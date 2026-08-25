@@ -1,0 +1,15 @@
+# Android build outputs
+out/
+out_*/
+*.img
+*.zip
+
+# Proprietary/vendor archives
+*.tgz
+*.tar.gz
+
+# Local metadata and temporary files
+*.log
+*.swp
+*~
+.DS_Store
