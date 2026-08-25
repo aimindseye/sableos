@@ -1,0 +1,12 @@
+diff --git a/rust/config/allowed_list.go b/rust/config/allowed_list.go
+index 394fcc52d9..b26cb9b294 100644
+--- a/rust/config/allowed_list.go
++++ b/rust/config/allowed_list.go
+@@ -7,6 +7,7 @@ var (
+ 	// TODO(b/160223496): enable rustfmt globally.
+ 	RustAllowedPaths = []string{
+ 		"device/google/cuttlefish",
++		"device/sable",
+ 		"external/adhd",
+ 		"external/crosvm",
+ 		"external/libchromeos-rs",
