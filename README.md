@@ -11,7 +11,7 @@ SableOS is an experimental privacy-focused mobile OS project targeting Google Pi
 - Build ID: `SQ3A.220705.003.A1`
 - Build variant: `userdebug`
 
-## Current milestone: B1
+## Current milestone: B1 — frozen
 
 B1 is the first SableOS derivative build on `bramble`.
 
@@ -36,16 +36,31 @@ Verified B1 properties:
 - `dtb.img` unchanged from B0
 - underlying DTBO payload unchanged from B0; final `dtbo.img` differs only because of AVB/build metadata
 
+The local B1 gold master is frozen and checksum-verified at:
+
+```text
+/srv/data/aosp_gold_master_bramble/B1-oxynoded-SQ3A.220705.003.A1
+```
+
+Both payload and metadata checksum manifests were verified after the final read-only freeze, and the target-files ZIP passed `unzip -t`.
+
 ## Repository layout
 
 ```text
 device/sable/bramble/        SableOS bramble product and oxynoded source
 patches/                     Minimal AOSP patches required by the pinned base
-docs/                        Build and milestone validation notes
+docs/                        Build, validation, and hardware acceptance notes
 ```
 
 Generated Android images, proprietary vendor archives, and target-files ZIPs are intentionally not committed to this repository.
 
+## Documentation
+
+- `docs/BUILDING_B1.md` — reproduce the B1 build
+- `docs/B1_VALIDATION.md` — B1 build and image validation record
+- `docs/B1_GOLD_MASTER.md` — immutable B1 archive/freeze record
+- `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory-state, unlock, safe-flash, B0/B1 hardware acceptance runbook
+
 ## Next hardware gate
 
-B0 and B1 will be validated on a Pixel 4a 5G G025E before B1.1 adds an init service and dedicated SELinux domain.
+Validate B0 and B1 on the physical Pixel 4a 5G G025E before B1.1 adds an init service and dedicated SELinux domain.
