@@ -4,31 +4,49 @@ SableOS is designed as one common OS architecture with device-specific hardware 
 
 The project should not become a collection of unrelated ROMs. Hardware changes the adapters. Form factor changes the shell. Application and service semantics remain common wherever practical.
 
-## Architectural rule
+Privacy and security are the first priorities, but SableOS does not discard mature Android/AOSP/vendor capability merely to reduce the amount of Android code present.
+
+## Architectural rules
 
 > One SableOS core, multiple hardware adapters, multiple interaction profiles.
 
+> Preserve proven AOSP/vendor capability unless there is a demonstrated privacy, security, performance, maintainability, or architectural reason to replace it.
+
+> The shell may observe and request; privileged services decide and execute.
+
 A device port should avoid branching common services or applications on model names when the same difference can be represented as a hardware or interaction capability.
+
+SableOS minimalism means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity. It does not mean reimplementing working platform capabilities without cause.
 
 ## Logical layers
 
 ```text
 SableOS
-├── common core
-│   ├── oxynoded
-│   ├── capability / IPC model
+├── interaction layer
+│   ├── touch-first shell
+│   ├── keyboard-first shell
+│   └── Sable applications
+│
+├── common semantic APIs
+│   ├── commands / capability requests
 │   ├── application lifecycle
 │   ├── notifications
-│   ├── contacts / messages / calls data models
-│   ├── settings and storage models
-│   ├── search / indexing
+│   ├── contacts / messages / calls models
+│   ├── settings / storage / search models
+│   └── media / connectivity semantics
+│
+├── common Sable services
+│   ├── oxynoded
+│   ├── narrow brokers/helpers
+│   ├── capability / IPC policy
 │   └── security policy model
 │
 ├── common Android substrate
 │   ├── init integration
 │   ├── SELinux integration
-│   ├── Binder / HIDL / AIDL adapters
-│   └── retained Android hardware framework where required
+│   ├── Binder / HIDL / AIDL infrastructure
+│   ├── retained AOSP framework capability
+│   └── compatibility components where justified
 │
 ├── hardware adapters
 │   ├── Qualcomm
@@ -37,12 +55,11 @@ SableOS
 │       ├── Q25 / MT6789
 │       └── future compatible MediaTek devices
 │
-└── interaction profiles
-    ├── touch-first
-    │   └── Pixel reference experience
-    └── keyboard-first
-        ├── Q25
-        └── future QWERTY devices
+└── vendor / hardware boundary
+    ├── modem / IMS / radio
+    ├── audio / camera / graphics
+    ├── power / thermal / sensors
+    └── firmware / device-specific HALs
 ```
 
 This is a logical architecture. The repository may use different physical directory names while the implementation is still being established.
@@ -59,8 +76,68 @@ The intended direction is to keep privileged code small and auditable:
 - no broad device access by default
 - no direct modem protocol implementation
 - no privilege granted merely for convenience
+- no direct privileged hardware/security libraries loaded by the presentation shell
 
 B1 validates native Rust compilation and packaging. B1.1 adds init startup and a dedicated SELinux domain while intentionally granting no radio, Binder, network, device, socket, or capability permissions beyond those required for init to transition into the daemon domain.
+
+## Shell / service trust boundary
+
+Presentation code must remain outside the privileged hardware/security trust boundary.
+
+Preferred flow:
+
+```text
+Sable shell / application
+        ↓
+typed semantic Sable API
+        ↓
+narrow Rust service / broker
+        ↓
+SELinux + capability policy
+        ↓
+AOSP framework / supported HAL / vendor stack
+        ↓
+hardware
+```
+
+A screen that can display or request a privileged operation does not receive the privilege to perform that operation directly.
+
+Examples:
+
+- a brightness control requests a power/display service operation;
+- a phone UI requests a call through the telephony service;
+- a security UI queries or requests a security service operation;
+- a notification UI renders notification state without inheriting arbitrary app or filesystem access.
+
+This prevents a shell/rendering compromise from automatically becoming broad system compromise.
+
+## AOSP capability preservation
+
+SableOS divides inherited platform functionality into three broad classes.
+
+### Foundation
+
+Foundation capabilities are normally retained and hardened rather than rewritten. Examples include Binder/HIDL/AIDL infrastructure, SELinux, AVB, Keystore/KeyMint-backed key handling, update/A-B machinery, networking, Wi-Fi, Bluetooth, audio, media, camera, power/thermal, input, HAL infrastructure, and the supported vendor modem/RIL/IMS stack.
+
+Foundation does not mean unrestricted trust. These components remain subject to privilege minimization, SELinux policy, network/privacy review, and physical regression testing.
+
+### Compatibility
+
+Compatibility components may be retained when they preserve useful ecosystem functionality, but should be optional and isolated as tightly as practical.
+
+Examples may include Android application compatibility, selected framework services, automotive/projection compatibility, or other third-party interoperability layers.
+
+A compatibility component does not automatically gain unrelated access to contacts, location, messages, media, identifiers, files, sensors, or the network.
+
+### Replacement candidate
+
+SableOS is expected to own presentation and policy where that creates a better privacy/security/product architecture, while retaining useful lower layers.
+
+Examples include the launcher/home experience, SystemUI presentation, Settings presentation, notification presentation, search/command UI, and Sable-native applications.
+
+Replacing presentation does not imply deleting the underlying AOSP service that provides the capability.
+
+See `docs/AOSP_CAPABILITY_POLICY.md` for the preserve-before-remove and replacement gates.
 
 ## Hardware adaptation boundary
 
@@ -73,12 +150,16 @@ Examples:
 ```text
 Sable service API
         │
+        ├── mock backend ───────────── development / tests
+        │
         ├── Qualcomm adapter ── Android HAL / vendor stack ── Qualcomm hardware
         │
         └── MediaTek adapter ── Android HAL / vendor stack ── MediaTek hardware
 ```
 
 The common service API should expose stable Sable semantics while adapters translate to the Android/vendor interfaces available on each device family.
+
+Mocks belong behind the same service contracts. Production UI code should not switch between mock and direct privileged libraries.
 
 ## Telephony boundary
 
@@ -116,6 +197,16 @@ modem firmware
 
 CarrierConfig, APN selection, IMS behavior and vendor radio firmware should remain intact until a replacement is demonstrably safer and equally compatible.
 
+## Automotive and external-device compatibility
+
+SableOS should preserve the Android/AOSP capabilities that make automotive and accessory interoperability possible, including media-session semantics, Bluetooth profiles, Telecom/call semantics, notifications, location/navigation interfaces, audio routing, USB/network transports, and related framework behavior.
+
+Do not make proprietary Google components a foundation requirement for SableOS. Equally, do not intentionally break compatible Android interfaces simply because the Sable shell is different.
+
+If official Android Auto or another proprietary/third-party projection host is usable on a future configuration, treat it as an optional compatibility component behind explicit Sable capability grants. It should receive only the media, calls, notifications, navigation/location, microphone, contacts, or other data that the feature actually requires and the user has enabled.
+
+If official projection is unavailable, reuse the mature underlying Android media, Telecom, Bluetooth, notification, navigation, and external-display semantics rather than inventing parallel stacks without cause.
+
 ## Security model
 
 The security direction is:
@@ -125,8 +216,28 @@ The security direction is:
 3. Narrow privileged helpers instead of a monolithic privileged process.
 4. No blanket root daemon.
 5. No direct hardware, radio, Binder or network permission until required by a concrete feature.
-6. Treat AVCs as evidence to investigate, not as instructions to add broad `allow` rules.
-7. Preserve verified boot and partition boundaries appropriate to each device during bring-up.
+6. The shell remains unprivileged relative to the operations it presents.
+7. Treat AVCs as evidence to investigate, not as instructions to add broad `allow` rules.
+8. Preserve verified boot and partition boundaries appropriate to each device during bring-up.
+9. Reused compatibility components receive explicit, minimal data and privilege rather than inheriting broad platform access.
+10. Replacement code must have an equal or narrower trust boundary than the mature component it replaces.
+
+## Capability-preservation gate
+
+Before removing or replacing an AOSP, LineageOS, or vendor component, determine:
+
+- the capability it provides;
+- its dependency graph;
+- its external communications/data flows;
+- its current UID/SELinux/Binder/socket/device/network privileges;
+- whether unwanted behavior can be disabled while preserving useful behavior;
+- whether a narrower broker or policy boundary solves the privacy/security concern;
+- whether a proposed replacement is demonstrably better;
+- whether physical-device capability parity has been proven.
+
+A component is not removed merely because it is inherited from Android.
+
+Each device maintains a known-good capability baseline. Subsequent Sable milestones must not silently lose working capabilities; intentional removals must be documented as explicit product decisions.
 
 ## Interaction is not hardware support
 
@@ -154,6 +265,8 @@ navigation.secondary
 display.aspect_class
 display.compactness
 telephony.radio_family
+media.automotive_projection
+compat.android_runtime
 ```
 
 A future QWERTY device should be able to use the keyboard-first shell without adding device-specific branches throughout applications.
@@ -196,6 +309,8 @@ The current LineageOS Q25 tree provides a promising substrate:
 - MediaTek vendor SELinux and hardware dependencies
 - Android Radio HIDL plus MediaTek-specific radio interfaces
 
+The Q25 baseline must inventory and preserve working LineageOS/AOSP capabilities before Sable-specific cleanup begins.
+
 See `docs/Q25_PORT_PLAN.md`.
 
 ### Zinwa Q27
@@ -208,22 +323,26 @@ The goal is to reuse the common Sable core and keyboard-first interaction profil
 
 ## Porting principle
 
-A new device port should prove the hardware substrate before adding Sable-specific behavior:
+A new device port should prove and inventory the hardware/software substrate before adding Sable-specific behavior:
 
 ```text
 known-good stock / upstream ROM
         ↓
-hardware acceptance baseline
+hardware + capability acceptance baseline
         ↓
 minimal Sable Rust integration
         ↓
+capability-parity regression gate
+        ↓
 dedicated init + SELinux domain
+        ↓
+capability-parity regression gate
         ↓
 common Sable services
         ↓
 interaction profile
         ↓
-optional narrow hardware brokers
+optional narrow hardware/compatibility brokers
 ```
 
-This keeps hardware regressions distinguishable from SableOS regressions and maximizes reusable common code.
+This keeps hardware regressions distinguishable from SableOS regressions, prevents accidental loss of mature Android functionality, and maximizes reusable common code.
