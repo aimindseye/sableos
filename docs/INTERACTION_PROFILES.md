@@ -30,6 +30,31 @@ Applications should be built from semantic concepts that shells can present diff
 
 Device-specific UI code should be limited to places where hardware really requires it.
 
+## Interaction security boundary
+
+Both interaction profiles follow the same trust-boundary rule:
+
+> The shell may observe and request; privileged services decide and execute.
+
+A touch control, keyboard shortcut, command-palette entry, or Settings page does not gain direct hardware/security privilege merely because it can request an operation.
+
+The shell should consume typed Sable semantic APIs for actions such as:
+
+- placing or ending a call
+- sending a message
+- changing brightness or power policy
+- connecting to a network
+- changing notification policy
+- querying storage or battery state
+- requesting a security/encryption operation
+- invoking automotive/accessory compatibility features
+
+Raw device nodes, modem sockets, filesystem-encryption primitives, broad Binder/HIDL/AIDL surfaces, and privileged native libraries remain behind dedicated services/brokers and SELinux policy.
+
+This rule is renderer-independent and applies equally to Slint, Vexo/`wgpu`, touch-first, keyboard-first, and any future interaction profile.
+
+See `AOSP_CAPABILITY_POLICY.md` and `ARCHITECTURE.md`.
+
 ## Touch-first profile
 
 Internal/source naming should remain generic, for example `shell_touch` or `interaction_touch`.
