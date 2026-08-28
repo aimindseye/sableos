@@ -4,6 +4,18 @@ SableOS is an experimental privacy-focused mobile OS with a Rust-first userspace
 
 The project is not intended to become a collection of unrelated device ROMs. Hardware-specific behavior belongs in adapters; form-factor-specific behavior belongs in interaction profiles; common application and service semantics should remain shared wherever practical.
 
+SableOS is also not intended to discard mature Android capability merely to minimize the amount of inherited code. Privacy and security come first, while proven AOSP/vendor functionality is preserved wherever it can be reused safely.
+
+## Core rules
+
+> One SableOS core, multiple hardware adapters, multiple interaction profiles.
+
+> Preserve proven AOSP/vendor capability unless there is a demonstrated privacy, security, performance, maintainability, or architectural reason to replace it.
+
+> The shell may observe and request; privileged services decide and execute.
+
+Minimalism means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity — not needless reinvention of working platform functionality.
+
 ## Current reference target
 
 - Device: Google Pixel 4a 5G G025E
@@ -80,17 +92,29 @@ The pre-full-build SELinux gates have passed:
 
 The full B1.1 image build and physical validation remain pending.
 
+See `docs/B1_1_VALIDATION.md` for the current gate record.
+
 ## Architecture
 
-SableOS follows this rule:
+SableOS keeps presentation, semantic services, Android/AOSP substrate and device/vendor adaptation as separate trust and portability layers.
 
-> One SableOS core, multiple hardware adapters, multiple interaction profiles.
-
-The common architecture includes Rust services, security boundaries, application/service semantics, notifications, search, settings/storage, and eventual common telephony APIs.
-
-Hardware differences are isolated below those APIs. The supported vendor modem/radio stack is preserved rather than reimplemented.
+The shell should never gain a privileged hardware/security interface merely because it presents a control for that feature. Sensitive operations belong behind typed semantic APIs, narrow services/brokers and SELinux policy.
 
 See `docs/ARCHITECTURE.md`.
+
+## AOSP capability policy
+
+SableOS classifies inherited functionality as:
+
+- **foundation** — retain and harden mature platform capability;
+- **compatibility** — retain when useful, but isolate and grant only required data/privilege;
+- **replacement candidate** — Sable-owned presentation/policy where replacement has a clear benefit while useful lower layers remain available.
+
+Before removing an AOSP, LineageOS or vendor component, the project must identify the capability it provides, its dependencies/data flows/privileges, whether the unwanted behavior can be constrained, and whether a replacement has proven physical-device capability parity.
+
+A Sable milestone must not silently lose working baseline functionality. Intentional removals are explicit product decisions with documented rationale.
+
+See `docs/AOSP_CAPABILITY_POLICY.md`.
 
 ## Interaction profiles
 
@@ -130,6 +154,7 @@ Q25 is intended to validate:
 - a second SoC/vendor family
 - the common Sable Rust/service architecture on MediaTek
 - vendor-RIL preservation outside Qualcomm
+- capability-preserving reuse of the existing LineageOS/AOSP substrate
 - the keyboard-first interaction profile
 
 See `docs/Q25_PORT_PLAN.md`.
@@ -150,6 +175,14 @@ On Qualcomm this means retaining the Google/Qualcomm Radio HAL, QCRIL, IMS and m
 
 A future Rust telephony broker must use narrow supported Android/vendor interfaces. It must not talk directly to raw modem sockets or implement a replacement modem protocol.
 
+## Automotive / Android compatibility
+
+SableOS should retain the underlying Android media, Bluetooth, Telecom, notification, navigation/location, audio-routing, USB/networking and related semantics that enable automotive and accessory interoperability.
+
+The core OS must not depend on proprietary Google components. If official Android Auto or another third-party/proprietary compatibility layer is usable on a future configuration, it should be optional and tightly sandboxed with explicit access only to the media, calls, notifications, navigation/location or other data actually required and enabled by the user.
+
+The goal is reuse without surrendering privacy/security control.
+
 ## Repository layout
 
 ```text
@@ -162,15 +195,17 @@ Generated Android images, proprietary vendor archives, firmware blobs and target
 
 ## Documentation
 
-- `docs/ARCHITECTURE.md` — common-core, hardware-adapter, security and telephony architecture
+- `docs/ARCHITECTURE.md` — common-core, AOSP reuse, hardware-adapter, security and telephony architecture
+- `docs/AOSP_CAPABILITY_POLICY.md` — preserve/remove/replacement, compatibility, parity and privacy/security gates
 - `docs/INTERACTION_PROFILES.md` — touch-first and keyboard-first UI/input design
 - `docs/Q25_PORT_PLAN.md` — planned MediaTek/QWERTY port methodology
 - `docs/BUILDING_B1.md` — reproduce the B1 build
-- `docs/B1_VALIDATION.md` — B1 build and image validation record
+- `docs/B1_VALIDATION.md` — B1 build and physical validation record
+- `docs/B1_1_VALIDATION.md` — active B1.1 build, SELinux, partition-delta and capability-parity gates
 - `docs/B1_GOLD_MASTER.md` — immutable B1 archive/freeze record
-- `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory-state, unlock, safe-flash and B0/B1 acceptance runbook
+- `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory-state, unlock, safe-flash and hardware acceptance runbook
 - `docs/CARRIER_COMPATIBILITY.md` — carrier compatibility goals and qualification rules
 
 ## Next gate
 
-Complete the full B1.1 build, audit the B1-to-B1.1 partition delta, create a safe flash package only after that audit passes, then physically validate automatic `oxynoded` startup, the dedicated SELinux domain, enforcing policy, absence of unexpected AVCs, and telephony parity on the G025E.
+Complete the full B1.1 build, audit the B1-to-B1.1 partition delta, create a safe flash package only after that audit passes, then physically validate automatic `oxynoded` startup, the dedicated SELinux domain, enforcing policy, absence of unexpected AVCs, and B1 AOSP/vendor capability parity including telephony on the G025E.
