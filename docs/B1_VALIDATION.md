@@ -87,6 +87,57 @@ fcaa3e706a6b4ac4699fb965218964b342b41cc918caee99fd3232c7009e176d  product.img
 fe3637453a6dc754c842cde07e7939ff214d4a92888c6afd13c9b3a2c3826c16  boot.img
 ```
 
-## Next gate
+## Physical G025E validation — passed
 
-Before B1.1, validate B0 and B1 on physical G025E hardware. B1.1 should add an init service and a dedicated SELinux domain without weakening SELinux enforcement or introducing broad root privileges.
+B0 was first flashed and used as the control build. B0 physical hardware/carrier acceptance passed.
+
+Observed B0 telephony behavior included:
+
+- SIM loaded and registered
+- LTE service
+- cellular data validated
+- outbound/inbound voice calls
+- earpiece, microphone and speakerphone
+- SMS send/receive
+- MMS
+- 5G/NR observed
+- Android Radio HAL and retained Qualcomm IMS/QtiRadio services present
+
+B1 was then flashed to the same G025E without changing the bootloader/radio firmware boundary.
+
+B1 validation passed:
+
+- product identity: `SableOS B1 on bramble`
+- `oxynoded` installed at `/system_ext/bin/oxynoded`
+- installed SHA-256 matched the frozen B1 artifact
+- `oxynoded --probe` completed successfully
+- cellular Internet remained working
+- outbound/inbound voice remained working
+- SMS send/receive remained working
+- LTE/NR capability remained present
+
+Probe output observed on physical hardware:
+
+```text
+[SableOS] SableOS oxynoded B1 starting
+[SableOS] Rust userspace probe successful
+[SableOS] version=SableOS oxynoded B1
+```
+
+This closes the B1 physical gate: native Rust compilation, packaging and execution have been validated on the target handset without a telephony regression.
+
+Sensitive device identifiers remain in local logs only and are intentionally not recorded here.
+
+## Current next gate: B1.1
+
+B1.1 adds only:
+
+- init-managed `oxynoded` startup
+- a dedicated `oxynoded` SELinux domain and executable type
+- SELinux enforcing
+- non-root/system service execution
+- no radio, Binder, network, device, socket or capability privileges yet
+
+The B1.1 pre-full-build SELinux gates have passed, including file-context tests, neverallows, combined policy and `sepolicy_tests`.
+
+The remaining gate is the full B1.1 image build, strict B1-to-B1.1 partition-delta audit, safe flash-package review, then physical validation of automatic startup, domain labeling, enforcing policy, AVC behavior and telephony parity.
