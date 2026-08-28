@@ -6,6 +6,10 @@ The Zinwa Q25 is the first planned non-Pixel SableOS target and the first planne
 
 The objective is not to fork SableOS for the Q25. The objective is to reuse the common Rust/services/security architecture while introducing a MediaTek hardware adapter and a keyboard-first interaction profile.
 
+The port must preserve working LineageOS/AOSP/vendor capability by default. Cleanup or replacement work begins only after the known-good baseline is inventoried and only when the Sable replacement has a clear privacy, security, maintainability, performance or architectural benefit.
+
+See `AOSP_CAPABILITY_POLICY.md`.
+
 ## Upstream substrate
 
 Primary reference tree:
@@ -66,28 +70,37 @@ Device identifiers and subscriber identifiers must remain in local logs only and
 
 Build the supported LineageOS Q25 configuration without Sable modifications.
 
+Q0 is not just a boot baseline. It is the capability inventory for every later Sable regression gate.
+
 Physical acceptance should cover at minimum:
 
-- boot stability
+- boot/reboot stability
 - display
 - touch
 - physical keyboard
 - keyboard shortcuts / scan codes
 - Wi-Fi
-- Bluetooth
-- audio
+- Bluetooth and useful profiles
+- audio playback/recording/routing
 - camera
 - NFC
 - sensors
+- GNSS/location where available
 - USB / ADB / Fastboot
+- storage
 - suspend/resume
-- charging
+- charging/power
 - SIM detection
 - LTE / available 5G behavior
 - packet data
 - outbound/inbound voice
 - SMS/MMS
 - IMS/VoLTE
+- media playback/codec behavior
+- notifications
+- update/rollback/recovery behavior
+
+For each working capability, record the framework/vendor component or dependency that appears to provide it where practical. This becomes the dependency map used before later component removal.
 
 Freeze hashes and a target-files/recovery record before moving to Sable changes.
 
@@ -107,6 +120,10 @@ Requirements:
 
 The purpose is to prove the common Rust userspace builds and runs on MediaTek without changing hardware behavior.
 
+#### Q1 capability-parity gate
+
+Repeat the Q0 smoke inventory. Q1 fails if a working Q0 capability is silently lost because of the Rust/product integration.
+
 ### Q1.1 — init + dedicated SELinux domain
 
 Add:
@@ -119,17 +136,45 @@ Add:
 
 Repeat the Q0 hardware and telephony smoke tests.
 
+#### Q1.1 security + capability gate
+
+Q1.1 passes only if:
+
+- the daemon starts automatically in the dedicated domain;
+- SELinux remains enforcing;
+- no broad privilege is granted merely to suppress AVCs;
+- working Q0/Q1 capabilities remain functional;
+- firmware/radio boundaries remain unchanged unless an explicitly reviewed update is required.
+
 ### Q2 — common Sable services and keyboard shell
 
 Introduce the common Sable service APIs and the keyboard-first interaction profile.
 
 Do not fork application semantics from the Pixel implementation. Differences should be expressed through capabilities and shell presentation.
 
+The keyboard shell follows the same trust-boundary rule as the touch shell:
+
+> The shell may observe and request; privileged services decide and execute.
+
+A keyboard shortcut or settings screen does not receive direct hardware, encryption, modem, device-node or broad Binder privileges simply because it can request those operations.
+
+#### Q2 capability gate
+
+Replacing Lineage/AOSP presentation must not accidentally remove the useful lower-layer service.
+
+Examples:
+
+- replacing Settings presentation must preserve the underlying working Wi-Fi/Bluetooth/power/storage services;
+- replacing home/SystemUI presentation must preserve notification, audio, Telecom and connectivity functionality used by the product;
+- changing app UX for the square/QWERTY display must not require device-specific forks of common application semantics.
+
 ### Q3 — narrow MediaTek telephony broker
 
 Only after the vendor stack is proven stable should Sable expose telephony through a narrow broker.
 
 The broker should consume supported Android/vendor interfaces and present common Sable call/message/radio semantics. It must not talk directly to raw modem sockets or protocols.
+
+Q3 must retain the Q0 carrier/IMS baseline unless a difference is explicitly understood and accepted.
 
 ## Shared vs device-specific code
 
@@ -141,9 +186,11 @@ Expected shared code:
 - notifications
 - contacts/messages/calls models
 - settings/storage/search
+- media/application semantics
 - security design
 - keyboard-first interaction framework
 - eventual common telephony API
+- capability-preservation/compatibility policy
 
 Expected Q25/MediaTek-specific code:
 
@@ -162,11 +209,25 @@ The goal is not to squeeze a conventional slab-phone UI into a compact/square di
 
 Applications should query capabilities rather than the `Q25` model name.
 
-## Dependency policy
+## Dependency and reuse policy
 
 Initial bring-up should keep the working LineageOS/MediaTek hardware substrate intact rather than attempting to remove every Lineage component immediately.
 
-Once Q0/Q1/Q1.1 are physically stable, dependencies can be reviewed individually and replaced only when SableOS has an equivalent with a clear security, maintenance or efficiency benefit.
+Dependencies fall into three broad classes:
+
+- **foundation**: keep and harden when they provide mature hardware/platform capability;
+- **compatibility**: keep when useful, but isolate and grant only required data/privilege;
+- **replacement candidate**: replace presentation/policy only after the underlying capability and dependency graph are understood.
+
+Before removing a LineageOS/AOSP/vendor component, apply the preserve-before-remove gate in `AOSP_CAPABILITY_POLICY.md`.
+
+A replacement is not approved simply because equivalent UI exists. It must preserve the working hardware/service capability or document an intentional product decision to remove it.
+
+## Automotive / accessory compatibility
+
+If the Q25 substrate already provides Android media, Bluetooth, Telecom, notification, navigation/location, USB/networking or other compatibility semantics useful to vehicles/accessories, preserve them through the Sable transition where they can be retained safely.
+
+Optional proprietary/third-party projection components are not foundational dependencies. If later used, isolate them behind explicit Sable capabilities rather than widening the keyboard shell or common services.
 
 ## Q27 relationship
 
@@ -179,6 +240,7 @@ If suitable, Q27 should reuse:
 - the common Sable core
 - MediaTek abstractions that are genuinely common
 - the keyboard-first interaction framework
+- the same AOSP capability-preservation and security gates
 
 while maintaining its own device acceptance and firmware boundary.
 
@@ -187,9 +249,12 @@ while maintaining its own device acceptance and firmware boundary.
 A Q25 build becomes a SableOS supported target only after:
 
 1. the upstream baseline is reproducible;
-2. hardware/telephony acceptance is recorded;
-3. Sable Rust integration is physically validated;
+2. the Q0 capability inventory and hardware/telephony acceptance are recorded;
+3. Sable Rust integration is physically validated without capability regression;
 4. SELinux remains enforcing with narrow domains;
 5. firmware/vendor boundaries are documented;
 6. keyboard-first interaction works without device-specific application forks;
-7. a safe restore path is proven.
+7. retained AOSP/Lineage/vendor functionality passes the relevant parity checks;
+8. removed/replaced components have passed the preserve-before-remove and replacement gates;
+9. optional compatibility components are isolated rather than given broad shell/service privilege;
+10. a safe restore path is proven.
