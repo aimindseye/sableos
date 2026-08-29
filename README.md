@@ -26,21 +26,13 @@ Minimalism means minimal privilege, attack surface, unnecessary background activ
 - Build ID: `SQ3A.220705.003.A1`
 - Build variant: `userdebug`
 
-## Current milestone: B1.1 — in progress
+## Current milestone: B2 — `power.read_state`
 
 ### B0 — physical baseline passed
 
 Vanilla AOSP B0 has been physically validated on the G025E.
 
-Validated cellular/hardware behavior includes:
-
-- cellular Internet
-- outbound/inbound voice calling
-- earpiece, microphone and speakerphone
-- SMS send/receive
-- MMS
-- LTE registration
-- 5G/NR observation
+Validated cellular/hardware behavior includes cellular Internet, outbound/inbound voice calling, earpiece/microphone/speakerphone, SMS, MMS, LTE, and available 5G/NR behavior.
 
 The retained Google/Qualcomm radio and IMS stack remains the hardware compatibility baseline.
 
@@ -62,37 +54,50 @@ The frozen B1 executable is:
 
 B1 has been physically validated on the G025E. `oxynoded --probe` runs successfully on-device and B1 retains cellular data, voice and SMS parity with B0.
 
-The local B1 gold master is frozen and checksum-verified at:
+### B1.1 — init + dedicated SELinux domain passed
+
+B1.1 is physically validated and its Gold Master is frozen.
+
+B1.1 proves that the B1-validated `oxynoded` can:
+
+- start automatically through Android init;
+- run as UID/GID `system`, not root;
+- run in dedicated SELinux domain `u:r:oxynoded:s0`;
+- keep SELinux enforcing;
+- run with zero inheritable, permitted, effective and ambient Linux capabilities;
+- remain running after reboot;
+- retain the B1 AOSP/vendor hardware and telephony capability baseline;
+- avoid new radio, Binder, network, HAL, service-manager, device-node or other feature privileges.
+
+The B1.1 offline structural/capability audit, safe flash-package audit, physical security validation, hardware parity, telephony parity and firmware-preservation gates all passed.
+
+See `docs/B1_1_VALIDATION.md`.
+
+### B2 — first narrow semantic hardware service
+
+B2 introduces one read-only Sable semantic operation:
 
 ```text
-/srv/data/aosp_gold_master_bramble/B1-oxynoded-SQ3A.220705.003.A1
+power.read_state
 ```
 
-### B1.1 — init + dedicated SELinux domain
+The goal is to prove the service/backend boundary before adding write-capable or larger Android framework interfaces.
 
-B1.1 is the current development milestone.
+B2 requires:
 
-Its intended delta is deliberately small:
+- a typed `PowerState` semantic API;
+- a `PowerBackend` abstraction with a deterministic mock backend;
+- a physical Android/bramble backend behind the same contract;
+- no bramble-specific paths/constants in core service semantics;
+- read-only physical access;
+- minimum attributable SELinux permissions;
+- no radio, network or telephony permissions;
+- no root or Linux capabilities;
+- physical agreement with Android battery percentage/charging state;
+- reboot/polling stability;
+- preservation of the B1.1 hardware and telephony capability baseline.
 
-- start `oxynoded` through Android init
-- run it as a non-root system service
-- use a dedicated `oxynoded` SELinux domain
-- keep SELinux enforcing
-- add no radio, Binder, network, device, socket or capability privileges yet
-
-The pre-full-build SELinux gates have passed:
-
-- `system_ext_sepolicy.cil`
-- `system_ext_file_contexts`
-- `system_ext_file_contexts_test`
-- `sepolicy_neverallows`
-- combined `sepolicy`
-- `sepolicy_tests`
-- hand-written broad privilege audit: none
-
-The full B1.1 image build and physical validation remain pending.
-
-See `docs/B1_1_VALIDATION.md` for the current gate record.
+See `docs/B2_POWER_READ_STATE.md`.
 
 ## Architecture
 
@@ -136,12 +141,13 @@ See `docs/INTERACTION_PROFILES.md`.
 
 ### Google Pixel 4a 5G G025E (`bramble`)
 
-Status: **reference / physically validated**.
+Status: **reference / physically validated through B1.1**.
 
 - Qualcomm SM7250
 - B0 physical baseline: passed
 - B1 Rust validation: passed
-- B1.1: in progress
+- B1.1 init/SELinux validation: passed
+- B2 `power.read_state`: planned/current
 
 ### Zinwa Q25
 
@@ -151,11 +157,11 @@ The current LineageOS Q25 device tree provides a promising MediaTek substrate wi
 
 Q25 is intended to validate:
 
-- a second SoC/vendor family
-- the common Sable Rust/service architecture on MediaTek
-- vendor-RIL preservation outside Qualcomm
-- capability-preserving reuse of the existing LineageOS/AOSP substrate
-- the keyboard-first interaction profile
+- a second SoC/vendor family;
+- the common Sable Rust/service architecture on MediaTek;
+- vendor-RIL preservation outside Qualcomm;
+- capability-preserving reuse of the existing LineageOS/AOSP substrate;
+- the keyboard-first interaction profile.
 
 See `docs/Q25_PORT_PLAN.md`.
 
@@ -201,11 +207,12 @@ Generated Android images, proprietary vendor archives, firmware blobs and target
 - `docs/Q25_PORT_PLAN.md` — planned MediaTek/QWERTY port methodology
 - `docs/BUILDING_B1.md` — reproduce the B1 build
 - `docs/B1_VALIDATION.md` — B1 build and physical validation record
-- `docs/B1_1_VALIDATION.md` — active B1.1 build, SELinux, partition-delta and capability-parity gates
+- `docs/B1_1_VALIDATION.md` — completed B1.1 build, SELinux, structural, capability and physical validation record
+- `docs/B2_POWER_READ_STATE.md` — B2 semantic API, backend, privilege and physical acceptance plan
 - `docs/B1_GOLD_MASTER.md` — immutable B1 archive/freeze record
 - `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory-state, unlock, safe-flash and hardware acceptance runbook
 - `docs/CARRIER_COMPATIBILITY.md` — carrier compatibility goals and qualification rules
 
 ## Next gate
 
-Complete the full B1.1 build, audit the B1-to-B1.1 partition delta, create a safe flash package only after that audit passes, then physically validate automatic `oxynoded` startup, the dedicated SELinux domain, enforcing policy, absence of unexpected AVCs, and B1 AOSP/vendor capability parity including telephony on the G025E.
+Implement the B2 semantic `PowerState` contract and deterministic `MockPowerBackend` first, with host-side tests and no new Android/SELinux privileges. Only after that core layer is clean should B2 inspect and select the narrowest physical Android/bramble power-state interface.
