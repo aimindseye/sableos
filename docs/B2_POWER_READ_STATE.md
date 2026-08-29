@@ -1,6 +1,6 @@
 # B2 — `power.read_state` service and hardware adapter
 
-Status: **in progress — B2.0 semantic/mock gate passed**.
+Status: **in progress — B2.0 semantic/mock and B2.1 Soong integration gates passed**.
 
 B2 is the first SableOS semantic service and hardware-adapter milestone after the physically validated B1.1 init/SELinux foundation.
 
@@ -8,7 +8,9 @@ Its purpose is to prove that SableOS can expose useful hardware state through a 
 
 ## Current progress
 
-B2.0 is complete:
+### B2.0 — semantic/mock gate
+
+Complete:
 
 - typed `PowerState`, `PowerSource`, `PowerError`, `PowerBackend`, and `PowerService` exist;
 - `MockPowerBackend` exists;
@@ -17,7 +19,24 @@ B2.0 is complete:
 - host semantic tests compile with Rust edition 2018;
 - all 9 deterministic semantic/mock tests pass.
 
-No physical power backend, new SELinux permission, Binder/HAL access, or device privilege has been added yet.
+Gate: **PASS**.
+
+### B2.1 — Soong integration gate
+
+Complete:
+
+- isolated `sable_bramble_b2-userdebug` product target exists;
+- the B2 product inherits the stock bramble AOSP product and packages `oxynoded` plus the existing init RC;
+- `power.rs` is compiled into the B2 `oxynoded` crate through `mod power;`;
+- host integration build passes with the pinned Rust compiler;
+- explicit `--power-mock-probe` returns the deterministic mock state successfully;
+- Soong builds and installs `out_b2/target/product/bramble/system_ext/bin/oxynoded` successfully;
+- no physical power backend has been added;
+- no new SELinux permission, Binder/HAL access, device-node access, sysfs access, network access, radio access, telephony access, Linux capability, or root execution has been introduced.
+
+Gate: **PASS**.
+
+The next gate is read-only investigation and selection of the narrowest existing Android/bramble power-state interface before any physical backend or policy change is implemented.
 
 ## Scope
 
