@@ -1,0 +1,13 @@
+diff --git a/device/google/redbull-sepolicy/redbull-sepolicy.mk b/device/google/redbull-sepolicy/redbull-sepolicy.mk
+--- a/device/google/redbull-sepolicy/redbull-sepolicy.mk
++++ b/device/google/redbull-sepolicy/redbull-sepolicy.mk
+@@ -15,4 +15,10 @@ BOARD_VENDOR_SEPOLICY_DIRS += hardware/google/pixel-sepolicy/powerstats
+ 
+ # system_ext
+ SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/google/redbull-sepolicy/system_ext/private
++
++# SableOS B1.1
++# Keep SableOS system_ext policy out of B0/B1 rebuilds.
++ifeq ($(TARGET_PRODUCT),sable_bramble_b11)
++SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/sable/bramble/sepolicy/system_ext/private
++endif
