@@ -14,6 +14,8 @@ Privacy and security are the first priorities, but SableOS does not discard matu
 
 > The shell may observe and request; privileged services decide and execute.
 
+> Platform security boundaries are design constraints to understand first, not obstacles to disable for convenience.
+
 A device port should avoid branching common services or applications on model names when the same difference can be represented as a hardware or interaction capability.
 
 SableOS minimalism means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity. It does not mean reimplementing working platform capabilities without cause.
@@ -50,9 +52,10 @@ SableOS
 │
 ├── hardware adapters
 │   ├── Qualcomm
-│   │   └── bramble / Pixel 4a 5G
+│   │   ├── bramble / Pixel 4a 5G
+│   │   └── future supported Pixel-class targets
 │   └── MediaTek
-│       ├── Q25 / MT6789
+│       ├── Q25 / MT6789-class study target
 │       └── future compatible MediaTek devices
 │
 └── vendor / hardware boundary
@@ -70,15 +73,15 @@ This is a logical architecture. The repository may use different physical direct
 
 The intended direction is to keep privileged code small and auditable:
 
-- narrow services rather than one giant root daemon
-- dedicated SELinux domains
-- explicit capability boundaries
-- no broad device access by default
-- no direct modem protocol implementation
-- no privilege granted merely for convenience
-- no direct privileged hardware/security libraries loaded by the presentation shell
+- narrow services rather than one giant root daemon;
+- dedicated SELinux domains;
+- explicit capability boundaries;
+- no broad device access by default;
+- no direct modem protocol implementation;
+- no privilege granted merely for convenience;
+- no direct privileged hardware/security libraries loaded by the presentation shell.
 
-B1 validates native Rust compilation and packaging. B1.1 adds init startup and a dedicated SELinux domain while intentionally granting no radio, Binder, network, device, socket, or capability permissions beyond those required for init to transition into the daemon domain.
+The Android 12 B1/B1.1 milestones proved native Rust compilation, init startup and dedicated SELinux confinement. S0 re-establishes those properties on the Android 14 baseline rather than assuming old build/partition/policy mechanics remain valid.
 
 ## Shell / service trust boundary
 
@@ -119,7 +122,7 @@ SableOS divides inherited platform functionality into three broad classes.
 
 Foundation capabilities are normally retained and hardened rather than rewritten. Examples include Binder/HIDL/AIDL infrastructure, SELinux, AVB, Keystore/KeyMint-backed key handling, update/A-B machinery, networking, Wi-Fi, Bluetooth, audio, media, camera, power/thermal, input, HAL infrastructure, and the supported vendor modem/RIL/IMS stack.
 
-Foundation does not mean unrestricted trust. These components remain subject to privilege minimization, SELinux policy, network/privacy review, and physical regression testing.
+Foundation does not mean unrestricted trust. These components remain subject to privilege minimization, SELinux policy, network/privacy review, security-update review and physical regression testing.
 
 ### Compatibility
 
@@ -174,7 +177,7 @@ Sable telephony API
       ↓
 future narrow Rust broker
       ↓
-Android Radio HAL / Binder / HIDL
+Android Radio HAL / Binder / HIDL / AIDL as supported
       ↓
 Google / Qualcomm radio, QCRIL and IMS stack
       ↓
@@ -188,7 +191,7 @@ Sable telephony API
       ↓
 future narrow Rust broker
       ↓
-Android Radio HIDL / vendor MediaTek interfaces
+Android Radio HIDL / AIDL / supported MediaTek interfaces
       ↓
 MediaTek vendor RIL and IMS stack
       ↓
@@ -218,9 +221,52 @@ The security direction is:
 5. No direct hardware, radio, Binder or network permission until required by a concrete feature.
 6. The shell remains unprivileged relative to the operations it presents.
 7. Treat AVCs as evidence to investigate, not as instructions to add broad `allow` rules.
-8. Preserve verified boot and partition boundaries appropriate to each device during bring-up.
-9. Reused compatibility components receive explicit, minimal data and privilege rather than inheriting broad platform access.
-10. Replacement code must have an equal or narrower trust boundary than the mature component it replaces.
+8. Treat `neverallow` failures as architecture signals; do not disable platform invariants merely to make a design build.
+9. Preserve verified boot and partition boundaries appropriate to each device during bring-up.
+10. Reused compatibility components receive explicit, minimal data and privilege rather than inheriting broad platform access.
+11. Replacement code must have an equal or narrower trust boundary than the mature component it replaces.
+12. Security claims must account for kernel, firmware, vendor-code and OEM support lifetime, not only Sable-owned userspace code.
+13. Development/unlocked-bootloader state must not be represented as production security.
+14. Security maintenance is continuous: platform, kernel, WebView/browser, vendor/firmware and CVE status require ongoing tracking.
+
+### B2 architectural precedent
+
+B2 established an important enforcement precedent. Once the Sable SELinux policy was genuinely included in the Android 12 build, a platform `neverallow` rejected a `coredomain` helper directly reading `sysfs_batteryinfo`.
+
+The correct response was not to weaken the `neverallow`; the design moved physical access to a vendor-side helper boundary while keeping `oxynoded` isolated from raw sysfs.
+
+That precedent applies to future Sable services: first understand why a platform boundary exists, then place the component on the correct side of it.
+
+## Security-reference discipline
+
+AOSP is the normative reference for Android platform/security architecture. GrapheneOS is a primary additional security-engineering reference.
+
+SableOS should learn from GrapheneOS work in areas such as:
+
+- attack-surface reduction;
+- exploit mitigations and memory-hardening strategy;
+- compatibility without ambient privilege;
+- meaningful network/sensor capability enforcement;
+- app/process sandboxing;
+- USB/debug attack-surface control;
+- verified boot, signing, rollback protection and attestation;
+- kernel/browser/WebView update discipline;
+- explicit device-support and firmware-lifecycle security limits.
+
+SableOS does **not** aim to become a GrapheneOS fork or copy its product architecture. Each feature is reviewed against the selected AOSP baseline, hardware support, Sable trust boundaries, testability and maintenance cost.
+
+Review outcomes use:
+
+```text
+ALREADY_UPSTREAM
+ADOPT
+ADAPT_FOR_SABLE
+HARDWARE_UNAVAILABLE
+NOT_RELEVANT
+DEFER
+```
+
+See `docs/SECURITY_REFERENCE_GRAPHENEOS.md` for the full S0 security-delta framework.
 
 ## Capability-preservation gate
 
@@ -245,7 +291,7 @@ Hardware support and user experience are separate axes.
 
 The Pixel reference device uses a touch-first, Metro-inspired visual and navigation direction. Physical-QWERTY devices use a keyboard-first interaction profile designed around focus, shortcuts, type-to-search and dense information presentation.
 
-Applications should consume semantic UI and command primitives rather than hard-code a Pixel or Q25 layout.
+Applications should consume semantic UI and command primitives rather than hard-code a Pixel or QWERTY-device layout.
 
 See `docs/INTERACTION_PROFILES.md`.
 
@@ -283,66 +329,48 @@ The renderer is replaceable. Application semantics, IPC contracts and security b
 
 ### Pixel 4a 5G G025E (`bramble`)
 
-Status: reference and physically validated platform.
+Status: architecture/regression reference; S0 Android 14 uplift in progress.
 
 - Qualcomm Snapdragon 765G / SM7250
 - Adreno 620
-- Android 12.1 baseline: `android-12.1.0_r11`
-- build ID: `SQ3A.220705.003.A1`
+- historical Android 12.1 baseline: `android-12.1.0_r11` / `SQ3A.220705.003.A1`
+- current S0 baseline: Android 14 `android-14.0.0_r28` / `UP1A.231105.001.B2`
 - B0 physical hardware/carrier baseline: passed
 - B1 native Rust validation: passed
-- B1.1 init + dedicated SELinux integration: in progress
+- B1.1 init + dedicated SELinux validation: passed
+- B2 semantic power-service architecture: retained; Android-12 physical completion superseded by S0
+- S0.2 Android 14 source transition: passed
+- S0.3 vanilla Android 14 build/physical baseline: current
+- security limitation: end-of-life firmware/vendor support ceiling
+
+`bramble` is suitable for architecture, regression and controlled development work. It must not be used to imply indefinite production security because OEM firmware/vendor maintenance has ended.
+
+### Modern Pixel-class reference
+
+Status: future security-reference role.
+
+SableOS needs a modern, actively supported device baseline for production-security claims, modern exploit-mitigation evaluation, verified-boot/relock work and long-lived firmware/vendor updates. The exact supported reference should be selected by security properties and maintainability rather than by UI/form-factor preference alone.
 
 ### Zinwa Q25
 
-Status: planned port; not yet a supported SableOS build.
+Status: planned/optional port; not yet a supported SableOS build.
 
-The current LineageOS Q25 tree provides a promising substrate:
+The existing Q25/MediaTek study remains useful for validating:
 
-- arm64
-- MediaTek MT6789
-- GKI kernel source dependency
-- A/B updates
-- dynamic partitions
-- AVB
-- `vendor_boot`
-- MediaTek vendor SELinux and hardware dependencies
-- Android Radio HIDL plus MediaTek-specific radio interfaces
+- a second SoC/vendor family;
+- the common Sable service architecture on MediaTek;
+- vendor-RIL preservation outside Qualcomm;
+- capability-preserving reuse of the Android/LineageOS substrate;
+- the keyboard-first interaction profile.
 
-The Q25 baseline must inventory and preserve working LineageOS/AOSP capabilities before Sable-specific cleanup begins.
+It must independently pass source, unlock, vendor-boundary and physical acceptance gates before support claims.
 
 See `docs/Q25_PORT_PLAN.md`.
 
 ### Zinwa Q27
 
-Status: exploratory/watch target.
+Status: future physical-QWERTY target pending hardware/source acceptance.
 
-Q27 should not be assumed compatible with the Q25 port until public kernel/device sources, unlock/flash documentation, vendor boundaries and physical hardware are available and reviewed.
+Q27 should not be assumed compatible with the Q25 work until public kernel/device sources, unlock/flash documentation, vendor boundaries and physical hardware are available and reviewed.
 
-The goal is to reuse the common Sable core and keyboard-first interaction profile if the hardware/platform substrate is suitable.
-
-## Porting principle
-
-A new device port should prove and inventory the hardware/software substrate before adding Sable-specific behavior:
-
-```text
-known-good stock / upstream ROM
-        ↓
-hardware + capability acceptance baseline
-        ↓
-minimal Sable Rust integration
-        ↓
-capability-parity regression gate
-        ↓
-dedicated init + SELinux domain
-        ↓
-capability-parity regression gate
-        ↓
-common Sable services
-        ↓
-interaction profile
-        ↓
-optional narrow hardware/compatibility brokers
-```
-
-This keeps hardware regressions distinguishable from SableOS regressions, prevents accidental loss of mature Android functionality, and maximizes reusable common code.
+If accepted, it should reuse the common Sable core and keyboard-first interaction framework rather than become a separate OS fork.
