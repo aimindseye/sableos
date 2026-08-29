@@ -1,0 +1,4 @@
+type oxynoded, domain, coredomain;
+type oxynoded_exec, system_file_type, exec_type, file_type;
+
+init_daemon_domain(oxynoded)
