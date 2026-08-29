@@ -2,11 +2,14 @@ rust_binary {
     name: "oxynoded",
     crate_name: "oxynoded",
     srcs: ["src/main.rs"],
-
-    // B1: SableOS is currently an extension of the stock Android
-    // system image, so install the daemon in system_ext rather than
-    // claiming ownership of /system.
     system_ext_specific: true,
-
     prefer_rlib: true,
+}
+
+prebuilt_etc {
+    name: "oxynoded_init_rc",
+    src: "oxynoded.rc",
+    filename: "oxynoded.rc",
+    sub_dir: "init",
+    system_ext_specific: true,
 }
