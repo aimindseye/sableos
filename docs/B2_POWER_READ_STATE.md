@@ -1,6 +1,6 @@
 # B2 — `power.read_state` service and hardware adapter
 
-Status: **in progress — B2.0 semantic/mock and B2.1 Soong integration gates passed**.
+Status: **in progress — B2.0 semantic/mock, B2.1 Soong integration, and B2.2 backend-investigation gates passed**.
 
 B2 is the first SableOS semantic service and hardware-adapter milestone after the physically validated B1.1 init/SELinux foundation.
 
@@ -36,7 +36,31 @@ Complete:
 
 Gate: **PASS**.
 
-The next gate is read-only investigation and selection of the narrowest existing Android/bramble power-state interface before any physical backend or policy change is implemented.
+### B2.2 — physical backend investigation
+
+Complete:
+
+- Android Battery Service reports expected battery/charging state;
+- retained Health 2.1 service/implementation is present;
+- `/sys/class/power_supply` exposes the B2-required state;
+- relevant power-supply semantic files use the dedicated `sysfs_batteryinfo` SELinux type;
+- the investigation was read-only with SELinux enforcing;
+- `oxynoded` remained running with no observed AVC denials;
+- adbd was restored to non-root state.
+
+Decision:
+
+- preserve Android Health HAL unchanged for Android/framework consumers;
+- do not grant `oxynoded` direct Health/HwBinder or sysfs access;
+- implement a dedicated non-root Rust helper, `sable-powerd`;
+- grant the helper only the minimum read-only `sysfs_batteryinfo` access required by the physical adapter;
+- connect `oxynoded` to the helper through narrow private Unix request/response IPC.
+
+See `docs/B2_POWER_BACKEND_DECISION.md`.
+
+Gate: **PASS**.
+
+The next gate is host-only parser, source-precedence, helper-reader, protocol, and malformed-input testing before any init or SELinux change.
 
 ## Scope
 
@@ -94,36 +118,24 @@ Sable client / future shell
           v
       PowerBackend
        /        \
-MockPowerBackend  Android/Bramble backend
+MockPowerBackend  AndroidPowerBackend
+                       |
+                       v
+                  sable-powerd
+                       |
+                       v
+             selected sysfs_batteryinfo
 ```
 
 The preferred implementation rule is:
 
 > Core Sable service semantics must not contain device-specific paths, property names, HAL identifiers, or vendor-specific branching.
 
-If the physical Android/bramble backend requires privilege not otherwise needed by `oxynoded`, that privilege belongs in a narrow helper/service with its own SELinux domain rather than being granted broadly to `oxynoded`.
-
-A possible separated implementation is:
-
-```text
-oxynoded
-   |
-   | narrow private request/response IPC
-   v
-sable-powerd
-   |
-   v
-PowerBackend
-   |
-   v
-specific Android/kernel power-state interface
-```
-
-B2 should use the narrowest mature Android/AOSP interface that can provide the required state reliably. Direct kernel/sysfs reads are acceptable only when they are well-defined for the target and can be confined narrowly. AOSP/Android health-service integration is preferred long-term when it can be used without unnecessarily broad privilege.
+The physical privilege is isolated in `sable-powerd`; `oxynoded` should receive only the private IPC access needed to request the semantic power state.
 
 ## Backend contract
 
-The backend boundary should be typed and testable. A starting shape is:
+The backend boundary should be typed and testable. The current shape is:
 
 ```rust
 pub trait PowerBackend {
@@ -131,23 +143,24 @@ pub trait PowerBackend {
 }
 ```
 
-The first two backends are:
+The backends are:
 
 - `MockPowerBackend` — desktop/unit-test/development backend;
-- Android/bramble physical backend — maps the retained Android hardware substrate into Sable semantics.
+- `AndroidPowerBackend` — client-side adapter that obtains semantic state from `sable-powerd`;
+- helper-side bramble reader — maps selected retained kernel power-supply state into the Sable semantic contract.
 
-The adapter may know platform-specific details. `PowerService`, callers, and future shells may not.
+The helper-side adapter may know platform-specific paths. `PowerService`, callers, and future shells may not.
 
 ## Privilege rules
 
 B1.1 established `oxynoded` as UID/GID `system`, in `u:r:oxynoded:s0`, with no Linux capabilities and no radio, Binder, network, HAL, service-manager, device-node, or other feature privileges.
 
-B2 starts from that boundary.
+B2 preserves that boundary.
 
 Requirements:
 
 - SELinux remains enforcing;
-- no root execution;
+- neither daemon runs as root;
 - no Linux capabilities;
 - no radio access;
 - no telephony permissions;
@@ -156,24 +169,23 @@ Requirements:
 - no broad filesystem read permission;
 - no broad Binder/service-manager/HAL permission merely for convenience;
 - any new allow rule must be directly attributable to `power.read_state` and documented;
-- read-only access only for the first B2 milestone.
-
-If a helper is introduced, `oxynoded` should gain only the narrow IPC permission required to request `power.read_state`, while the helper receives only the minimum read permission needed for the physical backend.
+- read-only hardware interaction only for B2;
+- `oxynoded` gains only narrow IPC permission to `sable-powerd`;
+- `sable-powerd` gains only the minimum read permission necessary for selected `sysfs_batteryinfo` paths.
 
 ## Mock-backend gate
 
-Before touching physical hardware access, the semantic layer should be testable using deterministic mock states, including at least:
+Deterministic tests cover:
 
 - battery / not charging;
 - USB charging;
-- AC charging where representable;
-- wireless charging where representable;
+- AC charging;
+- wireless charging;
 - unknown source;
 - low battery;
 - full battery;
-- backend read failure.
-
-The semantic API must reject invalid battery percentages above 100 rather than silently exposing malformed state.
+- backend read failure;
+- invalid battery percentage.
 
 Gate: **PASS**.
 
@@ -184,13 +196,14 @@ The physical backend must correctly map the retained Android/AOSP power state in
 At minimum validate:
 
 1. unplugged state reports `charging = false` and `source = Battery`;
-2. USB charging reports `charging = true` and `source = Usb` when the platform can distinguish the source;
-3. battery percentage matches the Android-visible value within the same observation window;
-4. repeated reads do not leak resources or destabilize the service;
-5. reads continue to work after reboot;
-6. failure is returned as an explicit error rather than stale or invented data.
+2. USB charging reports `charging = true` and `source = Usb` when the selected platform field identifies USB power;
+3. wireless charging maps to `Wireless` when available;
+4. battery percentage matches the Android-visible value within the same observation window;
+5. repeated reads do not leak resources or destabilize either service;
+6. reads continue to work after reboot;
+7. malformed or missing data returns an explicit error rather than stale or invented state.
 
-Status: **pending**.
+Status: **pending implementation**.
 
 ## B2 success criteria
 
@@ -202,13 +215,14 @@ B2 passes only when all of the following are true:
 4. a physical Android/bramble backend exists behind the same backend contract;
 5. the physical implementation is read-only;
 6. `oxynoded` remains non-root and without Linux capabilities;
-7. no radio/network/telephony permissions are introduced;
-8. any new SELinux permissions are minimal, documented, and attributable only to the power-state path;
-9. reported battery percentage and charging state match the Android baseline on-device;
-10. repeated polling and reboot persistence pass;
-11. no unexpected AVCs are hidden by broad policy weakening;
-12. B1.1 capability parity remains intact, including Wi-Fi, Bluetooth, audio, camera, sensors, USB, suspend/resume, charging, mobile data, calls, SMS, MMS, and available 5G behavior;
-13. bootloader/baseband/vendor hardware foundations remain untouched.
+7. `sable-powerd` is non-root and without Linux capabilities;
+8. no radio/network/telephony permissions are introduced;
+9. any new SELinux permissions are minimal, documented, and attributable only to the power-state path;
+10. reported battery percentage and charging state match the Android baseline on-device;
+11. repeated polling and reboot persistence pass;
+12. no unexpected AVCs are hidden by broad policy weakening;
+13. B1.1 capability parity remains intact, including Wi-Fi, Bluetooth, audio, camera, sensors, USB, suspend/resume, charging, mobile data, calls, SMS, MMS, and available 5G behavior;
+14. bootloader/baseband/vendor hardware foundations remain untouched.
 
 ## Explicit non-goals
 
@@ -217,6 +231,8 @@ B2 is not the telephony broker milestone and must not open the modem/radio bound
 B2 is not a shell/UI milestone. A future shell may consume the semantic API, but the service contract is validated independently first.
 
 B2 is not a generic hardware abstraction rewrite. It reuses the proven Android/AOSP/vendor substrate and adds only the narrow Sable semantic boundary required for power state.
+
+B2 does not replace Android Health HAL. The retained Android health stack remains available to Android/framework consumers.
 
 ## Expected follow-on
 
