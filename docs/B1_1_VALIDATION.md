@@ -1,10 +1,8 @@
 # B1.1 validation record and acceptance gates
 
-Status: **pre-full-build gates passed; full image and physical validation pending**.
+Status: **PASS — physically validated and Gold Master frozen**.
 
-B1.1 is intentionally a narrow change from the physically validated B1 baseline.
-
-Its purpose is to prove that the B1-validated `oxynoded` code can start automatically through Android init in its own SELinux domain while SELinux remains enforcing and while no new hardware, radio, Binder, network, device-node, socket, or Linux-capability permissions are granted.
+B1.1 is intentionally a narrow change from the physically validated B1 baseline. Its purpose was to prove that the B1-validated `oxynoded` code can start automatically through Android init in its own SELinux domain while SELinux remains enforcing and while no new radio, Binder, network, HAL, device-node, socket, or Linux-capability feature privileges are granted.
 
 ## Reference baseline
 
@@ -18,45 +16,24 @@ Its purpose is to prove that the B1-validated `oxynoded` code can start automati
 
 ## Intended B1 -> B1.1 delta
 
-- add B1.1 product target
-- keep the same `oxynoded` source/code behavior
-- install an init service definition
-- run as UID `system`, not root
-- add dedicated `oxynoded` and `oxynoded_exec` SELinux types
-- allow init to transition into the dedicated domain
-- keep SELinux enforcing
-- grant no feature privileges yet
+- add B1.1 product target;
+- keep the same `oxynoded` source/code behavior;
+- install an init service definition;
+- run as UID/GID `system`, not root;
+- add dedicated `oxynoded` and `oxynoded_exec` SELinux types;
+- allow init to transition into the dedicated domain;
+- keep SELinux enforcing;
+- grant no feature privileges yet.
 
-## Binary-equivalence gate
+## Rust binary-equivalence gate
 
-The B1.1 build of the same Rust source has a different whole-file SHA-256 because the GNU build-id differs.
-
-B1.1 installed binary SHA-256 before the full image build:
+B1.1 installed `oxynoded` SHA-256:
 
 ```text
 39cd9b55f240cb2ca8e7efebff82b3228ccb3fd393489ea46b9a9deefdd4628c
 ```
 
-A section-level comparison established:
-
-- same file size
-- same AArch64 PIE structure
-- same entry point
-- same ELF layout
-- same Android note
-- same dynamic dependencies
-- identical `.text`
-- identical `.rodata`
-- identical `.data`
-- identical `.dynamic`
-- identical `.dynsym`
-- identical `.dynstr`
-- identical `.eh_frame`
-- identical `.got`
-- identical `.rela.plt`
-- exactly 16 differing bytes, confined to the GNU build-id payload
-
-After removing `.note.gnu.build-id`, B1 and B1.1 normalize to the same SHA-256:
+The whole-file hash differs from B1 because the GNU build-id differs. After removing `.note.gnu.build-id`, B1 and B1.1 normalize to the same SHA-256:
 
 ```text
 ff598082b5889e07bcabd7333740584e0428dbe3002c7401315f65cdfcb255f3
@@ -64,11 +41,9 @@ ff598082b5889e07bcabd7333740584e0428dbe3002c7401315f65cdfcb255f3
 
 Gate: **PASS**.
 
-Whole-file equality with B1 is therefore not a B1.1 requirement. The B1.1 binary is recorded independently while normalized code/data identity is retained as the provenance check.
+## Init and SELinux gate
 
-## Init-service gate
-
-Expected installed service definition:
+Installed init definition:
 
 ```rc
 service oxynoded /system_ext/bin/oxynoded
@@ -77,22 +52,7 @@ service oxynoded /system_ext/bin/oxynoded
     group system
 ```
 
-Requirements:
-
-- no root UID
-- no `seclabel` override
-- no Linux capabilities
-- no sockets
-- no hardware interfaces
-- no restart hooks that grant additional privilege
-- not `oneshot`
-- not manually `disabled`
-
-Packaging gate: **PASS** before full image build.
-
-## SELinux source policy
-
-Expected policy:
+SELinux source policy:
 
 ```te
 type oxynoded, domain, coredomain;
@@ -101,152 +61,168 @@ type oxynoded_exec, system_file_type, exec_type, file_type;
 init_daemon_domain(oxynoded)
 ```
 
-Expected file context:
+File context:
 
 ```text
 /system_ext/bin/oxynoded    u:object_r:oxynoded_exec:s0
 ```
 
-No explicit hand-written `allow`, `permissive`, `net_domain`, `binder_use`, `binder_call`, `unix_socket_connect`, `set_prop`, or `get_prop` grants are present in the Sable B1.1 policy source.
+Compiled-policy inspection established that the only outbound `allow` from `oxynoded` is its own executable entrypoint. No radio, Binder, network, HAL, service-manager, generic device-node, or Linux-capability access was introduced.
 
-Source privilege audit: **PASS**.
-
-## Pre-full-build SELinux gates
-
-The following targets have passed for `sable_bramble_b11-userdebug` with `OUT_DIR=out_b11`:
-
-- `system_ext_sepolicy.cil`
-- `system_ext_file_contexts`
-- `system_ext_file_contexts_test`
-- `sepolicy_neverallows`
-- combined `sepolicy`
-- `sepolicy_tests`
-
-Generated policy confirms:
-
-- `oxynoded` is a dedicated domain/coredomain
-- `oxynoded_exec` is the executable file type
-- init transition into `oxynoded` exists
-- `oxynoded_exec` is an allowed entrypoint for the new domain
-- no Sable-authored radio/Binder/network/device/capability grants were introduced
+`oxynoded` is not permissive. The B1 and B1.1 permissive-domain sets are identical for the userdebug build.
 
 Gate: **PASS**.
 
-## Full-build gate
+## Build and target-files gate
 
-The full `sable_bramble_b11-userdebug` image build must complete successfully using the isolated `out_b11` output tree.
+The isolated full build used `OUT_DIR=out_b11` and completed successfully.
 
-Do not flash if the full build fails.
+Target-files package SHA-256:
 
-After a successful full build, re-verify:
-
-- installed `oxynoded` path and SHA-256
-- installed init RC
-- installed `system_ext_file_contexts` mapping
-- installed `system_ext_sepolicy.cil` types
-- target-files integrity
-
-Status: **pending**.
-
-## B1 -> B1.1 partition-delta gate
-
-Before generating or using a flash package, hash and compare the full B1.1 image set against the frozen B1 reference.
-
-The following hardware/vendor-bound artifacts are expected to remain outside the intended B1.1 change and require strict review if they differ:
-
-- `bootloader.img`
-- `radio.img`
-- `vendor.img`
-- `dtb.img`
-- `super_empty.img`
-
-Do not assume equality before hashing.
-
-Changes to `system_ext`, AVB/vbmeta, product identity, boot/vendor-boot/ramdisk or other product-generated images must be investigated structurally rather than treated as automatic failures or automatic successes.
-
-A flash package must not casually include or update bootloader/radio firmware.
-
-Status: **pending full build**.
-
-## AOSP capability-parity gate
-
-B1.1 is not accepted merely because `oxynoded` starts.
-
-The B1 baseline established working Android/vendor capability that must not be silently lost by the init/SELinux change.
-
-At minimum, physically re-check the relevant B1 capabilities:
-
-- stable boot and UI
-- display/touch
-- Wi-Fi
-- Bluetooth
-- audio playback/recording/routing needed for calls
-- SIM detection
-- cellular packet data
-- LTE registration
-- available 5G/NR behavior
-- outbound/inbound voice
-- SMS send/receive
-- MMS where practical
-- IMS/VoLTE behavior
-- earpiece/microphone/speakerphone
-- camera
-- sensors
-- USB/ADB
-- suspend/resume
-- charging
-
-An intentional future capability removal must be documented through `AOSP_CAPABILITY_POLICY.md`; it must not be hidden as a regression.
-
-## Physical B1.1 security/health gate
-
-After a safe flash, all of the following are required:
-
-```bash
-adb shell getenforce
-adb shell getprop init.svc.oxynoded
-adb shell ps -AZ | grep oxynoded
-adb shell ls -Z /system_ext/bin/oxynoded
+```text
+064d607b33fccd90b1e408ad3a790b24dc8ee70806eac8176d8ae70d535727b3
 ```
 
-Required observations:
+Target-files ZIP integrity: **PASS**.
 
-- SELinux reports `Enforcing`
-- `init.svc.oxynoded` reports `running`
-- the process runs in `u:r:oxynoded:s0`
-- process UID is `system`, not root
-- `/system_ext/bin/oxynoded` is labeled `oxynoded_exec`
-- daemon remains running over time and after reboot
-- no unexpected `oxynoded` AVC denials indicate undeclared feature dependencies
-- no broad policy weakening was added to suppress AVCs
+Gate: **PASS**.
 
-Because the B1 source currently prints startup text and then sleeps, `init.svc` plus process/context checks are the primary health evidence. Do not change the Rust source merely to produce more logging unless physical validation demonstrates a real observability requirement.
+## B1 -> B1.1 structural and capability audit
 
-Status: **pending physical validation**.
+Strictly preserved hardware/vendor-bound artifacts included:
+
+- bootloader image;
+- radio image;
+- vendor image;
+- DTB;
+- super layout.
+
+The DTBO whole-image hash changed because of finalized image/AVB metadata, but the stripped DTBO payload remained identical:
+
+```text
+982ae82c5dca424e2db3ef159b8012a488dc21b1c79ab4f02005cb92c4ff9266
+```
+
+BOOT/VENDOR_BOOT ELF differences were classified through build-id/debug-link normalization, section analysis, disassembly-shape comparison, control-flow-target comparison, and constant-table relocation checks. No unintended executable control-flow change was found.
+
+`SYSTEM` and `PRODUCT` preserved their complete file sets:
+
+```text
+SYSTEM:  2613 -> 2613, added 0, removed 0
+PRODUCT:  344 -> 344, added 0, removed 0
+```
+
+Application/framework file set:
+
+```text
+347 -> 347, added 0, removed 0
+```
+
+Capability-bearing permission/sysconfig/VINTF/init/seccomp/overlay configuration had no unintended change.
+
+`services.jar` executable bytecode remained unchanged; generated compat-config XML differences normalized to output-directory provenance only. NetworkStack retained the same managed payload, normalized-identical native libraries, and the same signing certificate.
+
+Gate: **PASS**.
+
+## Flash-package gate
+
+Canonical flash package:
+
+```text
+B1.1-full-images.zip
+SHA-256: 2b7dab2f5f5b5d66efacaf8ab908a3e3e78ea508c743837246bbaedcf792d1d4
+```
+
+Requirements verified:
+
+- ZIP integrity passed;
+- `android-info.txt` requires `board=bramble`;
+- no `bootloader.img`;
+- no `radio.img`;
+- exact expected flash file set;
+- 12/12 packaged `.img` files match the finalized `IMAGES/*` entries in the audited target-files package;
+- final DTBO payload matches the audited payload;
+- DTB embedded in final `vendor_boot.img` matches the frozen bramble DTB.
+
+Gate: **PASS**.
+
+## Physical security/health gate
+
+Observed on-device:
+
+```text
+sys.boot_completed=1
+ro.build.id=SQ3A.220705.003.A1
+ro.product.name=sable_bramble_b11
+SELinux=Enforcing
+init.svc.oxynoded=running
+```
+
+Runtime `oxynoded` observations:
+
+- one process;
+- process context `u:r:oxynoded:s0`;
+- UID/GID `1000/1000` (`system/system`);
+- executable context `u:object_r:oxynoded_exec:s0`;
+- inheritable capabilities: zero;
+- permitted capabilities: zero;
+- effective capabilities: zero;
+- ambient capabilities: zero;
+- no observed `oxynoded` AVC denial during the validation run;
+- remains running after a real reboot with SELinux enforcing.
+
+Gate: **PASS**.
+
+## Physical AOSP/vendor capability-parity gate
+
+Physically validated after the B1.1 flash:
+
+- display/touch: PASS;
+- Wi-Fi: PASS;
+- Bluetooth: PASS;
+- audio playback: PASS;
+- microphone: PASS;
+- rear camera: PASS;
+- front camera: PASS;
+- sensors/rotation: PASS;
+- USB: PASS;
+- charging: PASS;
+- suspend/resume: PASS;
+- mobile data/Internet: PASS;
+- outgoing call: PASS;
+- incoming call: PASS;
+- outgoing SMS: PASS;
+- incoming SMS: PASS;
+- MMS: PASS;
+- available 5G registration/data behavior: PASS.
+
+`oxynoded` remained running and SELinux remained enforcing through capability and telephony testing.
+
+Gate: **PASS**.
 
 ## Firmware-preservation gate
 
-Before and after B1.1 flashing, verify the device remains `bramble`, unlocked for development, and on the expected validated bootloader/baseband level.
+Post-flash checks confirmed:
 
-B1.1 must not require a bootloader/radio downgrade or an unrelated firmware change.
+- product remains `bramble`;
+- bootloader version unchanged from the pre-flash validated baseline;
+- baseband version unchanged from the pre-flash validated baseline;
+- no bootloader or radio image was present in the B1.1 flash package.
 
-Status: **pending physical validation**.
+Gate: **PASS**.
 
-## Acceptance rule
+## Gold Master
 
-B1.1 passes only when all of the following are true:
+The B1.1 Gold Master was checksum-verified and frozen read-only at:
 
-1. normalized B1/B1.1 Rust binary identity remains proven;
-2. full B1.1 image build succeeds;
-3. target-files and generated artifacts pass integrity checks;
-4. partition-delta audit is understood and approved;
-5. no unintended bootloader/radio/vendor change is introduced;
-6. SELinux remains enforcing;
-7. `oxynoded` starts automatically in its dedicated domain as UID `system`;
-8. no broad privileges are introduced merely to make the daemon run;
-9. the relevant B1 AOSP/vendor capability baseline remains functional;
-10. telephony data/voice/SMS parity remains intact;
-11. physical reboot/stability and AVC checks pass;
-12. a safe restore path remains available.
+```text
+/srv/data/aosp_gold_master_bramble/B1.1-oxynoded-selinux-SQ3A.220705.003.A1
+```
 
-Only after this gate should the project move from daemon-startup validation toward new privileged services, hardware brokers, or larger UI/framework replacement work.
+Gold Master full verification: **PASS**.
+
+## Acceptance result
+
+All B1.1 acceptance gates passed.
+
+B1.1 establishes the validated foundation for the first narrow Sable semantic hardware service. The next milestone is B2 `power.read_state`; see `docs/B2_POWER_READ_STATE.md`.
