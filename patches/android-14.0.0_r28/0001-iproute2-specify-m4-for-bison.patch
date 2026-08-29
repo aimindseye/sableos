@@ -1,0 +1,38 @@
+From f802dbfadf575f00d02d0a6d420f2c303a402010 Mon Sep 17 00:00:00 2001
+From: AOSP upstream
+Subject: [PATCH] iproute2: specify which M4 to use with bison
+
+Backport of AOSP external/iproute2 commit:
+f802dbfadf575f00d02d0a6d420f2c303a402010
+
+--- a/tc/Android.bp
++++ b/tc/Android.bp
+@@ -39,18 +39,24 @@ genrule {
+ 
+ genrule {
+     name: "emp_ematch.yacc.c",
+-    cmd: "$(location bison) -y --output=$(genDir)/emp_ematch.yacc.c $(in)",
++    cmd: "M4=$(location m4) $(location bison) -y --output=$(genDir)/emp_ematch.yacc.c $(in)",
+     out: ["emp_ematch.yacc.c"],
+     srcs: ["emp_ematch.y"],
+-    tools: ["bison"],
++    tools: [
++        "bison",
++        "m4",
++    ],
+ }
+ 
+ genrule {
+     name: "emp_ematch.yacc.h",
+-    cmd: "$(location bison) -y --defines=$(genDir)/emp_ematch.yacc.h --output=$(genDir)/emp_ematch.yacc.c $(in)",
++    cmd: "M4=$(location m4) $(location bison) -y --defines=$(genDir)/emp_ematch.yacc.h --output=$(genDir)/emp_ematch.yacc.c $(in)",
+     out: ["emp_ematch.yacc.h"],
+     srcs: ["emp_ematch.y"],
+-    tools: ["bison"],
++    tools: [
++        "bison",
++        "m4",
++    ],
+ }
+ 
+ cc_binary {
