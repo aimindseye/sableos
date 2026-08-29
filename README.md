@@ -1,10 +1,10 @@
 # SableOS
 
-SableOS is an experimental privacy-focused mobile OS with a Rust-first userspace architecture, narrow privilege boundaries, and a goal of sharing one common core across different hardware and interaction profiles.
+SableOS is an experimental privacy- and security-focused mobile OS with a Rust-first userspace architecture, narrow privilege boundaries, and one common core across different hardware and interaction profiles.
 
 The project is not intended to become a collection of unrelated device ROMs. Hardware-specific behavior belongs in adapters; form-factor-specific behavior belongs in interaction profiles; common application and service semantics should remain shared wherever practical.
 
-SableOS is also not intended to discard mature Android capability merely to minimize the amount of inherited code. Privacy and security come first, while proven AOSP/vendor functionality is preserved wherever it can be reused safely.
+SableOS is also not intended to discard mature Android capability merely to minimize inherited code. Privacy and security come first while proven AOSP/vendor functionality is preserved wherever it can be reused safely.
 
 ## Core rules
 
@@ -14,6 +14,8 @@ SableOS is also not intended to discard mature Android capability merely to mini
 
 > The shell may observe and request; privileged services decide and execute.
 
+> Platform security boundaries are design constraints to understand first, not obstacles to disable for convenience.
+
 Minimalism means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity — not needless reinvention of working platform functionality.
 
 ## Current reference target
@@ -22,88 +24,117 @@ Minimalism means minimal privilege, attack surface, unnecessary background activ
 - AOSP device codename: `bramble`
 - SoC: Qualcomm Snapdragon 765G / SM7250
 - GPU: Adreno 620
-- Base: Android 12.1 / `android-12.1.0_r11`
-- Build ID: `SQ3A.220705.003.A1`
-- Build variant: `userdebug`
+- Current substrate: Android 14 / `android-14.0.0_r28`
+- Build ID: `UP1A.231105.001.B2`
+- Build product/variant: `aosp_bramble-userdebug`
+- Current build output: `out_s0`
 
-## Current milestone: B2 — `power.read_state`
+`bramble` is now an end-of-life reference/development device. Android 14 materially improves the development substrate over the prior Android 12.1 baseline, but it does not remove the security ceiling created by unsupported closed firmware/vendor components.
 
-### B0 — physical baseline passed
+## Current milestone: S0 — security baseline uplift
 
-Vanilla AOSP B0 has been physically validated on the G025E.
+S0 moves the `bramble` reference target from the July 2022 Android 12.1 baseline to the final official Android 14 AOSP baseline before Sable services are ported back.
 
-Validated cellular/hardware behavior includes cellular Internet, outbound/inbound voice calling, earpiece/microphone/speakerphone, SMS, MMS, LTE, and available 5G/NR behavior.
+The purpose is to separate three questions:
 
-The retained Google/Qualcomm radio and IMS stack remains the hardware compatibility baseline.
+1. Can the final official Android 14 `bramble` substrate build and operate correctly on the hardware?
+2. Can existing Sable architecture be reintroduced without weakening Android 14 security boundaries?
+3. Which additional hardening ideas from AOSP, GrapheneOS and other security work should be adopted or adapted for Sable?
 
-### B1 — physical Rust validation passed
+### S0.2 — Android 14 source transition passed
 
-B1 is the first SableOS derivative build on `bramble`.
-
-It keeps the known-good Google/Qualcomm hardware and radio stack intact and adds one native Rust executable:
-
-```text
-/system_ext/bin/oxynoded
-```
-
-The frozen B1 executable is:
+The existing AOSP repository/object store was retagged to:
 
 ```text
-753cd2e2b4e915848a72f289d6bc764cd34edf1bbde0b0b4d023d06ae88d0e45  oxynoded
+android-14.0.0_r28
+UP1A.231105.001.B2
 ```
 
-B1 has been physically validated on the G025E. `oxynoded --probe` runs successfully on-device and B1 retains cellular data, voice and SMS parity with B0.
+Validation passed for:
+
+- successful Repo sync;
+- `TARGET_PRODUCT=aosp_bramble`;
+- `BUILD_ID=UP1A.231105.001.B2`;
+- Sable source absent from the vanilla Android 14 worktree;
+- retained Android-12 `device/sable` Git repository safely held outside the worktree;
+- Android-12 build outputs removed after a verified transition freeze.
+
+See `docs/S0_2_VALIDATION.md`.
+
+### S0.3 — official vendor binaries + vanilla Android 14 build
+
+S0.3 is the current gate.
+
+It uses the official Google and Qualcomm `bramble` proprietary binaries matching `UP1A.231105.001.B2` and builds a completely vanilla `aosp_bramble-userdebug` baseline with no Sable payload restored.
+
+The first full-build attempt reached the AOSP `external/iproute2` Bison generation rules and stopped because the pinned snapshot does not explicitly provide the AOSP-prebuilt `m4` to the sandboxed Bison invocation. A later upstream AOSP iproute2 change fixes this exact build-rule issue by declaring `m4` as a tool and setting `M4=$(location m4)`.
+
+S0.3A tracks that minimal upstream-compatible build backport. It is build-system compatibility work only; it does not alter Sable runtime architecture, SELinux policy, vendor blobs or firmware.
+
+The vanilla Android 14 baseline is not considered passed until the full build, target-files audit and physical baseline gates complete.
+
+## Prior Android 12 milestones
+
+The Android 12 work remains useful architectural and physical-validation evidence even though production development has moved to Android 14.
+
+### B0 — vanilla physical baseline passed
+
+Vanilla Android 12.1 AOSP was physically validated on the G025E, including cellular Internet, inbound/outbound voice, SMS/MMS, audio paths, LTE and available 5G/NR behavior.
+
+### B1 — native Rust validation passed
+
+B1 proved native Rust compilation/packaging and retained the known-good Google/Qualcomm hardware and radio stack.
 
 ### B1.1 — init + dedicated SELinux domain passed
 
 B1.1 is physically validated and its Gold Master is frozen.
 
-B1.1 proves that the B1-validated `oxynoded` can:
+It proved that `oxynoded` could:
 
 - start automatically through Android init;
 - run as UID/GID `system`, not root;
 - run in dedicated SELinux domain `u:r:oxynoded:s0`;
 - keep SELinux enforcing;
-- run with zero inheritable, permitted, effective and ambient Linux capabilities;
-- remain running after reboot;
-- retain the B1 AOSP/vendor hardware and telephony capability baseline;
-- avoid new radio, Binder, network, HAL, service-manager, device-node or other feature privileges.
-
-The B1.1 offline structural/capability audit, safe flash-package audit, physical security validation, hardware parity, telephony parity and firmware-preservation gates all passed.
+- run with zero Linux capabilities;
+- survive reboot;
+- preserve hardware and telephony capability parity;
+- avoid broad radio, Binder, network, HAL, service-manager or device-node privilege.
 
 See `docs/B1_1_VALIDATION.md`.
 
 ### B2 — first narrow semantic hardware service
 
-B2 introduces one read-only Sable semantic operation:
+B2 introduced the typed read-only semantic operation:
 
 ```text
 power.read_state
 ```
 
-The goal is to prove the service/backend boundary before adding write-capable or larger Android framework interfaces.
+B2.0 through B2.4 passed their semantic/host/build gates. B2.5P proved the intended vendor-side privileged-helper architecture and policy/build bridge on Android 12.1. The later complete-image gate exposed Android-12 product-packaging behavior that placed the helper in the wrong final partition despite vendor module metadata.
 
-B2 requires:
+Rather than spending more effort on a legacy build-system workaround, physical B2 completion was intentionally superseded by S0. The semantic contract, mapper logic, tests and narrow service/helper boundary are retained for the Android 14 port; Android-12-specific packaging mechanics are not assumed to carry forward.
 
-- a typed `PowerState` semantic API;
-- a `PowerBackend` abstraction with a deterministic mock backend;
-- a physical Android/bramble backend behind the same contract;
-- no bramble-specific paths/constants in core service semantics;
-- read-only physical access;
-- minimum attributable SELinux permissions;
-- no radio, network or telephony permissions;
-- no root or Linux capabilities;
-- physical agreement with Android battery percentage/charging state;
-- reboot/polling stability;
-- preservation of the B1.1 hardware and telephony capability baseline.
-
-See `docs/B2_POWER_READ_STATE.md`.
+See `docs/B2_POWER_READ_STATE.md`, `docs/B2_POWER_BACKEND_DECISION.md` and the B2 validation records.
 
 ## Architecture
 
 SableOS keeps presentation, semantic services, Android/AOSP substrate and device/vendor adaptation as separate trust and portability layers.
 
-The shell should never gain a privileged hardware/security interface merely because it presents a control for that feature. Sensitive operations belong behind typed semantic APIs, narrow services/brokers and SELinux policy.
+```text
+Sable shell / applications
+        ↓
+typed semantic Sable APIs
+        ↓
+narrow Rust services / brokers
+        ↓
+SELinux + capability policy
+        ↓
+AOSP framework / supported HAL / vendor stack
+        ↓
+hardware
+```
+
+The shell must not gain a privileged hardware/security interface merely because it presents a control for that feature.
 
 See `docs/ARCHITECTURE.md`.
 
@@ -115,11 +146,32 @@ SableOS classifies inherited functionality as:
 - **compatibility** — retain when useful, but isolate and grant only required data/privilege;
 - **replacement candidate** — Sable-owned presentation/policy where replacement has a clear benefit while useful lower layers remain available.
 
-Before removing an AOSP, LineageOS or vendor component, the project must identify the capability it provides, its dependencies/data flows/privileges, whether the unwanted behavior can be constrained, and whether a replacement has proven physical-device capability parity.
+Before removing an AOSP, LineageOS or vendor component, identify the capability it provides, its dependencies/data flows/privileges, whether unwanted behavior can be constrained, and whether a replacement has proven physical-device capability parity.
 
-A Sable milestone must not silently lose working baseline functionality. Intentional removals are explicit product decisions with documented rationale.
+A milestone must not silently lose working baseline functionality. Intentional removals are explicit product decisions with documented rationale.
 
 See `docs/AOSP_CAPABILITY_POLICY.md`.
+
+## Security references
+
+AOSP remains the normative platform/security reference for Android architecture, SELinux, verified boot, build behavior and device integration.
+
+GrapheneOS is a primary additional security-engineering reference. SableOS should learn from its attack-surface reduction, compatibility-without-privilege approach, capability enforcement, exploit mitigations, verified-boot/attestation posture, update discipline and explicit device-lifecycle security model.
+
+SableOS does not aim to become a GrapheneOS fork or copy its product architecture. Each security idea is evaluated against the selected AOSP baseline, target hardware, Sable trust boundaries, independent testability and maintenance cost.
+
+Security-delta classifications are:
+
+```text
+ALREADY_UPSTREAM
+ADOPT
+ADAPT_FOR_SABLE
+HARDWARE_UNAVAILABLE
+NOT_RELEVANT
+DEFER
+```
+
+See `docs/SECURITY_REFERENCE_GRAPHENEOS.md`.
 
 ## Interaction profiles
 
@@ -127,13 +179,11 @@ SableOS does not require radically different form factors to use one slab-phone 
 
 ### Touch-first
 
-The Pixel reference experience is touch-first with a Metro-inspired design direction: strong typography, simple geometry, glanceable information, low chrome and fast gesture navigation.
+The Pixel reference experience is touch-first with a Metro-inspired direction: strong typography, simple geometry, glanceable information, low chrome and fast gesture navigation.
 
 ### Keyboard-first
 
 Physical-QWERTY devices use a keyboard-first profile built around focus navigation, shortcuts, type-to-search, command routing, dense information presentation, and touch/keyboard coexistence.
-
-Source and API naming should remain generic rather than naming the interaction model after another commercial OS.
 
 See `docs/INTERACTION_PROFILES.md`.
 
@@ -141,37 +191,33 @@ See `docs/INTERACTION_PROFILES.md`.
 
 ### Google Pixel 4a 5G G025E (`bramble`)
 
-Status: **reference / physically validated through B1.1**.
+Status: **architecture/regression reference; Android 14 S0 uplift in progress**.
 
-- Qualcomm SM7250
-- B0 physical baseline: passed
-- B1 Rust validation: passed
-- B1.1 init/SELinux validation: passed
-- B2 `power.read_state`: planned/current
+- Android 12 B0/B1/B1.1 physical gates: passed
+- B2 semantic/service architecture: retained
+- Android 14 S0.2 source transition: passed
+- Android 14 S0.3 vanilla build/physical baseline: current
+- production-security limitation: end-of-life firmware/vendor support ceiling
+
+### Pixel 7
+
+Status: **future modern touch reference candidate**.
+
+A newer supported security baseline is required before SableOS can make meaningful production-security claims beyond architecture/development work on `bramble`.
 
 ### Zinwa Q25
 
-Status: **planned port / not yet supported**.
+Status: **planned/optional port; not yet supported**.
 
-The current LineageOS Q25 device tree provides a promising MediaTek substrate with arm64, MT6789, kernel source dependency, A/B updates, dynamic partitions, AVB, MediaTek vendor policy/hardware support, and Android/MediaTek radio interfaces.
-
-Q25 is intended to validate:
-
-- a second SoC/vendor family;
-- the common Sable Rust/service architecture on MediaTek;
-- vendor-RIL preservation outside Qualcomm;
-- capability-preserving reuse of the existing LineageOS/AOSP substrate;
-- the keyboard-first interaction profile.
+Q25 remains useful as a MediaTek/QWERTY architecture study if source, unlock and hardware availability justify the port.
 
 See `docs/Q25_PORT_PLAN.md`.
 
 ### Zinwa Q27
 
-Status: **exploratory/watch target**.
+Status: **future physical-QWERTY target pending hardware/source acceptance**.
 
-Q27 is of interest as a future physical-QWERTY platform, but SableOS will not assume Q25 compatibility or claim support until public developer sources, unlock/flash documentation, vendor interfaces and physical hardware can be reviewed.
-
-If suitable, it should reuse the common Sable core and keyboard-first interaction framework rather than become a separate OS fork.
+Q27 must pass source availability, bootloader/unlock, flashing, vendor-interface and physical hardware acceptance before SableOS assumes support. If accepted, it should reuse the common Sable core and keyboard-first interaction framework rather than become a separate OS fork.
 
 ## Telephony rule
 
@@ -183,36 +229,37 @@ A future Rust telephony broker must use narrow supported Android/vendor interfac
 
 ## Automotive / Android compatibility
 
-SableOS should retain the underlying Android media, Bluetooth, Telecom, notification, navigation/location, audio-routing, USB/networking and related semantics that enable automotive and accessory interoperability.
+SableOS should retain Android media, Bluetooth, Telecom, notification, navigation/location, audio-routing, USB/networking and related semantics that enable automotive and accessory interoperability.
 
-The core OS must not depend on proprietary Google components. If official Android Auto or another third-party/proprietary compatibility layer is usable on a future configuration, it should be optional and tightly sandboxed with explicit access only to the media, calls, notifications, navigation/location or other data actually required and enabled by the user.
+The core OS must not depend on proprietary Google components. Third-party/proprietary compatibility layers should be optional and tightly sandboxed with explicit access only to the data/capabilities actually required and enabled by the user.
 
 The goal is reuse without surrendering privacy/security control.
 
 ## Repository layout
 
 ```text
-device/sable/bramble/        SableOS bramble product and oxynoded source
-patches/                     Minimal AOSP patches required by pinned bases
-docs/                        Architecture, build, validation and porting notes
+device/sable/bramble/        Sable bramble service/product source and historical integration
+patches/                     Minimal AOSP patches/backports required by pinned bases
+docs/                        Architecture, security, build, validation and porting notes
 ```
 
 Generated Android images, proprietary vendor archives, firmware blobs and target-files ZIPs are intentionally not committed to this repository.
 
 ## Documentation
 
-- `docs/ARCHITECTURE.md` — common-core, AOSP reuse, hardware-adapter, security and telephony architecture
+- `docs/ARCHITECTURE.md` — common-core, hardware-adapter, security and telephony architecture
 - `docs/AOSP_CAPABILITY_POLICY.md` — preserve/remove/replacement, compatibility, parity and privacy/security gates
+- `docs/SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS lessons, Sable security-delta categories and adoption discipline
 - `docs/INTERACTION_PROFILES.md` — touch-first and keyboard-first UI/input design
 - `docs/Q25_PORT_PLAN.md` — planned MediaTek/QWERTY port methodology
-- `docs/BUILDING_B1.md` — reproduce the B1 build
+- `docs/S0_2_VALIDATION.md` — Android 14 source-transition validation
 - `docs/B1_VALIDATION.md` — B1 build and physical validation record
-- `docs/B1_1_VALIDATION.md` — completed B1.1 build, SELinux, structural, capability and physical validation record
-- `docs/B2_POWER_READ_STATE.md` — B2 semantic API, backend, privilege and physical acceptance plan
-- `docs/B1_GOLD_MASTER.md` — immutable B1 archive/freeze record
-- `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory-state, unlock, safe-flash and hardware acceptance runbook
+- `docs/B1_1_VALIDATION.md` — completed B1.1 SELinux/physical validation record
+- `docs/B2_POWER_READ_STATE.md` — B2 semantic API/backend plan and evidence
+- `docs/B2_POWER_BACKEND_DECISION.md` — B2 backend boundary decision
+- `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory/unlock/safe-flash hardware acceptance runbook
 - `docs/CARRIER_COMPATIBILITY.md` — carrier compatibility goals and qualification rules
 
 ## Next gate
 
-Implement the B2 semantic `PowerState` contract and deterministic `MockPowerBackend` first, with host-side tests and no new Android/SELinux privileges. Only after that core layer is clean should B2 inspect and select the narrowest physical Android/bramble power-state interface.
+Complete the vanilla Android 14 `aosp_bramble-userdebug` build and target-files audit using the exact `UP1A.231105.001.B2` substrate and matching official Google/Qualcomm binaries. Do not restore Sable source or introduce GrapheneOS-derived hardening until the vanilla baseline has passed its build and physical capability gates.
