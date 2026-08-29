@@ -1,0 +1,4 @@
+service oxynoded /system_ext/bin/oxynoded
+    class main
+    user system
+    group system
