@@ -1,10 +1,23 @@
 # B2 — `power.read_state` service and hardware adapter
 
-Status: **planned / implementation not started**.
+Status: **in progress — B2.0 semantic/mock gate passed**.
 
 B2 is the first SableOS semantic service and hardware-adapter milestone after the physically validated B1.1 init/SELinux foundation.
 
 Its purpose is to prove that SableOS can expose useful hardware state through a small, typed, portable semantic API without turning `oxynoded` into a broad privileged hardware daemon and without regressing inherited Android/AOSP/vendor capability.
+
+## Current progress
+
+B2.0 is complete:
+
+- typed `PowerState`, `PowerSource`, `PowerError`, `PowerBackend`, and `PowerService` exist;
+- `MockPowerBackend` exists;
+- core portability audit passed with no bramble/Qualcomm/sysfs/procfs/dev/Binder/radio/telephony/service-manager/Android-HAL references;
+- the pinned Android 12.1 AOSP Rust compiler is `rustc 1.51.0-dev`;
+- host semantic tests compile with Rust edition 2018;
+- all 9 deterministic semantic/mock tests pass.
+
+No physical power backend, new SELinux permission, Binder/HAL access, or device privilege has been added yet.
 
 ## Scope
 
@@ -143,6 +156,8 @@ Before touching physical hardware access, the semantic layer should be testable 
 
 The semantic API must reject invalid battery percentages above 100 rather than silently exposing malformed state.
 
+Gate: **PASS**.
+
 ## Physical backend gate
 
 The physical backend must correctly map the retained Android/AOSP power state into the Sable `PowerState` contract.
@@ -155,6 +170,8 @@ At minimum validate:
 4. repeated reads do not leak resources or destabilize the service;
 5. reads continue to work after reboot;
 6. failure is returned as an explicit error rather than stale or invented data.
+
+Status: **pending**.
 
 ## B2 success criteria
 
