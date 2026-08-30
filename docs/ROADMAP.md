@@ -6,6 +6,10 @@ SableOS advances through independently testable security and capability gates.
 
 A milestone is complete only when its implementation, policy boundary, build integration and relevant physical-device behavior are validated. New security features must not silently remove working Android capability.
 
+SableOS is not tied conceptually to one Android release. Portable semantic contracts and Rust logic should remain stable while Android-version/device integration is requalified behind bounded adapters and framework hooks.
+
+See `docs/ANDROID_VERSION_PORTABILITY.md`.
+
 ## S0 — Android 14 security baseline uplift
 
 Goal: move the bramble development substrate from the prior Android 12.1 baseline to the final official Android 14 baseline while keeping vanilla AOSP capability measurable.
@@ -45,6 +49,37 @@ Goal: restore Sable-owned Rust services without weakening Android 14 partition, 
 - helper remains disabled until controlled runtime validation;
 - compile-only SELinux and vendor-image packaging gates passed before device runtime work;
 - full product build/integrity gate is the next closure point before controlled physical validation.
+
+## Android substrate transition track
+
+Android-version work is a cross-cutting qualification track rather than a reason to fork Sable semantics for each release.
+
+### A14 — current bramble architecture baseline
+
+Pixel 4a 5G (`bramble`) on Android 14 remains the current architecture/regression baseline until S1 service, policy and physical-runtime gates are closed and frozen.
+
+### A15 — bramble portability experiment
+
+After the Android 14 S1 architecture is stable, use Android 15 on bramble as a controlled portability experiment.
+
+Objectives:
+
+- establish a vanilla/upstream Android 15 baseline before Sable changes;
+- measure hardware, telephony and application parity against Android 14;
+- reintroduce the minimum Sable product/service integration;
+- identify exactly which SELinux/build/init/framework hooks are Android-version-specific;
+- prove that common semantic APIs and portable Rust logic do not require redesign merely because the Android substrate changed;
+- stop rather than globally weakening security if frozen vendor/HAL incompatibility becomes the dominant maintenance burden.
+
+Android 15 on bramble is an engineering qualification target, not a claim that Google's firmware/vendor security support has been restored.
+
+### A16+ — modern touch baseline moves to Pixel 7-class hardware
+
+From Android 16 onward, the roadmap intent is to move the modern touch/security reference to Pixel 7-class supported hardware, subject to hardware/source/bootloader/vendor/security-lifecycle acceptance.
+
+The goal is to combine newer Android framework security with a materially healthier firmware/vendor maintenance baseline than bramble can provide.
+
+Bramble may still be used for regression or experimental work, but Android 16+ is not a promised production path for it.
 
 ## S2 — Secure Package Intelligence
 
@@ -258,9 +293,73 @@ Evaluate on supported hardware:
 
 ## Device roadmap relationship
 
-`bramble` remains an architecture/regression target with an end-of-life firmware/vendor security ceiling.
+### Pixel 4a 5G (`bramble`)
 
-Production-security milestones must be validated on hardware receiving active OEM firmware/vendor security maintenance. Future Pixel and other targets are accepted only after source, bootloader, flashing, vendor-interface, update-lifecycle and physical capability gates pass.
+Role: **architecture/regression reference**.
+
+- Android 14: current primary Sable development substrate;
+- Android 15: planned portability experiment after Android 14 S1 closure;
+- Android 16+: optional engineering experiment only, not a promised support path;
+- security ceiling: end-of-life firmware/vendor maintenance remains explicit at every Android version.
+
+### Pixel 7
+
+Role: **successor modern touch/security reference**.
+
+Roadmap intent: take over the modern Android substrate from Android 16 onward once hardware, source, flashing, vendor interfaces, bootloader/relock behavior, update lifecycle and physical capability parity are accepted.
+
+### Zinwa Q25
+
+Role: **optional MediaTek/QWERTY development reference; not required for SableOS or Q27 support**.
+
+Q25 is valuable if acquired because it can answer portability questions before Q27 is mature:
+
+- Qualcomm -> MediaTek;
+- touch-first -> keyboard-first;
+- Pixel/AOSP device integration -> community/Lineage-backed device integration;
+- large slab UI -> compact square-display constraints.
+
+If used, Q25 should validate the common Sable core, MediaTek device-adapter boundary and generic keyboard-first interaction framework. It is engineering capital, not the intended long-term QWERTY product baseline.
+
+Acquisition should remain opportunistic based on device availability, price and lab value; transient retail pricing is deliberately not part of the architecture roadmap.
+
+See `docs/Q25_PORT_PLAN.md`.
+
+### Zinwa Q27
+
+Role: **primary future physical-QWERTY candidate pending hardware/source acceptance**.
+
+Q27 should become the preferred modern QWERTY target if it proves:
+
+- public and maintainable kernel/device source availability;
+- reliable bootloader unlock and recovery/restore path;
+- understood partition and vendor interfaces;
+- working MediaTek radio/IMS, camera, audio, keyboard and suspend/power behavior;
+- an acceptable firmware/vendor security lifecycle;
+- ability to reuse the common Sable core and keyboard-first profile without device-specific application forks.
+
+Q25 device-specific code must not be assumed to apply to Q27. Only abstractions proven genuinely common should be shared.
+
+### Two-track device evolution
+
+The intended architecture-validation matrix is:
+
+```text
+Touch / Qualcomm track             QWERTY / MediaTek track
+
+Pixel 4a 5G                        Zinwa Q25 (optional)
+Android 14                         development/reference
+Android 15 experiment                    │
+      │                                   │
+      ▼                                   ▼
+Pixel 7                              Zinwa Q27
+Android 16+                          future primary QWERTY
+modern touch/security                modern keyboard-first
+```
+
+The common Sable semantic APIs, package-security model, capability model and service architecture should remain shared across both tracks.
+
+Production-security milestones must be validated on hardware receiving active OEM/vendor/firmware security maintenance. A device being bootable is not sufficient evidence for production security.
 
 ## Standing priorities
 
@@ -275,4 +374,6 @@ Across all milestones:
 7. make security UI correspond to real enforceable behavior;
 8. prefer local analysis and local provenance over unnecessary telemetry;
 9. validate security features with negative tests proving what they cannot access;
-10. treat device/vendor/firmware support lifetime as part of the security model.
+10. treat device/vendor/firmware support lifetime as part of the security model;
+11. keep Android-release-specific integration bounded so Sable core semantics survive substrate upgrades;
+12. use QWERTY/MediaTek ports to prove portability, not to create separate SableOS forks.
