@@ -1,14 +1,40 @@
 # Zinwa Q25 SableOS port plan
 
-Status: **planned / not yet supported**.
+Status: **optional development/reference target; not yet supported**.
 
-The Zinwa Q25 is the first planned non-Pixel SableOS target and the first planned physical-QWERTY / MediaTek validation platform.
+The Zinwa Q25 is a strong candidate for the first non-Pixel SableOS portability exercise and the first physical-QWERTY / MediaTek validation platform. It is **not a prerequisite** for SableOS and is not intended to displace the Q27 as the preferred future modern QWERTY target.
+
+The engineering value of Q25 is that it can test several portability boundaries at once:
+
+```text
+Qualcomm -> MediaTek
+touch-first -> keyboard-first
+Pixel/AOSP device integration -> community/Lineage-backed device integration
+large slab UI -> compact square-display constraints
+```
 
 The objective is not to fork SableOS for the Q25. The objective is to reuse the common Rust/services/security architecture while introducing a MediaTek hardware adapter and a keyboard-first interaction profile.
 
 The port must preserve working LineageOS/AOSP/vendor capability by default. Cleanup or replacement work begins only after the known-good baseline is inventoried and only when the Sable replacement has a clear privacy, security, maintainability, performance or architectural benefit.
 
-See `AOSP_CAPABILITY_POLICY.md`.
+Q25 acquisition should remain opportunistic based on availability, price and expected lab value. Transient retail pricing does not belong in the architecture plan.
+
+See `AOSP_CAPABILITY_POLICY.md`, `ANDROID_VERSION_PORTABILITY.md` and `ROADMAP.md`.
+
+## Strategic role
+
+If acquired, Q25 should be treated as **engineering capital** rather than a long-term product commitment.
+
+Its primary jobs are:
+
+1. prove the common Sable core builds and runs on MediaTek;
+2. validate the Android/vendor adapter boundary outside Google's Pixel device family;
+3. establish the generic keyboard-first input and navigation model;
+4. expose compact/square-display assumptions before the Q27 UI is frozen;
+5. develop repeatable MediaTek bootloader, flashing, SELinux and hardware-acceptance methodology;
+6. provide a known QWERTY reference against which a future Q27 port can be compared.
+
+A successful Q25 port should reduce Q27 bring-up risk by proving what is genuinely common. It must not encourage copying Q25-specific vendor assumptions into Q27.
 
 ## Upstream substrate
 
@@ -31,6 +57,8 @@ The LineageOS tree identifies:
 - MediaTek hardware and vendor SELinux dependencies
 
 The device tree also uses a proprietary vendor layer and firmware extraction rather than pretending the hardware is fully open.
+
+This existing community substrate is the main reason Q25 can be useful before Q27 matures: the first Sable MediaTek/QWERTY exercise can begin from a known-working custom-ROM architecture rather than first reverse-engineering every boot and vendor integration detail.
 
 ## Telephony architecture
 
@@ -79,6 +107,7 @@ Physical acceptance should cover at minimum:
 - touch
 - physical keyboard
 - keyboard shortcuts / scan codes
+- trackpad/navigation behavior where exposed by the device
 - Wi-Fi
 - Bluetooth and useful profiles
 - audio playback/recording/routing
@@ -91,7 +120,7 @@ Physical acceptance should cover at minimum:
 - suspend/resume
 - charging/power
 - SIM detection
-- LTE / available 5G behavior
+- LTE / available radio behavior
 - packet data
 - outbound/inbound voice
 - SMS/MMS
@@ -158,6 +187,12 @@ The keyboard shell follows the same trust-boundary rule as the touch shell:
 
 A keyboard shortcut or settings screen does not receive direct hardware, encryption, modem, device-node or broad Binder privileges simply because it can request those operations.
 
+#### Q2 portability objective
+
+The Q25's compact/square display and physical input should be used deliberately to find assumptions that would otherwise be hidden by a larger Q27 display.
+
+The desired result is a **generic keyboard-first interaction framework**, not a Q25-specific UI. Applications should query form-factor/input capabilities rather than model names.
+
 #### Q2 capability gate
 
 Replacing Lineage/AOSP presentation must not accidentally remove the useful lower-layer service.
@@ -201,6 +236,8 @@ Expected Q25/MediaTek-specific code:
 - display/form-factor capability profile
 - firmware/partition acceptance rules
 
+Any code proposed for reuse by Q27 must first be shown to represent a real MediaTek or Sable abstraction rather than a Q25 implementation detail.
+
 ## Interaction profile
 
 The Q25 should use the generic keyboard-first shell described in `INTERACTION_PROFILES.md`.
@@ -208,6 +245,8 @@ The Q25 should use the generic keyboard-first shell described in `INTERACTION_PR
 The goal is not to squeeze a conventional slab-phone UI into a compact/square display. Physical QWERTY input is a primary navigation mechanism.
 
 Applications should query capabilities rather than the `Q25` model name.
+
+Using both Q25 and Q27, if both become available, gives a stronger portability test than designing the keyboard profile against one device alone: common navigation and semantic behavior should survive different display sizes, keyboard hardware and device generations.
 
 ## Dependency and reuse policy
 
@@ -231,18 +270,44 @@ Optional proprietary/third-party projection components are not foundational depe
 
 ## Q27 relationship
 
-The Zinwa Q27 is currently an exploratory target, not an extension of this port by assumption.
+The Zinwa Q27 is the **preferred future modern physical-QWERTY candidate**, subject to actual source and physical-device acceptance.
+
+Q25 and Q27 have different jobs:
+
+```text
+Q25
+optional development/reference target
+prove MediaTek + keyboard-first portability
+        │
+        │ only genuinely common abstractions flow forward
+        ▼
+Q27
+future primary QWERTY target
+modern hardware/product candidate
+```
 
 Do not share Q25 device-specific code with Q27 until public Q27 kernel/device sources, partition layout, vendor interfaces and physical hardware prove the platforms compatible.
 
+Q27 must independently pass:
+
+- kernel/device source availability and maintainability;
+- bootloader unlock and safe restore/recovery;
+- partition/AVB/update-layout acceptance;
+- vendor/HAL/VINTF inventory;
+- radio/IMS/camera/audio/suspend/power hardware parity;
+- physical keyboard mapping and input behavior;
+- firmware/vendor security-lifecycle review.
+
 If suitable, Q27 should reuse:
 
-- the common Sable core
-- MediaTek abstractions that are genuinely common
-- the keyboard-first interaction framework
-- the same AOSP capability-preservation and security gates
+- the common Sable core;
+- MediaTek abstractions proven genuinely common by Q25 or other devices;
+- the keyboard-first interaction framework;
+- the same AOSP capability-preservation and security gates;
 
 while maintaining its own device acceptance and firmware boundary.
+
+Q25 remains useful even if Q27 ultimately becomes the only supported QWERTY product target because it can serve as a portability/regression reference.
 
 ## Port acceptance rule
 
@@ -258,3 +323,5 @@ A Q25 build becomes a SableOS supported target only after:
 8. removed/replaced components have passed the preserve-before-remove and replacement gates;
 9. optional compatibility components are isolated rather than given broad shell/service privilege;
 10. a safe restore path is proven.
+
+Until these gates pass, Q25 remains a lab/reference candidate rather than a supported SableOS device.
