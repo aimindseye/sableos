@@ -4,376 +4,386 @@
 
 SableOS advances through independently testable security and capability gates.
 
-A milestone is complete only when its implementation, policy boundary, build integration and relevant physical-device behavior are validated. New security features must not silently remove working Android capability.
+A milestone is complete only when implementation, policy boundary, build integration, generated artifacts, image composition and relevant physical behavior are validated. New security features must not silently remove working Android capability.
 
-SableOS is not tied conceptually to one Android release. Portable semantic contracts and Rust logic should remain stable while Android-version/device integration is requalified behind bounded adapters and framework hooks.
+Portable semantic contracts and Rust logic should remain stable while Android-version/device integration is requalified behind bounded adapters.
 
-See `docs/ANDROID_VERSION_PORTABILITY.md`.
+## Milestone progression
+
+```text
+hardware correctness
+    -> service correctness
+    -> typed platform API
+    -> authorized consumers
+    -> lifecycle / policy
+    -> measured resource policy
+    -> mobile UX
+```
+
+A later layer must not paper over an unproven earlier layer.
 
 ## S0 — Android 14 security baseline uplift
 
-Goal: move the bramble development substrate from the prior Android 12.1 baseline to the final official Android 14 baseline while keeping vanilla AOSP capability measurable.
+Status: **established**.
 
-Key objectives:
+Goal: move the bramble development substrate from Android 12.1 to the final official Android 14 baseline while keeping vanilla AOSP capability measurable.
 
-- validated Android 14 source/vendor baseline;
-- vanilla build and physical capability reference;
+Key outcomes:
+
+- Android 14 source/vendor baseline;
+- vanilla comparison point;
 - explicit bramble end-of-life security ceiling;
-- preserve a clean comparison point before reintroducing Sable services.
+- substrate used by current S1 development.
 
-Status: baseline uplift work established the Android 14 substrate used by current S1 development.
+## S1 — narrow Sable services on Android 14
 
-## S1 — reintroduce narrow Sable services on Android 14
-
-Goal: restore Sable-owned Rust services without weakening Android 14 partition, SELinux or vendor/platform boundaries.
+Goal: restore and evolve Sable-owned Rust services without weakening Android partition, SELinux, framework, or immutable vendor boundaries.
 
 ### S1.1 — oxynoded Android 14 integration
 
-- system_ext Rust daemon;
+Status: **PASS**.
+
+- `system_ext` Rust daemon;
 - dedicated SELinux domain;
 - Sable-owned product integration;
-- no raw hardware privilege in the shell/service layer.
+- no shell hardware privilege.
 
 ### S1.2 — semantic power contract migration
 
-- retain the typed `power.read_state` contract;
-- preserve the separation between semantic policy and physical device access;
-- reuse host-testable mapper logic.
+Status: **PASS**.
 
-### S1.3 — vendor power-observation helper
+- retained typed semantic power state;
+- portable host-testable mapper;
+- separation between Sable semantics and physical backend.
 
-- `sable-powerd` packaged under `/vendor`;
-- dedicated vendor SELinux domain;
-- read-only `sysfs_batteryinfo` access;
-- no generic sysfs file writes, networking, Binder service privilege or device-node authority;
-- helper remains disabled until controlled runtime validation;
-- compile-only SELinux and vendor-image packaging gates passed before device runtime work;
-- full product build/integrity gate is the next closure point before controlled physical validation.
+### S1.3 — Health-backed power integration
+
+Status: **PASS**.
+
+The original vendor-helper plan was superseded after image audit proved `bramble` uses an immutable byte-for-byte Google prebuilt `vendor.img`.
+
+Final architecture:
+
+```text
+vendor Health HAL / battery sysfs
+        -> Health HIDL 2.1
+        -> native bridge
+        -> Rust HealthBackend / PowerState
+```
+
+Outcomes:
+
+- `sable-powerd` retired;
+- vendor image retained immutable;
+- `oxynoded` gains Health-client permission, not battery sysfs;
+- Sable power-source semantics tested and frozen.
+
+### S1.4 — production Health monitoring
+
+Status: **PASS**.
+
+- normal init startup monitoring;
+- nonfatal Health failures;
+- stable retry behavior;
+- physical runtime proof.
+
+### S1.5 — production cleanup / logging
+
+Status: **PASS**.
+
+- removed diagnostic CLI scaffolding from production path;
+- migrated logs to Android liblog;
+- preserved Health semantics and SELinux boundary.
+
+### S1.6 — callback-driven power monitoring
+
+Status: **PASS**.
+
+- physical testing proved steady polling can miss a real Battery state across suspend;
+- Health callback feasibility proven via VTS;
+- production poller removed;
+- callback-time bounded snapshot queue added;
+- HIDL RPC callback transport configured;
+- HAL-death recovery added;
+- unplug/reconnect proven while dozing without sampler/wakelock/synthetic state;
+- valid `Battery -> Unknown -> AC` reconnect semantics accepted;
+- closure had zero power read errors, relevant AVC denials, or daemon crashes.
+
+### S1.7A — frozen read-only power API
+
+Status: **IN PROGRESS**.
+
+Goal: expose latest validated `PowerState` through frozen AIDL V1 while keeping Health ownership inside `oxynoded`.
+
+Target:
+
+```text
+com.sableos.power.IPowerService/default
+    getLatestState() -> PowerSnapshot
+```
+
+V1 properties:
+
+- read-only;
+- availability;
+- battery percentage;
+- charging state;
+- stable Sable source enum;
+- monotonic externally-visible state-change sequence;
+- no Health handle;
+- no sysfs path;
+- no mutation methods;
+- no client domain in A.
+
+Current validated build state:
+
+- generated Rust AIDL artifact placement corrected to `system_ext`;
+- no direct `/system/lib{,64}` install target for the Sable AIDL dylib;
+- API generation/freeze, affected build, full image reseal and host seal remain in progress;
+- no S1.7 flash before host seal completion.
+
+### S1.7B — authorized consumer runtime proof
+
+Status: **PLANNED**.
+
+- dedicated authorized test-client domain;
+- intended client can `find` and call;
+- ordinary shell cannot;
+- clients gain no Health/sysfs authority;
+- state/sequence correlate with real callbacks;
+- physical unplug/reconnect reflected through API;
+- `oxynoded` remains sole Health owner;
+- inactive-slot deployment preserves S1.6 fallback.
+
+### S1.8 — power UX integration
+
+Status: **PLANNED**.
+
+- first user-facing read-only power client;
+- battery percentage, charging and source;
+- graceful unavailable state;
+- no backend-specific UI logic;
+- UI restart cannot disturb monitoring;
+- UI compromise does not become Health ownership.
+
+### S1.9 — application lifecycle foundation
+
+Status: **PLANNED**.
+
+- explicit foreground/background state;
+- process importance;
+- bounded background execution;
+- lifecycle event logging;
+- policy hooks for later freezer/uclamp work.
+
+No device-specific CPU tuning in this milestone.
+
+### S1.10 — measured resource policy
+
+Status: **PLANNED**.
+
+Candidate areas:
+
+- memory pressure;
+- background process freezing;
+- uclamp/scheduler hints through appropriate Android mechanisms;
+- modem/Wi-Fi standby;
+- display idle;
+- thermal/wakeup accounting.
+
+Required before/after evidence:
+
+- power/current proxy;
+- wakeup/interrupt rate;
+- CPU residency;
+- temperature;
+- memory pressure;
+- app launch and interaction latency;
+- idle and active regressions;
+- rollback criteria.
+
+No tuning knob lands on folklore alone.
+
+### S1.11 — connectivity policy services
+
+Status: **PLANNED**.
+
+Preferred:
+
+```text
+UI -> narrow typed request -> Sable connectivity service -> Android framework
+```
+
+Rejected:
+
+```text
+UI -> broad-capability general-purpose network utility
+```
+
+### S1.12 — recovery and diagnostics surface
+
+Status: **PLANNED**.
+
+- safe recovery workflow;
+- bounded diagnostics;
+- slot/fallback visibility;
+- service-health reporting;
+- no normal recovery bypass of SELinux/verified boot.
 
 ## Android substrate transition track
 
-Android-version work is a cross-cutting qualification track rather than a reason to fork Sable semantics for each release.
+### A14 — current architecture baseline
 
-### A14 — current bramble architecture baseline
-
-Pixel 4a 5G (`bramble`) on Android 14 remains the current architecture/regression baseline until S1 service, policy and physical-runtime gates are closed and frozen.
+Android 14 on bramble remains the architecture/regression baseline until S1 service/API/runtime gates are closed and frozen.
 
 ### A15 — bramble portability experiment
 
-After the Android 14 S1 architecture is stable, use Android 15 on bramble as a controlled portability experiment.
+After S1 architecture is stable:
 
-Objectives:
+- establish vanilla/upstream Android 15 baseline first;
+- measure hardware/telephony/app parity;
+- reintroduce minimum Sable integration;
+- identify Android-version-specific SELinux/build/init/framework hooks;
+- prove common semantic APIs do not require redesign;
+- stop rather than globally weakening security if frozen vendor/HAL incompatibility dominates.
 
-- establish a vanilla/upstream Android 15 baseline before Sable changes;
-- measure hardware, telephony and application parity against Android 14;
-- reintroduce the minimum Sable product/service integration;
-- identify exactly which SELinux/build/init/framework hooks are Android-version-specific;
-- prove that common semantic APIs and portable Rust logic do not require redesign merely because the Android substrate changed;
-- stop rather than globally weakening security if frozen vendor/HAL incompatibility becomes the dominant maintenance burden.
+This is an engineering qualification target, not restored OEM security support.
 
-Android 15 on bramble is an engineering qualification target, not a claim that Google's firmware/vendor security support has been restored.
+### A16+ — maintained modern Pixel-class touch baseline
 
-### A16+ — modern touch baseline moves to Pixel 7-class hardware
-
-From Android 16 onward, the roadmap intent is to move the modern touch/security reference to Pixel 7-class supported hardware, subject to hardware/source/bootloader/vendor/security-lifecycle acceptance.
-
-The goal is to combine newer Android framework security with a materially healthier firmware/vendor maintenance baseline than bramble can provide.
-
-Bramble may still be used for regression or experimental work, but Android 16+ is not a promised production path for it.
+Move modern touch/security reference to actively supported hardware subject to source, bootloader, vendor, relock/update and physical capability acceptance.
 
 ## S2 — Secure Package Intelligence
 
-Goal: keep full ordinary Android APK compatibility while making increases in application authority visible and reviewable.
+Goal: preserve standard Android APK compatibility while making increases in application authority visible and reviewable.
 
-Design reference: `docs/APP_SECURITY_AND_COMPATIBILITY.md`.
+### S2.1 package analyzer
 
-### S2.1 — package security analyzer
+Local deterministic analysis of permissions, signing identity, SDK levels, exported components, special accesses, debuggable/test-only state, cleartext policy, native code, and known tracker/library signals.
 
-Implement a local, deterministic analyzer for:
+### S2.2 update delta engine
 
-- requested permissions/protection levels;
-- signing identity;
-- target/min SDK;
-- exported components;
-- special-access declarations;
-- debuggable/test-only state;
-- cleartext policy;
-- native-code presence;
-- known tracker/library signals.
+Compare installed/incoming permissions, signing lineage, components, SDK, libraries and elevated capabilities.
 
-No opaque AI trust score is required for the first implementation.
+### S2.3 Secure Install UI
 
-### S2.2 — update delta engine
+Explain findings as informational/review/elevated/critical/privacy signals without claiming certainty about whether an app "needs" a permission.
 
-Compare installed and incoming package state for:
+### S2.4 PackageManager enforcement
 
-- permissions added/removed;
-- signing identity/lineage;
-- components added/removed/exported;
-- target SDK changes;
-- tracker/library changes;
-- elevated capability changes.
+Put mandatory security-review enforcement below installer UI so alternate stores cannot bypass it.
 
-Unchanged updates should remain low-friction.
+### S2.5 PermissionController integration
 
-### S2.3 — Sable Secure Install UI
+Preserve contextual Android runtime permission prompts while adding relevant Sable context.
 
-Add an install/update security review which presents explainable findings as:
+### S2.6 unified permission/AppOps view
 
-- Informational;
-- Review;
-- Elevated;
-- Critical;
-- Privacy signal.
+Present real enforcement state without hiding the distinction between runtime permissions and AppOps.
 
-Do not claim that Sable can determine with certainty whether a permission is "needed" by an application.
+### S2.7 local tracker/library intelligence
 
-### S2.4 — PackageManager enforcement
+Optional local signatures; treat matches as signals rather than proof of malicious behavior.
 
-Move mandatory-review enforcement below installer UI so alternate stores/installers cannot bypass security-sensitive update review.
+### S2.8 special-access/exported-component analysis
 
-Preserve standard Android package formats, PackageInstaller sessions and installer-of-record semantics.
+Prioritize accessibility, notification listeners, VPN, device admin, overlays, package installation, all-files access, background location, boot/background execution, and unprotected exports.
 
-### S2.5 — PermissionController integration
+### S2.9 compatibility regression corpus
 
-Preserve contextual Android runtime permission prompts while adding relevant Sable security context.
+Continuously test representative open-source, Play-dependent, banking/DRM, split APK, accessibility, VPN, notifications, camera/location/media, and background-execution cases.
 
-Sensitive runtime permissions should normally begin ungranted and be requested when used rather than pre-granted during installation.
+### S2.10 Install Quarantine research
 
-### S2.6 — unified permission/AppOps capability view
+Research optional quarantine for newly installed high-risk packages only after PackageManager/ActivityManager semantics can support it without bypasses.
 
-Present real enforcement state for capabilities such as location, microphone and camera without hiding the distinction between runtime permission and AppOps enforcement.
+## S3 — ecosystem compatibility without ambient trust
 
-### S2.7 — local tracker/library intelligence
-
-Maintain an optional local signature dataset for tracker/analytics/library signals.
-
-Treat matches as privacy/security signals rather than proof of malicious behavior.
-
-### S2.8 — exported-component and special-access analysis
-
-Prioritize changes involving:
-
-- accessibility;
-- notification listeners;
-- VPN;
-- device admin;
-- overlays;
-- package installation;
-- all-files access;
-- background location;
-- boot/background execution;
-- exported unprotected components.
-
-### S2.9 — compatibility regression corpus
-
-Continuously test representative applications across:
-
-- F-Droid/open-source applications;
-- Play-dependent applications;
-- split APK/app bundle delivery;
-- banking/DRM/integrity-check edge cases;
-- accessibility;
-- VPN;
-- notifications/push;
-- camera/location/media;
-- background execution.
-
-### S2.10 — Install Quarantine research
-
-Research an optional state where a newly installed high-risk package cannot launch or automatically execute until the user completes security review.
-
-This is deferred until PackageManager and ActivityManager semantics can be changed without creating bypasses or compatibility regressions.
-
-## S3 — Android ecosystem compatibility without ambient trust
-
-Goal: allow users broad Android application availability without making external ecosystems trusted OS components.
-
-### S3.1 — multi-source standard APK installation
-
-Support ordinary user-authorized Android installation paths for:
-
-- direct APK/split APK installation;
-- F-Droid-compatible clients;
-- other Android stores;
-- ADB/developer installation when explicitly enabled.
-
-Every source converges on the same package verification and Sable security-policy enforcement path.
-
-### S3.2 — optional sandboxed Google compatibility
-
-Evaluate and implement, where maintainable, an optional compatibility layer allowing official Google Play services / Play Store applications to run as ordinary sandboxed user applications rather than privileged system components.
-
-Requirements:
-
-- not bundled as a trusted Sable dependency;
-- ordinary app sandbox by default;
-- explicit user permissions;
-- profile-scoped availability;
-- no ambient access to Sable services;
-- narrow documented compatibility shims only where necessary;
-- explicit documentation for functionality that cannot be safely reproduced without privilege.
-
-### S3.3 — application integrity compatibility reporting
-
-Document separately from APK compatibility the applications which reject alternate operating systems due to Play Integrity, banking anti-tamper, proprietary certification, DRM or device-attestation policy.
-
-Sable should not weaken verified boot, app sandboxing or platform integrity merely to spoof acceptance by third-party applications.
-
-### S3.4 — per-app compatibility exceptions
-
-Where Sable hardening exposes an app defect, prefer a visible per-app compatibility exception over globally weakening exploit mitigations or security policy.
+- multi-source standard Android installation converging on the same enforcement path;
+- optional sandboxed Google compatibility as ordinary user applications where maintainable;
+- integrity/DRM compatibility reporting separate from APK compatibility;
+- per-app compatibility exceptions instead of global hardening rollback.
 
 ## S4 — user-facing capability hardening
 
-Goal: extend least-privilege controls while maintaining application usability.
-
-### S4.1 — per-app Network capability
-
-Evaluate a user-facing network denial that blocks direct sockets and meaningful indirect network paths through cooperating OS services.
-
-A packet-only firewall is insufficient as the complete semantic boundary.
-
-### S4.2 — Storage Scopes
-
-Provide compatibility-preserving access to explicitly selected files/directories rather than broad shared-storage access where technically feasible.
-
-### S4.3 — Contact Scopes
-
-Allow applications to receive access only to selected contacts/contact fields rather than the complete contact database where technically feasible.
-
-### S4.4 — sensor/local-network scopes
-
-Evaluate narrow controls for sensor and local-network discovery capabilities where reliable Android/kernel enforcement exists.
-
-### S4.5 — profile-centered trust separation
-
-Make Android user/work/private profiles first-class Sable trust domains for separating applications, data and optional compatibility services.
+- semantic per-app Network capability including meaningful indirect paths;
+- Storage Scopes;
+- Contact Scopes;
+- sensor/local-network scopes where enforceable;
+- profile-centered trust separation.
 
 ## S5 — production security posture
 
-Goal: move from a development/reference ROM to a release process capable of defensible production-security claims on supported hardware.
+- Sable release keys and locked verified boot;
+- signed OTA/update infrastructure and rollback handling;
+- provenance / SBOM / source lineage;
+- rapid Browser/WebView security channel;
+- physical attack-surface controls such as USB restriction and secure auto-reboot where hardware supports them.
 
-### S5.1 — Sable release keys and locked verified boot
+## Mobile UX track
 
-- Sable-owned release signing;
-- AVB verification;
-- rollback protection;
-- documented bootloader-lock/relock model;
-- recovery/update trust chain.
+Once service boundaries are stable, explore a distinct mobile interaction model rather than merely cloning stock Android or adapting a desktop shell.
 
-### S5.2 — update infrastructure
+Potential themes:
 
-- signed OTA pipeline;
-- rapid Android security patch intake;
-- kernel/vendor/firmware tracking;
-- emergency release process;
-- rollback/interrupted-update validation.
+- gesture-first navigation;
+- unified communication/notification hub;
+- persistent live task previews;
+- fast peek/return workflows;
+- physical-keyboard-aware interaction;
+- explicit lifecycle visualization;
+- low-latency transitions.
 
-### S5.3 — software provenance
+These are product ideas, not privilege justifications.
 
-- reproducible/traceable release inputs where practical;
-- signed build provenance;
-- dependency and binary inventory/SBOM for release artifacts;
-- auditable patch/source lineage.
-
-### S5.4 — browser/WebView rapid update track
-
-Treat browser and WebView security updates as an independent high-priority channel rather than waiting on broad OS feature milestones.
-
-### S5.5 — physical attack-surface controls
-
-Evaluate on supported hardware:
-
-- USB data restriction while locked;
-- secure auto-reboot / return to Before First Unlock state after inactivity;
-- memory clearing around boot/recovery transitions;
-- strong authentication options;
-- hardware-backed keystore/attestation posture.
-
-## Device roadmap relationship
+## Device roadmap
 
 ### Pixel 4a 5G (`bramble`)
 
-Role: **architecture/regression reference**.
+Architecture/regression reference. Android 14 primary Sable substrate; Android 15 portability experiment candidate; not a long-lived production-security target.
 
-- Android 14: current primary Sable development substrate;
-- Android 15: planned portability experiment after Android 14 S1 closure;
-- Android 16+: optional engineering experiment only, not a promised support path;
-- security ceiling: end-of-life firmware/vendor maintenance remains explicit at every Android version.
+### Modern Pixel-class hardware
 
-### Pixel 7
-
-Role: **successor modern touch/security reference**.
-
-Roadmap intent: take over the modern Android substrate from Android 16 onward once hardware, source, flashing, vendor interfaces, bootloader/relock behavior, update lifecycle and physical capability parity are accepted.
+Successor maintained touch/security reference for Android 16+ work, subject to source, flashing/relock, vendor and update-lifecycle acceptance.
 
 ### Zinwa Q25
 
-Role: **optional MediaTek/QWERTY development reference; not required for SableOS or Q27 support**.
-
-Q25 is valuable if acquired because it can answer portability questions before Q27 is mature:
-
-- Qualcomm -> MediaTek;
-- touch-first -> keyboard-first;
-- Pixel/AOSP device integration -> community/Lineage-backed device integration;
-- large slab UI -> compact square-display constraints.
-
-If used, Q25 should validate the common Sable core, MediaTek device-adapter boundary and generic keyboard-first interaction framework. It is engineering capital, not the intended long-term QWERTY product baseline.
-
-Acquisition should remain opportunistic based on device availability, price and lab value; transient retail pricing is deliberately not part of the architecture roadmap.
-
-See `docs/Q25_PORT_PLAN.md`.
+Optional MediaTek/QWERTY development reference for portability validation; not required for SableOS or Q27 support.
 
 ### Zinwa Q27
 
-Role: **primary future physical-QWERTY candidate pending hardware/source acceptance**.
-
-Q27 should become the preferred modern QWERTY target if it proves:
-
-- public and maintainable kernel/device source availability;
-- reliable bootloader unlock and recovery/restore path;
-- understood partition and vendor interfaces;
-- working MediaTek radio/IMS, camera, audio, keyboard and suspend/power behavior;
-- an acceptable firmware/vendor security lifecycle;
-- ability to reuse the common Sable core and keyboard-first profile without device-specific application forks.
-
-Q25 device-specific code must not be assumed to apply to Q27. Only abstractions proven genuinely common should be shared.
-
-### Two-track device evolution
-
-The intended architecture-validation matrix is:
-
-```text
-Touch / Qualcomm track             QWERTY / MediaTek track
-
-Pixel 4a 5G                        Zinwa Q25 (optional)
-Android 14                         development/reference
-Android 15 experiment                    │
-      │                                   │
-      ▼                                   ▼
-Pixel 7                              Zinwa Q27
-Android 16+                          future primary QWERTY
-modern touch/security                modern keyboard-first
-```
-
-The common Sable semantic APIs, package-security model, capability model and service architecture should remain shared across both tracks.
-
-Production-security milestones must be validated on hardware receiving active OEM/vendor/firmware security maintenance. A device being bootable is not sufficient evidence for production security.
+Future primary QWERTY candidate pending public/maintainable source, reliable unlock/recovery, understood partitions/vendor interfaces, working radio/IMS/camera/audio/keyboard/suspend/power, and acceptable security lifecycle.
 
 ## Standing priorities
 
-Across all milestones:
-
-1. preserve standard Android application compatibility;
-2. preserve working telephony/camera/audio/connectivity capability unless removal is intentional and documented;
-3. do not bypass SELinux `neverallow` or similar platform boundaries for convenience;
+1. preserve standard Android app compatibility;
+2. preserve working telephony/camera/audio/connectivity unless removal is intentional and documented;
+3. do not bypass SELinux `neverallow` or platform boundaries for convenience;
 4. do not make the Sable shell a privileged universal client;
 5. prefer narrow semantic services and app-scoped exceptions;
 6. keep compatibility software unprivileged wherever possible;
 7. make security UI correspond to real enforceable behavior;
-8. prefer local analysis and local provenance over unnecessary telemetry;
-9. validate security features with negative tests proving what they cannot access;
+8. prefer local analysis/provenance over unnecessary telemetry;
+9. include negative tests proving what a component cannot access;
 10. treat device/vendor/firmware support lifetime as part of the security model;
-11. keep Android-release-specific integration bounded so Sable core semantics survive substrate upgrades;
-12. use QWERTY/MediaTek ports to prove portability, not to create separate SableOS forks.
+11. keep Android-release integration bounded so Sable core semantics survive upgrades;
+12. use MediaTek/QWERTY ports to prove portability, not create separate forks;
+13. require measured evidence for power/performance tuning;
+14. preserve a known-good fallback slot during runtime-changing deployment.
+
+## Runtime milestone closure
+
+```text
+source guards
+ -> targeted tests
+ -> affected build
+ -> generated-artifact audit
+ -> security-policy audit
+ -> full product build
+ -> exact binary/image proof
+ -> AVB validation
+ -> inactive-slot deployment
+ -> runtime/physical proof
+ -> natural slot success
+ -> fallback preserved
+```
