@@ -16,6 +16,8 @@ SableOS is also not intended to discard mature Android capability merely to mini
 
 > Platform security boundaries are design constraints to understand first, not obstacles to disable for convenience.
 
+> Standard Android applications remain standard Android applications; SableOS adds policy and containment around the Android app model rather than requiring a Sable-specific package ecosystem.
+
 Minimalism means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity — not needless reinvention of working platform functionality.
 
 ## Current reference target
@@ -26,52 +28,64 @@ Minimalism means minimal privilege, attack surface, unnecessary background activ
 - GPU: Adreno 620
 - Current substrate: Android 14 / `android-14.0.0_r28`
 - Build ID: `UP1A.231105.001.B2`
-- Build product/variant: `aosp_bramble-userdebug`
-- Current build output: `out_s0`
+- Current Sable product: `sable_bramble_s1-userdebug`
+- Current Sable build output: `out_s13b`
 
 `bramble` is now an end-of-life reference/development device. Android 14 materially improves the development substrate over the prior Android 12.1 baseline, but it does not remove the security ceiling created by unsupported closed firmware/vendor components.
 
-## Current milestone: S0 — security baseline uplift
+## Current milestone: S1 — narrow Sable services on Android 14
 
-S0 moves the `bramble` reference target from the July 2022 Android 12.1 baseline to the final official Android 14 AOSP baseline before Sable services are ported back.
+S1 reintroduces Sable-owned Rust services on top of the validated Android 14 bramble substrate without weakening Android partition, SELinux or vendor/platform boundaries.
 
-The purpose is to separate three questions:
+### S1.1 — oxynoded Android 14 integration
 
-1. Can the final official Android 14 `bramble` substrate build and operate correctly on the hardware?
-2. Can existing Sable architecture be reintroduced without weakening Android 14 security boundaries?
-3. Which additional hardening ideas from AOSP, GrapheneOS and other security work should be adopted or adapted for Sable?
+The Sable Android 14 product retains `oxynoded` as a `system_ext` Rust daemon with Sable-owned private SELinux policy.
 
-### S0.2 — Android 14 source transition passed
+The service layer remains separate from raw device access.
 
-The existing AOSP repository/object store was retagged to:
+### S1.2 — semantic power contract migration
+
+The typed read-only semantic operation:
 
 ```text
-android-14.0.0_r28
-UP1A.231105.001.B2
+power.read_state
 ```
 
-Validation passed for:
+and the host-testable power mapper are retained from the Android 12 B2 work.
 
-- successful Repo sync;
-- `TARGET_PRODUCT=aosp_bramble`;
-- `BUILD_ID=UP1A.231105.001.B2`;
-- Sable source absent from the vanilla Android 14 worktree;
-- retained Android-12 `device/sable` Git repository safely held outside the worktree;
-- Android-12 build outputs removed after a verified transition freeze.
+### S1.3 — vendor power-observation helper
 
-See `docs/S0_2_VALIDATION.md`.
+S1.3 introduces `sable-powerd` as a narrow vendor-side helper for read-only battery/power-source observation.
 
-### S0.3 — official vendor binaries + vanilla Android 14 build
+Validated so far:
 
-S0.3 is the current gate.
+- `sable-powerd` and its init RC build successfully as vendor modules;
+- the product packages both modules only for the Sable product;
+- vanilla `aosp_bramble` does not inherit Sable vendor policy;
+- the helper runs in a dedicated `sable_powerd` vendor SELinux domain;
+- `/vendor/bin/sable-powerd` is labeled `sable_powerd_exec`;
+- policy permits read-only `sysfs_batteryinfo` access and generic sysfs directory traversal, without generic sysfs file write access;
+- SELinux compilation and `sepolicy_test` pass;
+- `vendor.img` packages the daemon, init RC and compiled policy successfully;
+- the service remains `disabled` until controlled runtime validation.
 
-It uses the official Google and Qualcomm `bramble` proprietary binaries matching `UP1A.231105.001.B2` and builds a completely vanilla `aosp_bramble-userdebug` baseline with no Sable payload restored.
+The full Sable product build/integrity gate is the current closure point before physical runtime validation.
 
-The first full-build attempt reached the AOSP `external/iproute2` Bison generation rules and stopped because the pinned snapshot does not explicitly provide the AOSP-prebuilt `m4` to the sandboxed Bison invocation. A later upstream AOSP iproute2 change fixes this exact build-rule issue by declaring `m4` as a tool and setting `M4=$(location m4)`.
+See `docs/ROADMAP.md` for the staged Sable roadmap.
 
-S0.3A tracks that minimal upstream-compatible build backport. It is build-system compatibility work only; it does not alter Sable runtime architecture, SELinux policy, vendor blobs or firmware.
+## Prior Android 14 baseline milestone
 
-The vanilla Android 14 baseline is not considered passed until the full build, target-files audit and physical baseline gates complete.
+### S0 — security baseline uplift
+
+S0 moved the `bramble` reference target from the July 2022 Android 12.1 baseline to the final official Android 14 AOSP baseline before Sable services were ported back.
+
+The transition established:
+
+1. a final official Android 14 `bramble` substrate;
+2. a clean vanilla comparison point before restoring Sable source;
+3. the basis for reviewing additional hardening ideas from AOSP, GrapheneOS and other security work.
+
+See the S0 validation records under `docs/`.
 
 ## Prior Android 12 milestones
 
@@ -173,6 +187,55 @@ DEFER
 
 See `docs/SECURITY_REFERENCE_GRAPHENEOS.md`.
 
+## Android application compatibility and Secure Package Intelligence
+
+SableOS intends to preserve broad Android application availability.
+
+The OS should continue using the standard Android package format, PackageInstaller/PackageManager path, ART runtime, app sandbox, permissions and AppOps. Applications should not require a Sable-specific package format or Sable rebuild merely to run.
+
+User-authorized application sources can include:
+
+- direct APK/split-APK installation;
+- F-Droid-compatible clients;
+- other Android application stores;
+- optional Google Play Store support through a future sandboxed compatibility layer;
+- developer/ADB installation when explicitly enabled.
+
+Application source and application trust are separate. Every source should converge on the same package verification and Sable security-policy path.
+
+Planned **Secure Package Intelligence** work will add local, explainable security review for installation and updates, including:
+
+- permission and special-capability inspection;
+- signing identity and signing-lineage presentation;
+- permission/component/SDK/signing deltas across updates;
+- exported-component analysis;
+- accessibility/VPN/device-admin/notification-listener and similar elevated capability review;
+- local tracker/library privacy signals;
+- PermissionController/AppOps integration;
+- mandatory review for material increases in application authority without forcing low-risk updates through excessive prompts.
+
+SableOS must not claim it can know with certainty whether a requested permission is "needed" by an application. It should instead provide evidence, classify sensitive/unusual authority and let enforceable policy remain explicit.
+
+See `docs/APP_SECURITY_AND_COMPATIBILITY.md` and `docs/ROADMAP.md`.
+
+## Additional hardening direction
+
+High-value future work includes:
+
+- user-facing per-app Network denial with direct and indirect path enforcement;
+- storage and contact scopes for compatibility-preserving least privilege;
+- profile-centered trust separation for applications and optional compatibility services;
+- per-app exploit-protection compatibility exceptions instead of global weakening;
+- rapid independent Browser/WebView security updates;
+- locked verified boot with Sable-owned release keys on supported production hardware;
+- signed OTA/update infrastructure and rollback protection;
+- release provenance/SBOM discipline;
+- USB data restriction while locked on capable hardware;
+- secure auto-reboot back to Before First Unlock state after inactivity;
+- application compatibility regression testing across open-source, Play-dependent, banking/DRM and hardware-integrated use cases.
+
+These are staged after the current S1 service-port work rather than mixed into the active S1.3 boundary validation.
+
 ## Interaction profiles
 
 SableOS does not require radically different form factors to use one slab-phone UI.
@@ -191,12 +254,12 @@ See `docs/INTERACTION_PROFILES.md`.
 
 ### Google Pixel 4a 5G G025E (`bramble`)
 
-Status: **architecture/regression reference; Android 14 S0 uplift in progress**.
+Status: **architecture/regression reference; Android 14 S1 development target**.
 
 - Android 12 B0/B1/B1.1 physical gates: passed
 - B2 semantic/service architecture: retained
-- Android 14 S0.2 source transition: passed
-- Android 14 S0.3 vanilla build/physical baseline: current
+- Android 14 S0 baseline uplift: established
+- Android 14 S1 service reintroduction: current
 - production-security limitation: end-of-life firmware/vendor support ceiling
 
 ### Pixel 7
@@ -247,8 +310,10 @@ Generated Android images, proprietary vendor archives, firmware blobs and target
 
 ## Documentation
 
+- `docs/ROADMAP.md` — staged S0–S5 service, app-security, compatibility and production-security roadmap
 - `docs/ARCHITECTURE.md` — common-core, hardware-adapter, security and telephony architecture
 - `docs/AOSP_CAPABILITY_POLICY.md` — preserve/remove/replacement, compatibility, parity and privacy/security gates
+- `docs/APP_SECURITY_AND_COMPATIBILITY.md` — standard Android APK compatibility, Secure Package Intelligence and app-source policy
 - `docs/SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS lessons, Sable security-delta categories and adoption discipline
 - `docs/INTERACTION_PROFILES.md` — touch-first and keyboard-first UI/input design
 - `docs/Q25_PORT_PLAN.md` — planned MediaTek/QWERTY port methodology
@@ -258,8 +323,3 @@ Generated Android images, proprietary vendor archives, firmware blobs and target
 - `docs/B2_POWER_READ_STATE.md` — B2 semantic API/backend plan and evidence
 - `docs/B2_POWER_BACKEND_DECISION.md` — B2 backend boundary decision
 - `docs/G025E_HARDWARE_ACCEPTANCE.md` — factory/unlock/safe-flash hardware acceptance runbook
-- `docs/CARRIER_COMPATIBILITY.md` — carrier compatibility goals and qualification rules
-
-## Next gate
-
-Complete the vanilla Android 14 `aosp_bramble-userdebug` build and target-files audit using the exact `UP1A.231105.001.B2` substrate and matching official Google/Qualcomm binaries. Do not restore Sable source or introduce GrapheneOS-derived hardening until the vanilla baseline has passed its build and physical capability gates.
