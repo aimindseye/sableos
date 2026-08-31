@@ -51,15 +51,15 @@ The shell should consume typed Sable semantic APIs for actions such as:
 
 Raw device nodes, modem sockets, filesystem-encryption primitives, broad Binder/HIDL/AIDL surfaces, and privileged native libraries remain behind dedicated services/brokers and SELinux policy.
 
-This rule is renderer-independent and applies equally to Slint, Vexo/`wgpu`, touch-first, keyboard-first, and any future interaction profile.
+This rule is renderer-independent and applies equally to Slint, Vexo/`wgpu`, a future Sable-owned renderer, touch-first, keyboard-first, and any future interaction profile.
 
-See `AOSP_CAPABILITY_POLICY.md` and `ARCHITECTURE.md`.
+See `AOSP_CAPABILITY_POLICY.md`, `ARCHITECTURE.md`, and `adr/0002-rust-ui-framework-and-android-app-compatibility.md`.
 
 ## Touch-first profile
 
 Internal/source naming should remain generic, for example `shell_touch` or `interaction_touch`.
 
-The Pixel reference experience is touch-first and Metro-inspired in its design direction:
+The Pixel and conventional-phone reference experience is touch-first and Metro-inspired in its design direction:
 
 - strong typography
 - simple geometry
@@ -68,17 +68,19 @@ The Pixel reference experience is touch-first and Metro-inspired in its design d
 - glanceable information surfaces
 - fast gesture navigation
 - large, deliberate touch targets
+- fast peek/return workflows
+- low-latency transitions
 - motion used to clarify hierarchy rather than decorate it
 
-This is an inspiration, not an attempt to clone another product.
+This is inspiration, not an attempt to clone Windows Phone or another Microsoft product.
 
-The touch-first profile is the initial Pixel 4a 5G experience.
+The touch-first profile is the initial Pixel 4a 5G experience and should remain applicable to later Pixel-class and other conventional touch-first phones.
 
 ## Keyboard-first profile
 
 Internal/source naming should remain generic, for example `shell_keyboard` or `interaction_keyboard`.
 
-The keyboard-first profile treats a physical QWERTY keyboard as a primary OS input device rather than an accessory attached to a touchscreen UI.
+The keyboard-first profile is BlackBerry/BB10-inspired in interaction philosophy and treats a physical QWERTY keyboard as a primary OS input device rather than an accessory attached to a touchscreen UI.
 
 Core behaviors should include:
 
@@ -92,11 +94,14 @@ Core behaviors should include:
 - command palette / quick launcher
 - notification and communication triage from the keyboard
 - deterministic back/navigation behavior
+- fast peek/return workflows
 - focus restoration after dialogs or app switching
 - touch and keyboard coexistence
 - pointer/touch-surface integration where available
 
 Dense layouts are acceptable when they remain readable and navigable from the keyboard.
+
+This is inspiration, not an attempt to clone BlackBerry OS/BB10.
 
 ## Do not branch on model name
 
@@ -170,6 +175,10 @@ High device RAM should improve multitasking and caching; it should not be a prer
 
 ## Rendering independence
 
-R1 uses Slint and R2 is expected to move toward Vexo / `wgpu`.
+Historic planning identified Slint for an initial Rust UI and Vexo/`wgpu` for a later renderer. These are now qualification candidates rather than immutable release requirements.
 
-Interaction-profile semantics must not depend on one renderer. Focus traversal, command routing, search, navigation and capability decisions belong above the rendering backend so the UI implementation can evolve without rewriting application logic.
+S1.8-F0 compares Slint and Vexo against the actual Android/AOSP baseline, including toolchain fit, reproducible build integration, touch/multi-touch, keyboard/focus behavior, IME, accessibility, lifecycle, performance and security boundaries. The outcome may select either framework, select one with bounded gaps, justify a focused Sable fork, or justify a Sable-owned Rust UI framework if neither candidate can meet requirements without disproportionate compromise.
+
+Interaction-profile semantics must not depend on one renderer. Focus traversal, command routing, search, navigation, application state and capability decisions belong above the rendering backend so the UI implementation can evolve without rewriting application logic.
+
+See `adr/0002-rust-ui-framework-and-android-app-compatibility.md` for the accepted framework-qualification and Android-APK coexistence decision.
