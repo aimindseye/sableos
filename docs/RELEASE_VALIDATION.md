@@ -57,11 +57,13 @@ Validate positive and negative policy:
 
 - provider can register;
 - required backend permission exists;
-- no unintended client `find`;
+- intended client transaction authority is explicit;
+- attribute-based platform grants are included in effective-policy review;
+- unauthorized domains cannot transact with the service even if platform policy permits service-name discovery;
 - no direct battery sysfs grant;
 - no broad policy expansion.
 
-Runtime must remain enforcing.
+Runtime must remain enforcing. Expected AVC denials from deliberate negative tests should be recorded separately from unexpected runtime denials.
 
 ## Image Proof
 
@@ -77,22 +79,26 @@ Validate `system_ext`, `vbmeta_system`, and expected top-level `vbmeta` behavior
 
 ## Expected Delta
 
-For current system_ext-only integration the normal pattern is:
+Expected image deltas are milestone-specific and must be classified from generated content rather than assumed from the primary install partition.
+
+For frozen S1.7 power IPC on bramble, stable AIDL metadata and SELinux policy propagation produce the validated pattern:
 
 ```text
+system.img          changed
+product.img         changed
 system_ext.img      changed
-vbmeta_system.img   changed
+vendor_boot.img     changed
+vbmeta_system.img   changed   # downstream AVB consequence
+vbmeta.img          changed   # downstream AVB consequence
 
 boot.img            unchanged
 dtbo.img            unchanged
-product.img         unchanged
-system.img          unchanged
-vendor.img          unchanged
-vendor_boot.img     unchanged
-vbmeta.img          unchanged
+vendor.img          unchanged # immutable Google prebuilt
 ```
 
-Unexpected deltas block deployment until explained.
+The root changes were classified file/component-by-file/component: `product` and `system` changes were policy/metadata propagation, `vendor_boot` changed only through its vendor ramdisk policy content, and AVB changes followed their covered partitions.
+
+Unexpected deltas still block deployment until explained.
 
 ## Deployment
 
@@ -120,7 +126,9 @@ Verify:
 - service domain/UID/GID;
 - exact host/device binary hash;
 - expected service registration;
-- zero relevant AVC denials;
+- authorized client success;
+- unauthorized transaction denial;
+- expected negative-test AVCs only, with no unexplained relevant AVC denials;
 - zero crash evidence;
 - daemon stability.
 
