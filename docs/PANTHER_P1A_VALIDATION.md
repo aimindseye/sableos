@@ -11,13 +11,16 @@ Purpose: determine whether the pinned Pixel 7 Android-17 support-generation refe
 - Android release: 17 / SDK 37
 - SELinux: Enforcing
 - active stock slot during audit: `_b`
-- AOSP base: `android-17.0.0_r1`
+- signed GrapheneOS reference-manifest default base: `android-17.0.0_r1`
+- AOSP `android17-release` manifest head observed during P0: `29ace668ae756c7b8917c57abb440f6518844b0c`
 - AOSP Rust toolchain: `1.93.1`
 - `adevtool`: `5019450d9235c48a987250c890e346b416f8dfd4`
 - `vendor_state`: `d69d029d7fe3745049e80ad64ad1967a9cac8e5f`
 - `device_google_pantah-kernels_6.1`: `b3fd241e7f8b3283c864b3e6e464f853defb5997`
 
 All three external pins revalidated exactly before the audit. The physical Pixel 7 remained on the same build/slot and no root, reboot, flash, Android workspace creation, product build, or Sable source mutation occurred.
+
+The pinned `adevtool` build-ID-to-AOSP-tag index does not contain Android-17 Pixel build mappings. Therefore **P1A does not claim that `CP2A.260705.006` maps exactly to `android-17.0.0_r1`**. What is proven is that the signed external reference manifest uses `android-17.0.0_r1` as its default AOSP base while the Pixel vendor-generation configuration targets the July stock build. P1B/V0-HOST must freeze the exact resolved AOSP project manifest actually built and treat Pixel vendor/firmware provenance separately.
 
 ## Product-base result
 
@@ -98,6 +101,8 @@ The next service-port gate should qualify the actual AIDL Health callback/client
 ## Security / provenance policy
 
 - base platform remains AOSP Android 17;
+- the exact built AOSP project set must be frozen as a resolved manifest during P1B/V0-HOST;
+- Pixel July stock vendor/firmware provenance is tracked separately from the AOSP platform project snapshot;
 - GrapheneOS remains a reference/security source, not the OS substrate;
 - `adevtool` output must be generated from pinned stock inputs and reviewed/diffed;
 - GrapheneOS-only hooks are removed or replaced explicitly;
@@ -128,4 +133,4 @@ PANTHER_P1A_ADB_ROOT_USED=NO
 PANTHER_P1A_REBOOT_PERFORMED=NO
 ```
 
-P1A closes the pre-workspace decoupling question. The next milestone is `PANTHER-P1B / V0-HOST`: create a separate Android-17 workspace, sync the pinned AOSP base, introduce only audited Pixel-generation inputs plus a Sable-specific decoupling adapter, generate/classify the vendor/device material, prove the Panther product graph/toolchain, and attempt the first vanilla host build. No device flash is authorized by P1A.
+P1A closes the pre-workspace decoupling question. The next milestone is `PANTHER-P1B / V0-HOST`: create a separate Android-17 workspace, sync the pinned AOSP release branch and freeze its resolved project manifest, introduce only audited Pixel-generation inputs plus a Sable-specific decoupling adapter, generate/classify the vendor/device material, prove the Panther product graph/toolchain, and attempt the first vanilla host build. No device flash is authorized by P1A.
