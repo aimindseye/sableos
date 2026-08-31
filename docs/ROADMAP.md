@@ -111,11 +111,11 @@ Status: **PASS**.
 
 ### S1.7A — frozen read-only power API
 
-Status: **IN PROGRESS**.
+Status: **PASS**.
 
 Goal: expose latest validated `PowerState` through frozen AIDL V1 while keeping Health ownership inside `oxynoded`.
 
-Target:
+Frozen contract:
 
 ```text
 com.sableos.power.IPowerService/default
@@ -132,28 +132,33 @@ V1 properties:
 - monotonic externally-visible state-change sequence;
 - no Health handle;
 - no sysfs path;
-- no mutation methods;
-- no client domain in A.
+- no mutation methods.
 
-Current validated build state:
+Validated closure:
 
-- generated Rust AIDL artifact placement corrected to `system_ext`;
-- no direct `/system/lib{,64}` install target for the Sable AIDL dylib;
-- API generation/freeze, affected build, full image reseal and host seal remain in progress;
-- no S1.7 flash before host seal completion.
+- AIDL V1 frozen and ownerless on the Android 14 release graph;
+- generated Rust AIDL dylib installed in `system_ext`, with no direct `/system/lib{,64}` Sable AIDL target;
+- 31 host tests pass, including `PowerStateStore` availability/sequence semantics;
+- affected and full product builds pass with compiled SELinux/neverallow checks;
+- exact provider and generated AIDL library content verified in `system_ext.img`;
+- stable-AIDL/SELinux propagation into `system`, `product`, vendor ramdisk and AVB metadata was classified rather than treated as an unexplained image delta;
+- provider/API host seal closed before S1.7B client authorization was introduced.
 
 ### S1.7B — authorized consumer runtime proof
 
-Status: **PLANNED**.
+Status: **PASS**.
 
-- dedicated authorized test-client domain;
-- intended client can `find` and call;
-- ordinary shell cannot;
-- clients gain no Health/sysfs authority;
-- state/sequence correlate with real callbacks;
-- physical unplug/reconnect reflected through API;
-- `oxynoded` remains sole Health owner;
-- inactive-slot deployment preserves S1.6 fallback.
+- dedicated `sable_power_test_client` domain and disabled oneshot test client;
+- intended client can `find` the service and Binder-call `oxynoded`;
+- client has no Health HAL or battery-sysfs authority;
+- Android 14 shell can discover the service name through broad platform `service_manager_type` `find`, but cannot trigger the privileged client and is denied Binder `call` to `oxynoded` under enforcing SELinux;
+- provider remains stable through authorized and denied-client tests;
+- inactive slot A received the validated six-image S1.7 deployment, with activation last and slot B preserved as successful S1.6 fallback;
+- slot A became naturally successful without manual success marking;
+- physical unplug/reconnect while dozing produced callback-driven `Usb -> Battery -> Unknown -> Ac` state changes with no read errors, relevant AVCs, synthetic overrides or daemon wakelock;
+- AIDL sequence advanced from `1` to `7`, exactly matching six externally visible callback state changes with the same `oxynoded` PID.
+
+S1.7 overall status: **PASS / FROZEN**. Exact source, AIDL, image, device-binary and runtime seals are recorded in `S1_7_VALIDATION.md`.
 
 ### S1.8 — power UX integration
 
@@ -234,7 +239,7 @@ Status: **PLANNED**.
 
 ### A14 — current architecture baseline
 
-Android 14 on bramble remains the architecture/regression baseline until S1 service/API/runtime gates are closed and frozen.
+Android 14 on bramble remains the architecture/regression baseline. The S1.7 power service/API/runtime boundary is closed and frozen; later S1 milestones continue on this baseline unless a deliberate portability experiment says otherwise.
 
 ### A15 — bramble portability experiment
 
