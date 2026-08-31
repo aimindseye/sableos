@@ -8,6 +8,8 @@ A milestone is complete only when implementation, policy boundary, build integra
 
 Portable semantic contracts and Rust logic should remain stable while Android-version/device integration is requalified behind bounded adapters.
 
+A historical device or Android branch must not become a permanent product constraint. UI-framework selection is based on Sable requirements, not on the oldest platform Rust compiler used by a frozen reference target.
+
 ## Milestone progression
 
 ```text
@@ -16,30 +18,31 @@ hardware correctness
     -> typed platform API
     -> authorized consumers
     -> Rust UI qualification / user-facing semantic client
-    -> Android-version portability qualification
     -> lifecycle / policy
     -> measured resource policy
     -> broader mobile UX
 ```
 
+Android-version/device portability is requalified whenever the maintained reference target changes; it is no longer treated as a one-time bramble-specific milestone.
+
 A later layer must not paper over an unproven earlier layer.
 
 ## S0 — Android 14 security baseline uplift
 
-Status: **established**.
+Status: **established / historical bramble baseline**.
 
-Goal: move the bramble development substrate from Android 12.1 to the final official Android 14 baseline while keeping vanilla AOSP capability measurable.
+Goal: move the original bramble development substrate from Android 12.1 to the final official Android 14 baseline while keeping vanilla AOSP capability measurable.
 
 Key outcomes:
 
 - Android 14 source/vendor baseline;
 - vanilla comparison point;
 - explicit bramble end-of-life security ceiling;
-- substrate used by current S1 development.
+- substrate used to prove S1.1 through S1.7.
 
-## S1 — narrow Sable services on Android 14
+## S1 — narrow Sable services
 
-Goal: restore and evolve Sable-owned Rust services without weakening Android partition, SELinux, framework, or immutable vendor boundaries.
+Goal: restore and evolve Sable-owned Rust services without weakening Android partition, SELinux, framework, or vendor boundaries.
 
 ### S1.1 — oxynoded Android 14 integration
 
@@ -162,47 +165,125 @@ Status: **PASS**.
 
 S1.7 overall status: **PASS / FROZEN**. Exact source, AIDL, image, device-binary and runtime seals are recorded in `S1_7_VALIDATION.md`.
 
-### S1.8 — Rust UI foundation qualification + power UX
+### S1.8 — modern Rust UI foundation qualification + power UX
 
-Status: **D0/F0 IN PROGRESS**.
+Status: **BRAMBLE QUALIFICATION CAPTURED / PANTHER RESTART**.
 
 S1.8 is the first Sable-native user-facing client of a frozen semantic service and the qualification point for the Rust UI direction.
 
 #### S1.8-D0 — architecture/document reconciliation
 
+Status: **PASS**.
+
 - preserve Android APK/split-APK, ART, PackageManager, ActivityManager, SurfaceFlinger, permissions/AppOps and ordinary app sandboxing;
-- formally supersede older bare-Linux/direct-framebuffer/root-shell assumptions which conflict with the proven Android 14 architecture;
+- formally supersede older bare-Linux/direct-framebuffer/root-shell assumptions which conflict with the proven Android architecture;
 - keep Sable-native UI Rust-first while keeping application/interaction semantics renderer-independent;
 - define Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first profiles without cloning either product;
-- treat Slint and Vexo as evidence-driven candidates rather than immutable release requirements;
+- treat UI frameworks as evidence-driven candidates rather than immutable release requirements;
 - allow a focused Sable fork or Sable-owned Rust UI framework when qualification evidence justifies it;
 - retain App Manager, MarathonOS, GrapheneOS and AOSP as scoped design/security references without importing their complete trust models.
 
-Normative decision: `adr/0002-rust-ui-framework-and-android-app-compatibility.md`.
+Normative decisions:
 
-#### S1.8-F0 — Slint vs Vexo feasibility qualification
+- `adr/0002-rust-ui-framework-and-android-app-compatibility.md`;
+- `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`.
 
-Read-only qualification before Android source mutation. Compare at minimum:
+#### S1.8-F0 through F3 — bramble framework/toolchain evidence
 
-- AOSP Rust toolchain compatibility;
+Status: **CAPTURED / CLOSED AS HISTORICAL PLATFORM QUALIFICATION**.
+
+Read-only/temp-only qualification established:
+
+- bramble Android 14 AOSP uses Rust/Cargo 1.68;
+- current UI frameworks commonly require substantially newer Rust versions;
+- current Vexo and other modern candidates should not be forced onto the historical 1.68 platform;
+- Slint 1.5 core can compile on Rust 1.68 after bounded Cargo compatibility work, proving the device architecture itself was not the blocker;
+- continuing dependency down-revs/pins solely for the end-of-life Android 14 platform would distort long-term framework selection;
+- no production S1.8 UI source was landed;
+- no global AOSP Rust uplift was performed;
+- the planned Android 15 bramble portability experiment is no longer required.
+
+Do not continue the Android-14-specific Slint dependency-backport sequence unless a future regression investigation explicitly needs it.
+
+See `S1_8_PLATFORM_TRANSITION.md`.
+
+#### PANTHER-P0 — modern device/source/toolchain baseline
+
+Status: **NEXT**.
+
+Pixel 7 (`panther`) becomes the active touch-first development reference.
+
+P0 is read-only and selects the real reproducible baseline before Sable source mutation:
+
+- device identity/current stock build;
+- bootloader/recovery/update state;
+- official factory/OTA recovery point;
+- available AOSP/device/vendor proprietary binaries for candidate Android branches;
+- kernel/vendor_boot/vendor_kernel_boot partition model;
+- exact Rust/Cargo/Clang/Soong toolchains;
+- preferred newest supported/reproducible Android release;
+- explicit fallback if the newest stock release is not yet reproducible as a clean AOSP hardware baseline.
+
+The goal is not merely a higher Android version. It is a maintained, modern platform on which Sable can qualify current Rust UI technology without inheriting bramble's platform-age constraints.
+
+#### PANTHER-V0 — vanilla capability and Android-app baseline
+
+Status: **PLANNED AFTER P0**.
+
+Before Sable integration:
+
+- reproducible vanilla/upstream panther build;
+- boot and A/B behavior;
+- SELinux enforcing;
+- telephony/IMS/data/SMS;
+- Wi-Fi/Bluetooth;
+- camera/audio;
+- USB/ADB/recovery;
+- suspend/power/thermal sanity;
+- bounded APK/split-APK/native/WebView/notification/background regression corpus;
+- exact vendor/kernel/firmware provenance.
+
+#### S1.8-F-modern — expanded Rust UI qualification
+
+Status: **PLANNED AFTER P0/V0**.
+
+Qualification set includes:
+
+- Slint;
+- WaterUI;
+- Project Robius + Makepad;
+- Blinc;
+- Vexo;
+- Dioxus Native / Blitz where appropriate;
+- `BUILD_SABLEUI` if no candidate meets Sable requirements without disproportionate compromise.
+
+Architectural/interoperability references:
+
+- Crux — renderer-independent application/state/effect architecture;
+- UniFFI — possible language interop, not a shell renderer;
+- Flutter Rust Bridge — Flutter/Rust interop, not a Rust-first renderer;
+- Tauri/WebView — not preferred for the Sable system shell.
+
+Compare at minimum:
+
+- modern Rust toolchain/MSRV and whether it can use the platform compiler directly;
 - reproducible/offline dependency integration;
-- Soong/product integration cost;
+- Soong/product or separately pinned UI build integration cost;
 - open-source license obligations;
 - dependency/supply-chain size;
 - Android Activity/window/surface lifecycle integration;
 - SurfaceFlinger/Vulkan/GPU path;
 - package/binary/image footprint;
-- startup latency, RSS and idle CPU once runnable;
+- startup latency, RSS and idle CPU;
 - touch and multi-touch;
 - keyboard, modifiers, repeat and focus traversal;
 - IME, clipboard, text shaping and localization;
 - accessibility maturity;
 - crash isolation;
 - Android-version portability risk;
-- ability to consume frozen `sable-power-aidl-V1-rust` without backend authority;
-- absence of unnecessary network, Health, sysfs or other hardware permissions.
+- no unnecessary network, Health, sysfs or other hardware permissions.
 
-F0 outcome classification:
+Framework outcome classification remains:
 
 ```text
 SELECT
@@ -215,10 +296,11 @@ Passing a tiny screen does not authorize replacement of Launcher3 or AOSP System
 
 #### S1.8-C — first real Rust power client
 
-After F0 selects the implementation path:
+After the panther service adapter and framework path are selected:
 
 - standalone Sable Android application; Launcher3 and SystemUI remain intact;
-- read frozen AIDL V1 without schema change;
+- preserve the frozen Sable power semantics across the device adapter transition;
+- read power state through a stable service boundary;
 - battery percentage, charging state and source;
 - graceful unavailable state;
 - no backend-specific UI logic;
@@ -226,7 +308,9 @@ After F0 selects the implementation path:
 - no unnecessary Internet/network authority;
 - UI restart/crash cannot disturb monitoring;
 - physical callback transition reaches the visible client;
-- renderer/app semantics structured so later touch-first and keyboard-first shells can share state/navigation concepts.
+- renderer/app semantics structured so touch-first and keyboard-first shells share state/navigation concepts.
+
+If UI and platform Rust compilers differ, direct compiler-private Rust ABI linkage is rejected. Use a stable C/NDK/AIDL adapter instead of globally uplifting AOSP solely for the renderer.
 
 ### S1.9 — application lifecycle foundation
 
@@ -294,31 +378,23 @@ Status: **PLANNED**.
 
 ## Android substrate transition track
 
-### A14 — current architecture baseline
+### Bramble Android 14 — frozen architecture baseline
 
-Android 14 on bramble remains the architecture/regression baseline. The S1.7 power service/API/runtime boundary is closed and frozen; S1.8 Rust-UI qualification and the first real user-facing semantic client run on this baseline.
+Status: **PASS / FROZEN**.
 
-### A15-P — bramble portability experiment
+Android 14 on Pixel 4a 5G remains the historical architecture/regression baseline for S1.7. It no longer hosts active S1.8 implementation work.
 
-**Position: immediately after S1.8 closes and before S1.9 begins.**
+### Bramble Android 15 portability experiment
 
-The experiment should:
+Status: **CLOSED WITHOUT EXECUTION**.
 
-- use a separate workspace/OUT_DIR and preserve the frozen Android 14 reference tree;
-- establish vanilla/upstream Android 15 baseline first;
-- measure hardware and telephony parity;
-- measure ordinary Android APK compatibility with a bounded regression corpus;
-- reintroduce the minimum Sable integration;
-- port the frozen S1.7 power contract without semantic redesign;
-- run the S1.8 selected/qualified Rust UI path against the same semantic API;
-- identify Android-version-specific SELinux/build/init/framework/UI integration hooks;
-- stop rather than globally weakening security if frozen vendor/HAL incompatibility dominates.
+The earlier plan to port S1.8 to Android 15 on bramble is superseded by the move to maintained Pixel 7 hardware. No product milestone depends on this experiment.
 
-This is an engineering qualification target, not restored OEM security support.
+### Panther modern Android baseline
 
-### A16+ — maintained modern Pixel-class touch baseline
+Status: **P0 NEXT**.
 
-Move modern touch/security reference to actively supported hardware subject to source, bootloader, vendor, relock/update and physical capability acceptance.
+Use Pixel 7 as the active touch-first development reference. Prefer the newest supported/reproducible Android release proven by P0/V0. Keep platform-specific adaptation bounded so the same Sable semantics and UI core can move again to later Pixel hardware.
 
 ## S2 — Secure Package Intelligence
 
@@ -424,13 +500,19 @@ MarathonOS remains a UX/device/power/recovery reference, especially for mobile-f
 
 ## Device roadmap
 
+### Pixel 7 (`panther`)
+
+Active touch-first development reference. PANTHER-P0 selects the newest supported/reproducible Android baseline and inventories its platform/UI toolchain boundaries before Sable source mutation.
+
+Pixel 7 is a materially better current engineering target than bramble, but remaining OEM support lifetime still matters. Later Pixel hardware with a longer support window may replace it without changing Sable service/application semantics.
+
 ### Pixel 4a 5G (`bramble`)
 
-Architecture/regression reference. Android 14 primary Sable substrate; Android 15 portability experiment candidate immediately after S1.8; not a long-lived production-security target.
+Frozen Android 14 S1.7 architecture/regression reference. No active S1.8 implementation or Android 15 portability milestone. Not a production-security target and not a required Rust-development device.
 
-### Modern Pixel-class hardware
+### Later Pixel-class hardware
 
-Successor maintained touch/security reference for Android 16+ work, subject to source, flashing/relock, vendor and update-lifecycle acceptance.
+Future longer-lived touch/security reference when support lifetime, source, flashing/relock, vendor and update-lifecycle advantages justify migration.
 
 ### Zinwa Q25
 
@@ -439,6 +521,8 @@ Optional MediaTek/QWERTY development reference for portability validation; not r
 ### Zinwa Q27
 
 Future primary QWERTY candidate pending public/maintainable source, reliable unlock/recovery, understood partitions/vendor interfaces, working radio/IMS/camera/audio/keyboard/suspend/power, and acceptable security lifecycle.
+
+The Pixel and Zinwa tracks must share the same Sable semantic APIs, application model and UI core. Platform Rust compiler differences must not create separate product architectures.
 
 ## Standing priorities
 
@@ -457,7 +541,9 @@ Future primary QWERTY candidate pending public/maintainable source, reliable unl
 13. require measured evidence for power/performance tuning;
 14. preserve a known-good fallback slot during runtime-changing deployment;
 15. keep Sable application/interaction semantics renderer-independent;
-16. qualify UI-framework accessibility/input/lifecycle/supply-chain behavior before replacing mature Android presentation surfaces.
+16. qualify UI-framework accessibility/input/lifecycle/supply-chain behavior before replacing mature Android presentation surfaces;
+17. prefer the platform Rust compiler when viable, but do not select a UI framework solely to satisfy an old platform MSRV;
+18. never link independently compiled Rust components across compiler-private Rust ABI; use a stable C/NDK/AIDL boundary when toolchains differ.
 
 ## Runtime milestone closure
 
