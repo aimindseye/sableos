@@ -10,14 +10,20 @@ Privacy and security are the first priorities, but SableOS does not discard matu
 
 Current proven baseline:
 
-- S1.6 is closed and runtime-proven on Android 14 `bramble`.
+- S1.7 is closed, runtime-proven and frozen on Android 14 `bramble`.
 - `oxynoded` consumes Android Health HAL 2.1 asynchronously through HIDL callbacks.
 - the 60-second production power poller is removed;
 - callback-time snapshots are queued in the native bridge and consumed by Rust;
 - HAL death unblocks the Rust retry/recovery path;
-- SELinux remains enforcing;
-- `oxynoded` has no direct battery sysfs access;
-- S1.7A is introducing a frozen, read-only power AIDL API and remains **in progress** until host/image seal completion.
+- latest validated `PowerState` is published through frozen read-only AIDL V1;
+- a dedicated `sable_power_test_client` proves the intended Binder client boundary;
+- ordinary Android shell may discover the service name through platform service-manager policy, but Binder `call` to `oxynoded` is denied under enforcing SELinux;
+- the authorized client has no direct Health HAL or battery sysfs access;
+- physical unplug/reconnect while dozing advanced AIDL sequence `1 -> 7` across six externally visible callback state changes with the same provider PID;
+- slot A is naturally successful with S1.7 while successful slot B remains the S1.6 fallback;
+- SELinux remains enforcing.
+
+Exact S1.7 source, AIDL, image, device-binary and runtime seals are recorded in `S1_7_VALIDATION.md`.
 
 ## Architectural rules
 
@@ -125,7 +131,7 @@ UI -> broad-capability general-purpose utility
 
 ## Power architecture
 
-### Proven S1.6 path
+### Proven S1.6 callback path
 
 ```text
 Android Health HAL 2.1
@@ -151,13 +157,15 @@ The bridge captures callback-delivered state rather than treating a callback as 
 
 Physical runtime testing proved the prior steady poller could miss a real Battery interval across suspend. The architectural correction was callback delivery—not longer test timing and not a daemon wakelock.
 
-### S1.7 target
+### Proven S1.7 typed IPC path
 
 ```text
-Health callback
+Android Health HAL 2.1 callback
+    -> native callback bridge
     -> PowerMonitor
     -> PowerStateStore
-    -> frozen read-only AIDL
+    -> com.sableos.power.IPowerService/default
+    -> frozen read-only AIDL V1
     -> explicitly authorized Sable client
 ```
 
@@ -167,9 +175,13 @@ The V1 client receives stable Sable semantics, not backend handles:
 - battery percentage;
 - charging state;
 - Sable power-source enum;
-- state-change sequence.
+- externally-visible state-change sequence.
 
 It does not receive raw sysfs paths, a Health handle, mutation methods, or backend lifecycle details.
+
+Authorization is a transaction boundary, not a secrecy boundary. Android 14 platform policy permits shell to discover many `service_manager_type` services, including the Sable power service. S1.7 therefore validates the effective boundary at Binder use: `sable_power_test_client` can find and call `oxynoded`, while `u:r:shell:s0` cannot start that dedicated client and is denied Binder `call` to `u:r:oxynoded:s0` under enforcing SELinux.
+
+The physical closure correlated the API directly with callback delivery: sequence advanced from `1` to `7` across six externally visible callback transitions while the same `oxynoded` PID survived.
 
 ### Power semantics
 
@@ -277,6 +289,8 @@ Earlier B2 work proved that a `coredomain` helper directly reading `sysfs_batter
 
 S1 refined the implementation further after discovering `bramble`'s final vendor image is an immutable Google prebuilt: the production power architecture now leaves battery sysfs ownership in the vendor Health HAL and makes `oxynoded` a Health client.
 
+S1.7 extends that precedent upward: user-facing or diagnostic consumers do not become Health clients. They receive the frozen Sable semantic API through explicit Binder authorization.
+
 This precedent applies broadly: understand why the boundary exists, then place the component on the correct side of it.
 
 ## Security-reference discipline
@@ -353,6 +367,8 @@ For runtime-changing milestones:
 6. keep the prior successful slot as fallback until closure.
 
 Do not manually mark a slot successful as a substitute for runtime proof.
+
+S1.7 followed this model: known-good successful S1.6 slot B was preserved while S1.7 was written to inactive slot A; activation occurred only after all validated image writes, slot A became naturally successful, and slot B remained successful fallback.
 
 ## Reference / planned hardware
 
