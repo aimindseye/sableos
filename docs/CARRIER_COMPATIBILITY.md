@@ -2,11 +2,15 @@
 
 SableOS aims for broad carrier interoperability on the Pixel 4a 5G G025E (`bramble`) while preserving the supported Google/Qualcomm radio, IMS, and vendor stack.
 
-## Baseline
+## Baselines
 
-Reference Android build: `SQ3A.220705.003.A1` (Android 12.1).
+### Current Sable system baseline
 
-For Pixel 4a (5G), Google's July 2022 Pixel release note lists `SQ3A.220705.003.A1` as the global build. The B0/B1 gold masters therefore remain the reference baseline.
+The current Sable architecture/regression substrate is Android 14 on bramble. New S1 service/UI/application work and the planned Android 15 portability experiment are evaluated against this current baseline.
+
+### Historical physical carrier baseline
+
+The July 2022 build `SQ3A.220705.003.A1` remains an important historical B0/B1 physical carrier-capability record because voice, SMS/MMS, packet data, IMS/VoLTE and 5G/NR behavior were exercised on real hardware there. It is not the current Sable system baseline.
 
 Factory handset observed before unlock:
 
@@ -20,6 +24,8 @@ Frozen B0 contains newer firmware components:
 - baseband: `g7250-00202-220422-B-8489468`
 
 This is an upgrade direction, not a downgrade. Firmware should still be updated deliberately and validated rather than blindly flashed as part of a whole-device package.
+
+Carrier qualification on the current Android 14 Sable baseline must revalidate the relevant working services rather than assuming that historical B0/B1 evidence automatically transfers across framework, telephony or vendor-integration changes.
 
 ## Hardware capability boundary
 
@@ -42,8 +48,9 @@ Therefore the compatibility goal is:
 3. Keep Android CarrierConfig and APN selection behavior; do not hard-code one carrier or APN.
 4. Select behavior from SIM/eSIM identity, MCC/MNC, carrier configuration, and modem capabilities.
 5. Do not replace the vendor radio protocol with a custom Rust modem implementation.
-6. `oxynoded` may broker or observe telephony through narrow Android interfaces later, but must not bypass the supported radio/IMS stack.
+6. `oxynoded` or a future Sable telephony broker may observe/request through narrow Android interfaces later, but must not bypass the supported radio/IMS stack.
 7. Treat emergency calling, IMS registration, VoLTE, and roaming as release blockers.
+8. A Sable-native Rust shell/renderer must not require changes to the ordinary Android telephony/application semantics used by third-party APKs.
 
 ## Qualification matrix
 
@@ -101,6 +108,12 @@ adb shell dumpsys telephony.registry
 
 Do not commit IMSI, ICCID, IMEI, phone number, or device serial values to the repository.
 
+## Android-version portability
+
+The Android 15 bramble experiment occurs after S1.8 and before S1.9. It must treat telephony/carrier behavior as a measured parity gate rather than assuming that a booting Android 15 userspace implies carrier compatibility with frozen bramble vendor/firmware components.
+
+A regression discovered there is classified by framework/telephony/vendor boundary before any compatibility shim or security relaxation is considered.
+
 ## Release rule
 
-A single working SIM is a smoke test, not carrier certification. Carrier support should be tracked as a matrix of tested network families, services, and regions, with explicit known limitations derived from G025E hardware bands and carrier provisioning.
+A single working SIM is a smoke test, not carrier certification. Carrier support should be tracked as a matrix of tested network families, services, Android substrate versions and regions, with explicit known limitations derived from G025E hardware bands, carrier provisioning and the retained vendor/firmware security lifecycle.
