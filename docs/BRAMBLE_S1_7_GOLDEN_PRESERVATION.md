@@ -1,6 +1,6 @@
 # Bramble S1.7 golden preservation
 
-Status: **PASS / off-machine golden backup verified**
+Status: **PASS / off-machine golden backup verified / storage cleanup closed**
 
 Purpose: preserve the frozen Pixel 4a 5G (`bramble`) S1.7 runtime and host-tool reference before reclaiming obsolete Android build outputs for the Pixel 7 (`panther`) Android 17 workspace.
 
@@ -109,7 +109,7 @@ After cleanup A:
 /srv/data free: 419.1 GiB
 ```
 
-The bramble source tree, `.repo`, `device/`, and `out_s13b` were preserved.
+The bramble source tree, `.repo`, `device/`, and `out_s13b` were preserved at this stage.
 
 ## Host-tool preservation
 
@@ -144,7 +144,53 @@ build=CP2A.260705.006
 
 Therefore the active Panther workflow no longer depends on `out_s13b` for `adb` or `fastboot`.
 
-## Deletion authorization state
+## Final cleanup B3R
+
+The first B3 attempt produced false-negative Drive inventory checks because the parser treated the `rclone lsl` filename as field 3; the actual layout is size, date, time, filename. The guard correctly prevented deletion. No Drive or local preservation failure occurred.
+
+The corrected B3R guard then passed all local hashes, remote sizes, preserved host-tool hashes/execution, and source/reference preservation checks before deleting exactly:
+
+```text
+/srv/data/aosp_bramble_workspace/out_s13b
+```
+
+Observed result:
+
+```text
+B3R_DRIVE_INVENTORY=PASS
+B3R_DRIVE_SOURCE_GOLDEN=PASS
+B3R_DRIVE_RUNTIME_GOLDEN=PASS
+B3R_DRIVE_GOLDEN_MANIFEST=PASS
+B3R_ADB_HASH=PASS
+B3R_FASTBOOT_HASH=PASS
+B3R_HOST_TOOLS_EXECUTION=PASS
+B3R_OUT_S13B_DELETE=PASS
+B3R_HOST_TOOLS_POST_DELETE=PASS
+SABLE_DISK_CLEANUP_B3R=PASS
+OUT_S13B_DELETED=YES
+```
+
+Disk state after deletion:
+
+```text
+/srv/data used: 494 GiB
+/srv/data free: 528.9 GiB
+/srv/data use: 49%
+PANTHER_P1B_DISK_CAPACITY=PASS
+```
+
+Preserved after deletion:
+
+```text
+/srv/data/aosp_bramble_workspace
+/srv/data/aosp_bramble_workspace/.repo
+/srv/data/aosp_bramble_workspace/device/sable/bramble
+/srv/data/sable_golden
+/srv/data/sable_host_tools/bramble_s1_7
+/tmp/sable-panther-p0r1
+```
+
+## Closure
 
 ```text
 BRAMBLE_S1_7_GOLDEN_ARCHIVE=PASS
@@ -152,12 +198,15 @@ BRAMBLE_S1_7_DRIVE_BACKUP=PASS
 BRAMBLE_S1_7_DRIVE_REMOTE_VERIFY=PASS
 SABLE_DISK_CLEANUP_A=PASS
 SABLE_HOST_TOOLS_PRESERVED=PASS
-HOST_ADB_EXECUTION=PASS
-HOST_FASTBOOT_EXECUTION=PASS
-HOST_ADB_DEVICE_TEST=PASS
-OUT_S13B_DELETE_AUTHORIZED=YES
+SABLE_DISK_CLEANUP_B3R=PASS
+OUT_S13B_DELETED=YES
+PANTHER_P1B_DISK_CAPACITY=PASS
+BRAMBLE_SOURCE_DELETED=NO
+BRAMBLE_REPO_DELETED=NO
+LOCAL_GOLDEN_DELETED=NO
+DRIVE_GOLDEN_DELETED=NO
+PANTHER_P0R1_REFERENCE_DELETED=NO
+DEVICE_TOUCHED=NO
 ```
 
-`out_s13b` is now disposable. The bramble source tree remains the frozen S1.7 regression/porting reference and should not be removed as part of the Panther storage cleanup.
-
-No device mutation, root, reboot or flash occurred during the preservation and backup steps.
+The disk-space prerequisite for Panther P1B / V0-HOST is closed. No device mutation, root, reboot or flash occurred during the preservation, backup, or cleanup steps.
