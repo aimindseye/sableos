@@ -45,14 +45,17 @@ Prefer `setFeatureEnabled(bool)` over shelling out.
 
 ## 6. Negative Tests Are First-class
 
-Prove what must not happen:
+Prove the effective security property, not merely the absence of one literal policy rule:
 
 - no battery sysfs access;
-- no unauthorized Binder `find`;
+- service discovery is understood from effective compiled/runtime policy, including attribute grants;
+- unauthorized clients cannot transact with or use privileged Binder APIs;
 - no policy widening;
 - no daemon restart during physical transition;
 - no manual slot-success marking;
 - no unexpected image delta.
+
+S1.7 is the reference correction: Android 14 shell may discover the Sable power service through platform attribute policy while Binder `call` to `oxynoded` remains denied. Discovery and transaction authority are different properties.
 
 ## 7. Preserve Known-good Recovery
 
@@ -73,6 +76,7 @@ Important reversals belong in project history:
 - raw sysfs design -> Health HAL;
 - polling -> callback delivery;
 - direct reconnect expectation -> valid transient Unknown;
+- direct-rule service-manager audit -> effective attribute-aware authorization audit;
 - build failure classification before source repair.
 
 ## 11. Bound Output and Tests
@@ -89,3 +93,9 @@ Scripts should:
 ## 12. Production Path Is Not a Debug Path
 
 Production correctness must not depend on root, samplers, synthetic battery state, debug CLI probes, or test-only overrides.
+
+## 13. Renderer Choice Does Not Define OS Privilege
+
+A Rust renderer, GPU backend, launcher or SystemUI replacement candidate does not gain direct hardware/system authority by virtue of being user-facing.
+
+Keep Sable application and interaction semantics above a renderer adapter boundary, and keep privileged operations behind typed Sable services. Qualify touch, keyboard, IME, accessibility, lifecycle, dependency and supply-chain behavior before replacing mature Android presentation components.
