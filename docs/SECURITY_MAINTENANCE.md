@@ -4,11 +4,11 @@ Status: **required project-wide security gate**.
 
 SableOS treats its pinned Android reference builds as reproducibility and compatibility baselines, not as permanent security baselines.
 
-A historical AOSP tag, successful SELinux enforcement, or a narrow Rust service architecture does not prove that the complete device is current against later Android, Linux-kernel, chipset, firmware, browser/WebView, media, or vendor vulnerabilities.
+A historical AOSP tag, successful SELinux enforcement, or a narrow Rust service architecture does not prove that the complete device is current against later Android, Linux-kernel, chipset, firmware, browser/WebView, media, vendor, or third-party framework/dependency vulnerabilities.
 
 ## Core rule
 
-> A SableOS release must not claim a security patch level or current-security status that its integrated platform, kernel, firmware, vendor components, and maintained modules do not actually satisfy.
+> A SableOS release must not claim a security patch level or current-security status that its integrated platform, kernel, firmware, vendor components, maintained modules and Sable-owned dependency graph do not actually satisfy.
 
 Security provenance must be evidence-based. Version strings alone are not proof because fixes may be backported without version changes and conversely a high patch-level string can be dishonest if required fixes are absent.
 
@@ -20,7 +20,7 @@ SableOS tracks security independently across at least these layers:
 2. Linux kernel and device kernel modules;
 3. device/vendor proprietary binaries and firmware;
 4. browser/WebView and independently updatable components/APEX modules;
-5. Sable-owned Rust/C/C++ code and dependencies;
+5. Sable-owned Rust/C/C++ code and dependencies, including selected UI-framework dependencies;
 6. boot chain, AVB/signing, SELinux, seccomp and other platform mitigations.
 
 A release is limited by the weakest unremediated layer.
@@ -91,15 +91,20 @@ Never represent an end-of-life device with unresolved proprietary vulnerabilitie
 
 ## Bramble policy
 
-The current Android 12.1 `SQ3A.220705.003.A1` bramble build remains a valuable reproducibility and Sable architecture baseline, but it is not the long-term security baseline.
+The current Sable architecture/regression baseline on bramble is Android 14. Earlier Android 12.1 `SQ3A.220705.003.A1` B0/B1 records remain valuable historical physical-capability and carrier evidence, but they are no longer the current Sable system baseline.
 
-Before SableOS is considered a secure daily-driver on bramble, perform a separate security-uplift program that evaluates at minimum:
+Android 14 materially improves the platform-development substrate and is the frozen reference for the S1.7 service/API boundary. It does **not** remove bramble's proprietary firmware/vendor end-of-life security ceiling.
 
-1. migration from the July 2022 platform/vendor baseline to the final official bramble Android/vendor baseline where architecture and compatibility permit;
-2. AOSP security fixes published after that final baseline;
+Before SableOS is considered a secure daily-driver on bramble, a separate security-uplift program must evaluate at minimum:
+
+1. the exact final officially available bramble vendor/firmware baseline actually integrated or intentionally retained;
+2. AOSP security fixes published after the selected Android 14 reference baseline;
 3. redbull 4.19 kernel security backports;
 4. browser/WebView and Mainline/updatable-component currency;
-5. remaining Qualcomm/Google proprietary vulnerabilities for which no post-EOL fix is available.
+5. remaining Qualcomm/Google proprietary vulnerabilities for which no post-EOL fix is available;
+6. Sable-owned Rust/UI dependency advisories and reproducible provenance.
+
+The planned Android 15 bramble exercise after S1.8 is a portability experiment, not a mechanism for claiming restored OEM security maintenance.
 
 If unresolved proprietary risk remains because bramble is end-of-life, bramble remains an architecture/reference target rather than SableOS's strongest security-reference hardware.
 
@@ -108,6 +113,21 @@ If unresolved proprietary risk remains because bramble is end-of-life, bramble r
 SableOS should maintain at least one security-reference device that is still receiving upstream manufacturer/chipset security updates. Architecture validation on older hardware is useful, but a privacy/security-first project needs an actively supported hardware path for current security claims.
 
 Device-port acceptance must therefore consider security-support lifetime, unlock/relock/verified-boot support, kernel/vendor source availability, firmware update availability, and vendor security-bulletin responsiveness in addition to hardware features.
+
+## Third-party Rust/UI dependency policy
+
+Rust-first does not eliminate supply-chain risk. Any Slint, Vexo, `wgpu`, text/layout/input dependency, fork, or eventual SableUI dependency entering a production image must have:
+
+- pinned source/version/commit provenance;
+- license classification compatible with Sable's open-source distribution model;
+- reproducible/offline-capable build inputs;
+- a bounded dependency inventory;
+- security-advisory monitoring;
+- a documented update path;
+- review of network/filesystem/native/unsafe surface where relevant;
+- removal of demo/development/network features not required by the shipped component.
+
+S1.8-F0 is the first application of this policy to UI-framework qualification.
 
 ## Release gates
 
@@ -119,11 +139,12 @@ Before a security-qualified release:
 4. integrate and provenance-record applicable kernel fixes;
 5. verify vendor/firmware status;
 6. update browser/WebView/updatable components where applicable;
-7. run Soong/build, SELinux neverallow/policy tests and Sable unit/integration tests;
-8. run targeted vulnerability regression tests when a public reproducer/test exists;
-9. run physical capability parity and stability checks;
-10. verify AVB/signing/boot-chain state appropriate to the release stage;
-11. publish an unresolved-risk manifest rather than hiding unsupported components.
+7. review Sable-owned and third-party Rust/UI dependency advisories/provenance;
+8. run Soong/build, SELinux neverallow/policy tests and Sable unit/integration tests;
+9. run targeted vulnerability regression tests when a public reproducer/test exists;
+10. run physical capability parity and stability checks;
+11. verify AVB/signing/boot-chain state appropriate to the release stage;
+12. publish an unresolved-risk manifest rather than hiding unsupported components.
 
 A critical unresolved remotely reachable vulnerability or an unresolved security-critical vendor component blocks a claim of a fully security-qualified release unless the vulnerable capability is removed or independently isolated with documented evidence.
 
@@ -135,4 +156,4 @@ A future production SableOS release should use release signing, verified boot an
 
 ## Continuous maintenance
 
-Security maintenance is recurring work, not a one-time audit. Monitor Android Security Bulletins, relevant Linux/kernel/device branches, chipset/vendor advisories, browser/WebView security releases, and Sable-owned dependency advisories for the lifetime of each supported release.
+Security maintenance is recurring work, not a one-time audit. Monitor Android Security Bulletins, relevant Linux/kernel/device branches, chipset/vendor advisories, browser/WebView security releases, Sable-owned dependencies and selected UI-framework/dependency advisories for the lifetime of each supported release.
