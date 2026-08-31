@@ -2,13 +2,17 @@
 
 ## Purpose
 
-SableOS is implemented on an Android/AOSP substrate, but it must not become permanently coupled to one Android release.
+SableOS is implemented on an Android/AOSP substrate, but it must not become permanently coupled to one Android release, one device, or one platform compiler generation.
 
 The architectural rule is:
 
 > Sable semantic contracts and portable Rust logic should remain stable across Android releases; Android-version and device-specific integration belongs behind narrow adapters which are requalified at each substrate transition.
 
-SableOS is therefore not defined as "an Android 14 fork". Android provides the mature kernel, framework, security, application and hardware substrate on which Sable services and policy are implemented.
+SableOS is therefore not defined as "an Android 14 fork" or as a ROM for one Pixel generation. Android provides the mature kernel, framework, security, application and hardware substrate on which Sable services and policy are implemented.
+
+UI-framework selection is also not defined by whichever Rust compiler happens to ship in one Android branch. Prefer one compiler universe when viable, but use a stable ABI/AIDL/NDK boundary when a separately pinned modern UI toolchain is justified.
+
+Normative device/toolchain transition decision: `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`.
 
 ## Coupling model
 
@@ -21,6 +25,8 @@ low Android-version coupling
 Sable semantic contracts
         │
 portable Rust policy / transformation logic
+        │
+Sable application / interaction semantics
         │
 Sable service interfaces
         │
@@ -46,7 +52,8 @@ Expected coupling by layer:
 | pure Rust transformation/policy logic | very low |
 | host tests | very low |
 | Sable application/domain concepts | low |
-| public Android SDK-facing UI | low to medium |
+| renderer-independent UI state/navigation concepts | low |
+| public Android SDK-facing UI adapter | low to medium |
 | Sable Android services | medium |
 | init integration | medium |
 | versioned/stable Binder interfaces | medium |
@@ -90,7 +97,9 @@ Sable policy should fit Android's public/private/vendor policy architecture. AVC
 
 Binder remains the preferred local IPC substrate for Android-integrated Sable services.
 
-Where interfaces need to survive independent component or Android-version evolution, prefer stable/versioned AIDL or equivalent explicitly versioned Sable contracts rather than private implementation APIs.
+Where interfaces need to survive independent component, toolchain or Android-version evolution, prefer stable/versioned AIDL or equivalent explicitly versioned Sable contracts rather than private implementation APIs.
+
+The Rust ABI is not used as a cross-toolchain compatibility contract. If independently compiled Rust components use different compiler versions, interoperate through a stable C/NDK/AIDL boundary.
 
 ### HAL / VINTF boundaries
 
@@ -116,7 +125,7 @@ Preserve the ordinary Android application substrate:
 
 Sable security features should surround and harden this model rather than require applications to be rebuilt into a Sable-specific format.
 
-Sable-native UI technology is independent of third-party Android application technology. A Rust/Slint/Vexo/future-SableUI launcher or application may coexist with Java/Kotlin/Compose/Flutter/native APKs because application execution and lifecycle remain Android-managed.
+Sable-native UI technology is independent of third-party Android application technology. A Rust/Slint/WaterUI/Makepad/Blinc/Vexo/future-SableUI launcher or application may coexist with Java/Kotlin/Compose/Flutter/native APKs because application execution and lifecycle remain Android-managed.
 
 ### Hardware and vendor stacks
 
@@ -193,7 +202,23 @@ A later Android release may change:
 
 Every substrate upgrade therefore requires a fresh compile, `sepolicy_test`, generated-policy inspection, runtime AVC audit and negative-access testing. A policy compiling on Android N does not automatically authorize carrying it unchanged to Android N+1.
 
-### 4. Vendor/HAL compatibility changes
+### 4. Platform Rust/Cargo changes
+
+The Rust/Cargo toolchain integrated into AOSP changes by release and may be substantially older than current upstream GUI/application ecosystems.
+
+Do not respond automatically by either:
+
+- down-revving every UI dependency until it fits the platform compiler; or
+- globally uplifting AOSP's Rust compiler solely for UI convenience.
+
+Preferred decision order:
+
+1. use the platform compiler if the chosen UI stack fits cleanly;
+2. use bounded source compatibility work only when small and maintainable;
+3. if the UI requires a modern compiler, build the UI with a separately pinned toolchain and cross into platform services through a stable ABI/AIDL/NDK adapter;
+4. upgrade the AOSP platform compiler only as an independently justified Android-platform change with full blast-radius validation.
+
+### 5. Vendor/HAL compatibility changes
 
 This is the hard ceiling for old hardware.
 
@@ -208,11 +233,11 @@ Sable semantic APIs should remain independent of how a given Android/device gene
 Power is the current reference example:
 
 ```text
-Sable API: PowerSnapshot / IPowerService V1
+Sable API: PowerSnapshot / IPowerService V1 semantics
         │
         ├── bramble Android 14 adapter -> Health HAL 2.1 callback bridge -> PowerMonitor
-        ├── later Pixel adapter       -> supported health/power HAL adapter
-        └── MediaTek adapter          -> supported Android/MTK health backend
+        ├── panther adapter            -> supported health/power HAL adapter
+        └── MediaTek adapter           -> supported Android/MTK health backend
 ```
 
 The user-facing contract should not change solely because the physical backend changed. Clients do not receive raw Health handles or battery sysfs paths.
@@ -225,62 +250,93 @@ sable/android/common/  common Android integration
 sable/android/api34/   Android 14-specific adapter
 sable/android/api35/   Android 15-specific adapter
 sable/android/api36/   Android 16-specific adapter
+sable/android/api37/   Android 17-specific adapter
 sable/device/<target>/ device/vendor integration
 ```
 
 This is an architectural pattern, not a mandatory repository layout.
 
+## UI toolchain portability
+
+The long-term UI architecture must also survive device/platform compiler changes.
+
+Same-compiler path:
+
+```text
+Sable Rust UI
+    -> generated stable AIDL Rust binding
+    -> Sable service
+```
+
+Different-compiler path:
+
+```text
+modern Rust UI
+    -> stable C/NDK/AIDL adapter
+    -> Sable semantic service
+```
+
+Rejected:
+
+```text
+modern-rustc UI
+    -> direct linkage to platform-rustc private Rust dylib ABI
+```
+
+This separation is especially important for Pixel versus future MediaTek/QWERTY targets, which may ship different Android branches and platform Rust versions while still needing the same Sable UI/application semantics.
+
 ## Device / Android transition strategy
 
 ### Pixel 4a 5G (`bramble`)
 
-Role: architecture and regression reference.
+Role: frozen architecture and regression reference.
 
-- Android 14: primary current Sable development baseline.
-- Android 15: planned portability experiment immediately after S1.8 closes and before S1.9 begins.
-- Android 16+: not a promised bramble target; investigate only if useful as an engineering experiment.
+- Android 14: authoritative S1.7 service/API/runtime baseline.
+- S1.8 D0/F0-F3: framework/toolchain evidence captured, no production UI landed.
+- Android 15 bramble portability experiment: closed without execution.
+- Android 16+: no promised Sable bramble target.
 
-The Android 15 exercise is intended to answer whether the Sable core survives an Android substrate upgrade cleanly while the frozen bramble vendor generation remains workable.
+Bramble's unsupported proprietary firmware/vendor components impose a security ceiling. It must not constrain current framework selection or modern Android architecture.
 
-It does not restore the device's missing OEM firmware/vendor security maintenance.
+### Pixel 7 (`panther`)
 
-A proposed qualification sequence is:
+Role: active touch-first development reference.
 
-1. create a separate Android 15 workspace/OUT_DIR and preserve the frozen Android 14 reference tree;
-2. establish a vanilla Android 15 source/device baseline without Sable changes;
-3. measure hardware and telephony parity against the Android 14 baseline;
-4. measure a bounded ordinary Android APK compatibility corpus;
-5. reintroduce the minimum Sable product/service integration;
-6. requalify SELinux, build, init and partition boundaries;
-7. port the frozen S1.7 Power AIDL contract without semantic redesign;
-8. run the S1.8 qualified Rust UI path against the same contract;
-9. document every Android-version-specific change.
+The transition begins with `PANTHER-P0` rather than assuming one Android branch.
 
-### Pixel 7
+P0 must:
 
-Role: successor modern touch/security reference.
+1. identify the exact physical device/current stock build;
+2. record bootloader/recovery/update state and official restore path;
+3. inventory candidate AOSP/platform branches and device/vendor proprietary binary availability;
+4. inventory the exact Rust/Cargo/Clang/Soong toolchain for each candidate;
+5. understand the Pixel 7 kernel and `vendor_kernel_boot`/dynamic-partition model;
+6. select the newest supported/reproducible Android hardware baseline;
+7. explicitly record any reason an older panther platform baseline is temporarily required.
 
-The roadmap intent is for Pixel 7-class supported hardware to take over the modern Android substrate from Android 16 onward, subject to normal hardware/source/bootloader/vendor/security-lifecycle acceptance.
+Pixel 7 currently receives modern Android releases and is a better active engineering target than bramble. Its remaining OEM support lifetime is nevertheless finite, so later Pixel hardware can supersede it without semantic redesign.
 
-The purpose is not merely to obtain a higher Android version. It is to move the modern Sable baseline onto hardware with a materially better firmware/vendor support and security lifecycle than bramble.
+After P0, `PANTHER-V0` establishes vanilla hardware, security and ordinary Android-app compatibility before Sable service/UI integration.
 
 ### QWERTY / MediaTek targets
 
 QWERTY devices provide a second portability axis:
 
 ```text
-Qualcomm -> MediaTek
+Qualcomm/Google -> MediaTek
 Pixel/touch-first -> physical-QWERTY/keyboard-first
 Google device tree -> independent vendor/community tree
 ```
 
-A successful QWERTY port should reuse the same semantic Sable core and differ primarily in device adapters and interaction profile.
+A successful QWERTY port should reuse the same semantic Sable core and UI/application model and differ primarily in device adapters and interaction profile.
+
+Platform Rust compiler differences do not justify separate Pixel and QWERTY UI codebases.
 
 See `Q25_PORT_PLAN.md` and `INTERACTION_PROFILES.md`.
 
 ## Upgrade acceptance rule
 
-An Android substrate upgrade is accepted only when:
+An Android substrate upgrade or device transition is accepted only when:
 
 1. a vanilla or upstream baseline is reproducible;
 2. hardware/telephony capability parity is measured;
@@ -292,26 +348,30 @@ An Android substrate upgrade is accepted only when:
 8. direct and negative security tests pass;
 9. update/verified-boot behavior is understood;
 10. device firmware/vendor security limitations are explicitly documented;
-11. the maintenance burden is lower than or justified against moving to newer supported hardware.
+11. the maintenance burden is lower than or justified against moving to newer supported hardware;
+12. Rust-toolchain differences are explicitly classified, with stable ABI boundaries when compilers differ.
 
 ## Long-term objective
 
 The target architecture is:
 
 ```text
-                  Sable Core
-                      │
-          stable semantic contracts
-                      │
-       ┌──────────────┼──────────────┐
-       ▼              ▼              ▼
- Android 14       Android 15       Android 16+
- adapter           adapter          adapter
-       │              │              │
-       ▼              ▼              ▼
- device adapters / supported vendor stacks
+                    Sable Core
+                        │
+             stable semantic contracts
+                        │
+       ┌────────────────┼────────────────┐
+       ▼                ▼                ▼
+   Pixel adapter   later Pixel      MediaTek/QWERTY
+       │             adapter            adapter
+       │                │                │
+       └──────── Android substrates ─────┘
+                        │
+              supported vendor stacks
 ```
+
+Above that substrate, one renderer-independent Sable application/interaction core supports both Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first profiles.
 
 Sable should be an OS architecture implemented on Android substrates, not an ever-growing collection of release-specific forks.
 
-The renderer is one portable client of this architecture, not the definition of the OS substrate. See `adr/0002-rust-ui-framework-and-android-app-compatibility.md`.
+The renderer is one portable client of this architecture, not the definition of the OS substrate. See `adr/0002-rust-ui-framework-and-android-app-compatibility.md` and `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`.
