@@ -61,8 +61,10 @@ Each Binder service gets:
 
 - a dedicated service-manager type;
 - provider registration restricted to its owner;
-- client `find` grants limited to intended domains;
-- Binder call policy limited to intended caller/provider pairs.
+- intended-client `find` and Binder-call authority kept explicit and narrow;
+- negative tests based on effective compiled/runtime policy, including attribute-based platform grants.
+
+Android platform policy may grant broad service-name discovery to development domains such as `shell`. Discovery alone is not authority. For Sable services, the security invariant is that an unauthorized domain cannot transact with or use the API even when platform policy permits discovering the service name.
 
 ## Capability Policy
 
@@ -147,12 +149,15 @@ Production-oriented procedure should avoid:
 
 For new services prove:
 
-- unauthorized shell cannot find;
-- unauthorized domain cannot call;
-- client has no backend permission;
-- service cannot be registered by another domain;
+- effective service-manager discovery matches platform policy and is not confused with transaction authority;
+- unauthorized domains cannot Binder-call or use the API;
+- unauthorized shell cannot trigger a privileged dedicated test/client service;
+- intended clients have no backend permission beyond the typed Sable API;
+- service registration remains restricted to the provider;
 - malformed inputs cannot widen privilege;
-- runtime remains enforcing with zero relevant AVC denials.
+- runtime remains enforcing, and expected negative-test AVCs are distinguished from unexpected denials.
+
+S1.7 is the reference example: Android 14 shell can discover `sable_power_service` through a broad `service_manager_type` `find` grant, but Binder `call` from `u:r:shell:s0` to `u:r:oxynoded:s0` is denied while `sable_power_test_client` succeeds.
 
 ## Recovery
 
