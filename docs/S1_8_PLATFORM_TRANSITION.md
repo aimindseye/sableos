@@ -1,6 +1,6 @@
 # S1.8 platform transition: bramble closure and panther restart
 
-Status: **BRAMBLE CLOSED / PANTHER P0 NEXT**.
+Status: **BRAMBLE CLOSED / PANTHER ANDROID 17 HOST BRING-UP IN PROGRESS**.
 
 ## Decision
 
@@ -48,28 +48,50 @@ It is not:
 - the long-term security reference;
 - a framework-selection constraint;
 - a required Rust-development device;
-- scheduled for an Android 15 Sable portability port.
+- scheduled for an Android 15 Sable portability port;
+- an S1.8C production implementation target.
 
-## Panther next role
+A later Bramble observation or inventory gate may be retained as historical/regression evidence, but it does not reopen production development on that device.
 
-Pixel 7 (`panther`) becomes the active touch-first development reference.
+## Panther role and selected baseline
 
-The next gate is deliberately `PANTHER-P0`, not an immediate Sable port. P0 determines:
+Pixel 7 (`panther`) is the active touch-first development reference.
 
-- exact device/bootloader/current-build state;
-- usable official factory/OTA recovery point;
-- reproducible AOSP/platform branch candidates;
-- Pixel 7 proprietary/vendor binary availability for those branches;
-- kernel/vendor_boot/vendor_kernel_boot partition model;
-- exact Rust/Cargo/Clang/Soong toolchains;
-- stock hardware/telephony/camera/audio/connectivity baseline;
-- whether the newest supported Android release can be used directly as the reproducible Sable baseline or whether an older reproducible panther branch is needed temporarily for platform bring-up.
+`PANTHER-P0`, `PANTHER-P0R1`, and `PANTHER-P1A` have now passed. The active reconstruction path is Android 17 with:
 
-The preference is the newest supported/reproducible panther Android release, not an arbitrary older version chosen for compatibility with bramble-era code.
+```text
+device: panther / Pixel 7
+Android: 17 / SDK 37
+stock Pixel baseline: CP2A.260705.006
+active host workspace: /srv/data/aosp_panther17_workspace
+```
+
+The base platform remains AOSP. GrapheneOS is used as a signed/pinned reference for Pixel-generation tooling, security engineering, and narrowly reviewed compatibility contracts; it is not adopted as the Sable OS substrate.
+
+The current P1B host work is recorded in `PANTHER_P1B_ANDROID17_HOST_BRINGUP.md`.
+
+## Current P1B execution status
+
+The Android 17 workspace is active and controlled Pixel-generation work is in progress.
+
+Closed host/runtime compatibility boundaries include:
+
+- isolated Node 24 runtime required by `adevtool`;
+- Android 17 JDK 21 child-tool runtime;
+- AAPT2 host proto module required by the dependency graph;
+- Graphene stringified resource-configuration contract;
+- AAPT2 `dump brief-package-info --sdk-version` contract plus library field;
+- ApkSigner `print-certs` contract under JDK 21.
+
+Controlled `generate-all -d panther -v` has progressed through properties, file enumeration, sepolicy, overlays, presigned-app processing, blob copying, VINTF extraction, and firmware extraction without regression of those earlier blockers.
+
+The current arsclib/AAPT2 boundary is the optimized `proto-adevtool` conversion contract. Its diagnostic closure is PASS; the complete repair gate is not promoted to PASS in the project record until its full source/build/runtime evidence is recorded.
+
+The generated Panther vendor tree is still partial. FileTreeSpec verification, final generated-vendor acceptance, the vanilla Panther product build, and physical V0 acceptance remain open.
 
 ## UI framework reset
 
-The S1.8 framework decision is reopened on the new baseline.
+The S1.8 framework decision is reopened on the modern Panther baseline.
 
 Qualification set:
 
@@ -150,34 +172,42 @@ Zinwa Q25/Q27-class devices remain the intended BlackBerry/BB10-inspired keyboar
 
 The panther transition must strengthen, not weaken, the requirement that both profiles share one Sable application/service semantic core.
 
-## Next sequence
+## S1.8C sequencing guard
+
+S1.8C is a Panther/Android-17 milestone, not a Bramble milestone.
+
+It must not start by bypassing unfinished platform/service gates. Required order:
 
 ```text
-S1.7 bramble
-PASS / FROZEN
+PANTHER-P0 / P0R1 / P1A
+PASS
       |
       v
-S1.8 bramble D0/F0-F4
-architecture + toolchain evidence captured
+PANTHER-P1B / V0-HOST
+Android 17 workspace + audited Pixel generation
       |
-      X  close further A14 UI backport work
-      |
-      v
-PANTHER-P0
-source/device/toolchain baseline
+      +-- complete vendor generation
+      +-- FileTreeSpec verification
+      +-- generated-vendor / GrapheneOS-hook audit
+      +-- vanilla Panther product build
       |
       v
 PANTHER-V0
-vanilla hardware + Android app compatibility baseline
+vanilla hardware + Android app compatibility acceptance
       |
       v
-S1.7 semantic service port
+S1.7 semantic service port to Panther
+qualify Android 17 / GS201 Health AIDL adapter
+preserve frozen PowerSnapshot / V1 semantics
       |
       v
-S1.8 modern Rust UI qualification + first power client
+S1.8 / S1.8C
+modern Rust UI qualification + first standalone power client
       |
       v
 S1.9 lifecycle
 ```
 
-No implementation source mutation, image build, flash or device state change is implied by this documentation transition.
+The first production S1.8C client remains a consumer of the frozen semantic service. It must not gain direct Health HAL access, battery-sysfs access, or shell/Binder-command shortcuts.
+
+No implementation source mutation, image build, flash or device state change is implied by this documentation update itself.
