@@ -31,7 +31,8 @@ These documents define the current project architecture. When an older concept n
 Validation records document the architecture and evidence applicable to their milestone. They are historical evidence, not a license to revive superseded design assumptions.
 
 - `S1_7_VALIDATION.md` — frozen Power AIDL V1 source/image/device/runtime seal and physical acceptance record on bramble Android 14.
-- `S1_8_D0_F0_QUALIFICATION.md` — closed bramble D0/F0-F3 Rust UI/toolchain evidence; not an instruction to continue Rust-1.68 backport work.
+- `S1_8_D0_F0_QUALIFICATION.md` — bramble D0/F0-F3 architecture/toolchain evidence leading to the platform transition.
+- `S1_8_BRAMBLE_UI_QUALIFICATION_FINAL.md` — final F4 closure: Slint 1.5 core proven on Rust 1.68 with bounded compatibility work, public API then blocked by another transitive compiler floor (`toml_edit 0.21.1` requiring Rust 1.69), confirming that further dependency down-rev work should stop.
 - `S0_*`, `S1_*`, `B1_*`, `B2_*` — milestone-specific build/runtime evidence.
 - `G025E_HARDWARE_ACCEPTANCE.md` — bramble safe-flash and physical capability history.
 
@@ -51,7 +52,7 @@ S1.7A       PASS
 S1.7B       PASS
 S1.7        PASS / FROZEN on bramble Android 14
 S1.8-D0     PASS
-S1.8-F0-F3  CAPTURED / bramble qualification closed
+S1.8-F0-F4  CAPTURED / bramble qualification closed
 PANTHER-P0  NEXT
 PANTHER-V0  PLANNED after P0
 S1.8 modern Rust UI qualification + first power client  after panther baseline
@@ -60,7 +61,7 @@ S1.9+       PLANNED
 
 S1.7 closed with frozen AIDL V1, dedicated least-privilege client authorization, verified unauthorized-call blocking, physical callback-to-AIDL sequence correlation, natural slot-A success, and preserved successful slot-B fallback. See `S1_7_VALIDATION.md` for the exact seals.
 
-Bramble remains a frozen architecture/regression reference. The previously planned Android 15 bramble portability experiment is closed without execution, and no additional UI-framework dependency down-rev work is required for its AOSP Rust/Cargo 1.68 platform.
+Bramble remains a frozen architecture/regression reference. The previously planned Android 15 bramble portability experiment is closed without execution, and no additional UI-framework dependency down-rev work is required for its AOSP Rust/Cargo 1.68 platform. F4 is the final UI/toolchain evidence record for that branch.
 
 Pixel 7 (`panther`) is the active touch-first development reference. `PANTHER-P0` selects the newest supported/reproducible Android baseline before Sable source mutation and inventories the actual platform toolchain/vendor/kernel boundaries.
 
