@@ -15,9 +15,11 @@ hardware correctness
     -> service correctness
     -> typed platform API
     -> authorized consumers
+    -> Rust UI qualification / user-facing semantic client
+    -> Android-version portability qualification
     -> lifecycle / policy
     -> measured resource policy
-    -> mobile UX
+    -> broader mobile UX
 ```
 
 A later layer must not paper over an unproven earlier layer.
@@ -160,16 +162,71 @@ Status: **PASS**.
 
 S1.7 overall status: **PASS / FROZEN**. Exact source, AIDL, image, device-binary and runtime seals are recorded in `S1_7_VALIDATION.md`.
 
-### S1.8 — power UX integration
+### S1.8 — Rust UI foundation qualification + power UX
 
-Status: **PLANNED**.
+Status: **D0/F0 IN PROGRESS**.
 
-- first user-facing read-only power client;
-- battery percentage, charging and source;
+S1.8 is the first Sable-native user-facing client of a frozen semantic service and the qualification point for the Rust UI direction.
+
+#### S1.8-D0 — architecture/document reconciliation
+
+- preserve Android APK/split-APK, ART, PackageManager, ActivityManager, SurfaceFlinger, permissions/AppOps and ordinary app sandboxing;
+- formally supersede older bare-Linux/direct-framebuffer/root-shell assumptions which conflict with the proven Android 14 architecture;
+- keep Sable-native UI Rust-first while keeping application/interaction semantics renderer-independent;
+- define Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first profiles without cloning either product;
+- treat Slint and Vexo as evidence-driven candidates rather than immutable release requirements;
+- allow a focused Sable fork or Sable-owned Rust UI framework when qualification evidence justifies it;
+- retain App Manager, MarathonOS, GrapheneOS and AOSP as scoped design/security references without importing their complete trust models.
+
+Normative decision: `adr/0002-rust-ui-framework-and-android-app-compatibility.md`.
+
+#### S1.8-F0 — Slint vs Vexo feasibility qualification
+
+Read-only qualification before Android source mutation. Compare at minimum:
+
+- AOSP Rust toolchain compatibility;
+- reproducible/offline dependency integration;
+- Soong/product integration cost;
+- open-source license obligations;
+- dependency/supply-chain size;
+- Android Activity/window/surface lifecycle integration;
+- SurfaceFlinger/Vulkan/GPU path;
+- package/binary/image footprint;
+- startup latency, RSS and idle CPU once runnable;
+- touch and multi-touch;
+- keyboard, modifiers, repeat and focus traversal;
+- IME, clipboard, text shaping and localization;
+- accessibility maturity;
+- crash isolation;
+- Android-version portability risk;
+- ability to consume frozen `sable-power-aidl-V1-rust` without backend authority;
+- absence of unnecessary network, Health, sysfs or other hardware permissions.
+
+F0 outcome classification:
+
+```text
+SELECT
+SELECT_WITH_GAPS
+FORK
+BUILD_SABLEUI
+```
+
+Passing a tiny screen does not authorize replacement of Launcher3 or AOSP SystemUI.
+
+#### S1.8-C — first real Rust power client
+
+After F0 selects the implementation path:
+
+- standalone Sable Android application; Launcher3 and SystemUI remain intact;
+- read frozen AIDL V1 without schema change;
+- battery percentage, charging state and source;
 - graceful unavailable state;
 - no backend-specific UI logic;
-- UI restart cannot disturb monitoring;
-- UI compromise does not become Health ownership.
+- no Health HAL or battery sysfs authority;
+- no unnecessary Internet/network authority;
+- UI restart/crash cannot disturb monitoring;
+- physical callback transition reaches the visible client;
+- renderer/app semantics structured so later touch-first and keyboard-first shells can share state/navigation concepts.
 
 ### S1.9 — application lifecycle foundation
 
@@ -239,17 +296,22 @@ Status: **PLANNED**.
 
 ### A14 — current architecture baseline
 
-Android 14 on bramble remains the architecture/regression baseline. The S1.7 power service/API/runtime boundary is closed and frozen; later S1 milestones continue on this baseline unless a deliberate portability experiment says otherwise.
+Android 14 on bramble remains the architecture/regression baseline. The S1.7 power service/API/runtime boundary is closed and frozen; S1.8 Rust-UI qualification and the first real user-facing semantic client run on this baseline.
 
-### A15 — bramble portability experiment
+### A15-P — bramble portability experiment
 
-After S1 architecture is stable:
+**Position: immediately after S1.8 closes and before S1.9 begins.**
 
+The experiment should:
+
+- use a separate workspace/OUT_DIR and preserve the frozen Android 14 reference tree;
 - establish vanilla/upstream Android 15 baseline first;
-- measure hardware/telephony/app parity;
-- reintroduce minimum Sable integration;
-- identify Android-version-specific SELinux/build/init/framework hooks;
-- prove common semantic APIs do not require redesign;
+- measure hardware and telephony parity;
+- measure ordinary Android APK compatibility with a bounded regression corpus;
+- reintroduce the minimum Sable integration;
+- port the frozen S1.7 power contract without semantic redesign;
+- run the S1.8 selected/qualified Rust UI path against the same semantic API;
+- identify Android-version-specific SELinux/build/init/framework/UI integration hooks;
 - stop rather than globally weakening security if frozen vendor/HAL incompatibility dominates.
 
 This is an engineering qualification target, not restored OEM security support.
@@ -261,6 +323,8 @@ Move modern touch/security reference to actively supported hardware subject to s
 ## S2 — Secure Package Intelligence
 
 Goal: preserve standard Android APK compatibility while making increases in application authority visible and reviewable.
+
+App Manager is a major design reference for package/component transparency, permissions/AppOps, signatures, manifests, tracker/library signals and package comparison. Sable adapts those ideas into platform-backed security analysis and narrow enforcement rather than creating a root/ADB super-app.
 
 ### S2.1 package analyzer
 
@@ -327,25 +391,42 @@ Research optional quarantine for newly installed high-risk packages only after P
 
 ## Mobile UX track
 
-Once service boundaries are stable, explore a distinct mobile interaction model rather than merely cloning stock Android or adapting a desktop shell.
+The Sable interaction model is deliberately mobile-first and has two first-class profiles sharing common application/service semantics.
 
-Potential themes:
+### Touch-first / conventional phones
 
+Metro-inspired direction:
+
+- strong typography and spatial hierarchy;
+- edge-to-edge, low-chrome information surfaces;
 - gesture-first navigation;
-- unified communication/notification hub;
-- persistent live task previews;
+- persistent/live information where useful;
 - fast peek/return workflows;
-- physical-keyboard-aware interaction;
-- explicit lifecycle visualization;
-- low-latency transitions.
+- low-latency transitions and motion which communicates hierarchy.
 
-These are product ideas, not privilege justifications.
+This is inspiration, not a Windows Phone clone.
+
+### Keyboard-first / physical QWERTY
+
+BlackBerry/BB10-inspired direction:
+
+- physical keyboard as primary input;
+- deterministic focus and visible focus state;
+- type-to-search;
+- shortcuts and command palette;
+- fast communication/notification triage;
+- predictable back/navigation/focus restoration;
+- touch/keyboard/pointer coexistence where available.
+
+This is inspiration, not a BlackBerry OS clone.
+
+MarathonOS remains a UX/device/power/recovery reference, especially for mobile-first and QWERTY interaction ideas, but Sable does not adopt shell-as-privilege-aggregator patterns. Product ideas never justify moving hardware authority into the renderer.
 
 ## Device roadmap
 
 ### Pixel 4a 5G (`bramble`)
 
-Architecture/regression reference. Android 14 primary Sable substrate; Android 15 portability experiment candidate; not a long-lived production-security target.
+Architecture/regression reference. Android 14 primary Sable substrate; Android 15 portability experiment candidate immediately after S1.8; not a long-lived production-security target.
 
 ### Modern Pixel-class hardware
 
@@ -369,12 +450,14 @@ Future primary QWERTY candidate pending public/maintainable source, reliable unl
 6. keep compatibility software unprivileged wherever possible;
 7. make security UI correspond to real enforceable behavior;
 8. prefer local analysis/provenance over unnecessary telemetry;
-9. include negative tests proving what a component cannot access;
+9. include negative tests proving what a component cannot access or transact with, based on effective compiled/runtime policy rather than only literal rules;
 10. treat device/vendor/firmware support lifetime as part of the security model;
 11. keep Android-release integration bounded so Sable core semantics survive upgrades;
 12. use MediaTek/QWERTY ports to prove portability, not create separate forks;
 13. require measured evidence for power/performance tuning;
-14. preserve a known-good fallback slot during runtime-changing deployment.
+14. preserve a known-good fallback slot during runtime-changing deployment;
+15. keep Sable application/interaction semantics renderer-independent;
+16. qualify UI-framework accessibility/input/lifecycle/supply-chain behavior before replacing mature Android presentation surfaces.
 
 ## Runtime milestone closure
 
