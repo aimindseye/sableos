@@ -10,13 +10,15 @@ The bramble program closes with:
 
 - S1.7 overall PASS/FROZEN as the authoritative architecture/runtime seal;
 - S1.8 D0 documentation reconciliation PASS;
-- S1.8 F0/F1/F2/F3 qualification evidence retained;
+- S1.8 F0/F1/F2/F3/F4 qualification evidence retained;
 - no S1.8 production UI source landed on bramble;
 - no global AOSP Rust uplift performed;
 - no Android 15 bramble portability experiment required;
 - no further Slint-1.5-on-Rust-1.68 dependency pinning/backport work required.
 
 Normative decision: `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`.
+
+Final bramble UI/toolchain evidence: `S1_8_BRAMBLE_UI_QUALIFICATION_FINAL.md`.
 
 ## What the bramble UI experiment proved
 
@@ -26,9 +28,10 @@ The framework probes were useful despite not selecting a renderer.
 2. The frozen bramble tree uses AOSP Rust/Cargo 1.68.
 3. Current Rust UI frameworks have moved substantially beyond that toolchain.
 4. Slint 1.5 core can compile on Rust 1.68 after bounded Cargo compatibility adjustments, proving that the framework was not fundamentally blocked by the device architecture.
-5. Continuing to down-rev and pin modern UI-framework dependencies for an end-of-life Android baseline would make historical platform constraints drive Sable product architecture.
-6. Current Vexo and other modern candidates also demonstrate that framework qualification should happen against a newer platform or a separately pinned UI compiler.
-7. The S1.7 frozen AIDL service boundary gives Sable a clean mechanism to decouple UI evolution from hardware/service implementation.
+5. F4 then showed the public Slint path entering successive transitive dependency compiler floors: after resolving Cargo-1.68 `fontdb` behavior and pinning `codemap-diagnostic` to 0.1.1, the next blocker was `toml_edit 0.21.1` requiring Rust 1.69.
+6. Continuing to down-rev and pin modern UI-framework dependencies for an end-of-life Android baseline would make historical platform constraints drive Sable product architecture.
+7. Current Vexo and other modern candidates also demonstrate that framework qualification should happen against a newer platform or a separately pinned UI compiler.
+8. The S1.7 frozen semantic service boundary gives Sable a clean mechanism to decouple UI evolution from hardware/service implementation.
 
 ## Bramble final role
 
@@ -60,7 +63,7 @@ The next gate is deliberately `PANTHER-P0`, not an immediate Sable port. P0 dete
 - kernel/vendor_boot/vendor_kernel_boot partition model;
 - exact Rust/Cargo/Clang/Soong toolchains;
 - stock hardware/telephony/camera/audio/connectivity baseline;
-- whether Android 17 can be used directly as the reproducible Sable baseline or whether an older reproducible panther branch is needed temporarily for platform bring-up.
+- whether the newest supported Android release can be used directly as the reproducible Sable baseline or whether an older reproducible panther branch is needed temporarily for platform bring-up.
 
 The preference is the newest supported/reproducible panther Android release, not an arbitrary older version chosen for compatibility with bramble-era code.
 
@@ -154,7 +157,7 @@ S1.7 bramble
 PASS / FROZEN
       |
       v
-S1.8 bramble D0/F0-F3
+S1.8 bramble D0/F0-F4
 architecture + toolchain evidence captured
       |
       X  close further A14 UI backport work
