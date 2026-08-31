@@ -24,13 +24,14 @@ Minimalism means minimal privilege, attack surface, unnecessary background activ
 
 ## Current reference target
 
-Active development is moving to:
+Active development is on:
 
 - Device: Google Pixel 7 (`panther`)
 - Role: active touch-first development reference
 - Interaction profile: Metro-inspired touch-first
-- Android baseline: **PANTHER-P0 qualification in progress**; prefer the newest supported/reproducible panther Android release rather than inheriting the bramble Android 14 baseline
-- UI framework: not yet selected; modern Rust framework qualification resumes after the panther platform/toolchain inventory
+- Android baseline: **Android 17 / SDK 37**; PANTHER-P0/P0R1/P1A are PASS and the separate P1B/V0-HOST Android-17 workspace bring-up is in progress
+- Stock Pixel baseline: `CP2A.260705.006`
+- UI framework: not yet selected; modern Rust framework qualification resumes only after the Panther baseline and frozen S1.7 semantic-service port are proven
 
 Pixel 7 is still in Google's supported five-year update cohort and receives current Android releases, making it a materially better engineering/security target than Pixel 4a 5G. It is still not an indefinite production-security baseline; later Pixel hardware with a longer remaining support window may replace it without changing Sable semantics.
 
@@ -42,9 +43,9 @@ Historical reference:
 - Sable product `sable_bramble_s1-userdebug`
 - S1.7 power service/API/runtime boundary: **PASS / FROZEN**
 
-Bramble is now a frozen architecture/regression reference. Its end-of-life proprietary firmware/vendor ceiling and Android 14 Rust/Cargo 1.68 baseline no longer constrain S1.8 UI-framework selection. The previously planned Android 15 bramble portability experiment is closed without execution.
+Bramble is now a frozen architecture/regression reference. Its end-of-life proprietary firmware/vendor ceiling and Android 14 Rust/Cargo 1.68 baseline no longer constrain S1.8 UI-framework selection. The previously planned Android 15 bramble portability experiment is closed without execution. Bramble is not a production S1.8/S1.8C target.
 
-See `docs/adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md` and `docs/S1_8_PLATFORM_TRANSITION.md`.
+See `docs/adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`, `docs/S1_8_PLATFORM_TRANSITION.md`, and `docs/PANTHER_P1B_ANDROID17_HOST_BRINGUP.md`.
 
 ## Proven S1.7 architecture — PASS / FROZEN
 
@@ -124,26 +125,52 @@ Validated S1.7 outcomes:
 
 Exact source, AIDL, image, device-binary and runtime seals are recorded in `docs/S1_7_VALIDATION.md`.
 
-## Current milestone: S1.8 — modern Rust UI qualification + first power client
+## Current milestone: Panther Android 17 bring-up before S1.8
 
-S1.8 remains the first Sable-native user-facing consumer of a frozen semantic service, but framework qualification is restarting on the modern Pixel baseline rather than continuing Android-14/Rust-1.68 backport work.
+S1.8 remains the first Sable-native user-facing consumer of a frozen semantic service, but production UI work is blocked until the modern Pixel baseline and service port are proven.
 
 Captured bramble qualification evidence:
 
 - D0 architecture/document reconciliation PASS;
-- F0/F1/F2/F3 framework/toolchain evidence captured;
+- F0/F1/F2/F3/F4 framework/toolchain evidence captured;
 - current Vexo and several modern frameworks exceed the Android 14 platform Rust toolchain;
 - Slint 1.5 core was proven buildable on Rust 1.68 with bounded compatibility work, confirming that the constraint was the historical platform toolchain/dependency graph rather than the device CPU architecture;
 - no production S1.8 UI source was landed on bramble;
 - no global AOSP Rust uplift was performed.
 
-Next gate: `PANTHER-P0`.
+Current Panther sequence:
 
-After the panther platform baseline is chosen, S1.8 requalifies a broader modern Rust UI set including Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native / Blitz, and a possible Sable-owned UI framework.
+```text
+PANTHER-P0 / P0R1 / P1A
+PASS
+      |
+      v
+PANTHER-P1B / V0-HOST
+Android 17 pure-AOSP workspace + audited Pixel generation
+IN PROGRESS
+      |
+      v
+PANTHER-V0
+vanilla hardware + Android app compatibility acceptance
+      |
+      v
+S1.7 semantic service port
+Android 17 / GS201 Health adapter + frozen PowerSnapshot/V1 semantics
+      |
+      v
+S1.8 / S1.8C
+modern Rust UI qualification + first power client
+```
+
+The active P1B workspace is `/srv/data/aosp_panther17_workspace`. It uses the stock Pixel 7 `CP2A.260705.006` factory input and bounded, pinned generation references. Recent compatibility work has closed the Node 24/JDK 21 runtime boundary and the AAPT2 proto-module, stringified resource configuration, `brief-package-info`, and ApkSigner `print-certs` host contracts. The remaining host-generation work is tracked in `docs/PANTHER_P1B_ANDROID17_HOST_BRINGUP.md`.
+
+GrapheneOS remains a reference/security source, not the Sable OS substrate. Compatibility patches imported during P1B are reviewed host-tool contracts required by the pinned `adevtool`/`arsclib` generation path; GrapheneOS applications, broad product policy, and wholesale platform-manifest inheritance remain rejected.
+
+After the Panther baseline and S1.7 service port close, S1.8 requalifies a broader modern Rust UI set including Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native / Blitz, and a possible Sable-owned UI framework.
 
 Crux remains an application/core architecture reference. UniFFI and Flutter Rust Bridge are interop tools rather than preferred shell renderers. Tauri/WebView presentation is not the preferred Sable system-shell architecture.
 
-The first real S1.8 client remains deliberately narrow:
+The first real S1.8/S1.8C client remains deliberately narrow:
 
 - standalone Android-managed Sable application;
 - Launcher3 and AOSP SystemUI remain intact;
@@ -266,8 +293,8 @@ See `docs/APP_SECURITY_AND_COMPATIBILITY.md` and `docs/ROADMAP.md`.
 
 Current and planned roles:
 
-- `panther` / Pixel 7 — active touch-first development reference; exact modern Android baseline selected by PANTHER-P0.
-- `bramble` / Pixel 4a 5G — frozen Android 14 S1.7 architecture/regression reference; no longer an active S1.8 or Android-15-port target.
+- `panther` / Pixel 7 — active touch-first development reference on the Android 17 path; P1B/V0-HOST bring-up in progress.
+- `bramble` / Pixel 4a 5G — frozen Android 14 S1.7 architecture/regression reference; no longer an active S1.8/S1.8C or Android-15-port target.
 - later Pixel hardware — future longer-lived production/security reference when remaining support lifetime justifies transition.
 - Zinwa Q25 — optional MediaTek/QWERTY study target.
 - Zinwa Q27 — future primary QWERTY candidate subject to source, unlock, vendor, hardware, radio, suspend/power, and security-lifecycle acceptance.
