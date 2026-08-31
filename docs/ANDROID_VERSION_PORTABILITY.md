@@ -116,6 +116,8 @@ Preserve the ordinary Android application substrate:
 
 Sable security features should surround and harden this model rather than require applications to be rebuilt into a Sable-specific format.
 
+Sable-native UI technology is independent of third-party Android application technology. A Rust/Slint/Vexo/future-SableUI launcher or application may coexist with Java/Kotlin/Compose/Flutter/native APKs because application execution and lifecycle remain Android-managed.
+
 ### Hardware and vendor stacks
 
 Preserve mature supported implementations for:
@@ -203,17 +205,17 @@ At that point Sable should normally move the modern Android baseline to newer ha
 
 Sable semantic APIs should remain independent of how a given Android/device generation implements the operation.
 
-Example:
+Power is the current reference example:
 
 ```text
-Sable API: power.read_state
+Sable API: PowerSnapshot / IPowerService V1
         │
-        ├── bramble Android 14 adapter -> vendor helper / sysfs_batteryinfo
-        ├── later Pixel adapter       -> supported health/power HAL
-        └── MediaTek adapter          -> supported MTK/Android backend
+        ├── bramble Android 14 adapter -> Health HAL 2.1 callback bridge -> PowerMonitor
+        ├── later Pixel adapter       -> supported health/power HAL adapter
+        └── MediaTek adapter          -> supported Android/MTK health backend
 ```
 
-The user-facing contract should not change solely because the physical backend changed.
+The user-facing contract should not change solely because the physical backend changed. Clients do not receive raw Health handles or battery sysfs paths.
 
 Where useful, implementation structure may distinguish common code from Android-API-specific adapters, for example conceptually:
 
@@ -235,7 +237,7 @@ This is an architectural pattern, not a mandatory repository layout.
 Role: architecture and regression reference.
 
 - Android 14: primary current Sable development baseline.
-- Android 15: planned portability experiment after the Android 14 S1 architecture is closed and frozen.
+- Android 15: planned portability experiment immediately after S1.8 closes and before S1.9 begins.
 - Android 16+: not a promised bramble target; investigate only if useful as an engineering experiment.
 
 The Android 15 exercise is intended to answer whether the Sable core survives an Android substrate upgrade cleanly while the frozen bramble vendor generation remains workable.
@@ -244,12 +246,15 @@ It does not restore the device's missing OEM firmware/vendor security maintenanc
 
 A proposed qualification sequence is:
 
-1. vanilla Android 15 source/device bring-up without Sable changes;
-2. hardware and telephony parity against the Android 14 baseline;
-3. reintroduce the minimum Sable product/service integration;
-4. requalify SELinux, build, init and partition boundaries;
-5. confirm common Sable semantic APIs did not require redesign;
-6. document every Android-version-specific change.
+1. create a separate Android 15 workspace/OUT_DIR and preserve the frozen Android 14 reference tree;
+2. establish a vanilla Android 15 source/device baseline without Sable changes;
+3. measure hardware and telephony parity against the Android 14 baseline;
+4. measure a bounded ordinary Android APK compatibility corpus;
+5. reintroduce the minimum Sable product/service integration;
+6. requalify SELinux, build, init and partition boundaries;
+7. port the frozen S1.7 Power AIDL contract without semantic redesign;
+8. run the S1.8 qualified Rust UI path against the same contract;
+9. document every Android-version-specific change.
 
 ### Pixel 7
 
@@ -283,10 +288,11 @@ An Android substrate upgrade is accepted only when:
 4. Android-specific patches/hooks remain bounded and documented;
 5. SELinux remains enforcing and narrow;
 6. app compatibility regressions are measured;
-7. direct and negative security tests pass;
-8. update/verified-boot behavior is understood;
-9. device firmware/vendor security limitations are explicitly documented;
-10. the maintenance burden is lower than or justified against moving to newer supported hardware.
+7. Sable-native UI integration is requalified without granting renderer-specific hardware privilege;
+8. direct and negative security tests pass;
+9. update/verified-boot behavior is understood;
+10. device firmware/vendor security limitations are explicitly documented;
+11. the maintenance burden is lower than or justified against moving to newer supported hardware.
 
 ## Long-term objective
 
@@ -307,3 +313,5 @@ The target architecture is:
 ```
 
 Sable should be an OS architecture implemented on Android substrates, not an ever-growing collection of release-specific forks.
+
+The renderer is one portable client of this architecture, not the definition of the OS substrate. See `adr/0002-rust-ui-framework-and-android-app-compatibility.md`.
