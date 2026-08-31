@@ -20,7 +20,7 @@ SableOS tracks security independently across at least these layers:
 2. Linux kernel and device kernel modules;
 3. device/vendor proprietary binaries and firmware;
 4. browser/WebView and independently updatable components/APEX modules;
-5. Sable-owned Rust/C/C++ code and dependencies, including selected UI-framework dependencies;
+5. Sable-owned Rust/C/C++ code and dependencies, including selected UI-framework dependencies and any separately pinned UI Rust toolchain;
 6. boot chain, AVB/signing, SELinux, seccomp and other platform mitigations.
 
 A release is limited by the weakest unremediated layer.
@@ -73,7 +73,9 @@ For each device record:
 - upstream stable/LTS and Android-device backports applied;
 - unresolved driver/vendor-kernel risks.
 
-Bramble uses the legacy redbull 4.19 kernel family. Later public redbull kernel branches may be used as patch-provenance/reference sources, but kernel replacement or large rebases require the same physical capability and boot/security validation as other hardware-foundation changes.
+Bramble uses the legacy redbull 4.19 kernel family and is now historical. Later public redbull kernel branches may still be useful as patch-provenance/reference sources, but no current Sable security claim depends on keeping bramble modern.
+
+Panther kernel/vendor provenance must be established by `PANTHER-P0/PANTHER-V0` before the new active baseline is considered security-qualified.
 
 ## Proprietary vendor and firmware policy
 
@@ -91,22 +93,41 @@ Never represent an end-of-life device with unresolved proprietary vulnerabilitie
 
 ## Bramble policy
 
-The current Sable architecture/regression baseline on bramble is Android 14. Earlier Android 12.1 `SQ3A.220705.003.A1` B0/B1 records remain valuable historical physical-capability and carrier evidence, but they are no longer the current Sable system baseline.
+Pixel 4a 5G (`bramble`) is now a frozen architecture/regression reference.
 
-Android 14 materially improves the platform-development substrate and is the frozen reference for the S1.7 service/API boundary. It does **not** remove bramble's proprietary firmware/vendor end-of-life security ceiling.
+The authoritative Sable bramble baseline is Android 14. Earlier Android 12.1 `SQ3A.220705.003.A1` B0/B1 records remain valuable historical physical-capability and carrier evidence, but they are not the current Sable development target.
 
-Before SableOS is considered a secure daily-driver on bramble, a separate security-uplift program must evaluate at minimum:
+Android 14 materially improved the original platform-development substrate and is the frozen reference for the S1.7 service/API boundary. It does **not** remove bramble's proprietary firmware/vendor end-of-life security ceiling.
 
-1. the exact final officially available bramble vendor/firmware baseline actually integrated or intentionally retained;
-2. AOSP security fixes published after the selected Android 14 reference baseline;
-3. redbull 4.19 kernel security backports;
-4. browser/WebView and Mainline/updatable-component currency;
-5. remaining Qualcomm/Google proprietary vulnerabilities for which no post-EOL fix is available;
-6. Sable-owned Rust/UI dependency advisories and reproducible provenance.
+The previously planned Android 15 bramble portability experiment is closed without execution. Sable will not spend current engineering effort attempting to turn bramble into a maintained-security target or forcing modern UI dependencies onto its Rust/Cargo 1.68 platform.
 
-The planned Android 15 bramble exercise after S1.8 is a portability experiment, not a mechanism for claiming restored OEM security maintenance.
+If future regression archaeology uses bramble, preserve honest status:
 
-If unresolved proprietary risk remains because bramble is end-of-life, bramble remains an architecture/reference target rather than SableOS's strongest security-reference hardware.
+- architecture/reference only;
+- unsupported OEM firmware/vendor security ceiling;
+- no production-security claim;
+- no claim that newer Android or Rust versions are required or prevented by the device CPU itself.
+
+## Panther policy
+
+Pixel 7 (`panther`) becomes the active touch-first development reference.
+
+This does not automatically make any arbitrary panther build security-qualified. `PANTHER-P0` and `PANTHER-V0` must establish:
+
+1. exact current stock/restore baseline;
+2. reproducible Android/platform source baseline;
+3. kernel source/branch and partition model;
+4. exact proprietary vendor/firmware provenance;
+5. current OEM support status and available security fixes;
+6. browser/WebView/updatable-component currency;
+7. exact platform Rust/Cargo/Clang/Soong provenance;
+8. ordinary Android application compatibility;
+9. AVB/bootloader/update/recovery behavior;
+10. Sable-owned service/UI dependency provenance.
+
+Prefer the newest supported/reproducible panther Android release. If the newest official stock release is temporarily not reproducible as a clean AOSP hardware baseline, record that gap explicitly rather than pretending an older platform is equally current.
+
+Pixel 7's remaining OEM support lifetime is finite. It is an active engineering improvement over bramble, not the final production-security device. Later Pixel hardware with a longer remaining support window may replace it without changing Sable semantic contracts.
 
 ## Maintained-hardware rule
 
@@ -114,9 +135,9 @@ SableOS should maintain at least one security-reference device that is still rec
 
 Device-port acceptance must therefore consider security-support lifetime, unlock/relock/verified-boot support, kernel/vendor source availability, firmware update availability, and vendor security-bulletin responsiveness in addition to hardware features.
 
-## Third-party Rust/UI dependency policy
+## Third-party Rust/UI dependency and toolchain policy
 
-Rust-first does not eliminate supply-chain risk. Any Slint, Vexo, `wgpu`, text/layout/input dependency, fork, or eventual SableUI dependency entering a production image must have:
+Rust-first does not eliminate supply-chain risk. Any Slint, WaterUI, Makepad/Robius, Blinc, Vexo, Dioxus/Blitz, `wgpu`, text/layout/input dependency, fork, or eventual SableUI dependency entering a production image must have:
 
 - pinned source/version/commit provenance;
 - license classification compatible with Sable's open-source distribution model;
@@ -127,7 +148,11 @@ Rust-first does not eliminate supply-chain risk. Any Slint, Vexo, `wgpu`, text/l
 - review of network/filesystem/native/unsafe surface where relevant;
 - removal of demo/development/network features not required by the shipped component.
 
-S1.8-F0 is the first application of this policy to UI-framework qualification.
+If Sable UI uses a separately pinned Rust compiler rather than the AOSP platform compiler, the UI compiler itself becomes part of the release provenance and security-maintenance inventory.
+
+Do not globally uplift AOSP's Rust compiler solely to satisfy a renderer. Do not directly link independently compiled Rust components across compiler-private Rust ABI. Cross-toolchain integration must use a stable C/NDK/AIDL boundary.
+
+S1.8 framework qualification is the first application of this policy.
 
 ## Release gates
 
@@ -139,7 +164,7 @@ Before a security-qualified release:
 4. integrate and provenance-record applicable kernel fixes;
 5. verify vendor/firmware status;
 6. update browser/WebView/updatable components where applicable;
-7. review Sable-owned and third-party Rust/UI dependency advisories/provenance;
+7. review Sable-owned and third-party Rust/UI dependency and compiler advisories/provenance;
 8. run Soong/build, SELinux neverallow/policy tests and Sable unit/integration tests;
 9. run targeted vulnerability regression tests when a public reproducer/test exists;
 10. run physical capability parity and stability checks;
@@ -156,4 +181,4 @@ A future production SableOS release should use release signing, verified boot an
 
 ## Continuous maintenance
 
-Security maintenance is recurring work, not a one-time audit. Monitor Android Security Bulletins, relevant Linux/kernel/device branches, chipset/vendor advisories, browser/WebView security releases, Sable-owned dependencies and selected UI-framework/dependency advisories for the lifetime of each supported release.
+Security maintenance is recurring work, not a one-time audit. Monitor Android Security Bulletins, relevant Linux/kernel/device branches, chipset/vendor advisories, browser/WebView security releases, Sable-owned dependencies, selected UI-framework/dependency advisories, and any separately pinned UI Rust compiler for the lifetime of each supported release.
