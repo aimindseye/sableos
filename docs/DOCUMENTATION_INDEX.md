@@ -35,6 +35,7 @@ Validation records document the architecture and evidence applicable to their mi
 - `S1_8_BRAMBLE_UI_QUALIFICATION_FINAL.md` — final F4 closure: Slint 1.5 core proven on Rust 1.68 with bounded compatibility work, public API then blocked by another transitive compiler floor (`toml_edit 0.21.1` requiring Rust 1.69), confirming that further dependency down-rev work should stop.
 - `PANTHER_P0_VALIDATION.md` — Pixel 7 Android-17 physical/source/toolchain inventory; Android 17 selected as preferred reconstruction candidate, with Android 15 retained as the official-Google-publication fallback.
 - `PANTHER_P0R1_VALIDATION.md` — signed Android-17 reconstruction/provenance qualification: exact AOSP/Pixel/adevtool/vendor-state/kernel reference pins, correction of the GrapheneOS-manifest classification blind spot, official July Pixel 7 stock/recovery baseline, and requirement to decouple GrapheneOS-only `adevtool` product hooks before a pure-AOSP workspace build.
+- `PANTHER_P1A_VALIDATION.md` — pure-AOSP decoupling audit: six explicit GrapheneOS-only product/init hooks in the active Pixel include closure, standard AOSP product inheritance retained, vendor-state classified reference-only, Panther Health backend identified as modern GS201 AIDL candidate, and bounded Sable-specific `adevtool` adapter authorized for the next host workspace gate.
 - `S0_*`, `S1_*`, `B1_*`, `B2_*` — milestone-specific build/runtime evidence.
 - `G025E_HARDWARE_ACCEPTANCE.md` — bramble safe-flash and physical capability history.
 
@@ -57,8 +58,8 @@ S1.8-D0      PASS
 S1.8-F0-F4   CAPTURED / bramble qualification closed
 PANTHER-P0   PASS
 PANTHER-P0R1 PASS
-PANTHER-P1A  NEXT — pure-AOSP decoupling audit of Pixel 7 generation inputs
-PANTHER-P1B / V0-HOST  PLANNED after bounded decoupling result
+PANTHER-P1A  PASS
+PANTHER-P1B / V0-HOST  NEXT — separate Android-17 workspace, audited Pixel-generation adapter, first vanilla host build, no flash
 PANTHER-V0   physical vanilla acceptance after host build closure
 S1.8 modern Rust UI qualification + first power client  after panther baseline
 S1.9+        PLANNED
@@ -68,7 +69,7 @@ S1.7 closed with frozen AIDL V1, dedicated least-privilege client authorization,
 
 Bramble remains a frozen architecture/regression reference. The previously planned Android 15 bramble portability experiment is closed without execution, and no additional UI-framework dependency down-rev work is required for its AOSP Rust/Cargo 1.68 platform. F4 is the final UI/toolchain evidence record for that branch.
 
-Pixel 7 (`panther`) is the active touch-first development reference. P0/P0R1 confirm Android 17 as the preferred reconstruction path, with `android-17.0.0_r1`, the current physical Pixel 7 build `CP2A.260705.006`, signed/pinned external Pixel-generation references, and the modern Android-17 Rust generation. Google's legacy public `device/google/pantah` tree is not required for the candidate path, but the reference `adevtool` configuration contains GrapheneOS-only product hooks and must be decoupled before Sable treats generated output as a pure-AOSP baseline.
+Pixel 7 (`panther`) is the active touch-first development reference. P0/P0R1/P1A confirm Android 17 as the preferred reconstruction path, with `android-17.0.0_r1`, the physical Pixel 7 stock build `CP2A.260705.006`, signed/pinned external Pixel-generation references, Rust 1.93.1, standard AOSP product inheritance and a bounded set of GrapheneOS-only product/init hooks that must be removed or replaced by a Sable-specific generation adapter. `vendor_state` is reference-only rather than a stock package payload, and generated Pixel support must be diffed/classified before acceptance.
 
 S1.8 does not assume a renderer in advance. Modern framework qualification includes Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native/Blitz, and `BUILD_SABLEUI` if necessary. Framework choice must satisfy both Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first directions without fragmenting the common Sable application/service semantic core.
 
