@@ -18,25 +18,39 @@ Privacy and security come first, but SableOS does not discard mature Android/AOS
 
 > Stable Sable semantic contracts should survive Android-version and device changes; substrate-specific behavior belongs behind bounded adapters.
 
+> UI-framework choice must not be dictated by one historical Android branch's Rust compiler. When platform and UI Rust toolchains differ, cross the boundary only through a stable ABI/AIDL/NDK contract, never compiler-private Rust ABI.
+
 Minimalism means minimal privilege, attack surface, unnecessary background activity, telemetry, duplicated implementation, and UI complexity—not needless reinvention of working platform functionality.
 
 ## Current reference target
 
-- Device: Google Pixel 4a 5G (`bramble`)
-- SoC: Qualcomm Snapdragon 765G / SM7250
-- Current substrate: Android 14 / `android-14.0.0_r28`
-- Build ID: `UP1A.231105.001.B2`
-- Sable product: `sable_bramble_s1-userdebug`
-- Build output: `out_s13b`
-- SELinux: enforcing in validated runtime gates
+Active development is moving to:
 
-`bramble` is an end-of-life architecture/regression device. It remains useful for controlled development, but unsupported closed firmware/vendor components impose a production-security ceiling.
+- Device: Google Pixel 7 (`panther`)
+- Role: active touch-first development reference
+- Interaction profile: Metro-inspired touch-first
+- Android baseline: **PANTHER-P0 qualification in progress**; prefer the newest supported/reproducible panther Android release rather than inheriting the bramble Android 14 baseline
+- UI framework: not yet selected; modern Rust framework qualification resumes after the panther platform/toolchain inventory
 
-## Current milestone: S1.7 — typed power IPC — PASS
+Pixel 7 is still in Google's supported five-year update cohort and receives current Android releases, making it a materially better engineering/security target than Pixel 4a 5G. It is still not an indefinite production-security baseline; later Pixel hardware with a longer remaining support window may replace it without changing Sable semantics.
 
-S1 has moved the power path from direct-sysfs concepts to a platform-compatible, callback-driven architecture and frozen the first read-only Sable power API.
+Historical reference:
 
-### Proven S1.6 runtime baseline
+- Pixel 4a 5G (`bramble`)
+- Android 14 / `android-14.0.0_r28`
+- build `UP1A.231105.001.B2`
+- Sable product `sable_bramble_s1-userdebug`
+- S1.7 power service/API/runtime boundary: **PASS / FROZEN**
+
+Bramble is now a frozen architecture/regression reference. Its end-of-life proprietary firmware/vendor ceiling and Android 14 Rust/Cargo 1.68 baseline no longer constrain S1.8 UI-framework selection. The previously planned Android 15 bramble portability experiment is closed without execution.
+
+See `docs/adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md` and `docs/S1_8_PLATFORM_TRANSITION.md`.
+
+## Proven S1.7 architecture — PASS / FROZEN
+
+S1 moved the power path from direct-sysfs concepts to a platform-compatible, callback-driven architecture and froze the first read-only Sable power API.
+
+### S1.6 callback-driven power monitoring
 
 ```text
 Android Health HAL 2.1
@@ -67,9 +81,7 @@ S1.6 is closed and runtime-proven:
 - `Battery -> Unknown -> AC` is accepted as valid reconnect behavior when charging state settles before source flags;
 - zero relevant AVC denials or daemon crashes in the closure test.
 
-### S1.7 — frozen read-only power API and authorization proof
-
-Status: **PASS**.
+### S1.7 frozen read-only power API and authorization proof
 
 Frozen contract:
 
@@ -87,7 +99,7 @@ The V1 API is intentionally narrow:
 - no raw sysfs;
 - no setters or mutation methods.
 
-The runtime trust boundary is now physically proven:
+The runtime trust boundary is physically proven:
 
 ```text
 Health HAL callback
@@ -112,7 +124,34 @@ Validated S1.7 outcomes:
 
 Exact source, AIDL, image, device-binary and runtime seals are recorded in `docs/S1_7_VALIDATION.md`.
 
-Next planned milestone: S1.8 power UX integration, consuming the frozen V1 contract without moving Health ownership or hardware privilege into the UI.
+## Current milestone: S1.8 — modern Rust UI qualification + first power client
+
+S1.8 remains the first Sable-native user-facing consumer of a frozen semantic service, but framework qualification is restarting on the modern Pixel baseline rather than continuing Android-14/Rust-1.68 backport work.
+
+Captured bramble qualification evidence:
+
+- D0 architecture/document reconciliation PASS;
+- F0/F1/F2/F3 framework/toolchain evidence captured;
+- current Vexo and several modern frameworks exceed the Android 14 platform Rust toolchain;
+- Slint 1.5 core was proven buildable on Rust 1.68 with bounded compatibility work, confirming that the constraint was the historical platform toolchain/dependency graph rather than the device CPU architecture;
+- no production S1.8 UI source was landed on bramble;
+- no global AOSP Rust uplift was performed.
+
+Next gate: `PANTHER-P0`.
+
+After the panther platform baseline is chosen, S1.8 requalifies a broader modern Rust UI set including Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native / Blitz, and a possible Sable-owned UI framework.
+
+Crux remains an application/core architecture reference. UniFFI and Flutter Rust Bridge are interop tools rather than preferred shell renderers. Tauri/WebView presentation is not the preferred Sable system-shell architecture.
+
+The first real S1.8 client remains deliberately narrow:
+
+- standalone Android-managed Sable application;
+- Launcher3 and AOSP SystemUI remain intact;
+- consume stable Sable power semantics without Health/sysfs authority;
+- display battery percentage, charging state, source and unavailable state;
+- UI crash/restart cannot disturb the provider;
+- no unnecessary Internet/network authority;
+- Metro-inspired touch and BlackBerry/BB10-inspired keyboard semantics remain one shared application/core model.
 
 ## Architecture
 
@@ -137,7 +176,7 @@ Examples:
 
 ```text
 preferred:
-UI -> read PowerSnapshot -> read-only AIDL
+UI -> read PowerSnapshot -> read-only semantic service
 UI -> request narrow policy operation -> dedicated service -> framework/HAL
 
 rejected:
@@ -147,7 +186,17 @@ UI -> broad-capability general-purpose networking tool
 UI -> generic privileged command executor
 ```
 
-See `docs/ARCHITECTURE.md`, `docs/SECURITY_MODEL.md`, and `docs/adr/0001-mobile-ux-with-strict-privilege-separation.md`.
+When the Sable UI and platform use different Rust compiler versions:
+
+```text
+modern Rust UI
+    -> stable C/NDK/AIDL adapter
+    -> Sable semantic service
+```
+
+Direct linking across independently compiled Rust ABI is rejected.
+
+See `docs/ARCHITECTURE.md`, `docs/SECURITY_MODEL.md`, `docs/adr/0001-mobile-ux-with-strict-privilege-separation.md`, and `docs/adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`.
 
 ## Engineering and release discipline
 
@@ -174,26 +223,42 @@ See `docs/ENGINEERING_PRINCIPLES.md` and `docs/RELEASE_VALIDATION.md`.
 
 ## Product direction
 
-SableOS should be mobile-first rather than a desktop shell adapted to a narrow display. Areas worth exploring after service boundaries are stable include:
+SableOS is mobile-first rather than a desktop shell adapted to a narrow display.
 
+Two first-class interaction profiles share one application/service semantic core.
+
+### Touch-first / conventional phones
+
+Metro-inspired direction:
+
+- strong typography and spatial hierarchy;
+- edge-to-edge, low-chrome information surfaces;
 - gesture-first navigation;
-- unified communication/notification hub;
-- live task previews;
-- fast app switching / peek-return workflows;
-- explicit foreground/background lifecycle;
-- keyboard-first interaction profiles on physical-QWERTY hardware.
+- persistent/live information where useful;
+- fast peek/return workflows;
+- low-latency transitions and motion which communicates hierarchy.
 
-These product ideas do not justify moving hardware privilege into the shell.
+### Keyboard-first / physical QWERTY
 
-The project studies other systems, including GrapheneOS for security engineering and MarathonOS for mobile UX/device/power/recovery lessons, while evaluating each idea against Sable's own trust boundaries and Android substrate.
+BlackBerry/BB10-inspired direction:
 
-See `docs/SECURITY_REFERENCE_GRAPHENEOS.md` and `docs/EXTERNAL_LESSONS.md`.
+- physical keyboard as primary input;
+- deterministic focus and visible focus state;
+- type-to-search;
+- shortcuts and command palette;
+- fast communication/notification triage;
+- predictable back/navigation/focus restoration;
+- touch/keyboard/pointer coexistence where available.
+
+The project studies other systems, including GrapheneOS for security engineering, App Manager for package/application transparency, MarathonOS for mobile/QWERTY UX and device/recovery lessons, and multiple Rust UI frameworks for rendering/application architecture. Each idea is re-evaluated against Sable's own Android-compatible trust boundaries.
 
 ## Android application compatibility
 
-SableOS intends to preserve standard Android application packaging, PackageManager/PackageInstaller, ART, sandboxing, permissions, and AppOps rather than creating a Sable-specific package ecosystem.
+SableOS preserves standard Android application packaging, PackageManager/PackageInstaller, ART, sandboxing, permissions, AppOps, intents/components and profiles rather than creating a Sable-specific package ecosystem.
 
-Later roadmap tracks cover Secure Package Intelligence, optional compatibility services, user-facing capability hardening, and production release/update security.
+F-Droid, direct APKs and compatible third-party stores remain ordinary Android applications. A future optional sandboxed Google compatibility layer is separate from base APK compatibility.
+
+The Sable-native Rust renderer is a presentation choice; it does not replace the Android application runtime.
 
 See `docs/APP_SECURITY_AND_COMPATIBILITY.md` and `docs/ROADMAP.md`.
 
@@ -201,12 +266,13 @@ See `docs/APP_SECURITY_AND_COMPATIBILITY.md` and `docs/ROADMAP.md`.
 
 Current and planned roles:
 
-- `bramble` / Pixel 4a 5G — Android 14 architecture/regression baseline; Android 15 portability experiment candidate; not a long-lived production-security target.
-- modern Pixel-class hardware — future maintained touch/security reference.
+- `panther` / Pixel 7 — active touch-first development reference; exact modern Android baseline selected by PANTHER-P0.
+- `bramble` / Pixel 4a 5G — frozen Android 14 S1.7 architecture/regression reference; no longer an active S1.8 or Android-15-port target.
+- later Pixel hardware — future longer-lived production/security reference when remaining support lifetime justifies transition.
 - Zinwa Q25 — optional MediaTek/QWERTY study target.
 - Zinwa Q27 — future primary QWERTY candidate subject to source, unlock, vendor, hardware, radio, suspend/power, and security-lifecycle acceptance.
 
-The common semantic APIs, security model, package policy, and service architecture should remain shared across tracks.
+The common semantic APIs, security model, package policy and UI/application architecture must remain shared across these tracks.
 
 ## Documentation
 
