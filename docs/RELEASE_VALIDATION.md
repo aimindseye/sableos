@@ -11,20 +11,23 @@ This document implements the evidence gates defined by `SECURITY_PRIVACY_ASSURAN
 4. targeted tests
 5. affected build
 6. generated-artifact audit
-7. compiled SELinux audit
-8. full product build
-9. exact image-content proof
-10. AVB validation
-11. expected image-delta classification
-12. hardware-security capability record
-13. privacy/data-flow/network-egress record
-14. inactive-slot deployment
-15. runtime security/privacy proof
-16. physical behavior proof
-17. natural slot success
-18. fallback-slot health
-19. unresolved-risk + provenance manifest
+7. kernel baseline/update record when kernel-changing or first qualifying the device
+8. compiled SELinux audit
+9. full product build
+10. exact image-content proof
+11. AVB validation
+12. expected image-delta classification
+13. hardware-security capability record
+14. privacy/data-flow/network-egress record
+15. inactive-slot deployment
+16. runtime security/privacy proof
+17. physical behavior proof
+18. natural slot success
+19. fallback-slot health
+20. unresolved-risk + provenance manifest
 ```
+
+A kernel baseline/update record is conditional: normal builds whose kernel inputs are unchanged reference/verify the sealed device kernel baseline rather than rebuilding the kernel solely to satisfy this gate.
 
 ## Assurance Stage
 
@@ -42,11 +45,15 @@ Before mutation verify exact source hashes, absence/presence expectations, and k
 
 If a baseline guard fails, do not mutate.
 
+For a gate which intentionally changes the kernel, also bind the canonical per-device kernel/KMI/module baseline defined by `KERNEL_SECURITY_UPDATE_POLICY.md` before mutation.
+
 ## Mutation
 
 After a mutation has applied, do not rerun the whole block to repair a later failure. Use a targeted repair gate from post-mutation hashes.
 
 Never put `exit` or `set -e` into commands intended for an interactive tmux shell.
+
+Kernel security mutations must be classified as K1, K2 or K3 before applying them. A K1/K2 gate must reject unexpected KMI/LTS-family change. K3 follows full device/platform migration discipline rather than continuing as a hotfix gate.
 
 ## Build Output
 
@@ -68,6 +75,91 @@ Validate effective build topology:
 - production/dev signing state where relevant.
 
 Do not rely only on source declarations when generated build files can prove the result.
+
+## Kernel Baseline and Independent Security Update Gate
+
+SableOS supports independent kernel security updates according to `KERNEL_SECURITY_UPDATE_POLICY.md` and ADR-0005.
+
+### Normal platform/product build
+
+If kernel inputs are unchanged:
+
+```text
+sealed device/kernel baseline
+        +
+platform/Sable changes
+        -> normal product build
+        -> verify/reference kernel baseline
+```
+
+Do **not** rebuild, replace or advance the kernel merely because SableOS supports independent kernel updates.
+
+A normal build should record enough evidence to prove whether kernel-related inputs/images changed. Unexpected kernel-image or module-partition deltas block closure until explained.
+
+### First device kernel qualification
+
+Before a device claims independent kernel-update capability, establish the canonical baseline fields from `KERNEL_SECURITY_UPDATE_POLICY.md`, including where applicable:
+
+```text
+SABLEOS_KERNEL_BASELINE=
+SABLEOS_KERNEL_RELEASE=
+SABLEOS_KERNEL_ANDROID_BRANCH=
+SABLEOS_KERNEL_KMI_VERSION=
+SABLEOS_KERNEL_SOURCE_COMMIT=
+SABLEOS_KERNEL_SOURCE_MANIFEST_SHA256=
+SABLEOS_KERNEL_CONFIG_SHA256=
+SABLEOS_KERNEL_MODULE_MANIFEST_SHA256=
+SABLEOS_KERNEL_BOOT_IMAGE_SHA256=
+SABLEOS_KERNEL_SYSTEM_DLKM_SHA256=
+SABLEOS_KERNEL_VENDOR_DLKM_SHA256=
+SABLEOS_KERNEL_VENDOR_BOOT_SHA256=
+SABLEOS_KERNEL_AB_OTA_PARTITIONS=
+SABLEOS_KERNEL_BUILD_TOOLCHAIN_PROVENANCE=
+SABLEOS_KERNEL_KMI_BASELINE_VALIDATION=
+```
+
+The exact applicable partition set is device-specific.
+
+### K1/K2 security build
+
+For an intentional kernel security update:
+
+```text
+sealed kernel baseline
+        +
+provenance-recorded K1/K2 change
+        -> supported pinned kernel build
+        -> KMI/ABI check
+        -> GKI module match where applicable
+        -> vendor-module compatibility
+        -> affected image/partition build
+        -> AVB/signing proof
+        -> A/B OTA/deployment proof
+        -> physical runtime/rollback closure
+```
+
+At minimum require the kernel update record fields defined in `KERNEL_SECURITY_UPDATE_POLICY.md`, including:
+
+```text
+SABLEOS_KERNEL_UPDATE_TYPE=K1_SECURITY_BACKPORT|K2_SAME_KMI_SUBLEVEL
+SABLEOS_KERNEL_UPDATE_KMI_UNCHANGED=YES
+SABLEOS_KERNEL_UPDATE_SOURCE_PROVENANCE=PASS
+SABLEOS_KERNEL_UPDATE_ABI_KMI_CHECK=PASS|NOT_APPLICABLE
+SABLEOS_KERNEL_UPDATE_GKI_MODULE_MATCH=PASS|NOT_APPLICABLE
+SABLEOS_KERNEL_UPDATE_VENDOR_MODULE_COMPATIBILITY=PASS|NOT_APPLICABLE
+SABLEOS_KERNEL_UPDATE_BUILD=PASS
+SABLEOS_KERNEL_UPDATE_IMAGE_MANIFEST=PASS
+SABLEOS_KERNEL_UPDATE_AVB=PASS
+SABLEOS_KERNEL_UPDATE_BOOT=PASS
+SABLEOS_KERNEL_UPDATE_MODULE_LOAD=PASS|NOT_APPLICABLE
+SABLEOS_KERNEL_UPDATE_SELINUX=PASS
+SABLEOS_KERNEL_UPDATE_HARDWARE_REGRESSION=PASS
+SABLEOS_KERNEL_SECURITY_UPDATE=PASS
+```
+
+For production A/B delivery also require rollback/natural-slot evidence where supported.
+
+A kernel version string alone is not evidence that a CVE is fixed. Source/provenance and effective validation are authoritative.
 
 ## Hardware Security Capability Classification
 
@@ -156,6 +248,8 @@ Validate positive and negative policy:
 
 Runtime must remain enforcing. Expected AVC denials from deliberate negative tests should be recorded separately from unexpected runtime denials.
 
+A kernel K1/K2 update must also prove the post-update device remains enforcing and has no new unexplained security-relevant AVC or module-load failures attributable to the change.
+
 ## Image Proof
 
 - extract target binary from filesystem image;
@@ -166,11 +260,15 @@ Runtime must remain enforcing. Expected AVC denials from deliberate negative tes
 - verify no development credential/backdoor artifacts in production candidate images;
 - verify privacy-sensitive defaults in the actual image where they are image-configured.
 
+For kernel-changing builds, hash every affected kernel/module/device image and classify unaffected kernel-related partitions as unchanged or `NOT_APPLICABLE`.
+
 ## AVB
 
 Validate `system_ext`, `vbmeta_system`, and expected top-level `vbmeta` behavior.
 
 For production, also prove the signing/bootloader state needed for the claimed verified-boot posture. Development unlocked state is recorded as development, not production failure.
+
+Kernel K1/K2 production payloads must validate the AVB/signing state for all affected boot/kernel/module partitions before activation.
 
 ## Expected Delta
 
@@ -195,6 +293,8 @@ The root changes were classified file/component-by-file/component: `product` and
 
 Unexpected deltas still block deployment until explained.
 
+For kernel K1/K2 gates, the expected-delta set is derived from the device's actual kernel/module dependency graph and `AB_OTA_PARTITIONS`; do not globally assume that only `boot` changes.
+
 ## Deployment
 
 Determine active/inactive slots at runtime.
@@ -214,6 +314,8 @@ Activation is last.
 
 For a dedicated development device, direct controlled flashing may be used when the device-specific gate explicitly authorizes it, but the script must first verify expected product identity, bootloader state, image hashes and flash target.
 
+For a production kernel security update, root/unlocked flashing is not the delivery model. Use the Sable-signed supported A/B OTA/update path to the inactive slot, updating the exact affected kernel/module partitions and preserving the prior successful slot through closure.
+
 ## Runtime Security Proof
 
 Verify:
@@ -230,6 +332,8 @@ Verify:
 - daemon stability.
 
 For hardware-dependent security capabilities that are enabled, include feature-specific runtime proof before claiming them. If hardware capability is absent, record `NOT_APPLICABLE` rather than fabricating a pass or failing the device.
+
+For kernel K1/K2 updates additionally verify the target kernel release/build identity, required module load state, absence of update-related kernel panic/oops evidence, and device-critical hardware paths relevant to the kernel change.
 
 Root may be used briefly on userdebug for exact evidence where shell policy intentionally forbids access. Restore normal adb afterward.
 
@@ -251,7 +355,7 @@ Network/privacy evidence should be captured on a representative physical device 
 
 When behavior depends on actual hardware state, use actual hardware rather than synthetic state.
 
-This includes hardware-security capability validation when an effective runtime probe exists, and privacy behavior tied to modem/sensors/networking/user interaction.
+This includes hardware-security capability validation when an effective runtime probe exists, privacy behavior tied to modem/sensors/networking/user interaction, and K1/K2 kernel updates which may affect suspend, charging, radio, audio, camera, storage, USB, networking or other driver/module behavior.
 
 ## Supply-Chain / Provenance Proof
 
@@ -266,6 +370,8 @@ Before a production security claim, preserve evidence for:
 - repeatable build procedure;
 - security-advisory state for Sable-owned dependencies;
 - unresolved risk manifest.
+
+Kernel K1/K2 updates also preserve the upstream fixing commit(s), Sable backport/advance provenance, kernel source manifest, config, KMI/ABI evidence and module/image hashes.
 
 Build provenance should move toward SLSA-style attestable provenance. This is a direction/reference, not a certification claim.
 
@@ -282,11 +388,15 @@ external -> Battery -> Unknown -> external
 
 Capability validation must likewise distinguish `FAIL` from `NOT_APPLICABLE` and `NOT_RUN`.
 
+A kernel update gate must distinguish an unavailable device-specific independent-update capability from a failed attempted K1/K2 update. A device can remain SableOS-eligible even if its proprietary module/update architecture prevents safe independent kernel updates.
+
 ## Slot Closure
 
 Do not manually mark successful.
 
 Require target naturally successful/bootable and fallback still successful/bootable.
+
+For a production kernel security OTA, retain the previously successful kernel slot as fallback until the new slot has passed required runtime/security/physical checks and becomes naturally successful.
 
 ## Production Closure Summary
 
@@ -308,3 +418,5 @@ SABLEOS_UPDATE_RECOVERY=PASS
 ```
 
 Any unavailable optional hardware capabilities remain separately recorded as `NOT_APPLICABLE` and do not invalidate the portable baseline.
+
+If the release includes a kernel K1/K2 security update, also require `SABLEOS_KERNEL_SECURITY_UPDATE=PASS` and bind its exact kernel update record. If the release does not change kernel inputs, bind the existing sealed `SABLEOS_KERNEL_BASELINE=PASS` record instead.
