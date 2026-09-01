@@ -5,12 +5,13 @@
 These documents define the current project architecture. When an older concept note or historical validation record conflicts with an accepted ADR or a normative document, the normative/ADR decision takes precedence.
 
 - `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation.
+- `CORE_PRODUCT_MODEL.md` — revised SableOS product baseline: tagline/principle, Home, Hub, Search, Security/Privacy, AOD, local-first Agent/Voice, and the AOSP/default-app retain/replace matrix.
 - `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules and privacy architecture.
 - `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` — project-wide security/privacy assurance stages, control families, privacy defaults, evidence records and standards crosswalk.
 - `HARDWARE_SECURITY_CAPABILITIES.md` — canonical per-device hardware-security capability registry; MTE/PAC/BTI/StrongBox/etc. are capability-dependent and absent optional hardware is `NOT_APPLICABLE`, not device failure.
 - `KERNEL_SECURITY_UPDATE_POLICY.md` — independent K1/K2 kernel security updates, KMI/module/AVB/A-B constraints, canonical per-device kernel baseline and kernel-hotfix evidence markers.
 - `LANGUAGE_AND_VOICE_POLICY.md` — preserve Android locale/Indic language capability; Hindi first-class; local-first multilingual STT/TTS and voice privacy/agent integration requirements.
-- `AOSP_CAPABILITY_POLICY.md` — preserve mature Android/vendor capability unless a reviewed replacement is justified.
+- `AOSP_CAPABILITY_POLICY.md` — preserve mature Android/vendor capability unless a reviewed replacement is justified; includes the revised core-product app/surface boundary.
 - `APP_SECURITY_AND_COMPATIBILITY.md` — standard Android APK/ART/PackageManager compatibility and Secure Package Intelligence direction.
 - `APPLICATION_SECURITY_PRIVACY_TRANSPARENCY.md` — ongoing per-app identity, authority, components, libraries/trackers, storage, network/data use, background behavior and security-history transparency, with declared/enforced/observed/inferred evidence separation.
 - `ANDROID_VERSION_PORTABILITY.md` — stable Sable semantics across Android substrate, device and compiler changes.
@@ -22,20 +23,23 @@ These documents define the current project architecture. When an older concept n
 - `adr/0004-portable-security-privacy-and-hardware-capability-model.md` — portable mandatory security/privacy baseline with additive per-device hardware security capabilities.
 - `adr/0005-independent-kernel-security-updates.md` — allow signed K1/K2 kernel-security updates independently of feature releases while treating cross-KMI/LTS K3 as a full platform migration.
 - `adr/0006-multilingual-local-first-voice.md` — preserve Android multilingual capability and provide privacy-preserving local-first Sable STT/TTS, with Hindi as a first-class acceptance language.
+- `adr/0007-core-product-hub-aod-agent-and-aosp-boundary.md` — accept the revised Sable core product: strategic Sable presentation/attention/agent surfaces over retained Android capability and enforcement.
 
 ## Planning
 
-- `ROADMAP.md` — completed, current and planned milestones.
+- `ROADMAP.md` — completed, current and planned platform/service milestones.
+- `CORE_PRODUCT_ROADMAP.md` — CP0-CP6 product-integration track for Home, Hub, Search, Security/Privacy, AOD, local-first Agent/Voice and product-composition closure.
 - `Q25_PORT_PLAN.md` — optional MediaTek/QWERTY reference-port plan.
 - `S1_8_PLATFORM_TRANSITION.md` — bramble S1.8 qualification closure and panther restart sequence.
 
 ## Engineering / Release
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing, recovery discipline.
-- `RELEASE_VALIDATION.md` — build, image, AVB, flashing, hardware-security capability, privacy/data-flow/network-egress, runtime and slot-closure gates.
+- `RELEASE_VALIDATION.md` — build, image, AVB, product-composition/default-app, kernel, hardware-security, privacy/data-flow/network-egress, runtime and slot-closure gates.
+- `CORE_PRODUCT_MODEL.md` — canonical product-stage markers and default-app/product composition expectations; `NOT_INTEGRATED` is valid only during substrate work.
 - `KERNEL_SECURITY_UPDATE_POLICY.md` — canonical kernel-build baseline and K1/K2 kernel-security update gate; normal builds reference the baseline when kernel inputs are unchanged.
 - `LANGUAGE_AND_VOICE_POLICY.md` — canonical locale-preservation and language/voice capability matrix; full gate activates when Sable-owned user-facing/voice components enter the product.
-- `SECURITY_PRIVACY_RELEASE_RECORD_TEMPLATE.md` — canonical machine/line-oriented release evidence fields for portable security, hardware capabilities, privacy, provenance and unresolved risk.
+- `SECURITY_PRIVACY_RELEASE_RECORD_TEMPLATE.md` — canonical machine/line-oriented release evidence fields for product composition, portable security, hardware capabilities, kernel, privacy, provenance and unresolved risk.
 
 ## Frozen Validation / Evidence
 
@@ -57,6 +61,8 @@ Validation records document the architecture and evidence applicable to their mi
 - `SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS security-engineering lessons adapted to Sable boundaries.
 - NIST SSDF, NIST Privacy Framework, OWASP MASVS and SLSA are cross-check/reference frameworks for the Sable assurance standard; they are not certification claims.
 - App Manager is a design reference for Secure Package Intelligence and ongoing application security/privacy transparency. Sable adopts inspection, comparison and explainability ideas while explicitly rejecting a single root/ADB-supervisor application as the platform trust model.
+- BlackBerry Hub and Windows Phone/People-Hub interaction concepts are product references for attention/person-centric organization; Sable implements them through Android notification/conversation/action contracts rather than private application database access.
+- `flagdizero/jenny-android-ai-agent` is a local-first agent design reference. Sable adopts useful local-memory/agent ideas while rejecting generic privileged Python/root/shell authority as the system trust model.
 - AOSP GKI/KMI and A/B update documentation is normative for independent kernel-update compatibility and delivery mechanics; Sable-specific K1/K2/K3 policy is defined in `KERNEL_SECURITY_UPDATE_POLICY.md`.
 - Android locale/resource/IME/TTS/speech framework contracts are preserved as platform capability; Sable-specific Indian-language and local-first voice requirements are defined in `LANGUAGE_AND_VOICE_POLICY.md`.
 - Slint, WaterUI, Project Robius/Makepad, Blinc, Vexo and Dioxus Native/Blitz are UI/framework qualification candidates or references, not automatic architecture dependencies.
@@ -76,6 +82,8 @@ PANTHER-P0R1 PASS
 PANTHER-P1A  PASS
 PANTHER-P1B / V0-HOST  IN PROGRESS — Android 17 workspace + audited Pixel generation compatibility; product integration bring-up in progress
 PANTHER-V0   NOT STARTED — physical vanilla acceptance after product-build/flashability closure
+CP0          PASS / POLICY — revised core product baseline documented
+CP1+         BLOCKED on Panther V0 + service/UI prerequisites
 S1.7 Panther semantic-service port  BLOCKED ON P1B/V0
 S1.8 / S1.8C modern UI qualification + first power client  BLOCKED until Panther baseline + S1.7 port
 S1.9+        PLANNED
@@ -87,7 +95,9 @@ Bramble remains a frozen architecture/regression reference. The previously plann
 
 Pixel 7 (`panther`) is the active touch-first development reference on the Android 17 path. P0/P0R1/P1A selected and bounded the reconstruction model; P1B is now exercising that model in `/srv/data/aosp_panther17_workspace` using the stock `CP2A.260705.006` Pixel input and audited generation references. The current host-tool work imports only narrowly reviewed compatibility contracts required by `adevtool`/`arsclib`; GrapheneOS remains a reference/security source and is not the Sable operating-system substrate.
 
-P1B has closed the Node 24/JDK 21 runtime mismatch and AAPT2 dependency closure. Product integration is now proceeding through the official Siso-backed Android build path with bounded source repairs and evidence gates. Physical V0 remains blocked until target-files/AVB/flashability closure. The independent-kernel-update policy does not restart or invalidate the active P1B product build; Panther's canonical kernel/KMI/module baseline is first sealed during the post-target-files V0/device-provenance sequence. The multilingual/voice policy likewise does not restart P1B; its current requirement is preservation of the selected Android locale/font/IME substrate, with full Sable language/voice gates activating when Sable-owned user-facing/voice components are integrated.
+P1B has closed the Node 24/JDK 21 runtime mismatch and AAPT2 dependency closure. Product integration is now proceeding through the official Siso-backed Android build path with bounded source repairs and evidence gates. Physical V0 remains blocked until target-files/AVB/flashability closure. The independent-kernel-update, revised-core-product, and multilingual/voice policies do not restart or invalidate the active P1B product build. P1B is classified as `SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE`: it preserves the Android foundations required by the future product while Sable Home/Hub/AOD/Agent/Voice remain `NOT_INTEGRATED`. Panther's canonical kernel/KMI/module baseline is first sealed during the post-target-files V0/device-provenance sequence.
+
+The revised core product is now governed by the principle **“Applications provide capabilities; Sable organizes people, attention and actions.”** CP0 is policy-complete. CP1+ begins after the Panther V0, S1.7-port and modern-UI prerequisites make product integration safe. See `CORE_PRODUCT_MODEL.md`, `CORE_PRODUCT_ROADMAP.md`, and ADR-0007.
 
 S1.8 does not assume a renderer in advance. Modern framework qualification includes Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native/Blitz, and `BUILD_SABLEUI` if necessary. Framework choice must satisfy Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first directions, Indic text/input requirements, and common Sable semantic contracts without fragmenting the application/service core.
 
