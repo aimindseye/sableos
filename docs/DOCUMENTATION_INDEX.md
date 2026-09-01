@@ -27,6 +27,7 @@ These documents define the current project architecture. When an older concept n
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing, recovery discipline.
 - `RELEASE_VALIDATION.md` — build, image, AVB, flashing, hardware-security capability, privacy/data-flow/network-egress, runtime and slot-closure gates.
+- `SECURITY_PRIVACY_RELEASE_RECORD_TEMPLATE.md` — canonical machine/line-oriented release evidence fields for portable security, hardware capabilities, privacy, provenance and unresolved risk.
 
 ## Frozen Validation / Evidence
 
