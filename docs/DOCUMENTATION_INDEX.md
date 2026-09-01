@@ -16,6 +16,7 @@ These documents define the current project architecture. When an older concept n
 - `adr/0001-mobile-ux-with-strict-privilege-separation.md` — UX remains separate from hardware/system privilege.
 - `adr/0002-rust-ui-framework-and-android-app-compatibility.md` — Rust UI qualification, Android APK coexistence, Metro-inspired touch and BlackBerry-inspired keyboard profiles, framework/fork/SableUI decision model.
 - `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md` — move active development from bramble to Pixel 7, close the bramble A15/UI-backport path, and decouple modern UI Rust toolchains from platform Rust through stable ABI boundaries when necessary.
+- `adr/0004-portable-security-privacy-and-hardware-capability-model.md` — portable mandatory security/privacy baseline with additive per-device hardware security capabilities.
 
 ## Planning
 
