@@ -10,6 +10,7 @@ These documents define the current project architecture. When an older concept n
 - `HARDWARE_SECURITY_CAPABILITIES.md` — canonical per-device hardware-security capability registry; MTE/PAC/BTI/StrongBox/etc. are capability-dependent and absent optional hardware is `NOT_APPLICABLE`, not device failure.
 - `AOSP_CAPABILITY_POLICY.md` — preserve mature Android/vendor capability unless a reviewed replacement is justified.
 - `APP_SECURITY_AND_COMPATIBILITY.md` — standard Android APK/ART/PackageManager compatibility and Secure Package Intelligence direction.
+- `APPLICATION_SECURITY_PRIVACY_TRANSPARENCY.md` — ongoing per-app identity, authority, components, libraries/trackers, storage, network/data use, background behavior and security-history transparency, with declared/enforced/observed/inferred evidence separation.
 - `ANDROID_VERSION_PORTABILITY.md` — stable Sable semantics across Android substrate, device and compiler changes.
 - `INTERACTION_PROFILES.md` — common application semantics with touch-first and keyboard-first interaction profiles.
 - `SECURITY_MAINTENANCE.md` — platform/kernel/vendor/browser/security-update provenance and release claims.
@@ -49,7 +50,7 @@ Validation records document the architecture and evidence applicable to their mi
 - `EXTERNAL_LESSONS.md` — MarathonOS/Marathon Shell lessons and resulting Sable decisions.
 - `SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS security-engineering lessons adapted to Sable boundaries.
 - NIST SSDF, NIST Privacy Framework, OWASP MASVS and SLSA are cross-check/reference frameworks for the Sable assurance standard; they are not certification claims.
-- App Manager is a design reference for the Secure Package Intelligence work described in `APP_SECURITY_AND_COMPATIBILITY.md`; its privileged/root application model is not the Sable platform trust model.
+- App Manager is a design reference for Secure Package Intelligence and ongoing application security/privacy transparency. Sable adopts inspection, comparison and explainability ideas while explicitly rejecting a single root/ADB-supervisor application as the platform trust model.
 - Slint, WaterUI, Project Robius/Makepad, Blinc, Vexo and Dioxus Native/Blitz are UI/framework qualification candidates or references, not automatic architecture dependencies.
 - Crux is an application/core architecture reference; UniFFI and Flutter Rust Bridge are interop tools rather than preferred shell renderers; Tauri/WebView is not the preferred Sable system-shell model.
 
