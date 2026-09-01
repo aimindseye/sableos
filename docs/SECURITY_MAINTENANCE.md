@@ -77,6 +77,41 @@ Bramble uses the legacy redbull 4.19 kernel family and is now historical. Later 
 
 Panther kernel/vendor provenance must be established by `PANTHER-P0/PANTHER-V0` before the new active baseline is considered security-qualified.
 
+## Independent kernel security updates
+
+SableOS may close applicable open-source kernel vulnerabilities without waiting for a complete OS feature release when the target's supported kernel/KMI/module/update contract can be preserved and validated.
+
+The canonical update classes are:
+
+```text
+K1 = specific security backport within the existing supported kernel/KMI contract
+K2 = same-KMI stable/GKI sublevel advance with broader regression testing
+K3 = cross-KMI/LTS migration; full device/platform migration, not routine hotfix
+```
+
+K1 is preferred. K2 is permitted when KMI and module/device compatibility remain valid. K3 follows full device-port/migration acceptance.
+
+Security maintenance must not determine vulnerability state from `uname -r` or upstream sublevel alone. An older-reported kernel may contain a backported fix; a newer-reported kernel may still be misconfigured or carry an incomplete device patch set. Applicability/fix state is established from source/provenance and validation evidence.
+
+Each supported device that claims independent kernel-update capability must maintain the sealed kernel/KMI/module baseline defined by `KERNEL_SECURITY_UPDATE_POLICY.md`.
+
+A kernel security update must preserve, as applicable:
+
+- Android kernel/ACK source and pinned toolchain provenance;
+- allowed KMI/ABI contract;
+- matching GKI modules in `system_dlkm` where used;
+- vendor/device kernel-module compatibility;
+- affected partition and image manifests;
+- AVB/signing integrity;
+- A/B update/rollback behavior;
+- SELinux and physical hardware capability parity.
+
+Production K1/K2 distribution uses Sable-signed supported A/B OTA/update machinery and does not require root or an unlocked bootloader.
+
+Independent kernel patching does not erase proprietary security ceilings. Kernel, vendor modules, GPU/DSP/media/radio/Wi-Fi firmware, TEE/secure processor, bootloader and other proprietary layers remain separately tracked.
+
+See `KERNEL_SECURITY_UPDATE_POLICY.md` and ADR-0005.
+
 ## Proprietary vendor and firmware policy
 
 Closed-source GPU, camera, media, DSP, radio/IMS, Wi-Fi/Bluetooth, firmware, bootloader and other vendor components create a hard security ceiling when the device manufacturer/chipset vendor stops publishing corrected binaries.
@@ -129,6 +164,8 @@ Prefer the newest supported/reproducible panther Android release. If the newest 
 
 Pixel 7's remaining OEM support lifetime is finite. It is an active engineering improvement over bramble, not the final production-security device. Later Pixel hardware with a longer remaining support window may replace it without changing Sable semantic contracts.
 
+The active Panther P1B product-integration build is not restarted or invalidated by ADR-0005. Panther's canonical independent-kernel-update baseline is established during post-target-files V0/device-provenance qualification, then bound by future kernel-changing gates.
+
 ## Maintained-hardware rule
 
 SableOS should maintain at least one security-reference device that is still receiving upstream manufacturer/chipset security updates. Architecture validation on older hardware is useful, but a privacy/security-first project needs an actively supported hardware path for current security claims.
@@ -161,7 +198,7 @@ Before a security-qualified release:
 1. generate a component/security inventory;
 2. evaluate Android Security Bulletins since the previous qualified baseline;
 3. integrate and provenance-record applicable AOSP fixes;
-4. integrate and provenance-record applicable kernel fixes;
+4. integrate and provenance-record applicable kernel fixes, using the K1/K2/K3 classification and kernel baseline/update record where relevant;
 5. verify vendor/firmware status;
 6. update browser/WebView/updatable components where applicable;
 7. review Sable-owned and third-party Rust/UI dependency and compiler advisories/provenance;
@@ -169,7 +206,8 @@ Before a security-qualified release:
 9. run targeted vulnerability regression tests when a public reproducer/test exists;
 10. run physical capability parity and stability checks;
 11. verify AVB/signing/boot-chain state appropriate to the release stage;
-12. publish an unresolved-risk manifest rather than hiding unsupported components.
+12. verify A/B rollback/natural slot-success for a kernel-security OTA when that update stream is exercised;
+13. publish an unresolved-risk manifest rather than hiding unsupported components.
 
 A critical unresolved remotely reachable vulnerability or an unresolved security-critical vendor component blocks a claim of a fully security-qualified release unless the vulnerable capability is removed or independently isolated with documented evidence.
 
@@ -182,3 +220,5 @@ A future production SableOS release should use release signing, verified boot an
 ## Continuous maintenance
 
 Security maintenance is recurring work, not a one-time audit. Monitor Android Security Bulletins, relevant Linux/kernel/device branches, chipset/vendor advisories, browser/WebView security releases, Sable-owned dependencies, selected UI-framework/dependency advisories, and any separately pinned UI Rust compiler for the lifetime of each supported release.
+
+Kernel monitoring should classify actionable vulnerabilities against each device's exact sealed kernel/KMI/module baseline and trigger a K1/K2 evaluation when an upstream fix is available instead of automatically waiting for the next full OS feature release.
