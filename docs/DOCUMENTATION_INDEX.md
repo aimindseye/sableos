@@ -6,6 +6,7 @@ These documents define the current project architecture. When an older concept n
 
 - `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation.
 - `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules.
+- `HARDWARE_SECURITY_CAPABILITIES.md` — portable security baseline versus capability-dependent hardening; MTE is optional and must not be a device/build/release admission requirement.
 - `AOSP_CAPABILITY_POLICY.md` — preserve mature Android/vendor capability unless a reviewed replacement is justified.
 - `APP_SECURITY_AND_COMPATIBILITY.md` — standard Android APK/ART/PackageManager compatibility and Secure Package Intelligence direction.
 - `ANDROID_VERSION_PORTABILITY.md` — stable Sable semantics across Android substrate, device and compiler changes.
@@ -24,7 +25,7 @@ These documents define the current project architecture. When an older concept n
 ## Engineering / Release
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing, recovery discipline.
-- `RELEASE_VALIDATION.md` — build, image, AVB, flashing, runtime and slot-closure gates.
+- `RELEASE_VALIDATION.md` — build, image, AVB, flashing, runtime and slot-closure gates, including capability-state handling for hardware-dependent security features.
 
 ## Frozen Validation / Evidence
 
