@@ -8,6 +8,7 @@ These documents define the current project architecture. When an older concept n
 - `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules and privacy architecture.
 - `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` — project-wide security/privacy assurance stages, control families, privacy defaults, evidence records and standards crosswalk.
 - `HARDWARE_SECURITY_CAPABILITIES.md` — canonical per-device hardware-security capability registry; MTE/PAC/BTI/StrongBox/etc. are capability-dependent and absent optional hardware is `NOT_APPLICABLE`, not device failure.
+- `KERNEL_SECURITY_UPDATE_POLICY.md` — independent K1/K2 kernel security updates, KMI/module/AVB/A-B constraints, canonical per-device kernel baseline and kernel-hotfix evidence markers.
 - `AOSP_CAPABILITY_POLICY.md` — preserve mature Android/vendor capability unless a reviewed replacement is justified.
 - `APP_SECURITY_AND_COMPATIBILITY.md` — standard Android APK/ART/PackageManager compatibility and Secure Package Intelligence direction.
 - `APPLICATION_SECURITY_PRIVACY_TRANSPARENCY.md` — ongoing per-app identity, authority, components, libraries/trackers, storage, network/data use, background behavior and security-history transparency, with declared/enforced/observed/inferred evidence separation.
@@ -18,6 +19,7 @@ These documents define the current project architecture. When an older concept n
 - `adr/0002-rust-ui-framework-and-android-app-compatibility.md` — Rust UI qualification, Android APK coexistence, Metro-inspired touch and BlackBerry-inspired keyboard profiles, framework/fork/SableUI decision model.
 - `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md` — move active development from bramble to Pixel 7, close the bramble A15/UI-backport path, and decouple modern UI Rust toolchains from platform Rust through stable ABI boundaries when necessary.
 - `adr/0004-portable-security-privacy-and-hardware-capability-model.md` — portable mandatory security/privacy baseline with additive per-device hardware security capabilities.
+- `adr/0005-independent-kernel-security-updates.md` — allow signed K1/K2 kernel-security updates independently of feature releases while treating cross-KMI/LTS K3 as a full platform migration.
 
 ## Planning
 
@@ -29,6 +31,7 @@ These documents define the current project architecture. When an older concept n
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing, recovery discipline.
 - `RELEASE_VALIDATION.md` — build, image, AVB, flashing, hardware-security capability, privacy/data-flow/network-egress, runtime and slot-closure gates.
+- `KERNEL_SECURITY_UPDATE_POLICY.md` — canonical kernel-build baseline and K1/K2 kernel-security update gate; normal builds reference the baseline when kernel inputs are unchanged.
 - `SECURITY_PRIVACY_RELEASE_RECORD_TEMPLATE.md` — canonical machine/line-oriented release evidence fields for portable security, hardware capabilities, privacy, provenance and unresolved risk.
 
 ## Frozen Validation / Evidence
@@ -51,6 +54,7 @@ Validation records document the architecture and evidence applicable to their mi
 - `SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS security-engineering lessons adapted to Sable boundaries.
 - NIST SSDF, NIST Privacy Framework, OWASP MASVS and SLSA are cross-check/reference frameworks for the Sable assurance standard; they are not certification claims.
 - App Manager is a design reference for Secure Package Intelligence and ongoing application security/privacy transparency. Sable adopts inspection, comparison and explainability ideas while explicitly rejecting a single root/ADB-supervisor application as the platform trust model.
+- AOSP GKI/KMI and A/B update documentation is normative for independent kernel-update compatibility and delivery mechanics; Sable-specific K1/K2/K3 policy is defined in `KERNEL_SECURITY_UPDATE_POLICY.md`.
 - Slint, WaterUI, Project Robius/Makepad, Blinc, Vexo and Dioxus Native/Blitz are UI/framework qualification candidates or references, not automatic architecture dependencies.
 - Crux is an application/core architecture reference; UniFFI and Flutter Rust Bridge are interop tools rather than preferred shell renderers; Tauri/WebView is not the preferred Sable system-shell model.
 
@@ -79,7 +83,7 @@ Bramble remains a frozen architecture/regression reference. The previously plann
 
 Pixel 7 (`panther`) is the active touch-first development reference on the Android 17 path. P0/P0R1/P1A selected and bounded the reconstruction model; P1B is now exercising that model in `/srv/data/aosp_panther17_workspace` using the stock `CP2A.260705.006` Pixel input and audited generation references. The current host-tool work imports only narrowly reviewed compatibility contracts required by `adevtool`/`arsclib`; GrapheneOS remains a reference/security source and is not the Sable operating-system substrate.
 
-P1B has closed the Node 24/JDK 21 runtime mismatch and AAPT2 dependency closure. Product integration is now proceeding through the official Siso-backed Android build path with bounded source repairs and evidence gates. Physical V0 remains blocked until target-files/AVB/flashability closure.
+P1B has closed the Node 24/JDK 21 runtime mismatch and AAPT2 dependency closure. Product integration is now proceeding through the official Siso-backed Android build path with bounded source repairs and evidence gates. Physical V0 remains blocked until target-files/AVB/flashability closure. The independent-kernel-update policy does not restart or invalidate the active P1B product build; Panther's canonical kernel/KMI/module baseline is first sealed during the post-target-files V0/device-provenance sequence.
 
 S1.8 does not assume a renderer in advance. Modern framework qualification includes Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native/Blitz, and `BUILD_SABLEUI` if necessary. Framework choice must satisfy both Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first directions without fragmenting the common Sable application/service semantic core.
 
