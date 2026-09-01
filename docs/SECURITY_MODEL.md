@@ -78,6 +78,18 @@ Use:
 UI -> typed Sable service -> validated privileged action
 ```
 
+## Hardware Security Capability Policy
+
+SableOS separates its portable security baseline from hardware-specific enhancements.
+
+ARM MTE or equivalent hardware memory tagging is **optional capability-dependent hardening**, not a device-admission, build-success, or production-eligibility requirement.
+
+A target without MTE remains eligible when its actual mandatory security and platform gates pass. Build and validation scripts must classify MTE absence as `NOT_APPLICABLE`, not `FAIL`.
+
+When MTE is available, SableOS should preserve and enable it where compatible and must validate it before claiming that protection is active. When MTE is absent, SableOS must retain the rest of the portable hardening baseline rather than weakening unrelated protections.
+
+Normative policy and gate states are defined in `HARDWARE_SECURITY_CAPABILITIES.md`.
+
 ## Sysfs Policy
 
 For bramble power:
@@ -144,6 +156,8 @@ Production-oriented procedure should avoid:
 - embedded personal SSH access;
 - password helper files;
 - disabled tests for privileged core components without explicit exception.
+
+Build configuration must also avoid importing hardware requirements from a reference project as unconditional SableOS requirements. Capability-dependent protections such as MTE belong behind capability checks and must not block non-MTE targets solely because the hardware feature is absent.
 
 ## Negative Security Tests
 
