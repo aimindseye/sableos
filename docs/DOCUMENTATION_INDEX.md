@@ -5,8 +5,9 @@
 These documents define the current project architecture. When an older concept note or historical validation record conflicts with an accepted ADR or a normative document, the normative/ADR decision takes precedence.
 
 - `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation.
-- `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules.
-- `HARDWARE_SECURITY_CAPABILITIES.md` — portable security baseline versus capability-dependent hardening; MTE is optional and must not be a device/build/release admission requirement.
+- `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules and privacy architecture.
+- `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` — project-wide security/privacy assurance stages, control families, privacy defaults, evidence records and standards crosswalk.
+- `HARDWARE_SECURITY_CAPABILITIES.md` — canonical per-device hardware-security capability registry; MTE/PAC/BTI/StrongBox/etc. are capability-dependent and absent optional hardware is `NOT_APPLICABLE`, not device failure.
 - `AOSP_CAPABILITY_POLICY.md` — preserve mature Android/vendor capability unless a reviewed replacement is justified.
 - `APP_SECURITY_AND_COMPATIBILITY.md` — standard Android APK/ART/PackageManager compatibility and Secure Package Intelligence direction.
 - `ANDROID_VERSION_PORTABILITY.md` — stable Sable semantics across Android substrate, device and compiler changes.
@@ -25,7 +26,7 @@ These documents define the current project architecture. When an older concept n
 ## Engineering / Release
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing, recovery discipline.
-- `RELEASE_VALIDATION.md` — build, image, AVB, flashing, runtime and slot-closure gates, including capability-state handling for hardware-dependent security features.
+- `RELEASE_VALIDATION.md` — build, image, AVB, flashing, hardware-security capability, privacy/data-flow/network-egress, runtime and slot-closure gates.
 
 ## Frozen Validation / Evidence
 
@@ -45,6 +46,7 @@ Validation records document the architecture and evidence applicable to their mi
 
 - `EXTERNAL_LESSONS.md` — MarathonOS/Marathon Shell lessons and resulting Sable decisions.
 - `SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS security-engineering lessons adapted to Sable boundaries.
+- NIST SSDF, NIST Privacy Framework, OWASP MASVS and SLSA are cross-check/reference frameworks for the Sable assurance standard; they are not certification claims.
 - App Manager is a design reference for the Secure Package Intelligence work described in `APP_SECURITY_AND_COMPATIBILITY.md`; its privileged/root application model is not the Sable platform trust model.
 - Slint, WaterUI, Project Robius/Makepad, Blinc, Vexo and Dioxus Native/Blitz are UI/framework qualification candidates or references, not automatic architecture dependencies.
 - Crux is an application/core architecture reference; UniFFI and Flutter Rust Bridge are interop tools rather than preferred shell renderers; Tauri/WebView is not the preferred Sable system-shell model.
@@ -61,8 +63,8 @@ S1.8-F0-F4   CAPTURED / bramble qualification closed
 PANTHER-P0   PASS
 PANTHER-P0R1 PASS
 PANTHER-P1A  PASS
-PANTHER-P1B / V0-HOST  IN PROGRESS — Android 17 workspace + audited Pixel generation compatibility; no product build/flash yet
-PANTHER-V0   NOT STARTED — physical vanilla acceptance after host build closure
+PANTHER-P1B / V0-HOST  IN PROGRESS — Android 17 workspace + audited Pixel generation compatibility; product integration bring-up in progress
+PANTHER-V0   NOT STARTED — physical vanilla acceptance after product-build/flashability closure
 S1.7 Panther semantic-service port  BLOCKED ON P1B/V0
 S1.8 / S1.8C modern UI qualification + first power client  BLOCKED until Panther baseline + S1.7 port
 S1.9+        PLANNED
@@ -74,7 +76,7 @@ Bramble remains a frozen architecture/regression reference. The previously plann
 
 Pixel 7 (`panther`) is the active touch-first development reference on the Android 17 path. P0/P0R1/P1A selected and bounded the reconstruction model; P1B is now exercising that model in `/srv/data/aosp_panther17_workspace` using the stock `CP2A.260705.006` Pixel input and audited generation references. The current host-tool work imports only narrowly reviewed compatibility contracts required by `adevtool`/`arsclib`; GrapheneOS remains a reference/security source and is not the Sable operating-system substrate.
 
-P1B has already closed the Node 24/JDK 21 runtime mismatch and the earlier AAPT2 proto-module, stringified configuration, `brief-package-info`, and ApkSigner `print-certs` host blockers. Controlled `generate-all` has reached the post-firmware/arsclib boundary without regression, but FileTreeSpec verification, final generated-vendor acceptance, the vanilla product build, and physical V0 remain open. See `PANTHER_P1B_ANDROID17_HOST_BRINGUP.md` for the exact current classification.
+P1B has closed the Node 24/JDK 21 runtime mismatch and AAPT2 dependency closure. Product integration is now proceeding through the official Siso-backed Android build path with bounded source repairs and evidence gates. Physical V0 remains blocked until target-files/AVB/flashability closure.
 
 S1.8 does not assume a renderer in advance. Modern framework qualification includes Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native/Blitz, and `BUILD_SABLEUI` if necessary. Framework choice must satisfy both Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first directions without fragmenting the common Sable application/service semantic core.
 
