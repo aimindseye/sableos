@@ -6,6 +6,8 @@
 
 User-facing importance does not imply system privilege.
 
+SableOS security and privacy claims are governed by `SECURITY_PRIVACY_ASSURANCE_STANDARD.md`. The security model defines trust boundaries; the assurance standard defines the common control families, privacy defaults, evidence states and development/release/production gates used to prove them.
+
 ## UI / Shell
 
 Treat the UI as high-exposure code because it handles rendering, user input, apps, notifications, and external data.
@@ -82,13 +84,30 @@ UI -> typed Sable service -> validated privileged action
 
 SableOS separates its portable security baseline from hardware-specific enhancements.
 
-ARM MTE or equivalent hardware memory tagging is **optional capability-dependent hardening**, not a device-admission, build-success, or production-eligibility requirement.
+MTE, PAC, BTI, StrongBox, secure processors and similar hardware features are **capability-dependent hardening**, not universal device-admission, build-success or production-eligibility requirements.
 
-A target without MTE remains eligible when its actual mandatory security and platform gates pass. Build and validation scripts must classify MTE absence as `NOT_APPLICABLE`, not `FAIL`.
+A target without one of these features remains eligible when its mandatory security/privacy/platform gates pass. Build and validation scripts classify absent optional hardware as `NOT_APPLICABLE`, not `FAIL`.
 
-When MTE is available, SableOS should preserve and enable it where compatible and must validate it before claiming that protection is active. When MTE is absent, SableOS must retain the rest of the portable hardening baseline rather than weakening unrelated protections.
+When a hardware capability exists, SableOS should preserve/enable it where compatible and must validate the effective configuration before claiming the protection is active.
 
-Normative policy and gate states are defined in `HARDWARE_SECURITY_CAPABILITIES.md`.
+The canonical capability registry and state model are defined in `HARDWARE_SECURITY_CAPABILITIES.md`.
+
+## Privacy architecture
+
+Privacy is enforced at the same architectural boundaries as security rather than being left only to application UI.
+
+Default Sable policy:
+
+- no mandatory Sable telemetry or analytics channel;
+- remote diagnostics are opt-in unless a future explicit policy authorizes a narrowly justified exception;
+- Sable-owned network access is denied unless the feature requires it;
+- persistent identifiers are avoided unless a protocol/security function requires them;
+- local processing is preferred when remote processing is unnecessary;
+- sensitive persistent storage and retention are documented;
+- compatibility components do not inherit unrelated user data or privilege;
+- UI privacy controls must reflect real Android/SELinux/AppOps/network enforcement rather than cosmetic state.
+
+Every shipped Sable-owned privileged service, preinstalled application and compatibility component should have the bounded privacy/data-flow record defined by `SECURITY_PRIVACY_ASSURANCE_STANDARD.md`.
 
 ## Sysfs Policy
 
@@ -142,8 +161,10 @@ Production logs should:
 - expose bounded state transitions;
 - suppress unchanged spam;
 - report first error and recovery;
-- avoid secrets;
-- use Android platform logging.
+- avoid secrets and unnecessary personal data;
+- avoid stable identifiers unless required for the diagnostic purpose;
+- use Android platform logging;
+- keep verbose/debug collection bounded and deliberate.
 
 ## Build / Supply Chain
 
@@ -155,9 +176,13 @@ Production-oriented procedure should avoid:
 - personal Wi-Fi credentials in release images;
 - embedded personal SSH access;
 - password helper files;
-- disabled tests for privileged core components without explicit exception.
+- disabled tests for privileged core components without explicit exception;
+- unreviewed network-fetched build dependencies;
+- claims of provenance that are not backed by hashes/manifests/repeatable build evidence.
 
-Build configuration must also avoid importing hardware requirements from a reference project as unconditional SableOS requirements. Capability-dependent protections such as MTE belong behind capability checks and must not block non-MTE targets solely because the hardware feature is absent.
+Build configuration must also avoid importing hardware requirements from a reference project as unconditional SableOS requirements. Capability-dependent protections belong behind capability checks and must not block targets solely because the optional hardware feature is absent.
+
+Supply-chain evidence should move toward the provenance model in `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` and `SECURITY_MAINTENANCE.md`.
 
 ## Negative Security Tests
 
@@ -171,8 +196,15 @@ For new services prove:
 - malformed inputs cannot widen privilege;
 - runtime remains enforcing, and expected negative-test AVCs are distinguished from unexpected denials.
 
-S1.7 is the reference example: Android 14 shell can discover `sable_power_service` through a broad `service_manager_type` `find` grant, but Binder `call` from `u:r:shell:s0` to `u:r:oxynoded:s0` is denied while `sable_power_test_client` succeeds.
+For network/privacy controls also prove, where relevant:
+
+- a component classified as network-denied cannot communicate through direct or meaningful indirect OS-mediated paths;
+- disabled telemetry/diagnostics do not continue network submission;
+- privacy UI state matches actual enforcement;
+- reset/delete operations remove the data the product claims they remove.
+
+S1.7 is the reference service-boundary example: Android 14 shell can discover `sable_power_service` through a broad `service_manager_type` `find` grant, but Binder `call` from `u:r:shell:s0` to `u:r:oxynoded:s0` is denied while `sable_power_test_client` succeeds.
 
 ## Recovery
 
-Do not disable SELinux, verified boot, or authorization checks as a normal recovery mechanism. Prefer A/B rollback.
+Do not disable SELinux, verified boot, authorization checks or privacy controls as a normal recovery mechanism. Prefer A/B rollback and narrow diagnostic exceptions.
