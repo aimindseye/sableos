@@ -8,6 +8,8 @@ The default rule is:
 
 Minimalism in SableOS means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity. It does **not** mean reimplementing working platform capabilities without cause.
 
+The normative product boundary is defined by `CORE_PRODUCT_MODEL.md` and ADR-0007.
+
 ## Shell security rule
 
 > The shell may observe and request; privileged services decide and execute.
@@ -87,6 +89,62 @@ Examples include:
 - touch-first and keyboard-first shells
 
 Replacing presentation does not imply deleting the underlying AOSP service that provides the capability.
+
+## Revised core-product application boundary
+
+The initial default-app/product strategy is selective replacement rather than maximum forking.
+
+Strategic Sable-owned surfaces, after qualification:
+
+```text
+Home / Launcher                  -> SABLE_OWNED
+Hub / notification presentation -> SABLE_OWNED
+Search / command                 -> SABLE_OWNED
+Security & Privacy               -> SABLE_OWNED
+AOD / glance presentation        -> SABLE_OWNED over Android doze/display
+Agent                            -> SABLE_OWNED local-first capability
+Voice orchestration              -> SABLE_OWNED local-first capability
+```
+
+Hybrid/gradual replacement:
+
+```text
+Settings                         -> AOSP initially; Sable high-value surfaces gradually
+SystemUI                         -> AOSP initially; Sable presentation after qualification
+Lockscreen / Quick Settings      -> AOSP initially; evolve with SystemUI qualification
+Contacts / People                -> retain ContactsProvider; Sable people UX may evolve
+```
+
+Retain mature Android/AOSP implementation initially:
+
+```text
+Phone / Telecom / InCallUI
+SMS/MMS transport
+Calendar/provider semantics
+DocumentsUI / Storage Access Framework
+PackageInstaller enforcement path
+PermissionController / AppOps enforcement
+camera framework/HAL
+Clock
+Calculator
+Android input/IME framework
+WebView / maintained Chromium engine substrate
+```
+
+Product-specific selection:
+
+```text
+Browser -> maintained Chromium-derived path; do not rely on an obsolete AOSP Browser
+Email   -> no Sable mail client required for V1; standard clients participate through Hub
+Gallery -> compatible existing option initially; Sable local-first gallery is a later candidate
+RCS     -> preserve carrier/application compatibility; do not invent a Sable transport
+```
+
+The core product principle is:
+
+> **Applications provide capabilities; Sable organizes people, attention and actions.**
+
+This matrix does not authorize deleting an AOSP component before its replacement passes the preserve-before-remove and capability-parity gates below.
 
 ## Preserve-before-remove gate
 
