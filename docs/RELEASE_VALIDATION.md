@@ -51,6 +51,44 @@ Validate effective build topology:
 
 Do not rely only on source declarations when generated build files can prove the result.
 
+## Hardware Security Capability Classification
+
+Build and release gates must distinguish the portable SableOS security baseline from optional hardware-dependent hardening.
+
+ARM MTE or equivalent hardware memory tagging is not a universal device-admission or production-release requirement. A target without hardware MTE must not fail merely because MTE is unavailable.
+
+Record hardware-dependent security features using explicit states:
+
+```text
+AVAILABLE=YES|NO|UNKNOWN
+ENABLED=YES|NO|NOT_APPLICABLE|UNKNOWN
+VALIDATED=PASS|FAIL|NOT_APPLICABLE|NOT_RUN
+```
+
+For MTE specifically:
+
+```text
+AVAILABLE=NO
+  -> ENABLED=NOT_APPLICABLE
+  -> VALIDATED=NOT_APPLICABLE
+  -> build/device remains eligible
+
+AVAILABLE=YES and ENABLED=YES
+  -> run MTE-specific validation
+  -> PASS required before claiming MTE is active
+
+AVAILABLE=YES and ENABLED=NO
+  -> document the state and rationale
+  -> do not claim MTE protection
+  -> do not automatically reject the target
+```
+
+Validation scripts must not convert `NOT_APPLICABLE` into failure. They must also avoid unconditional MTE compiler, linker, kernel, allocator or runtime assumptions on non-MTE devices.
+
+The absence of MTE does not authorize weakening SELinux, AVB/verified boot, app/process isolation, privilege separation, update integrity, or other portable mitigations.
+
+See `HARDWARE_SECURITY_CAPABILITIES.md` for the normative policy.
+
 ## SELinux
 
 Validate positive and negative policy:
@@ -131,6 +169,8 @@ Verify:
 - expected negative-test AVCs only, with no unexplained relevant AVC denials;
 - zero crash evidence;
 - daemon stability.
+
+For hardware-dependent security capabilities that are enabled, include their feature-specific runtime proof before claiming them. If the hardware capability is absent, record `NOT_APPLICABLE` rather than fabricating a pass or failing the device.
 
 Root may be used briefly on userdebug for exact evidence where shell policy intentionally forbids access. Restore normal adb afterward.
 
