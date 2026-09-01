@@ -1,6 +1,6 @@
 # SableOS Build, Release, and Runtime Validation
 
-This document implements the evidence gates defined by `SECURITY_PRIVACY_ASSURANCE_STANDARD.md`.
+This document implements the evidence gates defined by `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` and the product-composition rules defined by `CORE_PRODUCT_MODEL.md`.
 
 ## Gate Sequence
 
@@ -11,23 +11,24 @@ This document implements the evidence gates defined by `SECURITY_PRIVACY_ASSURAN
 4. targeted tests
 5. affected build
 6. generated-artifact audit
-7. kernel baseline/update record when kernel-changing or first qualifying the device
-8. compiled SELinux audit
-9. full product build
-10. exact image-content proof
-11. AVB validation
-12. expected image-delta classification
-13. hardware-security capability record
-14. privacy/data-flow/network-egress record
-15. inactive-slot deployment
-16. runtime security/privacy proof
-17. physical behavior proof
-18. natural slot success
-19. fallback-slot health
-20. unresolved-risk + provenance manifest
+7. core-product composition/default-app gate when applicable
+8. kernel baseline/update record when kernel-changing or first qualifying the device
+9. compiled SELinux audit
+10. full product build
+11. exact image-content proof
+12. AVB validation
+13. expected image-delta classification
+14. hardware-security capability record
+15. privacy/data-flow/network-egress record
+16. inactive-slot deployment
+17. runtime security/privacy proof
+18. physical behavior proof
+19. natural slot success
+20. fallback-slot health
+21. unresolved-risk + provenance manifest
 ```
 
-A kernel baseline/update record is conditional: normal builds whose kernel inputs are unchanged reference/verify the sealed device kernel baseline rather than rebuilding the kernel solely to satisfy this gate.
+The core-product gate and kernel baseline/update gate are conditional. Substrate bring-up builds do not fail merely because Sable-owned product surfaces are not yet integrated, and normal builds whose kernel inputs are unchanged reference/verify the sealed device kernel baseline rather than rebuilding the kernel solely to satisfy policy.
 
 ## Assurance Stage
 
@@ -35,9 +36,12 @@ Every device build or release gate must identify:
 
 ```text
 SABLEOS_ASSURANCE_STAGE=DEVELOPMENT|RELEASE_CANDIDATE|PRODUCTION
+SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE|PRODUCT_INTEGRATION|RELEASE_CANDIDATE|PRODUCTION
 ```
 
 Development permits `userdebug`, unlocked bootloader/test keys and bounded diagnostics. Production security/privacy claims require the production conditions defined in `SECURITY_PRIVACY_ASSURANCE_STANDARD.md`.
+
+`SUBSTRATE` means Android/device/platform qualification before Sable Home/Hub/AOD/Agent/Voice are required to be present. `PRODUCT_INTEGRATION` begins when those Sable-owned surfaces intentionally enter product images.
 
 ## Baseline
 
@@ -47,6 +51,8 @@ If a baseline guard fails, do not mutate.
 
 For a gate which intentionally changes the kernel, also bind the canonical per-device kernel/KMI/module baseline defined by `KERNEL_SECURITY_UPDATE_POLICY.md` before mutation.
 
+For a product-integration gate, bind the intended default-app/product matrix from `CORE_PRODUCT_MODEL.md` and the last known-good AOSP capability baseline before replacing a mature surface.
+
 ## Mutation
 
 After a mutation has applied, do not rerun the whole block to repair a later failure. Use a targeted repair gate from post-mutation hashes.
@@ -54,6 +60,8 @@ After a mutation has applied, do not rerun the whole block to repair a later fai
 Never put `exit` or `set -e` into commands intended for an interactive tmux shell.
 
 Kernel security mutations must be classified as K1, K2 or K3 before applying them. A K1/K2 gate must reject unexpected KMI/LTS-family change. K3 follows full device/platform migration discipline rather than continuing as a hotfix gate.
+
+A product mutation which removes/replaces an AOSP default must identify the replacement and expected capability delta before mutation. Do not remove an AOSP fallback merely because a Sable UI prototype renders.
 
 ## Build Output
 
@@ -72,9 +80,84 @@ Validate effective build topology:
 - target partition;
 - service contexts;
 - frozen API dumps;
-- production/dev signing state where relevant.
+- production/dev signing state where relevant;
+- installed/default product packages and roles when a Sable surface is being integrated.
 
 Do not rely only on source declarations when generated build files can prove the result.
+
+## Core Product Composition Gate
+
+The normative core product is defined in `CORE_PRODUCT_MODEL.md` and ADR-0007.
+
+Canonical status fields:
+
+```text
+SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE|PRODUCT_INTEGRATION|RELEASE_CANDIDATE|PRODUCTION
+SABLEOS_CORE_PRODUCT_MODEL=PASS|FAIL|NOT_RUN
+SABLEOS_DEFAULT_APP_MATRIX=PASS|FAIL|NOT_RUN
+SABLEOS_AOSP_FOUNDATION_PRESERVED=PASS|FAIL|NOT_RUN
+SABLEOS_HOME_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
+SABLEOS_HUB_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
+SABLEOS_SEARCH_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
+SABLEOS_SECURITY_PRIVACY_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
+SABLEOS_AOD_STATUS=NOT_INTEGRATED|PRESENT|ENABLED|DEVICE_UNAVAILABLE|FAIL
+SABLEOS_AGENT_STATUS=NOT_INTEGRATED|PRESENT|ENABLED|DISABLED_BY_DEFAULT|FAIL
+SABLEOS_VOICE_STATUS=NOT_INTEGRATED|PRESENT|ENABLED|FAIL
+SABLEOS_LANGUAGE_BASELINE=PASS|FAIL|NOT_RUN
+```
+
+### SUBSTRATE
+
+During device/platform bring-up:
+
+- preserve the selected AOSP application/runtime/platform capability baseline;
+- preserve Android locale/font/IME infrastructure;
+- preserve notification/conversation, Telecom, PackageManager, PermissionController/AppOps, ContactsProvider, DocumentsUI/SAF, WebView and other foundations needed by the future Sable product;
+- record Sable-owned surfaces as `NOT_INTEGRATED` rather than fabricating a pass;
+- do not change the active build merely to satisfy future product composition.
+
+The current Panther P1B target-files integration is `SUBSTRATE`. This revised product gate does not restart or invalidate that build.
+
+### PRODUCT_INTEGRATION
+
+When a Sable-owned surface first enters the product, prove at minimum:
+
+- exact package/binary/image presence and hashes;
+- intended default/role assignment where applicable;
+- no unexpected removal of Android dependencies/capabilities;
+- declared permissions, UID, SELinux domain and Binder/service dependencies;
+- network/data-flow/privacy inventory;
+- localization/Indic text/input coverage for user-facing surfaces;
+- crash/restart isolation from privileged services;
+- touch/keyboard behavior appropriate to the supported interaction profiles;
+- rollback/fallback path while the replacement remains under qualification.
+
+Surface-specific evidence:
+
+**Home** — prove HOME/launcher role/default behavior, application launch/task compatibility and rollback to the retained reference launcher during development.
+
+**Hub** — prove notification/conversation ingestion through Android-supported interfaces, authorized `RemoteInput`/notification-action execution, bounded/local history, no direct reading of other applications' private databases, and lock-screen/privacy redaction behavior.
+
+**Search** — prove Unicode/multilingual behavior, bounded indexing/data authority, and typed action dispatch rather than generic privileged execution.
+
+**Security & Privacy** — prove displayed state corresponds to PackageManager/PermissionController/AppOps/effective platform evidence and does not require root/ADB-supervisor privilege.
+
+**AOD** — prove device support, burn-in mitigation, lock-screen privacy, doze/suspend residency, idle-power impact, and that disabling/failure does not break normal suspend/notifications/lockscreen. `DEVICE_UNAVAILABLE` is valid where the hardware/product cannot support the intended AOD mode.
+
+**Agent** — prove local-first/default provider policy, model/tool provenance, memory/retention controls, explicit network behavior, typed capability allowlist, negative tests against generic shell/root/filesystem/other-app-private-data access, and prompt/tool failure isolation.
+
+**Voice** — prove the language/voice matrix from `LANGUAGE_AND_VOICE_POLICY.md`, including local-first behavior, microphone privacy semantics and no silent cloud fallback.
+
+### RELEASE_CANDIDATE / PRODUCTION
+
+Before the revised core product is release-qualified:
+
+- the intended default-app matrix must be explicit and closed;
+- all strategic Sable surfaces intended for that release must be `DEFAULT`, `ENABLED`, or have an explicit product-supported state as defined by the surface;
+- any retained AOSP surface must be intentionally retained rather than accidentally left behind;
+- replaced AOSP surfaces must have passed capability-parity and physical regression gates;
+- no Sable surface may gain broader privilege merely because it centralizes multiple capabilities;
+- the product tagline/principle must remain architecturally true: applications provide capabilities while Sable organizes people, attention and actions through authorized interfaces.
 
 ## Kernel Baseline and Independent Security Update Gate
 
@@ -250,6 +333,8 @@ Runtime must remain enforcing. Expected AVC denials from deliberate negative tes
 
 A kernel K1/K2 update must also prove the post-update device remains enforcing and has no new unexplained security-relevant AVC or module-load failures attributable to the change.
 
+A core-product integration must prove that presentation surfaces do not directly acquire backend/HAL/device-node authority which belongs behind narrow services.
+
 ## Image Proof
 
 - extract target binary from filesystem image;
@@ -259,6 +344,8 @@ A kernel K1/K2 update must also prove the post-update device remains enforcing a
 - verify immutable vendor image unchanged where required;
 - verify no development credential/backdoor artifacts in production candidate images;
 - verify privacy-sensitive defaults in the actual image where they are image-configured.
+
+For product-integration builds, verify the exact installed package/binary set and intended default roles against the core-product matrix. Unexpected AOSP app removal or duplicate privileged Sable/AOSP implementation blocks closure until explained.
 
 For kernel-changing builds, hash every affected kernel/module/device image and classify unaffected kernel-related partitions as unchanged or `NOT_APPLICABLE`.
 
@@ -292,6 +379,8 @@ vendor.img          unchanged # immutable Google prebuilt
 The root changes were classified file/component-by-file/component: `product` and `system` changes were policy/metadata propagation, `vendor_boot` changed only through its vendor ramdisk policy content, and AVB changes followed their covered partitions.
 
 Unexpected deltas still block deployment until explained.
+
+For core-product replacement gates, the expected delta must include the exact Sable packages/resources/SELinux/policy/default-role changes and any intentionally removed AOSP package. Do not accept a broad product-image change without package/component classification.
 
 For kernel K1/K2 gates, the expected-delta set is derived from the device's actual kernel/module dependency graph and `AB_OTA_PARTITIONS`; do not globally assume that only `boot` changes.
 
@@ -333,6 +422,8 @@ Verify:
 
 For hardware-dependent security capabilities that are enabled, include feature-specific runtime proof before claiming them. If hardware capability is absent, record `NOT_APPLICABLE` rather than fabricating a pass or failing the device.
 
+For product-integration builds, also validate surface-specific trust boundaries: Hub actions remain application-authorized; Agent tools remain allowlisted/typed; AOD has no unauthorized private-content/microphone path; Home/Search/Security UI failures do not destabilize privileged services.
+
 For kernel K1/K2 updates additionally verify the target kernel release/build identity, required module load state, absence of update-related kernel panic/oops evidence, and device-critical hardware paths relevant to the kernel change.
 
 Root may be used briefly on userdebug for exact evidence where shell policy intentionally forbids access. Restore normal adb afterward.
@@ -349,13 +440,15 @@ Where applicable verify:
 - sensitive data reset/delete behavior matches the documented claim;
 - logs do not expose secrets or unnecessary stable identifiers.
 
+For Hub/Agent/Voice additionally verify bounded/local retention defaults, no mandatory notification/app-inventory upload, no silent cloud model/speech fallback, and explicit user control over remote providers if present.
+
 Network/privacy evidence should be captured on a representative physical device for release-candidate/production claims when the feature depends on real networking, modem, sensor or account behavior.
 
 ## Physical Proof
 
 When behavior depends on actual hardware state, use actual hardware rather than synthetic state.
 
-This includes hardware-security capability validation when an effective runtime probe exists, privacy behavior tied to modem/sensors/networking/user interaction, and K1/K2 kernel updates which may affect suspend, charging, radio, audio, camera, storage, USB, networking or other driver/module behavior.
+This includes hardware-security capability validation when an effective runtime probe exists, privacy behavior tied to modem/sensors/networking/user interaction, AOD/doze/burn-in/power validation, voice microphone behavior, and K1/K2 kernel updates which may affect suspend, charging, radio, audio, camera, storage, USB, networking or other driver/module behavior.
 
 ## Supply-Chain / Provenance Proof
 
@@ -370,6 +463,8 @@ Before a production security claim, preserve evidence for:
 - repeatable build procedure;
 - security-advisory state for Sable-owned dependencies;
 - unresolved risk manifest.
+
+Sable Home/Hub/Search/Security/AOD/Agent/Voice dependencies and local models are part of the production dependency/provenance inventory when shipped.
 
 Kernel K1/K2 updates also preserve the upstream fixing commit(s), Sable backport/advance provenance, kernel source manifest, config, KMI/ABI evidence and module/image hashes.
 
@@ -386,7 +481,9 @@ external -> Battery -> external
 external -> Battery -> Unknown -> external
 ```
 
-Capability validation must likewise distinguish `FAIL` from `NOT_APPLICABLE` and `NOT_RUN`.
+Capability validation must likewise distinguish `FAIL` from `NOT_APPLICABLE`, `NOT_INTEGRATED` and `NOT_RUN`.
+
+A `SUBSTRATE` product build may legitimately record all Sable product surfaces as `NOT_INTEGRATED`; a production product may not use that state to hide missing required surfaces.
 
 A kernel update gate must distinguish an unavailable device-specific independent-update capability from a failed attempted K1/K2 update. A device can remain SableOS-eligible even if its proprietary module/update architecture prevents safe independent kernel updates.
 
@@ -404,6 +501,10 @@ A production-qualified release should be able to produce a bounded summary inclu
 
 ```text
 SABLEOS_ASSURANCE_STAGE=PRODUCTION
+SABLEOS_CORE_PRODUCT_STAGE=PRODUCTION
+SABLEOS_CORE_PRODUCT_MODEL=PASS
+SABLEOS_DEFAULT_APP_MATRIX=PASS
+SABLEOS_AOSP_FOUNDATION_PRESERVED=PASS
 SABLEOS_SELINUX=ENFORCING
 SABLEOS_AVB=VERIFIED
 SABLEOS_BOOTLOADER_STATE=LOCKED_OR_DEVICE_APPROVED_EQUIVALENT
@@ -413,10 +514,11 @@ SABLEOS_UNEXPLAINED_SABLE_NETWORK_EGRESS=0
 SABLEOS_MANDATORY_TELEMETRY=NO
 SABLEOS_PRIVACY_INVENTORY=PASS
 SABLEOS_HWSEC_CAPABILITY_RECORD=PASS
+SABLEOS_LANGUAGE_BASELINE=PASS
 SABLEOS_SUPPLY_CHAIN_PROVENANCE=PASS
 SABLEOS_UPDATE_RECOVERY=PASS
 ```
 
-Any unavailable optional hardware capabilities remain separately recorded as `NOT_APPLICABLE` and do not invalidate the portable baseline.
+Any unavailable optional hardware capabilities remain separately recorded as `NOT_APPLICABLE` and do not invalidate the portable baseline. Device-unavailable optional presentation capabilities such as an unsupported AOD mode must be explicitly classified rather than silently failed or falsely claimed.
 
 If the release includes a kernel K1/K2 security update, also require `SABLEOS_KERNEL_SECURITY_UPDATE=PASS` and bind its exact kernel update record. If the release does not change kernel inputs, bind the existing sealed `SABLEOS_KERNEL_BASELINE=PASS` record instead.
