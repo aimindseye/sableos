@@ -24,7 +24,7 @@ patches/android-17-grapheneos-2026081300/BASELINE.lock
 
 ## Host requirements
 
-GrapheneOS documents Ubuntu 24.04 LTS, Ubuntu 24.10, Debian bookworm and Arch Linux as supported build hosts. The validated Sable run used the GrapheneOS Android build system with Node.js 24 LTS for `adevtool` vendor extraction.
+The validated Sable run used the GrapheneOS Android build system with Node.js 24 LTS for `adevtool` vendor extraction.
 
 At minimum, install the normal GrapheneOS source/build tools for your host. On Debian/Ubuntu the GrapheneOS guide begins with:
 
@@ -32,7 +32,7 @@ At minimum, install the normal GrapheneOS source/build tools for your host. On D
 sudo apt install repo yarnpkg zip rsync
 ```
 
-Also ensure the Android build dependencies listed by GrapheneOS are installed (`git`, `gnupg`, `openssh`, `diffutils`, `fontconfig`, a font package, `hostname`, `openssl`, `unzip`, and the normal compiler/runtime host support).
+Also install the normal Android/GrapheneOS host dependencies for the selected distro (`git`, `gnupg`, `openssh`, `diffutils`, `fontconfig`, fonts, `hostname`, `openssl`, `unzip`, and the required compiler/runtime support).
 
 Validated vendor-tool Node version:
 
@@ -114,9 +114,38 @@ adevtool generate-all -d panther
 
 Proprietary Pixel vendor/firmware files are not redistributed by this SableOS repository. Use the vendor extraction procedure for the exact GrapheneOS release and device.
 
-## 3. Apply the Sable-specific source delta
+## 3. Prepare the exact Sable D2+D3 delta
 
-Clone this SableOS repository separately, then apply the bounded D2+D3 source delta:
+Clone this SableOS repository separately. Before applying the delta, ensure these exact binary assets exist in:
+
+```text
+patches/android-17-grapheneos-2026081300/assets/
+```
+
+Required files:
+
+```text
+sableos_setupwizard_icon.png
+sableos_boot_fallback_mask_448x605.png
+```
+
+Verify them before touching the Android source tree:
+
+```bash
+cd /path/to/sableos/patches/android-17-grapheneos-2026081300
+sha256sum -c assets/SHA256SUMS
+```
+
+Expected hashes:
+
+```text
+eed1b1277a77fa1f94b514585622c403c85c95191cfa3ba90edf526d02e5aea7  sableos_setupwizard_icon.png
+dd16d019fc36aefae3b3d6c624c372bf3d5ed8f4ce88aec3932c1816913f7b9e  sableos_boot_fallback_mask_448x605.png
+```
+
+Do not recompress or regenerate these while claiming the exact D3 reference identity. Any byte change is a new source input and requires a new artifact audit.
+
+## 4. Apply and verify the Sable-specific source delta
 
 ```bash
 cd /path/to/sableos
@@ -130,9 +159,26 @@ python3 patches/android-17-grapheneos-2026081300/apply_sable_branding.py \
   --source /srv/data/sableos_panther_graphene_2026081300_workspace verify
 ```
 
-The applicator enforces the exact validated heads for `SetupWizard2`, `Settings`, and `frameworks/base`, exact pre-change boot-logo assets, exact final dirty scope and exact Sable binary asset hashes.
+The applicator enforces the exact validated heads for `SetupWizard2`, `Settings`, and `frameworks/base`, the exact pre-change Graphene boot-logo mask, the unchanged shine asset, the exact final dirty scope and the exact Sable binary asset hashes.
 
-## 4. Build the validated development target-files package
+Expected dirty scope:
+
+```text
+packages/apps/SetupWizard2:
+ M res/layout/activity_finish.xml
+ M res/layout/activity_welcome.xml
+ M res/values/strings.xml
+?? res/drawable-nodpi/sableos_icon.png
+
+packages/apps/Settings:
+ M res/values/strings_app_exploit_protection.xml
+ M res/values/strings_ext.xml
+
+frameworks/base:
+ M core/res/assets/images/android-logo-mask.png
+```
+
+## 5. Build the validated development target-files package
 
 The validated D3 build used `userdebug/test-keys`. It is a development artifact, not a production release-signing recipe.
 
@@ -155,9 +201,9 @@ m -j8 \
   2>&1 | tee /tmp/sableos-panther-d3-build.log
 ```
 
-The `vendorbootimage vendorkernelbootimage target-files-package` target set matches the GrapheneOS Pixel 7 build requirement and the validated Sable run.
+The `vendorbootimage vendorkernelbootimage target-files-package` target set matches the validated Pixel 7 D3 build.
 
-The exact validated target-files reference was:
+Exact validated target-files reference:
 
 ```text
 out_graphene_control/target/product/panther/obj/PACKAGING/target_files_intermediates/panther-target-files.zip
@@ -166,11 +212,11 @@ SHA-256: 746fb6c6168d56b18285199649343210453301e32408e2bc456b86dbdd5f3fe8
 
 Do **not** require this target-files SHA on a different host as a universal correctness condition. The project has proven semantically equivalent host/build-environment residuals such as filesystem metadata, BTF encoding and empty-data filesystem UUID nondeterminism. Treat the D3 SHA as the validated reference artifact, then audit deltas on a new host.
 
-## 5. Mandatory build-log audit
+## 6. Mandatory build-log audit
 
 A successful final `m` status is necessary but not sufficient. Audit the complete build log before artifact/deployment gates.
 
-Capture candidate lines without blindly treating every textual `warning` or `Failed to read` as a correctness failure:
+Capture candidate lines without blindly treating every textual warning as a correctness failure:
 
 ```bash
 grep -Ein \
@@ -190,7 +236,7 @@ BUILD_CORRECTNESS_RISK
 
 The validated D3 run contained non-D3 API-37 compiler/R8/resource warning families and packaging probes. The contextual audit found zero D3-relevant warnings and zero unresolved build-correctness risks. Keep the evidence rather than suppressing those warnings.
 
-## 6. Expected Sable source identity
+## 7. Expected Sable source identity
 
 The current Sable delta changes only these seven source files:
 
@@ -219,7 +265,7 @@ unchanged android-logo-shine.png:
 
 The fallback boot-animation implementation is intentionally unchanged. There is no runtime `bootanimation.zip`; `BootAnimation.cpp` falls back to the framework assets. The Sable mask is opaque and therefore visually occludes the existing shine asset while retaining the upstream renderer.
 
-## 7. Validated D3 image identities
+## 8. Validated D3 image identities
 
 Reference artifacts from the physically booted D3 build:
 
@@ -239,7 +285,7 @@ cc284d3841c243a91d6a43efcf6aea81dc0cfa95d4107426c9c4112d0808a789
 
 Changing `framework-res.apk` also regenerates its fs-verity metadata, the fs-verity `BuildManifest.apk` / V4 signature, and a PRODUCT auto-generated framework characteristics RRO. Those downstream changes were proven and are recorded in `PANTHER_D3_VALIDATION.md`.
 
-## 8. Deployment is a separate authorized operation
+## 9. Deployment is a separate authorized operation
 
 Do not treat the build procedure as authorization to flash a device. The validated D3 physical test needed `system_b`, `product_b`, and matching `vbmeta_b` together because D3 `vbmeta` binds the regenerated PRODUCT hashtree.
 
@@ -250,4 +296,6 @@ The final validated physical-gate script names and SHA-256 values are recorded i
 - GrapheneOS build documentation: https://grapheneos.org/build
 - GrapheneOS manifest repository: https://github.com/GrapheneOS/platform_manifest
 - Canonical Sable delta: `patches/android-17-grapheneos-2026081300/`
+- Changed-file inventory: `patches/android-17-grapheneos-2026081300/CHANGED_FILES.md`
+- Binary-asset hashes: `patches/android-17-grapheneos-2026081300/assets/SHA256SUMS`
 - D3 validation record: `docs/PANTHER_D3_VALIDATION.md`
