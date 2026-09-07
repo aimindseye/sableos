@@ -25,7 +25,9 @@ Start here for current work:
 
 - `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — clean source/vendor/delta/build procedure.
 - `docs/PANTHER_D3_VALIDATION.md` — exact D3 build/artifact/physical validation record.
-- `patches/android-17-grapheneos-2026081300/` — exact Sable source delta and binary branding assets.
+- `patches/android-17-grapheneos-2026081300/` — exact text delta applicator, source/head seals, changed-file inventory and binary-asset SHA-256 manifest.
 - `docs/PANTHER_D3_VALIDATION.md` also records the exact SHA-256 seals of the final state-bound validation/deployment gates.
+
+The two exact D3 binary branding inputs are `sableos_setupwizard_icon.png` and `sableos_boot_fallback_mask_448x605.png`; their required hashes are in `patches/android-17-grapheneos-2026081300/assets/SHA256SUMS`. They must be present before the applicator is run.
 
 Historical pure-AOSP Panther bring-up records remain useful forensic evidence, but `/srv/data/aosp_panther17_workspace` is no longer the canonical SableOS Android/Pixel substrate.
