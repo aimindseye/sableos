@@ -71,9 +71,11 @@ def sha256(path: Path) -> str:
 
 
 def run_git(repo: Path, *args: str) -> str:
+    # Preserve leading spaces: git status --porcelain uses the first two
+    # columns as meaningful index/worktree state. Only remove trailing newlines.
     return subprocess.check_output(
         ["git", "-C", str(repo), *args], text=True, stderr=subprocess.STDOUT
-    ).strip()
+    ).rstrip("\n")
 
 
 def assert_head(source: Path, repo_rel: Path, expected: str) -> None:
@@ -231,13 +233,38 @@ def apply(source: Path) -> None:
 def self_test() -> None:
     setup_asset, mask_asset = verify_assets()
     with tempfile.TemporaryDirectory(prefix="sable-brand-selftest-") as td:
-        p = Path(td) / "x.txt"
+        root = Path(td)
+
+        p = root / "x.txt"
         p.write_text("alpha GrapheneOS omega", encoding="utf-8")
         replace_once(p, "GrapheneOS", "SableOS")
         if p.read_text(encoding="utf-8") != "alpha SableOS omega":
             raise SystemExit("SELF_TEST_REPLACE_FAIL")
+
+        # Regression test for the porcelain-leading-space parser bug. The
+        # worktree-only modification must remain exactly " M ..." rather than
+        # being collapsed to "M ..." by output trimming.
+        repo = root / "repo"
+        repo.mkdir()
+        run_git(repo, "init", "-q")
+        run_git(repo, "config", "user.email", "sable-selftest@example.invalid")
+        run_git(repo, "config", "user.name", "Sable self-test")
+        (repo / "tracked.txt").write_text("baseline\n", encoding="utf-8")
+        run_git(repo, "add", "tracked.txt")
+        run_git(repo, "commit", "-q", "-m", "self-test baseline")
+        (repo / "tracked.txt").write_text("changed\n", encoding="utf-8")
+        (repo / "new.txt").write_text("untracked\n", encoding="utf-8")
+
+        porcelain = status_set(root, Path("repo"))
+        expected_porcelain = {" M tracked.txt", "?? new.txt"}
+        if porcelain != expected_porcelain:
+            raise SystemExit(
+                f"SELF_TEST_PORCELAIN_FAIL expected={sorted(expected_porcelain)!r} actual={sorted(porcelain)!r}"
+            )
+
     print(f"SELF_TEST_SETUP_ICON_SHA={sha256(setup_asset)}")
     print(f"SELF_TEST_BOOT_MASK_SHA={sha256(mask_asset)}")
+    print("SELF_TEST_PORCELAIN_COLUMNS=PASS")
     print("SABLE_D2_D3_APPLY_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
