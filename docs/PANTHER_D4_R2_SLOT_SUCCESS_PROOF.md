@@ -41,7 +41,7 @@ It requires explicit authorization for device contact and reboot, then:
 5. requires product `panther`, current slot `b`, slot count `2`, `slot-successful:b=yes`, and `slot-unbootable:b=no`;
 6. records `slot-retry-count:b` when observable without making it a closure blocker;
 7. reboots back to Android;
-8. proves product, slot and completed boot again;
+8. waits for both authorized ADB transport and `sys.boot_completed=1`, then proves product and slot again;
 9. writes a final SHA-256 evidence seal.
 
 Android's A/B fastboot contract defines the relevant variables as `current-slot`, `slot-count`, `slot-successful:<slot>`, `slot-unbootable:<slot>`, and `slot-retry-count:<slot>`.
@@ -82,7 +82,7 @@ USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
 Exact script SHA-256:
 
 ```text
-42666e4f59929017391b2b112b228452f824609c9f6f17dbf193bad6ec1873c0
+7cb77b25a11968aa4f439ecc58acb517c525014b72c312981fc25de25c327de4
 ```
 
 Validated cases:
@@ -90,6 +90,7 @@ Validated cases:
 ```text
 BASH_SYNTAX=PASS
 SUCCESS_CASE=PASS
+DELAYED_POSTBOOT_COMPLETION=PASS
 FAIL_SUCCESSFUL_NO=PASS
 FAIL_RECOVERY_REBOOT=PASS
 NOAUTH_NO_DEVICE_CONTACT=PASS
@@ -98,7 +99,12 @@ SERIAL_LEAK=ABSENT
 FORBIDDEN_FASTBOOT_MUTATIONS=ABSENT
 ```
 
-The adversarial test initially found a same-second evidence-directory collision. The final script uses `mktemp -d` with a timestamp prefix plus unique suffix and supersedes that defective draft.
+Two pre-execution defects were found and superseded during adversarial validation:
+
+1. a same-second evidence-directory collision, fixed by using `mktemp -d` with a timestamp prefix plus unique suffix;
+2. a real-device postboot timing race where ADB may report `device` before `sys.boot_completed=1`, fixed by waiting explicitly for completed Android boot before final validation.
+
+After the authorized `adb reboot bootloader` command succeeds, any bounded failure attempts the authorized recovery reboot back to Android.
 
 ## Execution
 
@@ -121,6 +127,12 @@ USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO \
 EXPECTED_DEVICE=panther \
 EXPECTED_SLOT=b \
 bash tools/validation/panther-d4/PANTHER_D4_R2_SLOT_SUCCESS_PROOF.sh
+```
+
+Expected script hash before execution:
+
+```text
+7cb77b25a11968aa4f439ecc58acb517c525014b72c312981fc25de25c327de4
 ```
 
 Expected closure markers:
