@@ -1,7 +1,7 @@
 # sablectl — SableOS host validation CLI plan
 
 Date: 2026-09-08
-Status: v0.1 initial implementation delivered
+Status: v0.1 implemented and live-validated on Panther B2
 
 ## Purpose
 
@@ -19,6 +19,60 @@ source change
   -> manual checkpoints where truly required
   -> JSON / Markdown / JUnit evidence
 ```
+
+## v0.1 live validation result
+
+The first physical Panther run on the successfully flashed D4 B2 device closed the exact post-boot gap left by the historical R10R3 shell harness.
+
+Host installation/self-test:
+
+```text
+pytest=PASS_6_OF_6
+sablectl doctor=PASS
+sablectl device wait=PASS
+```
+
+Exact packaged B2 verification:
+
+```text
+sablectl verify boot
+PASS=11 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
+OVERALL=PASS
+REPORT_DIR=.sablectl/runs/verify-boot/20260908T181140Z
+```
+
+The run proved:
+
+```text
+device=panther
+boot_completed=1
+active_slot=_b
+crypto=encrypted
+BuildManifest exact match=PASS
+ART exact match=PASS_5_OF_5
+artifact.art.count expected=5 actual=5
+```
+
+Initial smoke:
+
+```text
+sablectl smoke
+PASS=16 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
+OVERALL=PASS
+REPORT_DIR=.sablectl/runs/smoke/20260908T181212Z
+```
+
+Additional runtime checks:
+
+```text
+SELinux=Enforcing
+servicemanager=running
+surfaceflinger=running
+zygote=running
+PackageManager=PASS installed_packages=229
+```
+
+This establishes `sablectl` as the maintained post-boot validation path for Panther development.
 
 ## Design principles
 
@@ -69,7 +123,7 @@ A non-applicable or manual check must not be silently converted into pass/fail.
 
 ### 5. Evidence is a first-class output
 
-Each run should produce:
+Each run produces or is designed to produce:
 
 ```text
 report.json
@@ -78,7 +132,7 @@ junit.xml
 raw evidence files as needed
 ```
 
-Reports should mask serial/device identifiers by default while preserving exact local evidence where explicitly requested.
+Reports mask serial/device identifiers by default while preserving exact local evidence where explicitly requested.
 
 ## v0.1 implementation
 
@@ -123,6 +177,8 @@ Captures timestamped evidence including:
 
 It also stores a structured device snapshot for later preserved-data comparison.
 
+The first B2 baseline should be captured now and used as the reference for subsequent deployments. It is post-B2 and must not be used to retroactively claim pre-B2 package/user preservation for the already-completed flash.
+
 ### `verify boot`
 
 Given the exact `target_files.zip`:
@@ -138,7 +194,7 @@ Given the exact `target_files.zip`:
 - compare all five ART files exactly;
 - require an explicit aggregate 5/5 result.
 
-The implementation uses Python subprocesses with `stdin=DEVNULL`; an ADB child cannot consume the parent validation loop input.
+The implementation uses Python subprocesses with `stdin=DEVNULL`; an ADB child cannot consume the parent validation loop input. The first live Panther run proved the full 5/5 path.
 
 ### `verify preserved-data`
 
@@ -161,9 +217,11 @@ Combines:
 - PackageManager responding;
 - optional preserved-data checks.
 
+The first live Panther smoke run passed 16/16 checks.
+
 ## v0.2 — D4 automated acceptance
 
-Planned host checks:
+Next host checks:
 
 - crash/ANR/tombstone and DropBox audit;
 - Wi-Fi state and reconnect;
