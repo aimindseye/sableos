@@ -74,6 +74,19 @@ wait_adb_device() {
   return 1
 }
 
+wait_android_boot_complete() {
+  local i state boot
+  for ((i=0; i<120; i++)); do
+    state=$(adb_quiet get-state 2>/dev/null || true)
+    if [[ "$state" == device ]]; then
+      boot=$(adb_quiet shell getprop sys.boot_completed 2>/dev/null | tr -d '\r\n' || true)
+      [[ "$boot" == 1 ]] && return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
 fastboot_device_count() {
   local raw count=0 line
   raw=$("$FASTBOOT" devices 2>/dev/null || true)
@@ -157,8 +170,9 @@ printf 'PRE_BOOT_COMPLETED=%s\n' "$pre_boot"
 
 printf '\n===== CONTROLLED REBOOT TO BOOTLOADER =====\n'
 adb_quiet reboot bootloader || fail 40 ADB_REBOOT_BOOTLOADER_FAILED
-wait_fastboot_one || fail 41 FASTBOOT_DEVICE_NOT_READY_OR_NOT_UNIQUE
+# From this point forward, any bounded failure attempts a recovery reboot to Android.
 ENTERED_FASTBOOT=YES
+wait_fastboot_one || fail 41 FASTBOOT_DEVICE_NOT_READY_OR_NOT_UNIQUE
 printf 'FASTBOOT_TRANSPORT=PASS_ONE_DEVICE\n'
 
 printf '\n===== READ-ONLY BOOTLOADER SLOT METADATA =====\n'
@@ -193,7 +207,7 @@ printf 'D4_SLOT_%s_CURRENT=PASS\n' "${EXPECTED_SLOT^^}"
 printf '\n===== CONTROLLED REBOOT TO ANDROID =====\n'
 "$FASTBOOT" reboot </dev/null >/dev/null 2>&1 || fail 70 FASTBOOT_REBOOT_FAILED
 ENTERED_FASTBOOT=NO
-wait_adb_device || fail 71 POST_ADB_DEVICE_NOT_READY
+wait_android_boot_complete || fail 71 POST_ANDROID_BOOT_NOT_COMPLETE
 
 post_product=$(adb_quiet shell getprop ro.product.device | tr -d '\r\n') || fail 72 POST_PRODUCT_QUERY_FAILED
 post_slot=$(adb_quiet shell getprop ro.boot.slot_suffix | tr -d '\r\n') || fail 73 POST_SLOT_QUERY_FAILED
