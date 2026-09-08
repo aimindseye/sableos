@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "description": "Required fields for a SableOS Panther production release source seal before build authorization.",
+  "required": [
+    "schema_version",
+    "device",
+    "graphene_manifest_tag",
+    "pinned_manifest_sha256",
+    "pinned_repo_manifest",
+    "sable_tools_commit",
+    "sable_delta_commits",
+    "release_policy_sha256",
+    "updater_config_sha256",
+    "release_tooling_heads",
+    "vendor_state_commit",
+    "build_number",
+    "build_variant",
+    "official_build",
+    "build_datetime_policy",
+    "host_tool_hashes"
+  ],
+  "hash_algorithm": "sha256",
+  "rules": {
+    "device": "panther",
+    "build_variant": "user",
+    "official_build": true,
+    "build_number_format": "^[0-9]{10}$",
+    "build_number_semantics": "YYYYMMDDRR and never reused",
+    "private_key_material": "MUST_NOT_APPEAR",
+    "private_key_hashes": "MUST_NOT_APPEAR"
+  }
+}
