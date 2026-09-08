@@ -1,148 +1,95 @@
 # sablectl — SableOS host validation CLI plan
 
 Date: 2026-09-08
-Status: v0.1 implemented and live-validated on Panther B2
+Status: v0.2 implementation delivered; live Panther D4 acceptance run pending
 
 ## Purpose
 
 `sablectl` is the reusable host-side validation and regression tool for SableOS development. It replaces one-off post-boot shell harnesses with typed checks, deterministic subprocess handling, structured evidence and named acceptance suites.
 
-The primary development loop becomes:
+## Delivered milestones
 
-```text
-source change
-  -> build
-  -> target_files.zip
-  -> controlled deployment
-  -> sablectl smoke
-  -> sablectl acceptance <milestone>
-  -> manual checkpoints where truly required
-  -> JSON / Markdown / JUnit evidence
-```
-
-## v0.1 live validation result
-
-The first physical Panther run on the successfully flashed D4 B2 device closed the exact post-boot gap left by the historical R10R3 shell harness.
-
-Host installation/self-test:
+### v0.1 — operationally closed on Panther B2
 
 ```text
 pytest=PASS_6_OF_6
 sablectl doctor=PASS
 sablectl device wait=PASS
-```
-
-Exact packaged B2 verification:
-
-```text
-sablectl verify boot
-PASS=11 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
-OVERALL=PASS
-REPORT_DIR=.sablectl/runs/verify-boot/20260908T181140Z
-```
-
-The run proved:
-
-```text
-device=panther
-boot_completed=1
-active_slot=_b
-crypto=encrypted
-BuildManifest exact match=PASS
+sablectl verify boot=PASS_11_OF_11
 ART exact match=PASS_5_OF_5
-artifact.art.count expected=5 actual=5
+sablectl smoke=PASS_16_OF_16
+baseline capture=PASS
+verify preserved-data=PASS_3_OF_3
+smoke + baseline=PASS_19_OF_19
 ```
 
-Initial smoke:
+The first post-B2 baseline is the reference for subsequent deployments and is not retrospective pre-B2 evidence.
+
+### v0.2 — D4 named acceptance suite delivered
+
+New command:
 
 ```text
-sablectl smoke
-PASS=16 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
-OVERALL=PASS
-REPORT_DIR=.sablectl/runs/smoke/20260908T181212Z
+sablectl acceptance d4
 ```
 
-Additional runtime checks:
+Required inputs:
 
 ```text
-SELinux=Enforcing
-servicemanager=running
-surfaceflinger=running
-zygote=running
-PackageManager=PASS installed_packages=229
+--target-files <exact packaged target-files>
+--baseline <pre-deployment sablectl baseline>
+--expected-slot <slot>
 ```
 
-This establishes `sablectl` as the maintained post-boot validation path for Panther development.
+The suite combines v0.1 exact identity/smoke/preserved-data checks with:
 
-## Design principles
+- crash-buffer audit scoped to the current boot;
+- Wi-Fi framework status and validated-network observation;
+- telephony registry and cellular-data observation;
+- IMS observation where exposed;
+- Bluetooth manager state;
+- USB/ADB function health;
+- battery service and sane battery level;
+- Sable power-service observation, currently SKIP until the Panther service port exists;
+- WebView provider through read-only `dumpsys webviewupdate`;
+- Home/browser/dialer/SMS role holders using the current Android `cmd role get-role-holders` interface;
+- explicit `MANUAL` results for voice, SMS, MMS, hotspot, Bluetooth audio, camera quality, location, biometrics and NFC.
 
-### 1. Packaged build is the source of truth
-
-Release/device validation compares the live device against `target_files.zip`, not loose product-output files when the two namespaces differ.
-
-### 2. Separate collection, checks, suites, actions and reports
-
-```text
-COLLECT
-  capture facts/evidence
-
-CHECK
-  compare facts to explicit expectations
-
-SUITE
-  compose checks into a named gate
-
-ACTION
-  mutating operation; explicit authorization required
-
-REPORT
-  serialize results without changing semantics
-```
-
-### 3. Typed result model
-
-Every check returns one of:
+Result semantics now distinguish:
 
 ```text
 PASS
+PASS_WITH_MANUAL
 FAIL
-SKIP
-MANUAL
-ERROR
 ```
 
-A non-applicable or manual check must not be silently converted into pass/fail.
+`--require-complete` returns exit 4 while manual gates remain. FAIL/ERROR returns exit 2.
 
-### 4. No ambient shell authority
-
-- no `shell=True` host execution;
-- subprocess stdin isolated from caller input;
-- ADB serial pinned before commands;
-- no generic device root requirement for validation;
-- mutating operations are separate from read-only validation.
-
-### 5. Evidence is a first-class output
-
-Each run produces or is designed to produce:
+Local delivery validation:
 
 ```text
-report.json
-report.md
-junit.xml
-raw evidence files as needed
+compileall=PASS
+pytest=PASS_11_OF_11
+adb reboot execution path=ABSENT
+pm install execution path=ABSENT
+pm uninstall execution path=ABSENT
+fastboot execution path=ABSENT
+wipe flag execution path=ABSENT
+shell=True=ABSENT
 ```
 
-Reports mask serial/device identifiers by default while preserving exact local evidence where explicitly requested.
+v0.2 remains read-only. APK install/uninstall and reboot/persistence automation are deferred until they have separate authorization gates and negative tests.
 
-## v0.1 implementation
+## Design principles
 
-Repository path:
+1. Packaged `target_files.zip` is the release/device source of truth.
+2. Collection, checks, suites, actions and reporting remain separate layers.
+3. Every check is typed: PASS, FAIL, SKIP, MANUAL or ERROR.
+4. Child subprocess stdin is isolated; no `shell=True` host execution.
+5. Reports are machine-readable and mask serial identifiers by default.
+6. Mutating operations require explicit, separately tested authorization gates.
 
-```text
-tools/sablectl/
-```
-
-Commands:
+## Current command surface
 
 ```text
 sablectl doctor
@@ -151,140 +98,32 @@ sablectl baseline capture
 sablectl verify boot
 sablectl verify preserved-data
 sablectl smoke
+sablectl acceptance d4
 ```
 
-### `doctor`
+## Next after live v0.2 closure
 
-- ADB executable present;
-- exactly one authorized device unless serial explicitly selected.
+### v0.2.1 / v0.3 host actions and device agent
 
-### `baseline capture`
+- separately authorized reboot/persistence test;
+- separately authorized APK install/launch/uninstall fixture;
+- richer crash/ANR/tombstone evidence;
+- SableTestAgent instrumentation integration for camera, sensors, audio, location, WebView, notifications, storage, lifecycle and selected permission paths.
 
-Captures timestamped evidence including:
+### v0.4 deployment and lab automation
 
-- `getprop`;
-- package lists;
-- third-party packages;
-- features;
-- Android users;
-- battery;
-- Wi-Fi;
-- connectivity;
-- telephony registry;
-- Bluetooth manager;
-- location;
-- SELinux state.
-
-It also stores a structured device snapshot for later preserved-data comparison.
-
-The first B2 baseline should be captured now and used as the reference for subsequent deployments. It is post-B2 and must not be used to retroactively claim pre-B2 package/user preservation for the already-completed flash.
-
-### `verify boot`
-
-Given the exact `target_files.zip`:
-
-- parse nested `BuildManifest.apk/assets/build_manifest.pb`;
-- compute expected installed BuildManifest SHA-256;
-- compute expected SHA-256 for the five D4 ART residual files;
-- verify device codename;
-- verify `sys.boot_completed=1`;
-- verify expected slot when requested;
-- verify encrypted state;
-- compare installed BuildManifest exactly;
-- compare all five ART files exactly;
-- require an explicit aggregate 5/5 result.
-
-The implementation uses Python subprocesses with `stdin=DEVNULL`; an ADB child cannot consume the parent validation loop input. The first live Panther run proved the full 5/5 path.
-
-### `verify preserved-data`
-
-Against a pre-flash baseline:
-
-- credential-encrypted user-0 data available;
-- exact third-party package set preserved;
-- Android user count preserved.
-
-Future versions can add stronger stable identifiers for user/profile and selected application data without collecting sensitive content.
-
-### `smoke`
-
-Combines:
-
-- exact boot/build identity;
-- exact ART identity;
-- SELinux enforcing;
-- `servicemanager`, `surfaceflinger`, `zygote` running;
-- PackageManager responding;
-- optional preserved-data checks.
-
-The first live Panther smoke run passed 16/16 checks.
-
-## v0.2 — D4 automated acceptance
-
-Next host checks:
-
-- crash/ANR/tombstone and DropBox audit;
-- Wi-Fi state and reconnect;
-- connectivity/default network;
-- cellular registration/data;
-- IMS state where observable;
-- Bluetooth adapter/service state;
-- USB/ADB health;
-- battery/charging and Sable power-service checks;
-- PackageManager/default role validation;
-- WebView provider identity;
-- package install/launch test;
-- notification host-observable sanity;
-- reboot/persistence suite;
-- D4 named suite and release-gate summary.
-
-## v0.3 — SableTestAgent integration
-
-`sablectl` orchestrates a test-only Android instrumentation APK and ingests structured results for:
-
-- camera;
-- sensors;
-- audio;
-- location;
-- WebView;
-- notifications;
-- storage;
-- lifecycle;
-- selected permission paths.
-
-See `SABLETEST_AGENT_PLAN.md`.
-
-## v0.4 — deployment and lab automation
-
-Only after read-only validation is stable:
+Only after read-only and bounded mutating test actions are proven:
 
 - controlled reboot/flash orchestration;
-- OTA apply/verify workflows;
+- OTA apply/verify;
 - active/inactive-slot policy;
 - rollback/fallback checks;
-- multi-device serial inventory;
-- self-hosted hardware runner support;
+- multi-device lab support;
 - release-candidate batch execution.
 
-Mutating commands must retain the explicit authorization model proven during Panther D4: contact, reboot, flash, slot and wipe authorities are separate decisions.
+## Release target
 
-## Testing requirements
-
-Every release must include unit tests for:
-
-- subprocess stdin isolation;
-- target-files parsing;
-- all expected artifact loops reaching full cardinality;
-- device serial selection;
-- result aggregation;
-- baseline comparisons;
-- report generation.
-
-New mutating features additionally require negative tests for forbidden operations and interrupted workflows.
-
-## Release integration
-
-A future SableOS release candidate should be able to produce:
+A future SableOS release candidate should emit:
 
 ```text
 BUILD_ARTIFACT_IDENTITY=PASS
@@ -296,5 +135,3 @@ D4_AUTOMATED_ACCEPTANCE=PASS
 D4_MANUAL_ACCEPTANCE=PASS
 RELEASE_CANDIDATE=PASS
 ```
-
-with exact machine-readable report artifacts attached to the release evidence record.
