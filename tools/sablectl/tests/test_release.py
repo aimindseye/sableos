@@ -20,17 +20,44 @@ class Result:
 
 
 class FakeAdb:
-    def __init__(self, successful: bool = True):
+    def __init__(
+        self,
+        successful: bool = True,
+        *,
+        runtime_suffix: str = "_b",
+        boot_successful_prop: str = "yes",
+        bootctl_current: Result | None = None,
+        bootctl_bootable: Result | None = None,
+        bootctl_successful: Result | None = None,
+    ):
         self.successful = successful
+        self.runtime_suffix = runtime_suffix
+        self.boot_successful_prop = boot_successful_prop
+        self.bootctl_current = bootctl_current or Result(stdout="1\n")
+        self.bootctl_bootable = bootctl_bootable or Result(stdout="1\n")
+        if bootctl_successful is not None:
+            self.bootctl_successful = bootctl_successful
+        else:
+            self.bootctl_successful = Result(
+                returncode=0 if successful else 70,
+                stdout="1\n" if successful else "0\n",
+            )
+        self.calls: list[tuple[str, ...]] = []
+
+    def getprop(self, name):
+        if name == "ro.boot.slot_suffix":
+            return self.runtime_suffix
+        if name == "ro.boot.slot_successful":
+            return self.boot_successful_prop
+        raise AssertionError(name)
 
     def shell(self, args, **kwargs):
         key = tuple(args)
+        self.calls.append(key)
         table = {
-            ("bootctl", "get-current-slot"): Result(stdout="1\n"),
-            ("bootctl", "is-slot-bootable", "1"): Result(returncode=0),
-            ("bootctl", "is-slot-marked-successful", "1"): Result(
-                returncode=0 if self.successful else 1
-            ),
+            ("bootctl", "get-current-slot"): self.bootctl_current,
+            ("bootctl", "is-slot-bootable", "1"): self.bootctl_bootable,
+            ("bootctl", "is-slot-marked-successful", "1"): self.bootctl_successful,
             ("cmd", "role", "get-role-holders", "--user", "0", "android.app.role.HOME"): Result(
                 stdout="com.android.launcher3\n"
             ),
@@ -85,12 +112,54 @@ def evidence() -> dict:
 
 def test_slot_successful_passes():
     results = {r.id: r for r in verify_slot_release_health(FakeAdb(), "b")}
-    assert all(r.status is Status.PASS for r in results.values())
+    assert results["release.slot_runtime"].status is Status.PASS
+    assert results["release.slot_successful_boot_property"].status is Status.PASS
+    assert results["release.boot_control_observable"].status is Status.PASS
+    assert results["release.slot_index"].status is Status.PASS
+    assert results["release.slot_bootable"].status is Status.PASS
+    assert results["release.slot_successful"].status is Status.PASS
 
 
-def test_slot_unsuccessful_fails():
+def test_slot_unsuccessful_fails_when_boolean_false_is_observable():
     results = {r.id: r for r in verify_slot_release_health(FakeAdb(False), "_b")}
     assert results["release.slot_successful"].status is Status.FAIL
+    assert results["release.slot_successful"].actual is False
+
+
+def test_bootctl_module_unavailable_is_skip_not_three_false_failures():
+    adb = FakeAdb(
+        boot_successful_prop="no",
+        bootctl_current=Result(returncode=70, stderr="Failed to get bootctl module.\n"),
+    )
+    results = {r.id: r for r in verify_slot_release_health(adb, "b")}
+    assert results["release.slot_runtime"].status is Status.PASS
+    assert results["release.slot_successful_boot_property"].status is Status.SKIP
+    assert results["release.boot_control_observable"].status is Status.SKIP
+    assert results["release.slot_index"].status is Status.SKIP
+    assert results["release.slot_bootable"].status is Status.SKIP
+    assert results["release.slot_successful"].status is Status.SKIP
+    assert ("bootctl", "is-slot-bootable", "1") not in adb.calls
+    assert ("bootctl", "is-slot-marked-successful", "1") not in adb.calls
+
+
+def test_bootctl_boolean_rpc_failure_is_skip_without_false_stdout():
+    adb = FakeAdb(
+        bootctl_successful=Result(
+            returncode=70,
+            stderr="Error calling isSlotMarkedSuccessful()\n",
+        )
+    )
+    results = {r.id: r for r in verify_slot_release_health(adb, "b")}
+    assert results["release.slot_successful"].status is Status.SKIP
+
+
+def test_runtime_slot_mismatch_fails_even_if_bootctl_unavailable():
+    adb = FakeAdb(
+        runtime_suffix="_a",
+        bootctl_current=Result(returncode=70, stderr="Failed to get bootctl module.\n"),
+    )
+    results = {r.id: r for r in verify_slot_release_health(adb, "b")}
+    assert results["release.slot_runtime"].status is Status.FAIL
 
 
 def test_manual_evidence_and_nfc_deferred():
