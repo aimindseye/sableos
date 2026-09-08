@@ -201,6 +201,8 @@ def test_source_seal_required_field_drift_is_error():
     assert any(c.id == "source_seal.required_fields" and c.status == "ERROR" for c in audit.checks)
 
 
+
+
 def test_mutation_semantics_drift_is_error():
     policy = load_policy()
     policy["planned_source_mutations"][0]["postimage"] = "CN=Wrong"
@@ -223,7 +225,6 @@ def test_source_seal_rule_drift_is_error():
     audit = m.Audit()
     m.validate_policy(load_policy(), schema, audit)
     assert any(c.id == "source_seal.rules" and c.status == "ERROR" for c in audit.checks)
-
 
 def test_readonly_subprocess_allowlist_rejects_device_and_build_tools():
     for exe in ("adb", "fastboot", "make", "openssl", "ota_from_target_files"):
@@ -360,6 +361,7 @@ def test_script_has_no_mutating_execution_surface():
     )
     for token in forbidden_literals:
         assert token not in text
+    # All subprocess execution routes through run_readonly and its git/repo allowlist.
     assert text.count("subprocess.run(") == 1
 
 
@@ -369,8 +371,8 @@ def test_policy_contains_no_private_material_or_secret_values():
     assert "BEGIN PRIVATE KEY" not in text
     assert "BEGIN OPENSSH PRIVATE KEY" not in text
     assert "pkcs8:" not in text.lower()
+    # Policy names may mention password/passphrase rules, but no secret value fields are permitted.
     forbidden_keys = {"password", "passphrase", "secret", "private_key_value", "private_key_bytes"}
-
     def walk(obj):
         if isinstance(obj, dict):
             for k, v in obj.items():
@@ -379,7 +381,6 @@ def test_policy_contains_no_private_material_or_secret_values():
         elif isinstance(obj, list):
             for v in obj:
                 walk(v)
-
     walk(policy)
 
 
