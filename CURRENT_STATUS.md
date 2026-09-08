@@ -47,8 +47,6 @@ sha256=8a56fddab2ae42f40d522e96241b4b486bb2d702e11f9bb0b10e7527d32f8cec
 
 D4 is **CLOSED** for the current B2 development population.
 
-Validated chain:
-
 ```text
 R7R7 fs-verity named-input fidelity                 PASS / CLOSED
 R8 ART residual classification                      PARTIAL / historical C2 evidence unavailable
@@ -73,19 +71,15 @@ PANTHER_D4_R2                                       PASS
 PANTHER_D4                                          CLOSED
 ```
 
-The D4 release gate completed with:
+D4 release gate:
 
 ```text
-PASS=56
-FAIL=0
-SKIP=8
-MANUAL=0
-ERROR=0
+PASS=56 FAIL=0 SKIP=8 MANUAL=0 ERROR=0
 OVERALL=PASS
 RELEASE_D4_RC=0
 ```
 
-The dedicated bootloader-side slot proof then established:
+Bootloader-side slot proof:
 
 ```text
 FASTBOOT_PRODUCT=panther
@@ -94,67 +88,18 @@ FASTBOOT_SLOT_COUNT=2
 FASTBOOT_SLOT_SUCCESSFUL_b=yes
 FASTBOOT_SLOT_UNBOOTABLE_b=no
 FASTBOOT_SLOT_RETRY_COUNT_b=2
-D4_SLOT_B_SUCCESSFUL=PASS
-D4_SLOT_B_BOOTABLE=PASS
-D4_SLOT_B_CURRENT=PASS
 POST_SLOT_SUFFIX=_b
 POST_BOOT_COMPLETED=1
-POST_SLOT_PRESERVED=PASS
 PANTHER_D4_R2_SLOT_SUCCESS_RESULT=PASS
 R2_RC=0
 ```
 
-The successful slot-proof evidence directory was:
+Successful slot-proof evidence:
 
 ```text
 /tmp/PANTHER_D4_R2_SLOT_SUCCESS_PROOF_20260908T215953Z_JS7omS
-```
-
-with:
-
-```text
 script sha256=d3cdb1dc4cdca4289ff7d835a96d9c96aebfee05a4feaa4c967bbf033115ca71
 log sha256=8aaf2bbaf195cd5f48acc0eafad64022c3dd6ca339a4b400a933752a49738dbc
-```
-
-The earlier slot-proof attempt is superseded as a host fastboot-readiness race. It produced no flash, slot change, unlock or wipe, and Android was recovered on slot B before the corrected proof passed.
-
-## Functional acceptance
-
-Automated D4 acceptance and release checks proved, among other items:
-
-```text
-exact BuildManifest identity
-five exact ART images
-SELinux enforcing
-core Android services healthy
-credential-encrypted data available
-third-party package count preserved: 6
-Android user count preserved: 1
-Wi-Fi enabled and validated
-cellular registration and data
-Bluetooth enabled
-Vanadium WebView selected
-default launcher/browser/dialer/SMS roles
-ADB/USB transport health
-```
-
-Physical validation passed:
-
-```text
-VOICE_OUT=PASS
-VOICE_IN=PASS
-SMS_OUT=PASS
-SMS_IN=PASS
-MMS_OUT=PASS
-MMS_IN=PASS
-HOTSPOT=PASS
-BLUETOOTH_AUDIO=PASS
-CAMERA=PASS
-LOCATION=PASS
-BIOMETRICS=PASS
-CELLULAR_DATA=PASS
-WIFI=PASS
 ```
 
 NFC framework/service/HAL initialization and enable/routing path passed. RF tag read remains:
@@ -168,7 +113,7 @@ This is not a D4 blocking defect.
 
 ## Current active milestone: R1 release engineering
 
-The active milestone is now **R1 — Sable-owned release engineering**.
+The active milestone is **R1 — Sable-owned release engineering**.
 
 R1 goal:
 
@@ -184,46 +129,138 @@ rollback/recovery validation
 sablectl release evidence integration
 ```
 
-### R1-R0 preflight lineage
+### R1-R0 — CLOSED
 
-The original read-only R1-R0 base is byte-frozen:
+R1-R0 is closed as a trustworthy read-only release-engineering inventory.
+
+Final executable:
 
 ```text
-tools/validation/release-r1/SABLE_R1_R0_RELEASE_PREFLIGHT.py
-sha256=cf94b3a37529b63f6e72ebd5899cfe34d2a7e232f33a99396832773926a4dbe7
+tools/validation/release-r1/SABLE_R1_R0R3_RELEASE_PREFLIGHT.py
+sha256=595db875192ab5c3753e6d31698bce8adefdd3af5900de217bf4ea987ef7b88f
+git_blob=e35081e18cbbd12e7d49accb26766bc03721c649
 ```
 
-The first live R0 run exposed two parser defects. R0R1 fixed those semantics but introduced a monkeypatch self-recursion and is retained only as historical evidence.
-
-Current executable:
+Final ThinkPad gate:
 
 ```text
-tools/validation/release-r1/SABLE_R1_R0R2_RELEASE_PREFLIGHT.py
+BRANCH_BINDING=PASS
+R1_R0R3_FILE_BINDINGS=PASS
+PY_COMPILE=PASS_6_OF_6
+R1_R0R3_TESTS=PASS_38_OF_38
+PASS=19 BLOCKER=10 INFO=11 SKIP=2 ERROR=0
+R1_R0_PREFLIGHT_EXECUTION=PASS
+R1_RELEASE_READINESS=BLOCKED_10
+R1_R0R3_RC=3
 ```
 
-Current release-preflight disposition before the next ThinkPad run:
+Evidence:
 
 ```text
-R1_R0_BASE_TESTS=PASS_9_OF_9_ON_THINKPAD
-R1_R0R1=SUPERSEDED_MONKEYPATCH_SELF_RECURSION
-R1_R0R2_LOCAL_FOCUSED_TESTS=PASS_11_OF_11
-R1_R0R2_LIVE_THINKPAD_PREFLIGHT=PENDING
-KEY_GENERATION_AUTHORIZED=NO
+/tmp/SABLE_R1_R0_RELEASE_PREFLIGHT_20260908T225032Z_wfba8zy8
+```
+
+The ten substantive blockers were promoted into R1. R0R1 and R0R2 remain historical harness failures and are not current executable paths.
+
+### R1-R1 — ACTIVE
+
+R1-R1 defines policy/configuration before any production key-generation request.
+
+Current deliverables:
+
+```text
+tools/validation/release-r1/SABLE_R1_R1_POLICY_PREFLIGHT.py
+tools/validation/release-r1/test_release_policy_r1r1.py
+release/r1/panther-release-policy-v1.json
+release/r1/release-source-seal-v1.schema.json
+docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md
+```
+
+Adopted policy includes:
+
+```text
+CERTIFICATE_SUBJECT=CN=SableOS
+SIGNING_KEY_DOMAINS=9_BOUND
+BUILD_VARIANT=user
+OFFICIAL_BUILD=true
+BUILD_NUMBER_POLICY=YYYYMMDDRR_NO_REUSE
+TESTING_CHANNEL_FIRST=YES
+FUTURE_UPDATE_PATH_TEST=REQUIRED
+PERSISTENT_PRIVATE_KEYS=OFFLINE_ENCRYPTED_EXTERNAL_TO_WORKSPACE
+DECRYPTED_SIGNING_WORKDIR=TMPFS
+PRIVATE_KEY_MATERIAL_IN_PUBLIC_EVIDENCE=NO
+PRIVATE_KEY_HASHES_IN_PUBLIC_EVIDENCE=NO
+```
+
+The exact future source-mutation plan is limited to:
+
+```text
+script/generate-keys
+    CN=GrapheneOS -> CN=SableOS
+
+packages/apps/Updater/res/values/config.xml
+    https://releases.grapheneos.org/
+    -> operator-selected Sable-owned HTTPS base URL
+```
+
+Neither mutation is authorized or applied by R1-R1.
+
+Pre-delivery R1-R1 validation:
+
+```text
+PY_COMPILE_AST=PASS
+R1_R1_FOCUSED_TESTS=PASS_34_OF_34
+EXECUTION_SURFACE_AST=PASS
+FORBIDDEN_EXECUTION_SCAN=PASS
+SECRET_MATERIAL_SCAN=PASS
+REPEATED_MAIN_25=PASS
+```
+
+The checked-in R1-R1 policy intentionally has one unresolved operator-owned value:
+
+```text
+SABLE_UPDATE_BASE_URL=UNSET
+```
+
+Therefore the expected first ThinkPad policy-preflight result is:
+
+```text
+ERROR=0
+R1_R1_POLICY_EXECUTION=PASS
+R1_R1_POLICY_READINESS=BLOCKED_1
+R1_R1_RC=3
+```
+
+The sole expected blocker is the real Sable-owned HTTPS update endpoint. No hostname is invented by the tooling.
+
+### Authorization boundary
+
+```text
+SOURCE_MUTATION_AUTHORIZED=NO
+WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO
 BUILD_AUTHORIZED=NO
+KEY_GENERATION_AUTHORIZED=NO
 SIGNING_AUTHORIZED=NO
 OTA_GENERATION_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
+DEVICE_REBOOT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+SLOT_CHANGE_AUTHORIZED=NO
+USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
 ```
 
-A healthy R0R2 run is expected to complete the audit with `ERROR=0` and release blockers still present. Only after that should the blocker set become the R1-R1 worklist.
+A future R1-R1 exit `0` means only that policy is complete enough to **request** separate key-generation authorization. It never grants that authorization itself.
 
 ## Start here
 
 - `docs/PANTHER_D4_CLOSURE_20260908.md` — D4 final closure record.
 - `docs/PANTHER_D4_ROADMAP.md` — closed D4 roadmap and handoff to R1.
-- `docs/SABLE_R1_R0_RELEASE_ENGINEERING_PREFLIGHT.md` — current R1 architecture and R0R2 execution gate.
-- `docs/SABLE_R1_R0R2_PREFLIGHT_CORRECTION.md` — R0/R0R1 failure lineage and R0R2 validation.
-- `tools/validation/release-r1/README.md` — current executable/test commands.
+- `docs/SABLE_R1_R0_CLOSURE_20260908.md` — final R1-R0 live closure.
+- `release/r1/r1-r0-closure-20260908.json` — structured R1-R0 closure record.
+- `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — current R1-R1 architecture/policy.
+- `release/r1/panther-release-policy-v1.json` — Panther release policy.
+- `release/r1/release-source-seal-v1.schema.json` — production source-seal schema.
+- `tools/validation/release-r1/README.md` — current validation commands.
 - `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical GrapheneOS-based build procedure.
 
 Historical pure-AOSP Panther bring-up records remain forensic/reference evidence only; `/srv/data/aosp_panther17_workspace` is not the canonical active substrate.
