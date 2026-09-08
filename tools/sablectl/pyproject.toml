@@ -1,6 +1,6 @@
 [project]
 name = "sablectl"
-version = "0.1.0"
+version = "0.2.0"
 description = "Host-side validation and regression CLI for SableOS development"
 requires-python = ">=3.11"
 readme = "README.md"
