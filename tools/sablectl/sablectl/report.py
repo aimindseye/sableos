@@ -20,6 +20,18 @@ class RunReport:
     def failed(self) -> bool:
         return any(r.status in {Status.FAIL, Status.ERROR} for r in self.results)
 
+    @property
+    def has_manual(self) -> bool:
+        return any(r.status is Status.MANUAL for r in self.results)
+
+    @property
+    def overall(self) -> str:
+        if self.failed:
+            return "FAIL"
+        if self.has_manual:
+            return "PASS_WITH_MANUAL"
+        return "PASS"
+
     def counts(self) -> dict[str, int]:
         return {status.value: sum(1 for r in self.results if r.status is status) for status in Status}
 
@@ -32,6 +44,8 @@ class RunReport:
             "metadata": self.metadata,
             "counts": self.counts(),
             "failed": self.failed,
+            "complete": not self.failed and not self.has_manual,
+            "overall": self.overall,
             "results": [r.to_dict() for r in self.results],
         }
 
@@ -49,7 +63,7 @@ class RunReport:
         lines = [
             f"# sablectl report — {self.suite}",
             "",
-            f"Overall: **{'FAIL' if self.failed else 'PASS'}**",
+            f"Overall: **{self.overall}**",
             "",
             "| Status | Count |",
             "| --- | ---: |",
@@ -106,4 +120,4 @@ def print_report(report: RunReport) -> None:
         print(f"[{r.status.value:6}] {r.id}: {r.summary} (expected={r.expected!r} actual={r.actual!r})")
     counts = report.counts()
     print("\n" + " ".join(f"{k}={v}" for k, v in counts.items()))
-    print(f"OVERALL={'FAIL' if report.failed else 'PASS'}")
+    print(f"OVERALL={report.overall}")
