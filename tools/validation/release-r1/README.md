@@ -1,34 +1,44 @@
 # Sable R1 release validation
 
-`SABLE_R1_R0R3_RELEASE_PREFLIGHT.py` is the current read-only Panther release-engineering inventory/gate.
+R1-R0 is closed. `SABLE_R1_R1_POLICY_PREFLIGHT.py` is the current read-only Panther release-policy/custody gate.
 
-Execution lineage:
-
-```text
-SABLE_R1_R0_RELEASE_PREFLIGHT.py      HISTORICAL BASE / DO NOT EXECUTE DIRECTLY
-SABLE_R1_R0R1_RELEASE_PREFLIGHT.py    SUPERSEDED / KNOWN RECURSION DEFECT
-SABLE_R1_R0R2_RELEASE_PREFLIGHT.py    SUPERSEDED / LIVE TARGET-IDENTITY DEFECT
-SABLE_R1_R0R3_RELEASE_PREFLIGHT.py    CURRENT EXECUTION ENTRYPOINT
-```
-
-R0R3 binds the historical R1-R0 base by exact SHA-256 and keeps the non-recursive closure/`finally` lifecycle introduced in R0R2. It fixes target-files device identity using the exact partition-scoped property contract from the pinned GrapheneOS 2026081300 `platform_build` source:
+## R1-R0 execution lineage
 
 ```text
-SYSTEM/build.prop          ro.product.system.device
-VENDOR/build.prop          ro.product.vendor.device
-PRODUCT/etc/build.prop     ro.product.product.device
-ODM/etc/build.prop         ro.product.odm.device
-SYSTEM_EXT/etc/build.prop  ro.product.system_ext.device
+SABLE_R1_R0_RELEASE_PREFLIGHT.py      HISTORICAL BYTE-BOUND BASE
+SABLE_R1_R0R1_RELEASE_PREFLIGHT.py    SUPERSEDED / SELF-RECURSION DEFECT
+SABLE_R1_R0R2_RELEASE_PREFLIGHT.py    SUPERSEDED / TARGET-IDENTITY DEFECT
+SABLE_R1_R0R3_RELEASE_PREFLIGHT.py    FINAL R1-R0 EXECUTABLE / R1-R0 CLOSED
 ```
 
-It also retains the indented `CN=GrapheneOS` parser correction. Conflicting non-generic partition identities or OTA-vs-partition conflicts fail closed rather than being coerced to Panther.
+Final R1-R0 live result:
 
-R0R3 does not build, generate keys, sign, generate OTAs, or contact a device. See:
+```text
+PY_COMPILE=PASS_6_OF_6
+R1_R0R3_TESTS=PASS_38_OF_38
+PASS=19 BLOCKER=10 INFO=11 SKIP=2 ERROR=0
+R1_R0_PREFLIGHT_EXECUTION=PASS
+R1_RELEASE_READINESS=BLOCKED_10
+R1_R0R3_RC=3
+```
 
-- `docs/SABLE_R1_R0_RELEASE_ENGINEERING_PREFLIGHT.md`
-- `docs/SABLE_R1_R0R1_PREFLIGHT_CORRECTION.md` — historical R0R1
-- `docs/SABLE_R1_R0R2_PREFLIGHT_CORRECTION.md` — historical R0R2
-- `docs/SABLE_R1_R0R3_PREFLIGHT_CORRECTION.md` — current correction
+See `docs/SABLE_R1_R0_CLOSURE_20260908.md` and `release/r1/r1-r0-closure-20260908.json`.
+
+## Current R1-R1 gate
+
+Files:
+
+```text
+tools/validation/release-r1/SABLE_R1_R1_POLICY_PREFLIGHT.py
+tools/validation/release-r1/test_release_policy_r1r1.py
+release/r1/panther-release-policy-v1.json
+release/r1/release-source-seal-v1.schema.json
+docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md
+```
+
+R1-R1 validates release identity, the exact two-file future source-mutation plan, key inventory/custody policy, production build policy, source-seal schema, and exact pinned GrapheneOS release-tooling preimages.
+
+It remains strictly read-only. It does not generate keys, mutate Android source, build, sign, generate OTAs, contact a device, reboot, flash, change slots, lock/unlock the bootloader, or wipe data.
 
 Use the existing sablectl virtual environment:
 
@@ -36,25 +46,34 @@ Use the existing sablectl virtual environment:
 PY="$HOME/.venvs/sablectl/bin/python"
 
 PYTHONDONTWRITEBYTECODE=1 "$PY" -m pytest \
-  tools/validation/release-r1/test_release_preflight.py \
-  tools/validation/release-r1/test_release_preflight_r0r2.py \
-  tools/validation/release-r1/test_release_preflight_r0r3.py -q
+  -p no:cacheprovider \
+  tools/validation/release-r1/test_release_policy_r1r1.py -q
 
-PYTHONDONTWRITEBYTECODE=1 "$PY" \
-  tools/validation/release-r1/SABLE_R1_R0R3_RELEASE_PREFLIGHT.py
+PYTHONDONTWRITEBYTECODE=1 env \
+  SOURCE_MUTATION_AUTHORIZED=NO \
+  WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO \
+  BUILD_AUTHORIZED=NO \
+  KEY_GENERATION_AUTHORIZED=NO \
+  SIGNING_AUTHORIZED=NO \
+  OTA_GENERATION_AUTHORIZED=NO \
+  DEVICE_CONTACT_AUTHORIZED=NO \
+  DEVICE_REBOOT_AUTHORIZED=NO \
+  FLASH_AUTHORIZED=NO \
+  SLOT_CHANGE_AUTHORIZED=NO \
+  USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO \
+  "$PY" tools/validation/release-r1/SABLE_R1_R1_POLICY_PREFLIGHT.py
+
 RC=$?
-echo "R1_R0R3_RC=$RC"
+echo "R1_R1_RC=$RC"
 ```
 
-Current full validation cardinality is 38 tests:
+Pre-delivery R1-R1 validation is 34/34 PASS. With the checked-in policy the expected live disposition is deliberately:
 
 ```text
-test_release_preflight.py        9
-test_release_preflight_r0r2.py  11
-test_release_preflight_r0r3.py  18
-TOTAL                            38
+ERROR=0
+R1_R1_POLICY_EXECUTION=PASS
+R1_R1_POLICY_READINESS=BLOCKED_1
+R1_R1_RC=3
 ```
 
-R0R1 tests are retained only as historical evidence because that suite passed while its executable still recursed at runtime; they are not part of the current gate.
-
-Exit `3` means the audit completed without parser/runtime errors and genuine release blockers remain. `ERROR=0` is required before R1-R0 is closed as an inventory.
+The sole expected blocker is the intentionally unset Sable-owned HTTPS update endpoint. No hostname is invented by the tooling. A future zero exit code means only that the policy is complete enough to **request** separate key-generation authorization; it is not key-generation authorization itself.
