@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "device": "panther",
+  "substrate": {
+    "graphene_manifest_tag": "2026081300",
+    "pinned_manifest_sha256": "c50f0096f538e604aa008e8ab4e3f1a3739f142c60c878a32f402c11eb406572"
+  },
+  "certificate_subject": "CN=SableOS",
+  "signing_key_domains": [
+    "bluetooth",
+    "gmscompat_lib",
+    "media",
+    "networkstack",
+    "nfc",
+    "platform",
+    "releasekey",
+    "sdk_sandbox",
+    "shared"
+  ],
+  "update_endpoint": {
+    "url": null,
+    "owner": "SableOS",
+    "ownership_status": "UNVERIFIED",
+    "note": "Operator must supply a real Sable-owned HTTPS base URL ending in /. The preflight will not invent one."
+  },
+  "key_custody": {
+    "unique_per_device_variant": true,
+    "private_keys_outside_git": true,
+    "encrypted_at_rest": true,
+    "offline_backup_count_at_least_2": true,
+    "backups_physically_separated": true,
+    "operator_authorization_required": true,
+    "signing_session_audit_required": true,
+    "decrypted_workdir_tmpfs": true,
+    "passphrase_not_in_argv": true,
+    "passphrase_not_in_repo": true,
+    "private_key_material_not_in_public_evidence": true,
+    "private_key_hashes_not_in_public_evidence": true,
+    "persistent_store_class": "OFFLINE_ENCRYPTED_EXTERNAL_TO_WORKSPACE",
+    "signing_workspace_binding": "EPHEMERAL_KEYS_PANTHER_BINDING_ONLY_DURING_AUTHORIZED_SIGNING"
+  },
+  "build_policy": {
+    "variant": "user",
+    "official_build": true,
+    "build_number_scheme": "YYYYMMDDRR",
+    "build_number_reuse": false,
+    "testing_channel_first": true,
+    "future_update_path_test": true,
+    "build_number_allocation": "ALLOCATE_AT_BUILD_AUTHORIZATION_AFTER_SOURCE_SEAL",
+    "build_datetime_policy": "PINNED_AND_RECORDED_IN_RELEASE_SOURCE_SEAL"
+  },
+  "planned_source_mutations": [
+    {
+      "path": "script/generate-keys",
+      "preimage": "CN=GrapheneOS",
+      "postimage": "CN=SableOS",
+      "authorization_required": "SOURCE_MUTATION_AUTHORIZED=YES"
+    },
+    {
+      "path": "packages/apps/Updater/res/values/config.xml",
+      "preimage": "https://releases.grapheneos.org/",
+      "postimage_from": "update_endpoint.url",
+      "authorization_required": "SOURCE_MUTATION_AUTHORIZED=YES"
+    }
+  ],
+  "future_key_inventory": {
+    "apk_certificate_pairs": [
+      "bluetooth",
+      "gmscompat_lib",
+      "media",
+      "networkstack",
+      "nfc",
+      "platform",
+      "releasekey",
+      "sdk_sandbox",
+      "shared"
+    ],
+    "avb_private_key": "avb.pem",
+    "avb_public_metadata": "avb_pkmd.bin",
+    "factory_archive_signing_key": "id_ed25519"
+  },
+  "source_seal_schema": "release/r1/release-source-seal-v1.schema.json"
+}
