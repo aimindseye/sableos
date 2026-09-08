@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .adb import AdbClient
 from .baseline import capture_baseline, load_baseline
-from .checks import verify_boot, verify_preserved_data, verify_smoke_health
+from .checks import manual_d4_gates, verify_boot, verify_d4_host_acceptance, verify_preserved_data, verify_smoke_health
 from .report import RunReport, print_report
 from .runner import CommandRunner
 from .target_files import inspect_target_files
@@ -61,6 +61,20 @@ def build_parser() -> argparse.ArgumentParser:
     smoke.add_argument("--expected-slot")
     smoke.add_argument("--hash-container", action="store_true")
 
+    acceptance = sub.add_parser("acceptance")
+    asub = acceptance.add_subparsers(dest="acceptance_command", required=True)
+    d4 = asub.add_parser("d4")
+    d4.add_argument("--target-files", required=True)
+    d4.add_argument("--baseline", required=True)
+    d4.add_argument("--expected-device", default="panther")
+    d4.add_argument("--expected-slot", required=True)
+    d4.add_argument("--hash-container", action="store_true")
+    d4.add_argument(
+        "--require-complete",
+        action="store_true",
+        help="return exit 4 while any MANUAL D4 gates remain",
+    )
+
     return p
 
 
@@ -72,13 +86,25 @@ def _client(args) -> AdbClient:
     )
 
 
-def _run_report(args, suite: str, results: list[CheckResult], serial: str | None, metadata: dict) -> int:
+def _run_report(
+    args,
+    suite: str,
+    results: list[CheckResult],
+    serial: str | None,
+    metadata: dict,
+    *,
+    require_complete: bool = False,
+) -> int:
     report = RunReport(suite=suite, results=results, serial=serial, metadata=metadata)
     out = _output_dir(args.output_root, suite)
     report.write(out)
     print_report(report)
     print(f"REPORT_DIR={out}")
-    return 2 if report.failed else 0
+    if report.failed:
+        return 2
+    if require_complete and report.has_manual:
+        return 4
+    return 0
 
 
 def cmd_doctor(args) -> int:
@@ -167,6 +193,43 @@ def cmd_smoke(args) -> int:
     return _run_report(args, "smoke", results, serial, metadata)
 
 
+def cmd_acceptance_d4(args) -> int:
+    client = _client(args)
+    serial = client.wait(30)
+    expected = inspect_target_files(args.target_files, hash_container=args.hash_container)
+    baseline = load_baseline(args.baseline)
+
+    results = verify_boot(
+        client,
+        expected,
+        expected_device=args.expected_device,
+        expected_slot=args.expected_slot,
+    )
+    results.extend(verify_smoke_health(client))
+    results.extend(verify_preserved_data(client, baseline))
+    results.extend(verify_d4_host_acceptance(client))
+    results.extend(manual_d4_gates())
+
+    metadata = {
+        "target_files": str(expected.path),
+        "target_files_size": expected.size,
+        "target_files_sha256": expected.container_sha256,
+        "manifest_pb_sha256": expected.manifest_pb_sha256,
+        "buildmanifest_apk_sha256": expected.buildmanifest_apk_sha256,
+        "baseline": args.baseline,
+        "acceptance": "d4",
+        "manual_gate_policy": "explicit MANUAL results retained",
+    }
+    return _run_report(
+        args,
+        "acceptance-d4",
+        results,
+        serial,
+        metadata,
+        require_complete=args.require_complete,
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -182,6 +245,8 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_verify_preserved(args)
         if args.command == "smoke":
             return cmd_smoke(args)
+        if args.command == "acceptance" and args.acceptance_command == "d4":
+            return cmd_acceptance_d4(args)
         raise RuntimeError("unhandled command")
     except Exception as exc:
         print(f"sablectl: {type(exc).__name__}: {exc}", file=sys.stderr)
