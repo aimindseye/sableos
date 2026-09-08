@@ -16,6 +16,7 @@ ENTERED_FASTBOOT=NO
 LOG_ACTIVE=NO
 EVIDENCE_DIR=
 LOG=
+FASTBOOT_READY_PRODUCT=
 
 seal_if_active() {
   [[ "$LOG_ACTIVE" == YES ]] || return 0
@@ -28,50 +29,8 @@ seal_if_active() {
   LOG_ACTIVE=NO
 }
 
-fail() {
-  local code=$1 recovery_rc
-  shift
-  if [[ "$ENTERED_FASTBOOT" == YES ]]; then
-    "$FASTBOOT" reboot </dev/null >/dev/null 2>&1
-    recovery_rc=$?
-    printf 'RECOVERY_REBOOT_TO_ANDROID_RC=%d\n' "$recovery_rc"
-    ENTERED_FASTBOOT=NO
-  fi
-  printf 'GATE_ERROR=%s\n' "$*"
-  printf 'PANTHER_D4_R2_SLOT_SUCCESS_RESULT=BOUNDED_FAIL\n'
-  seal_if_active
-  exit "$code"
-}
-
-need_yes() {
-  local name=$1 value=$2
-  [[ "$value" == YES ]] || fail 20 "${name}_NOT_AUTHORIZED"
-}
-
-need_no() {
-  local name=$1 value=$2
-  [[ "$value" == NO ]] || fail 21 "${name}_MUST_BE_NO"
-}
-
-sanitize_slot() {
-  local x=${1//$'\r'/}
-  x=${x//$'\n'/}
-  x=${x#_}
-  printf '%s' "$x"
-}
-
 adb_quiet() {
   "$ADB" "$@" </dev/null
-}
-
-wait_adb_device() {
-  local i state
-  for ((i=0; i<90; i++)); do
-    state=$(adb_quiet get-state 2>/dev/null || true)
-    [[ "$state" == device ]] && return 0
-    sleep 2
-  done
-  return 1
 }
 
 wait_android_boot_complete() {
@@ -96,12 +55,77 @@ fastboot_device_count() {
   printf '%s' "$count"
 }
 
-wait_fastboot_one() {
-  local i count
-  for ((i=0; i<60; i++)); do
+recovery_reboot_to_android() {
+  local i count rc state
+  for ((i=1; i<=30; i++)); do
+    state=$(adb_quiet get-state 2>/dev/null || true)
+    if [[ "$state" == device ]]; then
+      printf 'RECOVERY_ANDROID_ALREADY_PRESENT=YES\n'
+      ENTERED_FASTBOOT=NO
+      if wait_android_boot_complete; then
+        printf 'RECOVERY_ANDROID_BOOT_COMPLETED=PASS\n'
+      else
+        printf 'RECOVERY_ANDROID_BOOT_COMPLETED=UNCONFIRMED\n'
+      fi
+      return 0
+    fi
+
     count=$(fastboot_device_count)
-    [[ "$count" == 1 ]] && return 0
+    if [[ "$count" == 1 ]]; then
+      "$FASTBOOT" reboot </dev/null >/dev/null 2>&1
+      rc=$?
+      printf 'RECOVERY_REBOOT_TO_ANDROID_ATTEMPT=%d RC=%d\n' "$i" "$rc"
+      if [[ $rc -eq 0 ]]; then
+        ENTERED_FASTBOOT=NO
+        if wait_android_boot_complete; then
+          printf 'RECOVERY_ANDROID_BOOT_COMPLETED=PASS\n'
+        else
+          printf 'RECOVERY_ANDROID_BOOT_COMPLETED=UNCONFIRMED\n'
+        fi
+        return 0
+      fi
+    fi
     sleep 1
+  done
+  printf 'RECOVERY_REBOOT_TO_ANDROID=FAILED_AFTER_RETRIES\n'
+  return 1
+}
+
+fail() {
+  local code=$1
+  shift
+  if [[ "$ENTERED_FASTBOOT" == YES ]]; then
+    recovery_reboot_to_android || true
+  fi
+  printf 'GATE_ERROR=%s\n' "$*"
+  printf 'PANTHER_D4_R2_SLOT_SUCCESS_RESULT=BOUNDED_FAIL\n'
+  seal_if_active
+  exit "$code"
+}
+
+need_yes() {
+  local name=$1 value=$2
+  [[ "$value" == YES ]] || fail 20 "${name}_NOT_AUTHORIZED"
+}
+
+need_no() {
+  local name=$1 value=$2
+  [[ "$value" == NO ]] || fail 21 "${name}_MUST_BE_NO"
+}
+
+sanitize_slot() {
+  local x=${1//$'\r'/}
+  x=${x//$'\n'/}
+  x=${x#_}
+  printf '%s' "$x"
+}
+
+wait_adb_device() {
+  local i state
+  for ((i=0; i<90; i++)); do
+    state=$(adb_quiet get-state 2>/dev/null || true)
+    [[ "$state" == device ]] && return 0
+    sleep 2
   done
   return 1
 }
@@ -110,19 +134,40 @@ fb_getvar() {
   local var=$1 out rc value
   out=$("$FASTBOOT" getvar "$var" 2>&1 </dev/null)
   rc=$?
-  [[ $rc -eq 0 ]] || {
-    printf 'rc=%d' "$rc"
-    return 1
-  }
+  [[ $rc -eq 0 ]] || return 1
   value=$(printf '%s\n' "$out" | sed -nE "s/^(\(bootloader\)[[:space:]]*)?${var}:[[:space:]]*//p" | head -n1)
   if [[ -z "$value" ]]; then
     value=$(printf '%s\n' "$out" | sed -nE "s/^${var}:[[:space:]]*//p" | head -n1)
   fi
-  [[ -n "$value" ]] || {
-    printf 'unparsed'
-    return 1
-  }
+  [[ -n "$value" ]] || return 1
   printf '%s' "$value"
+}
+
+fb_getvar_retry() {
+  local var=$1 attempts=${2:-10} i value
+  for ((i=1; i<=attempts; i++)); do
+    if value=$(fb_getvar "$var"); then
+      printf '%s' "$value"
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
+wait_fastboot_ready() {
+  local i count product
+  for ((i=1; i<=60; i++)); do
+    count=$(fastboot_device_count)
+    if [[ "$count" == 1 ]]; then
+      if product=$(fb_getvar product); then
+        FASTBOOT_READY_PRODUCT=$product
+        return 0
+      fi
+    fi
+    sleep 1
+  done
+  return 1
 }
 
 need_yes DEVICE_CONTACT_AUTHORIZED "$DEVICE_CONTACT_AUTHORIZED"
@@ -170,18 +215,19 @@ printf 'PRE_BOOT_COMPLETED=%s\n' "$pre_boot"
 
 printf '\n===== CONTROLLED REBOOT TO BOOTLOADER =====\n'
 adb_quiet reboot bootloader || fail 40 ADB_REBOOT_BOOTLOADER_FAILED
-# From this point forward, any bounded failure attempts a recovery reboot to Android.
+# From this point forward, any bounded failure attempts the authorized recovery reboot.
 ENTERED_FASTBOOT=YES
-wait_fastboot_one || fail 41 FASTBOOT_DEVICE_NOT_READY_OR_NOT_UNIQUE
+wait_fastboot_ready || fail 41 FASTBOOT_NOT_READY_FOR_GETVAR
 printf 'FASTBOOT_TRANSPORT=PASS_ONE_DEVICE\n'
+printf 'FASTBOOT_GETVAR_READY=PASS\n'
 
 printf '\n===== READ-ONLY BOOTLOADER SLOT METADATA =====\n'
-fb_product=$(fb_getvar product) || fail 50 FASTBOOT_PRODUCT_UNOBSERVABLE
-fb_current=$(fb_getvar current-slot) || fail 51 FASTBOOT_CURRENT_SLOT_UNOBSERVABLE
-fb_count=$(fb_getvar slot-count) || fail 52 FASTBOOT_SLOT_COUNT_UNOBSERVABLE
-fb_success=$(fb_getvar "slot-successful:$EXPECTED_SLOT") || fail 53 FASTBOOT_SLOT_SUCCESSFUL_UNOBSERVABLE
-fb_unbootable=$(fb_getvar "slot-unbootable:$EXPECTED_SLOT") || fail 54 FASTBOOT_SLOT_UNBOOTABLE_UNOBSERVABLE
-fb_retry=$(fb_getvar "slot-retry-count:$EXPECTED_SLOT") || fb_retry=UNOBSERVED
+fb_product=$FASTBOOT_READY_PRODUCT
+fb_current=$(fb_getvar_retry current-slot) || fail 51 FASTBOOT_CURRENT_SLOT_UNOBSERVABLE
+fb_count=$(fb_getvar_retry slot-count) || fail 52 FASTBOOT_SLOT_COUNT_UNOBSERVABLE
+fb_success=$(fb_getvar_retry "slot-successful:$EXPECTED_SLOT") || fail 53 FASTBOOT_SLOT_SUCCESSFUL_UNOBSERVABLE
+fb_unbootable=$(fb_getvar_retry "slot-unbootable:$EXPECTED_SLOT") || fail 54 FASTBOOT_SLOT_UNBOOTABLE_UNOBSERVABLE
+fb_retry=$(fb_getvar_retry "slot-retry-count:$EXPECTED_SLOT" 3) || fb_retry=UNOBSERVED
 
 fb_current=$(sanitize_slot "$fb_current")
 printf 'FASTBOOT_PRODUCT=%s\n' "$fb_product"
