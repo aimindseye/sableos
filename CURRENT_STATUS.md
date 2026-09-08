@@ -15,128 +15,215 @@ userdebug / test-keys
 
 active slot: B
 bootloader: unlocked
-verified boot state: orange (expected for unlocked test-key development device)
+verified boot state: orange
 file-based encryption: enabled
-SableOS B2 packaged target-files population: flashed successfully
-SableOS B2: booted successfully into Android userspace
-shared userdata: preserved through flash
+SableOS B2 packaged target-files: flashed successfully
+shared userdata: preserved
 exact post-boot BuildManifest identity: PASS
 exact post-boot ART identity: PASS_5_OF_5
-initial sablectl smoke: PASS_16_OF_16
+slot B current: PASS
+slot B bootable: PASS
+slot B marked successful: PASS
 ```
 
-The 2026-09-08 D4 B2 validation closed the most important practical milestone: an exact packaged B2 payload derived solely from the bound `panther-target_files.zip` was flashed to the already-active slot B without `-w`, without bootloader unlock, without inactive-slot flashing, and without an intentional userdata/metadata wipe. Fastboot completed successfully, slot B remained active, and Android reached `sys.boot_completed=1`.
-
-The exact packaged B2 target-files SHA-256 used for the physical flash was:
+Canonical packaged B2 target-files:
 
 ```text
-b22c5ab5676b3a61304102cd508bf75a01bd4d0bc2a47ffceba8be153376bb78
+/srv/data/sableos_panther_graphene_2026081300_workspace/
+  out_d4_b2_final/target/product/panther/obj/PACKAGING/
+  target_files_intermediates/panther-target_files.zip
+
+sha256=b22c5ab5676b3a61304102cd508bf75a01bd4d0bc2a47ffceba8be153376bb78
 ```
 
-The installed post-boot `BuildManifest.apk` matched the B2 target-files population exactly:
+Installed BuildManifest identity:
 
 ```text
-8a56fddab2ae42f40d522e96241b4b486bb2d702e11f9bb0b10e7527d32f8cec
+/system/etc/security/fsverity/BuildManifest.apk
+sha256=8a56fddab2ae42f40d522e96241b4b486bb2d702e11f9bb0b10e7527d32f8cec
 ```
 
-The historical R10R3 harness itself ended as a bounded failure after boot because its shell `while read ... < expected_b2_art_sha256.tsv` loop allowed `adb` to consume the loop's stdin after the first ART row. This is a **host validation harness defect**, not evidence of a failed flash or failed boot.
+## Panther D4 closure
 
-That exact post-boot gap is now closed by `sablectl`.
+D4 is **CLOSED** for the current B2 development population.
 
-## sablectl live Panther validation
-
-The first live `sablectl verify boot` run against the packaged B2 target-files completed:
+Validated chain:
 
 ```text
-PASS=11 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
+R7R7 fs-verity named-input fidelity                 PASS / CLOSED
+R8 ART residual classification                      PARTIAL / historical C2 evidence unavailable
+R9 preserved-data flash preflight                   PASS
+R10R3 exact packaged B2 flash                       PASS
+R10R3 Android boot                                  PASS
+R10R3 BuildManifest identity                        PASS
+R10R3 postboot ART loop                             SUPERSEDED HOST HARNESS DEFECT
+sablectl exact postboot ART                         PASS_5_OF_5
+sablectl v0.3.1 full tests                          PASS_26_OF_26
+sablectl D4 release gate                            PASS
+D4 automated acceptance                             PASS
+D4 minimum physical acceptance                      PASS
+D4 broad functional acceptance                      PASS_WITH_NONBLOCKING_NFC_RF_GAP
+D4 slot B boot                                      PASS
+D4 slot B current                                   PASS
+D4 slot B bootable                                  PASS
+D4 slot B successful                                PASS
+D4 shared data preserved                            PASS
+D4 automated regression                             PASS
+PANTHER_D4_R2                                       PASS
+PANTHER_D4                                          CLOSED
+```
+
+The D4 release gate completed with:
+
+```text
+PASS=56
+FAIL=0
+SKIP=8
+MANUAL=0
+ERROR=0
 OVERALL=PASS
-REPORT_DIR=.sablectl/runs/verify-boot/20260908T181140Z
+RELEASE_D4_RC=0
 ```
 
-It proved:
-
-- device codename `panther`;
-- `sys.boot_completed=1`;
-- active slot `_b`;
-- encrypted data state;
-- exact installed BuildManifest match;
-- all five D4 residual ART images match the exact packaged B2 bytes;
-- aggregate `artifact.art.count expected=5 actual=5`.
-
-The immediately following `sablectl smoke` run completed:
+The dedicated bootloader-side slot proof then established:
 
 ```text
-PASS=16 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
-OVERALL=PASS
-REPORT_DIR=.sablectl/runs/smoke/20260908T181212Z
+FASTBOOT_PRODUCT=panther
+FASTBOOT_CURRENT_SLOT=b
+FASTBOOT_SLOT_COUNT=2
+FASTBOOT_SLOT_SUCCESSFUL_b=yes
+FASTBOOT_SLOT_UNBOOTABLE_b=no
+FASTBOOT_SLOT_RETRY_COUNT_b=2
+D4_SLOT_B_SUCCESSFUL=PASS
+D4_SLOT_B_BOOTABLE=PASS
+D4_SLOT_B_CURRENT=PASS
+POST_SLOT_SUFFIX=_b
+POST_BOOT_COMPLETED=1
+POST_SLOT_PRESERVED=PASS
+PANTHER_D4_R2_SLOT_SUCCESS_RESULT=PASS
+R2_RC=0
 ```
 
-Additional runtime smoke proved:
+The successful slot-proof evidence directory was:
 
 ```text
-SELinux=Enforcing
-servicemanager=running
-surfaceflinger=running
-zygote=running
-PackageManager=PASS installed_packages=229
+/tmp/PANTHER_D4_R2_SLOT_SUCCESS_PROOF_20260908T215953Z_JS7omS
 ```
 
-This is the first reusable SableOS automated physical validation result and supersedes the R10R3 post-boot shell aggregate defect.
-
-## Offline closure reached before physical deployment
-
-The D4 B2 forensic chain now includes:
-
-- **R7R7: fs-verity manifest-input fidelity closed.** All 220 BuildManifest entries were recomputed from their exact named inputs, including target-files symlink semantics. The B2-vs-B1 five-key delta and B2-vs-C2 six-key delta were reproduced exactly.
-- **R8R4: ART residual narrowed.** The five remaining B2 ART differences are `ART_ONLY` in both B2-vs-B1 and B2-vs-C2; corresponding ODEX and VDEX siblings are byte-stable. Direct producer records were recovered for B1 and B2. C2 producer Ninja evidence was unavailable, so the exact upstream C2 ART producer cause remains an evidence-boundary item rather than a contradiction.
-- **R9: preserved-data flash preflight passed.** Panther identity, slot B, unlocked state, B2 artifact identity, AVB metadata and device readiness were established without reboot or flash.
-- **R10R3: packaged B2 flash + boot succeeded.** Target-files was treated as the sole flash image source. Fourteen required images were staged from `IMAGES/`, sealed, verified immediately before mutation, flashed with no wipe flag and no inactive-slot task, and Android booted successfully.
-- **sablectl v0.1: exact post-boot identity + initial runtime smoke closed.** BuildManifest and all five ART files match packaged B2 exactly; SELinux and core runtime services are healthy.
-
-## Current active milestone: D4
-
-D4 remains **Sable identity + default app set + functional acceptance**, but the development process is now transitioning from one-off shell gates to reusable automated validation.
-
-The current D4 state is:
+with:
 
 ```text
-D4 packaged build production         PASS
-D4 offline artifact identity         PASS
-D4 fs-verity closure                 PASS
-D4 exact packaged flash              PASS
-D4 post-flash Android boot           PASS
-D4 exact post-boot artifact identity PASS
-D4 initial automated smoke           PASS_16_OF_16
-D4 preserved-data flash path         PASS physically; future comparisons use pre-flash sablectl baselines
-D4 full functional acceptance        OPEN
-D4 release-candidate automation      IN PROGRESS
+script sha256=d3cdb1dc4cdca4289ff7d835a96d9c96aebfee05a4feaa4c967bbf033115ca71
+log sha256=8aaf2bbaf195cd5f48acc0eafad64022c3dd6ca339a4b400a933752a49738dbc
 ```
 
-The next engineering focus is expanding **`sablectl`** from the validated v0.1 boot/smoke foundation into the D4 automated acceptance suite. A later **SableTestAgent APK** will extend automation to device-side camera, sensors, audio, location, WebView, notification, storage and lifecycle testing through Android instrumentation.
+The earlier slot-proof attempt is superseded as a host fastboot-readiness race. It produced no flash, slot change, unlock or wipe, and Android was recovered on slot B before the corrected proof passed.
 
-## D4 physical acceptance matrix
+## Functional acceptance
 
-D4 minimum physical acceptance includes outgoing/incoming voice calls, outgoing/incoming SMS, cellular data and Wi-Fi. The broader target matrix covers MMS/IMS where carrier support permits, hotspot, Bluetooth, audio, camera, location, NFC, USB, sensors, biometrics, APK install, permissions, browser/WebView, notifications, charging/power and persistence. No live emergency-services call is part of normal ROM sanity testing.
+Automated D4 acceptance and release checks proved, among other items:
 
-Automation policy going forward:
+```text
+exact BuildManifest identity
+five exact ART images
+SELinux enforcing
+core Android services healthy
+credential-encrypted data available
+third-party package count preserved: 6
+Android user count preserved: 1
+Wi-Fi enabled and validated
+cellular registration and data
+Bluetooth enabled
+Vanadium WebView selected
+default launcher/browser/dialer/SMS roles
+ADB/USB transport health
+```
 
-- automate deterministic host/ADB checks first;
-- keep physical/manual checkpoints only where Android or external hardware makes automation unreliable;
-- collect every run as machine-readable evidence;
-- distinguish `PASS`, `FAIL`, `SKIP`, `MANUAL`, and `ERROR` rather than collapsing all non-zero outcomes;
-- separate collection, checking, suites, mutating actions and reporting;
-- require explicit authorization for reboot/flash/wipe-capable actions;
-- prefer target-files as the packaged build source of truth for release validation.
+Physical validation passed:
+
+```text
+VOICE_OUT=PASS
+VOICE_IN=PASS
+SMS_OUT=PASS
+SMS_IN=PASS
+MMS_OUT=PASS
+MMS_IN=PASS
+HOTSPOT=PASS
+BLUETOOTH_AUDIO=PASS
+CAMERA=PASS
+LOCATION=PASS
+BIOMETRICS=PASS
+CELLULAR_DATA=PASS
+WIFI=PASS
+```
+
+NFC framework/service/HAL initialization and enable/routing path passed. RF tag read remains:
+
+```text
+NFC_RF_TAG_READ=NOT_TESTED_NO_TEST_HARDWARE
+NFC_DISPOSITION=DEFERRED_NON_BLOCKING_EXTERNAL_HARDWARE_VALIDATION
+```
+
+This is not a D4 blocking defect.
+
+## Current active milestone: R1 release engineering
+
+The active milestone is now **R1 — Sable-owned release engineering**.
+
+R1 goal:
+
+```text
+Sable signing-key architecture and custody
+Sable release/version identity
+user/release build policy
+signed target-files and factory artifacts
+full/incremental OTA generation and signing
+Sable-owned update metadata and Updater endpoint
+A/B OTA forward-update validation
+rollback/recovery validation
+sablectl release evidence integration
+```
+
+### R1-R0 preflight lineage
+
+The original read-only R1-R0 base is byte-frozen:
+
+```text
+tools/validation/release-r1/SABLE_R1_R0_RELEASE_PREFLIGHT.py
+sha256=cf94b3a37529b63f6e72ebd5899cfe34d2a7e232f33a99396832773926a4dbe7
+```
+
+The first live R0 run exposed two parser defects. R0R1 fixed those semantics but introduced a monkeypatch self-recursion and is retained only as historical evidence.
+
+Current executable:
+
+```text
+tools/validation/release-r1/SABLE_R1_R0R2_RELEASE_PREFLIGHT.py
+```
+
+Current release-preflight disposition before the next ThinkPad run:
+
+```text
+R1_R0_BASE_TESTS=PASS_9_OF_9_ON_THINKPAD
+R1_R0R1=SUPERSEDED_MONKEYPATCH_SELF_RECURSION
+R1_R0R2_LOCAL_FOCUSED_TESTS=PASS_11_OF_11
+R1_R0R2_LIVE_THINKPAD_PREFLIGHT=PENDING
+KEY_GENERATION_AUTHORIZED=NO
+BUILD_AUTHORIZED=NO
+SIGNING_AUTHORIZED=NO
+OTA_GENERATION_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=NO
+```
+
+A healthy R0R2 run is expected to complete the audit with `ERROR=0` and release blockers still present. Only after that should the blocker set become the R1-R1 worklist.
 
 ## Start here
 
-- `docs/PANTHER_D4_ROADMAP.md` — current Panther D4 scope and post-D4 release roadmap.
-- `docs/PANTHER_D4_B2_PHYSICAL_VALIDATION.md` — exact B2 packaged flash, boot and post-boot sablectl closure.
-- `docs/PANTHER_D4_R0_PLAN.md` — original D4-R0 read-only audit and functional-baseline plan.
-- `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — clean source/vendor/delta/build procedure.
-- `docs/PANTHER_D3_VALIDATION.md` — exact D3 build/artifact/physical validation record.
-- `docs/SABLECTL_PLAN.md` — host-side validation CLI architecture and staged delivery plan.
-- `docs/SABLETEST_AGENT_PLAN.md` — test-only Android instrumentation agent plan.
-- `patches/android-17-grapheneos-2026081300/` — exact text delta applicator, source/head seals, changed-file inventory and binary-asset SHA-256 manifest.
+- `docs/PANTHER_D4_CLOSURE_20260908.md` — D4 final closure record.
+- `docs/PANTHER_D4_ROADMAP.md` — closed D4 roadmap and handoff to R1.
+- `docs/SABLE_R1_R0_RELEASE_ENGINEERING_PREFLIGHT.md` — current R1 architecture and R0R2 execution gate.
+- `docs/SABLE_R1_R0R2_PREFLIGHT_CORRECTION.md` — R0/R0R1 failure lineage and R0R2 validation.
+- `tools/validation/release-r1/README.md` — current executable/test commands.
+- `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical GrapheneOS-based build procedure.
 
-Historical pure-AOSP Panther bring-up records remain useful forensic evidence, but `/srv/data/aosp_panther17_workspace` is no longer the canonical SableOS Android/Pixel substrate.
+Historical pure-AOSP Panther bring-up records remain forensic/reference evidence only; `/srv/data/aosp_panther17_workspace` is not the canonical active substrate.
