@@ -204,3 +204,7 @@ R1_R1_RC=3
 ```
 
 The sole expected blocker is the intentionally unset Sable-owned update endpoint.
+
+## Upstream basis
+
+The current GrapheneOS build guide independently confirms the policy choices used here: production builds should be `user`; derivatives using `OFFICIAL_BUILD=true` must point Updater at their own update server; release keys must be retained/reused and should be encrypted at rest; keys should be unique per device variant; `id_ed25519` is generated separately for factory-image signatures; and an internal testing release should be followed by a sample future release to prove the forward-update path before broader promotion.
