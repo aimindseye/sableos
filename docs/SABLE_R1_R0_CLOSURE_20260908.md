@@ -3,7 +3,7 @@
 Date: 2026-09-08  
 Status: **CLOSED**
 
-R1-R0 is closed as a trustworthy read-only inventory. The current executable was `SABLE_R1_R0R3_RELEASE_PREFLIGHT.py`; R0R1 and R0R2 remain historical superseded harnesses.
+R1-R0 is closed as a trustworthy read-only inventory. The final executable was `SABLE_R1_R0R3_RELEASE_PREFLIGHT.py`; R0R1 and R0R2 remain historical superseded harnesses.
 
 ## Final live gate
 
