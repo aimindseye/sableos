@@ -2,7 +2,7 @@
 set -euo pipefail
 
 WS="${WS:-/srv/data/sableos_panther_graphene_2026081300_workspace}"
-TARGET_FILES="${TARGET_FILES:-$WS/out_d4_b2_final/target/product/panther/obj/PACKAGING/target_files_intermediates/panther-target-files.zip}"
+TARGET_FILES="${TARGET_FILES:-$WS/out_d4_b2_final/target/product/panther/obj/PACKAGING/target_files_intermediates/panther-target_files.zip}"
 SABLECTL="${SABLECTL:-sablectl}"
 EXPECTED_SLOT="${EXPECTED_SLOT:-b}"
 BASELINE="${BASELINE:-}"
