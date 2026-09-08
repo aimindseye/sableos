@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "device": "panther",
+  "build_fingerprint": "google/panther/panther:17/CP2A.260705.006/2026090500:userdebug/test-keys",
+  "buildmanifest_sha256": "8a56fddab2ae42f40d522e96241b4b486bb2d702e11f9bb0b10e7527d32f8cec",
+  "source": "operator-reported physical validation on 2026-09-08",
+  "default_app_set": {
+    "home": "com.android.launcher3",
+    "browser": "app.vanadium.browser",
+    "dialer": "com.android.dialer",
+    "sms": "com.android.messaging"
+  },
+  "tests": {
+    "voice_out": {
+      "status": "PASS",
+      "note": "Outgoing voice path physically validated."
+    },
+    "voice_in": {
+      "status": "PASS",
+      "note": "Incoming voice path physically validated."
+    },
+    "sms_out": {
+      "status": "PASS",
+      "note": "Outgoing SMS physically validated."
+    },
+    "sms_in": {
+      "status": "PASS",
+      "note": "Incoming SMS physically validated."
+    },
+    "mms_out": {
+      "status": "PASS",
+      "note": "Outgoing MMS physically validated."
+    },
+    "mms_in": {
+      "status": "PASS",
+      "note": "Incoming MMS physically validated."
+    },
+    "hotspot": {
+      "status": "PASS",
+      "note": "Hotspot client connectivity physically validated."
+    },
+    "bluetooth_audio": {
+      "status": "PASS",
+      "note": "Bluetooth pairing/audio physically validated."
+    },
+    "camera": {
+      "status": "PASS",
+      "note": "Camera physical/visual sanity validated."
+    },
+    "location": {
+      "status": "PASS",
+      "note": "Location fix physically validated."
+    },
+    "biometrics": {
+      "status": "PASS",
+      "note": "Biometric enrollment/unlock physically validated."
+    },
+    "nfc_rf": {
+      "status": "NOT_TESTED_NO_HARDWARE",
+      "note": "No NFC tag/test peer available. NFC feature/service/HAL/init/enable path was observable and adapter transitioned from off to on; RF tag interaction remains deferred."
+    }
+  }
+}
