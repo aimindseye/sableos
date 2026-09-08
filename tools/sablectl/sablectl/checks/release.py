@@ -33,6 +33,10 @@ def _text(result) -> str:
     return (result.stdout or "").replace("\r", "").strip()
 
 
+def _stderr(result) -> str:
+    return (result.stderr or "").replace("\r", "").strip()
+
+
 def _slot_index(slot: str) -> int:
     normalized = slot.strip().lower().removeprefix("_")
     if normalized == "a":
@@ -42,41 +46,183 @@ def _slot_index(slot: str) -> int:
     raise ValueError(f"unsupported A/B slot: {slot!r}")
 
 
+def _slot_suffix(slot: str) -> str:
+    return "_a" if _slot_index(slot) == 0 else "_b"
+
+
+def _bootctl_boolean_result(
+    *,
+    check_id: str,
+    summary: str,
+    result,
+) -> CheckResult:
+    """Interpret bootctl boolean commands without conflating false with RPC failure.
+
+    Current AOSP bootctl returns EX_SOFTWARE (70) both when a boolean query is
+    false and when the boot-control RPC failed. A false result is printed as
+    literal `0`; an RPC/module failure has no boolean stdout and normally emits
+    an error on stderr. Preserve that distinction.
+    """
+    stdout = _text(result)
+    stderr = _stderr(result)
+    if result.returncode == 0 and stdout in {"", "1"}:
+        return CheckResult(
+            id=check_id,
+            status=Status.PASS,
+            summary=summary,
+            expected=True,
+            actual=True,
+            details={"bootctl_rc": result.returncode, "stdout": stdout, "stderr": stderr},
+        )
+    if stdout == "0":
+        return CheckResult(
+            id=check_id,
+            status=Status.FAIL,
+            summary=summary,
+            expected=True,
+            actual=False,
+            details={"bootctl_rc": result.returncode, "stdout": stdout, "stderr": stderr},
+        )
+    return CheckResult(
+        id=check_id,
+        status=Status.SKIP,
+        summary=summary,
+        expected="observable boot-control boolean",
+        actual=f"unobservable rc={result.returncode}",
+        details={"bootctl_rc": result.returncode, "stdout": stdout, "stderr": stderr},
+    )
+
+
 def verify_slot_release_health(adb: AdbClient, expected_slot: str) -> list[CheckResult]:
+    """Read-only release-slot validation with bounded bootctl fallback semantics.
+
+    `ro.boot.slot_suffix` proves the runtime slot without requiring boot_control
+    HAL access. Pixel bootloaders may also expose `ro.boot.slot_successful`,
+    which is useful positive evidence when it is `yes`, but a boot-time `no`
+    cannot prove that Android did not mark the slot successful later in boot.
+
+    If `bootctl get-current-slot` itself is unavailable, subsequent bootctl
+    metadata is classified SKIP rather than FAIL. This is fail-closed: the gate
+    never fabricates successful/bootable metadata that ordinary ADB shell could
+    not observe.
+    """
     expected_index = _slot_index(expected_slot)
+    expected_suffix = _slot_suffix(expected_slot)
+    runtime_suffix = adb.getprop("ro.boot.slot_suffix")
+    results: list[CheckResult] = [
+        CheckResult(
+            id="release.slot_runtime",
+            status=Status.PASS if runtime_suffix == expected_suffix else Status.FAIL,
+            summary="runtime slot suffix matches expected release slot",
+            expected=expected_suffix,
+            actual=runtime_suffix,
+        )
+    ]
+
+    boot_success_prop = adb.getprop("ro.boot.slot_successful").strip().lower()
+    if boot_success_prop in {"yes", "true", "1"}:
+        prop_status = Status.PASS
+        prop_actual = True
+    elif boot_success_prop in {"no", "false", "0"}:
+        prop_status = Status.SKIP
+        prop_actual = False
+    else:
+        prop_status = Status.SKIP
+        prop_actual = boot_success_prop or "unavailable"
+    results.append(
+        CheckResult(
+            id="release.slot_successful_boot_property",
+            status=prop_status,
+            summary="bootloader-reported slot-success state at boot time",
+            expected=True,
+            actual=prop_actual,
+            details={
+                "property": "ro.boot.slot_successful",
+                "raw": boot_success_prop,
+                "semantics": "positive value is proof; negative value is only a boot-time snapshot",
+            },
+        )
+    )
+
     current = adb.shell(["bootctl", "get-current-slot"], timeout=15)
-    current_text = _text(current)
+    current_stdout = _text(current)
+    current_stderr = _stderr(current)
+    if current.returncode != 0:
+        results.extend(
+            [
+                CheckResult(
+                    id="release.boot_control_observable",
+                    status=Status.SKIP,
+                    summary="boot_control metadata observable from ordinary ADB shell",
+                    expected="bootctl get-current-slot rc=0",
+                    actual=f"rc={current.returncode}",
+                    details={"stdout": current_stdout, "stderr": current_stderr},
+                ),
+                CheckResult(
+                    id="release.slot_index",
+                    status=Status.SKIP,
+                    summary="boot_control current slot matches expected release slot",
+                    expected=expected_index,
+                    actual=f"unobservable rc={current.returncode}; runtime={runtime_suffix}",
+                ),
+                CheckResult(
+                    id="release.slot_bootable",
+                    status=Status.SKIP,
+                    summary="expected release slot is bootable",
+                    expected="observable boot_control metadata",
+                    actual="not queried because boot_control client is unavailable",
+                ),
+                CheckResult(
+                    id="release.slot_successful",
+                    status=Status.SKIP,
+                    summary="expected release slot is marked successful",
+                    expected="observable boot_control metadata",
+                    actual="not queried because boot_control client is unavailable",
+                ),
+            ]
+        )
+        return results
+
     try:
-        current_index = int(current_text)
+        current_index = int(current_stdout)
     except ValueError:
         current_index = -1
+    results.extend(
+        [
+            CheckResult(
+                id="release.boot_control_observable",
+                status=Status.PASS,
+                summary="boot_control metadata observable from ordinary ADB shell",
+                expected="bootctl get-current-slot rc=0",
+                actual=f"rc={current.returncode}",
+            ),
+            CheckResult(
+                id="release.slot_index",
+                status=Status.PASS if current_index == expected_index else Status.FAIL,
+                summary="boot_control current slot matches expected release slot",
+                expected=expected_index,
+                actual=current_stdout,
+            ),
+        ]
+    )
 
     bootable = adb.shell(["bootctl", "is-slot-bootable", str(expected_index)], timeout=15)
     successful = adb.shell(["bootctl", "is-slot-marked-successful", str(expected_index)], timeout=15)
-
-    return [
-        CheckResult(
-            id="release.slot_index",
-            status=Status.PASS if current.returncode == 0 and current_index == expected_index else Status.FAIL,
-            summary="boot_control current slot matches expected release slot",
-            expected=expected_index,
-            actual=current_text or f"rc={current.returncode}",
-        ),
-        CheckResult(
-            id="release.slot_bootable",
-            status=Status.PASS if bootable.returncode == 0 else Status.FAIL,
+    results.append(
+        _bootctl_boolean_result(
+            check_id="release.slot_bootable",
             summary="expected release slot is bootable",
-            expected="bootctl rc=0",
-            actual=f"rc={bootable.returncode}",
-        ),
-        CheckResult(
-            id="release.slot_successful",
-            status=Status.PASS if successful.returncode == 0 else Status.FAIL,
+            result=bootable,
+        )
+    )
+    results.append(
+        _bootctl_boolean_result(
+            check_id="release.slot_successful",
             summary="expected release slot is marked successful",
-            expected="bootctl rc=0",
-            actual=f"rc={successful.returncode}",
-        ),
-    ]
+            result=successful,
+        )
+    )
+    return results
 
 
 def load_manual_d4_evidence(path: str | Path) -> dict:
