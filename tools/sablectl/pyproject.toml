@@ -1,0 +1,29 @@
+[project]
+name = "sablectl"
+version = "0.1.0"
+description = "Host-side validation and regression CLI for SableOS development"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "SableOS project"}]
+keywords = ["sableos", "android", "adb", "validation", "regression"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Software Development :: Testing",
+]
+
+[project.scripts]
+sablectl = "sablectl.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["sablectl*"]
