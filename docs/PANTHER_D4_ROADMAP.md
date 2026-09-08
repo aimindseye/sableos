@@ -4,7 +4,7 @@ Date: 2026-09-08
 
 Baseline: Pixel 7 (`panther`), Android 17 / GrapheneOS `2026081300` substrate, SableOS D4 B2 packaged population physically flashed and booted successfully on slot B with shared userdata preserved.
 
-D3 is closed. D4 has now passed the build, packaged-artifact, exact-flash and Android-boot gates. The active D4 work is **automated functional acceptance and release-candidate evidence**, not basic flashability.
+D3 is closed. D4 has now passed the build, packaged-artifact, exact-flash, Android-boot, exact post-boot artifact-identity and initial runtime smoke gates. The active D4 work is **expanded automated functional acceptance and release-candidate evidence**, not basic flashability or boot identity.
 
 ## Current D4 status
 
@@ -18,7 +18,11 @@ R9 preserved-data flash preflight                     PASS
 R10R3 exact packaged B2 flash                         PASS
 R10R3 Android boot                                    PASS
 R10R3 exact installed BuildManifest identity          PASS
-R10R3 shell post-boot ART aggregate                   HARNESS DEFECT AFTER 1/5
+R10R3 shell post-boot ART aggregate                   SUPERSEDED HARNESS DEFECT
+sablectl exact post-boot BuildManifest                PASS
+sablectl exact post-boot ART aggregate                PASS_5_OF_5
+sablectl verify-boot                                  PASS_11_OF_11
+sablectl smoke                                        PASS_16_OF_16
 D4-V1 automated functional acceptance                 ACTIVE
 D4-R2 final closure                                   OPEN
 ```
@@ -93,6 +97,9 @@ source/config
     -> staged exact flash payload
     -> physical slot B
     -> Android userspace boot
+    -> exact installed BuildManifest
+    -> exact installed five ART residuals
+    -> initial runtime smoke
 ```
 
 ### R7R7 — fs-verity boundary closed
@@ -125,7 +132,43 @@ R10R3 then:
 - booted successfully into Android userspace;
 - proved the installed BuildManifest exactly matches B2.
 
-The historical R10R3 script ended `BOUNDED_FAIL` only because an `adb` child inherited the shell loop stdin while validating the five ART rows. That child consumed the remaining TSV records after row one. The flash and boot had already succeeded. This specific class of shell fragility is one of the reasons post-boot validation is moving into `sablectl`.
+The historical R10R3 script ended `BOUNDED_FAIL` only because an `adb` child inherited the shell loop stdin while validating the five ART rows. That child consumed the remaining TSV records after row one. This is now a superseded host-harness defect: `sablectl` subsequently proved all five ART files match the packaged B2 population exactly.
+
+### sablectl v0.1 — live Panther closure
+
+The first live `sablectl verify boot` run completed:
+
+```text
+PASS=11 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
+OVERALL=PASS
+REPORT_DIR=.sablectl/runs/verify-boot/20260908T181140Z
+```
+
+It verified:
+
+- device codename `panther`;
+- `sys.boot_completed=1`;
+- active slot `_b`;
+- encrypted data state;
+- exact installed BuildManifest SHA-256;
+- all five D4 residual ART files byte-for-byte against target-files;
+- explicit aggregate `artifact.art.count expected=5 actual=5`.
+
+The immediately following `sablectl smoke` run completed:
+
+```text
+PASS=16 FAIL=0 SKIP=0 MANUAL=0 ERROR=0
+OVERALL=PASS
+REPORT_DIR=.sablectl/runs/smoke/20260908T181212Z
+```
+
+Additional checks proved:
+
+- SELinux `Enforcing`;
+- `servicemanager` running;
+- `surfaceflinger` running;
+- `zygote` running;
+- PackageManager responding with 229 installed packages.
 
 ## D4-V1 — automated physical phone functional acceptance
 
@@ -141,7 +184,7 @@ MANUAL_PHYSICAL
 
 ### Automated host/ADB checks — `sablectl`
 
-Initial v0.1 scope:
+v0.1 live-validated scope:
 
 - host/ADB doctor;
 - single-device serial pinning;
@@ -159,17 +202,32 @@ Initial v0.1 scope:
 - Android user-count preservation;
 - terminal + JSON + Markdown + JUnit evidence.
 
+Current live proof:
+
+```text
+sablectl doctor=PASS
+sablectl device wait=PASS
+sablectl verify-boot=PASS_11_OF_11
+sablectl smoke=PASS_16_OF_16
+```
+
+The next live automation step is to capture a B2 baseline and use it as the reference for all subsequent deployment cycles. Because that baseline is post-B2, it must not be used to retroactively claim a pre-B2 package/user comparison for the already-completed flash.
+
 Planned v0.2 host automation:
 
 - crash/ANR/tombstone audit;
-- Wi-Fi/connectivity state and recovery;
-- cellular registration/data and IMS observation;
-- Bluetooth state;
-- USB/ADB state;
-- battery/charging/power service checks;
+- Wi-Fi state and reconnect;
+- connectivity/default network;
+- cellular registration/data;
+- IMS state where observable;
+- Bluetooth adapter/service state;
+- USB/ADB health;
+- battery/charging and Sable power-service checks;
 - WebView provider and package/default-role checks;
-- persistence/reboot suite;
-- D4 named acceptance suite.
+- package install/launch test;
+- notification host-observable sanity;
+- reboot/persistence suite;
+- D4 named suite and release-gate summary.
 
 ### Automated device-agent checks — SableTestAgent
 
@@ -275,10 +333,13 @@ D4  identity/default-app work
     + packaged B2 build
     + exact target-files flash
     + Android boot
-    PASS THROUGH PHYSICAL BOOT
+    + exact post-boot BuildManifest
+    + exact post-boot ART 5/5
+    + initial runtime smoke 16/16
+    PASS THROUGH INITIAL AUTOMATED SMOKE
 
 D4-V1
-    + sablectl host automation
+    + expand sablectl host automation
     + SableTestAgent planning
     + remaining manual phone acceptance
     ACTIVE
