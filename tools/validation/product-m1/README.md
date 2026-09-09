@@ -1,17 +1,52 @@
 # Sable M1 validation
 
-`SABLE_M1_ENGINEERING_PREFLIGHT.py` is the read-only gate for the Sable Start M1 engineering contract.
+## M1-R0 — engineering/source contract
 
-It validates the contract even before source exists. Once `packages/apps/SableStart` exists, it additionally performs a bounded source scan and Android manifest security review.
+`SABLE_M1_ENGINEERING_PREFLIGHT.py` validates the Sable Start M1 engineering
+contract. Before source exists it validates the contract itself; once
+`packages/apps/SableStart` exists it performs a bounded source scan and Android
+manifest security review.
 
-The validator intentionally uses only the Python standard library and performs no build, source mutation, device contact or network access.
+## M1-R1 — static toolchain/renderer preflight
 
-Typical invocation from the repository root:
+`SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.py` binds the canonical Panther Android 17
+workspace and inventories the local Rust, Cargo, rustfmt, Clippy, Clang, Soong,
+JDK 21, Ninja and Android UI-interface substrate.
 
-```bash
-python3 tools/validation/product-m1/SABLE_M1_ENGINEERING_PREFLIGHT.py \
-  --repo-root . \
-  --contract product/m1/sable-start-engineering-contract-v1.json
+M1-R1 is deliberately read-only:
+
+```text
+BUILD_TOOL_EXECUTION=NO
+BUILD_AUTHORIZED=NO
+SOURCE_MUTATION_AUTHORIZED=NO
+NETWORK_ACTIONS=NONE
+SOURCE_IMPORT_ACTIONS=NONE
+DEVICE_ACTIONS=NONE
+RENDERER_SELECTED=NONE
 ```
 
-Optional evidence JSON must name a new absolute path under `/tmp`; existing destinations and non-`/tmp` paths are refused.
+It never runs build tools and never fetches renderer dependencies. Renderer
+source absence is classified for later import review rather than silently
+turning into a dependency choice.
+
+Preferred invocation:
+
+```bash
+tools/validation/product-m1/run_SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.sh
+```
+
+The runner binds the reviewed script and contract SHA-256 values before
+execution. Evidence is written only to a newly-created root under `/tmp`.
+
+Unit/adversarial validation:
+
+```bash
+python3 tools/validation/product-m1/test_sable_m1_engineering_preflight.py
+python3 tools/validation/product-m1/test_sable_m1_r1_toolchain_preflight.py
+```
+
+See:
+
+- `docs/SABLE_M1_START_ARCHITECTURE_AND_ENGINEERING_STANDARD.md`
+- `docs/SABLE_M1_R0_ENGINEERING_GATE_20260909.md`
+- `docs/SABLE_M1_R1_STATIC_PREFLIGHT.md`
