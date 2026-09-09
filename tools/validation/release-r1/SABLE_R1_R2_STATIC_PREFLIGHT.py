@@ -223,6 +223,7 @@ def validate_source_and_materialize(
             audit.add(f"mutation.{ident}.postimage_differs", "ERROR", True, False)
             continue
 
+        # Exact delta invariant: reverting new->old once must reproduce the byte-identical preimage.
         reverted = after_text.replace(mutation["new"], mutation["old"], mutation["replacement_count"]).encode("utf-8")
         audit.add(
             f"mutation.{ident}.exact_delta",
@@ -270,6 +271,7 @@ def validate_source_and_materialize(
             "postimage_git_blob": post_blob,
         })
 
+        # Source immutability after candidate materialization.
         after_source = read_bounded(source)
         audit.add(
             f"mutation.{ident}.workspace_unchanged",
@@ -350,6 +352,7 @@ def validate_keygen_contract(workspace: Path, contract: dict[str, Any], audit: A
 def write_evidence(evidence_root: Path, audit: Audit, metadata: dict[str, Any]) -> Path:
     evidence_root.mkdir(parents=True, exist_ok=True)
     evidence = Path(tempfile.mkdtemp(prefix="SABLE_R1_R2_STATIC_PREFLIGHT_", dir=evidence_root))
+    # Caller may already have created an evidence dir for candidates. This helper is for tests only.
     payload = {
         "metadata": metadata,
         "checks": [c.__dict__ for c in audit.checks],
