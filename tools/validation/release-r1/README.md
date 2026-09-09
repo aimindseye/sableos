@@ -1,6 +1,6 @@
 # Sable R1 release validation
 
-R1-R0 is closed. `SABLE_R1_R1_POLICY_PREFLIGHT.py` is the current read-only Panther release-policy/custody gate.
+R1-R0 and R1-R1 are closed.
 
 ## R1-R0 execution lineage
 
@@ -24,7 +24,7 @@ R1_R0R3_RC=3
 
 See `docs/SABLE_R1_R0_CLOSURE_20260908.md` and `release/r1/r1-r0-closure-20260908.json`.
 
-## Current R1-R1 gate
+## R1-R1 — CLOSED
 
 Files:
 
@@ -34,46 +34,59 @@ tools/validation/release-r1/test_release_policy_r1r1.py
 release/r1/panther-release-policy-v1.json
 release/r1/release-source-seal-v1.schema.json
 docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md
+docs/SABLE_R1_R1_CLOSURE_20260908.md
+release/r1/r1-r1-closure-20260908.json
 ```
 
-R1-R1 validates release identity, the exact two-file future source-mutation plan, key inventory/custody policy, production build policy, source-seal schema, and exact pinned GrapheneOS release-tooling preimages.
+R1-R1 validates release identity, the exact two-file future source-mutation plan, key inventory/custody policy, production build policy, source-seal schema, the Sable-owned update endpoint and exact pinned GrapheneOS release-tooling preimages.
 
-It remains strictly read-only. It does not generate keys, mutate Android source, build, sign, generate OTAs, contact a device, reboot, flash, change slots, lock/unlock the bootloader, or wipe data.
-
-Use the existing sablectl virtual environment:
-
-```bash
-PY="$HOME/.venvs/sablectl/bin/python"
-
-PYTHONDONTWRITEBYTECODE=1 "$PY" -m pytest \
-  -p no:cacheprovider \
-  tools/validation/release-r1/test_release_policy_r1r1.py -q
-
-PYTHONDONTWRITEBYTECODE=1 env \
-  SOURCE_MUTATION_AUTHORIZED=NO \
-  WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO \
-  BUILD_AUTHORIZED=NO \
-  KEY_GENERATION_AUTHORIZED=NO \
-  SIGNING_AUTHORIZED=NO \
-  OTA_GENERATION_AUTHORIZED=NO \
-  DEVICE_CONTACT_AUTHORIZED=NO \
-  DEVICE_REBOOT_AUTHORIZED=NO \
-  FLASH_AUTHORIZED=NO \
-  SLOT_CHANGE_AUTHORIZED=NO \
-  USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO \
-  "$PY" tools/validation/release-r1/SABLE_R1_R1_POLICY_PREFLIGHT.py
-
-RC=$?
-echo "R1_R1_RC=$RC"
-```
-
-Pre-delivery R1-R1 validation is 34/34 PASS. With the checked-in policy the expected live disposition is deliberately:
+Canonical policy:
 
 ```text
-ERROR=0
-R1_R1_POLICY_EXECUTION=PASS
-R1_R1_POLICY_READINESS=BLOCKED_1
-R1_R1_RC=3
+SABLE_UPDATE_BASE_URL=https://updates.sableos.org/
+CERTIFICATE_SUBJECT=CN=SableOS
+BUILD_VARIANT=user
+OFFICIAL_BUILD=true
+release_policy_sha256=32d09f8ccb7b21bca083c8db3d41ae838daa1ee46e953454dfdb3c3f596a8c92
+release_policy_git_blob=9db278de6bdaa8781043762a326f2f9df03f0902
 ```
 
-The sole expected blocker is the intentionally unset Sable-owned HTTPS update endpoint. No hostname is invented by the tooling. A future zero exit code means only that the policy is complete enough to **request** separate key-generation authorization; it is not key-generation authorization itself.
+Final live disposition:
+
+```text
+R1_R1_TESTS=PASS_34_OF_34
+PASS=55 BLOCKER=0 INFO=9 SKIP=0 ERROR=0
+R1_R1_POLICY_EXECUTION=PASS
+R1_R1_POLICY_READINESS=READY_TO_REQUEST_KEYGEN_AUTHORIZATION
+R1_R1_ENDPOINT_RC=0
+```
+
+Evidence:
+
+```text
+/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260909T002354Z_qdw0b9dv
+```
+
+The validator remains strictly read-only. It does not generate keys, mutate Android source, build, sign, generate OTAs, contact a device, reboot, flash, change slots, lock/unlock the bootloader or wipe data.
+
+A zero exit code means only that policy is complete enough to **request** separate key-generation authorization. It is not key-generation authorization itself.
+
+## Current authorization boundary
+
+```text
+SOURCE_MUTATION_AUTHORIZED=NO
+WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO
+BUILD_AUTHORIZED=NO
+KEY_GENERATION_AUTHORIZED=NO
+SIGNING_AUTHORIZED=NO
+OTA_GENERATION_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=NO
+DEVICE_REBOOT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+SLOT_CHANGE_AUTHORIZED=NO
+USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
+```
+
+## Next gate
+
+Prepare and adversarially validate the exact two-file Android source mutation and the key-generation harness without executing either. Only after those deliverables are sealed should separate mutation/key-generation authorization be requested.
