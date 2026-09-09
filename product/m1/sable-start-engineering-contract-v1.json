@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "milestone": "SABLE_M1",
+  "component": "SableStart",
+  "target_device": "panther",
+  "source_root": "packages/apps/SableStart",
+  "product_stage": "PRODUCT_INTEGRATION_START",
+  "renderer_policy": "QUALIFY_BEFORE_BINDING",
+  "launcher3_fallback_required": true,
+  "privilege_policy": {
+    "allowed_permissions": [
+      "android.permission.QUERY_ALL_PACKAGES"
+    ],
+    "forbidden_permissions": [
+      "android.permission.INTERNET",
+      "android.permission.ACCESS_NETWORK_STATE",
+      "android.permission.WRITE_SECURE_SETTINGS",
+      "android.permission.MANAGE_ACTIVITY_TASKS",
+      "android.permission.STATUS_BAR",
+      "android.permission.STATUS_BAR_SERVICE",
+      "android.permission.MONITOR_INPUT",
+      "android.permission.READ_FRAME_BUFFER",
+      "android.permission.MANAGE_ACCESSIBILITY"
+    ],
+    "allow_exported_activity_count": 1,
+    "allow_exported_service_count": 0,
+    "allow_exported_receiver_count": 0,
+    "allow_exported_provider_count": 0,
+    "require_home_category_on_exported_activity": true,
+    "allow_backup": false,
+    "allow_cleartext_traffic": false,
+    "allow_persistent_process": false,
+    "allow_shared_user_id": false
+  },
+  "source_policy": {
+    "max_files": 5000,
+    "max_total_text_bytes": 52428800,
+    "max_individual_text_bytes": 2097152,
+    "scan_extensions": [
+      ".rs", ".kt", ".java", ".c", ".cc", ".cpp", ".h", ".hpp",
+      ".xml", ".bp", ".toml", ".gradle", ".kts"
+    ],
+    "excluded_path_fragments": [
+      "/tests/", "/test/", "/fixtures/", "/generated/", "/out/", "/target/"
+    ],
+    "prohibited_fragments": [
+      "std::process::Command",
+      "java.lang.ProcessBuilder",
+      "Runtime.getRuntime().exec",
+      "android.hardware.health",
+      "/sys/class/power_supply",
+      "/dev/binder",
+      "/dev/hwbinder",
+      "CAP_NET_ADMIN"
+    ],
+    "unsafe_rust_allowed_path_prefixes": []
+  },
+  "concurrency_policy": {
+    "blocking_io_on_ui_thread": "FORBIDDEN",
+    "unbounded_channels": "FORBIDDEN",
+    "unbounded_queues": "FORBIDDEN",
+    "background_polling": "FORBIDDEN_UNLESS_SEPARATELY_JUSTIFIED",
+    "task_cancellation": "REQUIRED_FOR_LONG_LIVED_TASKS",
+    "event_coalescing": "REQUIRED_FOR_HIGH_FREQUENCY_UI_STATE"
+  },
+  "data_policy": {
+    "network_egress": "NONE_M1",
+    "telemetry": "NONE_M1",
+    "analytics": "NONE_M1",
+    "remote_config": "NONE_M1",
+    "dynamic_code_download": "FORBIDDEN",
+    "local_state_minimization": "REQUIRED",
+    "sensitive_preview_redaction": "REQUIRED"
+  },
+  "rust_policy": {
+    "rustfmt": "REQUIRED",
+    "clippy_correctness": "DENY",
+    "clippy_suspicious": "DENY",
+    "clippy_perf": "DENY",
+    "unsafe_code": "FORBID_IN_SABLE_OWNED_M1_CODE_UNLESS_SEPARATELY_ALLOWLISTED",
+    "panic_on_untrusted_input": "FORBIDDEN",
+    "unwrap_expect_in_runtime_paths": "FORBIDDEN_EXCEPT_PROVEN_INVARIANTS_WITH_REVIEW"
+  },
+  "performance_policy": {
+    "measurement": "REQUIRED_ON_PANTHER",
+    "startup_hot_target_ms": 150,
+    "startup_warm_target_ms": 200,
+    "frame_deadline_p95_target": "NO_POSITIVE_FRAME_OVERRUN_IN_STANDARD_START_SCROLL",
+    "p99_tracking": "REQUIRED",
+    "startup_critical_path_network": "FORBIDDEN",
+    "startup_critical_path_disk_io": "MINIMIZE_AND_MEASURE",
+    "startup_critical_path_binder": "MINIMIZE_AND_MEASURE",
+    "idle_cpu_regression": "MUST_BE_MEASURED",
+    "rss_regression": "MUST_BE_MEASURED"
+  },
+  "supply_chain_policy": {
+    "offline_reproducible_build": "REQUIRED",
+    "dependency_lock": "REQUIRED",
+    "unpinned_git_dependencies": "FORBIDDEN",
+    "runtime_downloaded_code": "FORBIDDEN",
+    "dependency_inventory": "REQUIRED",
+    "license_inventory": "REQUIRED",
+    "new_dependency_justification": "REQUIRED"
+  },
+  "test_policy": {
+    "host_unit_tests": "REQUIRED_FOR_RENDERER_INDEPENDENT_CORE",
+    "state_machine_negative_tests": "REQUIRED",
+    "manifest_security_tests": "REQUIRED",
+    "lifecycle_tests": "REQUIRED",
+    "process_death_restore_tests": "REQUIRED",
+    "locale_rtl_font_scale_tests": "REQUIRED",
+    "accessibility_tests": "REQUIRED",
+    "package_add_remove_change_tests": "REQUIRED",
+    "touch_scroll_tests": "REQUIRED",
+    "keyboard_focus_contract_tests": "REQUIRED_BEFORE_Q25_Q27",
+    "startup_benchmark": "REQUIRED_BEFORE_DEFAULT_HOME",
+    "frame_timing_benchmark": "REQUIRED_BEFORE_DEFAULT_HOME",
+    "physical_panther_acceptance": "REQUIRED_BEFORE_DEFAULT_HOME",
+    "launcher3_rollback_proof": "REQUIRED_BEFORE_DEFAULT_HOME"
+  }
+}
