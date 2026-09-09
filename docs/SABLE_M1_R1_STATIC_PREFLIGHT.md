@@ -127,7 +127,9 @@ STARTUP_LATENCY
 PRIVILEGE_DELTA_NONE
 ```
 
-## Validation of this deliverable
+## Validation of the staged deliverable
+
+Before publication, the staged Python validator/test logic passed:
 
 ```text
 PY_COMPILE=PASS_2_OF_2
@@ -146,37 +148,39 @@ tools, platform-interface absence, renderer source presence/absence, renderer
 symlink escape, evidence-path restrictions, exclusive evidence creation, and
 static no-network/no-process-execution properties.
 
-## Artifacts
+GitHub publication produced different byte identities for the Python files than
+the local staging snapshots. This is not treated as silently equivalent. The
+runner therefore binds the **exact branch Git blobs** and executes the exact
+branch test suite before it is permitted to inspect the real Android workspace.
 
-```text
-product/m1/sable-m1-r1-toolchain-contract-v1.json
-  sha256=0e447be147989eadc9d1257800e9f06cec2a93f61c8c7f65d8ffff574d66f1eb
-
-tools/validation/product-m1/SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.py
-  sha256=bdc00d0d18bc6ad9ecfcb6b7f94d3ece564f462e47d0a2ec65305213ed4426fb
-
-tools/validation/product-m1/test_sable_m1_r1_toolchain_preflight.py
-  sha256=817a1b11622ba5d049d440204db7db0c28df6e013f8a855571e1e8f473b5cbf5
-
-tools/validation/product-m1/run_SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.sh
-  sha256=0bc5a248aabe5a6b8e2b0f1cfc1238d7c623e1f976138a04332e99dfae55a466
-```
-
-Git blob identities of the exact reviewed payloads:
+## Exact branch identities
 
 ```text
 product/m1/sable-m1-r1-toolchain-contract-v1.json
   git_blob=805d37edb4de15daccef8d8d456b837a0dd2c9bd
+  sha256=0e447be147989eadc9d1257800e9f06cec2a93f61c8c7f65d8ffff574d66f1eb
 
 tools/validation/product-m1/SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.py
-  git_blob=4271c3c7b44ed4afa0f55d88fadeb59ced160bba
+  git_blob=934059ead13b42188f72a80b61d42f073897e3f5
+  sha256=EMITTED_BY_RUNNER_BEFORE_TEST_EXECUTION
 
 tools/validation/product-m1/test_sable_m1_r1_toolchain_preflight.py
-  git_blob=c1e5a7a1d3d5d78ee1e443f718fa3185d5765669
+  git_blob=beff363458ad9b8447392b8d19836f712b80d57a
+  sha256=EMITTED_BY_RUNNER_BEFORE_TEST_EXECUTION
 
 tools/validation/product-m1/run_SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.sh
-  git_blob=fd9255e814e3182cfad94f83f83daf71617efea1
+  git_blob=6b4133737c910352cf1dbf4122dc034c262ca1d0
+  sha256=390759e09d5a7fab376458adb78ba4875c4028e44daea156e6f699eb56a48da9
 ```
+
+The runner refuses any mismatch in the contract, validator, or branch-test Git
+blob identities. It then requires:
+
+```text
+M1_R1_EXACT_BRANCH_TESTS=PASS_29_OF_29
+```
+
+before the real workspace static preflight begins.
 
 ## Execution
 
@@ -190,12 +194,18 @@ tools/validation/product-m1/run_SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.sh
 Expected success disposition:
 
 ```text
+M1_R1_SCRIPT_BINDING=PASS
+M1_R1_TEST_BINDING=PASS
+M1_R1_CONTRACT_BINDING=PASS
+M1_R1_EXACT_BRANCH_TESTS=PASS_29_OF_29
 SABLE_M1_R1_STATIC_TOOLCHAIN_PREFLIGHT=PASS
 RENDERER_SELECTED=NONE
 BUILD_TOOL_EXECUTION_ACTIONS=NONE
 M1_R1_READINESS=READY_FOR_RENDERER_IMPORT_AND_BUILD_QUALIFICATION_PLAN
 SABLE_M1_R1_RC=0
+SABLE_M1_R1_RUNNER_RC=0
 ```
 
-RC3 means a bounded static blocker. RC4 means validator/input error. Neither
+RC3 means a bounded static blocker. RC4 means validator/input error. Runner
+RC92–99 is a file-binding or exact-branch-test failure. None of those outcomes
 permits source import, build execution, or device contact.
