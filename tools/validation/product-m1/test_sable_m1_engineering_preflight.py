@@ -133,7 +133,7 @@ class M1PreflightTests(unittest.TestCase):
             m1.run(self.root, self.contract_path)
 
     def test_bounded_file_count_blocks(self):
-        self.source()
+        p = self.source()
         c = self.contract.copy()
         c["source_policy"] = dict(self.contract["source_policy"])
         c["source_policy"]["max_files"] = 1
