@@ -32,20 +32,17 @@ Canonical packaged B2 target-files:
 /srv/data/sableos_panther_graphene_2026081300_workspace/
   out_d4_b2_final/target/product/panther/obj/PACKAGING/
   target_files_intermediates/panther-target_files.zip
-
 sha256=b22c5ab5676b3a61304102cd508bf75a01bd4d0bc2a47ffceba8be153376bb78
 ```
 
-Installed BuildManifest identity:
+Installed BuildManifest:
 
 ```text
 /system/etc/security/fsverity/BuildManifest.apk
 sha256=8a56fddab2ae42f40d522e96241b4b486bb2d702e11f9bb0b10e7527d32f8cec
 ```
 
-## Panther D4 closure
-
-D4 is **CLOSED** for the current B2 development population.
+## Panther D4 — CLOSED
 
 ```text
 R7R7 fs-verity named-input fidelity                 PASS / CLOSED
@@ -102,7 +99,7 @@ script sha256=d3cdb1dc4cdca4289ff7d835a96d9c96aebfee05a4feaa4c967bbf033115ca71
 log sha256=8aaf2bbaf195cd5f48acc0eafad64022c3dd6ca339a4b400a933752a49738dbc
 ```
 
-NFC framework/service/HAL initialization and enable/routing path passed. RF tag read remains:
+NFC framework/service/HAL initialization and enable/routing passed. RF tag read remains:
 
 ```text
 NFC_RF_TAG_READ=NOT_TESTED_NO_TEST_HARDWARE
@@ -111,9 +108,7 @@ NFC_DISPOSITION=DEFERRED_NON_BLOCKING_EXTERNAL_HARDWARE_VALIDATION
 
 This is not a D4 blocking defect.
 
-## Current active milestone: R1 release engineering
-
-The active milestone is **R1 — Sable-owned release engineering**.
+## R1 release engineering
 
 R1 goal:
 
@@ -130,8 +125,6 @@ sablectl release evidence integration
 ```
 
 ### R1-R0 — CLOSED
-
-R1-R0 is closed as a trustworthy read-only release-engineering inventory.
 
 Final executable:
 
@@ -152,35 +145,30 @@ PASS=19 BLOCKER=10 INFO=11 SKIP=2 ERROR=0
 R1_R0_PREFLIGHT_EXECUTION=PASS
 R1_RELEASE_READINESS=BLOCKED_10
 R1_R0R3_RC=3
+EVIDENCE_DIR=/tmp/SABLE_R1_R0_RELEASE_PREFLIGHT_20260908T225032Z_wfba8zy8
 ```
 
-Evidence:
+The ten substantive blockers were promoted into R1. R0R1 and R0R2 remain historical host-harness failures.
+
+### R1-R1 — CLOSED
+
+R1-R1 closes release identity, update endpoint, key-custody policy, production build policy and source-seal policy before any production key generation.
+
+Canonical release policy:
 
 ```text
-/tmp/SABLE_R1_R0_RELEASE_PREFLIGHT_20260908T225032Z_wfba8zy8
-```
-
-The ten substantive blockers were promoted into R1. R0R1 and R0R2 remain historical harness failures and are not current executable paths.
-
-### R1-R1 — ACTIVE
-
-R1-R1 defines policy/configuration before any production key-generation request.
-
-Current deliverables:
-
-```text
-tools/validation/release-r1/SABLE_R1_R1_POLICY_PREFLIGHT.py
-tools/validation/release-r1/test_release_policy_r1r1.py
 release/r1/panther-release-policy-v1.json
-release/r1/release-source-seal-v1.schema.json
-docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md
+sha256=32d09f8ccb7b21bca083c8db3d41ae838daa1ee46e953454dfdb3c3f596a8c92
+git_blob=9db278de6bdaa8781043762a326f2f9df03f0902
 ```
 
-Adopted policy includes:
+Adopted policy:
 
 ```text
 CERTIFICATE_SUBJECT=CN=SableOS
 SIGNING_KEY_DOMAINS=9_BOUND
+SABLE_UPDATE_BASE_URL=https://updates.sableos.org/
+UPDATE_ENDPOINT_OWNERSHIP=OPERATOR_VERIFIED
 BUILD_VARIANT=user
 OFFICIAL_BUILD=true
 BUILD_NUMBER_POLICY=YYYYMMDDRR_NO_REUSE
@@ -192,7 +180,41 @@ PRIVATE_KEY_MATERIAL_IN_PUBLIC_EVIDENCE=NO
 PRIVATE_KEY_HASHES_IN_PUBLIC_EVIDENCE=NO
 ```
 
-The exact future source-mutation plan is limited to:
+Endpoint transport validation:
+
+```text
+DNS_PUBLIC_RESOLUTION=PASS
+HTTPS_OBJECT_GET=PASS
+HTTPS_HEAD_STATUS=200
+HTTP_RANGE_STATUS=206
+CONTENT_RANGE=bytes 0-5/23
+CLOUDFLARE_INTERACTIVE_CHALLENGE=ABSENT_AFTER_CONFIGURATION
+OTA_MACHINE_ACCESS=PASS
+```
+
+Initial live R1-R1 gate before the endpoint was bound:
+
+```text
+PASS=54 BLOCKER=1 INFO=9 SKIP=0 ERROR=0
+R1_R1_POLICY_EXECUTION=PASS
+R1_R1_POLICY_READINESS=BLOCKED_1
+R1_R1_RC=3
+EVIDENCE_DIR=/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260908T231345Z_fts6loeb
+```
+
+Final endpoint-bound gate:
+
+```text
+R1_R1_TESTS=PASS_34_OF_34
+PASS=55 BLOCKER=0 INFO=9 SKIP=0 ERROR=0
+R1_R1_POLICY_EXECUTION=PASS
+R1_R1_POLICY_READINESS=READY_TO_REQUEST_KEYGEN_AUTHORIZATION
+R1_R1_ENDPOINT_RC=0
+EVIDENCE_DIR=/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260909T002354Z_qdw0b9dv
+R1_R1=CLOSED
+```
+
+The exact future Android source mutation remains limited to:
 
 ```text
 script/generate-keys
@@ -200,40 +222,12 @@ script/generate-keys
 
 packages/apps/Updater/res/values/config.xml
     https://releases.grapheneos.org/
-    -> operator-selected Sable-owned HTTPS base URL
+    -> https://updates.sableos.org/
 ```
 
-Neither mutation is authorized or applied by R1-R1.
+Neither mutation has been applied.
 
-Pre-delivery R1-R1 validation:
-
-```text
-PY_COMPILE_AST=PASS
-R1_R1_FOCUSED_TESTS=PASS_34_OF_34
-EXECUTION_SURFACE_AST=PASS
-FORBIDDEN_EXECUTION_SCAN=PASS
-SECRET_MATERIAL_SCAN=PASS
-REPEATED_MAIN_25=PASS
-```
-
-The checked-in R1-R1 policy intentionally has one unresolved operator-owned value:
-
-```text
-SABLE_UPDATE_BASE_URL=UNSET
-```
-
-Therefore the expected first ThinkPad policy-preflight result is:
-
-```text
-ERROR=0
-R1_R1_POLICY_EXECUTION=PASS
-R1_R1_POLICY_READINESS=BLOCKED_1
-R1_R1_RC=3
-```
-
-The sole expected blocker is the real Sable-owned HTTPS update endpoint. No hostname is invented by the tooling.
-
-### Authorization boundary
+### Current authorization boundary
 
 ```text
 SOURCE_MUTATION_AUTHORIZED=NO
@@ -249,18 +243,33 @@ SLOT_CHANGE_AUTHORIZED=NO
 USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
 ```
 
-A future R1-R1 exit `0` means only that policy is complete enough to **request** separate key-generation authorization. It never grants that authorization itself.
+R1-R1 readiness means only that a separately sealed key-generation/source-mutation phase may now be prepared and authorization may later be requested. No production key exists yet.
+
+## Next gate
+
+Prepare and adversarially validate, without execution:
+
+```text
+1. exact two-file Android source-mutation harness
+2. production Panther key-generation harness
+3. encrypted external key-custody initialization procedure
+4. source-seal inputs for the first panther-cur-user production build
+```
+
+Only after those are independently sealed should explicit source-mutation and key-generation authorization be requested.
 
 ## Start here
 
 - `docs/PANTHER_D4_CLOSURE_20260908.md` — D4 final closure record.
 - `docs/PANTHER_D4_ROADMAP.md` — closed D4 roadmap and handoff to R1.
-- `docs/SABLE_R1_R0_CLOSURE_20260908.md` — final R1-R0 live closure.
+- `docs/SABLE_R1_R0_CLOSURE_20260908.md` — final R1-R0 closure.
 - `release/r1/r1-r0-closure-20260908.json` — structured R1-R0 closure record.
-- `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — current R1-R1 architecture/policy.
-- `release/r1/panther-release-policy-v1.json` — Panther release policy.
+- `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — R1-R1 policy architecture.
+- `docs/SABLE_R1_R1_CLOSURE_20260908.md` — final R1-R1 closure.
+- `release/r1/r1-r1-closure-20260908.json` — structured R1-R1 closure record.
+- `release/r1/panther-release-policy-v1.json` — canonical Panther release policy.
 - `release/r1/release-source-seal-v1.schema.json` — production source-seal schema.
-- `tools/validation/release-r1/README.md` — current validation commands.
+- `tools/validation/release-r1/README.md` — release-validation lineage and current authorization boundary.
 - `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical GrapheneOS-based build procedure.
 
 Historical pure-AOSP Panther bring-up records remain forensic/reference evidence only; `/srv/data/aosp_panther17_workspace` is not the canonical active substrate.
