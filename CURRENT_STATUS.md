@@ -1,8 +1,36 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
+
+## Current project priority
+
+SableOS has moved from substrate/release-engineering closure back to **active product development**.
+
+The accepted near-term product direction is **Sable Flow**: a Metro-inspired, information-first shell with Sable-owned visual identity, live tiles, native phone essentials, and a central Sable Hub for people, communication and social-service access.
+
+```text
+SABLEOS_PRODUCT_DEVELOPMENT=ACTIVE
+SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
+NEXT_PRODUCT_MILESTONE=SABLE_M1_METRO_SHELL_PROTOTYPE
+TARGET=panther
+```
+
+Primary sequence:
+
+```text
+Sable Flow shared UI primitives
+    -> Sable Start vertical live-tile shell
+    -> Phone / People / Messages / Settings vertical slice
+    -> Sable Hub provider capability framework
+    -> isolated social-service web capsules
+    -> broader native apps and polish
+    -> Q25/Q27 portability when justified
+    -> production signing/OTA closure before release candidate
+```
+
+See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` and `docs/CORE_PRODUCT_ROADMAP.md`.
 
 ## Current validated physical state
 
@@ -76,29 +104,6 @@ OVERALL=PASS
 RELEASE_D4_RC=0
 ```
 
-Bootloader-side slot proof:
-
-```text
-FASTBOOT_PRODUCT=panther
-FASTBOOT_CURRENT_SLOT=b
-FASTBOOT_SLOT_COUNT=2
-FASTBOOT_SLOT_SUCCESSFUL_b=yes
-FASTBOOT_SLOT_UNBOOTABLE_b=no
-FASTBOOT_SLOT_RETRY_COUNT_b=2
-POST_SLOT_SUFFIX=_b
-POST_BOOT_COMPLETED=1
-PANTHER_D4_R2_SLOT_SUCCESS_RESULT=PASS
-R2_RC=0
-```
-
-Successful slot-proof evidence:
-
-```text
-/tmp/PANTHER_D4_R2_SLOT_SUCCESS_PROOF_20260908T215953Z_JS7omS
-script sha256=d3cdb1dc4cdca4289ff7d835a96d9c96aebfee05a4feaa4c967bbf033115ca71
-log sha256=8aaf2bbaf195cd5f48acc0eafad64022c3dd6ca339a4b400a933752a49738dbc
-```
-
 NFC framework/service/HAL initialization and enable/routing passed. RF tag read remains:
 
 ```text
@@ -108,51 +113,18 @@ NFC_DISPOSITION=DEFERRED_NON_BLOCKING_EXTERNAL_HARDWARE_VALIDATION
 
 This is not a D4 blocking defect.
 
-## R1 release engineering
+## R1 release engineering — PAUSED / NON-BLOCKING
 
-R1 goal:
+R1 established the production release identity, update endpoint, key-custody policy, source-mutation controls and signing architecture. It is intentionally paused while SableOS product/UI work advances.
 
-```text
-Sable signing-key architecture and custody
-Sable release/version identity
-user/release build policy
-signed target-files and factory artifacts
-full/incremental OTA generation and signing
-Sable-owned update metadata and Updater endpoint
-A/B OTA forward-update validation
-rollback/recovery validation
-sablectl release evidence integration
-```
-
-### R1-R0 — CLOSED
-
-Final executable:
+### Closed release foundations
 
 ```text
-tools/validation/release-r1/SABLE_R1_R0R3_RELEASE_PREFLIGHT.py
-sha256=595db875192ab5c3753e6d31698bce8adefdd3af5900de217bf4ea987ef7b88f
-git_blob=e35081e18cbbd12e7d49accb26766bc03721c649
+R1_R0=CLOSED
+R1_R1=CLOSED
+R1_R3R2=PASS_EXACT_TWO_FILE_SOURCE_MUTATION
+R1_R4R2=PASS_POST_MUTATION_STATIC_VALIDATION
 ```
-
-Final ThinkPad gate:
-
-```text
-BRANCH_BINDING=PASS
-R1_R0R3_FILE_BINDINGS=PASS
-PY_COMPILE=PASS_6_OF_6
-R1_R0R3_TESTS=PASS_38_OF_38
-PASS=19 BLOCKER=10 INFO=11 SKIP=2 ERROR=0
-R1_R0_PREFLIGHT_EXECUTION=PASS
-R1_RELEASE_READINESS=BLOCKED_10
-R1_R0R3_RC=3
-EVIDENCE_DIR=/tmp/SABLE_R1_R0_RELEASE_PREFLIGHT_20260908T225032Z_wfba8zy8
-```
-
-The ten substantive blockers were promoted into R1. R0R1 and R0R2 remain historical host-harness failures.
-
-### R1-R1 — CLOSED
-
-R1-R1 closes release identity, update endpoint, key-custody policy, production build policy and source-seal policy before any production key generation.
 
 Canonical release policy:
 
@@ -180,54 +152,59 @@ PRIVATE_KEY_MATERIAL_IN_PUBLIC_EVIDENCE=NO
 PRIVATE_KEY_HASHES_IN_PUBLIC_EVIDENCE=NO
 ```
 
-Endpoint transport validation:
+### Applied exact Android source mutations
 
-```text
-DNS_PUBLIC_RESOLUTION=PASS
-HTTPS_OBJECT_GET=PASS
-HTTPS_HEAD_STATUS=200
-HTTP_RANGE_STATUS=206
-CONTENT_RANGE=bytes 0-5/23
-CLOUDFLARE_INTERACTIVE_CHALLENGE=ABSENT_AFTER_CONFIGURATION
-OTA_MACHINE_ACCESS=PASS
-```
-
-Initial live R1-R1 gate before the endpoint was bound:
-
-```text
-PASS=54 BLOCKER=1 INFO=9 SKIP=0 ERROR=0
-R1_R1_POLICY_EXECUTION=PASS
-R1_R1_POLICY_READINESS=BLOCKED_1
-R1_R1_RC=3
-EVIDENCE_DIR=/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260908T231345Z_fts6loeb
-```
-
-Final endpoint-bound gate:
-
-```text
-R1_R1_TESTS=PASS_34_OF_34
-PASS=55 BLOCKER=0 INFO=9 SKIP=0 ERROR=0
-R1_R1_POLICY_EXECUTION=PASS
-R1_R1_POLICY_READINESS=READY_TO_REQUEST_KEYGEN_AUTHORIZATION
-R1_R1_ENDPOINT_RC=0
-EVIDENCE_DIR=/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260909T002354Z_qdw0b9dv
-R1_R1=CLOSED
-```
-
-The exact future Android source mutation remains limited to:
+The two authorized source mutations were completed and postvalidated:
 
 ```text
 script/generate-keys
     CN=GrapheneOS -> CN=SableOS
+    sha256=c9957d82c62c61ec404c2d7366b0d80b71d98e2e6a6df60322fe066f0d58b440
+    git_blob=211209f492071e3a9f9c4247ad63c2dee3ffbf30
 
 packages/apps/Updater/res/values/config.xml
     https://releases.grapheneos.org/
     -> https://updates.sableos.org/
+    sha256=84a7aac655c3e863cb1b473b11d12269baa16c44ccc242757d9c2c9051428b3d
+    git_blob=9c0b38b3189c9674d4a150ffead95336211d462c
 ```
 
-Neither mutation has been applied.
+Postmutation validation:
 
-### Current authorization boundary
+```text
+SOURCE_POSTIMAGES=PASS_2_OF_2
+GIT_INDEX_UNCHANGED=PASS_2_OF_2
+SOURCE_DELTA_CARDINALITY=PASS_EXACT_2_FILES
+TARGET_PROJECT_DELTA_SCOPE=PASS_2_OF_2
+GENERATOR_CN_SEMANTICS=PASS
+UPDATER_ENDPOINT_SEMANTICS=PASS
+R1_R4R2_POST_MUTATION_VALIDATION=PASS
+R1_R4R2_RC=0
+```
+
+### Key-custody exploration status
+
+No production key has been generated.
+
+The ThinkPad host was proven unsuitable for immediate key generation while unencrypted persistent swap is active. The `/dev/sda` external disk was safely inspected and temporarily unmounted for read-only classification; its existing GPT/ext4 contents remain preserved and it is no longer on the critical path for production keystore provisioning.
+
+Latest storage review:
+
+```text
+R1_R5R5ER5R2_POST_UNMOUNT_READONLY_REVIEW=PASS
+R1_R5R5ER5R2_REPORT_SHA256=51e79fdc7fc39a4103ee7001c47b3f8c8031a089b90a7f2a70ffd109e407483d
+EXTERNAL_STORAGE=/dev/sda
+EXTERNAL_STORAGE_PARTITION=/dev/sda1
+PARTITION_TABLE=gpt
+FILESYSTEM=ext4
+ACTIVE_MOUNT_COUNT=0
+OVERWRITE_SAFE=NO
+OVERWRITE_AUTHORIZED=NO
+```
+
+A future dedicated or isolated signing-host environment remains preferred, but host selection is intentionally deferred. No hardware purchase is required for current product development.
+
+### Current release authorization boundary
 
 ```text
 SOURCE_MUTATION_AUTHORIZED=NO
@@ -236,6 +213,14 @@ BUILD_AUTHORIZED=NO
 KEY_GENERATION_AUTHORIZED=NO
 SIGNING_AUTHORIZED=NO
 OTA_GENERATION_AUTHORIZED=NO
+MOUNT_MUTATION_AUTHORIZED=NO
+OVERWRITE_AUTHORIZED=NO
+KEYSTORE_PROVISIONING_AUTHORIZED=NO
+PARTITION_AUTHORIZED=NO
+FORMAT_AUTHORIZED=NO
+CRYPTSETUP_AUTHORIZED=NO
+SWAP_MUTATION_AUTHORIZED=NO
+DELETE_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 DEVICE_REBOOT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
@@ -243,33 +228,41 @@ SLOT_CHANGE_AUTHORIZED=NO
 USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
 ```
 
-R1-R1 readiness means only that a separately sealed key-generation/source-mutation phase may now be prepared and authorization may later be requested. No production key exists yet.
+Release-signing work resumes before release-candidate/OTA distribution. It does not block feature/UI development.
 
-## Next gate
+## Sable Flow M1 — NEXT
 
-Prepare and adversarially validate, without execution:
+The first concrete product milestone is:
 
 ```text
-1. exact two-file Android source-mutation harness
-2. production Panther key-generation harness
-3. encrypted external key-custody initialization procedure
-4. source-seal inputs for the first panther-cur-user production build
+SABLE_M1=METRO_SHELL_PROTOTYPE
+TARGET=panther
+
+DELIVERABLES:
+  Sable Flow shared primitives
+  Sable Start vertical tile grid
+  typography + accent themes
+  app/service list transition
+  live-tile provider contract
+  Phone tile
+  People tile
+  Messages tile
+  Settings tile
+  Social Hub placeholder
 ```
 
-Only after those are independently sealed should explicit source-mutation and key-generation authorization be requested.
+Sable Hub will use a provider capability model rather than pretending every service exposes a universal native API. Initial social targets are WhatsApp, Instagram, Facebook and LinkedIn, with isolated web capsules used where supported native/API consumer integration is unavailable.
+
+The same semantic shell/Hub model is intended to become the base for later Q25 and Q27 compact/QWERTY work.
 
 ## Start here
 
+- `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Hub direction and M1-M5 sequence.
+- `docs/CORE_PRODUCT_MODEL.md` — normative product architecture and trust boundaries.
+- `docs/CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
 - `docs/PANTHER_D4_CLOSURE_20260908.md` — D4 final closure record.
-- `docs/PANTHER_D4_ROADMAP.md` — closed D4 roadmap and handoff to R1.
-- `docs/SABLE_R1_R0_CLOSURE_20260908.md` — final R1-R0 closure.
-- `release/r1/r1-r0-closure-20260908.json` — structured R1-R0 closure record.
-- `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — R1-R1 policy architecture.
-- `docs/SABLE_R1_R1_CLOSURE_20260908.md` — final R1-R1 closure.
-- `release/r1/r1-r1-closure-20260908.json` — structured R1-R1 closure record.
+- `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — preserved release/signing custody architecture.
 - `release/r1/panther-release-policy-v1.json` — canonical Panther release policy.
-- `release/r1/release-source-seal-v1.schema.json` — production source-seal schema.
-- `tools/validation/release-r1/README.md` — release-validation lineage and current authorization boundary.
 - `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical GrapheneOS-based build procedure.
 
-Historical pure-AOSP Panther bring-up records remain forensic/reference evidence only; `/srv/data/aosp_panther17_workspace` is not the canonical active substrate.
+Historical pure-AOSP Panther bring-up records remain forensic/reference evidence only; the active GrapheneOS-derived Android 17 Panther workspace is the canonical product-development substrate.
