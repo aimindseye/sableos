@@ -18,10 +18,10 @@
     "shared"
   ],
   "update_endpoint": {
-    "url": null,
+    "url": "https://updates.sableos.org/",
     "owner": "SableOS",
-    "ownership_status": "UNVERIFIED",
-    "note": "Operator must supply a real Sable-owned HTTPS base URL ending in /. The preflight will not invent one."
+    "ownership_status": "OPERATOR_VERIFIED",
+    "note": "Operator-verified Sable-owned HTTPS update base URL. DNS, HTTPS object retrieval, and byte-range delivery validated on 2026-09-08."
   },
   "key_custody": {
     "unique_per_device_variant": true,
