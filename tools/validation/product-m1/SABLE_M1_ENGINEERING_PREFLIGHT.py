@@ -186,6 +186,7 @@ def bounded_source_files(source_root: Path, policy: dict) -> list[Path]:
     total = 0
     for dirpath, dirnames, filenames in os.walk(source_root, topdown=True, followlinks=False):
         base = Path(dirpath)
+        # Reject directory symlinks and prune excluded trees before descent.
         kept_dirs: list[str] = []
         for name in sorted(dirnames):
             p = base / name
@@ -216,6 +217,8 @@ def bounded_source_files(source_root: Path, policy: dict) -> list[Path]:
 
 
 def text_without_comments(path: Path, text: str) -> str:
+    # Conservative comment removal for unsafe-token checks only; prohibited-fragment
+    # checks operate on raw text to avoid hiding real calls in unusual syntax.
     if path.suffix == ".rs":
         text = re.sub(r"//.*?$", "", text, flags=re.MULTILINE)
         text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
@@ -332,6 +335,7 @@ def validate_manifest(manifest: Path, contract: dict, result: Result) -> None:
         "receiver": priv["allow_exported_receiver_count"],
         "provider": priv["allow_exported_provider_count"],
     }
+    exported_counts: dict[str, int] = {}
     exported_activities: list[ET.Element] = []
     for kind, limit in limits.items():
         elems = app.findall(kind) + app.findall(f"activity-alias" if kind == "activity" else "__none__")
@@ -341,6 +345,7 @@ def validate_manifest(manifest: Path, contract: dict, result: Result) -> None:
         else:
             result.passed(f"M1_{kind.upper()}_EXPORTED_ATTRIBUTE=PASS_EXPLICIT")
         exported = [e for e in elems if bool_attr(e, "exported", False) is True]
+        exported_counts[kind] = len(exported)
         if kind == "activity":
             exported_activities.extend(exported)
         if len(exported) > limit:
@@ -429,7 +434,7 @@ def main() -> int:
     print("AUTHORIZATION_BOUNDARY=PASS_ALL_NO")
     try:
         rc, report = run(args.repo_root, args.contract)
-    except Exception as exc:
+    except Exception as exc:  # fail closed with bounded diagnostic
         print(f"M1_PREFLIGHT_INTERNAL_ERROR={type(exc).__name__}:{exc}")
         print("SABLE_M1_ENGINEERING_PREFLIGHT=FAIL")
         print("SABLE_M1_ENGINEERING_PREFLIGHT_RC=2")
@@ -450,6 +455,8 @@ def main() -> int:
     print(f"SABLE_M1_ENGINEERING_PREFLIGHT_RC={rc}")
 
     if args.json_report is not None:
+        # Evidence output is opt-in and /tmp-only. Refuse workspace/output writes,
+        # symlinked parents and existing destinations.
         target = args.json_report
         if not target.is_absolute():
             print("M1_JSON_REPORT=FAIL_NOT_ABSOLUTE")
