@@ -1,13 +1,13 @@
 # SableOS R1-R1 — release identity, source-seal and key-custody policy
 
 Date: 2026-09-08  
-Status: **DELIVERED / LIVE READ-ONLY POLICY PREFLIGHT PENDING**
+Status: **CLOSED**
 
 ## Purpose
 
-R1-R1 defines and validates the policy/configuration required *before* production signing-key generation can be requested. It is intentionally non-mutating.
+R1-R1 defines and validates the policy/configuration required before production signing-key generation can be requested. It is intentionally non-mutating.
 
-R1-R1 does **not**:
+R1-R1 did **not**:
 
 ```text
 generate keys
@@ -22,15 +22,49 @@ lock or unlock a bootloader
 wipe userdata or metadata
 ```
 
-## Release identity
-
-The adopted certificate identity is:
+Final closure is recorded in:
 
 ```text
-CN=SableOS
+docs/SABLE_R1_R1_CLOSURE_20260908.md
+release/r1/r1-r1-closure-20260908.json
 ```
 
-The pinned upstream `script/generate-keys` currently uses `CN=GrapheneOS`; R1-R1 records a future two-file mutation plan but does not apply it.
+## Final live result
+
+```text
+R1_R1_TESTS=PASS_34_OF_34
+PASS=55 BLOCKER=0 INFO=9 SKIP=0 ERROR=0
+R1_R1_POLICY_EXECUTION=PASS
+R1_R1_POLICY_READINESS=READY_TO_REQUEST_KEYGEN_AUTHORIZATION
+R1_R1_ENDPOINT_RC=0
+```
+
+Evidence:
+
+```text
+/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260909T002354Z_qdw0b9dv
+```
+
+A zero exit code means only that policy is complete enough to request separate key-generation authorization. It does not authorize key generation.
+
+## Release identity
+
+```text
+CERTIFICATE_SUBJECT=CN=SableOS
+SABLE_UPDATE_BASE_URL=https://updates.sableos.org/
+UPDATE_ENDPOINT_OWNER=SableOS
+UPDATE_ENDPOINT_OWNERSHIP_STATUS=OPERATOR_VERIFIED
+```
+
+The canonical policy is:
+
+```text
+release/r1/panther-release-policy-v1.json
+sha256=32d09f8ccb7b21bca083c8db3d41ae838daa1ee46e953454dfdb3c3f596a8c92
+git_blob=9db278de6bdaa8781043762a326f2f9df03f0902
+```
+
+The pinned upstream `script/generate-keys` still uses `CN=GrapheneOS`; R1-R1 records a future source mutation but does not apply it.
 
 The exact signing domains remain:
 
@@ -56,21 +90,28 @@ id_ed25519
 
 The upstream key generator creates the APK/certificate pairs and AVB key/material but does not create `id_ed25519`; the later authorized Sable key-generation harness must generate the factory-archive OpenSSH key separately.
 
-## Update endpoint
+## Update endpoint validation
 
-No Sable update hostname is invented by this deliverable.
+The first custom-domain test was challenged by Cloudflare and was rejected for OTA use. After the challenge-producing configuration was corrected, the public endpoint passed machine access:
 
-The checked-in policy intentionally contains:
-
-```json
-"update_endpoint": {
-  "url": null,
-  "owner": "SableOS",
-  "ownership_status": "UNVERIFIED"
-}
+```text
+DNS_PUBLIC_RESOLUTION=PASS
+HTTPS_OBJECT_GET=PASS
+HTTPS_HEAD_STATUS=200
+HTTP_RANGE_STATUS=206
+CONTENT_RANGE=bytes 0-5/23
+RANGE_BODY=SableO
+CLOUDFLARE_INTERACTIVE_CHALLENGE=ABSENT_AFTER_CONFIGURATION
+OTA_MACHINE_ACCESS=PASS
 ```
 
-The R1-R1 gate will remain `BLOCKED_1` until an operator supplies a real Sable-controlled HTTPS base URL and marks ownership as verified.
+R1-R1 therefore binds:
+
+```text
+https://updates.sableos.org/
+```
+
+rather than an `r2.dev`, GitHub Pages or GitHub Releases URL.
 
 The validator rejects:
 
@@ -89,7 +130,7 @@ ownership_status != OPERATOR_VERIFIED
 
 ## Exact planned source mutation scope
 
-R1-R1 permits only this *plan*:
+R1-R1 permits only this future plan:
 
 ```text
 script/generate-keys
@@ -98,7 +139,7 @@ script/generate-keys
 
 packages/apps/Updater/res/values/config.xml
     https://releases.grapheneos.org/
- -> <operator-selected Sable-owned HTTPS base URL>
+ -> https://updates.sableos.org/
 ```
 
 Both remain behind future `SOURCE_MUTATION_AUTHORIZED=YES`.
@@ -184,27 +225,38 @@ packages/apps/Updater/res/values/config.xml
 
 It also confirms the script/Updater repository heads, nine signing domains, current upstream `CN=GrapheneOS`, current GrapheneOS update URL, tmpfs encrypt/decrypt design, and release flow tokens for target-files signing, OTA generation, factory image generation and optional `id_ed25519` factory archive signing.
 
-## Exit semantics
+## Historical gate progression
+
+Initial live run with the endpoint intentionally unset:
 
 ```text
-0  policy complete; eligible to REQUEST separate key-generation authorization
-2  audit ERROR; policy state not trustworthy
-3  audit completed; one or more policy BLOCKERs remain
-```
-
-A zero exit code **does not itself authorize key generation**.
-
-With the delivered policy, the expected initial live result is:
-
-```text
-ERROR=0
+PASS=54 BLOCKER=1 INFO=9 SKIP=0 ERROR=0
 R1_R1_POLICY_EXECUTION=PASS
 R1_R1_POLICY_READINESS=BLOCKED_1
 R1_R1_RC=3
+EVIDENCE_DIR=/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260908T231345Z_fts6loeb
 ```
 
-The sole expected blocker is the intentionally unset Sable-owned update endpoint.
+The sole blocker was `policy.update_endpoint=UNSET`.
 
-## Upstream basis
+The endpoint-bound candidate was staged in `/tmp`, validated with the unchanged 34-test suite, then executed against the unchanged R1-R1 validator with all mutation/device authorizations disabled. It closed at `55/0/9/0/0` and `RC=0`.
 
-The current GrapheneOS build guide independently confirms the policy choices used here: production builds should be `user`; derivatives using `OFFICIAL_BUILD=true` must point Updater at their own update server; release keys must be retained/reused and should be encrypted at rest; keys should be unique per device variant; `id_ed25519` is generated separately for factory-image signatures; and an internal testing release should be followed by a sample future release to prove the forward-update path before broader promotion.
+## Authorization boundary after R1-R1 closure
+
+```text
+SOURCE_MUTATION_AUTHORIZED=NO
+WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO
+BUILD_AUTHORIZED=NO
+KEY_GENERATION_AUTHORIZED=NO
+SIGNING_AUTHORIZED=NO
+OTA_GENERATION_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=NO
+DEVICE_REBOOT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+SLOT_CHANGE_AUTHORIZED=NO
+USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
+```
+
+## Next gate
+
+The next deliverable is a statically and adversarially validated exact two-file source-mutation harness plus key-generation harness design. Neither is to be executed until independently sealed and separately authorized.
