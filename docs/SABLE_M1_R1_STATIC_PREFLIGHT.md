@@ -151,7 +151,8 @@ static no-network/no-process-execution properties.
 GitHub publication produced different byte identities for the Python files than
 the local staging snapshots. This is not treated as silently equivalent. The
 runner therefore binds the **exact branch Git blobs** and executes the exact
-branch test suite before it is permitted to inspect the real Android workspace.
+branch test suite under the same explicit all-NO authorization boundary before
+it is permitted to inspect the real Android workspace.
 
 ## Exact branch identities
 
@@ -169,8 +170,8 @@ tools/validation/product-m1/test_sable_m1_r1_toolchain_preflight.py
   sha256=EMITTED_BY_RUNNER_BEFORE_TEST_EXECUTION
 
 tools/validation/product-m1/run_SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.sh
-  git_blob=6b4133737c910352cf1dbf4122dc034c262ca1d0
-  sha256=390759e09d5a7fab376458adb78ba4875c4028e44daea156e6f699eb56a48da9
+  git_blob=f728266915167bb1c1eada121ecfe0249fec4399
+  sha256=f345d4eb5cd54bf1ca2e7ccd58cc498fd866eba4f3599c812582f9a8e18ba7e7
 ```
 
 The runner refuses any mismatch in the contract, validator, or branch-test Git
