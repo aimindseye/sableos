@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "milestone": "R1-R2",
+  "device": "panther",
+  "status": "STATIC_CONTRACT_ONLY_NO_KEY_GENERATION",
+  "certificate_subject": "CN=SableOS",
+  "signing_key_domains": [
+    "bluetooth",
+    "gmscompat_lib",
+    "media",
+    "networkstack",
+    "nfc",
+    "platform",
+    "releasekey",
+    "sdk_sandbox",
+    "shared"
+  ],
+  "upstream_make_key": {
+    "workspace_path": "development/tools/make_key",
+    "git_blob": "54bf82dd5ce666c6575866ea08fe67d232d3b5ad",
+    "production_use": "FORBIDDEN_WITH_PASSWORD",
+    "reason": "Pinned make_key states the entered password will be visible and prints the password value to stdout when non-empty. Production Sable key generation must not expose passphrases in terminal output or logs.",
+    "positive_properties": [
+      "raw private key is carried through named pipes rather than persisted to disk",
+      "RSA default is 4096 bits with exponent 65537",
+      "certificate digest is SHA-256",
+      "certificate validity is 10000 days",
+      "encrypted PKCS#8 uses scrypt"
+    ]
+  },
+  "production_harness_requirements": {
+    "sable_owned_harness": true,
+    "raw_private_key_staging": "TMPFS_ONLY",
+    "persistent_key_store": "OFFLINE_ENCRYPTED_EXTERNAL_TO_ANDROID_WORKSPACE",
+    "persistent_workspace_key_material": false,
+    "passphrase_prompt_hidden": true,
+    "passphrase_in_argv": false,
+    "passphrase_in_environment": false,
+    "passphrase_in_logs": false,
+    "passphrase_child_transport": "INHERITED_FILE_DESCRIPTOR_OR_EQUIVALENT_NON_ARGV_NON_ENV_CHANNEL",
+    "apk_key_algorithm": "RSA_4096",
+    "apk_cert_digest": "SHA256",
+    "apk_cert_validity_days": 10000,
+    "apk_private_format": "PKCS8_DER_SCRYPT_ENCRYPTED",
+    "avb_algorithm": "SHA256_RSA4096",
+    "avb_private_file": "avb.pem",
+    "avb_public_metadata": "avb_pkmd.bin",
+    "factory_archive_private_file": "id_ed25519",
+    "factory_archive_key_encrypted": true,
+    "atomic_external_publish_after_complete_inventory": true,
+    "refuse_existing_destination": true,
+    "operator_authorization_required": true,
+    "signing_session_audit_required": true
+  },
+  "expected_private_inventory": [
+    "bluetooth.pk8",
+    "gmscompat_lib.pk8",
+    "media.pk8",
+    "networkstack.pk8",
+    "nfc.pk8",
+    "platform.pk8",
+    "releasekey.pk8",
+    "sdk_sandbox.pk8",
+    "shared.pk8",
+    "avb.pem",
+    "id_ed25519"
+  ],
+  "expected_public_inventory": [
+    "bluetooth.x509.pem",
+    "gmscompat_lib.x509.pem",
+    "media.x509.pem",
+    "networkstack.x509.pem",
+    "nfc.x509.pem",
+    "platform.x509.pem",
+    "releasekey.x509.pem",
+    "sdk_sandbox.x509.pem",
+    "shared.x509.pem",
+    "avb_pkmd.bin",
+    "id_ed25519.pub"
+  ],
+  "execution_authorized": false
+}
