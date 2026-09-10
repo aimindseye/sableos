@@ -4,17 +4,19 @@
 
 For the current project state and active product direction:
 
-- `../CURRENT_STATUS.md` — current validated Panther state, paused R1 release work, and active Sable Flow milestone.
+- `../CURRENT_STATUS.md` — current validated Panther state, paused R1 release work, active Sable Flow milestone, and non-Pixel planning state.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
 - `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
 - `ROADMAP.md` — broader historical/platform/service roadmap.
+- `NON_PIXEL_DEVICE_ROADMAP.md` — Panther-first non-Pixel device ordering and Titan 2/Q27/Q25 roles.
 
 ## Normative architecture / policy
 
 When an older concept note or historical validation record conflicts with an accepted ADR or normative document, the normative/ADR decision takes precedence.
 
-- `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement and device separation.
+- `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation, and N0/N1/N2 non-Pixel assurance classes.
+- `NON_PIXEL_MEDIATEK_ARCHITECTURE.md` — normative candidate-port architecture for MediaTek/non-Pixel devices, including prebuilt-kernel policy, BSP/VINTF/ABI-shim boundaries, firmware lifecycle, AVB, recovery and production-support classification.
 - `CORE_PRODUCT_MODEL.md` — Sable Start, Hub, People, Search, Security/Privacy, AOD, Agent/Voice and default-app/product composition model.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — concrete Metro-inspired Sable Flow implementation direction and social-service provider/capsule policy.
 - `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules and privacy architecture.
@@ -43,7 +45,9 @@ Accepted ADRs include:
 
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — active product plan.
 - `CORE_PRODUCT_ROADMAP.md` — active M1-M6 / CP integration track.
-- `Q25_PORT_PLAN.md` — optional MediaTek/QWERTY engineering-reference plan; future Q25 work must reuse the common Sable Start/Hub semantic model.
+- `NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel device strategy: Panther first, Titan 2 as preferred interim N0 GSI/UI lab, Q27 as future full-QWERTY candidate, Q25 as optional low-level MediaTek/kernel research target.
+- `TITAN2_GSI_PLAN.md` — staged Titan 2 GSI/userspace development plan, stock-artifact qualification, UI/keyboard/5G work, assurance boundaries, and possible later N1 research.
+- `Q25_PORT_PLAN.md` — optional source-available MediaTek/kernel/QWERTY research-port plan; not a required first non-Pixel purchase or Q27 precursor.
 - `S1_8_PLATFORM_TRANSITION.md` — historical bramble UI/toolchain closure and Panther transition.
 
 Current product progression:
@@ -56,7 +60,8 @@ validated Panther substrate
     -> Sable Hub provider framework
     -> social web capsules / supported API adapters
     -> broader native apps and polish
-    -> Q25/Q27 portability when justified
+    -> Titan 2 N0 GSI/userspace/UI portability lab when Panther is ready
+    -> Q27 full-port evaluation when shipped hardware qualifies
     -> release-candidate signing/OTA closure
 ```
 
@@ -70,6 +75,11 @@ SABLE_FLOW_STATUS                  PLANNING_COMPLETE_IMPLEMENTATION_NEXT
 SABLE_START_STATUS                 NOT_INTEGRATED
 SABLE_HUB_STATUS                   NOT_INTEGRATED
 NEXT_PRODUCT_MILESTONE             SABLE_M1_METRO_SHELL_PROTOTYPE
+
+NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
+TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
+Q27_ROLE                            FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
+Q25_ROLE                            OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
 PRODUCTION_KEYS_GENERATED          NO
@@ -96,6 +106,7 @@ R1 release-engineering records:
 - `SABLE_R1_R1_CLOSURE_20260908.md` — R1-R1 closure.
 - `SABLE_R1_R2_STATIC_PREP_AND_DISK_AUDIT.md` — source/keygen static-preparation history.
 - `RELEASE_VALIDATION.md` — release validation policy and gates.
+- `NON_PIXEL_RELEASE_VALIDATION.md` — additional N0/N1/N2 gates for non-Pixel kernel/BSP/vendor/firmware provenance, ABI shims, 5G/IMS, AVB, recovery, physical variants and release claims.
 
 Production signing/OTA work is intentionally paused during current UI/feature development. Completed release identity and source-mutation evidence remains valid; no production private key has been generated.
 
@@ -119,6 +130,7 @@ Important frozen records:
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing and recovery discipline.
 - `RELEASE_VALIDATION.md` — build/image/AVB/product/runtime/slot release gates.
+- `NON_PIXEL_RELEASE_VALIDATION.md` — non-Pixel assurance and BSP/kernel/vendor/firmware validation extension.
 - `SECURITY_PRIVACY_RELEASE_RECORD_TEMPLATE.md` — canonical release evidence fields.
 - `SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS engineering lessons adapted to Sable boundaries.
 - `EXTERNAL_LESSONS.md` — external project lessons and resulting Sable decisions.
@@ -132,6 +144,7 @@ SableOS studies external systems for specific lessons rather than inheriting com
 - App Manager — package/application transparency reference for Secure Package Intelligence.
 - GrapheneOS — security-engineering reference and current audited Panther substrate source.
 - MarathonOS — mobile/QWERTY and recovery/device lessons.
+- Brax3/iodéOS — MediaTek device-port, prebuilt-kernel/BSP, VINTF/SELinux, firmware/OTA, ABI-shim and recovery reference; see `BRAX3_IODEOS_REFERENCE.md`.
 - Rust UI frameworks such as Slint, WaterUI, Project Robius/Makepad, Blinc, Vexo and Dioxus Native/Blitz — qualification candidates/references, not automatic dependencies.
 
 Third-party social provider capability must be verified against current official provider documentation at implementation time. Sable Hub must not rely on private application-database scraping or claim unsupported native/API integrations.
