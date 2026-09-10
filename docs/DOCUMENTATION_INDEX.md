@@ -4,7 +4,8 @@
 
 These documents define the current project architecture. When an older concept note or historical validation record conflicts with an accepted ADR or a normative document, the normative/ADR decision takes precedence.
 
-- `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation.
+- `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation, and N0/N1/N2 non-Pixel assurance classes.
+- `NON_PIXEL_MEDIATEK_ARCHITECTURE.md` — normative candidate-port architecture for MediaTek/non-Pixel devices, including prebuilt-kernel policy, BSP/VINTF/ABI-shim boundaries, firmware lifecycle, AVB, recovery and production-support classification.
 - `CORE_PRODUCT_MODEL.md` — revised SableOS product baseline: tagline/principle, Home, Hub, Search, Security/Privacy, AOD, local-first Agent/Voice, and the AOSP/default-app retain/replace matrix.
 - `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules and privacy architecture.
 - `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` — project-wide security/privacy assurance stages, control families, privacy defaults, evidence records and standards crosswalk.
@@ -28,14 +29,17 @@ These documents define the current project architecture. When an older concept n
 ## Planning
 
 - `ROADMAP.md` — completed, current and planned platform/service milestones.
+- `NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel device priority/order: Panther first, Titan 2 as preferred interim N0 GSI/UI lab, Q27 as future full-QWERTY candidate, Q25 as optional low-level MediaTek/kernel research target.
+- `TITAN2_GSI_PLAN.md` — staged Titan 2 GSI/userspace development plan, assurance boundaries, stock-artifact qualification, UI/keyboard/5G work and possible later N1 research.
 - `CORE_PRODUCT_ROADMAP.md` — CP0-CP6 product-integration track for Home, Hub, Search, Security/Privacy, AOD, local-first Agent/Voice and product-composition closure.
-- `Q25_PORT_PLAN.md` — optional MediaTek/QWERTY reference-port plan.
+- `Q25_PORT_PLAN.md` — optional source-available MediaTek/kernel/QWERTY research-port plan; no longer a required first non-Pixel purchase or Q27 precursor.
 - `S1_8_PLATFORM_TRANSITION.md` — bramble S1.8 qualification closure and panther restart sequence.
 
 ## Engineering / Release
 
 - `ENGINEERING_PRINCIPLES.md` — measurement, architecture correction, negative testing, recovery discipline.
 - `RELEASE_VALIDATION.md` — build, image, AVB, product-composition/default-app, kernel, hardware-security, privacy/data-flow/network-egress, runtime and slot-closure gates.
+- `NON_PIXEL_RELEASE_VALIDATION.md` — additional N0/N1/N2 gates for non-Pixel BSP/kernel/vendor/firmware provenance, ABI shims, 5G/IMS, AVB, recovery, physical variants and release claims.
 - `CORE_PRODUCT_MODEL.md` — canonical product-stage markers and default-app/product composition expectations; `NOT_INTEGRATED` is valid only during substrate work.
 - `KERNEL_SECURITY_UPDATE_POLICY.md` — canonical kernel-build baseline and K1/K2 kernel-security update gate; normal builds reference the baseline when kernel inputs are unchanged.
 - `LANGUAGE_AND_VOICE_POLICY.md` — canonical locale-preservation and language/voice capability matrix; full gate activates when Sable-owned user-facing/voice components enter the product.
@@ -57,7 +61,8 @@ Validation records document the architecture and evidence applicable to their mi
 
 ## External Reference Notes
 
-- `EXTERNAL_LESSONS.md` — MarathonOS/Marathon Shell lessons and resulting Sable decisions.
+- `EXTERNAL_LESSONS.md` — consolidated MarathonOS and Brax3/iodéOS lessons and resulting Sable decisions.
+- `BRAX3_IODEOS_REFERENCE.md` — exact September 2026 review of six Brax3 iodéOS repositories covering manifest/device layering, prebuilt kernel/modules, proprietary MediaTek BSP, ABI shims, radio/IMS, firmware, AVB, flashing and build reproducibility.
 - `SECURITY_REFERENCE_GRAPHENEOS.md` — GrapheneOS security-engineering lessons adapted to Sable boundaries.
 - NIST SSDF, NIST Privacy Framework, OWASP MASVS and SLSA are cross-check/reference frameworks for the Sable assurance standard; they are not certification claims.
 - App Manager is a design reference for Secure Package Intelligence and ongoing application security/privacy transparency. Sable adopts inspection, comparison and explainability ideas while explicitly rejecting a single root/ADB-supervisor application as the platform trust model.
@@ -87,18 +92,19 @@ CP1+         BLOCKED on Panther V0 + service/UI prerequisites
 S1.7 Panther semantic-service port  BLOCKED ON P1B/V0
 S1.8 / S1.8C modern UI qualification + first power client  BLOCKED until Panther baseline + S1.7 port
 S1.9+        PLANNED
+NON-PIXEL    PLANNING — Titan 2 preferred interim N0 GSI/UI lab after Panther; Q27 preferred future full-QWERTY candidate; Q25 optional kernel/device research
 ```
 
 S1.7 closed with frozen AIDL V1, dedicated least-privilege client authorization, verified unauthorized-call blocking, physical callback-to-AIDL sequence correlation, natural slot-A success, and preserved successful slot-B fallback. See `S1_7_VALIDATION.md` for the exact seals.
 
 Bramble remains a frozen architecture/regression reference. The previously planned Android 15 bramble portability experiment is closed without execution, and no additional UI-framework dependency down-rev work is required for its AOSP Rust/Cargo 1.68 platform. F4 is the final UI/toolchain evidence record for that branch. Bramble is not an S1.8C production target.
 
-Pixel 7 (`panther`) is the active touch-first development reference on the Android 17 path. P0/P0R1/P1A selected and bounded the reconstruction model; P1B is now exercising that model in `/srv/data/aosp_panther17_workspace` using the stock `CP2A.260705.006` Pixel input and audited generation references. The current host-tool work imports only narrowly reviewed compatibility contracts required by `adevtool`/`arsclib`; GrapheneOS remains a reference/security source and is not the Sable operating-system substrate.
+Pixel 7 (`panther`) is the active touch-first development reference on the Android 17 path. P0/P0R1/P1A selected and bounded the reconstruction model; P1B is exercising that model with audited generation references. Non-Pixel planning does not restart or weaken the Panther milestone.
 
-P1B has closed the Node 24/JDK 21 runtime mismatch and AAPT2 dependency closure. Product integration is now proceeding through the official Siso-backed Android build path with bounded source repairs and evidence gates. Physical V0 remains blocked until target-files/AVB/flashability closure. The independent-kernel-update, revised-core-product, and multilingual/voice policies do not restart or invalidate the active P1B product build. P1B is classified as `SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE`: it preserves the Android foundations required by the future product while Sable Home/Hub/AOD/Agent/Voice remain `NOT_INTEGRATED`. Panther's canonical kernel/KMI/module baseline is first sealed during the post-target-files V0/device-provenance sequence.
-
-The revised core product is now governed by the principle **“Applications provide capabilities; Sable organizes people, attention and actions.”** CP0 is policy-complete. CP1+ begins after the Panther V0, S1.7-port and modern-UI prerequisites make product integration safe. See `CORE_PRODUCT_MODEL.md`, `CORE_PRODUCT_ROADMAP.md`, and ADR-0007.
+The revised core product is governed by the principle **“Applications provide capabilities; Sable organizes people, attention and actions.”** CP0 is policy-complete. CP1+ begins after the Panther prerequisites make product integration safe. See `CORE_PRODUCT_MODEL.md`, `CORE_PRODUCT_ROADMAP.md`, and ADR-0007.
 
 S1.8 does not assume a renderer in advance. Modern framework qualification includes Slint, WaterUI, Project Robius + Makepad, Blinc, Vexo, Dioxus Native/Blitz, and `BUILD_SABLEUI` if necessary. Framework choice must satisfy Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first directions, Indic text/input requirements, and common Sable semantic contracts without fragmenting the application/service core.
 
 When a selected UI framework requires a newer Rust compiler than the AOSP platform compiler, Sable may use a separately pinned UI compiler but must cross into platform services only through a stable C/NDK/AIDL boundary, never compiler-private cross-version Rust ABI.
+
+The September 2026 Brax3/iodéOS review adds a formal non-Pixel architecture without declaring any new supported device. Functional portability may proceed through N0/N1 classes, but only N2 devices may receive production-support claims.
