@@ -500,9 +500,13 @@ MarathonOS remains a UX/device/power/recovery reference, especially for mobile-f
 
 ## Device roadmap
 
+The detailed non-Pixel sequencing and assurance model is maintained in `NON_PIXEL_DEVICE_ROADMAP.md` and `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`.
+
 ### Pixel 7 (`panther`)
 
-Active touch-first development reference. PANTHER-P0 selects the newest supported/reproducible Android baseline and inventories its platform/UI toolchain boundaries before Sable source mutation.
+**Priority 1 / active canonical full-stack target.**
+
+Active touch-first development reference on the GrapheneOS-derived Android 17 path. Panther defines the canonical SableOS product, build, security, AVB and release methodology before non-Pixel work expands.
 
 Pixel 7 is a materially better current engineering target than bramble, but remaining OEM support lifetime still matters. Later Pixel hardware with a longer support window may replace it without changing Sable service/application semantics.
 
@@ -514,15 +518,40 @@ Frozen Android 14 S1.7 architecture/regression reference. No active S1.8 impleme
 
 Future longer-lived touch/security reference when support lifetime, source, flashing/relock, vendor and update-lifecycle advantages justify migration.
 
-### Zinwa Q25
+### Unihertz Titan 2
 
-Optional MediaTek/QWERTY development reference for portability validation; not required for SableOS or Q27 support.
+**Priority 2 / preferred interim non-Pixel development candidate after Panther.**
+
+Initial classification: `N0_GSI_USERSPACE_LAB`.
+
+Use the stock kernel/vendor/firmware stack initially while developing and validating:
+
+- SableStart and common Sable userspace;
+- larger square/unusual-display layouts;
+- physical-keyboard focus, shortcuts and type-to-search;
+- touch/keyboard/pointer coexistence;
+- MediaTek/Treble compatibility methodology;
+- 5G/radio/IMS acceptance tooling.
+
+A booting Titan 2 GSI does not imply production SableOS support or Sable ownership of kernel/vendor/firmware security updates. Promotion to N1/N2 requires the independent gates in `TITAN2_GSI_PLAN.md` and `NON_PIXEL_RELEASE_VALIDATION.md`.
 
 ### Zinwa Q27
 
-Future primary QWERTY candidate pending public/maintainable source, reliable unlock/recovery, understood partitions/vendor interfaces, working radio/IMS/camera/audio/keyboard/suspend/power, and acceptable security lifecycle.
+**Priority 3 / preferred future full physical-QWERTY candidate.**
 
-The Pixel and Zinwa tracks must share the same Sable semantic APIs, application model and UI core. Platform Rust compiler differences must not create separate product architectures.
+Evaluate only from real shipped hardware and evidence. Required acceptance includes kernel source or a trustworthy maintained kernel-artifact path, vendor/BSP lifecycle, reliable unlock/recovery, AVB/custom-key/relock behavior, partition/update topology, radio/IMS/5G, camera/audio/NFC/GNSS, keyboard/pointer behavior, suspend/power/thermal behavior, firmware provenance and an acceptable security-support lifetime.
+
+Brax3/iodéOS demonstrates that an integrated MediaTek Android port can remain viable above a prebuilt kernel/BSP when vendor cooperation and current firmware artifacts exist, but that does not lower SableOS N2 production requirements.
+
+### Zinwa Q25
+
+**Priority 4 / optional low-level MediaTek/kernel research target.**
+
+Q25 is useful when its available community kernel/device source enables experiments which an opaque Titan 2 kernel/BSP cannot support: kernel/KMI/module analysis, device-tree work, driver/input/power experiments and source-level MediaTek portability research.
+
+Q25 is no longer a required first non-Pixel purchase or a prerequisite for Q27. See `Q25_PORT_PLAN.md`.
+
+The Pixel, Titan and Zinwa tracks must share the same Sable semantic APIs, application model and UI core. Platform Rust compiler differences and vendor BSP differences must not create separate product architectures.
 
 ## Standing priorities
 
@@ -543,7 +572,9 @@ The Pixel and Zinwa tracks must share the same Sable semantic APIs, application 
 15. keep Sable application/interaction semantics renderer-independent;
 16. qualify UI-framework accessibility/input/lifecycle/supply-chain behavior before replacing mature Android presentation surfaces;
 17. prefer the platform Rust compiler when viable, but do not select a UI framework solely to satisfy an old platform MSRV;
-18. never link independently compiled Rust components across compiler-private Rust ABI; use a stable C/NDK/AIDL boundary when toolchains differ.
+18. never link independently compiled Rust components across compiler-private Rust ABI; use a stable C/NDK/AIDL boundary when toolchains differ;
+19. distinguish N0 GSI development, N1 integrated vendor/BSP support and N2 production qualification; never promote a device based on boot success alone;
+20. track platform, kernel, vendor, modem, TEE, bootloader and connectivity firmware provenance independently on non-Pixel targets.
 
 ## Runtime milestone closure
 
