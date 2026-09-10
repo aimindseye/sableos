@@ -1,6 +1,6 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-08
+Last updated: 2026-09-10
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
 
@@ -66,6 +66,49 @@ D4 release-candidate automation       IN PROGRESS
 
 The next engineering focus is **`sablectl`**, a host-side Python validation CLI for repeatable SableOS build/device testing. It will replace fragile one-off post-boot shell loops with typed checks, structured evidence, JSON/Markdown/JUnit reports, resumable baselines, and named acceptance suites. A later **SableTestAgent APK** will extend automation to device-side camera, sensors, audio, location, WebView, notification, storage and lifecycle testing through Android instrumentation.
 
+## Non-Pixel / MediaTek planning
+
+No non-Pixel device is currently declared a supported SableOS production target.
+
+The September 2026 Brax3/iodéOS source review established a formal non-Pixel architecture and refined the device roadmap without changing Panther's priority or active build state.
+
+Current planning order:
+
+```text
+1. Pixel 7 / panther
+   canonical full-stack SableOS development target
+
+2. Unihertz Titan 2
+   preferred interim N0 GSI/userspace/UI development lab
+
+3. Zinwa Q27
+   preferred future full physical-QWERTY candidate if shipped hardware qualifies
+
+4. Zinwa Q25
+   optional source-available MediaTek/kernel/device research platform
+```
+
+Non-Pixel assurance classes are now explicit:
+
+```text
+N0_GSI_USERSPACE_LAB
+N1_INTEGRATED_VENDOR_BSP_PORT
+N2_PRODUCTION_QUALIFIED
+```
+
+A booting GSI does not imply production device support. Titan 2 would initially reuse its stock kernel/vendor/firmware stack and therefore be classified as development-only. Q25 remains useful when source-level kernel/device experimentation is specifically required. Q27 must independently qualify kernel/BSP/vendor/firmware, AVB/relock, radio/IMS/5G, recovery/update behavior and security lifecycle before any production-support decision.
+
+The reviewed Brax3 implementation demonstrates that a modern Android userspace can be maintained above a proprietary MediaTek BSP and prebuilt kernel/module set, but it also reinforces that kernel, vendor, modem, TEE, bootloader and firmware security provenance remain separate support obligations.
+
+See:
+
+- `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md`
+- `docs/NON_PIXEL_DEVICE_ROADMAP.md`
+- `docs/TITAN2_GSI_PLAN.md`
+- `docs/Q25_PORT_PLAN.md`
+- `docs/NON_PIXEL_RELEASE_VALIDATION.md`
+- `docs/BRAX3_IODEOS_REFERENCE.md`
+
 ## D4 physical acceptance matrix
 
 D4 minimum physical acceptance includes outgoing/incoming voice calls, outgoing/incoming SMS, cellular data and Wi-Fi. The broader target matrix covers MMS/IMS where carrier support permits, hotspot, Bluetooth, audio, camera, location, NFC, USB, sensors, biometrics, APK install, permissions, browser/WebView, notifications, charging/power and persistence. No live emergency-services call is part of normal ROM sanity testing.
@@ -88,6 +131,7 @@ Automation policy going forward:
 - `docs/PANTHER_D3_VALIDATION.md` — exact D3 build/artifact/physical validation record.
 - `docs/SABLECTL_PLAN.md` — host-side validation CLI architecture and staged delivery plan.
 - `docs/SABLETEST_AGENT_PLAN.md` — test-only Android instrumentation agent plan.
+- `docs/NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel hardware strategy and assurance ordering.
 - `patches/android-17-grapheneos-2026081300/` — exact text delta applicator, source/head seals, changed-file inventory and binary-asset SHA-256 manifest.
 
 Historical pure-AOSP Panther bring-up records remain useful forensic evidence, but `/srv/data/aosp_panther17_workspace` is no longer the canonical SableOS Android/Pixel substrate.
