@@ -37,6 +37,8 @@ Exact S1.7 source, AIDL, image, device-binary and runtime seals are recorded in 
 
 > Stable Sable semantic contracts should survive Android/device changes; substrate details belong behind adapters.
 
+> Functional portability and production-security support are separate device gates.
+
 Sable minimalism means minimal privilege, attack surface, unnecessary background activity, data collection, duplicated implementation, and UI complexity. It does not mean reimplementing working platform capability without cause.
 
 ## Logical layers
@@ -240,6 +242,33 @@ Bramble-specific facts belong below generic contracts, including:
 - cable classification quirks such as computer reconnect reporting AC;
 - A/B partition deployment details.
 
+## Non-Pixel assurance classes
+
+The Brax3/iodéOS review demonstrates that useful modern Android device integration can be maintained above a proprietary MediaTek BSP and prebuilt kernel/module set. SableOS therefore separates **functional device integration** from **production-security ownership**.
+
+Canonical non-Pixel classes are:
+
+```text
+N0_GSI_USERSPACE_LAB
+    Sable/AOSP userspace over stock kernel/vendor/firmware
+    development/UI/compatibility work only
+
+N1_INTEGRATED_VENDOR_BSP_PORT
+    device tree + VINTF + SELinux + vendor/BSP integration
+    may use prebuilt kernel/modules and proprietary firmware
+    functional support can be strong while lower-layer maintenance remains external
+
+N2_PRODUCTION_QUALIFIED
+    full SableOS release/security gates including kernel/vendor/firmware lifecycle,
+    AVB/signing/rollback, recovery, physical parity and reproducible release evidence
+```
+
+A device does not move from N0 to N1 or N2 merely because it boots.
+
+A prebuilt kernel is not an automatic blocker for N0/N1 development, but it does not provide independent Sable kernel-security ownership. Vendor ABI shims, modem/IMS components, TEE/KeyMint/Gatekeeper binaries, firmware and module inputs must be explicit, versioned dependencies.
+
+See `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `NON_PIXEL_RELEASE_VALIDATION.md`, and `BRAX3_IODEOS_REFERENCE.md`.
+
 ## Telephony boundary
 
 Telephony remains a strict vendor-stack preservation boundary.
@@ -255,6 +284,8 @@ Sable telephony API
 ```
 
 CarrierConfig, APNs, IMS behavior, vendor firmware, and supported radio paths remain intact until a replacement is demonstrably safer and equally compatible.
+
+On MediaTek devices, 5G/data, voice, SMS/MMS, IMS registration, VoLTE and VoWiFi are separate acceptance gates. Packet-data success does not prove IMS/voice support.
 
 ## Automotive / accessory compatibility
 
@@ -280,6 +311,8 @@ Direction:
 12. Security claims include kernel, firmware, vendor code, and OEM support lifetime.
 13. Development/unlocked state is not production security.
 14. Security maintenance is continuous.
+15. Release/production builds fail closed when required signing material is unavailable; they do not silently fall back to public test keys or verification-disabled vbmeta.
+16. Platform, vendor, kernel/boot, modem, TEE and bootloader security provenance are tracked independently on non-Pixel targets.
 
 See `SECURITY_MODEL.md`.
 
@@ -297,9 +330,9 @@ This precedent applies broadly: understand why the boundary exists, then place t
 
 AOSP is normative for Android platform/security architecture. GrapheneOS remains a primary additional security-engineering reference for attack-surface reduction, exploit mitigations, capability enforcement, verified boot, update discipline, USB/debug controls, and device-support lifecycle.
 
-External projects such as MarathonOS are also useful for UX, device-layering, recovery and measurement-driven power lessons. Product ideas are evaluated separately from their privilege architecture.
+External projects such as MarathonOS are useful for UX/device/power/recovery lessons. Brax3/iodéOS is additionally a strong reference for non-Pixel MediaTek device layering, proprietary-BSP compatibility, firmware/update ownership and recovery constraints. Neither project defines the SableOS trust model.
 
-See `SECURITY_REFERENCE_GRAPHENEOS.md` and `EXTERNAL_LESSONS.md`.
+See `SECURITY_REFERENCE_GRAPHENEOS.md`, `EXTERNAL_LESSONS.md`, and `BRAX3_IODEOS_REFERENCE.md`.
 
 ## Capability-preservation gate
 
@@ -313,6 +346,8 @@ Before removing/replacing an AOSP, LineageOS, or vendor component, determine:
 - whether a narrower broker solves the concern;
 - whether replacement is demonstrably better;
 - whether physical capability parity has been proven.
+
+On proprietary non-Pixel BSPs, also identify any framework/vendor ABI shim and the exact vendor/firmware dependency before removal or replacement.
 
 ## Interaction is not hardware support
 
@@ -370,23 +405,39 @@ Do not manually mark a slot successful as a substitute for runtime proof.
 
 S1.7 followed this model: known-good successful S1.6 slot B was preserved while S1.7 was written to inactive slot A; activation occurred only after all validated image writes, slot A became naturally successful, and slot B remained successful fallback.
 
+For non-Pixel hardware, the recovery model must additionally qualify the actual OEM bootloader/A-B behavior and any vendor low-level restore tooling. Unlockability is not sufficient evidence of safe OTA/rollback/relock behavior.
+
 ## Reference / planned hardware
 
 ### Pixel 4a 5G (`bramble`)
 
 Role: architecture/regression reference on Android 14; Android 15 portability experiment candidate. It is not a long-lived production-security target because OEM firmware/vendor maintenance has ended.
 
-### Modern Pixel-class reference
+### Pixel 7 (`panther`)
+
+Role: active canonical full-stack SableOS development target on the GrapheneOS-derived Android 17 path. Panther remains the authoritative touch-first product/security/build reference while non-Pixel work is exploratory.
+
+### Later Pixel-class reference
 
 Future actively maintained touch/security baseline for production-security work, modern mitigations, relocked verified boot, and long-lived firmware/vendor updates.
 
+### Unihertz Titan 2
+
+Preferred interim non-Pixel candidate after Panther for SableStart, physical-keyboard, square-display, pointer and MediaTek/5G compatibility work.
+
+Initial class: **N0 GSI/userspace development lab** using the stock kernel/vendor/firmware stack. It is not a production-security target unless later N1/N2 gates are independently proven.
+
+See `TITAN2_GSI_PLAN.md`.
+
 ### Zinwa Q25
 
-Optional MediaTek/QWERTY study target useful for proving second-SoC and keyboard-first portability. It is not supported until source/unlock/vendor/physical gates pass.
+Optional MediaTek/QWERTY low-level study target. Its distinguishing value is source/community access for kernel/device experimentation which may not be possible on a prebuilt-kernel Titan 2 path. It is no longer assumed to be the first non-Pixel purchase or a required Q27 precursor.
 
 ### Zinwa Q27
 
-Future primary QWERTY candidate subject to public source, unlock/recovery, vendor interfaces, radio/IMS, camera/audio, keyboard, suspend/power, and security-lifecycle acceptance.
+Future preferred full physical-QWERTY candidate subject to real shipped hardware and kernel/BSP/vendor/bootloader/AVB/radio/IMS/camera/audio/keyboard/suspend/power/security-lifecycle acceptance.
+
+See `NON_PIXEL_DEVICE_ROADMAP.md`.
 
 ## Non-goals
 
@@ -397,4 +448,6 @@ Future primary QWERTY candidate subject to public source, unlock/recovery, vendo
 - global policy expansion to make a test pass;
 - unbounded callback/event queues;
 - device-name branches throughout common applications;
-- coupling stable APIs to one vendor/backend implementation.
+- coupling stable APIs to one vendor/backend implementation;
+- treating a booting GSI as production device support;
+- claiming ownership of kernel/vendor/firmware security updates which SableOS does not actually maintain.
