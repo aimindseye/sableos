@@ -1,6 +1,6 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
 
@@ -26,11 +26,12 @@ Sable Flow shared UI primitives
     -> Sable Hub provider capability framework
     -> isolated social-service web capsules
     -> broader native apps and polish
-    -> Q25/Q27 portability when justified
+    -> Titan 2 N0 GSI/userspace/UI portability lab when Panther is ready
+    -> Q27 full-QWERTY evaluation when shipped hardware qualifies
     -> production signing/OTA closure before release candidate
 ```
 
-See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` and `docs/CORE_PRODUCT_ROADMAP.md`.
+See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`, `docs/CORE_PRODUCT_ROADMAP.md`, and `docs/NON_PIXEL_DEVICE_ROADMAP.md`.
 
 ## Current validated physical state
 
@@ -230,6 +231,32 @@ USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
 
 Release-signing work resumes before release-candidate/OTA distribution. It does not block feature/UI development.
 
+## Non-Pixel / MediaTek planning
+
+No non-Pixel device is currently declared a supported SableOS production target. The September 2026 Brax3/iodéOS source review established a formal non-Pixel architecture without changing Panther's priority.
+
+```text
+N0_GSI_USERSPACE_LAB
+N1_INTEGRATED_VENDOR_BSP_PORT
+N2_PRODUCTION_QUALIFIED
+
+1. Pixel 7 / panther
+   canonical full-stack SableOS development target
+
+2. Unihertz Titan 2
+   preferred interim N0 GSI/userspace/UI development lab
+
+3. Zinwa Q27
+   preferred future full physical-QWERTY candidate if shipped hardware qualifies
+
+4. Zinwa Q25
+   optional source-available MediaTek/kernel/device research platform
+```
+
+A booting GSI does not imply production support. A prebuilt kernel/BSP can be useful for N0/N1 functionality work but does not provide Sable-owned kernel security maintenance. Platform, kernel, vendor, modem, TEE, bootloader and connectivity firmware provenance must remain separate release inputs. Radio/data/5G/IMS/VoLTE/VoWiFi are separate acceptance gates rather than one generic telephony result.
+
+See `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `docs/NON_PIXEL_DEVICE_ROADMAP.md`, `docs/TITAN2_GSI_PLAN.md`, `docs/Q25_PORT_PLAN.md`, `docs/NON_PIXEL_RELEASE_VALIDATION.md`, and `docs/BRAX3_IODEOS_REFERENCE.md`.
+
 ## Sable Flow M1 — NEXT
 
 The first concrete product milestone is:
@@ -253,13 +280,16 @@ DELIVERABLES:
 
 Sable Hub will use a provider capability model rather than pretending every service exposes a universal native API. Initial social targets are WhatsApp, Instagram, Facebook and LinkedIn, with isolated web capsules used where supported native/API consumer integration is unavailable.
 
-The same semantic shell/Hub model is intended to become the base for later Q25 and Q27 compact/QWERTY work.
+The same semantic shell/Hub model is intended to become the base for Titan 2, Q25 and Q27 compact/QWERTY work without device-specific application forks.
 
 ## Start here
 
 - `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Hub direction and M1-M5 sequence.
 - `docs/CORE_PRODUCT_MODEL.md` — normative product architecture and trust boundaries.
 - `docs/CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
+- `docs/NON_PIXEL_DEVICE_ROADMAP.md` — non-Pixel hardware strategy and assurance ordering.
+- `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md` — normative non-Pixel/MediaTek architecture.
+- `docs/TITAN2_GSI_PLAN.md` — Titan 2 N0 GSI/userspace/UI plan.
 - `docs/PANTHER_D4_CLOSURE_20260908.md` — D4 final closure record.
 - `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — preserved release/signing custody architecture.
 - `release/r1/panther-release-policy-v1.json` — canonical Panther release policy.

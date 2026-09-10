@@ -1,6 +1,6 @@
 # SableOS roadmap
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 ## Roadmap rule
 
@@ -22,7 +22,8 @@ validated Android 17 Panther substrate
     -> Sable Hub provider framework
     -> isolated social-service capsules
     -> broader native apps / Search / Security / polish
-    -> Q25/Q27 portability when justified
+    -> Titan 2 N0 GSI/userspace/UI portability lab when Panther is ready
+    -> Q27 full-QWERTY evaluation when shipped hardware qualifies
     -> release-candidate composition
     -> production signing / OTA / rollback closure
 ```
@@ -37,6 +38,11 @@ SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
 SABLEOS_CORE_PRODUCT_STAGE         PRODUCT_INTEGRATION_START
 SABLE_FLOW_STATUS                  PLANNING_COMPLETE_IMPLEMENTATION_NEXT
 NEXT_PRODUCT_MILESTONE             SABLE_M1_METRO_SHELL_PROTOTYPE
+
+NON_PIXEL_ASSURANCE_MODEL          N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
+TITAN2_ROLE                        PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
+Q27_ROLE                           FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
+Q25_ROLE                           OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
 PRODUCTION_KEYS_GENERATED          NO
@@ -325,23 +331,67 @@ Sable Flow establishes:
 - touch/gesture semantics;
 - accessibility and multilingual behavior.
 
-### Q25
+### Unihertz Titan 2
 
-Status: **OPTIONAL FUTURE ENGINEERING REFERENCE**.
+Status: **PREFERRED INTERIM NON-PIXEL N0 LAB AFTER PANTHER**.
 
-Q25 may validate:
+Titan 2 is intended first as a GSI/userspace/UI laboratory, not a production-security target. Initial work should preserve the stock kernel, vendor, firmware and boot-chain substrate while qualifying:
 
-- MediaTek adapter portability;
+- physical keyboard/focus/navigation behavior;
+- larger QWERTY form-factor Sable Flow layouts;
+- Android framework/application portability;
+- stock vendor/HAL compatibility;
+- data/5G/IMS behavior as separate observations rather than assumed support.
+
+A successful GSI boot remains `N0_GSI_USERSPACE_LAB`. It does not imply Sable-owned kernel security maintenance, full firmware lifecycle ownership, relocked verified boot or supported production OTA. See `TITAN2_GSI_PLAN.md`.
+
+### Zinwa Q25
+
+Status: **OPTIONAL SOURCE-AVAILABLE MEDIATEK/KERNEL RESEARCH REFERENCE**.
+
+Q25 may validate lower-level areas which Titan 2 cannot if Titan 2 kernel/BSP source is unavailable:
+
+- MediaTek kernel/device-tree work;
+- source-level module and boot integration;
 - compact/square layout constraints;
 - physical keyboard/focus/navigation semantics.
 
-It must reuse the common Sable Start/Hub semantic model rather than creating a Q25-specific product fork. See `Q25_PORT_PLAN.md`.
+Q25 is not a required first non-Pixel purchase and is not a prerequisite for Q27. It must reuse the common Sable Start/Hub semantic model rather than creating a product fork. See `Q25_PORT_PLAN.md`.
 
-### Q27
+### Zinwa Q27
 
-Status: **FUTURE PREFERRED MODERN QWERTY DIRECTION**.
+Status: **FUTURE PREFERRED MODERN FULL-QWERTY CANDIDATE**.
 
-Q27 remains subject to source/vendor/bootloader/security/radio/power/hardware acceptance. Sable Flow and Hub are deliberately being designed now so Q27 can consume the same semantic model later.
+Q27 remains subject to shipped-hardware qualification of source/BSP/vendor/bootloader/security/radio/power/firmware/update behavior. Sable Flow and Hub are deliberately being designed now so Q27 can consume the same semantic model later.
+
+Q27 does not inherit support status from Titan 2 or Q25. It must independently qualify the N2 requirements if it is ever proposed as a production-supported device.
+
+See `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `NON_PIXEL_DEVICE_ROADMAP.md`, and `NON_PIXEL_RELEASE_VALIDATION.md`.
+
+## Non-Pixel assurance model
+
+Non-Pixel ports use explicit assurance classes so functional progress is not confused with security ownership:
+
+```text
+N0_GSI_USERSPACE_LAB
+    -> stock kernel/vendor/firmware retained
+    -> userspace/UI/framework portability work
+
+N1_INTEGRATED_VENDOR_BSP_PORT
+    -> device/product/VINTF/SELinux/vendor integration
+    -> prebuilt kernel/BSP permitted when explicitly classified
+    -> vendor ABI shims and firmware inputs versioned and tested
+
+N2_PRODUCTION_QUALIFIED
+    -> production verified-boot/signing posture
+    -> supported OTA/rollback/recovery
+    -> complete kernel/vendor/firmware security-lifecycle claim
+    -> full physical hardware and telephony acceptance
+```
+
+A prebuilt-kernel/BSP target can be a valuable N0/N1 engineering platform but is not equivalent to independent Sable kernel-security ownership. Platform, kernel, vendor, modem, TEE, bootloader and connectivity firmware provenance are tracked separately. Production AVB configuration fails closed if required production keys or verification settings are missing.
+
+The Brax3/iodéOS review is a device-port reference for these rules, not a SableOS security baseline. See `BRAX3_IODEOS_REFERENCE.md`.
 
 ## Security/product tracks after shell foundation
 
@@ -446,7 +496,7 @@ Before SableOS becomes a release candidate:
 - privacy/data-flow records are complete;
 - accessibility and multilingual gates pass;
 - Panther physical regression suite passes;
-- Q25/Q27 support claims, if any, have independent hardware acceptance;
+- any non-Pixel support claim has the assurance class and independent hardware acceptance required by `NON_PIXEL_RELEASE_VALIDATION.md`;
 - production signing/key custody is closed;
 - signed OTA/factory and rollback/recovery are proven.
 
@@ -459,9 +509,11 @@ Before SableOS becomes a release candidate:
 4. M3 Sable Hub provider framework
 5. M4 social-service capsules
 6. M5 broader native apps and polish
-7. Q25/Q27 portability when hardware/projects justify it
-8. M6 AOD / Voice / Agent
-9. production signing / OTA finalization before release candidate
+7. Titan 2 N0 portability/UI lab when Panther product work is ready
+8. Q27 qualification when shipped hardware and source/BSP inputs are known
+9. Q25 only when source-level MediaTek/kernel research is specifically useful
+10. M6 AOD / Voice / Agent
+11. production signing / OTA finalization before release candidate
 ```
 
 The project intentionally prioritizes building the actual operating-system experience before optimizing the distribution machinery for a product that is not yet feature-complete.
