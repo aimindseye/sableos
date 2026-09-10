@@ -4,11 +4,13 @@ Status: **normative product architecture**.
 
 SableOS is an Android-compatible, privacy- and security-first mobile operating system which preserves mature Android platform capability while owning the user-facing layers where Sable can materially improve attention, communication, privacy, security and interaction.
 
-The core product principle and working tagline is:
+The core product principle is:
 
 > **Applications provide capabilities; Sable organizes people, attention and actions.**
 
 This sentence is both product language and an architecture test. SableOS should avoid rebuilding mature application/platform machinery merely for branding. It should instead make capabilities easier to understand, combine and invoke through a coherent Sable interaction model.
+
+The concrete near-term interaction language is **Sable Flow**, defined in `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`.
 
 ## Product boundary
 
@@ -31,73 +33,154 @@ Replacing a Sable-facing experience does not imply replacing the underlying Andr
 
 Examples:
 
-- Sable Hub may replace notification presentation while retaining Android NotificationManager and application-authored notification actions.
-- Sable Home may replace Launcher3 as the primary home experience after qualification while retaining ActivityManager, PackageManager and normal Android application semantics.
+- Sable Hub may replace notification/communication presentation while retaining Android NotificationManager, conversation semantics and application-authored actions.
+- Sable Start may replace Launcher3 as the primary home experience after qualification while retaining ActivityManager, PackageManager and normal Android application semantics.
+- Sable Phone/Messages presentation may evolve while retaining Telecom/Telephony/carrier SMS/MMS machinery.
 - Sable Security & Privacy may provide a new application-transparency experience while retaining PackageManager, PermissionController and AppOps as enforcement authorities.
-- Sable AOD may own the ambient presentation while retaining Android display/doze/power infrastructure.
+- Sable AOD may own ambient presentation while retaining Android display/doze/power infrastructure.
 - Sable Agent may understand intent and request actions while privileged execution remains inside narrow Android/Sable services.
+
+## Sable Flow
+
+Sable Flow is a Metro-inspired, information-first interaction language with original Sable naming, visual assets and implementation.
+
+Core principles:
+
+```text
+people / information / tasks before app silos
+large typography and clear spatial hierarchy
+live state where useful and privacy-safe
+low-chrome information surfaces
+fast peek / act / return workflows
+one semantic model across touch and keyboard profiles
+```
+
+The UI-framework/rendering implementation remains evidence-driven. Sable Flow semantics must not depend on one renderer or one Android platform Rust compiler.
 
 ## Core Sable product surfaces
 
-The intended core SableOS experience consists of these Sable-owned product surfaces.
+### Sable Start
 
-### Sable Home
-
-Primary launcher/home and shell entry point.
+`Sable Start` is the concrete Sable Flow realization of the architectural Home/launcher surface.
 
 Responsibilities:
 
-- touch-first and keyboard-first home presentation;
-- application launch and task navigation;
-- quick access to Hub, Search, Agent and Security/Privacy;
+- vertical live-tile Start surface;
+- application/service launch and task navigation;
+- large typography and accent/theme system;
+- live information/action tiles with privacy/redaction policy;
+- fast application/service list transition;
+- explicit links to Hub, Search, Security/Privacy and Agent;
+- touch-first and keyboard-first semantic navigation;
 - capability-driven layout rather than device-name branches;
 - multilingual and accessibility-aware rendering;
 - no direct privileged hardware authority.
 
-Launcher3 remains the compatibility/reference baseline until Sable Home passes replacement gates.
+Initial M1 tile set:
+
+```text
+PEOPLE      PHONE
+MESSAGES    MAIL
+CAMERA      PHOTOS
+SOCIAL      CALENDAR
+SETTINGS    CLOCK
+```
+
+Launcher3 remains the compatibility/reference fallback until Sable Start passes replacement gates.
 
 ### Sable Hub
 
-The Hub is the central attention and communication surface.
+The Hub is the central people, communication, attention and service surface.
 
-Its goal is not to become a second copy of every messaging application's database. It consumes Android-supported notification/conversation semantics and application-authorized actions.
+It is not a second copy of every messaging/social application's private database.
 
-The initial semantic views are:
-
-```text
-NOW      current attention / priority / messages / calls / alerts
-PEOPLE   person-centric communication and conversation grouping
-APPS     source/application-oriented notification view
-LATER    snoozed, deferred or explicitly saved attention
-```
-
-The Hub should support actions such as:
+Supported provider classes:
 
 ```text
-reply
-open
-mark read when the source exposes such an action
-call back
-snooze
-dismiss/archive where semantically valid
-save/defer
+NATIVE_DATA
+ANDROID_NOTIFICATION
+SUPPORTED_API
+WEB
+UNAVAILABLE
 ```
 
-Generic reply should use application-supplied Android `RemoteInput` / notification actions rather than impersonating the source application.
+Provider capabilities may include:
 
-Person linking is local-first and evidence-based. Prefer Android `Person`, conversation/shortcut identity and ContactsProvider associations. Ambiguous cross-application identity linking should be user-confirmed rather than silently inferred by a remote service.
+```text
+MESSAGING
+FEED
+PROFILE
+CONTACTS
+SHARE
+NOTIFICATIONS
+DEEP_LINK
+WEB_SESSION
+```
 
-Hub history is bounded and local by default. Sable must not create a permanent cloud archive of all notification content as a side effect of providing a unified inbox.
+The Hub must expose capability honestly. A web-backed service must not be presented as a native/API integration.
+
+Initial social-service targets are:
+
+```text
+WhatsApp
+Instagram
+Facebook
+LinkedIn
+```
+
+Implementation rules:
+
+1. use native Android/Sable data where Sable legitimately owns/has access to it;
+2. consume Android notification/conversation semantics and application-authorized actions where appropriate;
+3. use official/supported provider APIs only for capabilities/account types they actually authorize;
+4. reverify provider/API capability at implementation time because provider support/terms can change;
+5. use isolated Sable-managed web capsules where a suitable native consumer API is unavailable;
+6. isolate provider session/cookie/storage state by default;
+7. never scrape third-party private application databases;
+8. never gain broad system privilege merely because a service is surfaced in Hub.
+
+The first Hub may organize bounded state through views such as:
+
+```text
+ALL
+MESSAGES
+PEOPLE
+SERVICES
+```
+
+The existing attention concepts remain useful:
+
+```text
+NOW
+PEOPLE
+APPS
+LATER
+```
+
+Exact presentation can evolve during prototyping; the semantic provider/person/action model is the stable part.
+
+### Sable People
+
+People is a first-class cross-surface semantic object used by Start and Hub.
+
+Preferred local identity evidence:
+
+```text
+ContactsProvider
+Android Person
+conversation / shortcut identity
+user-confirmed associations
+```
+
+Ambiguous cross-service identity linking must be user-confirmed. Sable must not create a permanent cloud archive of all communication as a side effect of providing person-centric organization.
 
 ### Sable Search / Command
 
-A system-wide search and command surface which works across touch and physical-keyboard profiles.
+A system-wide search and command surface across touch and physical-keyboard profiles.
 
-It should organize local, authorized capability rather than becoming a universal privileged executor.
+Potential semantic results:
 
-Potential semantic results include:
-
-- applications;
+- applications/services;
 - contacts/people;
 - conversations/Hub entries;
 - settings;
@@ -111,13 +194,13 @@ Search is Unicode-aware and multilingual. Original-script identity is preserved;
 
 First-class application/device security and privacy transparency.
 
-This includes the Secure Package Intelligence and ongoing Application Security & Privacy Transparency architecture defined elsewhere.
+This includes Secure Package Intelligence and ongoing Application Security & Privacy Transparency.
 
 It should expose effective permissions/AppOps, package identity/signing, components, privacy signals, network/data-use information where reliable, history and device security posture without becoming a root/ADB super-application.
 
 ### Sable Always-On Display / Glance
 
-Sable AOD is a low-power ambient information surface built on the supported Android/device doze and display architecture.
+Sable AOD is a low-power ambient information surface built on supported Android/device doze and display architecture.
 
 Initial information may include:
 
@@ -131,27 +214,14 @@ Initial information may include:
 AOD rules:
 
 1. lock-screen privacy/redaction policy is authoritative;
-2. AOD does not gain unrestricted Hub, microphone or agent privilege merely because it presents an affordance;
+2. AOD does not gain unrestricted Hub, microphone or agent privilege;
 3. burn-in mitigation, refresh behavior, suspend/doze residency and battery impact require physical validation;
 4. device hardware capability determines available AOD modes;
-5. failure or disablement of AOD must not break notifications, Hub, lockscreen or normal suspend;
-6. always-listening voice is not required for AOD.
-
-AOD is a Sable presentation capability layered on mature display/power infrastructure, not a reason to replace the vendor display stack.
+5. failure/disablement must not break Hub, lockscreen, notifications or normal suspend.
 
 ### Sable Agent
 
-A local-first on-device personal agent inspired by useful ideas from projects such as `flagdizero/jenny-android-ai-agent`, but with a stricter Sable privilege boundary.
-
-The agent may provide:
-
-- natural-language and voice command interpretation;
-- local user-approved memory/context;
-- Hub triage and response assistance;
-- Search/command assistance;
-- reminders and bounded scheduled actions;
-- composition/summarization over data the user explicitly authorizes;
-- invocation of typed Sable/Android capabilities.
+A local-first personal agent with strict privilege separation.
 
 Preferred architecture:
 
@@ -169,109 +239,130 @@ Rejected as the base trust model:
 ```text
 agent -> root shell
 agent -> generic privileged command executor
-agent -> arbitrary Python/native execution with OS privilege
+agent -> arbitrary privileged Python/native execution
 agent -> unrestricted other-app private data
 agent -> unrestricted filesystem mutation
 ```
 
-Agent model providers are capability choices. Local inference is preferred where practical. Optional remote models require explicit user configuration, clear data-flow disclosure and must never be a silent fallback from a local operation.
-
-Agent memory is local by default, user-controllable and covered by the privacy inventory/retention policy. Raw microphone streams are not agent memory.
+Optional remote models require explicit configuration and data-flow disclosure. Agent memory is local by default and user-controllable.
 
 ### Sable Voice
 
-Voice is a shared product capability rather than a separate assistant silo.
-
-It serves:
-
-- Agent;
-- Hub reply/actions;
-- Search;
-- dictation;
-- accessibility-compatible speech output;
-- future AOD/hands-free invocation.
+Voice is a shared capability serving Agent, Hub reply/actions, Search, dictation, accessibility-compatible speech output and future hands-free/AOD invocation.
 
 The multilingual/local-first requirements are defined in `LANGUAGE_AND_VOICE_POLICY.md`.
+
+## Native core-phone baseline
+
+SableOS should become a usable phone before broad social integration.
+
+Priority product surfaces:
+
+```text
+Phone / call history
+People / Contacts
+Messages / SMS/MMS presentation
+Settings high-value Sable surfaces
+Camera
+Photos
+Clock / alarms / timers
+Calculator
+Calendar
+Files
+Notes
+Browser
+Sable Hub
+```
+
+The first vertical slice is:
+
+```text
+PHONE
+PEOPLE
+MESSAGES
+SETTINGS
+```
+
+Sable presentation should sit over retained mature transport/providers/framework services where replacement would add no security/product value.
 
 ## Interaction model
 
 The same semantic product works through multiple interaction profiles.
 
-Touch-first example:
+Touch-first Panther example:
 
 ```text
-swipe / tap / hold
-        -> Hub/Search/Home semantic action
+tile / swipe / tap / hold
+        -> Start / Hub / semantic action
 ```
 
-Keyboard-first example:
+Keyboard-first Q25/Q27 example:
 
 ```text
-H       Hub
-/       Search
-J/K     next/previous
-R       reply
-S       snooze
-Enter   open/activate
+focus
+shortcuts
+command/search
+type-to-search
+predictable navigation restoration
 ```
 
-Exact shortcuts remain a UX decision, but the semantic action must be shared rather than reimplemented separately per device.
+Exact gestures/shortcuts remain UX decisions, but semantic actions and provider/person models must be shared rather than reimplemented per device.
 
 ## Default application and platform-surface matrix
-
-The initial policy is to preserve mature AOSP capability and selectively replace presentation.
 
 ### Sable-owned / strategic replacement
 
 ```text
-Home / Launcher                  -> SABLE_OWNED after qualification
-Hub / notification presentation -> SABLE_OWNED
-Search / command                 -> SABLE_OWNED
-Security & Privacy               -> SABLE_OWNED
-Agent                            -> SABLE_OWNED
-AOD / glance presentation        -> SABLE_OWNED over Android doze/display
-Voice orchestration              -> SABLE_OWNED local-first capability
+Home / Launcher                  -> SABLE START after qualification
+Hub / communication/attention   -> SABLE OWNED
+Search / command                 -> SABLE OWNED
+Security & Privacy               -> SABLE OWNED
+Agent                            -> SABLE OWNED
+AOD / glance presentation        -> SABLE OWNED over Android doze/display
+Voice orchestration              -> SABLE OWNED local-first capability
 ```
 
 ### Hybrid / gradual Sable presentation over retained Android machinery
 
 ```text
-Settings                         -> AOSP initially; Sable high-value surfaces gradually
-SystemUI                         -> AOSP initially; Sable presentation only after bounded qualification
+Phone / call history             -> SABLE PRESENTATION over Telecom/Telephony
+Messages / SMS/MMS presentation  -> SABLE PRESENTATION over mature transport/provider path
+Contacts / People                -> ContactsProvider retained; Sable People presentation
+Settings                         -> AOSP initially; Sable high-value surfaces progressively
+SystemUI                         -> AOSP initially; Sable presentation after bounded qualification
 Lockscreen / Quick Settings      -> AOSP initially; evolve with SystemUI qualification
-Contacts / People                -> retain ContactsProvider; Sable people experience may evolve
+Calendar                         -> provider semantics retained; Sable presentation may evolve
+Camera                           -> framework/HAL retained; app UX may evolve
 ```
 
-### Retain AOSP/platform implementation initially
+### Retain Android/platform implementation initially
 
 ```text
-Phone / Telecom / InCallUI       -> RETAIN mature Android path
-SMS/MMS transport                -> RETAIN mature Android/carrier path
-Calendar/provider semantics      -> RETAIN
-DocumentsUI / SAF                -> RETAIN
-PackageInstaller                 -> RETAIN enforcement path, add Sable review around it
-PermissionController             -> RETAIN enforcement path
-Camera framework/HAL             -> RETAIN; app UX replacement is optional/later
-Clock                            -> RETAIN initially
-Calculator                       -> RETAIN initially
-Android input/IME framework      -> RETAIN
-WebView                          -> RETAIN maintained Android/Chromium path
+Telecom / Telephony transport
+SMS/MMS carrier transport
+DocumentsUI / SAF
+PackageInstaller enforcement
+PermissionController enforcement
+Android input/IME framework
+WebView / maintained Chromium path
+vendor HAL / modem / firmware stacks
 ```
 
 ### Product-specific selection rather than blind AOSP inheritance
 
 ```text
-Browser    -> maintained Chromium-derived browser path; do not rely on obsolete AOSP Browser
-Email      -> no requirement to build a Sable mail client for V1; standard clients participate through Hub
-Gallery    -> existing compatible option initially; Sable local-first gallery is a later candidate
-RCS        -> do not invent a Sable transport; preserve available carrier/application compatibility
+Browser    -> maintained Chromium-derived path
+Email      -> standard client/provider or future Sable presentation; participates through Hub when authorized
+Gallery    -> compatible option initially; Sable local-first Photos is a product candidate
+RCS        -> preserve available carrier/application compatibility; do not invent a Sable transport
+Social     -> Hub provider/capsule model; do not require full vendor Android apps when a safe supported alternative works
 ```
 
-This matrix is a starting policy, not an excuse to ship obsolete or unmaintained applications. Security maintenance and application quality remain release requirements.
+This matrix is a starting policy, not an excuse to ship obsolete/unmaintained applications.
 
 ## AOSP replacement gate
 
-A Sable-owned surface may replace an AOSP default only after proving:
+A Sable-owned surface may replace an Android/AOSP default only after proving:
 
 - capability/dependency inventory;
 - Android application compatibility;
@@ -282,36 +373,39 @@ A Sable-owned surface may replace an AOSP default only after proving:
 - offline/reproducible build provenance;
 - runtime stability;
 - physical-device parity;
-- rollback path during development.
+- development rollback path.
 
-Until then, the mature AOSP surface remains available as reference/fallback where practical.
+Until then, mature Android surfaces remain reference/fallback where practical.
 
 ## Product-stage build model
 
-Build and release gates distinguish substrate bring-up from actual Sable product integration.
-
 ```text
 SUBSTRATE
-    Android/device bring-up; preserve AOSP capability
+    Android/device bring-up; preserve capability
+
+PRODUCT_INTEGRATION_START
+    shared Sable Flow primitives and first user-facing components begin entering builds
 
 PRODUCT_INTEGRATION
-    Sable-owned product surfaces begin entering images
+    Sable Start/Hub/native surfaces become functional and progressively default
 
 RELEASE_CANDIDATE
-    intended default-app/product composition is closed
+    intended product/default-app composition closed; production signing/OTA becomes mandatory
 
 PRODUCTION
-    signed end-user product with all mandatory product/security/privacy gates
+    signed end-user product with mandatory product/security/privacy/update gates
 ```
 
 Canonical markers:
 
 ```text
-SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE|PRODUCT_INTEGRATION|RELEASE_CANDIDATE|PRODUCTION
+SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE|PRODUCT_INTEGRATION_START|PRODUCT_INTEGRATION|RELEASE_CANDIDATE|PRODUCTION
 SABLEOS_CORE_PRODUCT_MODEL=PASS|FAIL|NOT_RUN
 SABLEOS_DEFAULT_APP_MATRIX=PASS|FAIL|NOT_RUN
 SABLEOS_AOSP_FOUNDATION_PRESERVED=PASS|FAIL|NOT_RUN
+SABLE_FLOW_STATUS=NOT_STARTED|PLANNING_COMPLETE_IMPLEMENTATION_NEXT|PRESENT|DEFAULT|FAIL
 SABLEOS_HOME_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
+SABLEOS_START_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
 SABLEOS_HUB_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
 SABLEOS_SEARCH_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
 SABLEOS_SECURITY_PRIVACY_STATUS=NOT_INTEGRATED|PRESENT|DEFAULT|FAIL
@@ -321,15 +415,39 @@ SABLEOS_VOICE_STATUS=NOT_INTEGRATED|PRESENT|ENABLED|FAIL
 SABLEOS_LANGUAGE_BASELINE=PASS|FAIL|NOT_RUN
 ```
 
-`NOT_INTEGRATED` is valid during `SUBSTRATE`; it is not a production pass.
-
 ## Current Panther effect
 
-The active Panther P1B work is `SUBSTRATE`.
+Panther D4 substrate/physical acceptance is closed. The project now enters:
 
-It must preserve Android capability and avoid choices which make the core product architecture impossible, but it is **not** required to contain Sable Home, Hub, AOD, Agent or Voice yet. The revised product model therefore does not restart, invalidate or mutate the current target-files integration build.
+```text
+SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
+SABLE_FLOW_STATUS=PLANNING_COMPLETE_IMPLEMENTATION_NEXT
+```
 
-The core-product gate becomes materially enforcing during post-V0 Sable UI/product integration.
+The first concrete gate is Sable M1: shared Sable Flow primitives plus a Sable Start prototype containing Phone, People, Messages, Settings and Social Hub tiles.
+
+Production signing/key generation/OTA finalization is deferred and non-blocking during this stage. It becomes mandatory again before release-candidate distribution.
+
+## Q25 / Q27 relationship
+
+Sable Start/Hub semantics are the base for future compact/QWERTY work, not a Panther-only design.
+
+Shared objects include:
+
+```text
+tile
+person
+conversation
+provider
+capability
+action
+pivot/section
+focus
+navigation
+search/command
+```
+
+Q25 may validate compact/square and keyboard-first assumptions as an engineering reference. Q27 remains a future preferred modern QWERTY direction. Device-specific forks of the common product model are rejected.
 
 ## Product outcome
 
@@ -339,4 +457,4 @@ Its identity is the coherent relationship between Android capabilities and Sable
 
 > **Applications provide capabilities; Sable organizes people, attention and actions.**
 
-Home organizes access. Hub organizes attention and people. Search organizes intent. Security & Privacy explains authority. AOD makes important state glanceable. Agent and Voice turn natural language into explicitly authorized actions. Android remains the mature compatibility and enforcement substrate beneath them.
+Sable Start organizes access and live state. Hub organizes people, communication and services. Search organizes intent. Security & Privacy explains authority. AOD makes important state glanceable. Agent and Voice turn natural language into explicitly authorized actions. Android remains the mature compatibility and enforcement substrate beneath them.

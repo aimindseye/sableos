@@ -1,0 +1,139 @@
+{
+  "authorization_policy": {
+    "required_no": [
+      "SOURCE_MUTATION_AUTHORIZED",
+      "WORKSPACE_OUTPUT_MUTATION_AUTHORIZED",
+      "BUILD_AUTHORIZED",
+      "BUILD_TOOL_EXECUTION",
+      "DEVICE_CONTACT_AUTHORIZED",
+      "DEVICE_REBOOT_AUTHORIZED",
+      "FLASH_AUTHORIZED",
+      "SLOT_CHANGE_AUTHORIZED",
+      "USERDATA_OR_METADATA_WIPE_AUTHORIZED",
+      "KEY_GENERATION_AUTHORIZED",
+      "SIGNING_AUTHORIZED",
+      "OTA_GENERATION_AUTHORIZED",
+      "DELETE_AUTHORIZED"
+    ]
+  },
+  "milestone": "SABLE_M1_R1",
+  "mode": "STATIC_READ_ONLY_TOOLCHAIN_AND_RENDERER_PREFLIGHT",
+  "platform_interfaces": {
+    "required_any_groups": [
+      {
+        "name": "ANATIVEWINDOW_HEADER",
+        "paths": [
+          "frameworks/native/libs/nativewindow/include/android/native_window.h",
+          "frameworks/native/include/android/native_window.h"
+        ]
+      },
+      {
+        "name": "ANDROID_SURFACE_JAVA",
+        "paths": [
+          "frameworks/base/core/java/android/view/Surface.java"
+        ]
+      },
+      {
+        "name": "ANDROID_WINDOW_JAVA",
+        "paths": [
+          "frameworks/base/core/java/android/view/Window.java"
+        ]
+      },
+      {
+        "name": "ACCESSIBILITY_PLATFORM",
+        "paths": [
+          "frameworks/base/core/java/android/view/accessibility/AccessibilityNodeInfo.java"
+        ]
+      },
+      {
+        "name": "IME_PLATFORM",
+        "paths": [
+          "frameworks/base/core/java/android/view/inputmethod/InputMethodManager.java"
+        ]
+      }
+    ]
+  },
+  "prior_m1_contract": {
+    "git_blob_sha1": "ad751087dd5150a5d93aebb6ab460542e7cf7b4a",
+    "path": "product/m1/sable-start-engineering-contract-v1.json"
+  },
+  "prior_m1_r0_closure": {
+    "git_blob_sha1": "9912834c690cbed1bce23cc0362b179ef98a032c",
+    "path": "docs/SABLE_M1_R0_ENGINEERING_GATE_20260909.md"
+  },
+  "qualification_policy": {
+    "build_execution": "FORBIDDEN",
+    "device_execution": "FORBIDDEN",
+    "missing_renderer_source_is_blocker": false,
+    "network_fetch": "FORBIDDEN",
+    "renderer_selection_at_static_gate": "FORBIDDEN",
+    "required_next_phase_evidence": [
+      "OFFLINE_REPRODUCIBLE_BUILD",
+      "ANDROID_ACTIVITY_WINDOW_SURFACE_LIFECYCLE",
+      "TOUCH_SCROLL_FRAME_TIMING",
+      "TEXT_SHAPING_HINDI_RTL",
+      "ACCESSIBILITY_BRIDGE",
+      "IME_CLIPBOARD",
+      "DEPENDENCY_LICENSE_INVENTORY",
+      "BINARY_SIZE_RSS_IDLE_CPU",
+      "STARTUP_LATENCY",
+      "PRIVILEGE_DELTA_NONE"
+    ],
+    "source_import": "FORBIDDEN"
+  },
+  "renderer_candidates": [
+    {
+      "display_name": "Slint",
+      "id": "slint",
+      "local_source_paths": [
+        "external/slint",
+        "external/rust/crates/slint"
+      ]
+    },
+    {
+      "display_name": "Makepad",
+      "id": "makepad",
+      "local_source_paths": [
+        "external/makepad",
+        "external/rust/crates/makepad"
+      ]
+    },
+    {
+      "display_name": "Dioxus Native / Blitz",
+      "id": "dioxus_blitz",
+      "local_source_paths": [
+        "external/dioxus",
+        "external/blitz",
+        "external/rust/crates/dioxus",
+        "external/rust/crates/blitz"
+      ]
+    },
+    {
+      "display_name": "Sable-owned renderer",
+      "id": "sable_owned",
+      "local_source_paths": []
+    }
+  ],
+  "schema_version": 1,
+  "target_device": "panther",
+  "toolchain": {
+    "clang_root": "prebuilts/clang/host/linux-x86",
+    "clang_stable": "prebuilts/clang/host/linux-x86/clang-stable",
+    "jdk21_java": "prebuilts/jdk/jdk21/linux-x86/bin/java",
+    "ninja": "prebuilts/build-tools/linux-x86/bin/ninja",
+    "required_clang_binaries": [
+      "clang",
+      "clang++"
+    ],
+    "required_rust_binaries": [
+      "rustc",
+      "cargo",
+      "rustfmt",
+      "clippy-driver"
+    ],
+    "rust_current": "prebuilts/rust/linux-x86/current",
+    "rust_root": "prebuilts/rust/linux-x86",
+    "soong_ui": "build/soong/soong_ui.bash"
+  },
+  "workspace_expected": "/srv/data/sableos_panther_graphene_2026081300_workspace"
+}

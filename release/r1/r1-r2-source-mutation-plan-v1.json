@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "milestone": "R1-R2",
+  "device": "panther",
+  "workspace": "/srv/data/sableos_panther_graphene_2026081300_workspace",
+  "r1_r1_policy": {
+    "path": "release/r1/panther-release-policy-v1.json",
+    "sha256": "32d09f8ccb7b21bca083c8db3d41ae838daa1ee46e953454dfdb3c3f596a8c92",
+    "git_blob": "9db278de6bdaa8781043762a326f2f9df03f0902"
+  },
+  "source_repositories": {
+    "script": {
+      "path": "script",
+      "head": "b54206456a15f1c1ef5776b752d2705fe75f1b0a"
+    },
+    "updater": {
+      "path": "packages/apps/Updater",
+      "head": "d7e29f110890de68b63bb8c256b4d249a2d29cf9"
+    }
+  },
+  "mutations": [
+    {
+      "id": "generator_subject",
+      "repo": "script",
+      "workspace_path": "script/generate-keys",
+      "repo_relative_path": "generate-keys",
+      "preimage_git_blob": "5c38a53eeda4eb16c55bd3a3ad776a3cb1d6349e",
+      "old": "    CN=GrapheneOS\n",
+      "new": "    CN=SableOS\n",
+      "replacement_count": 1,
+      "preimage_sha256": "f47098e935b3418f267c2f06f41105d01fef57ed74e872a46e888d63cf89f588",
+      "postimage_sha256": "c9957d82c62c61ec404c2d7366b0d80b71d98e2e6a6df60322fe066f0d58b440",
+      "postimage_git_blob": "211209f492071e3a9f9c4247ad63c2dee3ffbf30"
+    },
+    {
+      "id": "updater_url",
+      "repo": "updater",
+      "workspace_path": "packages/apps/Updater/res/values/config.xml",
+      "repo_relative_path": "res/values/config.xml",
+      "preimage_git_blob": "b3804bbeb82f3f6abda53f6401f8d1119dd5416d",
+      "old": "    <string name=\"url\" translatable=\"false\">https://releases.grapheneos.org/</string>\n",
+      "new": "    <string name=\"url\" translatable=\"false\">https://updates.sableos.org/</string>\n",
+      "replacement_count": 1,
+      "preimage_sha256": "bf91595fb7d229ae752bf25e6ab806950f848adb4a9dde9f9d1f8778d811d59a",
+      "postimage_sha256": "84a7aac655c3e863cb1b473b11d12269baa16c44ccc242757d9c2c9051428b3d",
+      "postimage_git_blob": "9c0b38b3189c9674d4a150ffead95336211d462c"
+    }
+  ],
+  "execution_policy": {
+    "static_preflight_only": true,
+    "source_mutation_authorized": false,
+    "key_generation_authorized": false,
+    "build_authorized": false,
+    "signing_authorized": false,
+    "ota_generation_authorized": false,
+    "device_contact_authorized": false,
+    "candidate_output_scope": "/tmp evidence directory only"
+  }
+}

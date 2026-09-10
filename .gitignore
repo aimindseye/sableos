@@ -8,6 +8,9 @@ out_*/
 *.tgz
 *.tar.gz
 
+# Local sablectl evidence
+/.sablectl/
+
 # Local metadata and temporary files
 *.log
 *.swp
