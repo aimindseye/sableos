@@ -1,124 +1,77 @@
 # SableOS roadmap
 
+Last updated: 2026-09-09
+
 ## Roadmap rule
 
-SableOS advances through independently testable security and capability gates.
+SableOS advances through independently testable security, capability and product gates.
 
-A milestone is complete only when implementation, policy boundary, build integration, generated artifacts, image composition and relevant physical behavior are validated. New security features must not silently remove working Android capability.
+A milestone is complete only when its implementation, policy boundary, build integration, generated artifacts and relevant physical behavior are validated. New product/security features must not silently remove working Android capability.
 
-Portable semantic contracts and Rust logic should remain stable while Android-version/device integration is requalified behind bounded adapters.
+Portable semantic contracts should remain stable while Android-version/device integration is requalified behind bounded adapters.
 
-A historical device or Android branch must not become a permanent product constraint. UI-framework selection is based on Sable requirements, not on the oldest platform Rust compiler used by a frozen reference target.
+The current project priority is to build the SableOS user experience. Production signing/OTA infrastructure is preserved but temporarily non-blocking until release-candidate work.
 
-## Milestone progression
+## Current progression
 
 ```text
-hardware correctness
-    -> service correctness
-    -> typed platform API
-    -> authorized consumers
-    -> Rust UI qualification / user-facing semantic client
-    -> lifecycle / policy
-    -> measured resource policy
-    -> broader mobile UX
+validated Android 17 Panther substrate
+    -> Sable Flow shared UI primitives
+    -> Sable Start M1 shell
+    -> Phone / People / Messages vertical slice
+    -> Sable Hub provider framework
+    -> isolated social-service capsules
+    -> broader native apps / Search / Security / polish
+    -> Q25/Q27 portability when justified
+    -> release-candidate composition
+    -> production signing / OTA / rollback closure
 ```
-
-Android-version/device portability is requalified whenever the maintained reference target changes; it is no longer treated as a one-time bramble-specific milestone.
 
 A later layer must not paper over an unproven earlier layer.
 
-## S0 — Android 14 security baseline uplift
+## Current snapshot
 
-Status: **established / historical bramble baseline**.
+```text
+PANTHER_D4                          CLOSED / PASS
+SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
+SABLEOS_CORE_PRODUCT_STAGE         PRODUCT_INTEGRATION_START
+SABLE_FLOW_STATUS                  PLANNING_COMPLETE_IMPLEMENTATION_NEXT
+NEXT_PRODUCT_MILESTONE             SABLE_M1_METRO_SHELL_PROTOTYPE
 
-Goal: move the original bramble development substrate from Android 12.1 to the final official Android 14 baseline while keeping vanilla AOSP capability measurable.
+R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
+PRODUCTION_KEYS_GENERATED          NO
+KEY_GENERATION_AUTHORIZED          NO
+SIGNING_AUTHORIZED                 NO
+OTA_GENERATION_AUTHORIZED          NO
+SIGNING_HOST_SELECTION             DEFERRED
+```
+
+## Historical substrate/service milestones
+
+### S0 — Android security baseline uplift
+
+Status: **PASS / HISTORICAL BRAMBLE BASELINE**.
+
+The original bramble development substrate established the Android 14 baseline, capability inventory and security ceiling used to prove the early narrow Sable service architecture.
+
+Detailed evidence remains in `S0_*` records.
+
+### S1.1–S1.6 — narrow Sable power/service architecture
+
+Status: **PASS / FROZEN ON BRAMBLE REFERENCE**.
 
 Key outcomes:
 
-- Android 14 source/vendor baseline;
-- vanilla comparison point;
-- explicit bramble end-of-life security ceiling;
-- substrate used to prove S1.1 through S1.7.
+- dedicated `oxynoded` SELinux domain;
+- semantic power state separated from physical backend;
+- Health-backed architecture rather than direct battery sysfs;
+- callback-driven power monitoring;
+- nonfatal HAL failure/recovery behavior;
+- Android logging and lifecycle cleanup.
 
-## S1 — narrow Sable services
+### S1.7 — frozen read-only power API
 
-Goal: restore and evolve Sable-owned Rust services without weakening Android partition, SELinux, framework, or vendor boundaries.
-
-### S1.1 — oxynoded Android 14 integration
-
-Status: **PASS**.
-
-- `system_ext` Rust daemon;
-- dedicated SELinux domain;
-- Sable-owned product integration;
-- no shell hardware privilege.
-
-### S1.2 — semantic power contract migration
-
-Status: **PASS**.
-
-- retained typed semantic power state;
-- portable host-testable mapper;
-- separation between Sable semantics and physical backend.
-
-### S1.3 — Health-backed power integration
-
-Status: **PASS**.
-
-The original vendor-helper plan was superseded after image audit proved `bramble` uses an immutable byte-for-byte Google prebuilt `vendor.img`.
-
-Final architecture:
-
-```text
-vendor Health HAL / battery sysfs
-        -> Health HIDL 2.1
-        -> native bridge
-        -> Rust HealthBackend / PowerState
-```
-
-Outcomes:
-
-- `sable-powerd` retired;
-- vendor image retained immutable;
-- `oxynoded` gains Health-client permission, not battery sysfs;
-- Sable power-source semantics tested and frozen.
-
-### S1.4 — production Health monitoring
-
-Status: **PASS**.
-
-- normal init startup monitoring;
-- nonfatal Health failures;
-- stable retry behavior;
-- physical runtime proof.
-
-### S1.5 — production cleanup / logging
-
-Status: **PASS**.
-
-- removed diagnostic CLI scaffolding from production path;
-- migrated logs to Android liblog;
-- preserved Health semantics and SELinux boundary.
-
-### S1.6 — callback-driven power monitoring
-
-Status: **PASS**.
-
-- physical testing proved steady polling can miss a real Battery state across suspend;
-- Health callback feasibility proven via VTS;
-- production poller removed;
-- callback-time bounded snapshot queue added;
-- HIDL RPC callback transport configured;
-- HAL-death recovery added;
-- unplug/reconnect proven while dozing without sampler/wakelock/synthetic state;
-- valid `Battery -> Unknown -> AC` reconnect semantics accepted;
-- closure had zero power read errors, relevant AVC denials, or daemon crashes.
-
-### S1.7A — frozen read-only power API
-
-Status: **PASS**.
-
-Goal: expose latest validated `PowerState` through frozen AIDL V1 while keeping Health ownership inside `oxynoded`.
+Status: **PASS / FROZEN**.
 
 Frozen contract:
 
@@ -127,437 +80,388 @@ com.sableos.power.IPowerService/default
     getLatestState() -> PowerSnapshot
 ```
 
-V1 properties:
+Properties:
 
-- read-only;
-- availability;
-- battery percentage;
-- charging state;
-- stable Sable source enum;
-- monotonic externally-visible state-change sequence;
+- read-only semantic state;
+- explicit availability;
+- battery percentage / charging / stable source enum;
+- monotonic externally visible sequence;
 - no Health handle;
-- no sysfs path;
+- no raw sysfs;
 - no mutation methods.
 
-Validated closure:
+Authorized/unauthorized client behavior and callback-to-AIDL physical transitions were proven on bramble. See `S1_7_VALIDATION.md`.
 
-- AIDL V1 frozen and ownerless on the Android 14 release graph;
-- generated Rust AIDL dylib installed in `system_ext`, with no direct `/system/lib{,64}` Sable AIDL target;
-- 31 host tests pass, including `PowerStateStore` availability/sequence semantics;
-- affected and full product builds pass with compiled SELinux/neverallow checks;
-- exact provider and generated AIDL library content verified in `system_ext.img`;
-- stable-AIDL/SELinux propagation into `system`, `product`, vendor ramdisk and AVB metadata was classified rather than treated as an unexplained image delta;
-- provider/API host seal closed before S1.7B client authorization was introduced.
+### S1.8 historical UI/toolchain qualification
 
-### S1.7B — authorized consumer runtime proof
+Status: **BRAMBLE QUALIFICATION CLOSED / LESSONS RETAINED**.
 
-Status: **PASS**.
+The historical Android 14 Rust/Cargo 1.68 branch proved that UI-framework choice must not be permanently constrained by an old platform compiler. Slint and other candidates were bounded/tested; further dependency down-rev work for the end-of-life bramble branch was stopped.
 
-- dedicated `sable_power_test_client` domain and disabled oneshot test client;
-- intended client can `find` the service and Binder-call `oxynoded`;
-- client has no Health HAL or battery-sysfs authority;
-- Android 14 shell can discover the service name through broad platform `service_manager_type` `find`, but cannot trigger the privileged client and is denied Binder `call` to `oxynoded` under enforcing SELinux;
-- provider remains stable through authorized and denied-client tests;
-- inactive slot A received the validated six-image S1.7 deployment, with activation last and slot B preserved as successful S1.6 fallback;
-- slot A became naturally successful without manual success marking;
-- physical unplug/reconnect while dozing produced callback-driven `Usb -> Battery -> Unknown -> Ac` state changes with no read errors, relevant AVCs, synthetic overrides or daemon wakelock;
-- AIDL sequence advanced from `1` to `7`, exactly matching six externally visible callback state changes with the same `oxynoded` PID.
+The accepted rule remains:
 
-S1.7 overall status: **PASS / FROZEN**. Exact source, AIDL, image, device-binary and runtime seals are recorded in `S1_7_VALIDATION.md`.
+```text
+modern UI toolchain
+    -> stable C / NDK / AIDL boundary
+    -> Android/Sable semantic services
+```
 
-### S1.8 — modern Rust UI foundation qualification + power UX
+Do not use compiler-private cross-version Rust ABI.
 
-Status: **BRAMBLE QUALIFICATION CAPTURED / PANTHER RESTART**.
+## Panther Android 17 track
 
-S1.8 is the first Sable-native user-facing client of a frozen semantic service and the qualification point for the Rust UI direction.
+### P0 / P0R1 / P1A / P1B
 
-#### S1.8-D0 — architecture/document reconciliation
+Status: **HISTORICAL BRING-UP / QUALIFICATION EVIDENCE**.
 
-Status: **PASS**.
+These milestones selected and bounded the Pixel 7 / Android 17 substrate, audited generation/toolchain dependencies and established the modern Panther development path.
 
-- preserve Android APK/split-APK, ART, PackageManager, ActivityManager, SurfaceFlinger, permissions/AppOps and ordinary app sandboxing;
-- formally supersede older bare-Linux/direct-framebuffer/root-shell assumptions which conflict with the proven Android architecture;
-- keep Sable-native UI Rust-first while keeping application/interaction semantics renderer-independent;
-- define Metro-inspired touch-first and BlackBerry/BB10-inspired keyboard-first profiles without cloning either product;
-- treat UI frameworks as evidence-driven candidates rather than immutable release requirements;
-- allow a focused Sable fork or Sable-owned Rust UI framework when qualification evidence justifies it;
-- retain App Manager, MarathonOS, GrapheneOS and AOSP as scoped design/security references without importing their complete trust models.
+The earlier pure-AOSP workspace is no longer the canonical active product substrate.
 
-Normative decisions:
+### Panther D4
 
-- `adr/0002-rust-ui-framework-and-android-app-compatibility.md`;
-- `adr/0003-panther-baseline-and-rust-ui-toolchain-boundary.md`.
+Status: **CLOSED / PASS**.
 
-#### S1.8-F0 through F3 — bramble framework/toolchain evidence
+Canonical physical-development outcome:
 
-Status: **CAPTURED / CLOSED AS HISTORICAL PLATFORM QUALIFICATION**.
+```text
+Pixel 7 / panther
+Android 17 / SDK 37
+GrapheneOS 2026081300-derived audited substrate
+B2 target-files flashed successfully
+shared userdata preserved
+BuildManifest identity PASS
+ART identity PASS_5_OF_5
+slot B current/bootable/successful PASS
+broad functional acceptance PASS
+```
 
-Read-only/temp-only qualification established:
+D4 release gate:
 
-- bramble Android 14 AOSP uses Rust/Cargo 1.68;
-- current UI frameworks commonly require substantially newer Rust versions;
-- current Vexo and other modern candidates should not be forced onto the historical 1.68 platform;
-- Slint 1.5 core can compile on Rust 1.68 after bounded Cargo compatibility work, proving the device architecture itself was not the blocker;
-- continuing dependency down-revs/pins solely for the end-of-life Android 14 platform would distort long-term framework selection;
-- no production S1.8 UI source was landed;
-- no global AOSP Rust uplift was performed;
-- the planned Android 15 bramble portability experiment is no longer required.
+```text
+PASS=56
+FAIL=0
+SKIP=8
+MANUAL=0
+ERROR=0
+OVERALL=PASS
+```
 
-Do not continue the Android-14-specific Slint dependency-backport sequence unless a future regression investigation explicitly needs it.
+NFC RF tag read remains a non-blocking external-hardware validation gap; framework/service/HAL/enable/routing passed.
 
-See `S1_8_PLATFORM_TRANSITION.md`.
+See `PANTHER_D4_CLOSURE_20260908.md`.
 
-#### PANTHER-P0 — modern device/source/toolchain baseline
+## Product track — Sable Flow
+
+The normative product model is `CORE_PRODUCT_MODEL.md`. The concrete implementation plan is `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`.
+
+Product principle:
+
+> **Applications provide capabilities; Sable organizes people, attention and actions.**
+
+### M1 / CP1 — Sable Flow primitives + Sable Start
 
 Status: **NEXT**.
 
-Pixel 7 (`panther`) becomes the active touch-first development reference.
+Target: Panther.
 
-P0 is read-only and selects the real reproducible baseline before Sable source mutation:
-
-- device identity/current stock build;
-- bootloader/recovery/update state;
-- official factory/OTA recovery point;
-- available AOSP/device/vendor proprietary binaries for candidate Android branches;
-- kernel/vendor_boot/vendor_kernel_boot partition model;
-- exact Rust/Cargo/Clang/Soong toolchains;
-- preferred newest supported/reproducible Android release;
-- explicit fallback if the newest stock release is not yet reproducible as a clean AOSP hardware baseline.
-
-The goal is not merely a higher Android version. It is a maintained, modern platform on which Sable can qualify current Rust UI technology without inheriting bramble's platform-age constraints.
-
-#### PANTHER-V0 — vanilla capability and Android-app baseline
-
-Status: **PLANNED AFTER P0**.
-
-Before Sable integration:
-
-- reproducible vanilla/upstream panther build;
-- boot and A/B behavior;
-- SELinux enforcing;
-- telephony/IMS/data/SMS;
-- Wi-Fi/Bluetooth;
-- camera/audio;
-- USB/ADB/recovery;
-- suspend/power/thermal sanity;
-- bounded APK/split-APK/native/WebView/notification/background regression corpus;
-- exact vendor/kernel/firmware provenance.
-
-#### S1.8-F-modern — expanded Rust UI qualification
-
-Status: **PLANNED AFTER P0/V0**.
-
-Qualification set includes:
-
-- Slint;
-- WaterUI;
-- Project Robius + Makepad;
-- Blinc;
-- Vexo;
-- Dioxus Native / Blitz where appropriate;
-- `BUILD_SABLEUI` if no candidate meets Sable requirements without disproportionate compromise.
-
-Architectural/interoperability references:
-
-- Crux — renderer-independent application/state/effect architecture;
-- UniFFI — possible language interop, not a shell renderer;
-- Flutter Rust Bridge — Flutter/Rust interop, not a Rust-first renderer;
-- Tauri/WebView — not preferred for the Sable system shell.
-
-Compare at minimum:
-
-- modern Rust toolchain/MSRV and whether it can use the platform compiler directly;
-- reproducible/offline dependency integration;
-- Soong/product or separately pinned UI build integration cost;
-- open-source license obligations;
-- dependency/supply-chain size;
-- Android Activity/window/surface lifecycle integration;
-- SurfaceFlinger/Vulkan/GPU path;
-- package/binary/image footprint;
-- startup latency, RSS and idle CPU;
-- touch and multi-touch;
-- keyboard, modifiers, repeat and focus traversal;
-- IME, clipboard, text shaping and localization;
-- accessibility maturity;
-- crash isolation;
-- Android-version portability risk;
-- no unnecessary network, Health, sysfs or other hardware permissions.
-
-Framework outcome classification remains:
+Deliverables:
 
 ```text
-SELECT
-SELECT_WITH_GAPS
-FORK
-BUILD_SABLEUI
+Sable Flow typography/theme tokens
+vertical tile-grid engine
+tile lifecycle + live-tile data contract
+pivot/section navigation
+motion/transitions
+privacy/redaction states
+accessibility semantics
+focus/keyboard hooks
+Sable Start development launcher
+Phone tile
+People tile
+Messages tile
+Settings tile
+Social Hub placeholder tile
 ```
 
-Passing a tiny screen does not authorize replacement of Launcher3 or AOSP SystemUI.
+Launcher3 stays available as a development fallback until Sable Start replacement qualification passes.
 
-#### S1.8-C — first real Rust power client
+M1 acceptance requires normal Android lifecycle/task behavior, deterministic build provenance, no unnecessary privileged authority, accessibility, restart recovery and Panther physical validation.
 
-After the panther service adapter and framework path are selected:
+### M2 / CP2 — Phone / People / Messages vertical slice
 
-- standalone Sable Android application; Launcher3 and SystemUI remain intact;
-- preserve the frozen Sable power semantics across the device adapter transition;
-- read power state through a stable service boundary;
-- battery percentage, charging state and source;
-- graceful unavailable state;
-- no backend-specific UI logic;
-- no Health HAL or battery sysfs authority;
-- no unnecessary Internet/network authority;
-- UI restart/crash cannot disturb monitoring;
-- physical callback transition reaches the visible client;
-- renderer/app semantics structured so touch-first and keyboard-first shells share state/navigation concepts.
+Status: **PLANNED AFTER M1**.
 
-If UI and platform Rust compilers differ, direct compiler-private Rust ABI linkage is rejected. Use a stable C/NDK/AIDL adapter instead of globally uplifting AOSP solely for the renderer.
+Phone:
 
-### S1.9 — application lifecycle foundation
+- Sable UI over Android Telecom/Telephony;
+- call history/missed calls/callback actions;
+- no direct modem protocol implementation.
+
+People:
+
+- ContactsProvider-backed presentation;
+- local people identity graph;
+- user-confirmed ambiguous cross-source associations.
+
+Messages:
+
+- Sable SMS/MMS presentation;
+- mature Android/carrier transport retained;
+- bounded communication timeline;
+- live/unread state and privacy redaction.
+
+### M3 / CP3 — Sable Hub provider framework
 
 Status: **PLANNED**.
 
-- explicit foreground/background state;
-- process importance;
-- bounded background execution;
-- lifecycle event logging;
-- policy hooks for later freezer/uclamp work.
+Provider classes:
 
-No device-specific CPU tuning in this milestone.
+```text
+NATIVE_DATA
+ANDROID_NOTIFICATION
+SUPPORTED_API
+WEB
+UNAVAILABLE
+```
 
-### S1.10 — measured resource policy
+Capabilities:
+
+```text
+MESSAGING
+FEED
+PROFILE
+CONTACTS
+SHARE
+NOTIFICATIONS
+DEEP_LINK
+WEB_SESSION
+```
+
+Requirements:
+
+- capability registry;
+- provider lifecycle/account state;
+- notification/conversation ingestion;
+- application-authorized actions;
+- local people linking;
+- bounded history;
+- explicit privacy/data-flow disclosure;
+- separate provider session/storage boundaries;
+- no private third-party application-database scraping.
+
+### M4 / CP4 — social-service capsules
+
+Status: **PLANNED**.
+
+Initial targets:
+
+```text
+WhatsApp
+Instagram
+Facebook
+LinkedIn
+```
+
+Sable does not assume these services expose a complete supported native consumer API. Provider capabilities must be verified against current official documentation at implementation time.
+
+Where needed, use isolated web capsules with independent session/cookie/storage state. The Hub must label web/API/native capability honestly.
+
+### M5 / CP5 — broader native apps + Search/Security
+
+Status: **PLANNED**.
+
+Candidate Sable-facing surfaces:
+
+```text
+Camera
+Photos
+Clock
+Calculator
+Calendar
+Files
+Notes
+Browser
+```
+
+Reuse mature Android capability underneath where appropriate.
+
+Also advance:
+
+- Search / Command;
+- Secure Package Intelligence;
+- application security/privacy transparency;
+- higher-value Sable Settings surfaces.
+
+### M6 / CP6 — AOD / Voice / Agent
+
+Status: **PLANNED AFTER CORE SHELL/HUB FOUNDATION**.
+
+AOD remains presentation over supported Android display/doze/power architecture.
+
+Voice/Agent remain local-first and capability-bounded:
+
+```text
+text / voice
+    -> semantic intent
+    -> typed capability request
+    -> narrow Sable/Android service
+```
+
+No generic privileged shell or unrestricted other-app private-data authority.
+
+## Interaction/form-factor track
+
+### Panther touch-first
+
+Status: **ACTIVE REFERENCE**.
+
+Sable Flow establishes:
+
+- live information/action tiles;
+- large typography/spatial hierarchy;
+- low-chrome surfaces;
+- fast peek/act/return interaction;
+- touch/gesture semantics;
+- accessibility and multilingual behavior.
+
+### Q25
+
+Status: **OPTIONAL FUTURE ENGINEERING REFERENCE**.
+
+Q25 may validate:
+
+- MediaTek adapter portability;
+- compact/square layout constraints;
+- physical keyboard/focus/navigation semantics.
+
+It must reuse the common Sable Start/Hub semantic model rather than creating a Q25-specific product fork. See `Q25_PORT_PLAN.md`.
+
+### Q27
+
+Status: **FUTURE PREFERRED MODERN QWERTY DIRECTION**.
+
+Q27 remains subject to source/vendor/bootloader/security/radio/power/hardware acceptance. Sable Flow and Hub are deliberately being designed now so Q27 can consume the same semantic model later.
+
+## Security/product tracks after shell foundation
+
+### S2 — Secure Package Intelligence
+
+Status: **PLANNED / ARCHITECTURE DEFINED**.
+
+Areas:
+
+- deterministic package analysis;
+- update delta engine;
+- Secure Install UI;
+- PackageManager enforcement integration;
+- PermissionController context;
+- unified permissions/AppOps presentation;
+- local tracker/library signals;
+- special-access/exported-component analysis;
+- compatibility regression corpus.
+
+### S3 — ecosystem compatibility without ambient trust
+
+Status: **PLANNED**.
+
+- multi-source Android installation through common enforcement;
+- optional sandboxed compatibility layers where maintainable;
+- integrity/DRM reporting separate from APK compatibility;
+- per-app exceptions instead of global security rollback.
+
+### S4 — user-facing capability hardening
 
 Status: **PLANNED**.
 
 Candidate areas:
 
-- memory pressure;
-- background process freezing;
-- uclamp/scheduler hints through appropriate Android mechanisms;
-- modem/Wi-Fi standby;
-- display idle;
-- thermal/wakeup accounting.
+- per-app network capability;
+- Storage Scopes;
+- Contact Scopes;
+- sensor/local-network scopes;
+- profile-centered trust controls.
 
-Required before/after evidence:
+### S5 — measured resource/lifecycle policy
 
-- power/current proxy;
-- wakeup/interrupt rate;
-- CPU residency;
-- temperature;
+Status: **PLANNED**.
+
+- background lifecycle;
+- freezer/uclamp decisions where justified;
 - memory pressure;
-- app launch and interaction latency;
-- idle and active regressions;
-- rollback criteria.
+- display/network standby;
+- thermal/wakeup accounting;
+- before/after physical evidence.
 
 No tuning knob lands on folklore alone.
 
-### S1.11 — connectivity policy services
+## Release engineering / R1
 
-Status: **PLANNED**.
+Status: **PAUSED / NON-BLOCKING DURING PRODUCT DEVELOPMENT**.
 
-Preferred:
+Completed foundations include:
+
+- release identity/policy;
+- `CN=SableOS` source mutation;
+- `https://updates.sableos.org/` Updater source mutation;
+- exact signing-domain policy;
+- source/keygen static gates;
+- signing-key custody architecture;
+- public endpoint transport validation.
+
+No production signing key has been generated.
+
+Current boundary:
 
 ```text
-UI -> narrow typed request -> Sable connectivity service -> Android framework
+KEY_GENERATION_AUTHORIZED=NO
+SIGNING_AUTHORIZED=NO
+OTA_GENERATION_AUTHORIZED=NO
+SIGNING_HOST_SELECTION=DEFERRED
+PRIMARY_PRODUCTION_KEYSTORE=DEFERRED
 ```
 
-Rejected:
+Release engineering resumes before release-candidate distribution with:
 
 ```text
-UI -> broad-capability general-purpose network utility
+signing-host acceptance
+primary encrypted keystore
+physically separated encrypted backups
+zero-swap/no-hibernate key-use window
+production key generation
+signed target-files/factory artifacts
+OTA generation
+forward-update validation
+rollback/recovery validation
+release evidence closure
 ```
 
-### S1.12 — recovery and diagnostics surface
-
-Status: **PLANNED**.
-
-- safe recovery workflow;
-- bounded diagnostics;
-- slot/fallback visibility;
-- service-health reporting;
-- no normal recovery bypass of SELinux/verified boot.
-
-## Android substrate transition track
-
-### Bramble Android 14 — frozen architecture baseline
-
-Status: **PASS / FROZEN**.
-
-Android 14 on Pixel 4a 5G remains the historical architecture/regression baseline for S1.7. It no longer hosts active S1.8 implementation work.
-
-### Bramble Android 15 portability experiment
-
-Status: **CLOSED WITHOUT EXECUTION**.
-
-The earlier plan to port S1.8 to Android 15 on bramble is superseded by the move to maintained Pixel 7 hardware. No product milestone depends on this experiment.
-
-### Panther modern Android baseline
-
-Status: **P0 NEXT**.
-
-Use Pixel 7 as the active touch-first development reference. Prefer the newest supported/reproducible Android release proven by P0/V0. Keep platform-specific adaptation bounded so the same Sable semantics and UI core can move again to later Pixel hardware.
-
-## S2 — Secure Package Intelligence
-
-Goal: preserve standard Android APK compatibility while making increases in application authority visible and reviewable.
-
-App Manager is a major design reference for package/component transparency, permissions/AppOps, signatures, manifests, tracker/library signals and package comparison. Sable adapts those ideas into platform-backed security analysis and narrow enforcement rather than creating a root/ADB super-app.
-
-### S2.1 package analyzer
-
-Local deterministic analysis of permissions, signing identity, SDK levels, exported components, special accesses, debuggable/test-only state, cleartext policy, native code, and known tracker/library signals.
-
-### S2.2 update delta engine
-
-Compare installed/incoming permissions, signing lineage, components, SDK, libraries and elevated capabilities.
-
-### S2.3 Secure Install UI
-
-Explain findings as informational/review/elevated/critical/privacy signals without claiming certainty about whether an app "needs" a permission.
-
-### S2.4 PackageManager enforcement
-
-Put mandatory security-review enforcement below installer UI so alternate stores cannot bypass it.
-
-### S2.5 PermissionController integration
-
-Preserve contextual Android runtime permission prompts while adding relevant Sable context.
-
-### S2.6 unified permission/AppOps view
-
-Present real enforcement state without hiding the distinction between runtime permissions and AppOps.
-
-### S2.7 local tracker/library intelligence
-
-Optional local signatures; treat matches as signals rather than proof of malicious behavior.
-
-### S2.8 special-access/exported-component analysis
-
-Prioritize accessibility, notification listeners, VPN, device admin, overlays, package installation, all-files access, background location, boot/background execution, and unprotected exports.
-
-### S2.9 compatibility regression corpus
-
-Continuously test representative open-source, Play-dependent, banking/DRM, split APK, accessibility, VPN, notifications, camera/location/media, and background-execution cases.
-
-### S2.10 Install Quarantine research
-
-Research optional quarantine for newly installed high-risk packages only after PackageManager/ActivityManager semantics can support it without bypasses.
-
-## S3 — ecosystem compatibility without ambient trust
-
-- multi-source standard Android installation converging on the same enforcement path;
-- optional sandboxed Google compatibility as ordinary user applications where maintainable;
-- integrity/DRM compatibility reporting separate from APK compatibility;
-- per-app compatibility exceptions instead of global hardening rollback.
-
-## S4 — user-facing capability hardening
-
-- semantic per-app Network capability including meaningful indirect paths;
-- Storage Scopes;
-- Contact Scopes;
-- sensor/local-network scopes where enforceable;
-- profile-centered trust separation.
-
-## S5 — production security posture
-
-- Sable release keys and locked verified boot;
-- signed OTA/update infrastructure and rollback handling;
-- provenance / SBOM / source lineage;
-- rapid Browser/WebView security channel;
-- physical attack-surface controls such as USB restriction and secure auto-reboot where hardware supports them.
-
-## Mobile UX track
-
-The Sable interaction model is deliberately mobile-first and has two first-class profiles sharing common application/service semantics.
-
-### Touch-first / conventional phones
-
-Metro-inspired direction:
-
-- strong typography and spatial hierarchy;
-- edge-to-edge, low-chrome information surfaces;
-- gesture-first navigation;
-- persistent/live information where useful;
-- fast peek/return workflows;
-- low-latency transitions and motion which communicates hierarchy.
-
-This is inspiration, not a Windows Phone clone.
-
-### Keyboard-first / physical QWERTY
-
-BlackBerry/BB10-inspired direction:
-
-- physical keyboard as primary input;
-- deterministic focus and visible focus state;
-- type-to-search;
-- shortcuts and command palette;
-- fast communication/notification triage;
-- predictable back/navigation/focus restoration;
-- touch/keyboard/pointer coexistence where available.
-
-This is inspiration, not a BlackBerry OS clone.
-
-MarathonOS remains a UX/device/power/recovery reference, especially for mobile-first and QWERTY interaction ideas, but Sable does not adopt shell-as-privilege-aggregator patterns. Product ideas never justify moving hardware authority into the renderer.
-
-## Device roadmap
-
-### Pixel 7 (`panther`)
-
-Active touch-first development reference. PANTHER-P0 selects the newest supported/reproducible Android baseline and inventories its platform/UI toolchain boundaries before Sable source mutation.
-
-Pixel 7 is a materially better current engineering target than bramble, but remaining OEM support lifetime still matters. Later Pixel hardware with a longer support window may replace it without changing Sable service/application semantics.
-
-### Pixel 4a 5G (`bramble`)
-
-Frozen Android 14 S1.7 architecture/regression reference. No active S1.8 implementation or Android 15 portability milestone. Not a production-security target and not a required Rust-development device.
-
-### Later Pixel-class hardware
-
-Future longer-lived touch/security reference when support lifetime, source, flashing/relock, vendor and update-lifecycle advantages justify migration.
-
-### Zinwa Q25
-
-Optional MediaTek/QWERTY development reference for portability validation; not required for SableOS or Q27 support.
-
-### Zinwa Q27
-
-Future primary QWERTY candidate pending public/maintainable source, reliable unlock/recovery, understood partitions/vendor interfaces, working radio/IMS/camera/audio/keyboard/suspend/power, and acceptable security lifecycle.
-
-The Pixel and Zinwa tracks must share the same Sable semantic APIs, application model and UI core. Platform Rust compiler differences must not create separate product architectures.
-
-## Standing priorities
-
-1. preserve standard Android app compatibility;
-2. preserve working telephony/camera/audio/connectivity unless removal is intentional and documented;
-3. do not bypass SELinux `neverallow` or platform boundaries for convenience;
-4. do not make the Sable shell a privileged universal client;
-5. prefer narrow semantic services and app-scoped exceptions;
-6. keep compatibility software unprivileged wherever possible;
-7. make security UI correspond to real enforceable behavior;
-8. prefer local analysis/provenance over unnecessary telemetry;
-9. include negative tests proving what a component cannot access or transact with, based on effective compiled/runtime policy rather than only literal rules;
-10. treat device/vendor/firmware support lifetime as part of the security model;
-11. keep Android-release integration bounded so Sable core semantics survive upgrades;
-12. use MediaTek/QWERTY ports to prove portability, not create separate forks;
-13. require measured evidence for power/performance tuning;
-14. preserve a known-good fallback slot during runtime-changing deployment;
-15. keep Sable application/interaction semantics renderer-independent;
-16. qualify UI-framework accessibility/input/lifecycle/supply-chain behavior before replacing mature Android presentation surfaces;
-17. prefer the platform Rust compiler when viable, but do not select a UI framework solely to satisfy an old platform MSRV;
-18. never link independently compiled Rust components across compiler-private Rust ABI; use a stable C/NDK/AIDL boundary when toolchains differ.
-
-## Runtime milestone closure
+## Release-candidate gate
+
+Before SableOS becomes a release candidate:
+
+- intended Sable default surfaces are explicit;
+- replaced Android surfaces have capability-parity evidence;
+- retained Android surfaces are intentional;
+- privacy/data-flow records are complete;
+- accessibility and multilingual gates pass;
+- Panther physical regression suite passes;
+- Q25/Q27 support claims, if any, have independent hardware acceptance;
+- production signing/key custody is closed;
+- signed OTA/factory and rollback/recovery are proven.
+
+## Near-term priority
 
 ```text
-source guards
- -> targeted tests
- -> affected build
- -> generated-artifact audit
- -> security-policy audit
- -> full product build
- -> exact binary/image proof
- -> AVB validation
- -> inactive-slot deployment
- -> runtime/physical proof
- -> natural slot success
- -> fallback preserved
+1. M1 Sable Flow primitives
+2. M1 Sable Start on Panther
+3. M2 Phone / People / Messages
+4. M3 Sable Hub provider framework
+5. M4 social-service capsules
+6. M5 broader native apps and polish
+7. Q25/Q27 portability when hardware/projects justify it
+8. M6 AOD / Voice / Agent
+9. production signing / OTA finalization before release candidate
 ```
+
+The project intentionally prioritizes building the actual operating-system experience before optimizing the distribution machinery for a product that is not yet feature-complete.

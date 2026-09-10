@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "milestone": "R1-R1",
+  "date_local": "2026-09-08",
+  "device": "panther",
+  "status": "CLOSED",
+  "release_policy": {
+    "path": "release/r1/panther-release-policy-v1.json",
+    "sha256": "32d09f8ccb7b21bca083c8db3d41ae838daa1ee46e953454dfdb3c3f596a8c92",
+    "git_blob": "9db278de6bdaa8781043762a326f2f9df03f0902",
+    "certificate_subject": "CN=SableOS",
+    "update_endpoint": "https://updates.sableos.org/",
+    "update_endpoint_owner": "SableOS",
+    "update_endpoint_ownership_status": "OPERATOR_VERIFIED",
+    "build_variant": "user",
+    "official_build": true,
+    "build_number_scheme": "YYYYMMDDRR",
+    "build_number_reuse": false
+  },
+  "endpoint_transport_validation": {
+    "dns_public_resolution": "PASS",
+    "https_object_get": "PASS",
+    "https_head_status": 200,
+    "http_range_status": 206,
+    "content_range": "bytes 0-5/23",
+    "range_body": "SableO",
+    "interactive_cloudflare_challenge": "ABSENT_AFTER_CONFIGURATION",
+    "machine_access": "PASS"
+  },
+  "initial_live_policy_gate": {
+    "pass": 54,
+    "blocker": 1,
+    "info": 9,
+    "skip": 0,
+    "error": 0,
+    "result": "BLOCKED_1",
+    "rc": 3,
+    "evidence_dir": "/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260908T231345Z_fts6loeb",
+    "sole_blocker": "policy.update_endpoint=UNSET"
+  },
+  "endpoint_bound_live_policy_gate": {
+    "test_suite": "PASS_34_OF_34",
+    "pass": 55,
+    "blocker": 0,
+    "info": 9,
+    "skip": 0,
+    "error": 0,
+    "execution": "PASS",
+    "readiness": "READY_TO_REQUEST_KEYGEN_AUTHORIZATION",
+    "rc": 0,
+    "evidence_dir": "/tmp/SABLE_R1_R1_POLICY_PREFLIGHT_20260909T002354Z_qdw0b9dv"
+  },
+  "planned_android_source_mutations": [
+    {
+      "path": "script/generate-keys",
+      "preimage": "CN=GrapheneOS",
+      "postimage": "CN=SableOS"
+    },
+    {
+      "path": "packages/apps/Updater/res/values/config.xml",
+      "preimage": "https://releases.grapheneos.org/",
+      "postimage": "https://updates.sableos.org/"
+    }
+  ],
+  "authorization_boundary_after_closure": {
+    "source_mutation_authorized": false,
+    "workspace_output_mutation_authorized": false,
+    "build_authorized": false,
+    "key_generation_authorized": false,
+    "signing_authorized": false,
+    "ota_generation_authorized": false,
+    "device_contact_authorized": false,
+    "device_reboot_authorized": false,
+    "flash_authorized": false,
+    "slot_change_authorized": false,
+    "userdata_or_metadata_wipe_authorized": false
+  },
+  "next_gate": "PREPARE_AND_VALIDATE_EXACT_TWO_FILE_SOURCE_MUTATION_AND_KEYGEN_HARNESS_WITHOUT_EXECUTING_EITHER; REQUEST_SEPARATE_AUTHORIZATION_AFTER_SEAL"
+}

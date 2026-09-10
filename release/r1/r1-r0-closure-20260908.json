@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "milestone": "R1-R0",
+  "device": "panther",
+  "date": "2026-09-08",
+  "status": "CLOSED",
+  "entrypoint": "tools/validation/release-r1/SABLE_R1_R0R3_RELEASE_PREFLIGHT.py",
+  "entrypoint_sha256": "595db875192ab5c3753e6d31698bce8adefdd3af5900de217bf4ea987ef7b88f",
+  "entrypoint_git_blob": "e35081e18cbbd12e7d49accb26766bc03721c649",
+  "branch_head": "b32529a9d0efda5304ca51b0f4388d20767a3c60",
+  "validation": {
+    "compile": "PASS_6_OF_6",
+    "tests": "PASS_38_OF_38",
+    "preflight_execution": "PASS",
+    "release_readiness": "BLOCKED_10",
+    "exit_code": 3,
+    "pass": 19,
+    "blocker": 10,
+    "info": 11,
+    "skip": 2,
+    "error": 0,
+    "evidence_dir": "/tmp/SABLE_R1_R0_RELEASE_PREFLIGHT_20260908T225032Z_wfba8zy8"
+  },
+  "validated_target_identity": {
+    "device": "panther",
+    "sources": [
+      "VENDOR/build.prop:ro.product.vendor.device=panther",
+      "PRODUCT/etc/build.prop:ro.product.product.device=panther",
+      "SYSTEM_EXT/etc/build.prop:ro.product.system_ext.device=panther"
+    ],
+    "non_authoritative_generic": "SYSTEM/build.prop:ro.product.system.device=generic"
+  },
+  "blockers_promoted_to_r1": [
+    "UPSTREAM_GENERATOR_SUBJECT_GRAPHENEOS",
+    "UPDATER_URL_GRAPHENEOS",
+    "PRODUCTION_KEYSET_ABSENT",
+    "PRODUCTION_SOURCE_SEAL_POLICY_UNDEFINED",
+    "CURRENT_ARTIFACT_USERDEBUG",
+    "CURRENT_ARTIFACT_TEST_KEYS",
+    "CURRENT_ARTIFACT_UPDATER_OMITTED",
+    "TARGET_FILES_APKCERTS_TEST_KEY_REFERENCES",
+    "TARGET_FILES_APEXKEYS_TEST_KEY_REFERENCES",
+    "TARGET_FILES_MISC_INFO_TEST_KEY_REFERENCES"
+  ],
+  "authorization": {
+    "key_generation": "NO",
+    "source_mutation": "NO",
+    "build": "NO",
+    "signing": "NO",
+    "ota_generation": "NO",
+    "device_contact": "NO"
+  }
+}

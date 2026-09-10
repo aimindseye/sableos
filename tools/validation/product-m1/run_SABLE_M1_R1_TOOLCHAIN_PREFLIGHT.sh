@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+set -u
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)" || exit 90
+REPO_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd -P)" || exit 91
+SCRIPT="$SCRIPT_DIR/SABLE_M1_R1_TOOLCHAIN_PREFLIGHT.py"
+TEST="$SCRIPT_DIR/test_sable_m1_r1_toolchain_preflight.py"
+CONTRACT="$REPO_ROOT/product/m1/sable-m1-r1-toolchain-contract-v1.json"
+
+EXPECTED_SCRIPT_GIT_BLOB="934059ead13b42188f72a80b61d42f073897e3f5"
+EXPECTED_TEST_GIT_BLOB="beff363458ad9b8447392b8d19836f712b80d57a"
+EXPECTED_CONTRACT_GIT_BLOB="805d37edb4de15daccef8d8d456b837a0dd2c9bd"
+
+hashes() {
+  /usr/bin/python3 - "$1" <<'PY'
+import hashlib
+import pathlib
+import sys
+p = pathlib.Path(sys.argv[1])
+data = p.read_bytes()
+blob = hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+sha256 = hashlib.sha256(data).hexdigest()
+print(blob, sha256)
+PY
+}
+
+run_all_no() {
+  env \
+    SOURCE_MUTATION_AUTHORIZED=NO \
+    WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO \
+    BUILD_AUTHORIZED=NO \
+    BUILD_TOOL_EXECUTION=NO \
+    DEVICE_CONTACT_AUTHORIZED=NO \
+    DEVICE_REBOOT_AUTHORIZED=NO \
+    FLASH_AUTHORIZED=NO \
+    SLOT_CHANGE_AUTHORIZED=NO \
+    USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO \
+    KEY_GENERATION_AUTHORIZED=NO \
+    SIGNING_AUTHORIZED=NO \
+    OTA_GENERATION_AUTHORIZED=NO \
+    DELETE_AUTHORIZED=NO \
+    "$@"
+}
+
+for path in "$SCRIPT" "$TEST" "$CONTRACT"; do
+  if [ ! -f "$path" ]; then
+    echo "M1_R1_FILE_BINDING=FAIL_MISSING:$path"
+    exit 92
+  fi
+done
+
+SCRIPT_HASHES="$(hashes "$SCRIPT")" || exit 93
+TEST_HASHES="$(hashes "$TEST")" || exit 94
+CONTRACT_HASHES="$(hashes "$CONTRACT")" || exit 95
+
+ACTUAL_SCRIPT_GIT_BLOB="${SCRIPT_HASHES%% *}"
+ACTUAL_SCRIPT_SHA256="${SCRIPT_HASHES#* }"
+ACTUAL_TEST_GIT_BLOB="${TEST_HASHES%% *}"
+ACTUAL_TEST_SHA256="${TEST_HASHES#* }"
+ACTUAL_CONTRACT_GIT_BLOB="${CONTRACT_HASHES%% *}"
+ACTUAL_CONTRACT_SHA256="${CONTRACT_HASHES#* }"
+
+echo "EXPECTED_SCRIPT_GIT_BLOB=$EXPECTED_SCRIPT_GIT_BLOB"
+echo "ACTUAL_SCRIPT_GIT_BLOB=$ACTUAL_SCRIPT_GIT_BLOB"
+echo "ACTUAL_SCRIPT_SHA256=$ACTUAL_SCRIPT_SHA256"
+echo "EXPECTED_TEST_GIT_BLOB=$EXPECTED_TEST_GIT_BLOB"
+echo "ACTUAL_TEST_GIT_BLOB=$ACTUAL_TEST_GIT_BLOB"
+echo "ACTUAL_TEST_SHA256=$ACTUAL_TEST_SHA256"
+echo "EXPECTED_CONTRACT_GIT_BLOB=$EXPECTED_CONTRACT_GIT_BLOB"
+echo "ACTUAL_CONTRACT_GIT_BLOB=$ACTUAL_CONTRACT_GIT_BLOB"
+echo "ACTUAL_CONTRACT_SHA256=$ACTUAL_CONTRACT_SHA256"
+
+if [ "$ACTUAL_SCRIPT_GIT_BLOB" != "$EXPECTED_SCRIPT_GIT_BLOB" ]; then
+  echo "M1_R1_SCRIPT_BINDING=FAIL_GIT_BLOB"
+  exit 96
+fi
+if [ "$ACTUAL_TEST_GIT_BLOB" != "$EXPECTED_TEST_GIT_BLOB" ]; then
+  echo "M1_R1_TEST_BINDING=FAIL_GIT_BLOB"
+  exit 97
+fi
+if [ "$ACTUAL_CONTRACT_GIT_BLOB" != "$EXPECTED_CONTRACT_GIT_BLOB" ]; then
+  echo "M1_R1_CONTRACT_BINDING=FAIL_GIT_BLOB"
+  exit 98
+fi
+
+echo "M1_R1_SCRIPT_BINDING=PASS"
+echo "M1_R1_TEST_BINDING=PASS"
+echo "M1_R1_CONTRACT_BINDING=PASS"
+
+echo
+echo "===== EXACT BRANCH TEST SUITE ====="
+run_all_no /usr/bin/python3 "$TEST"
+TEST_RC=$?
+echo "M1_R1_EXACT_BRANCH_TEST_RC=$TEST_RC"
+if [ "$TEST_RC" -ne 0 ]; then
+  echo "M1_R1_EXACT_BRANCH_TESTS=FAIL"
+  exit 99
+fi
+echo "M1_R1_EXACT_BRANCH_TESTS=PASS_29_OF_29"
+
+echo
+echo "===== REAL WORKSPACE STATIC PREFLIGHT ====="
+run_all_no \
+  /usr/bin/python3 "$SCRIPT" \
+    --repo-root "$REPO_ROOT" \
+    --workspace /srv/data/sableos_panther_graphene_2026081300_workspace \
+    --contract "$CONTRACT"
+
+RC=$?
+echo
+echo "SABLE_M1_R1_RUNNER_RC=$RC"
+exit "$RC"

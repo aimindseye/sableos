@@ -1,89 +1,245 @@
 # SableOS Core Product Integration Track
 
-Status: **planning companion to `ROADMAP.md`**.
+Status: **active product-development roadmap**.
 
-This track turns the normative product model in `CORE_PRODUCT_MODEL.md` into staged implementation gates without disrupting the current Panther substrate bring-up.
+This track turns the normative product model in `CORE_PRODUCT_MODEL.md` and the concrete shell/Hub direction in `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` into staged implementation gates.
 
 The product principle is:
 
 > **Applications provide capabilities; Sable organizes people, attention and actions.**
 
-## Dependency rule
+The current priority is to build the SableOS user experience first. Production signing-host selection, production key generation and OTA-signing finalization are deliberately deferred until release-candidate work makes them necessary.
 
-The product track does not bypass platform bring-up.
+## Current development state
+
+Panther D4 physical acceptance is closed. The Android 17 / GrapheneOS-derived Panther development substrate is proven bootable with preserved shared data and broad functional acceptance.
+
+Current product state:
 
 ```text
-Panther substrate / V0 capability proof
-        -> S1.7 semantic-service port
-        -> modern Sable UI qualification
-        -> core product integration
+SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
+SABLE_FLOW_STATUS=PLANNING_COMPLETE_IMPLEMENTATION_NEXT
+SABLE_START_STATUS=NOT_INTEGRATED
+SABLE_HUB_STATUS=NOT_INTEGRATED
+PRODUCTION_KEYS_GENERATED=NO
+KEY_GENERATION_AUTHORIZED=NO
+SIGNING_AUTHORIZED=NO
+OTA_GENERATION_AUTHORIZED=NO
+SIGNING_HOST_SELECTION=DEFERRED_NON_BLOCKING
 ```
 
-Individual product prototypes may be developed against mocks earlier, but they do not replace AOSP defaults until their Android/platform integration and physical-device gates pass.
+Release engineering remains preserved as a paused parallel track; it does not block product development.
+
+## Dependency rule
+
+Product work still respects Android/platform boundaries:
+
+```text
+validated Panther substrate
+        -> Sable Flow shared primitives
+        -> Sable Start shell prototype
+        -> native phone/people/messages vertical slice
+        -> Sable Hub provider framework
+        -> social capsules / supported provider integrations
+        -> broader product composition
+        -> release-candidate signing/OTA closure
+```
+
+A Sable presentation surface does not receive direct hardware/system authority merely because it displays or requests a capability.
 
 ## CP0 — Core product baseline
 
-Status: **POLICY COMPLETE / IMPLEMENTATION NOT STARTED**.
+Status: **PASS / POLICY COMPLETE**.
 
 Established by:
 
 - `CORE_PRODUCT_MODEL.md`;
+- `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`;
 - ADR-0007;
 - `AOSP_CAPABILITY_POLICY.md`;
+- `INTERACTION_PROFILES.md`;
 - `RELEASE_VALIDATION.md`.
 
 Outputs:
 
 - strategic Sable-owned surface list;
-- AOSP/default-app retain/replace matrix;
-- product-stage build markers;
-- Hub/AOD/Agent trust boundaries;
-- multilingual/local-first voice dependency.
+- retain/replace boundary for AOSP/application capability;
+- people/attention/action product model;
+- Metro-inspired Sable Flow interaction direction;
+- provider/capsule Hub model;
+- product-stage markers;
+- multilingual/local-first voice dependency;
+- release signing explicitly separated from near-term feature work.
 
-## CP1 — Shared semantic shell primitives
+## M1 / CP1 — Sable Flow shell primitives + Sable Start
 
-Prerequisite: modern renderer/framework qualification and stable Android lifecycle integration.
+Status: **NEXT IMPLEMENTATION MILESTONE**.
 
-Build common semantics for:
+Target: Panther / Pixel 7.
 
-- person;
-- conversation;
-- notification/attention item;
-- action;
-- search result;
-- setting/capability;
-- command;
-- focus/navigation;
-- voice/agent request.
+Build reusable Sable Flow primitives:
 
-Touch-first and keyboard-first presentation consume the same semantic model.
+```text
+typography
+accent/theme tokens
+tile layout + tile lifecycle
+live-tile data contract
+pivot/section navigation
+lists/section headers
+motion/transitions
+focus/navigation semantics
+privacy/redaction states
+accessibility semantics
+compact/square layout rules
+keyboard focus/shortcut hooks
+```
 
-## CP2 — Sable Home + Hub foundation
+Sable Start requirements:
 
-Home:
+- vertical Metro-inspired tile surface;
+- large typography and clear information hierarchy;
+- user-selectable accent/theme;
+- live tiles with privacy-aware state;
+- application/service list transition;
+- Phone tile;
+- People tile;
+- Messages tile;
+- Settings tile;
+- Social Hub placeholder tile;
+- Launcher3 retained as development fallback until replacement qualification passes.
 
-- application/task launch;
-- touch/keyboard navigation;
-- explicit links to Hub/Search/Security/Agent;
-- launcher replacement tested with rollback to reference Launcher3 during development.
+M1 is intentionally a real shell/product milestone, not only a renderer demo.
 
-Hub:
+Acceptance:
 
+- deterministic/offline build provenance;
+- normal Android lifecycle/task behavior;
+- no unnecessary privileged hardware authority;
+- process restart/recovery behavior;
+- accessibility semantics;
+- Panther touch interaction;
+- physical-device validation;
+- launcher rollback/fallback during development.
+
+## M2 / CP2 — native phone, people and messages experience
+
+Build the first complete daily-use vertical slice while retaining mature Android transport/enforcement.
+
+### Phone
+
+- Sable presentation over Android Telecom/Telephony;
+- call history;
+- missed-call state/live tile;
+- callback affordances;
+- no direct modem protocol implementation.
+
+### People
+
+- ContactsProvider-backed Sable People surface;
+- local person identity graph;
+- recent/important people presentation;
+- user-confirmed cross-source identity association when ambiguous.
+
+### Messages
+
+- Sable SMS/MMS presentation over retained mature Android/carrier machinery;
+- bounded communication timeline;
+- unread/live-tile state;
+- lock/privacy redaction.
+
+The first useful product should feel coherent without requiring third-party social applications.
+
+## M3 / CP3 — Sable Hub provider framework
+
+Status: **PLANNED AFTER M2 FOUNDATION**.
+
+Hub becomes the common people/communication/service layer.
+
+Provider types:
+
+```text
+NATIVE_DATA
+ANDROID_NOTIFICATION
+SUPPORTED_API
+WEB
+UNAVAILABLE
+```
+
+Provider capability declarations include:
+
+```text
+MESSAGING
+FEED
+PROFILE
+CONTACTS
+SHARE
+NOTIFICATIONS
+DEEP_LINK
+WEB_SESSION
+```
+
+Requirements:
+
+- capability registry;
+- provider lifecycle/account state;
 - Android notification/conversation ingestion;
-- NOW / PEOPLE / APPS / LATER semantic views;
 - application-authorized reply/actions;
 - local evidence-based person linking;
 - bounded local history;
-- lock-screen/privacy redaction.
+- unified share/deep-link semantics;
+- privacy/data-flow disclosure;
+- separate provider session/storage boundaries;
+- no private messaging-app database scraping.
 
-No private messaging-app database scraping.
+The Hub must expose the difference between native/API/web capability rather than pretending every provider is a native universal integration.
 
-## CP3 — Search + Security/Privacy integration
+## M4 / CP4 — social service capsules
+
+Status: **PLANNED**.
+
+Initial service targets:
+
+```text
+WhatsApp
+Instagram
+Facebook
+LinkedIn
+```
+
+The first implementation does not require or promise a native universal client for these services.
+
+Where an appropriate supported consumer API is unavailable, use isolated Sable-managed web capsules with independent provider session state. Official provider API capability must be reverified at implementation time because provider terms and supported account types can change.
+
+Requirements:
+
+- isolated persistent provider sessions;
+- no automatic cross-provider authentication sharing;
+- bounded background/resource behavior;
+- explicit WEB capability classification;
+- Android notification/deep-link integration where intentionally available;
+- no unsupported native/API claims.
+
+## M5 / CP5 — broader Sable core apps + Search/Security
+
+Expand the coherent native phone baseline:
+
+```text
+Camera
+Photos
+Clock / alarms / timers
+Calculator
+Calendar
+Files
+Notes
+Browser
+```
+
+Reuse mature Android capability where appropriate rather than forking every implementation merely for branding.
 
 Search:
 
 - Unicode/multilingual local search;
-- apps, people, conversations, settings and authorized local content;
+- applications, people, conversations, settings and authorized local content;
 - typed command dispatch.
 
 Security/Privacy:
@@ -93,59 +249,72 @@ Security/Privacy:
 - effective Permission/AppOps state;
 - package/signing/component/privacy history.
 
-## CP4 — Sable AOD / Glance
+## M6 / CP6 — AOD, Voice and Agent
 
-Prerequisite: physical display/doze/power baseline on target device.
-
-Validate:
+AOD / Glance:
 
 - time/date/battery;
 - priority Hub indicators;
 - privacy redaction;
 - burn-in mitigation;
-- display refresh/doze residency;
+- display/doze residency;
 - battery impact;
-- disable/failure behavior;
-- touch/keyboard/device-specific wake integration where applicable.
+- graceful disable/failure behavior.
 
-AOD is presentation over the supported Android/vendor display/power stack.
-
-## CP5 — Local-first Voice + Agent
-
-Voice prerequisites are defined by `LANGUAGE_AND_VOICE_POLICY.md`.
-
-Initial production voice requirement:
+Voice/Agent remain local-first and capability-bounded:
 
 ```text
-English local STT/TTS = required
-Hindi local STT/TTS   = required
+text / voice
+    -> semantic intent
+    -> typed capability request
+    -> narrow Sable/Android service
 ```
 
-Agent requirements:
+No generic root shell, arbitrary privileged executor or unrestricted other-app private-data access.
 
-- local-first/default model path where practical;
-- explicit optional remote-provider policy;
-- local user-controlled memory;
-- typed capability allowlist;
-- no generic root shell;
-- no unrestricted other-app/private-files access;
-- Hub/Search/Home integration through semantic actions;
-- voice input/output through the shared Sable voice interface.
+Language requirements remain governed by `LANGUAGE_AND_VOICE_POLICY.md`.
 
-## CP6 — Product composition closure
+## Q25 / Q27 portability track
+
+Sable Flow and Hub are explicitly the common foundation for future QWERTY/compact devices.
+
+Shared semantic objects include:
+
+```text
+tile
+person
+conversation
+provider
+capability
+action
+pivot/section
+focus
+navigation
+search/command
+```
+
+Panther validates the touch-first presentation. Q25 may later validate compact/square and physical-keyboard assumptions as an engineering reference. Q27 remains a future preferred modern QWERTY direction.
+
+Device-specific UI forks are rejected. Form-factor differences belong in interaction/layout profiles consuming shared semantics.
+
+## Release-candidate composition closure
+
+Production release infrastructure returns to the critical path here, not during M1 shell development.
 
 Before release-candidate classification:
 
 - intended default-app matrix is explicit;
-- strategic Sable surfaces intended for the release are installed and validated;
-- retained AOSP surfaces are intentionally retained;
-- removed/replaced AOSP surfaces have capability-parity evidence;
+- required Sable surfaces are installed and validated;
+- retained AOSP surfaces are intentional;
+- removed/replaced surfaces have capability-parity evidence;
 - privacy/data-flow records are complete;
-- multilingual/UI/Indic gates pass;
-- Agent/Voice model/dependency provenance is sealed;
-- AOD physical power/privacy gates pass where the device supports the feature;
-- touch and keyboard interaction profiles consume common semantics;
-- product image contains no accidental duplicate privileged implementation.
+- multilingual/accessibility gates pass;
+- physical power/privacy gates pass for AOD where applicable;
+- touch/keyboard profiles consume common semantics;
+- product image contains no accidental duplicate privileged implementation;
+- signing host / encrypted production keystore / backups are selected and validated;
+- production key generation is separately authorized and sealed;
+- signed target-files/factory/OTA and rollback/recovery gates pass.
 
 Typical closure markers:
 
@@ -159,12 +328,18 @@ SABLEOS_LANGUAGE_BASELINE=PASS
 
 Production adds the signing/security/privacy/update gates in `RELEASE_VALIDATION.md`.
 
-## Current Panther status
-
-Current Panther P1B work remains:
+## Near-term priority order
 
 ```text
-SABLEOS_CORE_PRODUCT_STAGE=SUBSTRATE
+1. M1 Sable Flow shared primitives
+2. M1 Sable Start prototype on Panther
+3. M2 Phone / People / Messages vertical slice
+4. M3 Sable Hub provider capability framework
+5. M4 social web capsules
+6. M5 broader native apps + product polish
+7. Q25/Q27 portability work when hardware/projects justify it
+8. M6 AOD/Voice/Agent as dependencies mature
+9. production signing / OTA finalization before release candidate
 ```
 
-CP0 policy exists now, but CP1+ does not become a blocker until the Panther V0/service/UI prerequisites are closed and Sable-owned user-facing components begin entering the product image.
+This ordering intentionally prioritizes building SableOS as a distinct, useful operating-system experience before optimizing future production distribution machinery.
