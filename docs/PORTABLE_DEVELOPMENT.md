@@ -1,85 +1,35 @@
 # Portable SableOS development
 
-This repository is intended to be sufficient for Sable-owned source, tests and
-build orchestration. It intentionally does not redistribute GrapheneOS/AOSP or
-Pixel proprietary vendor files.
+The SableOS repository is the canonical location for Sable-owned source, tests and build orchestration. GrapheneOS/AOSP and Pixel proprietary vendor inputs remain external upstream inputs.
 
-## New machine
+## Standard new-machine layout
 
-Choose a durable root. The default is:
+Use `/srv/data/sableos` by default, or override `SABLEOS_ROOT`.
 
-```bash
-export SABLEOS_ROOT=/srv/data/sableos
-mkdir -p "$SABLEOS_ROOT"
-git clone https://github.com/aimindseye/sableos.git "$SABLEOS_ROOT/repo"
-cd "$SABLEOS_ROOT/repo"
+```text
+/srv/data/sableos/repo
+/srv/data/sableos/upstream/panther/grapheneos-2026081300
+/srv/data/sableos/build/panther/grapheneos-2026081300
+/srv/data/sableos/evidence/panther
+/srv/data/sableos/host-tools
 ```
 
-Bootstrap the exact upstream release:
+Clone this repository into `repo`, then use `build/panther/bootstrap.sh` to create the exact GrapheneOS 2026081300 upstream checkout. Follow `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` for signed-tag verification and Pixel vendor provisioning.
 
-```bash
-NETWORK_FETCH_AUTHORIZED=YES \
-  ./build/panther/bootstrap.sh
-```
-
-Follow `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` to verify the GrapheneOS signed
-tag and provision Pixel vendor files with `adevtool`.
-
-Once the canonical SableStart snapshot is complete:
-
-```bash
-SOURCE_MUTATION_AUTHORIZED=YES \
-  ./build/panther/sync-sablestart.sh
-```
-
-Run no-build tests:
-
-```bash
-./build/gates/sablestart-r3-prebuild.sh
-
-WS="$SABLEOS_UPSTREAM" \
-  ./tests/sablestart/host/run_unit_tests.sh
-```
-
-Build only SableStart:
-
-```bash
-BUILD_AUTHORIZED=YES \
-  ./build/panther/build-sablestart.sh
-```
-
-Build the Panther target-files set when authorized:
-
-```bash
-BUILD_AUTHORIZED=YES \
-  ./build/panther/build-target-files.sh
-```
+After the canonical SableStart snapshot is complete, use `build/panther/sync-sablestart.sh`, run the host/static gates, and use `build/panther/build-sablestart.sh` for the module-only build. Use `build/panther/build-target-files.sh` for the full Panther target-files set when separately authorized.
 
 ## Current portability gap
 
-The 2026-09-11 R3 review extract contained exact full text for the files already
-committed under `src/android/packages/apps/SableStart`, but only hashes for these
-four unchanged baseline files:
+The repository already contains the build layout, orchestration, tests, R3 live-data model/repository, launcher repository, manifest, module definition and root UI source. Five exact source files still need full-text transfer from the validated workspace before the repository alone can reconstruct SableStart:
 
 ```text
+src/com/sable/start/ui/SableMetroPreviewActivity.kt
 res/values/strings.xml
 src/com/sable/start/SableStartActivity.kt
 src/com/sable/start/bridge/SableStartNative.kt
 src/com/sable/start/model/AppEntry.kt
 ```
 
-Therefore `sync-sablestart.sh` deliberately refuses to claim a complete portable
-snapshot until those exact four files are captured from the validated workspace
-and committed.
+Their expected hashes are recorded in `src/android/packages/apps/SableStart/PORTABILITY_STATUS.md`. The sync script deliberately refuses to run while the snapshot is incomplete.
 
-On the validated machine:
-
-```bash
-APP_DIR=/srv/data/sableos_panther_graphene_2026081300_workspace/packages/apps/SableStart \
-DEST=/path/to/sableos/src/android/packages/apps/SableStart \
-  ./build/panther/capture-sablestart.sh
-```
-
-Review the resulting diff and hashes, then commit the four missing files to main.
-After that closure, a fresh machine can reproduce the complete SableStart module
-from this repository plus the exact upstream GrapheneOS/vendor inputs.
+Use `build/panther/capture-sablestart.sh` on the validated workspace to capture the complete module, review the resulting Git diff and hashes, and commit the remaining files to `main`. Once those five files are present, another machine can reconstruct the full SableStart module from this repository plus the exact upstream GrapheneOS and vendor inputs.
