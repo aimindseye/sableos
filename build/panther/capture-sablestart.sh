@@ -14,18 +14,24 @@ if [[ ! -d "$APP_DIR" ]]; then
 fi
 
 mkdir -p "$DEST"
+
+# Capture the complete module source tree rather than guessing source extensions.
+# Build/cache directories are excluded. Repository-only status/hash files already
+# present in DEST are intentionally preserved for review.
 rsync -a \
-  --include='*/' \
-  --include='*.kt' \
-  --include='*.java' \
-  --include='*.xml' \
-  --include='Android.bp' \
-  --include='Android.mk' \
-  --exclude='*' \
+  --exclude='/.git/' \
+  --exclude='/out/' \
+  --exclude='/build/' \
+  --exclude='/.gradle/' \
+  --exclude='/target/' \
   "$APP_DIR/" "$DEST/"
 
-find "$DEST" -type f -print0 | sort -z | xargs -0 sha256sum > "$DEST/SHA256SUMS.txt"
+find "$DEST" -type f \
+  ! -name 'SHA256SUMS.txt' \
+  -print0 | sort -z | xargs -0 sha256sum > "$DEST/SHA256SUMS.txt"
 
 echo "SABLESTART_CAPTURE=PASS"
+echo "SOURCE=$APP_DIR"
 echo "DEST=$DEST"
-echo "Review git diff before committing. This script never commits automatically."
+echo "NEXT=bash build/panther/verify-sablestart-snapshot.sh"
+echo "Review git status/diff before committing. This script never commits automatically."
