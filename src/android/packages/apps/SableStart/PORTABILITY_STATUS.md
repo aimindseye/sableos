@@ -11,14 +11,14 @@ src/com/sable/start/live/LiveSurfaceModels.kt
 src/com/sable/start/ui/SableStartRoot.kt
 ```
 
-The exact R3 `SableMetroPreviewActivity.kt` is captured and hash-bound in the validated workspace, but its full text has not yet been transferred into this repository snapshot. Expected hash:
+The exact R3 `SableMetroPreviewActivity.kt` is captured and hash-bound in the validated workspace, but its full text has not yet been transferred into this repository snapshot:
 
 ```text
 src/com/sable/start/ui/SableMetroPreviewActivity.kt
   sha256=12db1f5a6fc6584dd462395d5f30f44d8980c4edd92b901bb52f9cb921eca1a2
 ```
 
-Exact unchanged baseline files also still awaiting full-text capture/transfer:
+Exact unchanged baseline files also awaiting full-text transfer:
 
 ```text
 res/values/strings.xml
@@ -34,4 +34,8 @@ src/com/sable/start/model/AppEntry.kt
   sha256=5da0f28b726910a9095ce28d5f7f07c3839ea3c9b497c0033e6c6ac01274e8fe
 ```
 
-`build/panther/sync-sablestart.sh` deliberately refuses to sync until the complete module is present. Do not claim the repository alone can reconstruct the complete SableStart module until these five files are committed.
+`Android.bp` also references `rust/src/lib.rs`. The earlier narrow source capture did not include Rust files, so that source and its exact hash still need to be captured from the validated workspace. A complete-tree capture may reveal additional module assets which must also be committed.
+
+Use `build/panther/capture-sablestart.sh` followed by `build/panther/verify-sablestart-snapshot.sh`. The verifier recursively compares the canonical repository snapshot with the validated workspace and only returns PASS when there are no missing, extra or hash-mismatched module files (apart from repository-only status/hash metadata).
+
+`build/panther/sync-sablestart.sh` deliberately refuses to sync while required source is missing. Do not claim the repository alone can reconstruct the complete SableStart module until the recursive snapshot verifier passes.
