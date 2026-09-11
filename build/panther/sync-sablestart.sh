@@ -18,6 +18,7 @@ required=(
   Android.bp
   AndroidManifest.xml
   res/values/strings.xml
+  rust/src/lib.rs
   src/com/sable/start/SableStartActivity.kt
   src/com/sable/start/bridge/SableStartNative.kt
   src/com/sable/start/model/AppEntry.kt
@@ -42,7 +43,11 @@ if [[ $missing -ne 0 ]]; then
 fi
 
 mkdir -p "$DST"
-rsync -a --delete "$SRC/" "$DST/"
+rsync -a --delete \
+  --exclude='/PORTABILITY_STATUS.md' \
+  --exclude='/SHA256SUMS.txt' \
+  "$SRC/" "$DST/"
+
 echo "SABLESTART_SYNC=PASS"
 echo "SOURCE=$SRC"
 echo "DESTINATION=$DST"
