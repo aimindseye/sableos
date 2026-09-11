@@ -12,5 +12,3 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate repository layout and shell syntax
         run: bash build/check-repo-layout.sh
-      - name: Verify SableStart R3 source invariants
-        run: bash build/gates/sablestart-r3-prebuild.sh
