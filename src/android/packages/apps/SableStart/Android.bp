@@ -1,0 +1,47 @@
+android_app {
+    name: "SableStart",
+    v4_signature: true,
+
+    manifest: "AndroidManifest.xml",
+
+    srcs: [
+        "src/**/*.kt",
+    ],
+
+    resource_dirs: [
+        "res",
+    ],
+
+    sdk_version: "current",
+
+    static_libs: [
+        "androidx.activity_activity-compose",
+        "androidx.compose.runtime_runtime",
+        "androidx.compose.ui_ui",
+        "androidx.compose.foundation_foundation",
+        "androidx.compose.foundation_foundation-layout",
+        "androidx.compose.animation_animation",
+        "androidx.compose.ui_ui-text",
+        "androidx.compose.material3_material3",
+        "androidx.core_core-ktx",
+    ],
+
+    jni_libs: [
+        "libsable_start_core_jni",
+    ],
+
+    kotlincflags: [
+        "-Xjvm-default=all",
+    ],
+}
+
+rust_ffi_shared {
+    name: "libsable_start_core_jni",
+    crate_name: "sable_start_core_jni",
+
+    srcs: [
+        "rust/src/lib.rs",
+    ],
+
+    edition: "2021",
+}
