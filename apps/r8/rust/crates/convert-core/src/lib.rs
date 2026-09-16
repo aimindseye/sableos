@@ -69,9 +69,7 @@ pub fn convert_milli(value_milli: i64, from: Unit, to: Unit) -> Result<i64, Conv
         .checked_mul(from_num)
         .and_then(|value| value.checked_mul(to_den))
         .ok_or(ConvertError::Overflow)?;
-    let denominator = from_den
-        .checked_mul(to_num)
-        .ok_or(ConvertError::Overflow)?;
+    let denominator = from_den.checked_mul(to_num).ok_or(ConvertError::Overflow)?;
     i64::try_from(div_round(numerator, denominator)).map_err(|_| ConvertError::Overflow)
 }
 
