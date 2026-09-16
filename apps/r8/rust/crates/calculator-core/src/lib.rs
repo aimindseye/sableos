@@ -105,11 +105,7 @@ impl ExactNumber {
         Self::new(numerator, denominator)
     }
 
-    pub fn apply(
-        self,
-        operation: BinaryOperation,
-        rhs: Self,
-    ) -> Result<Self, ArithmeticError> {
+    pub fn apply(self, operation: BinaryOperation, rhs: Self) -> Result<Self, ArithmeticError> {
         match operation {
             BinaryOperation::Add => {
                 let left = self
@@ -184,8 +180,8 @@ impl ExactNumber {
         let denominator_magnitude = denominator.unsigned_abs();
         let divisor = gcd(numerator_magnitude, denominator_magnitude);
 
-        let normalized_numerator = i128::try_from(numerator_magnitude / divisor)
-            .map_err(|_| ArithmeticError::Overflow)?;
+        let normalized_numerator =
+            i128::try_from(numerator_magnitude / divisor).map_err(|_| ArithmeticError::Overflow)?;
         let normalized_denominator = i128::try_from(denominator_magnitude / divisor)
             .map_err(|_| ArithmeticError::Overflow)?;
 
@@ -240,7 +236,12 @@ mod tests {
             ExactNumber::new(1, 3).unwrap()
         );
         assert_eq!(
-            quarter.apply(BinaryOperation::Multiply, ExactNumber::parse_decimal("4").unwrap()).unwrap(),
+            quarter
+                .apply(
+                    BinaryOperation::Multiply,
+                    ExactNumber::parse_decimal("4").unwrap(),
+                )
+                .unwrap(),
             one
         );
         assert_eq!(
@@ -266,6 +267,9 @@ mod tests {
     fn interaction_policy_is_not_encoded_in_the_domain() {
         // The core intentionally has no expression evaluator, precedence table,
         // percent key, repeated-equals state, or history store.
-        assert_eq!(ExactNumber::parse_decimal("-2.50").unwrap().to_string(), "-5/2");
+        assert_eq!(
+            ExactNumber::parse_decimal("-2.50").unwrap().to_string(),
+            "-5/2"
+        );
     }
 }
