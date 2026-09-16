@@ -7,12 +7,16 @@ plugins {
 android {
     namespace = "org.sableos.games"
     compileSdk = 36
+    ndkVersion = "30.0.16248370"
     defaultConfig {
         applicationId = "org.sableos.games"
         minSdk = 30
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
     buildFeatures { compose = true }
     compileOptions {
@@ -29,4 +33,26 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
+}
+
+android {
+    sourceSets {
+        getByName("main") {
+            jniLibs.setSrcDirs(
+                listOf(
+                    layout.buildDirectory
+                        .dir("generated/rustJni")
+                        .get()
+                        .asFile
+                )
+            )
+        }
+    }
+}
+
+tasks.matching {
+    it.name.startsWith("merge") &&
+        it.name.endsWith("JniLibFolders")
+}.configureEach {
+    dependsOn(rootProject.tasks.named("stageGamesRustJni"))
 }

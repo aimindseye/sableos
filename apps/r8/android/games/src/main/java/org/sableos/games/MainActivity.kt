@@ -19,6 +19,8 @@ import org.sableos.design.SableTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val nativeQualification = NativeBridge.selfTest()
+        check(nativeQualification.startsWith("PASS:")) { nativeQualification }
         setContent {
             SableTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {

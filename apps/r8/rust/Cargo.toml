@@ -5,4 +5,7 @@ members = [
     "crates/convert-core",
     "crates/games-core",
     "crates/media-domain",
+    "crates/calculator-jni",
+    "crates/convert-jni",
+    "crates/games-jni",
 ]
