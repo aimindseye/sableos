@@ -315,8 +315,7 @@ mod tests {
 
     #[test]
     fn game_2048_merges_once_per_move() {
-        let mut board =
-            game2048::Board::new([2, 2, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+        let mut board = game2048::Board::new([2, 2, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(board.slide(game2048::Direction::Left), 12);
         assert_eq!(&board.cells[0..4], &[4, 8, 0, 0]);
     }
