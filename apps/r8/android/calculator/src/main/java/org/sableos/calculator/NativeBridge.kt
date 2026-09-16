@@ -6,4 +6,10 @@ internal object NativeBridge {
     }
 
     external fun selfTest(): String
+
+    external fun applyBinary(
+        left: String,
+        operation: Int,
+        right: String,
+    ): String
 }

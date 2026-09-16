@@ -6,4 +6,10 @@ internal object NativeBridge {
     }
 
     external fun selfTest(): String
+
+    external fun convertMilli(
+        valueMilli: Long,
+        fromUnit: Int,
+        toUnit: Int,
+    ): String
 }
