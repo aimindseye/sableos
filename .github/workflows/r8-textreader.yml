@@ -1,0 +1,66 @@
+name: R8 Text Reader compile and tests
+
+on:
+  pull_request:
+    paths:
+      - 'apps/r8/textreader/**'
+      - '.github/workflows/r8-textreader.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/r8/textreader/**'
+      - '.github/workflows/r8-textreader.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r8-textreader-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  textreader:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Read pinned upstream identity
+        id: pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          source apps/r8/textreader/upstream.env
+          echo "repository=$VAACHAK_TEXTREADER_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "commit=$VAACHAK_TEXTREADER_COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Checkout pinned Vaachak Text Reader
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-tags --filter=blob:none "${{ steps.pin.outputs.repository }}" /tmp/vaachak-textreader
+          git -C /tmp/vaachak-textreader fetch --depth=1 origin "${{ steps.pin.outputs.commit }}"
+          git -C /tmp/vaachak-textreader checkout --detach "${{ steps.pin.outputs.commit }}"
+          test "$(git -C /tmp/vaachak-textreader rev-parse HEAD)" = "${{ steps.pin.outputs.commit }}"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests
+        working-directory: /tmp/vaachak-textreader
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest --stacktrace --console=plain --no-daemon --no-configuration-cache
+      - name: Build qualification APK
+        working-directory: /tmp/vaachak-textreader
+        run: ./gradlew assembleDebug --stacktrace --console=plain --no-daemon --no-configuration-cache
+      - name: Seal qualification APK
+        working-directory: /tmp/vaachak-textreader
+        shell: bash
+        run: |
+          set -euo pipefail
+          find app/build/outputs/apk/debug -type f -name '*.apk' -print -exec sha256sum {} \;
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r8-textreader-qualification-apk
+          path: /tmp/vaachak-textreader/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
