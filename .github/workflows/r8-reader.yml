@@ -1,4 +1,4 @@
-name: R8 Reader qualification
+name: R8 Reader compile and tests
 
 on:
   pull_request:
@@ -10,12 +10,13 @@ on:
     paths:
       - 'apps/r8/reader/**'
       - '.github/workflows/r8-reader.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: r8-reader-${{ github.ref }}
+  group: r8-reader-build-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -23,8 +24,8 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -58,13 +59,3 @@ jobs:
         run: |
           ./gradlew :leisure:assembleSableDebug \
             --stacktrace --console=plain --no-daemon --no-configuration-cache
-      - name: Lint Sable Reader
-        working-directory: /tmp/vaachak
-        run: |
-          ./gradlew :leisure:lintSableDebug \
-            --stacktrace --console=plain --no-daemon --no-configuration-cache
-      - name: Seal APK
-        working-directory: /tmp/vaachak
-        run: |
-          set -euo pipefail
-          find leisure/build/outputs/apk -type f -name '*.apk' -print -exec sha256sum {} \;

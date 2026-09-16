@@ -1,0 +1,71 @@
+name: R8 APK artifact seal
+
+on:
+  pull_request:
+    paths:
+      - 'apps/r8/android/**'
+      - '.github/workflows/r8-apk-seal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r8-apk-seal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  seal:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Locate Android SDK tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          test -n "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+      - name: Install Android SDK 36
+        shell: bash
+        run: "$SDKMANAGER 'platforms;android-36' 'build-tools;36.0.0'"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build qualification APKs
+        run: >-
+          gradle -p apps/r8/android
+          :calculator:assembleDebug
+          :convert:assembleDebug
+          :games:assembleDebug
+          :media:assembleDebug
+          --stacktrace
+      - name: Seal package identities, permissions and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          AAPT2="$ANDROID_HOME/build-tools/36.0.0/aapt2"
+          test -x "$AAPT2"
+          : > R8_APK_SEALS.txt
+          while IFS= read -r apk; do
+            echo "===== $apk =====" | tee -a R8_APK_SEALS.txt
+            sha256sum "$apk" | tee -a R8_APK_SEALS.txt
+            "$AAPT2" dump badging "$apk" | grep -E '^(package:|application-label:)' | tee -a R8_APK_SEALS.txt
+            "$AAPT2" dump permissions "$apk" | tee -a R8_APK_SEALS.txt
+          done < <(find apps/r8/android -path '*/build/outputs/apk/debug/*.apk' -type f | sort)
+          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: r8-qualification-apks-${{ github.sha }}
+          path: |
+            apps/r8/android/*/build/outputs/apk/debug/*.apk
+            R8_APK_SEALS.txt
+          if-no-files-found: error
+          retention-days: 14

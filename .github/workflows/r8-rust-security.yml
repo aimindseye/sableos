@@ -1,0 +1,41 @@
+name: R8 Rust security
+
+on:
+  pull_request:
+    paths:
+      - 'apps/r8/rust/**'
+      - '.github/workflows/r8-rust-security.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/r8/rust/**'
+      - '.github/workflows/r8-rust-security.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r8-rust-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/r8/rust
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Generate deterministic lockfile
+        run: cargo generate-lockfile
+      - name: Install RustSec audit tool
+        run: cargo install cargo-audit --locked
+      - name: RustSec audit
+        run: cargo audit --deny warnings
+      - name: Dependency inventory
+        run: |
+          cargo metadata --locked --no-deps --format-version 1 > r8-rust-metadata.json
+          cargo tree --locked > r8-rust-dependency-tree.txt
+          cat r8-rust-dependency-tree.txt
