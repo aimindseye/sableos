@@ -1,257 +1,271 @@
-//! Deterministic, offline calculator domain for Sable Calculator.
-//! Values use six fixed decimal places; no binary floating point is used.
+//! Interaction-neutral arithmetic domain for Sable Calculator.
+//!
+//! R8 intentionally does not select handheld immediate-execution semantics,
+//! expression precedence, display precision, percent behavior, history, or
+//! repeated-equals behavior. This crate therefore exposes only exact decimal
+//! parsing and checked binary arithmetic. The Android product layer must supply
+//! the interaction and presentation policy once those requirements are frozen.
 
 use core::fmt;
 
-const SCALE: i128 = 1_000_000;
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Decimal(i128);
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum CalcError {
-    Empty,
+pub enum ArithmeticError {
     InvalidNumber,
-    UnexpectedToken,
     DivisionByZero,
     Overflow,
 }
 
-impl Decimal {
-    pub const ZERO: Self = Self(0);
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BinaryOperation {
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+}
+
+/// Exact rational value produced from a finite decimal input.
+///
+/// The value is normalized after every operation. No floating-point arithmetic
+/// or user-visible rounding policy is embedded in this type.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ExactNumber {
+    numerator: i128,
+    denominator: i128,
+}
+
+impl ExactNumber {
+    pub const ZERO: Self = Self {
+        numerator: 0,
+        denominator: 1,
+    };
 
     #[must_use]
-    pub const fn raw(self) -> i128 {
-        self.0
+    pub const fn numerator(self) -> i128 {
+        self.numerator
     }
 
-    pub fn parse(text: &str) -> Result<Self, CalcError> {
+    #[must_use]
+    pub const fn denominator(self) -> i128 {
+        self.denominator
+    }
+
+    pub fn parse_decimal(text: &str) -> Result<Self, ArithmeticError> {
         let text = text.trim();
         if text.is_empty() {
-            return Err(CalcError::InvalidNumber);
+            return Err(ArithmeticError::InvalidNumber);
         }
-        let (negative, digits) = match text.as_bytes()[0] {
-            b'+' => (false, &text[1..]),
-            b'-' => (true, &text[1..]),
+
+        let (negative, unsigned) = match text.as_bytes().first().copied() {
+            Some(b'+') => (false, &text[1..]),
+            Some(b'-') => (true, &text[1..]),
             _ => (false, text),
         };
-        if digits.is_empty() {
-            return Err(CalcError::InvalidNumber);
+        if unsigned.is_empty() {
+            return Err(ArithmeticError::InvalidNumber);
         }
-        let mut split = digits.split('.');
-        let whole = split.next().unwrap_or_default();
-        let frac = split.next();
-        if split.next().is_some() || whole.is_empty() || !whole.bytes().all(|b| b.is_ascii_digit()) {
-            return Err(CalcError::InvalidNumber);
+
+        let mut parts = unsigned.split('.');
+        let whole = parts.next().unwrap_or_default();
+        let fraction = parts.next();
+        if parts.next().is_some()
+            || whole.is_empty()
+            || !whole.bytes().all(|byte| byte.is_ascii_digit())
+        {
+            return Err(ArithmeticError::InvalidNumber);
         }
-        let whole_value = whole.parse::<i128>().map_err(|_| CalcError::Overflow)?;
-        let mut value = whole_value.checked_mul(SCALE).ok_or(CalcError::Overflow)?;
-        if let Some(frac) = frac {
-            if frac.is_empty() || frac.len() > 6 || !frac.bytes().all(|b| b.is_ascii_digit()) {
-                return Err(CalcError::InvalidNumber);
+
+        let whole_value = whole
+            .parse::<i128>()
+            .map_err(|_| ArithmeticError::Overflow)?;
+
+        let (fraction_value, denominator) = if let Some(fraction) = fraction {
+            if fraction.is_empty() || !fraction.bytes().all(|byte| byte.is_ascii_digit()) {
+                return Err(ArithmeticError::InvalidNumber);
             }
-            let frac_value = frac.parse::<i128>().map_err(|_| CalcError::InvalidNumber)?;
-            let multiplier = 10_i128.pow((6 - frac.len()) as u32);
-            value = value
-                .checked_add(frac_value.checked_mul(multiplier).ok_or(CalcError::Overflow)?)
-                .ok_or(CalcError::Overflow)?;
-        }
-        if negative {
-            value = value.checked_neg().ok_or(CalcError::Overflow)?;
-        }
-        Ok(Self(value))
-    }
-
-    fn checked_add(self, rhs: Self) -> Result<Self, CalcError> {
-        self.0.checked_add(rhs.0).map(Self).ok_or(CalcError::Overflow)
-    }
-
-    fn checked_sub(self, rhs: Self) -> Result<Self, CalcError> {
-        self.0.checked_sub(rhs.0).map(Self).ok_or(CalcError::Overflow)
-    }
-
-    fn checked_mul(self, rhs: Self) -> Result<Self, CalcError> {
-        let product = self.0.checked_mul(rhs.0).ok_or(CalcError::Overflow)?;
-        Ok(Self(div_round(product, SCALE)))
-    }
-
-    fn checked_div(self, rhs: Self) -> Result<Self, CalcError> {
-        if rhs.0 == 0 {
-            return Err(CalcError::DivisionByZero);
-        }
-        let numerator = self.0.checked_mul(SCALE).ok_or(CalcError::Overflow)?;
-        Ok(Self(div_round_signed(numerator, rhs.0)))
-    }
-}
-
-impl fmt::Display for Decimal {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let negative = self.0 < 0;
-        let magnitude = self.0.unsigned_abs();
-        let whole = magnitude / SCALE as u128;
-        let frac = magnitude % SCALE as u128;
-        if negative {
-            write!(f, "-")?;
-        }
-        if frac == 0 {
-            return write!(f, "{whole}");
-        }
-        let mut fractional = format!("{frac:06}");
-        while fractional.ends_with('0') {
-            fractional.pop();
-        }
-        write!(f, "{whole}.{fractional}")
-    }
-}
-
-pub fn evaluate(expression: &str) -> Result<Decimal, CalcError> {
-    let mut parser = Parser::new(expression);
-    if parser.remaining().trim().is_empty() {
-        return Err(CalcError::Empty);
-    }
-    let result = parser.parse_expression()?;
-    parser.skip_ws();
-    if parser.pos != parser.input.len() {
-        return Err(CalcError::UnexpectedToken);
-    }
-    Ok(result)
-}
-
-struct Parser<'a> {
-    input: &'a str,
-    pos: usize,
-}
-
-impl<'a> Parser<'a> {
-    const fn new(input: &'a str) -> Self {
-        Self { input, pos: 0 }
-    }
-
-    fn remaining(&self) -> &str {
-        &self.input[self.pos..]
-    }
-
-    fn skip_ws(&mut self) {
-        while self.pos < self.input.len() && self.input.as_bytes()[self.pos].is_ascii_whitespace() {
-            self.pos += 1;
-        }
-    }
-
-    fn consume(&mut self, token: u8) -> bool {
-        self.skip_ws();
-        if self.input.as_bytes().get(self.pos) == Some(&token) {
-            self.pos += 1;
-            true
+            let digits = u32::try_from(fraction.len()).map_err(|_| ArithmeticError::Overflow)?;
+            let denominator = 10_i128
+                .checked_pow(digits)
+                .ok_or(ArithmeticError::Overflow)?;
+            let value = fraction
+                .parse::<i128>()
+                .map_err(|_| ArithmeticError::Overflow)?;
+            (value, denominator)
         } else {
-            false
+            (0, 1)
+        };
+
+        let mut numerator = whole_value
+            .checked_mul(denominator)
+            .and_then(|value| value.checked_add(fraction_value))
+            .ok_or(ArithmeticError::Overflow)?;
+        if negative {
+            numerator = numerator.checked_neg().ok_or(ArithmeticError::Overflow)?;
+        }
+
+        Self::new(numerator, denominator)
+    }
+
+    pub fn apply(
+        self,
+        operation: BinaryOperation,
+        rhs: Self,
+    ) -> Result<Self, ArithmeticError> {
+        match operation {
+            BinaryOperation::Add => {
+                let left = self
+                    .numerator
+                    .checked_mul(rhs.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                let right = rhs
+                    .numerator
+                    .checked_mul(self.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                let numerator = left.checked_add(right).ok_or(ArithmeticError::Overflow)?;
+                let denominator = self
+                    .denominator
+                    .checked_mul(rhs.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                Self::new(numerator, denominator)
+            }
+            BinaryOperation::Subtract => {
+                let left = self
+                    .numerator
+                    .checked_mul(rhs.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                let right = rhs
+                    .numerator
+                    .checked_mul(self.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                let numerator = left.checked_sub(right).ok_or(ArithmeticError::Overflow)?;
+                let denominator = self
+                    .denominator
+                    .checked_mul(rhs.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                Self::new(numerator, denominator)
+            }
+            BinaryOperation::Multiply => {
+                let numerator = self
+                    .numerator
+                    .checked_mul(rhs.numerator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                let denominator = self
+                    .denominator
+                    .checked_mul(rhs.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                Self::new(numerator, denominator)
+            }
+            BinaryOperation::Divide => {
+                if rhs.numerator == 0 {
+                    return Err(ArithmeticError::DivisionByZero);
+                }
+                let numerator = self
+                    .numerator
+                    .checked_mul(rhs.denominator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                let denominator = self
+                    .denominator
+                    .checked_mul(rhs.numerator)
+                    .ok_or(ArithmeticError::Overflow)?;
+                Self::new(numerator, denominator)
+            }
         }
     }
 
-    fn parse_expression(&mut self) -> Result<Decimal, CalcError> {
-        let mut value = self.parse_term()?;
-        loop {
-            if self.consume(b'+') {
-                value = value.checked_add(self.parse_term()?)?;
-            } else if self.consume(b'-') {
-                value = value.checked_sub(self.parse_term()?)?;
+    fn new(numerator: i128, denominator: i128) -> Result<Self, ArithmeticError> {
+        if denominator == 0 {
+            return Err(ArithmeticError::DivisionByZero);
+        }
+        if numerator == 0 {
+            return Ok(Self::ZERO);
+        }
+
+        let negative = (numerator < 0) ^ (denominator < 0);
+        let numerator_magnitude = numerator.unsigned_abs();
+        let denominator_magnitude = denominator.unsigned_abs();
+        let divisor = gcd(numerator_magnitude, denominator_magnitude);
+
+        let normalized_numerator = i128::try_from(numerator_magnitude / divisor)
+            .map_err(|_| ArithmeticError::Overflow)?;
+        let normalized_denominator = i128::try_from(denominator_magnitude / divisor)
+            .map_err(|_| ArithmeticError::Overflow)?;
+
+        Ok(Self {
+            numerator: if negative {
+                normalized_numerator
+                    .checked_neg()
+                    .ok_or(ArithmeticError::Overflow)?
             } else {
-                return Ok(value);
-            }
-        }
-    }
-
-    fn parse_term(&mut self) -> Result<Decimal, CalcError> {
-        let mut value = self.parse_factor()?;
-        loop {
-            if self.consume(b'*') {
-                value = value.checked_mul(self.parse_factor()?)?;
-            } else if self.consume(b'/') {
-                value = value.checked_div(self.parse_factor()?)?;
-            } else {
-                return Ok(value);
-            }
-        }
-    }
-
-    fn parse_factor(&mut self) -> Result<Decimal, CalcError> {
-        self.skip_ws();
-        if self.consume(b'+') {
-            return self.parse_factor();
-        }
-        if self.consume(b'-') {
-            let value = self.parse_factor()?;
-            return value.0.checked_neg().map(Decimal).ok_or(CalcError::Overflow);
-        }
-        if self.consume(b'(') {
-            let value = self.parse_expression()?;
-            if !self.consume(b')') {
-                return Err(CalcError::UnexpectedToken);
-            }
-            return Ok(value);
-        }
-        self.parse_number()
-    }
-
-    fn parse_number(&mut self) -> Result<Decimal, CalcError> {
-        self.skip_ws();
-        let start = self.pos;
-        let mut seen_digit = false;
-        let mut seen_dot = false;
-        while let Some(byte) = self.input.as_bytes().get(self.pos).copied() {
-            if byte.is_ascii_digit() {
-                seen_digit = true;
-                self.pos += 1;
-            } else if byte == b'.' && !seen_dot {
-                seen_dot = true;
-                self.pos += 1;
-            } else {
-                break;
-            }
-        }
-        if !seen_digit {
-            return Err(CalcError::UnexpectedToken);
-        }
-        Decimal::parse(&self.input[start..self.pos])
+                normalized_numerator
+            },
+            denominator: normalized_denominator,
+        })
     }
 }
 
-fn div_round(numerator: i128, denominator: i128) -> i128 {
-    debug_assert!(denominator > 0);
-    if numerator >= 0 {
-        (numerator + denominator / 2) / denominator
-    } else {
-        -((-numerator + denominator / 2) / denominator)
+impl fmt::Display for ExactNumber {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "{}/{}", self.numerator, self.denominator)
     }
 }
 
-fn div_round_signed(numerator: i128, denominator: i128) -> i128 {
-    let negative = (numerator < 0) ^ (denominator < 0);
-    let n = numerator.unsigned_abs();
-    let d = denominator.unsigned_abs();
-    let rounded = (n + d / 2) / d;
-    if negative { -(rounded as i128) } else { rounded as i128 }
+const fn gcd(mut left: u128, mut right: u128) -> u128 {
+    while right != 0 {
+        let remainder = left % right;
+        left = right;
+        right = remainder;
+    }
+    left
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{ArithmeticError, BinaryOperation, ExactNumber};
 
     #[test]
-    fn precedence_and_parentheses() {
-        assert_eq!(evaluate("2 + 3 * 4").unwrap().to_string(), "14");
-        assert_eq!(evaluate("(2 + 3) * 4").unwrap().to_string(), "20");
+    fn decimal_inputs_are_exact() {
+        let one_tenth = ExactNumber::parse_decimal("0.1").unwrap();
+        let two_tenths = ExactNumber::parse_decimal("0.2").unwrap();
+        assert_eq!((one_tenth.numerator(), one_tenth.denominator()), (1, 10));
+        assert_eq!((two_tenths.numerator(), two_tenths.denominator()), (1, 5));
     }
 
     #[test]
-    fn decimal_is_fixed_point() {
-        assert_eq!(evaluate("0.1 + 0.2").unwrap().to_string(), "0.3");
-        assert_eq!(evaluate("5 / 2").unwrap().to_string(), "2.5");
+    fn four_basic_operations_are_checked_and_exact() {
+        let one = ExactNumber::parse_decimal("1").unwrap();
+        let three = ExactNumber::parse_decimal("3").unwrap();
+        let quarter = ExactNumber::parse_decimal("0.25").unwrap();
+
+        assert_eq!(
+            one.apply(BinaryOperation::Divide, three).unwrap(),
+            ExactNumber::new(1, 3).unwrap()
+        );
+        assert_eq!(
+            quarter.apply(BinaryOperation::Multiply, ExactNumber::parse_decimal("4").unwrap()).unwrap(),
+            one
+        );
+        assert_eq!(
+            one.apply(BinaryOperation::Add, quarter).unwrap(),
+            ExactNumber::new(5, 4).unwrap()
+        );
+        assert_eq!(
+            one.apply(BinaryOperation::Subtract, quarter).unwrap(),
+            ExactNumber::new(3, 4).unwrap()
+        );
     }
 
     #[test]
-    fn unary_and_error_paths() {
-        assert_eq!(evaluate("-(3.5) + 1").unwrap().to_string(), "-2.5");
-        assert_eq!(evaluate("1/0"), Err(CalcError::DivisionByZero));
-        assert_eq!(evaluate(""), Err(CalcError::Empty));
+    fn division_by_zero_fails_closed() {
+        let one = ExactNumber::parse_decimal("1").unwrap();
+        assert_eq!(
+            one.apply(BinaryOperation::Divide, ExactNumber::ZERO),
+            Err(ArithmeticError::DivisionByZero)
+        );
+    }
+
+    #[test]
+    fn interaction_policy_is_not_encoded_in_the_domain() {
+        // The core intentionally has no expression evaluator, precedence table,
+        // percent key, repeated-equals state, or history store.
+        assert_eq!(ExactNumber::parse_decimal("-2.50").unwrap().to_string(), "-5/2");
     }
 }
