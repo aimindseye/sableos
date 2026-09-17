@@ -254,6 +254,36 @@ Device roles:
 
 The Sable Start/Hub data and capability model must remain common across these form factors.
 
+## Security, code quality and performance engineering
+
+SableOS treats security, privacy, correctness, quality, testability, performance and provenance as one engineering system rather than independent release checkboxes.
+
+Core assurance rules include:
+
+- preserve Android sandbox/permission/SELinux/verified-boot boundaries unless a documented architecture change justifies otherwise;
+- least-privilege applications and services, with explicit review of permissions, AppOps, exported components, network/data flows and sensitive storage;
+- **Rust by risk, not Rust by branding**: Rust owns high-value deterministic/parsing/state-machine/security-sensitive domains where it materially reduces risk; Android/Kotlin owns lifecycle, permissions, accessibility and framework-facing behavior where that is safer;
+- narrow typed JNI/AIDL boundaries with explicit ownership, validation, error and panic/exception contracts;
+- OWASP MASVS/MASTG-aligned mobile-security requirements/evidence rather than generic scanner-only security claims;
+- layered static analysis and code-quality checks including CodeQL, Android Lint, MobSF/mobsfscan, Rust Clippy and additional deterministic policy checks;
+- Rust dependency/advisory/license/source controls, Gradle dependency verification/locking, immutable GitHub Action pinning and artifact provenance;
+- source-based coverage reporting for Rust/Kotlin with a baseline/ratchet policy rather than arbitrary vanity percentages;
+- targeted property/fuzz testing for parsers, FFI boundaries, state machines and other high-risk deterministic code;
+- Compose/instrumentation/UIAutomator testing plus exact physical-device acceptance;
+- 16 KiB native compatibility verification for accepted Android-native artifacts;
+- measured startup, frame/jank, memory, CPU/I/O and power behavior where applicable; optimizations do not override privacy, accessibility or correctness without explicit review;
+- reproducible fresh-build reconstruction from exact source/toolchain identities rather than dependence on one historical OUT directory.
+
+The private canonical CI/build pipeline is being hardened to consolidate these controls before the next large implementation expansion. Planned controls are documented as planned until enforcement evidence exists; the project does not claim that a green scanner, high coverage or use of Rust means "vulnerability free."
+
+The organization-wide normative policy is maintained in `sableos-project/.github/docs/SECURITY_QUALITY_ENGINEERING.md` together with `CI_TRUST_ARCHITECTURE.md` and `RUST_APPLICATION_ARCHITECTURE.md`.
+
+## Private source and trusted CI
+
+Sable-owned implementation source is intended to have one private canonical Git authority. Disposable GitHub-hosted PR CI is separated from trusted Android/app artifact builds. The trusted development builder executes only accepted source/tool identities and must not run arbitrary unreviewed PR code in its persistent workspace.
+
+Production signing material is excluded from ordinary CI and from the development builder. Persistent private-source/runner storage, branch protection, immutable CI dependency pinning, secret scanning, dependency provenance and self-hosted-runner isolation are part of the infrastructure hardening required before the private pipeline is considered fully commissioned.
+
 ## Release signing
 
 Production signing/OTA engineering is intentionally **paused and non-blocking** while product features are developed.
@@ -277,6 +307,7 @@ Runtime milestones close on evidence, not compilation alone:
 ```text
 source guards
  -> targeted tests
+ -> static/security/coverage evidence
  -> affected build
  -> generated-artifact audit
  -> compiled policy audit
@@ -288,7 +319,7 @@ source guards
  -> fallback/recovery validation
 ```
 
-Power, thermal, scheduler, memory, modem and lifecycle tuning remain measurement-driven.
+Power, thermal, scheduler, memory, modem and lifecycle tuning remain measurement-driven. Performance work uses representative device measurements and regression baselines rather than assumptions about implementation language.
 
 ## Documentation
 
@@ -301,3 +332,4 @@ Start with:
 - `docs/ARCHITECTURE.md` — platform/service layering and privilege boundaries.
 - `docs/SECURITY_MODEL.md` — trust/SELinux/IPC model.
 - `docs/DOCUMENTATION_INDEX.md` — broader documentation index.
+- organization `SECURITY_QUALITY_ENGINEERING.md` — security, quality, coverage, fuzzing, supply-chain and performance policy.
