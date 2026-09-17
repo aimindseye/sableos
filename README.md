@@ -129,6 +129,42 @@ Sable Flow shared primitives
 
 See `CURRENT_STATUS.md` and `docs/CORE_PRODUCT_ROADMAP.md`.
 
+## CI qualification status
+
+This is a dated qualification snapshot for the stacked R8 infrastructure work as of **2026-09-17**. It records what has been proven on the draft integration stack; it does **not** claim these controls are already merged into `main`.
+
+Current stack:
+
+```text
+PR #7  R8 qualified source
+  -> PR #9  INFRA2B1 deterministic CI
+  -> PR #10 INFRA2B2 security baseline
+  -> INFRA2B3 quality + coverage baseline
+```
+
+| CI process | Status | Qualified evidence |
+| --- | --- | --- |
+| Repository structure | **PASS** | B2-R1 head `6f28c629...` |
+| R8 Rust correctness | **PASS** | B2-R1 head `6f28c629...` |
+| R8 Rust security / cargo-audit | **PASS** | B2-R1 head `6f28c629...` |
+| CI trust policy | **PASS** | B2-R1 head `6f28c629...` |
+| R8 Android compile and tests | **PASS** | INFRA2B1 head `213b29bd...` |
+| R8 Android static analysis / Android Lint | **PASS** | INFRA2B1 head `213b29bd...` |
+| R8 APK artifact seal | **PASS** | INFRA2B1 head `213b29bd...` |
+| R8 Reader compile and tests | **PASS** | INFRA2B1 head `213b29bd...` |
+| R8 Reader static and capability policy | **PASS** | INFRA2B1 head `213b29bd...` |
+| R8 Text Reader compile and tests | **PASS** | INFRA2B1 head `213b29bd...` |
+| R8 Text Reader static and capability policy | **PASS** | INFRA2B1 head `213b29bd...` |
+| Gitleaks secret-history scan | **PASS** | B2-R1 head `6f28c629...` |
+| MobSF Android source scan | **PASS / BASELINE** | Scanner execution passed; 14 findings retained for classification |
+| cargo-deny advisory / ban / source policy | **PASS** | B2-R1 head `6f28c629...` |
+| detekt Kotlin static analysis | **PENDING** | Introduced by INFRA2B3; initial findings are baseline-only |
+| ktlint Kotlin style analysis | **PENDING** | Introduced by INFRA2B3; initial findings are baseline-only |
+| Kover Kotlin coverage | **PENDING** | INFRA2B3 baseline; no arbitrary percentage threshold |
+| cargo-llvm-cov Rust coverage | **PENDING** | INFRA2B3 baseline; no arbitrary percentage threshold |
+
+Scanner success means the configured scanner executed successfully under its current policy; it does not mean the codebase is vulnerability-free. Coverage is introduced as a measured baseline first, then ratcheted with module-specific thresholds after evidence exists.
+
 ## Current reference target
 
 Active development:
