@@ -20,11 +20,13 @@ concurrency:
 
 jobs:
   textreader:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v5
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
           java-version: '17'
@@ -44,7 +46,7 @@ jobs:
           git -C /tmp/vaachak-textreader fetch --depth=1 origin "${{ steps.pin.outputs.commit }}"
           git -C /tmp/vaachak-textreader checkout --detach "${{ steps.pin.outputs.commit }}"
           test "$(git -C /tmp/vaachak-textreader rev-parse HEAD)" = "${{ steps.pin.outputs.commit }}"
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
       - name: Unit tests
         working-directory: /tmp/vaachak-textreader
         run: |
@@ -59,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           find app/build/outputs/apk/debug -type f -name '*.apk' -print -exec sha256sum {} \;
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: r8-textreader-qualification-apk
           path: /tmp/vaachak-textreader/app/build/outputs/apk/debug/*.apk
