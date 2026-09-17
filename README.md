@@ -139,7 +139,7 @@ Current stack:
 PR #7  R8 qualified source
   -> PR #9  INFRA2B1 deterministic CI
   -> PR #10 INFRA2B2 security baseline
-  -> INFRA2B3 quality + coverage baseline
+  -> PR #11 INFRA2B3 quality + coverage baseline
 ```
 
 | CI process | Status | Qualified evidence |
@@ -158,12 +158,14 @@ PR #7  R8 qualified source
 | Gitleaks secret-history scan | **PASS** | B2-R1 head `6f28c629...` |
 | MobSF Android source scan | **PASS / BASELINE** | Scanner execution passed; 14 findings retained for classification |
 | cargo-deny advisory / ban / source policy | **PASS** | B2-R1 head `6f28c629...` |
-| detekt Kotlin static analysis | **PENDING** | Introduced by INFRA2B3; initial findings are baseline-only |
-| ktlint Kotlin style analysis | **PENDING** | Introduced by INFRA2B3; initial findings are baseline-only |
-| Kover Kotlin coverage | **PENDING** | INFRA2B3 baseline; no arbitrary percentage threshold |
-| cargo-llvm-cov Rust coverage | **PENDING** | INFRA2B3 baseline; no arbitrary percentage threshold |
+| detekt Kotlin static analysis | **PASS / BASELINE** | PR #11 head `5038b571...`; 60 findings retained (51 MagicNumber, 5 LongMethod, 4 FunctionNaming) |
+| ktlint Kotlin style analysis | **PASS / BASELINE** | PR #11 head `5038b571...`; 52 style findings retained for cleanup |
+| Kover Kotlin coverage | **PASS / BASELINE** | `:design` line coverage 30.77% (16/52); no percentage gate |
+| cargo-llvm-cov Rust coverage | **PASS / BASELINE** | Rust line coverage 71.90% (952/1324); no percentage gate |
 
 Scanner success means the configured scanner executed successfully under its current policy; it does not mean the codebase is vulnerability-free. Coverage is introduced as a measured baseline first, then ratcheted with module-specific thresholds after evidence exists.
+
+INFRA2B3 qualification on PR #11 completed successfully for head `5038b57112ec321de3ba1f57d4aeee19622ad379`; the quality and coverage workflow also preserved its generated reports as GitHub Actions artifacts.
 
 ## Current reference target
 
