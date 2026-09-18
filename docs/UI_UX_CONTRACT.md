@@ -44,6 +44,9 @@ Shared primitives currently include:
 - `SableSize`
 - `SableColorTokens`
 - `SableScreen`
+- `SableScrollableScreen`
+- `SablePanel`
+- `SableActionButton`
 - `SablePageHeader`
 - `SableSectionHeader`
 - `SableListRow`
@@ -82,11 +85,16 @@ Screens should extend these primitives before introducing local visual conventio
 - Section titles, rows, toggles, warnings and destructive actions must use the same hierarchy and spacing as first-party apps.
 - Security/privacy explanations remain explicit; visual cleanup must not hide technical meaning.
 - Search/result rows display human-readable labels first.
+- The Applications list should expose a concise privacy/security summary under each app name based on **currently granted/effective access**, not every permission merely declared in the manifest.
+- Summaries should prioritize sensitive access such as Camera, Microphone, Location, Contacts, Phone/SMS, Nearby devices/Bluetooth, Photos/Media/Files, and high-impact special access such as Accessibility, Device admin, VPN, Notification access, Usage access, Draw over other apps, Install unknown apps, and unrestricted background/battery exceptions where relevant.
+- Keep the list scannable: show up to three sensitive access labels, then `+N more`; show `No sensitive access` when none is currently granted.
+- Tapping an application opens the full app-permission/security detail surface where each grant/special access can be inspected and changed through the appropriate Android controls.
+- Color is supplemental only: neutral granted access uses normal secondary text; exceptional/high-impact access may use the Sable accent/warning treatment, but the permission name must remain explicit.
 
 ### First-party apps
 
 - Calculator: Regular, Scientific and Converter are modes within one product shell.
-- Games: each game should present as a professional game experience rather than a developer test card.
+- Games: each game should present as a professional game experience rather than a developer test card. Shared game screens may be developed together, but the product target remains separate Sudoku, Minesweeper and 2048 launcher APKs.
 - Media: use a media-library/player hierarchy influenced by Zune/modern Windows media design while retaining Sable typography, spacing and state rules.
 - Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent.
 
@@ -94,7 +102,8 @@ Screens should extend these primitives before introducing local visual conventio
 
 ```text
 UI1  shared Sable Design System + Start reference screen
-UI2  Calculator + Games + Media migration
+UI2  Calculator + Media + touch-first game-screen migration
+UI2G separate Sudoku / Minesweeper / 2048 APK shells
 UI3  Reader/Text Reader composition and reading controls
 UI4  SystemUI pulldown / quick settings / notifications / media controls
 UI5  SetupWizard + Settings + system dialogs + visible branding cleanup

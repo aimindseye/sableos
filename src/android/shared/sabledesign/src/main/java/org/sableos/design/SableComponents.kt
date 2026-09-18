@@ -2,6 +2,8 @@ package org.sableos.design
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -45,6 +49,75 @@ fun SableScreen(
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
             content = content,
         )
+    }
+}
+
+
+@Composable
+fun SableScrollableScreen(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = SableSpacing.ScreenHorizontal,
+                    vertical = SableSpacing.ScreenVertical,
+                ),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+            content = content,
+        )
+    }
+}
+
+@Composable
+fun SablePanel(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(SableSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+            content = content,
+        )
+    }
+}
+
+@Composable
+fun SableActionButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    primary: Boolean = true,
+    onClick: () -> Unit,
+) {
+    if (primary) {
+        Button(
+            onClick = onClick,
+            modifier = modifier.heightIn(min = SableSize.TouchTarget),
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            Text(text)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier.heightIn(min = SableSize.TouchTarget),
+            shape = MaterialTheme.shapes.medium,
+        ) {
+            Text(text)
+        }
     }
 }
 
