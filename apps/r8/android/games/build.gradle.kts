@@ -8,8 +8,8 @@ android {
     namespace = "org.sableos.games"
     compileSdk = 36
     ndkVersion = "30.0.16248370"
+
     defaultConfig {
-        applicationId = "org.sableos.games"
         minSdk = 30
         targetSdk = 36
         versionCode = 1
@@ -18,24 +18,45 @@ android {
             abiFilters += "arm64-v8a"
         }
     }
-    buildFeatures { compose = true }
+
+    flavorDimensions += "game"
+    productFlavors {
+        create("sudoku") {
+            dimension = "game"
+            applicationId = "org.sableos.sudoku"
+            resValue("string", "app_name", "Sable Sudoku")
+            buildConfigField("String", "SABLE_GAME", "\"sudoku\"")
+        }
+        create("minesweeper") {
+            dimension = "game"
+            applicationId = "org.sableos.minesweeper"
+            resValue("string", "app_name", "Sable Minesweeper")
+            buildConfigField("String", "SABLE_GAME", "\"minesweeper\"")
+        }
+        create("game2048") {
+            dimension = "game"
+            applicationId = "org.sableos.game2048"
+            resValue("string", "app_name", "Sable 2048")
+            buildConfigField("String", "SABLE_GAME", "\"2048\"")
+        }
+    }
+
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
-}
 
-dependencies {
-    implementation(project(":design"))
-    implementation(platform("androidx.compose:compose-bom:2026.02.01"))
-    implementation("androidx.activity:activity-compose:1.12.4")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.foundation:foundation")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-}
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        }
+    }
 
-android {
     sourceSets {
         getByName("main") {
             jniLibs.setSrcDirs(
@@ -48,6 +69,15 @@ android {
             )
         }
     }
+}
+
+dependencies {
+    implementation(project(":design"))
+    implementation(platform("androidx.compose:compose-bom:2026.02.01"))
+    implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.foundation:foundation")
+    debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
 tasks.matching {
