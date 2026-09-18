@@ -85,6 +85,11 @@ Screens should extend these primitives before introducing local visual conventio
 - Section titles, rows, toggles, warnings and destructive actions must use the same hierarchy and spacing as first-party apps.
 - Security/privacy explanations remain explicit; visual cleanup must not hide technical meaning.
 - Search/result rows display human-readable labels first.
+- The Applications list should expose a concise privacy/security summary under each app name based on **currently granted/effective access**, not every permission merely declared in the manifest.
+- Summaries should prioritize sensitive access such as Camera, Microphone, Location, Contacts, Phone/SMS, Nearby devices/Bluetooth, Photos/Media/Files, and high-impact special access such as Accessibility, Device admin, VPN, Notification access, Usage access, Draw over other apps, Install unknown apps, and unrestricted background/battery exceptions where relevant.
+- Keep the list scannable: show up to three sensitive access labels, then `+N more`; show `No sensitive access` when none is currently granted.
+- Tapping an application opens the full app-permission/security detail surface where each grant/special access can be inspected and changed through the appropriate Android controls.
+- Color is supplemental only: neutral granted access uses normal secondary text; exceptional/high-impact access may use the Sable accent/warning treatment, but the permission name must remain explicit.
 
 ### First-party apps
 
