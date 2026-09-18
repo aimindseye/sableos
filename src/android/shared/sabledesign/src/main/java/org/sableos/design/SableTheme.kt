@@ -70,6 +70,9 @@ object SableSpacing {
     val Xl = 24.dp
     val Xxl = 32.dp
     val Xxxl = 48.dp
+
+    val ScreenHorizontal = SableDesignContract.SCREEN_HORIZONTAL_PADDING_DP.dp
+    val ScreenVertical = SableDesignContract.SCREEN_VERTICAL_PADDING_DP.dp
 }
 
 object SableSize {
