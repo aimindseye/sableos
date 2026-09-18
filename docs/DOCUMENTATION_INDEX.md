@@ -4,7 +4,8 @@
 
 For the current project state and active product direction:
 
-- `../CURRENT_STATUS.md` — current validated Panther state, paused R1 release work, active Sable Flow milestone, and non-Pixel planning state.
+- `../CURRENT_STATUS.md` — current execution handoff, R8 implementation/build-prep priority, paused release work, and validated Panther state.
+- `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
 - `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
@@ -82,6 +83,9 @@ Q27_ROLE                            FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFI
 Q25_ROLE                            OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
+INFRA5_TRUSTED_RUNNER              DEFERRED_NON_BLOCKING
+TRUSTED_SELF_HOSTED_RUNNER         DISABLED
+SOURCE_BUILD_STORAGE_ENCRYPTED     NO
 PRODUCTION_KEYS_GENERATED          NO
 KEY_GENERATION_AUTHORIZED          NO
 SIGNING_AUTHORIZED                 NO
@@ -109,6 +113,8 @@ R1 release-engineering records:
 - `NON_PIXEL_RELEASE_VALIDATION.md` — additional N0/N1/N2 gates for non-Pixel kernel/BSP/vendor/firmware provenance, ABI shims, 5G/IMS, AVB, recovery, physical variants and release claims.
 
 Production signing/OTA work is intentionally paused during current UI/feature development. Completed release identity and source-mutation evidence remains valid; no production private key has been generated.
+
+Trusted self-hosted runner activation is likewise deferred. Current CI remains GitHub-hosted; the unencrypted `ai-g732` Sable build volume is not accepted as a trusted release-runner environment. INFRA5 should be reopened with production signing/release hardening.
 
 ## Frozen architecture / validation references
 
