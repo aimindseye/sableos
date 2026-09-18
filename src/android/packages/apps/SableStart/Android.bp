@@ -6,6 +6,7 @@ android_app {
 
     srcs: [
         "src/**/*.kt",
+        ":sable_design_shared_srcs",
     ],
 
     resource_dirs: [
