@@ -6,6 +6,7 @@ For the current project state and active product direction:
 
 - `../CURRENT_STATUS.md` — current execution handoff, R8 implementation/build-prep priority, paused release work, and validated Panther state.
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
+- `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
 - `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
