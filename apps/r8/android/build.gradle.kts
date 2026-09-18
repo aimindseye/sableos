@@ -137,19 +137,21 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
 fun registerRustJniStage(
     taskName: String,
     projectPath: String,
-    libraryName: String,
+    vararg libraryNames: String,
 ) {
     tasks.register<Copy>(taskName) {
         group = "build"
-        description = "Stage $libraryName for $projectPath"
+        description = "Stage Rust JNI libraries for $projectPath"
 
         dependsOn(buildRustJniArm64)
 
-        from(
-            rustTargetDir.map {
-                it.file("$rustTargetTriple/release/$libraryName")
-            }
-        )
+        libraryNames.forEach { libraryName ->
+            from(
+                rustTargetDir.map {
+                    it.file("$rustTargetTriple/release/$libraryName")
+                }
+            )
+        }
 
         into(
             project(projectPath)
@@ -164,11 +166,6 @@ registerRustJniStage(
     "stageCalculatorRustJni",
     ":calculator",
     "libsable_calculator_jni.so",
-)
-
-registerRustJniStage(
-    "stageConvertRustJni",
-    ":convert",
     "libsable_convert_jni.so",
 )
 

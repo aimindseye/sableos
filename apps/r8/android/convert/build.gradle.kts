@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
@@ -9,11 +9,7 @@ android {
     compileSdk = 36
     ndkVersion = "30.0.16248370"
     defaultConfig {
-        applicationId = "org.sableos.convert"
         minSdk = 30
-        targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -26,6 +22,12 @@ android {
     kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        variantBuilder.enableAndroidTest = false
+    }
+}
+
 dependencies {
     implementation(project(":design"))
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
@@ -33,26 +35,4 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
-}
-
-android {
-    sourceSets {
-        getByName("main") {
-            jniLibs.setSrcDirs(
-                listOf(
-                    layout.buildDirectory
-                        .dir("generated/rustJni")
-                        .get()
-                        .asFile
-                )
-            )
-        }
-    }
-}
-
-tasks.matching {
-    it.name.startsWith("merge") &&
-        it.name.endsWith("JniLibFolders")
-}.configureEach {
-    dependsOn(rootProject.tasks.named("stageConvertRustJni"))
 }

@@ -52,7 +52,6 @@ jobs:
         run: >-
           gradle -p apps/r8/android
           :calculator:assembleDebug
-          :convert:assembleDebug
           :games:assembleDebug
           :media:assembleDebug
           --stacktrace
@@ -69,7 +68,7 @@ jobs:
             "$AAPT2" dump badging "$apk" | grep -E '^(package:|application-label:)' | tee -a R8_APK_SEALS.txt
             "$AAPT2" dump permissions "$apk" | tee -a R8_APK_SEALS.txt
           done < <(find apps/r8/android -path '*/build/outputs/apk/debug/*.apk' -type f | sort)
-          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 4
+          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 3
       - name: Generate deterministic artifact provenance and Rust SBOM
         run: >-
           python3 build/generate-supply-chain-evidence.py
