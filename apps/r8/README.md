@@ -84,7 +84,7 @@ The Android shells establish package identity, lifecycle, Compose/design consump
 
 Sable Convert is no longer intended to be a separate launcher-visible APK. The `:convert` Android module is an internal Calculator feature library, and Sable Calculator owns the Regular, Scientific, and Converter surfaces. The qualification APK set is therefore Calculator, Games, and Media, with Reader qualified through its separate pinned upstream lanes.
 
-The next implementation/build-preparation tranche after Calculator consolidation is professional per-game presentation, Media product UX, and Reader/Text Reader composition work, followed by the existing standalone qualification and exact artifact-freeze gates.
+UI2 is migrating Calculator, Converter, Games and Media onto the shared Sable design contract. The Games module now hosts reusable touch-first Sudoku, Minesweeper and 2048 screens; those screens are transitional shared implementation and do not change the product requirement for three separate launcher APKs. The separate game APK shells are the UI2G follow-on before final product integration. Reader/Text Reader composition follows UI2/UI2G, then the existing standalone qualification and exact artifact-freeze gates apply.
 
 Reader capability qualification remains distinct from Reader composition: Vaachak Mobile and Vaachak Text Reader may both pass independently without proving that one Sable Reader APK contains both paths or that its final manifest satisfies Sable privacy policy.
 
