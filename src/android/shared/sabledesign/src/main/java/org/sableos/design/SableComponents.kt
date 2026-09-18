@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 
 @Composable
 fun SableScreen(
@@ -181,7 +182,7 @@ fun SableTile(
         shape = MaterialTheme.shapes.medium,
         color = container,
         contentColor = content,
-        tonalElevation = androidx.compose.ui.unit.Dp.Unspecified,
+        tonalElevation = 0.dp,
     ) {
         Column(
             modifier = Modifier
