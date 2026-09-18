@@ -57,14 +57,17 @@ jobs:
               'DEVICE_REBOOT_AUTHORIZED',
               'FLASH_AUTHORIZED',
               'SLOT_CHANGE_AUTHORIZED',
+              'FASTBOOT_PACKAGE_CONTRACT=PASS',
+              'FASTBOOT_MINIMUM_REQUIRED',
               'TARGET_INACTIVE_SLOT',
-              'flash "system_$target_slot"',
-              'flash "product_$target_slot"',
-              'flash "system_ext_$target_slot"',
-              'flash "vbmeta_$target_slot"',
-              'set_active "$target_slot"',
+              '--slot="$target_slot"',
+              '--skip-secondary',
+              '--skip-reboot',
+              'update "$IMAGE_ZIP"',
+              'FASTBOOT_UPDATE_WIPE=NO',
               'USERDATA_WIPE=NONE',
               'METADATA_WIPE=NONE',
+              'ROLLBACK_SLOT_UNTOUCHED_BY_SECONDARY_FLASH',
           )
           for token in required:
               if token not in text:
@@ -72,22 +75,27 @@ jobs:
 
           forbidden = (
               "fastboot -w",
+              ' -w ',
               " erase userdata",
               " erase metadata",
               " format userdata",
               " format metadata",
               'flash "userdata',
               'flash "metadata',
+              'flash "system_$target_slot"',
+              'flash "product_$target_slot"',
+              'flash "system_ext_$target_slot"',
+              'flash "vbmeta_$target_slot"',
           )
           for token in forbidden:
               if token in text:
-                  raise SystemExit(f"forbidden destructive flash token: {token}")
+                  raise SystemExit(f"forbidden partial/destructive flash token: {token}")
 
-          system_ext = text.index('flash "system_ext_$target_slot"')
-          vbmeta = text.index('flash "vbmeta_$target_slot"')
-          set_active = text.index('set_active "$target_slot"')
-          if not system_ext < vbmeta < set_active:
-              raise SystemExit("vbmeta-last/set-active ordering contract violated")
+          update = text.index('update "$IMAGE_ZIP"')
+          post_check = text.index('POST_FLASH_CURRENT_SLOT=')
+          reboot = text.rindex('"${FB[@]}" reboot')
+          if not update < post_check < reboot:
+              raise SystemExit("update/post-flash-check/reboot ordering contract violated")
 
           print("UI_PREVIEW_FLASH_SAFETY_STATIC=PASS")
           PY
