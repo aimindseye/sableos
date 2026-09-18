@@ -52,7 +52,26 @@ BASELINE_BLOBS = {
 }
 
 UI4_DIRT = {f" M {path.as_posix()}" for path in BASELINE_BLOBS}
-BRANDING_DIRT = {" M core/res/assets/images/android-logo-mask.png"}
+
+BRANDING_PATH = Path("core/res/assets/images/android-logo-mask.png")
+BRANDING_BLOB = "bec81216db3ed6976f305fd496ed757f0788f702"
+BRANDING_DIRT = {f" M {BRANDING_PATH.as_posix()}"}
+
+SABLE_SECURITY_PATH = Path("core/res/res/values/config_ext.xml")
+SABLE_SECURITY_BLOB = "8264085d12533d294eab24aae55ca40830bfb62b"
+SABLE_SECURITY_DIRT = {f" M {SABLE_SECURITY_PATH.as_posix()}"}
+
+KNOWN_PREEXISTING_BLOBS = {
+    BRANDING_PATH: BRANDING_BLOB,
+    SABLE_SECURITY_PATH: SABLE_SECURITY_BLOB,
+}
+
+ALLOWED_PREEXISTING_SCOPES = (
+    set(),
+    BRANDING_DIRT,
+    SABLE_SECURITY_DIRT,
+    BRANDING_DIRT | SABLE_SECURITY_DIRT,
+)
 
 PATCHES: dict[Path, tuple[tuple[str, str], ...]] = {
     COMMON_TILE: (
@@ -265,11 +284,30 @@ def assert_head(source: Path) -> None:
         raise SystemExit(f"FRAMEWORK_HEAD_MISMATCH expected={FRAMEWORK_HEAD} actual={actual}")
 
 
+def assert_known_preexisting_blobs(source: Path, dirt: set[str]) -> None:
+    repo = framework(source)
+    for rel, expected in KNOWN_PREEXISTING_BLOBS.items():
+        marker = f" M {rel.as_posix()}"
+        if marker not in dirt:
+            continue
+        actual = run_git(repo, "hash-object", rel.as_posix())
+        if actual != expected:
+            raise SystemExit(
+                f"PREEXISTING_FRAMEWORK_BLOB_MISMATCH={rel} "
+                f"expected={expected} actual={actual}"
+            )
+
+
 def assert_preexisting_scope(source: Path) -> set[str]:
     dirt = status_set(source)
-    if dirt == set() or dirt == BRANDING_DIRT:
-        return dirt
-    raise SystemExit(f"UNEXPECTED_PREEXISTING_FRAMEWORK_DIRT={sorted(dirt)!r}")
+    if dirt not in ALLOWED_PREEXISTING_SCOPES:
+        raise SystemExit(f"UNEXPECTED_PREEXISTING_FRAMEWORK_DIRT={sorted(dirt)!r}")
+    assert_known_preexisting_blobs(source, dirt)
+    if SABLE_SECURITY_DIRT <= dirt:
+        print("UI4_PREEXISTING_SABLE_SECURITY_DELTA=PASS")
+    if BRANDING_DIRT <= dirt:
+        print("UI4_PREEXISTING_SABLE_BRANDING_DELTA=PASS")
+    return dirt
 
 
 def assert_baseline_blobs(source: Path) -> None:
@@ -342,12 +380,13 @@ def verify_visual_delta(source: Path) -> None:
             raise SystemExit(f"UI4_MEDIA_BEHAVIOR_OR_SEMANTICS_TOKEN_MISSING={token!r}")
 
     dirt = status_set(source)
-    valid = (UI4_DIRT, UI4_DIRT | BRANDING_DIRT)
+    valid = tuple(UI4_DIRT | scope for scope in ALLOWED_PREEXISTING_SCOPES)
     if dirt not in valid:
         raise SystemExit(
             f"UI4_DIRTY_SCOPE_MISMATCH actual={sorted(dirt)!r} "
             f"expected_one_of={[sorted(v) for v in valid]!r}"
         )
+    assert_known_preexisting_blobs(source, dirt)
 
     print("UI4_R1_QS_THEME_GEOMETRY=PASS")
     print("UI4_R1_COMPACT_QS_SPACING=PASS")
@@ -397,8 +436,13 @@ def self_test() -> None:
 
     if set(PATCHES) != set(BASELINE_BLOBS):
         raise SystemExit("SELF_TEST_MUTATION_SET_NOT_EQUAL_TO_PINNED_SET")
+    if SABLE_SECURITY_BLOB != "8264085d12533d294eab24aae55ca40830bfb62b":
+        raise SystemExit("SELF_TEST_SABLE_SECURITY_BLOB_PIN_MISMATCH")
+    if BRANDING_BLOB != "bec81216db3ed6976f305fd496ed757f0788f702":
+        raise SystemExit("SELF_TEST_BRANDING_BLOB_PIN_MISMATCH")
 
     print("UI4_R1_R2_R3_PINNED_MUTATION_SET=PASS")
+    print("UI4_KNOWN_PREEXISTING_BLOB_PINS=PASS")
     print("UI4_R1_R2_R3_REPLACEMENT_CARDINALITY=PASS")
     print("UI4_R1_R2_R3_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
