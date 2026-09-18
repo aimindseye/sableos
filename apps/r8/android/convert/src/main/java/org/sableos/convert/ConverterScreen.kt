@@ -4,8 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -15,9 +13,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import java.math.BigDecimal
 import java.math.RoundingMode
+import org.sableos.design.SableActionButton
+import org.sableos.design.SablePanel
+import org.sableos.design.SableSectionHeader
+import org.sableos.design.SableSpacing
+import org.sableos.design.SableTile
 
 private enum class UnitCategory(val label: String) {
     Length("Length"),
@@ -68,25 +70,20 @@ fun ConverterScreen(
     var result by remember { mutableStateOf("Ready") }
 
     Column(
-        modifier = modifier.padding(vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        Text(
-            "Unit converter",
-            style = MaterialTheme.typography.headlineMedium,
-        )
-        Text(
-            "Offline fixed-point conversion",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        SableSectionHeader("Convert")
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
         ) {
             UnitCategory.entries.forEach { choice ->
-                Button(
+                SableTile(
+                    title = choice.label,
+                    active = category == choice,
+                    modifier = Modifier.weight(1f),
                     onClick = {
                         category = choice
                         val available = units.filter { it.category == choice }
@@ -94,10 +91,7 @@ fun ConverterScreen(
                         to = available.getOrElse(1) { available.first() }
                         result = "Ready"
                     },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(if (category == choice) "[${choice.label}]" else choice.label)
-                }
+                )
             }
         }
 
@@ -111,27 +105,34 @@ fun ConverterScreen(
 
         val availableUnits = units.filter { it.category == category }
 
-        Button(
-            onClick = {
-                from = cycleUnit(availableUnits, from)
-                result = "Ready"
-            },
+        Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
         ) {
-            Text("From  ${from.label} (${from.symbol})")
+            SableTile(
+                title = "From",
+                subtitle = "${from.label} · ${from.symbol}",
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    from = cycleUnit(availableUnits, from)
+                    result = "Ready"
+                },
+            )
+
+            SableTile(
+                title = "To",
+                subtitle = "${to.label} · ${to.symbol}",
+                modifier = Modifier.weight(1f),
+                onClick = {
+                    to = cycleUnit(availableUnits, to)
+                    result = "Ready"
+                },
+            )
         }
 
-        Button(
-            onClick = {
-                to = cycleUnit(availableUnits, to)
-                result = "Ready"
-            },
+        SableActionButton(
+            text = "Convert",
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("To  ${to.label} (${to.symbol})")
-        }
-
-        Button(
             onClick = {
                 val valueMilli = parseMilli(input)
                 result = if (valueMilli == null) {
@@ -147,18 +148,23 @@ fun ConverterScreen(
                     )
                 }
             },
-        ) {
-            Text("Convert")
+        )
+
+        SablePanel {
+            Text(
+                "Result",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                result,
+                style = MaterialTheme.typography.headlineMedium,
+            )
         }
 
         Text(
-            result,
-            style = MaterialTheme.typography.headlineSmall,
-        )
-
-        Text(
-            "Length, mass, temperature and volume are local/offline. " +
-                "The Rust domain owns unit compatibility, conversion rules and range checks.",
+            "Length, mass, temperature and volume conversions are local and offline.",
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
