@@ -59,6 +59,21 @@
       "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/ui/composable/QSMediaMeasurePolicy.kt",
       "blob_sha": "8fe870393dd19b5490bb5163e3e2e45a43b473db",
       "role": "QS media geometry"
+    },
+    {
+      "path": "packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/QuickQuickSettings.kt",
+      "blob_sha": "84abda67984d38bfd7bc5f33f00a3a360854f180",
+      "role": "compact Quick Settings grid composition"
+    },
+    {
+      "path": "packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt",
+      "blob_sha": "2d6145d17d761cb163bc8ddf90ad6ab350da2a3e",
+      "role": "Quick Settings tile state-to-visual rendering and shape selection"
+    },
+    {
+      "path": "packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/CommonTile.kt",
+      "blob_sha": "6db03f5f11cb3414d928be973bfc3c0fb39ed522",
+      "role": "Quick Settings tile content geometry, labels, icon surfaces and semantics"
     }
   ]
 }
