@@ -86,3 +86,10 @@ tasks.matching {
 }.configureEach {
     dependsOn(rootProject.tasks.named("stageGamesRustJni"))
 }
+
+
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        variantBuilder.enableAndroidTest = false
+    }
+}
