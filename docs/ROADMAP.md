@@ -1,6 +1,6 @@
 # SableOS roadmap
 
-Last updated: 2026-09-10
+Last updated: 2026-09-18
 
 ## Roadmap rule
 
@@ -11,6 +11,26 @@ A milestone is complete only when its implementation, policy boundary, build int
 Portable semantic contracts should remain stable while Android-version/device integration is requalified behind bounded adapters.
 
 The current project priority is to build the SableOS user experience. Production signing/OTA infrastructure is preserved but temporarily non-blocking until release-candidate work.
+
+## 2026-09-18 execution overlay
+
+Current execution has moved onto the R8 standalone application and qualification track. The older Sable Flow/M1 product sequence remains architectural context, but the active engineering handoff is now:
+
+```text
+R8 application implementation/build preparation
+    -> standalone CI qualification
+    -> exact artifact freeze
+    -> product integration gates
+    -> Panther/Titan development qualification
+    -> release/security hardening
+         -> INFRA5 encrypted trusted runner
+         -> production signing/key custody
+         -> signed OTA/release closure
+```
+
+INFRA5 is **deferred and non-blocking**. The current `ai-g732` Sable storage is unencrypted, therefore the INFRA4 policy continues to prohibit trusted self-hosted execution. GitHub-hosted CI remains the current qualification authority. Build-host encryption, ephemeral trusted-runner activation and production signing should be revisited together when release-candidate hardening becomes active.
+
+This is a scheduling decision only; INFRA4's fail-closed security requirement remains unchanged. See `INFRA5_DEFERRED_TRUSTED_RUNNER.md`.
 
 ## Current progression
 
@@ -45,6 +65,9 @@ Q27_ROLE                           FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFIC
 Q25_ROLE                           OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
+INFRA5_TRUSTED_RUNNER              DEFERRED_NON_BLOCKING
+TRUSTED_SELF_HOSTED_RUNNER         DISABLED
+SOURCE_BUILD_STORAGE_ENCRYPTED     NO
 PRODUCTION_KEYS_GENERATED          NO
 KEY_GENERATION_AUTHORIZED          NO
 SIGNING_AUTHORIZED                 NO
