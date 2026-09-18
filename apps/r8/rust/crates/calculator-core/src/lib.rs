@@ -1,10 +1,9 @@
 //! Interaction-neutral arithmetic domain for Sable Calculator.
 //!
-//! R8 intentionally does not select handheld immediate-execution semantics,
-//! expression precedence, display precision, percent behavior, history, or
-//! repeated-equals behavior. This crate therefore exposes only exact decimal
-//! parsing and checked binary arithmetic. The Android product layer must supply
-//! the interaction and presentation policy once those requirements are frozen.
+//! R8 keeps handheld interaction semantics, expression precedence, percent
+//! behavior, history and repeated-equals policy in the Android product layer.
+//! The Rust domain owns exact checked binary arithmetic plus a bounded set of
+//! standard unary scientific functions used by the Scientific surface.
 
 use core::fmt;
 
