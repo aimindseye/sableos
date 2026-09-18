@@ -22,6 +22,12 @@ android {
     kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        variantBuilder.enableAndroidTest = false
+    }
+}
+
 dependencies {
     implementation(project(":design"))
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
