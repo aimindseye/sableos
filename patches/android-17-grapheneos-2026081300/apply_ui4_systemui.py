@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Apply/verify the SableOS UI4R1 Quick Settings visual delta.
+"""Apply/verify the cumulative SableOS UI4 SystemUI visual delta.
 
 Target: GrapheneOS 2026081300 / Android 17
 Pinned frameworks/base: aab06a8bd44c4c2b58eeec780fde83baa9d43a40
 
-UI4R1/UI4R2 are deliberately visual-only. They change Quick Settings tile
-geometry/colors, compact-QS spacing, brightness/panel spacing, footer geometry,
-notification-card/shade radii, and notification-stack spacing. They do not
-alter tile or notification state/view models, click/long-click behavior, shade
-gestures, permissions, privacy indicators, media behavior, ranking, dismissal,
-actions, or accessibility semantics.
+UI4R1/UI4R2/UI4R3 are deliberately visual-only. They change Quick Settings
+tile geometry/colors, compact-QS spacing, brightness/panel spacing, footer
+geometry, notification-card/shade radii, notification-stack spacing, and
+SystemUI media surface/control geometry. They do not alter tile, notification,
+or media state/view models, click/long-click behavior, shade gestures,
+permissions, privacy indicators, notification ranking/dismissal, media session
+behavior, carousel behavior, playback actions, or accessibility semantics.
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ FOOTER_ACTIONS = Path(
     "packages/SystemUI/compose/features/src/com/android/systemui/qs/footer/ui/compose/FooterActions.kt"
 )
 DIMENS = Path("packages/SystemUI/res/values/dimens.xml")
+MEDIA = Path("packages/SystemUI/src/com/android/systemui/media/remedia/ui/compose/Media.kt")
 
 BASELINE_BLOBS = {
     COMMON_TILE: "6db03f5f11cb3414d928be973bfc3c0fb39ed522",
@@ -46,6 +48,7 @@ BASELINE_BLOBS = {
     QUICK_SETTINGS_CONTENT: "0fc0146120c5547b29e7eeb043548c8cdb9f129f",
     FOOTER_ACTIONS: "f6bf90e8071541062b227c6a47829768f345659f",
     DIMENS: "6f388d006b55ce7355a08ca1628baf5b6ec3c92c",
+    MEDIA: "e794506f7928cd44c8670719ba051fb7f8a90b28",
 }
 
 UI4_DIRT = {f" M {path.as_posix()}" for path in BASELINE_BLOBS}
@@ -216,6 +219,28 @@ PATCHES: dict[Path, tuple[tuple[str, str], ...]] = {
             '<dimen name="notification_scrim_corner_radius">6dp</dimen>\n',
         ),
     ),
+    MEDIA: (
+        (
+            "    val roundedCornerShape = remember { RoundedCornerShape(32.dp) }\n",
+            "    val roundedCornerShape = remember { RoundedCornerShape(6.dp) }\n",
+        ),
+        (
+            "                        .clip(RoundedCornerShape(32.dp)),\n",
+            "                        .clip(RoundedCornerShape(6.dp)),\n",
+        ),
+        (
+            "                    color = style.fillColor,\n                    shape = RoundedCornerShape(12.dp),\n",
+            "                    color = style.fillColor,\n                    shape = RoundedCornerShape(6.dp),\n",
+        ),
+        (
+            "                    Modifier.clip(RoundedCornerShape(12.dp))\n",
+            "                    Modifier.clip(RoundedCornerShape(6.dp))\n",
+        ),
+        (
+            "                                color = style.borderColor!!,\n                                shape = RoundedCornerShape(12.dp),\n",
+            "                                color = style.borderColor!!,\n                                shape = RoundedCornerShape(6.dp),\n",
+        ),
+    ),
 }
 
 
@@ -287,6 +312,7 @@ def verify_visual_delta(source: Path) -> None:
     tile_text = (root / TILE).read_text(encoding="utf-8")
     common_text = (root / COMMON_TILE).read_text(encoding="utf-8")
     footer_text = (root / FOOTER_ACTIONS).read_text(encoding="utf-8")
+    media_text = (root / MEDIA).read_text(encoding="utf-8")
 
     preserved_tokens = (
         "accessibilityUiState.toggleableState",
@@ -301,6 +327,19 @@ def verify_visual_delta(source: Path) -> None:
 
     if "FooterButtonHeight = 48.dp" not in footer_text:
         raise SystemExit("UI4_FOOTER_TOUCH_TARGET_CHECK_FAIL")
+
+    media_preserved_tokens = (
+        "onDismissed = onDismissed",
+        "HorizontalCenteredHeroCarousel(",
+        "overscrollToDismiss(",
+        "viewModel.onCardSelected(",
+        "PlayPauseAction(",
+        "SeekBarTrack(",
+        "contentDescription = viewModel.contentDescription",
+    )
+    for token in media_preserved_tokens:
+        if token not in media_text:
+            raise SystemExit(f"UI4_MEDIA_BEHAVIOR_OR_SEMANTICS_TOKEN_MISSING={token!r}")
 
     dirt = status_set(source)
     valid = (UI4_DIRT, UI4_DIRT | BRANDING_DIRT)
@@ -317,8 +356,10 @@ def verify_visual_delta(source: Path) -> None:
     print("UI4_R2_NOTIFICATION_CARD_GEOMETRY=PASS")
     print("UI4_R2_NOTIFICATION_STACK_SPACING=PASS")
     print("UI4_R2_NOTIFICATION_SHADE_GEOMETRY=PASS")
-    print("UI4_R1_R2_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS")
-    print("UI4_R1_R2_BEHAVIORAL_DIFF=NONE")
+    print("UI4_R3_MEDIA_CARD_GEOMETRY=PASS")
+    print("UI4_R3_MEDIA_CONTROL_GEOMETRY=PASS")
+    print("UI4_R1_R2_R3_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS")
+    print("UI4_R1_R2_R3_BEHAVIORAL_DIFF=NONE")
 
 
 def apply(source: Path) -> None:
@@ -333,11 +374,11 @@ def apply(source: Path) -> None:
             f"UI4_POST_APPLY_SCOPE_MISMATCH expected={sorted(expected)!r} actual={sorted(actual)!r}"
         )
     verify_visual_delta(source)
-    print("SABLE_UI4_R1_APPLY=PASS")
+    print("SABLE_UI4_R1_R2_R3_APPLY=PASS")
 
 
 def self_test() -> None:
-    with tempfile.TemporaryDirectory(prefix="sable-ui4r1-selftest-") as td:
+    with tempfile.TemporaryDirectory(prefix="sable-ui4-selftest-") as td:
         root = Path(td)
         for rel, replacements in PATCHES.items():
             path = root / rel
@@ -357,9 +398,9 @@ def self_test() -> None:
     if set(PATCHES) != set(BASELINE_BLOBS):
         raise SystemExit("SELF_TEST_MUTATION_SET_NOT_EQUAL_TO_PINNED_SET")
 
-    print("UI4_R1_R2_PINNED_MUTATION_SET=PASS")
-    print("UI4_R1_R2_REPLACEMENT_CARDINALITY=PASS")
-    print("UI4_R1_R2_SELF_TEST=PASS")
+    print("UI4_R1_R2_R3_PINNED_MUTATION_SET=PASS")
+    print("UI4_R1_R2_R3_REPLACEMENT_CARDINALITY=PASS")
+    print("UI4_R1_R2_R3_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
     print("SELF_TEST_DEVICE_CONTACT=NONE")
