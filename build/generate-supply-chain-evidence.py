@@ -185,6 +185,13 @@ def critical_inputs() -> list[dict]:
         "build/install-pinned-tool.py",
         "build/generate-supply-chain-evidence.py",
         "build/check-ci-policy.py",
+        "build/check-gradle-supply-chain.py",
+        "apps/r8/android/calculator/gradle.lockfile",
+        "apps/r8/android/convert/gradle.lockfile",
+        "apps/r8/android/design/gradle.lockfile",
+        "apps/r8/android/games/gradle.lockfile",
+        "apps/r8/android/media/gradle.lockfile",
+        "apps/r8/android/gradle/verification-metadata.xml",
     ]
     fixed.extend(
         str(p.relative_to(ROOT)) for p in sorted(WORKFLOWS.glob("*.y*ml"))

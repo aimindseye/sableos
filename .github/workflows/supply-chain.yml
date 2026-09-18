@@ -127,6 +127,15 @@ jobs:
             --stacktrace
           echo "INFRA3_AAPT2_DETACHED_VERIFICATION_PATH=PASS"
 
+      - name: Exercise detached Android Lint verification path
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p apps/r8/android \
+            :design:lintDebug \
+            --stacktrace
+          echo "INFRA3_LINT_DETACHED_VERIFICATION_PATH=PASS"
+
       - name: Resolve dependencies under committed locks and verification metadata
         shell: bash
         run: |

@@ -148,6 +148,8 @@ if supply_workflow.is_file():
         "build/check-gradle-supply-chain.py",
         ":calculator:compileDebugNavigationResources",
         "INFRA3_AAPT2_DETACHED_VERIFICATION_PATH=PASS",
+        ":design:lintDebug",
+        "INFRA3_LINT_DETACHED_VERIFICATION_PATH=PASS",
         "INFRA3_GRADLE_STATE_BEFORE.json",
         "INFRA3_GRADLE_STATE_AFTER.json",
         "r8-android-gradle-supply-chain-evidence-${{ github.sha }}",

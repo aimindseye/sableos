@@ -89,6 +89,19 @@ makes the dedicated supply-chain lane execute
 `:calculator:compileDebugNavigationResources` so detached AAPT2 verification is
 covered by the supply-chain gate itself.
 
+The R2 hosted run isolated the final failing lane to Android Lint's separate
+detached toolchain resolution. A controlled isolated `:design:lintDebug`
+metadata-generation run produced 17 additional components / 30 SHA-256
+artifacts. A read-only audit proved that this superset contained every artifact
+reported by hosted CI plus only dependency metadata for Guava parent POMs,
+the Kotlin coroutines BOM, and JUnit BOM module metadata; no existing
+verification hash, lockfile, or verification configuration changed.
+
+The preserved generated metadata then passed `:design:lintDebug` offline before
+canonical mutation. The dedicated supply-chain lane now exercises Android Lint
+as well as AAPT2, and deterministic provenance hashes all five Gradle lockfiles,
+`verification-metadata.xml`, and the Gradle supply-chain checker.
+
 The reviewed Gradle state is now committed in the INFRA3 branch. Final INFRA3
 closure requires the updated PR head to pass hosted CI with:
 
