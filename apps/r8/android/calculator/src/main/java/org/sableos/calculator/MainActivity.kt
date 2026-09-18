@@ -6,15 +6,9 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,9 +17,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import org.sableos.convert.ConverterScreen
+import org.sableos.design.SableActionButton
+import org.sableos.design.SablePageHeader
+import org.sableos.design.SablePanel
+import org.sableos.design.SableScrollableScreen
+import org.sableos.design.SableSectionHeader
+import org.sableos.design.SableSpacing
 import org.sableos.design.SableTheme
+import org.sableos.design.SableTile
 
 private enum class CalculatorMode(val label: String) {
     Regular("Regular"),
@@ -62,50 +62,30 @@ class MainActivity : ComponentActivity() {
             SableTheme {
                 var mode by remember { mutableStateOf(CalculatorMode.Regular) }
 
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .verticalScroll(rememberScrollState())
-                                .padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                SableScrollableScreen {
+                    SablePageHeader(
+                        title = "Calculator",
+                        subtitle = "Regular · Scientific · Convert",
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
                     ) {
-                        Text(
-                            "Sable Calculator",
-                            style = MaterialTheme.typography.headlineLarge,
-                        )
-                        Text(
-                            "Regular arithmetic, scientific functions and offline conversion",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            CalculatorMode.entries.forEach { choice ->
-                                Button(
-                                    onClick = { mode = choice },
-                                    modifier = Modifier.weight(1f),
-                                ) {
-                                    Text(
-                                        if (mode == choice) {
-                                            "[${choice.label}]"
-                                        } else {
-                                            choice.label
-                                        },
-                                    )
-                                }
-                            }
+                        CalculatorMode.entries.forEach { choice ->
+                            SableTile(
+                                title = choice.label,
+                                active = mode == choice,
+                                modifier = Modifier.weight(1f),
+                                onClick = { mode = choice },
+                            )
                         }
+                    }
 
-                        when (mode) {
-                            CalculatorMode.Regular -> RegularCalculatorScreen()
-                            CalculatorMode.Scientific -> ScientificCalculatorScreen()
-                            CalculatorMode.Converter -> ConverterScreen()
-                        }
+                    when (mode) {
+                        CalculatorMode.Regular -> RegularCalculatorScreen()
+                        CalculatorMode.Scientific -> ScientificCalculatorScreen()
+                        CalculatorMode.Converter -> ConverterScreen()
                     }
                 }
             }
@@ -121,12 +101,9 @@ private fun RegularCalculatorScreen() {
     var result by remember { mutableStateOf("Ready") }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        Text(
-            "Regular calculator",
-            style = MaterialTheme.typography.headlineMedium,
-        )
+        SableSectionHeader("Regular")
 
         OutlinedTextField(
             value = left,
@@ -138,15 +115,15 @@ private fun RegularCalculatorScreen() {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
         ) {
             operationLabels.forEachIndexed { index, label ->
-                Button(
-                    onClick = { operation = index },
+                SableTile(
+                    title = label,
+                    active = operation == index,
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(if (operation == index) "[$label]" else label)
-                }
+                    onClick = { operation = index },
+                )
             }
         }
 
@@ -158,7 +135,9 @@ private fun RegularCalculatorScreen() {
             label = { Text("Right operand") },
         )
 
-        Button(
+        SableActionButton(
+            text = "Calculate",
+            modifier = Modifier.fillMaxWidth(),
             onClick = {
                 result =
                     renderResult(
@@ -169,18 +148,13 @@ private fun RegularCalculatorScreen() {
                         ),
                     )
             },
-        ) {
-            Text("Calculate")
-        }
-
-        Text(
-            "Result  $result",
-            style = MaterialTheme.typography.headlineSmall,
         )
 
+        ResultPanel(result)
+
         Text(
-            "Rust preserves exact decimal arithmetic for +, −, × and ÷. " +
-                "The UI does not silently round exact rational results.",
+            "Exact decimal arithmetic stays in the Rust domain; rational results are not silently rounded.",
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -192,12 +166,9 @@ private fun ScientificCalculatorScreen() {
     var result by remember { mutableStateOf("Ready") }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        Text(
-            "Scientific calculator",
-            style = MaterialTheme.typography.headlineMedium,
-        )
+        SableSectionHeader("Scientific")
 
         OutlinedTextField(
             value = input,
@@ -210,10 +181,12 @@ private fun ScientificCalculatorScreen() {
         scientificChoices.chunked(4).forEach { rowChoices ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
             ) {
                 rowChoices.forEach { choice ->
-                    Button(
+                    SableTile(
+                        title = choice.label,
+                        modifier = Modifier.weight(1f),
                         onClick = {
                             result =
                                 renderResult(
@@ -223,23 +196,33 @@ private fun ScientificCalculatorScreen() {
                                     ),
                                 )
                         },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Text(choice.label)
-                    }
+                    )
                 }
             }
         }
 
-        Text(
-            "Result  $result",
-            style = MaterialTheme.typography.headlineSmall,
-        )
+        ResultPanel(result)
 
         Text(
-            "Trigonometric functions use degrees. Square root, square, reciprocal, " +
-                "sin/cos/tan, ln and log₁₀ execute in the Rust calculator domain.",
+            "Trigonometric functions use degrees. Scientific operations execute in the Rust calculator domain.",
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ResultPanel(result: String) {
+    SablePanel {
+        Text(
+            "Result",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            result,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }
