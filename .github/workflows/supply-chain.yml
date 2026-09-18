@@ -1,0 +1,188 @@
+name: Supply-chain reproducibility baseline
+
+on:
+  pull_request:
+    paths:
+      - 'apps/r8/android/**'
+      - 'apps/r8/rust/**'
+      - 'build/check-ci-policy.py'
+      - 'build/supply-chain-lock.json'
+      - 'build/install-pinned-tool.py'
+      - 'build/generate-supply-chain-evidence.py'
+      - '.github/workflows/supply-chain.yml'
+      - '.github/workflows/r8-rust-security.yml'
+      - '.github/workflows/security-baseline.yml'
+      - '.github/workflows/quality-coverage.yml'
+      - '.github/workflows/r8-apk-seal.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/r8/android/**'
+      - 'apps/r8/rust/**'
+      - 'build/check-ci-policy.py'
+      - 'build/supply-chain-lock.json'
+      - 'build/install-pinned-tool.py'
+      - 'build/generate-supply-chain-evidence.py'
+      - '.github/workflows/supply-chain.yml'
+      - '.github/workflows/r8-rust-security.yml'
+      - '.github/workflows/security-baseline.yml'
+      - '.github/workflows/quality-coverage.yml'
+      - '.github/workflows/r8-apk-seal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supply-chain-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pinned-rust-tools-and-sbom:
+    name: Pinned Rust tools and deterministic SBOM
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Validate pinned tool lock
+        run: python3 build/install-pinned-tool.py --validate-lock
+      - name: Install checksum-verified pinned Rust tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEST="$RUNNER_TEMP/sable-pinned-tools"
+          python3 build/install-pinned-tool.py --all --dest "$DEST"
+          echo "$DEST" >> "$GITHUB_PATH"
+      - name: Verify pinned tool versions
+        run: |
+          cargo-audit --version
+          cargo-deny --version
+          cargo-llvm-cov --version
+      - name: Generate deterministic supply-chain evidence
+        run: >-
+          python3 build/generate-supply-chain-evidence.py
+          --out SABLE_SUPPLY_CHAIN_EVIDENCE.json
+          --rust-sbom SABLE_R8_RUST_SBOM.cdx.json
+      - name: Seal supply-chain evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum \
+            SABLE_SUPPLY_CHAIN_EVIDENCE.json \
+            SABLE_R8_RUST_SBOM.cdx.json \
+            > SABLE_SUPPLY_CHAIN_EVIDENCE.sha256
+          cat SABLE_SUPPLY_CHAIN_EVIDENCE.sha256
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: r8-supply-chain-evidence-${{ github.sha }}
+          path: |
+            SABLE_SUPPLY_CHAIN_EVIDENCE.json
+            SABLE_R8_RUST_SBOM.cdx.json
+            SABLE_SUPPLY_CHAIN_EVIDENCE.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  android-resolution-baseline:
+    name: Android Gradle lock and verification baseline
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Locate hosted Android SDK tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          test -n "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+      - name: Install exact Android SDK inputs
+        shell: bash
+        run: "$SDKMANAGER 'platforms;android-36' 'build-tools;36.0.0'"
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+        with:
+          gradle-version: '8.13'
+      - name: Resolve and write Gradle dependency baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle -p apps/r8/android \
+            :design:dependencies \
+            :calculator:dependencies \
+            :convert:dependencies \
+            :games:dependencies \
+            :media:dependencies \
+            --write-locks \
+            --write-verification-metadata sha256 \
+            --stacktrace \
+            > android-resolved-dependencies.txt
+      - name: Collect generated Gradle supply-chain state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import json
+          import shutil
+
+          root = Path("apps/r8/android")
+          out = Path("INFRA3_ANDROID_GRADLE_BASELINE")
+          out.mkdir(parents=True, exist_ok=True)
+
+          lockfiles = sorted(root.rglob("gradle.lockfile"))
+          verification = root / "gradle" / "verification-metadata.xml"
+
+          if not lockfiles:
+              raise SystemExit("no Gradle lockfiles generated")
+          if not verification.is_file() or verification.stat().st_size == 0:
+              raise SystemExit("Gradle verification metadata was not generated")
+
+          entries = []
+          for path in [*lockfiles, verification]:
+              rel = path.relative_to(root)
+              target = out / rel
+              target.parent.mkdir(parents=True, exist_ok=True)
+              shutil.copy2(path, target)
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              entries.append({
+                  "path": str(rel),
+                  "sha256": digest,
+                  "size": path.stat().st_size,
+              })
+
+          dep_report = Path("android-resolved-dependencies.txt")
+          if not dep_report.is_file() or dep_report.stat().st_size == 0:
+              raise SystemExit("Android dependency report missing")
+          shutil.copy2(dep_report, out / dep_report.name)
+          entries.append({
+              "path": dep_report.name,
+              "sha256": hashlib.sha256(dep_report.read_bytes()).hexdigest(),
+              "size": dep_report.stat().st_size,
+          })
+
+          (out / "manifest.json").write_text(
+              json.dumps(entries, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+
+          print(f"GRADLE_LOCKFILE_COUNT={len(lockfiles)}")
+          print(f"GRADLE_VERIFICATION_METADATA={verification}")
+          print("INFRA3_ANDROID_GRADLE_BASELINE=PASS")
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: r8-android-gradle-supply-chain-baseline-${{ github.sha }}
+          path: INFRA3_ANDROID_GRADLE_BASELINE/**
+          if-no-files-found: error
+          retention-days: 30

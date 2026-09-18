@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'apps/r8/android/**'
+      - 'apps/r8/rust/**'
+      - 'build/supply-chain-lock.json'
+      - 'build/generate-supply-chain-evidence.py'
       - '.github/workflows/r8-apk-seal.yml'
   workflow_dispatch:
 
@@ -67,11 +70,26 @@ jobs:
             "$AAPT2" dump permissions "$apk" | tee -a R8_APK_SEALS.txt
           done < <(find apps/r8/android -path '*/build/outputs/apk/debug/*.apk' -type f | sort)
           test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 4
+      - name: Generate deterministic artifact provenance and Rust SBOM
+        run: >-
+          python3 build/generate-supply-chain-evidence.py
+          --out R8_SUPPLY_CHAIN_PROVENANCE.json
+          --rust-sbom R8_RUST_SBOM.cdx.json
+          --artifact-glob 'apps/r8/android/*/build/outputs/apk/debug/*.apk'
+      - name: Seal provenance files
+        run: >-
+          sha256sum
+          R8_SUPPLY_CHAIN_PROVENANCE.json
+          R8_RUST_SBOM.cdx.json
+          > R8_SUPPLY_CHAIN_PROVENANCE.sha256
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
           name: r8-qualification-apks-${{ github.sha }}
           path: |
             apps/r8/android/*/build/outputs/apk/debug/*.apk
             R8_APK_SEALS.txt
+            R8_SUPPLY_CHAIN_PROVENANCE.json
+            R8_RUST_SBOM.cdx.json
+            R8_SUPPLY_CHAIN_PROVENANCE.sha256
           if-no-files-found: error
           retention-days: 14

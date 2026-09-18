@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 import subprocess
 import sys
+import urllib.parse
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 WORKFLOWS = ROOT / ".github" / "workflows"
@@ -42,8 +44,11 @@ for path in workflow_files:
 all_workflow_text = "\n".join(p.read_text(encoding="utf-8") for p in workflow_files)
 if "cargo generate-lockfile" in all_workflow_text:
     failures.append("CI must consume committed Cargo.lock; cargo generate-lockfile found")
-if "cargo install cargo-audit --version 0.22.2 --locked" not in all_workflow_text:
-    failures.append("cargo-audit exact version pin missing")
+if "cargo install " in all_workflow_text:
+    failures.append("runtime cargo install is forbidden in CI")
+for token in ("curl ", "wget "):
+    if token in all_workflow_text:
+        failures.append(f"direct unverified network download token found in CI: {token.strip()}")
 
 for required in ("r8-android.yml", "r8-apk-seal.yml"):
     text = (WORKFLOWS / required).read_text(encoding="utf-8")
@@ -52,13 +57,65 @@ for required in ("r8-android.yml", "r8-apk-seal.yml"):
     if "targets: aarch64-linux-android" not in text:
         failures.append(f"Rust Android target install missing: {required}")
 
+tool_lock = ROOT / "build" / "supply-chain-lock.json"
+installer = ROOT / "build" / "install-pinned-tool.py"
+generator = ROOT / "build" / "generate-supply-chain-evidence.py"
+supply_workflow = WORKFLOWS / "supply-chain.yml"
+
+for path in (tool_lock, installer, generator, supply_workflow):
+    if not path.is_file():
+        failures.append(f"INFRA3 supply-chain file missing: {path.relative_to(ROOT)}")
+
+if tool_lock.is_file():
+    try:
+        lock_doc = json.loads(tool_lock.read_text(encoding="utf-8"))
+    except Exception as exc:
+        failures.append(f"invalid supply-chain-lock.json: {exc}")
+        lock_doc = {}
+
+    expected_tools = {
+        "cargo-audit": (
+            "0.22.2",
+            "7fb9497f8594b389e5fce5ef9b92db08432996895b2e0c5a0167a69ed445c428",
+        ),
+        "cargo-deny": (
+            "0.20.2",
+            "9f12ed4c49936e09b48bf862b595cde2fe64fcbd9d74dfacac6131ca824c8d5f",
+        ),
+        "cargo-llvm-cov": (
+            "0.9.1",
+            "3fca950394a3c49457657c158b1619cec8dfd2647ae5b48746734c0ab969a522",
+        ),
+    }
+    tools = lock_doc.get("tools", {})
+    for name, (version, digest) in expected_tools.items():
+        item = tools.get(name)
+        if not isinstance(item, dict):
+            failures.append(f"pinned tool missing: {name}")
+            continue
+        if item.get("version") != version:
+            failures.append(f"pinned tool version mismatch: {name}")
+        if item.get("sha256") != digest:
+            failures.append(f"pinned tool SHA-256 mismatch: {name}")
+        url = item.get("url", "")
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme != "https" or parsed.netloc.lower() != "github.com":
+            failures.append(f"pinned tool URL is not GitHub HTTPS: {name}")
+
+required_installer_uses = {
+    "r8-rust-security.yml": "--tool cargo-audit",
+    "security-baseline.yml": "--tool cargo-deny",
+    "quality-coverage.yml": "--tool cargo-llvm-cov",
+}
+for workflow, token in required_installer_uses.items():
+    text = (WORKFLOWS / workflow).read_text(encoding="utf-8")
+    if "build/install-pinned-tool.py" not in text or token not in text:
+        failures.append(f"checksum-verified pinned tool install missing: {workflow}")
+
 quality_workflow = WORKFLOWS / "quality-coverage.yml"
-if not quality_workflow.is_file():
-    failures.append("quality-coverage workflow missing")
-else:
+if quality_workflow.is_file():
     qtext = quality_workflow.read_text(encoding="utf-8")
     required_quality_tokens = (
-        "cargo install cargo-llvm-cov --version 0.9.1 --locked",
         "components: llvm-tools-preview",
         "toolchain: '1.98.1'",
         "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
@@ -70,6 +127,32 @@ else:
         if token not in qtext:
             failures.append(f"quality/coverage pin or task missing: {token}")
 
+if supply_workflow.is_file():
+    stext = supply_workflow.read_text(encoding="utf-8")
+    required_supply_tokens = (
+        "python3 build/install-pinned-tool.py --all",
+        "--write-locks",
+        "--write-verification-metadata sha256",
+        "SABLE_R8_RUST_SBOM.cdx.json",
+        "r8-android-gradle-supply-chain-baseline-${{ github.sha }}",
+        "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
+    )
+    for token in required_supply_tokens:
+        if token not in stext:
+            failures.append(f"supply-chain workflow token missing: {token}")
+
+apk_seal = WORKFLOWS / "r8-apk-seal.yml"
+if apk_seal.is_file():
+    atext = apk_seal.read_text(encoding="utf-8")
+    for token in (
+        "build/generate-supply-chain-evidence.py",
+        "R8_SUPPLY_CHAIN_PROVENANCE.json",
+        "R8_RUST_SBOM.cdx.json",
+        "R8_SUPPLY_CHAIN_PROVENANCE.sha256",
+    ):
+        if token not in atext:
+            failures.append(f"APK provenance token missing: {token}")
+
 android_root_gradle = ROOT / "apps" / "r8" / "android" / "build.gradle.kts"
 if not android_root_gradle.is_file():
     failures.append("apps/r8/android/build.gradle.kts missing")
@@ -80,10 +163,11 @@ else:
         'id("org.jlleitschuh.gradle.ktlint") version "14.2.0" apply false',
         'id("org.jetbrains.kotlinx.kover") version "0.9.9" apply false',
         'version.set("1.8.0")',
+        "lockAllConfigurations()",
     )
     for token in required_gradle_plugins:
         if token not in gtext:
-            failures.append(f"quality Gradle pin missing: {token}")
+            failures.append(f"quality/reproducibility Gradle token missing: {token}")
 
 governance_hook = ROOT / ".githooks" / "pre-push"
 if not governance_hook.is_file():
@@ -134,10 +218,17 @@ else:
     if 'targets = ["aarch64-linux-android"]' not in text:
         failures.append("Rust Android target missing from rust-toolchain.toml")
 
-tracked = subprocess.check_output(["git", "-C", str(ROOT), "ls-files", "-z"]).decode().split("\0")
+tracked = subprocess.check_output(
+    ["git", "-C", str(ROOT), "ls-files", "-z"]
+).decode().split("\0")
 for item in filter(None, tracked):
     p = pathlib.Path(item)
-    if p.name in {"id_rsa", "id_ed25519"} or p.suffix.lower() in {".jks", ".keystore", ".p12", ".pfx"}:
+    if p.name in {"id_rsa", "id_ed25519"} or p.suffix.lower() in {
+        ".jks",
+        ".keystore",
+        ".p12",
+        ".pfx",
+    }:
         failures.append(f"high-risk credential container tracked: {item}")
 
 if failures:

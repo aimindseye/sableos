@@ -8,6 +8,12 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.9.9" apply false
 }
 
+allprojects {
+    dependencyLocking {
+        lockAllConfigurations()
+    }
+}
+
 subprojects {
     pluginManager.apply("io.gitlab.arturbosch.detekt")
     pluginManager.apply("org.jlleitschuh.gradle.ktlint")

@@ -4,11 +4,15 @@ on:
   pull_request:
     paths:
       - 'apps/r8/rust/**'
+      - 'build/supply-chain-lock.json'
+      - 'build/install-pinned-tool.py'
       - '.github/workflows/r8-rust-security.yml'
   push:
     branches: [main]
     paths:
       - 'apps/r8/rust/**'
+      - 'build/supply-chain-lock.json'
+      - 'build/install-pinned-tool.py'
       - '.github/workflows/r8-rust-security.yml'
   workflow_dispatch:
 
@@ -36,8 +40,15 @@ jobs:
         run: |
           test -f Cargo.lock
           cargo metadata --locked --no-deps --format-version 1 >/dev/null
-      - name: Install RustSec audit tool
-        run: cargo install cargo-audit --version 0.22.2 --locked
+      - name: Install checksum-verified cargo-audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEST="$RUNNER_TEMP/sable-pinned-tools"
+          python3 "$GITHUB_WORKSPACE/build/install-pinned-tool.py" \
+            --tool cargo-audit \
+            --dest "$DEST"
+          echo "$DEST" >> "$GITHUB_PATH"
       - name: RustSec audit
         run: cargo audit --deny warnings
       - name: Dependency inventory

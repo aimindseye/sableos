@@ -6,6 +6,8 @@ on:
       - 'apps/r8/android/**'
       - 'apps/r8/rust/**'
       - 'build/check-ci-policy.py'
+      - 'build/supply-chain-lock.json'
+      - 'build/install-pinned-tool.py'
       - '.github/workflows/quality-coverage.yml'
   push:
     branches: [main]
@@ -13,6 +15,8 @@ on:
       - 'apps/r8/android/**'
       - 'apps/r8/rust/**'
       - 'build/check-ci-policy.py'
+      - 'build/supply-chain-lock.json'
+      - 'build/install-pinned-tool.py'
       - '.github/workflows/quality-coverage.yml'
   workflow_dispatch:
 
@@ -139,8 +143,15 @@ jobs:
           components: llvm-tools-preview
       - name: Verify committed dependency lock
         run: cargo metadata --locked --no-deps --format-version 1 >/dev/null
-      - name: Install pinned cargo-llvm-cov
-        run: cargo install cargo-llvm-cov --version 0.9.1 --locked
+      - name: Install checksum-verified cargo-llvm-cov
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEST="$RUNNER_TEMP/sable-pinned-tools"
+          python3 "$GITHUB_WORKSPACE/build/install-pinned-tool.py" \
+            --tool cargo-llvm-cov \
+            --dest "$DEST"
+          echo "$DEST" >> "$GITHUB_PATH"
       - name: Generate Rust coverage baseline
         run: cargo llvm-cov --workspace --locked --lcov --output-path coverage.lcov
       - name: Summarize Rust coverage baseline
