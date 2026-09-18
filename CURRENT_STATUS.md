@@ -1,8 +1,30 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-10
+Last updated: 2026-09-18
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
+
+## 2026-09-18 execution handoff
+
+The current implementation line has advanced beyond the older M1-only snapshot below. Where this handoff conflicts with an older near-term milestone label in this file, this section is the current execution authority.
+
+```text
+R8_APPLICATION_FOUNDATION=MERGED
+R8_CALCULATOR_CONVERT_GAMES_JNI=MERGED
+INFRA2_CI_SECURITY_QUALITY=INTEGRATED
+INFRA3_SUPPLY_CHAIN_BASELINE=INTEGRATED
+INFRA4_TRUSTED_RUNNER_GATE=INTEGRATED
+INFRA5_TRUSTED_RUNNER_ACTIVATION=DEFERRED_NON_BLOCKING
+TRUSTED_SELF_HOSTED_RUNNER=DISABLED
+PRODUCTION_SIGNING=DEFERRED
+NEXT_ACTIVE_DELIVERABLE=R8_APPLICATION_IMPLEMENTATION_AND_BUILD_PREPARATION
+```
+
+INFRA5 is parked intentionally for the current hobby/development phase. The `ai-g732` host may continue to be used as a normal development/build machine, but its unencrypted Sable source/build storage does not qualify it as a trusted self-hosted release runner. GitHub-hosted CI remains authoritative for current qualification. INFRA5 should be reopened together with build-storage encryption, production signing/key custody and release-candidate hardening rather than weakening the existing INFRA4 fail-closed policy.
+
+The active R8 handoff is to finish application implementation and build preparation across the shared design/Kotlin surfaces, Calculator+Convert, Games, Reader/Text Reader composition and Media, then run the already-defined standalone qualification/artifact-freeze gates before product-image integration.
+
+See `docs/INFRA5_DEFERRED_TRUSTED_RUNNER.md` and `apps/r8/README.md`.
 
 ## Current project priority
 
