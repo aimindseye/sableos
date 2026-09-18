@@ -102,3 +102,34 @@ Human visual review should then cover Quick Settings active/inactive states, bri
 Do not wait for UI5/UI6 before this preview flash. Use the first device pass to find cross-surface visual problems early, then continue UI5/UI6 against real Pixel feedback.
 
 This is a development preview path. Production signing, OTA generation, release keys, userdata wiping, bootloader locking, and release-candidate claims remain out of scope.
+
+
+## Known pre-existing Panther security delta
+
+The current R8 Panther workspace carries one intentional pre-existing
+`frameworks/base` security/product delta in addition to the Sable boot mask:
+
+```text
+core/res/res/values/config_ext.xml
+git blob: 8264085d12533d294eab24aae55ca40830bfb62b
+sha256: 771a39703f97d0be7138f1f9b2ba510431dd98163309fb2a92728916d77175de
+```
+
+This delta removes the bundled GrapheneOS Auditor certificate digest from
+`read_additional_security_state_known_signers`. The current Sable product
+does not select Auditor, the Auditor project is not present in the repo
+manifest, and no Auditor artifact was found in the existing Panther product
+output.
+
+The UI4 applicator therefore accepts this pre-existing state only when the
+file matches the exact blob above. It also binds the existing Sable boot-mask
+blob exactly:
+
+```text
+core/res/assets/images/android-logo-mask.png
+git blob: bec81216db3ed6976f305fd496ed757f0788f702
+sha256: dd16d019fc36aefae3b3d6c624c372bf3d5ed8f4ce88aec3932c1816913f7b9e
+```
+
+Any other content at either path remains a hard failure. This is not a general
+permission for extra `frameworks/base` dirt.
