@@ -74,6 +74,35 @@ def main() -> None:
     if not components or not hashes:
         fail("VERIFICATION_CONTENT_EMPTY")
 
+    aapt2 = [
+        component
+        for component in components
+        if component.attrib.get("group") == "com.android.tools.build"
+        and component.attrib.get("name") == "aapt2"
+        and component.attrib.get("version") == "8.13.2-14304508"
+    ]
+    if len(aapt2) != 1:
+        fail("AAPT2_VERIFICATION_COMPONENT_COUNT")
+
+    expected_aapt2 = {
+        "aapt2-8.13.2-14304508-linux.jar": "839609d6d776d6dd60a02aa577d97193ce3e650cf1deaabf062321e23bbd6bf6",
+        "aapt2-8.13.2-14304508.pom": "7e085634f503d42a4f3ea14488c25d4a573914db23c64a5a05a0c5c186c93112",
+    }
+    actual_aapt2 = {}
+    for artifact in aapt2[0].findall("v:artifact", NS):
+        name = artifact.attrib.get("name")
+        sha = artifact.find("v:sha256", NS)
+        if not name or sha is None:
+            fail("AAPT2_VERIFICATION_ARTIFACT_INVALID")
+        actual_aapt2[name] = sha.attrib.get("value")
+
+    if actual_aapt2 != expected_aapt2:
+        fail(
+            "AAPT2_VERIFICATION_HASH_MISMATCH:"
+            f"actual={actual_aapt2}:"
+            f"expected={expected_aapt2}"
+        )
+
     files.append({
         "path": VERIFICATION_REL,
         "sha256": sha256(verification),

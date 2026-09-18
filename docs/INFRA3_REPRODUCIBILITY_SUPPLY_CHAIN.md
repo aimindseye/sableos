@@ -79,6 +79,16 @@ signature or production attestation.
 
 ## Remaining INFRA3 closure step
 
+The first enforcement run exposed one Android Gradle Plugin tool dependency
+that the bootstrap `:dependencies` resolution did not exercise:
+`com.android.tools.build:aapt2:8.13.2-14304508`. Android lint, APK compile, and
+APK sealing all failed on the same detached AAPT2 configuration.
+
+INFRA3-R2 adds only the reviewed AAPT2 Linux JAR and POM SHA-256 entries and
+makes the dedicated supply-chain lane execute
+`:calculator:compileDebugNavigationResources` so detached AAPT2 verification is
+covered by the supply-chain gate itself.
+
 The reviewed Gradle state is now committed in the INFRA3 branch. Final INFRA3
 closure requires the updated PR head to pass hosted CI with:
 

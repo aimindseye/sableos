@@ -146,6 +146,8 @@ if supply_workflow.is_file():
         "python3 build/install-pinned-tool.py --all",
         "cargo-llvm-cov llvm-cov --version",
         "build/check-gradle-supply-chain.py",
+        ":calculator:compileDebugNavigationResources",
+        "INFRA3_AAPT2_DETACHED_VERIFICATION_PATH=PASS",
         "INFRA3_GRADLE_STATE_BEFORE.json",
         "INFRA3_GRADLE_STATE_AFTER.json",
         "r8-android-gradle-supply-chain-evidence-${{ github.sha }}",
