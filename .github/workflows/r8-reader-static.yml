@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'apps/r8/reader/**'
+      - 'apps/r8/textreader/upstream.env'
+      - 'src/android/shared/sabledesign/**'
       - '.github/workflows/r8-reader-static.yml'
   push:
     branches: [main]
@@ -37,8 +39,11 @@ jobs:
         run: |
           set -euo pipefail
           source apps/r8/reader/upstream.env
+          source apps/r8/textreader/upstream.env
           echo "repository=$VAACHAK_REPOSITORY" >> "$GITHUB_OUTPUT"
           echo "commit=$VAACHAK_COMMIT" >> "$GITHUB_OUTPUT"
+          echo "text_repository=$VAACHAK_TEXTREADER_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "text_commit=$VAACHAK_TEXTREADER_COMMIT" >> "$GITHUB_OUTPUT"
       - name: Checkout pinned Vaachak source
         shell: bash
         run: |
