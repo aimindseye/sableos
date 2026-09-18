@@ -85,6 +85,41 @@ else:
         if token not in gtext:
             failures.append(f"quality Gradle pin missing: {token}")
 
+governance_hook = ROOT / ".githooks" / "pre-push"
+if not governance_hook.is_file():
+    failures.append("committed .githooks/pre-push missing")
+else:
+    stage = subprocess.check_output(
+        ["git", "-C", str(ROOT), "ls-files", "--stage", ".githooks/pre-push"],
+        text=True,
+    ).strip()
+    if not stage.startswith("100755 "):
+        failures.append(".githooks/pre-push must be tracked executable mode 100755")
+
+main_integrity = WORKFLOWS / "main-integrity.yml"
+if not main_integrity.is_file():
+    failures.append("main-integrity workflow missing")
+else:
+    mitext = main_integrity.read_text(encoding="utf-8")
+    required_main_integrity_tokens = (
+        "branches: [main]",
+        "fetch-depth: 0",
+        "python3 build/check-ci-policy.py",
+        "python3 build/check-main-integrity.py",
+        "actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803",
+    )
+    for token in required_main_integrity_tokens:
+        if token not in mitext:
+            failures.append(f"main-integrity policy token missing: {token}")
+
+main_integrity_checker = ROOT / "build" / "check-main-integrity.py"
+if not main_integrity_checker.is_file():
+    failures.append("build/check-main-integrity.py missing")
+
+free_governance_doc = ROOT / "docs" / "INFRA2C_FREE_GOVERNANCE.md"
+if not free_governance_doc.is_file():
+    failures.append("docs/INFRA2C_FREE_GOVERNANCE.md missing")
+
 lock = ROOT / "apps" / "r8" / "rust" / "Cargo.lock"
 if not lock.is_file():
     failures.append("committed apps/r8/rust/Cargo.lock missing")

@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REMOTE_NAME="${1:-}"
+REMOTE_URL="${2:-}"
+ZERO_SHA=0000000000000000000000000000000000000000
+MAIN_REF=refs/heads/main
+CANONICAL_URL=git@github.com:aimindseye/sableos.git
+
+deny() {
+  printf 'SABLE_PRE_PUSH_DENY=%s\n' "$1" >&2
+  exit 1
+}
+
+mapfile -t UPDATES
+
+MAIN_UPDATES=0
+for update in "${UPDATES[@]}"; do
+  read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA <<< "$update"
+
+  test -n "${LOCAL_REF:-}" || deny "MALFORMED_UPDATE_LOCAL_REF"
+  test -n "${LOCAL_SHA:-}" || deny "MALFORMED_UPDATE_LOCAL_SHA"
+  test -n "${REMOTE_REF:-}" || deny "MALFORMED_UPDATE_REMOTE_REF"
+  test -n "${REMOTE_SHA:-}" || deny "MALFORMED_UPDATE_REMOTE_SHA"
+
+  if test "$REMOTE_REF" != "$MAIN_REF"; then
+    continue
+  fi
+
+  MAIN_UPDATES=$((MAIN_UPDATES + 1))
+
+  test "$LOCAL_SHA" != "$ZERO_SHA" || deny "MAIN_DELETION_FORBIDDEN"
+  test "$REMOTE_SHA" != "$ZERO_SHA" || deny "MAIN_CREATION_NOT_AUTHORIZED_BY_C2"
+
+  test "${SABLEOS_GOVERNED_MAIN_PUSH:-}" = "YES" \
+    || deny "MAIN_PUSH_REQUIRES_GOVERNED_GATE"
+
+  test -n "${SABLEOS_EXPECTED_MAIN_OLD_SHA:-}" \
+    || deny "EXPECTED_MAIN_OLD_SHA_MISSING"
+  test -n "${SABLEOS_EXPECTED_MAIN_NEW_SHA:-}" \
+    || deny "EXPECTED_MAIN_NEW_SHA_MISSING"
+
+  test "$REMOTE_SHA" = "$SABLEOS_EXPECTED_MAIN_OLD_SHA" \
+    || deny "REMOTE_MAIN_SHA_MISMATCH"
+  test "$LOCAL_SHA" = "$SABLEOS_EXPECTED_MAIN_NEW_SHA" \
+    || deny "LOCAL_MAIN_SHA_MISMATCH"
+
+  test "$REMOTE_URL" = "$CANONICAL_URL" \
+    || deny "GOVERNED_MAIN_REQUIRES_CANONICAL_EXPLICIT_URL"
+
+  git cat-file -e "${REMOTE_SHA}^{commit}" 2>/dev/null \
+    || deny "REMOTE_MAIN_COMMIT_NOT_PRESENT_LOCALLY"
+  git cat-file -e "${LOCAL_SHA}^{commit}" 2>/dev/null \
+    || deny "LOCAL_MAIN_COMMIT_NOT_PRESENT_LOCALLY"
+
+  git merge-base --is-ancestor "$REMOTE_SHA" "$LOCAL_SHA" \
+    || deny "NON_FAST_FORWARD_MAIN_PUSH_FORBIDDEN"
+done
+
+if test "$MAIN_UPDATES" -gt 0; then
+  test "$MAIN_UPDATES" -eq 1 || deny "MULTIPLE_MAIN_UPDATES_FORBIDDEN"
+  test "${#UPDATES[@]}" -eq 1 || deny "GOVERNED_MAIN_PUSH_MUST_CONTAIN_EXACTLY_ONE_REF_UPDATE"
+  printf 'SABLE_PRE_PUSH_GOVERNED_MAIN=PASS\n' >&2
+fi
+
+exit 0
