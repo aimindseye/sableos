@@ -10,7 +10,6 @@ android {
     ndkVersion = "30.0.16248370"
     defaultConfig {
         minSdk = 30
-        targetSdk = 36
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -29,26 +28,4 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
-}
-
-android {
-    sourceSets {
-        getByName("main") {
-            jniLibs.setSrcDirs(
-                listOf(
-                    layout.buildDirectory
-                        .dir("generated/rustJni")
-                        .get()
-                        .asFile
-                )
-            )
-        }
-    }
-}
-
-tasks.matching {
-    it.name.startsWith("merge") &&
-        it.name.endsWith("JniLibFolders")
-}.configureEach {
-    dependsOn(rootProject.tasks.named("stageConvertRustJni"))
 }
