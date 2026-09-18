@@ -24,13 +24,19 @@ if [[ ! -d "$SABLEOS_UPSTREAM/.repo" ]]; then
     exit 3
 fi
 
-PREVIEW_OUT="${SABLEOS_UI_PREVIEW_OUT:-$SABLEOS_ROOT/build/panther/ui-preview}"
+PREVIEW_OUT="${SABLEOS_UI_PREVIEW_OUT:-out_sable_ui_preview}"
 PREVIEW_EVIDENCE="${SABLEOS_UI_PREVIEW_EVIDENCE:-$SABLEOS_EVIDENCE/ui-preview}"
+
+if [[ "$PREVIEW_OUT" = /* ]]; then
+    echo "UI_PREVIEW_OUT_MUST_BE_SOURCE_RELATIVE=$PREVIEW_OUT"
+    echo "Use a relative OUT_DIR such as out_sable_ui_preview to preserve Soong path semantics."
+    exit 3
+fi
 PREVIEW_LUNCH_TARGET="${SABLEOS_UI_PREVIEW_LUNCH_TARGET:-panther-cur-userdebug}"
 PREVIEW_BUILD_NUMBER="${SABLEOS_UI_PREVIEW_BUILD_NUMBER:-2026091801}"
 JOBS="${JOBS:-$(nproc)}"
 
-mkdir -p "$PREVIEW_OUT" "$PREVIEW_EVIDENCE"
+mkdir -p "$PREVIEW_EVIDENCE"
 
 echo "===== SABLE UI PREVIEW BUILD ====="
 echo "SABLEOS_UPSTREAM=$SABLEOS_UPSTREAM"
@@ -69,6 +75,7 @@ echo "SABLE_DESIGN_SHARED_SYNC=PASS"
 SOURCE_MUTATION_AUTHORIZED=YES     bash "$REPO_ROOT/build/panther/sync-sablestart.sh"
 
 cd "$SABLEOS_UPSTREAM"
+mkdir -p "$PREVIEW_OUT"
 source build/envsetup.sh
 
 export OUT_DIR="$PREVIEW_OUT"
@@ -122,15 +129,33 @@ echo "UI_PREVIEW_SABLESTART_PACKAGED=PASS"
 
 required_images=(system.img product.img system_ext.img vbmeta.img)
 for image in "${required_images[@]}"; do
-    if [[ ! -f "$PRODUCT_OUT/$image" ]]; then
+    if [[ -f "$PRODUCT_OUT/$image" ]]; then
+        continue
+    fi
+
+    archive_member="IMAGES/$image"
+    if ! grep -Fxq "$archive_member" "$TARGET_LIST"; then
         echo "UI_PREVIEW_IMAGE_MISSING=$PRODUCT_OUT/$image"
+        echo "UI_PREVIEW_TARGET_FILES_IMAGE_MISSING=$archive_member"
         exit 8
     fi
+
+    tmp="$PRODUCT_OUT/.$image.extracting"
+    rm -f "$tmp"
+    unzip -p "$TARGET_FILES" "$archive_member" > "$tmp"
+    [[ -s "$tmp" ]] || {
+        rm -f "$tmp"
+        echo "UI_PREVIEW_IMAGE_EXTRACT_EMPTY=$archive_member"
+        exit 8
+    }
+    mv "$tmp" "$PRODUCT_OUT/$image"
+    echo "UI_PREVIEW_IMAGE_STAGED_FROM_TARGET_FILES=$archive_member"
 done
 
 (
     cd "$PRODUCT_OUT"
-    sha256sum system.img product.img system_ext.img vbmeta.img         | tee UI_PREVIEW_IMAGES.sha256
+    sha256sum system.img product.img system_ext.img vbmeta.img \
+        | tee UI_PREVIEW_IMAGES.sha256
 )
 sha256sum "$TARGET_FILES" | tee "$PREVIEW_EVIDENCE/ui-preview-target-files-$STAMP.sha256"
 
