@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
 import org.sableos.design.SablePanel
-import org.sableos.design.SableSectionHeader
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTile
 
@@ -90,7 +89,6 @@ internal fun MinesweeperScreen() {
     Column(
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        SableSectionHeader("Minesweeper")
 
         SablePanel {
             Text(

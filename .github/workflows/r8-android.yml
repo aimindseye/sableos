@@ -65,6 +65,8 @@ jobs:
         run: >-
           gradle -p apps/r8/android
           :calculator:assembleDebug
-          :games:assembleDebug
+          :games:assembleSudokuDebug
+          :games:assembleMinesweeperDebug
+          :games:assembleGame2048Debug
           :media:assembleDebug
           --stacktrace

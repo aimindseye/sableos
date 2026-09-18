@@ -119,7 +119,7 @@ The Applications surface is a strategic SableOS privacy/security surface, not on
 ```text
 UI1  shared Sable Design System + Start reference screen
 UI2  Calculator + Media + touch-first game-screen migration
-UI2G separate Sudoku / Minesweeper / 2048 APK shells
+UI2G separate Sudoku / Minesweeper / 2048 launcher APKs
 UI3  Reader/Text Reader composition and reading controls
 UI4  SystemUI pulldown / quick settings / notifications / media controls
 UI5  SetupWizard + Settings + Application Security & Privacy + system dialogs + visible branding cleanup

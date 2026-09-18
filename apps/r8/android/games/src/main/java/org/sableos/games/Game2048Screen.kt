@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
 import org.sableos.design.SablePanel
-import org.sableos.design.SableSectionHeader
 import org.sableos.design.SableSpacing
 
 @Composable
@@ -49,7 +48,6 @@ internal fun Game2048Screen() {
     Column(
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        SableSectionHeader("2048")
 
         SablePanel {
             Text(

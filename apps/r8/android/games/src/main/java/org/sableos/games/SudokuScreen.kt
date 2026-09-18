@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
 import org.sableos.design.SablePanel
-import org.sableos.design.SableSectionHeader
 import org.sableos.design.SableSpacing
 
 private const val DEFAULT_SUDOKU =
@@ -71,7 +70,6 @@ internal fun SudokuScreen() {
     Column(
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        SableSectionHeader("Sudoku")
 
         SablePanel {
             Text(

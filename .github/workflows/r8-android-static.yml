@@ -54,6 +54,8 @@ jobs:
           :design:lintDebug
           :calculator:lintDebug
           :convert:lintDebug
-          :games:lintDebug
+          :games:lintSudokuDebug
+          :games:lintMinesweeperDebug
+          :games:lintGame2048Debug
           :media:lintDebug
           --stacktrace

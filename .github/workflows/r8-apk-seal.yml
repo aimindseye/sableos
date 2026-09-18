@@ -53,7 +53,9 @@ jobs:
         run: >-
           gradle -p apps/r8/android
           :calculator:assembleDebug
-          :games:assembleDebug
+          :games:assembleSudokuDebug
+          :games:assembleMinesweeperDebug
+          :games:assembleGame2048Debug
           :media:assembleDebug
           --stacktrace
       - name: Seal package identities, permissions and hashes
@@ -68,14 +70,23 @@ jobs:
             sha256sum "$apk" | tee -a R8_APK_SEALS.txt
             "$AAPT2" dump badging "$apk" | grep -E '^(package:|application-label:)' | tee -a R8_APK_SEALS.txt
             "$AAPT2" dump permissions "$apk" | tee -a R8_APK_SEALS.txt
-          done < <(find apps/r8/android -path '*/build/outputs/apk/debug/*.apk' -type f | sort)
-          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 3
+          done < <(
+            find apps/r8/android -path '*/build/outputs/apk/*' -type f -name '*.apk' | sort
+          )
+          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 5
+
+          grep -q "name='org.sableos.calculator'" R8_APK_SEALS.txt
+          grep -q "name='org.sableos.media'" R8_APK_SEALS.txt
+          grep -q "name='org.sableos.sudoku'" R8_APK_SEALS.txt
+          grep -q "name='org.sableos.minesweeper'" R8_APK_SEALS.txt
+          grep -q "name='org.sableos.game2048'" R8_APK_SEALS.txt
       - name: Generate deterministic artifact provenance and Rust SBOM
         run: >-
           python3 build/generate-supply-chain-evidence.py
           --out R8_SUPPLY_CHAIN_PROVENANCE.json
           --rust-sbom R8_RUST_SBOM.cdx.json
           --artifact-glob 'apps/r8/android/*/build/outputs/apk/debug/*.apk'
+          --artifact-glob 'apps/r8/android/*/build/outputs/apk/*/debug/*.apk'
       - name: Seal provenance files
         run: >-
           sha256sum
@@ -87,6 +98,7 @@ jobs:
           name: r8-qualification-apks-${{ github.sha }}
           path: |
             apps/r8/android/*/build/outputs/apk/debug/*.apk
+            apps/r8/android/*/build/outputs/apk/*/debug/*.apk
             R8_APK_SEALS.txt
             R8_SUPPLY_CHAIN_PROVENANCE.json
             R8_RUST_SBOM.cdx.json
