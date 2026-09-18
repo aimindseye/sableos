@@ -4,6 +4,23 @@ Last updated: 2026-09-18
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
 
+## 2026-09-18 UI refresh handoff
+
+The product UI refresh is now a cross-surface contract rather than a collection of app-specific restyles.
+
+```text
+UI_REFRESH=ACTIVE
+UI_CONTRACT=SABLE_DESIGN_SYSTEM_V1
+UI1_SHARED_DESIGN_AND_START=IN_IMPLEMENTATION
+UI2_FIRST_PARTY_APPS=NEXT
+UI3_READER_COMPOSITION=QUEUED
+UI4_SYSTEMUI_SHADE_QUICK_SETTINGS=QUEUED
+UI5_SETUP_SETTINGS_BRANDING=QUEUED
+UI6_REMAINING_SYSTEM_SURFACES=QUEUED
+```
+
+All new or refreshed screens must follow `docs/UI_UX_CONTRACT.md`. The same shared Compose design source is intended for R8 Gradle apps and Soong-built Sable surfaces such as SableStart. User-facing product copy should use SableOS branding where SableOS owns the surface, while internal identifiers and technically truthful provider/service references are not globally renamed.
+
 ## 2026-09-18 execution handoff
 
 The current implementation line has advanced beyond the older M1-only snapshot below. Where this handoff conflicts with an older near-term milestone label in this file, this section is the current execution authority.
