@@ -85,11 +85,27 @@ Screens should extend these primitives before introducing local visual conventio
 - Section titles, rows, toggles, warnings and destructive actions must use the same hierarchy and spacing as first-party apps.
 - Security/privacy explanations remain explicit; visual cleanup must not hide technical meaning.
 - Search/result rows display human-readable labels first.
-- The Applications list should expose a concise privacy/security summary under each app name based on **currently granted/effective access**, not every permission merely declared in the manifest.
-- Summaries should prioritize sensitive access such as Camera, Microphone, Location, Contacts, Phone/SMS, Nearby devices/Bluetooth, Photos/Media/Files, and high-impact special access such as Accessibility, Device admin, VPN, Notification access, Usage access, Draw over other apps, Install unknown apps, and unrestricted background/battery exceptions where relevant.
+
+#### Applications / Application Security & Privacy
+
+The Applications surface is a strategic SableOS privacy/security surface, not only a restyled stock app list.
+
+- The Applications list exposes a concise privacy/security summary under each app name based on **currently granted/effective access**, not every permission merely declared in the manifest.
+- Summaries prioritize sensitive access such as Camera, Microphone, Location, Contacts, Phone/SMS, Nearby devices/Bluetooth, Photos/Media/Files, and high-impact special access such as Accessibility, Device admin, VPN, Notification access, Usage access, Draw over other apps, Install unknown apps, and unrestricted background/battery exceptions where relevant.
 - Keep the list scannable: show up to three sensitive access labels, then `+N more`; show `No sensitive access` when none is currently granted.
-- Tapping an application opens the full app-permission/security detail surface where each grant/special access can be inspected and changed through the appropriate Android controls.
-- Color is supplemental only: neutral granted access uses normal secondary text; exceptional/high-impact access may use the Sable accent/warning treatment, but the permission name must remain explicit.
+- Tapping an application opens **Application Security & Privacy**, the Sable detail surface for effective authority and package transparency.
+- The detail surface should progressively expose:
+  1. identity, installer/update ownership and signing lineage;
+  2. runtime permissions, AppOps and special access;
+  3. component inventory and exported attack surface;
+  4. local library/tracker/privacy signals;
+  5. storage, data-use and background-execution context;
+  6. bounded local security/privacy history and security-relevant update deltas.
+- The UI must distinguish evidence classes where ambiguity matters: `DECLARED`, `ENFORCED`, `OBSERVED`, `INFERRED`, and `UNKNOWN`.
+- A declared permission must not be presented as observed use; a detected tracker/library must not be presented as proof that the code executed or transmitted data.
+- Color is supplemental only: normal granted access uses secondary text; exceptional/high-impact access may use Sable accent/warning treatment, but the capability name and state remain explicit.
+- Existing Android enforcement authorities remain authoritative. The UI should deep-link to or request narrow typed operations from PermissionController, AppOps, PackageManager and other appropriate platform services rather than becoming a generic privileged package manager.
+- AppManager is a capability/design reference only. SableOS independently implements these concepts at Android/AOSP boundaries and does not inherit AppManager's root/ADB super-application model or copy GPL implementation into Apache-licensed platform components.
 
 ### First-party apps
 
@@ -106,7 +122,7 @@ UI2  Calculator + Media + touch-first game-screen migration
 UI2G separate Sudoku / Minesweeper / 2048 APK shells
 UI3  Reader/Text Reader composition and reading controls
 UI4  SystemUI pulldown / quick settings / notifications / media controls
-UI5  SetupWizard + Settings + system dialogs + visible branding cleanup
+UI5  SetupWizard + Settings + Application Security & Privacy + system dialogs + visible branding cleanup
 UI6  lock screen / remaining system surfaces / accessibility and motion polish
 ```
 
