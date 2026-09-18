@@ -563,9 +563,9 @@ import org.junit.Test
 class SableTextReaderUtilTest {
     @Test
     fun readsPlainTextCapabilityInsideSableReader() {
-        val input = ByteArrayInputStream("Sable Reader\nPlain text".toByteArray())
+        val input = ByteArrayInputStream("Sable Reader\\nPlain text".toByteArray())
         assertEquals(
-            "Sable Reader\nPlain text",
+            "Sable Reader\\nPlain text",
             TextReaderUtil.readTextFromStream(input),
         )
     }
