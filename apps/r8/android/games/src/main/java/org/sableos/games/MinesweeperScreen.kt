@@ -145,7 +145,6 @@ internal fun MinesweeperScreen() {
                                 } else {
                                     MaterialTheme.colorScheme.onSurface
                                 },
-                            tonalElevation = androidx.compose.ui.unit.Dp.Hairline,
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
