@@ -29,8 +29,10 @@ rust/src/lib.rs
   sha256=27601dea645045b1688d40f301590613fb677aca51e4b980ec6878c3b09e90af
 
 src/com/sable/start/SableStartActivity.kt
-  git_blob=c78afae6e49655e61b2946b298225b75039de9ca
-  sha256=405c13177866b84cedbf51c204ba5c192d8e090470651c311c4e66f116ff72d5
+  source_component_blob=c78afae6e49655e61b2946b298225b75039de9ca
+  source_component_sha256=405c13177866b84cedbf51c204ba5c192d8e090470651c311c4e66f116ff72d5
+  canonical_ui1_sha256=1f14cfd6ff38b81dd17e0e8202ce9e5b4b098906af8d600be3f2df2a06e2ee66
+  note=adapted forward to the UI1 SableStartRoot(repository) and slim LauncherAppsRepository contract
 
 src/com/sable/start/bridge/SableStartNative.kt
   git_blob=da028fc0c8ddb7796df1e45b8c3dd5afcb7f6e5e
@@ -79,3 +81,19 @@ against an intended source workspace before describing a future workspace copy
 as identical to the canonical snapshot. Build-required portability is now
 closed for the current captured source set; historical README/docs files from
 the nested component checkout are not required product build inputs.
+
+
+## UI1 compatibility adaptation
+
+The recovered R6 `SableStartActivity.kt` was tracked and byte-identical to
+component commit `f705e875b3339ac1019429cac6df157257746660`, but that Activity
+targets the component repository's later callback/list-state API
+(`SableStartRoot(apps, onLaunchApp)`, Boolean `launch`, and launcher callback
+registration).
+
+Canonical UI1 intentionally uses the shared-design
+`SableStartRoot(repository)` surface and the slim repository contract.
+Therefore the canonical Activity is a narrow adapter: it retains native JNI
+lifecycle creation/destruction, constructs `LauncherAppsRepository`, and passes
+that repository into the UI1 root. This avoids reverting the UI1 refresh while
+keeping the recovered R6 source provenance explicit.
