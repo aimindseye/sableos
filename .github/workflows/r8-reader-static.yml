@@ -4,11 +4,17 @@ on:
   pull_request:
     paths:
       - 'apps/r8/reader/**'
+      - 'apps/r8/textreader/upstream.env'
+      - 'src/android/shared/sabledesign/**'
+      - 'build/verify-reader-manifest.py'
       - '.github/workflows/r8-reader-static.yml'
   push:
     branches: [main]
     paths:
       - 'apps/r8/reader/**'
+      - 'apps/r8/textreader/upstream.env'
+      - 'src/android/shared/sabledesign/**'
+      - 'build/verify-reader-manifest.py'
       - '.github/workflows/r8-reader-static.yml'
   workflow_dispatch:
 
@@ -27,35 +33,58 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
         with:
           distribution: temurin
           java-version: '21'
-      - name: Read pinned upstream identity
+
+      - name: Read pinned upstream identities
         id: pin
         shell: bash
         run: |
           set -euo pipefail
           source apps/r8/reader/upstream.env
+          source apps/r8/textreader/upstream.env
           echo "repository=$VAACHAK_REPOSITORY" >> "$GITHUB_OUTPUT"
           echo "commit=$VAACHAK_COMMIT" >> "$GITHUB_OUTPUT"
-      - name: Checkout pinned Vaachak source
+          echo "text_repository=$VAACHAK_TEXTREADER_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "text_commit=$VAACHAK_TEXTREADER_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout pinned Vaachak Mobile source
         shell: bash
         run: |
           set -euo pipefail
           git clone --no-tags --filter=blob:none "${{ steps.pin.outputs.repository }}" /tmp/vaachak
           git -C /tmp/vaachak fetch --depth=1 origin "${{ steps.pin.outputs.commit }}"
           git -C /tmp/vaachak checkout --detach "${{ steps.pin.outputs.commit }}"
-      - name: Apply Sable Reader flavor
-        run: python3 apps/r8/reader/apply_sable_flavor.py /tmp/vaachak
+          test "$(git -C /tmp/vaachak rev-parse HEAD)" = "${{ steps.pin.outputs.commit }}"
+
+      - name: Checkout pinned Vaachak Text Reader capability source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-tags --filter=blob:none "${{ steps.pin.outputs.text_repository }}" /tmp/vaachak-textreader
+          git -C /tmp/vaachak-textreader fetch --depth=1 origin "${{ steps.pin.outputs.text_commit }}"
+          git -C /tmp/vaachak-textreader checkout --detach "${{ steps.pin.outputs.text_commit }}"
+          test "$(git -C /tmp/vaachak-textreader rev-parse HEAD)" = "${{ steps.pin.outputs.text_commit }}"
+
+      - name: Apply Sable Reader composition
+        run: >-
+          python3 apps/r8/reader/apply_sable_flavor.py
+          /tmp/vaachak
+          /tmp/vaachak-textreader
+
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
-      - name: Lint Sable Reader
+
+      - name: Lint composed Sable Reader
         working-directory: /tmp/vaachak
         run: |
           chmod +x gradlew
           ./gradlew :leisure:lintSableDebug \
             --stacktrace --console=plain --no-daemon --no-configuration-cache
-      - name: Verify first-R8 Sable Reader manifest has no INTERNET permission
+
+      - name: Verify Sable Reader manifest policy
         working-directory: /tmp/vaachak
         shell: bash
         run: |
