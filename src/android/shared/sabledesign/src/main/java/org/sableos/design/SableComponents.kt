@@ -106,6 +106,7 @@ fun SableActionButton(
         Button(
             onClick = onClick,
             modifier = modifier.heightIn(min = SableSize.TouchTarget),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Text(text)
         }
@@ -113,6 +114,7 @@ fun SableActionButton(
         OutlinedButton(
             onClick = onClick,
             modifier = modifier.heightIn(min = SableSize.TouchTarget),
+            shape = MaterialTheme.shapes.medium,
         ) {
             Text(text)
         }
