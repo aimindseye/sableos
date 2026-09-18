@@ -112,13 +112,34 @@ UI4R1 remains source-qualified rather than product-qualified until the
 canonical Panther tree is mutated under an authorized gate and SystemUI is
 built/reviewed in product context.
 
+## UI4R2 implementation
+
+UI4R2 extends the cumulative SystemUI applicator with notification-shade
+geometry only. Before the mutation was added, `packages/SystemUI/res/values/dimens.xml`
+was sealed in `UI4_SYSTEMUI_BASELINE.json` at blob
+`6f388d006b55ce7355a08ca1628baf5b6ec3c92c`.
+
+The bounded delta is:
+
+- notification outer corner radius: 28dp -> 6dp;
+- normal inter-notification divider/spacing: 2dp -> 8dp;
+- notification shade scrim corner radius: 32dp -> 6dp.
+
+Existing grouped-child corner behavior remains unchanged, including the 4dp
+adjacent-notification radius. Notification ranking, grouping, expansion,
+dismissal, actions, heads-up behavior, focus/accessibility semantics, and
+notification-provider/security behavior are unchanged.
+
+The same `UI4 SystemUI static` workflow now self-tests the cumulative UI4R1
+and UI4R2 mutation set. Product/runtime acceptance remains deferred to UI4R4.
+
 ## First tranche acceptance
 
 ```text
 UI4_R0_PINNED_SYSTEMUI_SURFACES=PASS
 UI4_R1_QS_THEME_GEOMETRY=PASS
-UI4_R1_NOTIFICATION_SHADE_GEOMETRY=PASS
-UI4_R1_MEDIA_PLACEMENT=PASS
+UI4_R2_NOTIFICATION_SHADE_GEOMETRY=PASS
+UI4_R3_MEDIA_PLACEMENT=PASS
 UI4_R1_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS
 UI4_R1_BEHAVIORAL_DIFF=NONE
 ```

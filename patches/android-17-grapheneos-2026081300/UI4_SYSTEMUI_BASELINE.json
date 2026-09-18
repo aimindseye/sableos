@@ -74,6 +74,11 @@
       "path": "packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/CommonTile.kt",
       "blob_sha": "6db03f5f11cb3414d928be973bfc3c0fb39ed522",
       "role": "Quick Settings tile content geometry, labels, icon surfaces and semantics"
+    },
+    {
+      "path": "packages/SystemUI/res/values/dimens.xml",
+      "blob_sha": "6f388d006b55ce7355a08ca1628baf5b6ec3c92c",
+      "role": "notification row, stack-divider and shade-scrim visual geometry resources"
     }
   ]
 }
