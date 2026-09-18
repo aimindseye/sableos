@@ -8,23 +8,24 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import org.sableos.design.SableActionButton
+import org.sableos.design.SablePageHeader
+import org.sableos.design.SablePanel
+import org.sableos.design.SableScrollableScreen
+import org.sableos.design.SableSectionHeader
+import org.sableos.design.SableSpacing
 import org.sableos.design.SableTheme
+import org.sableos.design.SableTile
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
             SableTheme {
                 var stationUrl by remember { mutableStateOf("") }
                 var status by remember { mutableStateOf("Ready") }
+
                 val picker = rememberLauncherForActivityResult(
                     ActivityResultContracts.OpenDocument(),
                 ) { uri ->
@@ -43,54 +45,104 @@ class MainActivity : ComponentActivity() {
                                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
                             )
                         } catch (_: SecurityException) {
-                            // Some providers grant only transient access; playback still gets this URI.
+                            // Some providers grant transient access only.
                         }
                         playUri(uri)
                         status = "Playing local audio"
                     }
                 }
 
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                    ) {
-                        Text("Sable Media", style = MaterialTheme.typography.headlineLarge)
-                        Text("Music")
-                        Button(onClick = { picker.launch(arrayOf("audio/*")) }) {
-                            Text("Choose local audio")
-                        }
-                        Text("Internet Radio")
-                        OutlinedTextField(
-                            value = stationUrl,
-                            onValueChange = { stationUrl = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            label = { Text("HTTP(S) stream URL") },
-                        )
-                        Button(
-                            onClick = {
-                                val candidate = stationUrl.trim()
-                                if (candidate.startsWith("http://") || candidate.startsWith("https://")) {
-                                    playUri(Uri.parse(candidate))
-                                    status = "Playing radio stream"
-                                } else {
-                                    status = "Enter an HTTP or HTTPS station URL"
-                                }
-                            },
-                        ) { Text("Play station") }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { sendPlaybackAction(PlaybackService.ACTION_PAUSE) }) { Text("Pause") }
-                            Button(onClick = { sendPlaybackAction(PlaybackService.ACTION_RESUME) }) { Text("Resume") }
-                            Button(onClick = { sendPlaybackAction(PlaybackService.ACTION_STOP) }) { Text("Stop") }
-                        }
-                        Text(status, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                SableScrollableScreen {
+                    SablePageHeader(
+                        title = "Media",
+                        subtitle = "Music · Radio",
+                    )
+
+                    SablePanel {
                         Text(
-                            "Android Media3 owns decode, audio routing, focus and MediaSession lifecycle. " +
-                                "The Rust media domain owns station-list parsing and file-header probing only.",
+                            "Now playing",
+                            style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        Text(
+                            status,
+                            style = MaterialTheme.typography.headlineMedium,
+                        )
                     }
+
+                    SableSectionHeader("Music")
+                    SableTile(
+                        title = "Open local audio",
+                        subtitle = "Choose a track from this device",
+                        onClick = {
+                            picker.launch(arrayOf("audio/*"))
+                        },
+                    )
+
+                    SableSectionHeader("Internet radio")
+                    OutlinedTextField(
+                        value = stationUrl,
+                        onValueChange = { stationUrl = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("HTTP(S) stream URL") },
+                    )
+                    SableActionButton(
+                        text = "Play station",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = {
+                            val candidate = stationUrl.trim()
+                            if (
+                                candidate.startsWith("http://") ||
+                                candidate.startsWith("https://")
+                            ) {
+                                playUri(Uri.parse(candidate))
+                                status = "Playing radio stream"
+                            } else {
+                                status = "Enter an HTTP or HTTPS station URL"
+                            }
+                        },
+                    )
+
+                    SableSectionHeader("Playback")
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+                    ) {
+                        SableActionButton(
+                            text = "Pause",
+                            primary = false,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                sendPlaybackAction(PlaybackService.ACTION_PAUSE)
+                                status = "Paused"
+                            },
+                        )
+                        SableActionButton(
+                            text = "Resume",
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                sendPlaybackAction(PlaybackService.ACTION_RESUME)
+                                status = "Playing"
+                            },
+                        )
+                        SableActionButton(
+                            text = "Stop",
+                            primary = false,
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                sendPlaybackAction(PlaybackService.ACTION_STOP)
+                                status = "Stopped"
+                            },
+                        )
+                    }
+
+                    Text(
+                        "Media3 owns playback, audio routing, focus and session lifecycle. " +
+                            "Sable keeps the player surface direct and content-first.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }
