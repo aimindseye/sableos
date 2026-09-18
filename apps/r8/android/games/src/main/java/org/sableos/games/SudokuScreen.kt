@@ -118,7 +118,6 @@ internal fun SudokuScreen() {
                             shape = MaterialTheme.shapes.extraSmall,
                             color = container,
                             contentColor = content,
-                            tonalElevation = androidx.compose.ui.unit.Dp.Hairline,
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
