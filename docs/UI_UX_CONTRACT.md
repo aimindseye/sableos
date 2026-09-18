@@ -44,6 +44,9 @@ Shared primitives currently include:
 - `SableSize`
 - `SableColorTokens`
 - `SableScreen`
+- `SableScrollableScreen`
+- `SablePanel`
+- `SableActionButton`
 - `SablePageHeader`
 - `SableSectionHeader`
 - `SableListRow`
@@ -86,7 +89,7 @@ Screens should extend these primitives before introducing local visual conventio
 ### First-party apps
 
 - Calculator: Regular, Scientific and Converter are modes within one product shell.
-- Games: each game should present as a professional game experience rather than a developer test card.
+- Games: each game should present as a professional game experience rather than a developer test card. Shared game screens may be developed together, but the product target remains separate Sudoku, Minesweeper and 2048 launcher APKs.
 - Media: use a media-library/player hierarchy influenced by Zune/modern Windows media design while retaining Sable typography, spacing and state rules.
 - Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent.
 
@@ -94,7 +97,8 @@ Screens should extend these primitives before introducing local visual conventio
 
 ```text
 UI1  shared Sable Design System + Start reference screen
-UI2  Calculator + Games + Media migration
+UI2  Calculator + Media + touch-first game-screen migration
+UI2G separate Sudoku / Minesweeper / 2048 APK shells
 UI3  Reader/Text Reader composition and reading controls
 UI4  SystemUI pulldown / quick settings / notifications / media controls
 UI5  SetupWizard + Settings + system dialogs + visible branding cleanup
