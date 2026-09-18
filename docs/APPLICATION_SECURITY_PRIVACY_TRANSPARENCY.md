@@ -6,6 +6,24 @@ This document extends `APP_SECURITY_AND_COMPATIBILITY.md` from install/update-ti
 
 SableOS uses MuntashirAkon/AppManager as a design reference for rich package inspection, while independently implementing appropriate concepts at Android/AOSP enforcement and observation points. SableOS does **not** adopt App Manager's root/ADB privilege model as the platform trust model and does not require a single super-privileged package-management application.
 
+## UI refresh integration
+
+This policy is implemented through the Sable UI refresh rather than as a separate standalone product track.
+
+Primary user-facing ownership:
+
+```text
+UI5
+  -> Settings
+      -> Applications
+          -> concise effective-access summary
+          -> Application Security & Privacy
+```
+
+UI5 owns the presentation and interaction contract. This document remains authoritative for evidence semantics, trust boundaries, AppManager-derived lessons, and validation requirements.
+
+The normal Applications list remains intentionally simple. Advanced package names, component identifiers, signing details, tracker/library findings and evidence classes belong in the per-app detail surface.
+
 ## Core rule
 
 > SableOS should make an application's effective authority, exposed surfaces, data use, network behavior and security-relevant history understandable without weakening Android's sandbox or granting broad ambient privilege to the UI.
