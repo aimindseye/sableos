@@ -34,6 +34,13 @@ def load_lock() -> dict:
         for key in ("version", "url", "sha256", "binary", "version_contains"):
             if not isinstance(item.get(key), str) or not item[key]:
                 raise SystemExit(f"missing {name}.{key}")
+        version_args = item.get("version_args")
+        if (
+            not isinstance(version_args, list)
+            or not version_args
+            or any(not isinstance(arg, str) or not arg for arg in version_args)
+        ):
+            raise SystemExit(f"invalid {name}.version_args")
         parsed = urllib.parse.urlparse(item["url"])
         if parsed.scheme != "https" or parsed.netloc.lower() != "github.com":
             raise SystemExit(f"non-GitHub HTTPS tool URL: {name}")
@@ -113,7 +120,7 @@ def install_tool(name: str, item: dict, dest: pathlib.Path) -> None:
         archive.unlink(missing_ok=True)
 
     output = subprocess.check_output(
-        [str(binary_path), "--version"],
+        [str(binary_path), *item["version_args"]],
         text=True,
         stderr=subprocess.STDOUT,
     ).strip()

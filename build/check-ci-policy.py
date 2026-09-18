@@ -50,6 +50,10 @@ for token in ("curl ", "wget "):
     if token in all_workflow_text:
         failures.append(f"direct unverified network download token found in CI: {token.strip()}")
 
+for token in ("--write-locks", "--write-verification-metadata"):
+    if token in all_workflow_text:
+        failures.append(f"Gradle bootstrap write flag forbidden after INFRA3 baseline: {token}")
+
 for required in ("r8-android.yml", "r8-apk-seal.yml"):
     text = (WORKFLOWS / required).read_text(encoding="utf-8")
     if "'ndk;30.0.16248370'" not in text:
@@ -62,7 +66,9 @@ installer = ROOT / "build" / "install-pinned-tool.py"
 generator = ROOT / "build" / "generate-supply-chain-evidence.py"
 supply_workflow = WORKFLOWS / "supply-chain.yml"
 
-for path in (tool_lock, installer, generator, supply_workflow):
+gradle_checker = ROOT / "build" / "check-gradle-supply-chain.py"
+
+for path in (tool_lock, installer, generator, gradle_checker, supply_workflow):
     if not path.is_file():
         failures.append(f"INFRA3 supply-chain file missing: {path.relative_to(ROOT)}")
 
@@ -88,6 +94,11 @@ if tool_lock.is_file():
         ),
     }
     tools = lock_doc.get("tools", {})
+    expected_version_args = {
+        "cargo-audit": ["--version"],
+        "cargo-deny": ["--version"],
+        "cargo-llvm-cov": ["llvm-cov", "--version"],
+    }
     for name, (version, digest) in expected_tools.items():
         item = tools.get(name)
         if not isinstance(item, dict):
@@ -97,6 +108,8 @@ if tool_lock.is_file():
             failures.append(f"pinned tool version mismatch: {name}")
         if item.get("sha256") != digest:
             failures.append(f"pinned tool SHA-256 mismatch: {name}")
+        if item.get("version_args") != expected_version_args[name]:
+            failures.append(f"pinned tool version probe mismatch: {name}")
         url = item.get("url", "")
         parsed = urllib.parse.urlparse(url)
         if parsed.scheme != "https" or parsed.netloc.lower() != "github.com":
@@ -131,10 +144,12 @@ if supply_workflow.is_file():
     stext = supply_workflow.read_text(encoding="utf-8")
     required_supply_tokens = (
         "python3 build/install-pinned-tool.py --all",
-        "--write-locks",
-        "--write-verification-metadata sha256",
+        "cargo-llvm-cov llvm-cov --version",
+        "build/check-gradle-supply-chain.py",
+        "INFRA3_GRADLE_STATE_BEFORE.json",
+        "INFRA3_GRADLE_STATE_AFTER.json",
+        "r8-android-gradle-supply-chain-evidence-${{ github.sha }}",
         "SABLE_R8_RUST_SBOM.cdx.json",
-        "r8-android-gradle-supply-chain-baseline-${{ github.sha }}",
         "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a",
     )
     for token in required_supply_tokens:
@@ -152,6 +167,29 @@ if apk_seal.is_file():
     ):
         if token not in atext:
             failures.append(f"APK provenance token missing: {token}")
+
+expected_gradle_lockfiles = {
+    "apps/r8/android/calculator/gradle.lockfile",
+    "apps/r8/android/convert/gradle.lockfile",
+    "apps/r8/android/design/gradle.lockfile",
+    "apps/r8/android/games/gradle.lockfile",
+    "apps/r8/android/media/gradle.lockfile",
+}
+actual_gradle_lockfiles = {
+    str(path.relative_to(ROOT))
+    for path in (ROOT / "apps" / "r8" / "android").rglob("gradle.lockfile")
+    if path.is_file()
+}
+if actual_gradle_lockfiles != expected_gradle_lockfiles:
+    failures.append(
+        "Gradle lockfile set mismatch: "
+        f"actual={sorted(actual_gradle_lockfiles)} "
+        f"expected={sorted(expected_gradle_lockfiles)}"
+    )
+
+gradle_verification = ROOT / "apps" / "r8" / "android" / "gradle" / "verification-metadata.xml"
+if not gradle_verification.is_file():
+    failures.append("Gradle verification-metadata.xml missing")
 
 android_root_gradle = ROOT / "apps" / "r8" / "android" / "build.gradle.kts"
 if not android_root_gradle.is_file():

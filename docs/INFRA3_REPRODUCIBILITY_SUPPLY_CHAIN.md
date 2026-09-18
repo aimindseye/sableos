@@ -52,12 +52,17 @@ multi-project dependency graph with Gradle 8.13 and writes:
 - a resolved dependency report;
 - a manifest of those generated files.
 
-The generated baseline is uploaded as a CI artifact for review.
+The initial hosted baseline was generated successfully by PR #13 and reviewed
+before commit. Artifact `10527427195` had ZIP SHA-256
+`a677dad354d556476898e70717ce4b9cde10e05a6beaacfdd5c1641fe0d6133d`.
 
-**Important:** this initial combined commit does not pretend generated resolver
-state is already reviewed or authoritative. Exact Gradle lockfiles and
-verification metadata become enforced only after the hosted baseline artifact
-is inspected and committed in the bounded INFRA3 follow-up.
+The reviewed source state contains five module `gradle.lockfile` files plus
+`gradle/verification-metadata.xml`. The metadata contains SHA-256 verification
+entries and no host-specific `/home` or `/tmp` paths.
+
+Hosted CI now resolves the same dependency graph without bootstrap write flags,
+requires Gradle's committed dependency locks and verification metadata, and
+proves that the committed supply-chain state is unchanged after resolution.
 
 ### APK provenance
 
@@ -74,12 +79,15 @@ signature or production attestation.
 
 ## Remaining INFRA3 closure step
 
-After the combined branch passes hosted CI:
+The reviewed Gradle state is now committed in the INFRA3 branch. Final INFRA3
+closure requires the updated PR head to pass hosted CI with:
 
-1. inspect the generated Android Gradle baseline artifact;
-2. commit the exact generated lockfiles and verification metadata;
-3. rerun hosted CI with Gradle verification active;
-4. only then mark Android dependency resolution as reproducibly locked.
+1. checksum-verified Rust tool acquisition, including the corrected
+   `cargo-llvm-cov llvm-cov --version` probe contract;
+2. committed Gradle dependency locking;
+3. committed SHA-256 dependency verification metadata;
+4. immutable before/after Gradle supply-chain manifests;
+5. APK provenance and deterministic Rust SBOM generation.
 
 INFRA3 does not introduce production signing keys or a trusted self-hosted
 runner. Those remain separate roadmap gates.
