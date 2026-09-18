@@ -73,17 +73,14 @@ def main() -> None:
 '''
     gradle_text = gradle_text.replace(anchor, flavor + anchor, 1)
 
-    # LeakCanary exposes its own launcher activity in debug builds. Keep it for
-    # the upstream Vaachak debug flavor, but do not ship a second launcher
-    # surface inside the Sable Reader qualification APK.
+    # LeakCanary contributes its own launcher activity to debug APKs. The Sable
+    # qualification checkout does not need upstream debug tooling, so remove only
+    # this debug dependency from the ephemeral composed source tree. Canonical
+    # Vaachak source remains untouched.
     leakcanary_dependency = "    debugImplementation(libs.leakcanary.android)\n"
     if leakcanary_dependency not in gradle_text:
         fail("Vaachak LeakCanary dependency anchor changed; inspect upstream")
-    gradle_text = gradle_text.replace(
-        leakcanary_dependency,
-        "    add(\"vaachakDebugImplementation\", libs.leakcanary.android)\n",
-        1,
-    )
+    gradle_text = gradle_text.replace(leakcanary_dependency, "", 1)
 
     gradle_file.write_text(
         gradle_text,
