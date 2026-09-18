@@ -90,7 +90,7 @@ Sable Convert is no longer intended to be a separate launcher-visible APK. The `
 
 UI2 is merged. UI2G packages the shared touch-first Sudoku, Minesweeper and 2048 screens as three distinct launcher APKs using product flavors in the qualified `:games` module. The three APKs retain one Rust/JNI implementation boundary while receiving distinct package identities and launcher labels. Reader/Text Reader composition follows UI2/UI2G, then the existing standalone qualification and exact artifact-freeze gates apply.
 
-Reader capability qualification remains distinct from Reader composition: Vaachak Mobile and Vaachak Text Reader may both pass independently without proving that one Sable Reader APK contains both paths or that its final manifest satisfies Sable privacy policy.
+UI3 composes one Sable Reader qualification APK from the pinned Vaachak Mobile publication path plus the bounded Vaachak Text Reader plain-text stream capability. The composed manifest must prove one launcher, no INTERNET/CAMERA authority, and text/plain VIEW/SEND/PROCESS_TEXT support. OCR and translation remain deferred gates.
 
 INFRA5 encrypted trusted-runner activation is intentionally deferred and does not block this R8 work. Current qualification remains on GitHub-hosted CI; see `docs/INFRA5_DEFERRED_TRUSTED_RUNNER.md`.
 
