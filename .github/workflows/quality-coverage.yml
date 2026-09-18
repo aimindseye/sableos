@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/r8/android/**'
+      - 'src/android/shared/sabledesign/**'
       - 'apps/r8/rust/**'
       - 'build/check-ci-policy.py'
       - 'build/supply-chain-lock.json'
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - 'apps/r8/android/**'
+      - 'src/android/shared/sabledesign/**'
       - 'apps/r8/rust/**'
       - 'build/check-ci-policy.py'
       - 'build/supply-chain-lock.json'
