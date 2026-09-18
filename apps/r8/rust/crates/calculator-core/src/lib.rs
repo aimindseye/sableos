@@ -13,6 +13,7 @@ pub enum ArithmeticError {
     InvalidNumber,
     DivisionByZero,
     Overflow,
+    Domain,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -21,6 +22,70 @@ pub enum BinaryOperation {
     Subtract,
     Multiply,
     Divide,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ScientificOperation {
+    SquareRoot,
+    Square,
+    Reciprocal,
+    SinDegrees,
+    CosDegrees,
+    TanDegrees,
+    NaturalLog,
+    Log10,
+}
+
+pub fn apply_scientific(
+    text: &str,
+    operation: ScientificOperation,
+) -> Result<f64, ArithmeticError> {
+    let value = text
+        .trim()
+        .parse::<f64>()
+        .map_err(|_| ArithmeticError::InvalidNumber)?;
+    if !value.is_finite() {
+        return Err(ArithmeticError::Overflow);
+    }
+
+    let result = match operation {
+        ScientificOperation::SquareRoot => {
+            if value < 0.0 {
+                return Err(ArithmeticError::Domain);
+            }
+            value.sqrt()
+        }
+        ScientificOperation::Square => value * value,
+        ScientificOperation::Reciprocal => {
+            if value == 0.0 {
+                return Err(ArithmeticError::DivisionByZero);
+            }
+            1.0 / value
+        }
+        ScientificOperation::SinDegrees => value.to_radians().sin(),
+        ScientificOperation::CosDegrees => value.to_radians().cos(),
+        ScientificOperation::TanDegrees => value.to_radians().tan(),
+        ScientificOperation::NaturalLog => {
+            if value <= 0.0 {
+                return Err(ArithmeticError::Domain);
+            }
+            value.ln()
+        }
+        ScientificOperation::Log10 => {
+            if value <= 0.0 {
+                return Err(ArithmeticError::Domain);
+            }
+            value.log10()
+        }
+    };
+
+    if result.is_nan() {
+        return Err(ArithmeticError::Domain);
+    }
+    if !result.is_finite() {
+        return Err(ArithmeticError::Overflow);
+    }
+    Ok(result)
 }
 
 /// Exact rational value produced from a finite decimal input.
@@ -270,6 +335,47 @@ mod tests {
         assert_eq!(
             ExactNumber::parse_decimal("-2.50").unwrap().to_string(),
             "-5/2"
+        );
+    }
+
+    #[test]
+    fn scientific_operations_cover_standard_unary_functions() {
+        use super::{apply_scientific, ScientificOperation};
+
+        assert_eq!(
+            apply_scientific("9", ScientificOperation::SquareRoot).unwrap(),
+            3.0
+        );
+        assert_eq!(
+            apply_scientific("12", ScientificOperation::Square).unwrap(),
+            144.0
+        );
+        assert!((
+            apply_scientific("30", ScientificOperation::SinDegrees).unwrap() - 0.5
+        )
+            .abs()
+            < 1.0e-12);
+        assert_eq!(
+            apply_scientific("100", ScientificOperation::Log10).unwrap(),
+            2.0
+        );
+    }
+
+    #[test]
+    fn scientific_domain_errors_fail_closed() {
+        use super::{apply_scientific, ScientificOperation};
+
+        assert_eq!(
+            apply_scientific("-1", ScientificOperation::SquareRoot),
+            Err(ArithmeticError::Domain)
+        );
+        assert_eq!(
+            apply_scientific("0", ScientificOperation::Reciprocal),
+            Err(ArithmeticError::DivisionByZero)
+        );
+        assert_eq!(
+            apply_scientific("0", ScientificOperation::NaturalLog),
+            Err(ArithmeticError::Domain)
         );
     }
 }
