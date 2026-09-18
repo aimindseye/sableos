@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application")
+    id("com.android.library")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
@@ -9,11 +9,8 @@ android {
     compileSdk = 36
     ndkVersion = "30.0.16248370"
     defaultConfig {
-        applicationId = "org.sableos.convert"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
         ndk {
             abiFilters += "arm64-v8a"
         }
@@ -29,7 +26,6 @@ android {
 dependencies {
     implementation(project(":design"))
     implementation(platform("androidx.compose:compose-bom:2026.02.01"))
-    implementation("androidx.activity:activity-compose:1.12.4")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
