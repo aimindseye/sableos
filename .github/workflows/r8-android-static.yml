@@ -51,6 +51,7 @@ jobs:
           gradle -p apps/r8/android
           :design:lintDebug
           :calculator:lintDebug
+          :convert:lintDebug
           :games:lintDebug
           :media:lintDebug
           --stacktrace
