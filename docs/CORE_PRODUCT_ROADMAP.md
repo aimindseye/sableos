@@ -247,7 +247,11 @@ Security/Privacy:
 - Secure Package Intelligence;
 - application transparency;
 - effective Permission/AppOps state;
-- package/signing/component/privacy history.
+- package/signing/component/privacy history;
+- UI5 Settings -> Applications privacy summaries;
+- UI5 Application Security & Privacy detail surface for identity/signing, authority, components, privacy signals, usage/background context and bounded local history.
+
+The application-security surface follows `APPLICATION_SECURITY_PRIVACY_TRANSPARENCY.md` and the shared `UI_UX_CONTRACT.md`. AppManager remains a design/capability reference rather than a privileged dependency.
 
 ## M6 / CP6 — AOD, Voice and Agent
 
