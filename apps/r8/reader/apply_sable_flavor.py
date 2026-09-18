@@ -81,7 +81,7 @@ def main() -> None:
         fail("Vaachak LeakCanary dependency anchor changed; inspect upstream")
     gradle_text = gradle_text.replace(
         leakcanary_dependency,
-        "    vaachakDebugImplementation(libs.leakcanary.android)\n",
+        "    add(\"vaachakDebugImplementation\", libs.leakcanary.android)\n",
         1,
     )
 
