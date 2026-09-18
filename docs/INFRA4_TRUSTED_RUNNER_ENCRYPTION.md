@@ -58,3 +58,17 @@ included in deterministic supply-chain provenance.
 This INFRA4 change does not install/register a runner, enable a runner service,
 create registration credentials, change root privileges, or enable self-hosted
 workflow execution.
+
+## INFRA5 disposition — deferred on 2026-09-18
+
+INFRA5 trusted-runner activation is intentionally deferred until release/security hardening. The current unencrypted `ai-g732` development host remains **ineligible** for trusted self-hosted execution; GitHub-hosted CI remains the qualification path.
+
+This decision does not relax INFRA4. The current fail-closed state remains:
+
+```text
+SOURCE_STORAGE_ENCRYPTED=NO
+TRUSTED_SELF_HOSTED_RUNNER=DISABLED
+INFRA5_STATUS=DEFERRED_NON_BLOCKING
+```
+
+Revisit INFRA5 together with production signing/key custody and release-candidate infrastructure. See `INFRA5_DEFERRED_TRUSTED_RUNNER.md` for the activation triggers and current development handoff.
