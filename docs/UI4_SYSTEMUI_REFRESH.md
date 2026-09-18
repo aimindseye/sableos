@@ -61,6 +61,57 @@ Do not change:
 
 Behavioral changes require a later separately-qualified tranche.
 
+
+## UI4R1 implementation
+
+UI4R1 is represented by the fail-closed applicator:
+
+```text
+patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py
+```
+
+It is bound to the exact five UI4R1 mutation files already present in
+`UI4_SYSTEMUI_BASELINE.json`. The applicator refuses an unexpected
+`frameworks/base` HEAD, unexpected source blobs, replacement cardinality,
+or dirty source scope.
+
+The visual delta is intentionally small:
+
+- active Quick Settings tiles use the semantic primary-container surface rather
+  than a fully saturated primary fill;
+- active dual-target tiles use the same active surface while retaining a
+  stronger primary toggle target;
+- active and inactive tile surfaces use a common 6dp corner radius, with 4dp
+  icon/toggle corners;
+- compact Quick Settings grid spacing is 8dp;
+- expanded Quick Settings content uses 16dp horizontal padding;
+- brightness placement uses an 8dp vertical spacing class;
+- footer surface corners are 6dp and footer action height is 48dp.
+
+The applicator does **not** mutate tile state repositories/view models,
+click/long-click routing, shade gestures, permissions, privacy indicators,
+media session behavior, or accessibility semantics.
+
+Static qualification is hosted in `.github/workflows/ui4-systemui-static.yml`.
+That workflow compiles the applicator and runs its synthetic replacement and
+pinned-mutation-set self-test without mutating an Android workspace.
+
+Apply only from a SableOS checkout against the canonical Android workspace:
+
+```bash
+python3 patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py --self-test
+
+python3 patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py \
+  --source /srv/data/sableos_panther_graphene_2026081300_workspace apply
+
+python3 patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py \
+  --source /srv/data/sableos_panther_graphene_2026081300_workspace verify
+```
+
+UI4R1 remains source-qualified rather than product-qualified until the
+canonical Panther tree is mutated under an authorized gate and SystemUI is
+built/reviewed in product context.
+
 ## First tranche acceptance
 
 ```text
