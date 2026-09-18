@@ -349,11 +349,10 @@ mod tests {
             apply_scientific("12", ScientificOperation::Square).unwrap(),
             144.0
         );
-        assert!((
-            apply_scientific("30", ScientificOperation::SinDegrees).unwrap() - 0.5
-        )
-            .abs()
-            < 1.0e-12);
+        assert!(
+            (apply_scientific("30", ScientificOperation::SinDegrees).unwrap() - 0.5).abs()
+                < 1.0e-12
+        );
         assert_eq!(
             apply_scientific("100", ScientificOperation::Log10).unwrap(),
             2.0
