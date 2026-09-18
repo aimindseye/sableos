@@ -44,40 +44,73 @@ The script:
 1. self-tests and applies/verifies the cumulative UI4R1-R3 SystemUI delta;
 2. syncs the shared `SableDesign` Soong filegroup;
 3. syncs current SableStart;
-4. builds `SableStart`, `SystemUI`, vendor boot inputs, and the Panther target-files package;
+4. builds `SableStart`, `SystemUI`, vendor boot inputs, the Panther target-files package, and otatools;
 5. proves both SystemUI and SableStart are present in target-files;
-6. requires `system.img`, `product.img`, `system_ext.img`, and `vbmeta.img`;
-7. writes `UI_PREVIEW_IMAGES.sha256`;
-8. records build-warning candidates for review.
+6. generates a coherent fastboot image ZIP with `img_from_target_files`;
+7. verifies the image ZIP contains the boot-critical, vbmeta, super metadata, and dynamic-partition images required by the packaged `fastboot-info.txt`;
+8. proves the image ZIP's `fastboot-info.txt` is byte-identical to the target-files copy;
+9. writes a SHA-256 ledger for the fastboot image ZIP;
+10. records build-warning candidates for review.
 
 Default preview lunch target is `panther-cur-userdebug`. Override with `SABLEOS_UI_PREVIEW_LUNCH_TARGET` only when intentionally testing another variant.
 
 ## Flash the inactive slot
 
-The flash gate preserves userdata and chooses the opposite slot at runtime. It refuses non-Panther devices, locked bootloaders, active snapshot updates, missing hashes, multiple fastboot devices, or missing authorization flags.
+The preview flash uses the coherent image ZIP produced by
+`img_from_target_files`. It does not manually select a subset of AVB-protected
+partitions.
+
+This matters because the Panther target's `vbmeta.img` authenticates the boot
+chain and the dynamic partition set. A partial flash can therefore create a
+slot where the new vbmeta descriptors do not match old boot/vendor images.
+
+The packaged `fastboot-info.txt` is authoritative for the preview image. For
+the current Panther target it includes the boot-critical images, applies
+vbmeta, reboots to fastbootd, updates the super metadata, and flashes the six
+dynamic partitions.
+
+The flash helper:
+
+- requires fastboot 35.0.1 or newer;
+- verifies the image ZIP SHA-256 ledger;
+- verifies the required image members and fastboot-info contract;
+- refuses non-Panther devices, locked bootloaders, active snapshot updates, or
+  multiple fastboot devices;
+- discovers the inactive slot at runtime;
+- invokes `fastboot update` with `--slot=<inactive>`,
+  `--skip-secondary`, and `--skip-reboot`;
+- never passes `-w`, so the packaged conditional userdata/metadata erase
+  operations do not run;
+- returns to bootloader fastboot for a post-flash active-slot check before
+  booting Android.
+
+Example:
 
 ```bash
+export FASTBOOT=/path/to/platform-tools/fastboot
+export ADB=/path/to/platform-tools/adb
+
 export DEVICE_CONTACT_AUTHORIZED=YES
 export DEVICE_REBOOT_AUTHORIZED=YES
 export FLASH_AUTHORIZED=YES
 export SLOT_CHANGE_AUTHORIZED=YES
 
 bash build/panther/flash-ui-preview-inactive-slot.sh \
-  /srv/data/sableos-ui-preview-out/target/product/panther
+  /path/to/out/target/product/panther/sable_panther-ui-preview-images.zip
 ```
 
-The coherent preview set is:
+Do not use a distribution-provided legacy fastboot when it fails the version
+gate. Use a current Android Platform Tools fastboot or an equivalently current
+qualified build.
 
-```text
-system_<inactive>
-product_<inactive>
-system_ext_<inactive>
-vbmeta_<inactive>
-```
+The previous four-image preview set
+(`system/product/system_ext/vbmeta`) is retired. It was insufficient for the
+generated AVB contract because the same vbmeta also authenticates
+`boot`, `dtbo`, `init_boot`, `pvmfw`, `vendor_boot`,
+`vendor_kernel_boot`, `system_dlkm`, `vendor`, and `vendor_dlkm`.
 
-`vbmeta` is written last. There is no userdata or metadata wipe. The current slot remains the rollback side until the inactive-slot preview is explicitly made active.
-
-This extends the previously validated D3 deployment set because UI4 modifies SystemUI in `system_ext`.
+The known-good current slot is preserved as the rollback side through
+`--skip-secondary`.
 
 ## Runtime gate and screenshots
 

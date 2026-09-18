@@ -89,7 +89,7 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 LOG="$PREVIEW_EVIDENCE/ui-preview-build-$STAMP.log"
 
 set +e
-m -j"$JOBS"     SableStart     SystemUI     vendorbootimage     vendorkernelbootimage     target-files-package     2>&1 | tee "$LOG"
+m -j"$JOBS"     SableStart     SystemUI     vendorbootimage     vendorkernelbootimage     target-files-package     otatools-package     fastboot     2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 set -e
 
@@ -127,43 +127,105 @@ if ! grep -Eq '(^|/)SableStart\.apk$' "$TARGET_LIST"; then
 fi
 echo "UI_PREVIEW_SABLESTART_PACKAGED=PASS"
 
-required_images=(system.img product.img system_ext.img vbmeta.img)
-for image in "${required_images[@]}"; do
-    if [[ -f "$PRODUCT_OUT/$image" ]]; then
-        continue
-    fi
+HOST_FASTBOOT="$PREVIEW_OUT/host/linux-x86/bin/fastboot"
+if [[ ! -x "$HOST_FASTBOOT" ]]; then
+    echo "UI_PREVIEW_HOST_FASTBOOT_MISSING=$HOST_FASTBOOT"
+    exit 8
+fi
+echo "UI_PREVIEW_HOST_FASTBOOT=$HOST_FASTBOOT"
+"$HOST_FASTBOOT" --version
 
-    archive_member="IMAGES/$image"
-    if ! grep -Fxq "$archive_member" "$TARGET_LIST"; then
-        echo "UI_PREVIEW_IMAGE_MISSING=$PRODUCT_OUT/$image"
-        echo "UI_PREVIEW_TARGET_FILES_IMAGE_MISSING=$archive_member"
-        exit 8
-    fi
+OTATOOLS_PACKAGE="$(
+    find "$PREVIEW_OUT/host/linux-x86/obj/ETC" \
+        -type f \
+        -path '*/otatools-packagelinux_glibc_x86_64_intermediates/*' \
+        -name 'otatools-packagelinux_glibc_x86_64*' \
+        -printf '%T@ %p\n' 2>/dev/null \
+        | sort -nr \
+        | head -n1 \
+        | cut -d' ' -f2-
+)"
+if [[ -z "$OTATOOLS_PACKAGE" || ! -f "$OTATOOLS_PACKAGE" ]]; then
+    echo "UI_PREVIEW_OTATOOLS_PACKAGE=NOT_FOUND"
+    exit 8
+fi
+echo "UI_PREVIEW_OTATOOLS_PACKAGE=$OTATOOLS_PACKAGE"
 
-    tmp="$PRODUCT_OUT/.$image.extracting"
-    rm -f "$tmp"
-    unzip -p "$TARGET_FILES" "$archive_member" > "$tmp"
-    [[ -s "$tmp" ]] || {
-        rm -f "$tmp"
-        echo "UI_PREVIEW_IMAGE_EXTRACT_EMPTY=$archive_member"
+OTATOOLS_DIR="$PREVIEW_EVIDENCE/otatools-$STAMP"
+rm -rf "$OTATOOLS_DIR"
+mkdir -p "$OTATOOLS_DIR"
+unzip -q "$OTATOOLS_PACKAGE" -d "$OTATOOLS_DIR"
+
+IMG_FROM_TARGET_FILES="$OTATOOLS_DIR/bin/img_from_target_files"
+if [[ ! -x "$IMG_FROM_TARGET_FILES" ]]; then
+    echo "UI_PREVIEW_IMG_FROM_TARGET_FILES_MISSING=$IMG_FROM_TARGET_FILES"
+    exit 8
+fi
+echo "UI_PREVIEW_IMG_FROM_TARGET_FILES=$IMG_FROM_TARGET_FILES"
+
+FASTBOOT_ZIP="$PRODUCT_OUT/sable_panther-ui-preview-images.zip"
+rm -f "$FASTBOOT_ZIP" "$FASTBOOT_ZIP.sha256"
+
+"$IMG_FROM_TARGET_FILES" "$TARGET_FILES" "$FASTBOOT_ZIP"
+
+[[ -s "$FASTBOOT_ZIP" ]] || {
+    echo "UI_PREVIEW_FASTBOOT_ZIP_EMPTY=$FASTBOOT_ZIP"
+    exit 8
+}
+
+FASTBOOT_LIST="$PREVIEW_EVIDENCE/ui-preview-fastboot-zip-list-$STAMP.txt"
+unzip -Z1 "$FASTBOOT_ZIP" > "$FASTBOOT_LIST"
+
+required_fastboot_members=(
+    android-info.txt
+    fastboot-info.txt
+    boot.img
+    init_boot.img
+    dtbo.img
+    vendor_kernel_boot.img
+    pvmfw.img
+    vendor_boot.img
+    vbmeta.img
+    super_empty.img
+    system.img
+    system_dlkm.img
+    system_ext.img
+    product.img
+    vendor.img
+    vendor_dlkm.img
+)
+for member in "${required_fastboot_members[@]}"; do
+    grep -Fxq "$member" "$FASTBOOT_LIST" || {
+        echo "UI_PREVIEW_FASTBOOT_MEMBER_MISSING=$member"
         exit 8
     }
-    mv "$tmp" "$PRODUCT_OUT/$image"
-    echo "UI_PREVIEW_IMAGE_STAGED_FROM_TARGET_FILES=$archive_member"
 done
+
+TARGET_FASTBOOT_INFO="$PREVIEW_EVIDENCE/ui-preview-target-fastboot-info-$STAMP.txt"
+ZIP_FASTBOOT_INFO="$PREVIEW_EVIDENCE/ui-preview-image-fastboot-info-$STAMP.txt"
+unzip -p "$TARGET_FILES" META/fastboot-info.txt > "$TARGET_FASTBOOT_INFO"
+unzip -p "$FASTBOOT_ZIP" fastboot-info.txt > "$ZIP_FASTBOOT_INFO"
+cmp -s "$TARGET_FASTBOOT_INFO" "$ZIP_FASTBOOT_INFO" || {
+    echo "UI_PREVIEW_FASTBOOT_INFO_FIDELITY=FAIL"
+    exit 8
+}
+echo "UI_PREVIEW_FASTBOOT_INFO_FIDELITY=PASS"
 
 (
     cd "$PRODUCT_OUT"
-    sha256sum system.img product.img system_ext.img vbmeta.img \
-        | tee UI_PREVIEW_IMAGES.sha256
+    sha256sum "$(basename "$FASTBOOT_ZIP")" > "$(basename "$FASTBOOT_ZIP").sha256"
+    cat "$(basename "$FASTBOOT_ZIP").sha256"
 )
 sha256sum "$TARGET_FILES" | tee "$PREVIEW_EVIDENCE/ui-preview-target-files-$STAMP.sha256"
+
+echo "FASTBOOT_ZIP=$FASTBOOT_ZIP"
+echo "FASTBOOT_ZIP_LEDGER=$FASTBOOT_ZIP.sha256"
+echo "UI_PREVIEW_FASTBOOT_PACKAGE=PASS"
 
 WARNING_CANDIDATES="$PREVIEW_EVIDENCE/ui-preview-warning-candidates-$STAMP.txt"
 grep -Ein     'warning|warn:|error|fatal|failed to read|deprecated|undefined reference|neverallow'     "$LOG" > "$WARNING_CANDIDATES" || true
 
 echo "PRODUCT_OUT=$PRODUCT_OUT"
-echo "IMAGE_LEDGER=$PRODUCT_OUT/UI_PREVIEW_IMAGES.sha256"
 echo "WARNING_CANDIDATES=$WARNING_CANDIDATES"
 echo "UI_PREVIEW_BUILD=PASS"
-echo "UI_PREVIEW_READY_FOR_INACTIVE_SLOT_FLASH=YES"
+echo "UI_PREVIEW_READY_FOR_INACTIVE_SLOT_FASTBOOT_UPDATE=YES"
