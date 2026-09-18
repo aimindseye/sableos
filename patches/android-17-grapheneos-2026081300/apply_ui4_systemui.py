@@ -4,10 +4,12 @@
 Target: GrapheneOS 2026081300 / Android 17
 Pinned frameworks/base: aab06a8bd44c4c2b58eeec780fde83baa9d43a40
 
-UI4R1 is deliberately visual-only. It changes tile geometry/colors, compact-QS
-spacing, brightness/panel spacing, and footer geometry. It does not alter tile
-state/view models, click/long-click behavior, shade gestures, permissions,
-privacy indicators, media behavior, or accessibility semantics.
+UI4R1/UI4R2 are deliberately visual-only. They change Quick Settings tile
+geometry/colors, compact-QS spacing, brightness/panel spacing, footer geometry,
+notification-card/shade radii, and notification-stack spacing. They do not
+alter tile or notification state/view models, click/long-click behavior, shade
+gestures, permissions, privacy indicators, media behavior, ranking, dismissal,
+actions, or accessibility semantics.
 """
 
 from __future__ import annotations
@@ -35,6 +37,7 @@ QUICK_SETTINGS_CONTENT = Path(
 FOOTER_ACTIONS = Path(
     "packages/SystemUI/compose/features/src/com/android/systemui/qs/footer/ui/compose/FooterActions.kt"
 )
+DIMENS = Path("packages/SystemUI/res/values/dimens.xml")
 
 BASELINE_BLOBS = {
     COMMON_TILE: "6db03f5f11cb3414d928be973bfc3c0fb39ed522",
@@ -42,6 +45,7 @@ BASELINE_BLOBS = {
     QUICK_QUICK_SETTINGS: "84abda67984d38bfd7bc5f33f00a3a360854f180",
     QUICK_SETTINGS_CONTENT: "0fc0146120c5547b29e7eeb043548c8cdb9f129f",
     FOOTER_ACTIONS: "f6bf90e8071541062b227c6a47829768f345659f",
+    DIMENS: "6f388d006b55ce7355a08ca1628baf5b6ec3c92c",
 }
 
 UI4_DIRT = {f" M {path.as_posix()}" for path in BASELINE_BLOBS}
@@ -198,6 +202,20 @@ PATCHES: dict[Path, tuple[tuple[str, str], ...]] = {
         ),
         ("    val FooterButtonHeight = 40.dp\n", "    val FooterButtonHeight = 48.dp\n"),
     ),
+    DIMENS: (
+        (
+            '<dimen name="notification_corner_radius">28dp</dimen>\n',
+            '<dimen name="notification_corner_radius">6dp</dimen>\n',
+        ),
+        (
+            '<dimen name="notification_divider_height">2dp</dimen>\n',
+            '<dimen name="notification_divider_height">8dp</dimen>\n',
+        ),
+        (
+            '<dimen name="notification_scrim_corner_radius">32dp</dimen>\n',
+            '<dimen name="notification_scrim_corner_radius">6dp</dimen>\n',
+        ),
+    ),
 }
 
 
@@ -296,8 +314,11 @@ def verify_visual_delta(source: Path) -> None:
     print("UI4_R1_COMPACT_QS_SPACING=PASS")
     print("UI4_R1_BRIGHTNESS_PANEL_ALIGNMENT=PASS")
     print("UI4_R1_FOOTER_GEOMETRY=PASS")
-    print("UI4_R1_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS")
-    print("UI4_R1_BEHAVIORAL_DIFF=NONE")
+    print("UI4_R2_NOTIFICATION_CARD_GEOMETRY=PASS")
+    print("UI4_R2_NOTIFICATION_STACK_SPACING=PASS")
+    print("UI4_R2_NOTIFICATION_SHADE_GEOMETRY=PASS")
+    print("UI4_R1_R2_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS")
+    print("UI4_R1_R2_BEHAVIORAL_DIFF=NONE")
 
 
 def apply(source: Path) -> None:
@@ -336,9 +357,9 @@ def self_test() -> None:
     if set(PATCHES) != set(BASELINE_BLOBS):
         raise SystemExit("SELF_TEST_MUTATION_SET_NOT_EQUAL_TO_PINNED_SET")
 
-    print("UI4_R1_PINNED_MUTATION_SET=PASS")
-    print("UI4_R1_REPLACEMENT_CARDINALITY=PASS")
-    print("UI4_R1_SELF_TEST=PASS")
+    print("UI4_R1_R2_PINNED_MUTATION_SET=PASS")
+    print("UI4_R1_R2_REPLACEMENT_CARDINALITY=PASS")
+    print("UI4_R1_R2_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
     print("SELF_TEST_DEVICE_CONTACT=NONE")
