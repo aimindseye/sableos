@@ -133,6 +133,29 @@ notification-provider/security behavior are unchanged.
 The same `UI4 SystemUI static` workflow now self-tests the cumulative UI4R1
 and UI4R2 mutation set. Product/runtime acceptance remains deferred to UI4R4.
 
+## UI4R3 implementation
+
+UI4R3 extends the cumulative SystemUI applicator with media-surface visual
+alignment. Before mutation, the actual renderer
+`packages/SystemUI/src/com/android/systemui/media/remedia/ui/compose/Media.kt`
+was sealed in `UI4_SYSTEMUI_BASELINE.json` at blob
+`e794506f7928cd44c8670719ba051fb7f8a90b28`.
+
+The bounded delta is:
+
+- media carousel/card clip radius: 32dp -> 6dp;
+- media artwork/background clip radius: 32dp -> 6dp;
+- output/device-chip surface, clip, and border radius: 12dp -> 6dp.
+
+The media presentation model, album-art treatment, title/artist hierarchy,
+carousel paging, swipe-to-dismiss, output-device routing, playback actions,
+seek behavior, session state, false-touch handling, and accessibility semantics
+remain unchanged. Touch-target geometry is not reduced.
+
+The same `UI4 SystemUI static` workflow self-tests the cumulative UI4R1-R3
+mutation set. Product build and runtime visual/accessibility acceptance remain
+the UI4R4 gate.
+
 ## First tranche acceptance
 
 ```text
