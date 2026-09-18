@@ -12,4 +12,9 @@ internal object NativeBridge {
         operation: Int,
         right: String,
     ): String
+
+    external fun applyScientific(
+        input: String,
+        operation: Int,
+    ): String
 }
