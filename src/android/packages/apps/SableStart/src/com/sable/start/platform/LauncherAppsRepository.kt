@@ -1,11 +1,13 @@
 package org.sableos.start.platform
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.os.Process
 import android.os.UserManager
 import org.sableos.start.model.AppEntry
+import java.util.Locale
 
 class LauncherAppsRepository(
     context: Context,
@@ -19,6 +21,8 @@ class LauncherAppsRepository(
         appContext.getSystemService(UserManager::class.java)
 
     fun loadApps(): List<AppEntry> {
+        val locale = Locale.getDefault()
+
         return userManager.userProfiles
             .flatMap { user ->
                 launcherApps
@@ -32,30 +36,55 @@ class LauncherAppsRepository(
                     }
             }
             .sortedWith(
-                compareBy(
-                    String.CASE_INSENSITIVE_ORDER,
-                ) {
-                    it.label
+                compareBy<AppEntry> {
+                    it.label.lowercase(locale)
                 }
+                    .thenBy {
+                        it.component.packageName
+                    }
+                    .thenBy {
+                        it.component.className
+                    }
+                    .thenBy {
+                        userManager.getSerialNumberForUser(it.user)
+                    },
             )
     }
 
-    fun launch(entry: AppEntry) {
-        if (entry.user == Process.myUserHandle()) {
-            val intent =
-                Intent(Intent.ACTION_MAIN)
-                    .addCategory(Intent.CATEGORY_LAUNCHER)
-                    .setComponent(entry.component)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    fun launch(entry: AppEntry): Boolean {
+        return try {
+            if (entry.user == Process.myUserHandle()) {
+                val intent =
+                    Intent(Intent.ACTION_MAIN)
+                        .addCategory(Intent.CATEGORY_LAUNCHER)
+                        .setComponent(entry.component)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-            appContext.startActivity(intent)
-        } else {
-            launcherApps.startMainActivity(
-                entry.component,
-                entry.user,
-                null,
-                null,
-            )
+                appContext.startActivity(intent)
+            } else {
+                launcherApps.startMainActivity(
+                    entry.component,
+                    entry.user,
+                    null,
+                    null,
+                )
+            }
+
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
+        } catch (_: SecurityException) {
+            false
+        } catch (_: RuntimeException) {
+            false
         }
+    }
+
+    fun registerCallback(callback: LauncherApps.Callback) {
+        launcherApps.registerCallback(callback)
+    }
+
+    fun unregisterCallback(callback: LauncherApps.Callback) {
+        launcherApps.unregisterCallback(callback)
     }
 }
