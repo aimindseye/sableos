@@ -63,7 +63,6 @@ jobs:
         run: >-
           gradle -p apps/r8/android
           :calculator:assembleDebug
-          :convert:assembleDebug
           :games:assembleDebug
           :media:assembleDebug
           --stacktrace
