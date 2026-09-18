@@ -56,4 +56,6 @@ Sable Reader
         TXT / share / process-text / TTS / OCR
 ```
 
-The integration target should be shared Reader modules/adapters under one product identity, not two launcher-visible applications unless later product requirements explicitly choose otherwise.
+UI3 now composes the pinned pure `TextReaderUtil` stream capability into the Sable Reader flavor for local TXT/view/share/process-text handling. The Text Reader launcher UI, translation path, OCR/camera path and theme remain outside the composed product.
+
+The integration target remains one product identity and one launcher-visible Sable Reader. OCR and translation require separate privacy/offline gates before later composition.
