@@ -80,7 +80,6 @@ internal fun Game2048Screen() {
                             shape = MaterialTheme.shapes.medium,
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurface,
-                            tonalElevation = androidx.compose.ui.unit.Dp.Hairline,
                         ) {
                             Box(
                                 contentAlignment = Alignment.Center,
