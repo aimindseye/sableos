@@ -24,13 +24,19 @@ if [[ ! -d "$SABLEOS_UPSTREAM/.repo" ]]; then
     exit 3
 fi
 
-PREVIEW_OUT="${SABLEOS_UI_PREVIEW_OUT:-$SABLEOS_ROOT/build/panther/ui-preview}"
+PREVIEW_OUT="${SABLEOS_UI_PREVIEW_OUT:-out_sable_ui_preview}"
 PREVIEW_EVIDENCE="${SABLEOS_UI_PREVIEW_EVIDENCE:-$SABLEOS_EVIDENCE/ui-preview}"
+
+if [[ "$PREVIEW_OUT" = /* ]]; then
+    echo "UI_PREVIEW_OUT_MUST_BE_SOURCE_RELATIVE=$PREVIEW_OUT"
+    echo "Use a relative OUT_DIR such as out_sable_ui_preview to preserve Soong path semantics."
+    exit 3
+fi
 PREVIEW_LUNCH_TARGET="${SABLEOS_UI_PREVIEW_LUNCH_TARGET:-panther-cur-userdebug}"
 PREVIEW_BUILD_NUMBER="${SABLEOS_UI_PREVIEW_BUILD_NUMBER:-2026091801}"
 JOBS="${JOBS:-$(nproc)}"
 
-mkdir -p "$PREVIEW_OUT" "$PREVIEW_EVIDENCE"
+mkdir -p "$PREVIEW_EVIDENCE"
 
 echo "===== SABLE UI PREVIEW BUILD ====="
 echo "SABLEOS_UPSTREAM=$SABLEOS_UPSTREAM"
@@ -69,6 +75,7 @@ echo "SABLE_DESIGN_SHARED_SYNC=PASS"
 SOURCE_MUTATION_AUTHORIZED=YES     bash "$REPO_ROOT/build/panther/sync-sablestart.sh"
 
 cd "$SABLEOS_UPSTREAM"
+mkdir -p "$PREVIEW_OUT"
 source build/envsetup.sh
 
 export OUT_DIR="$PREVIEW_OUT"
