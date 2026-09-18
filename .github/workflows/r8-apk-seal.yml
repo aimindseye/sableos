@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/r8/android/**'
+      - 'src/android/shared/sabledesign/**'
       - 'apps/r8/rust/**'
       - 'build/supply-chain-lock.json'
       - 'build/generate-supply-chain-evidence.py'

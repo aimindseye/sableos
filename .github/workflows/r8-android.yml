@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'apps/r8/android/**'
+      - 'src/android/shared/sabledesign/**'
       - '.github/workflows/r8-android.yml'
   push:
     branches: [main]
     paths:
       - 'apps/r8/android/**'
+      - 'src/android/shared/sabledesign/**'
       - '.github/workflows/r8-android.yml'
   workflow_dispatch:
 
