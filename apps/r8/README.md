@@ -81,8 +81,12 @@ Upstream currently declares `INTERNET`, and the translation path downloads ML Ki
 
 ## Integration boundary
 
-The Android shells currently establish package identity, lifecycle, Compose/design consumption, Media3 playback ownership, and build/test seams. Portable Rust domains are host-qualified separately. Android-native FFI/JNI binding is an explicit follow-on gate and must be tested before any claim that Calculator/Convert/Games consume the Rust domain at runtime.
+The Android shells establish package identity, lifecycle, Compose/design consumption, Media3 playback ownership, and build/test seams. Calculator, Convert, and Games now have JNI wiring to the portable Rust domains in the merged R8 source line; that wiring still requires full Android build/package/runtime qualification before product integration is claimed.
 
-Reader capability qualification is similarly distinct from Reader composition: Vaachak Mobile and Vaachak Text Reader may both pass independently without proving that one Sable Reader APK contains both paths or that its final manifest satisfies Sable privacy policy.
+The next implementation/build-preparation tranche is the remaining Kotlin/Compose product surface closure, Calculator+Convert consolidation, professional game presentation, Media product UX, and Reader/Text Reader composition work, followed by the existing standalone qualification and exact artifact-freeze gates.
 
-This distinction is intentional: a compiling shell does not prove a native binding, a passing Rust core does not prove Android packaging, and a passing upstream capability does not prove product integration.
+Reader capability qualification remains distinct from Reader composition: Vaachak Mobile and Vaachak Text Reader may both pass independently without proving that one Sable Reader APK contains both paths or that its final manifest satisfies Sable privacy policy.
+
+INFRA5 encrypted trusted-runner activation is intentionally deferred and does not block this R8 work. Current qualification remains on GitHub-hosted CI; see `docs/INFRA5_DEFERRED_TRUSTED_RUNNER.md`.
+
+This distinction is intentional: a compiling shell does not by itself prove runtime native behavior, a passing Rust core does not prove Android packaging, and a passing upstream capability does not prove product integration.
