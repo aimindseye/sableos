@@ -89,7 +89,7 @@ STAMP="$(date +%Y%m%d_%H%M%S)"
 LOG="$PREVIEW_EVIDENCE/ui-preview-build-$STAMP.log"
 
 set +e
-m -j"$JOBS"     SableStart     SystemUI     vendorbootimage     vendorkernelbootimage     target-files-package     otatools-package     2>&1 | tee "$LOG"
+m -j"$JOBS"     SableStart     SystemUI     vendorbootimage     vendorkernelbootimage     target-files-package     otatools-package     fastboot     2>&1 | tee "$LOG"
 rc=${PIPESTATUS[0]}
 set -e
 
@@ -127,11 +127,41 @@ if ! grep -Eq '(^|/)SableStart\.apk$' "$TARGET_LIST"; then
 fi
 echo "UI_PREVIEW_SABLESTART_PACKAGED=PASS"
 
-IMG_FROM_TARGET_FILES="$PREVIEW_OUT/host/linux-x86/bin/img_from_target_files"
+HOST_FASTBOOT="$PREVIEW_OUT/host/linux-x86/bin/fastboot"
+if [[ ! -x "$HOST_FASTBOOT" ]]; then
+    echo "UI_PREVIEW_HOST_FASTBOOT_MISSING=$HOST_FASTBOOT"
+    exit 8
+fi
+echo "UI_PREVIEW_HOST_FASTBOOT=$HOST_FASTBOOT"
+"$HOST_FASTBOOT" --version
+
+OTATOOLS_PACKAGE="$(
+    find "$PREVIEW_OUT/host/linux-x86/obj/ETC" \
+        -type f \
+        -path '*/otatools-packagelinux_glibc_x86_64_intermediates/*' \
+        -name 'otatools-packagelinux_glibc_x86_64*' \
+        -printf '%T@ %p\n' 2>/dev/null \
+        | sort -nr \
+        | head -n1 \
+        | cut -d' ' -f2-
+)"
+if [[ -z "$OTATOOLS_PACKAGE" || ! -f "$OTATOOLS_PACKAGE" ]]; then
+    echo "UI_PREVIEW_OTATOOLS_PACKAGE=NOT_FOUND"
+    exit 8
+fi
+echo "UI_PREVIEW_OTATOOLS_PACKAGE=$OTATOOLS_PACKAGE"
+
+OTATOOLS_DIR="$PREVIEW_EVIDENCE/otatools-$STAMP"
+rm -rf "$OTATOOLS_DIR"
+mkdir -p "$OTATOOLS_DIR"
+unzip -q "$OTATOOLS_PACKAGE" -d "$OTATOOLS_DIR"
+
+IMG_FROM_TARGET_FILES="$OTATOOLS_DIR/bin/img_from_target_files"
 if [[ ! -x "$IMG_FROM_TARGET_FILES" ]]; then
     echo "UI_PREVIEW_IMG_FROM_TARGET_FILES_MISSING=$IMG_FROM_TARGET_FILES"
     exit 8
 fi
+echo "UI_PREVIEW_IMG_FROM_TARGET_FILES=$IMG_FROM_TARGET_FILES"
 
 FASTBOOT_ZIP="$PRODUCT_OUT/sable_panther-ui-preview-images.zip"
 rm -f "$FASTBOOT_ZIP" "$FASTBOOT_ZIP.sha256"
