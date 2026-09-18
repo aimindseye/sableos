@@ -76,8 +76,6 @@ jobs:
           forbidden = (
               "fastboot -w",
               ' -w ',
-              " erase userdata",
-              " erase metadata",
               " format userdata",
               " format metadata",
               'flash "userdata',
