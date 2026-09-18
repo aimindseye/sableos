@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
@@ -38,8 +39,8 @@ fun SableScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    horizontal = SableSpacing.Xl,
-                    vertical = SableSpacing.Xl,
+                    horizontal = SableSpacing.ScreenHorizontal,
+                    vertical = SableSpacing.ScreenVertical,
                 ),
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
             content = content,
@@ -178,7 +179,7 @@ fun SableTile(
 
     Surface(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.heightIn(min = SableSize.TouchTarget),
         shape = MaterialTheme.shapes.medium,
         color = container,
         contentColor = content,
