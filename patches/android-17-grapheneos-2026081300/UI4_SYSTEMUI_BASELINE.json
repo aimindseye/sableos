@@ -79,6 +79,11 @@
       "path": "packages/SystemUI/res/values/dimens.xml",
       "blob_sha": "6f388d006b55ce7355a08ca1628baf5b6ec3c92c",
       "role": "notification row, stack-divider and shade-scrim visual geometry resources"
+    },
+    {
+      "path": "packages/SystemUI/src/com/android/systemui/media/remedia/ui/compose/Media.kt",
+      "blob_sha": "e794506f7928cd44c8670719ba051fb7f8a90b28",
+      "role": "SystemUI media carousel/card/control visual geometry"
     }
   ]
 }
