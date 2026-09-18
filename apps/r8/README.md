@@ -48,7 +48,6 @@ Requirements: JDK 17, Android SDK platform 36/build-tools 36.0.0, Gradle 8.13.
 ```bash
 gradle -p apps/r8/android :design:testDebugUnitTest \
   :calculator:assembleDebug \
-  :convert:assembleDebug \
   :games:assembleDebug \
   :media:assembleDebug
 
@@ -81,9 +80,11 @@ Upstream currently declares `INTERNET`, and the translation path downloads ML Ki
 
 ## Integration boundary
 
-The Android shells establish package identity, lifecycle, Compose/design consumption, Media3 playback ownership, and build/test seams. Calculator, Convert, and Games now have JNI wiring to the portable Rust domains in the merged R8 source line; that wiring still requires full Android build/package/runtime qualification before product integration is claimed.
+The Android shells establish package identity, lifecycle, Compose/design consumption, Media3 playback ownership, and build/test seams. Calculator, conversion, and Games have JNI wiring to the portable Rust domains.
 
-The next implementation/build-preparation tranche is the remaining Kotlin/Compose product surface closure, Calculator+Convert consolidation, professional game presentation, Media product UX, and Reader/Text Reader composition work, followed by the existing standalone qualification and exact artifact-freeze gates.
+Sable Convert is no longer intended to be a separate launcher-visible APK. The `:convert` Android module is an internal Calculator feature library, and Sable Calculator owns the Regular, Scientific, and Converter surfaces. The qualification APK set is therefore Calculator, Games, and Media, with Reader qualified through its separate pinned upstream lanes.
+
+The next implementation/build-preparation tranche after Calculator consolidation is professional per-game presentation, Media product UX, and Reader/Text Reader composition work, followed by the existing standalone qualification and exact artifact-freeze gates.
 
 Reader capability qualification remains distinct from Reader composition: Vaachak Mobile and Vaachak Text Reader may both pass independently without proving that one Sable Reader APK contains both paths or that its final manifest satisfies Sable privacy policy.
 
