@@ -66,7 +66,7 @@ mkdir -p "$DESIGN_DST"
 rsync -a --delete "$DESIGN_SRC/" "$DESIGN_DST/"
 echo "SABLE_DESIGN_SHARED_SYNC=PASS"
 
-SOURCE_MUTATION_AUTHORIZED=YES     "$REPO_ROOT/build/panther/sync-sablestart.sh"
+SOURCE_MUTATION_AUTHORIZED=YES     bash "$REPO_ROOT/build/panther/sync-sablestart.sh"
 
 cd "$SABLEOS_UPSTREAM"
 source build/envsetup.sh
