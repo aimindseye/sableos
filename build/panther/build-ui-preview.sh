@@ -129,15 +129,33 @@ echo "UI_PREVIEW_SABLESTART_PACKAGED=PASS"
 
 required_images=(system.img product.img system_ext.img vbmeta.img)
 for image in "${required_images[@]}"; do
-    if [[ ! -f "$PRODUCT_OUT/$image" ]]; then
+    if [[ -f "$PRODUCT_OUT/$image" ]]; then
+        continue
+    fi
+
+    archive_member="IMAGES/$image"
+    if ! grep -Fxq "$archive_member" "$TARGET_LIST"; then
         echo "UI_PREVIEW_IMAGE_MISSING=$PRODUCT_OUT/$image"
+        echo "UI_PREVIEW_TARGET_FILES_IMAGE_MISSING=$archive_member"
         exit 8
     fi
+
+    tmp="$PRODUCT_OUT/.$image.extracting"
+    rm -f "$tmp"
+    unzip -p "$TARGET_FILES" "$archive_member" > "$tmp"
+    [[ -s "$tmp" ]] || {
+        rm -f "$tmp"
+        echo "UI_PREVIEW_IMAGE_EXTRACT_EMPTY=$archive_member"
+        exit 8
+    }
+    mv "$tmp" "$PRODUCT_OUT/$image"
+    echo "UI_PREVIEW_IMAGE_STAGED_FROM_TARGET_FILES=$archive_member"
 done
 
 (
     cd "$PRODUCT_OUT"
-    sha256sum system.img product.img system_ext.img vbmeta.img         | tee UI_PREVIEW_IMAGES.sha256
+    sha256sum system.img product.img system_ext.img vbmeta.img \
+        | tee UI_PREVIEW_IMAGES.sha256
 )
 sha256sum "$TARGET_FILES" | tee "$PREVIEW_EVIDENCE/ui-preview-target-files-$STAMP.sha256"
 
