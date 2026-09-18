@@ -1,0 +1,33 @@
+name: UI4 SystemUI static
+
+on:
+  pull_request:
+    paths:
+      - "patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
+      - "patches/android-17-grapheneos-2026081300/UI4_SYSTEMUI_BASELINE.json"
+      - "docs/UI4_SYSTEMUI_REFRESH.md"
+      - ".github/workflows/ui4-systemui-static.yml"
+  push:
+    branches: [main]
+    paths:
+      - "patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
+      - "patches/android-17-grapheneos-2026081300/UI4_SYSTEMUI_BASELINE.json"
+      - "docs/UI4_SYSTEMUI_REFRESH.md"
+      - ".github/workflows/ui4-systemui-static.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Compile UI4 applicator
+        run: python3 -m py_compile patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py
+      - name: Run UI4 applicator self-test
+        run: python3 patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py --self-test
