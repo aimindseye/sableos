@@ -11,6 +11,9 @@ build/panther/verify-sablestart-snapshot.sh
 build/panther/sync-sablestart.sh
 build/panther/build-sablestart.sh
 build/panther/build-target-files.sh
+build/panther/build-ui-preview.sh
+build/panther/flash-ui-preview-inactive-slot.sh
+build/panther/validate-ui-preview.sh
 build/gates/sablestart-r3-prebuild.sh
 build/gates/sablestart-r3b-soong.sh
 ```
@@ -20,3 +23,9 @@ The capture helper copies the complete SableStart module tree (including Rust an
 See `docs/BUILD_LAYOUT.md` and `docs/PORTABLE_DEVELOPMENT.md`.
 
 Authorization remains explicit. Bootstrap requires `NETWORK_FETCH_AUTHORIZED=YES`, sync requires `SOURCE_MUTATION_AUTHORIZED=YES`, and builds require `BUILD_AUTHORIZED=YES`.
+
+
+For the accelerated UI review path, use `docs/UI_PREVIEW_BUILD_FLASH.md`.
+The preview path combines current SableStart + UI4 SystemUI source preparation,
+Panther target-files generation, exact packaging checks, inactive-slot flashing,
+and runtime evidence. It is a development gate, not a production release path.

@@ -156,6 +156,40 @@ The same `UI4 SystemUI static` workflow self-tests the cumulative UI4R1-R3
 mutation set. Product build and runtime visual/accessibility acceptance remain
 the UI4R4 gate.
 
+## UI4R4 accelerated preview gate
+
+UI4R4 combines source application, product build, packaging proof, inactive-slot
+flash and runtime evidence into one development-preview handoff:
+
+```text
+build/panther/build-ui-preview.sh
+build/panther/flash-ui-preview-inactive-slot.sh
+build/panther/validate-ui-preview.sh
+docs/UI_PREVIEW_BUILD_FLASH.md
+```
+
+The build gate syncs the shared Sable Design filegroup and SableStart, applies
+or verifies the cumulative UI4R1-R3 SystemUI delta, builds a Panther userdebug
+target-files package, and refuses flash readiness unless both `SystemUI.apk`
+and `SableStart.apk` are present in target-files.
+
+The flash gate preserves userdata and writes the coherent Android userspace set
+to the inactive slot:
+
+```text
+system_<inactive>
+product_<inactive>
+system_ext_<inactive>
+vbmeta_<inactive>
+```
+
+`vbmeta` is written last. The gate refuses a non-Panther device, locked
+bootloader, active snapshot update, ambiguous fastboot device set, hash
+mismatch, or missing explicit authorization.
+
+This preview intentionally does not wait for UI5/UI6. Device feedback from
+UI4R4 should feed those later system-surface tranches.
+
 ## First tranche acceptance
 
 ```text
@@ -163,8 +197,9 @@ UI4_R0_PINNED_SYSTEMUI_SURFACES=PASS
 UI4_R1_QS_THEME_GEOMETRY=PASS
 UI4_R2_NOTIFICATION_SHADE_GEOMETRY=PASS
 UI4_R3_MEDIA_PLACEMENT=PASS
-UI4_R1_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS
-UI4_R1_BEHAVIORAL_DIFF=NONE
+UI4_R1_R2_R3_ACCESSIBILITY_SEMANTICS_PRESERVED=PASS
+UI4_R1_R2_R3_BEHAVIORAL_DIFF=NONE
+UI4_R4_PRODUCT_BUILD_RUNTIME=REQUIRED
 ```
 
 A source-level or standalone SystemUI build is not sufficient to call UI4 complete. Final acceptance requires Panther product build/integration and visual review on-device or emulator-equivalent product runtime.
