@@ -37,11 +37,13 @@ The first implementation tranche is limited to the pinned Compose surfaces for:
 
 - Quick Settings theme/context;
 - Quick Settings content and overlay;
+- compact Quick Settings grid composition;
+- tile rendering, state-to-visual mapping and tile content geometry;
 - footer actions;
 - notification shade overlay/primitives;
 - Quick Settings media geometry.
 
-Any additional SystemUI source file must be added to the baseline ledger before mutation.
+Any additional SystemUI source file must be added to the baseline ledger before mutation. UI4R0A extends that ledger to the exact compact-grid and tile-renderer sources reached by `TileGrid`, without authorizing behavioral changes.
 
 ## Non-goals for the first tranche
 
@@ -76,6 +78,7 @@ A source-level or standalone SystemUI build is not sufficient to call UI4 comple
 
 ```text
 UI4R0  source binding + mutation boundary
+UI4R0A tile-renderer source binding required by UI4R1
 UI4R1  Quick Settings theme / tile / slider / footer visual refresh
 UI4R2  notification shade visual refresh
 UI4R3  media control visual alignment
