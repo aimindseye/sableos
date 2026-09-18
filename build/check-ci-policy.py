@@ -67,8 +67,20 @@ generator = ROOT / "build" / "generate-supply-chain-evidence.py"
 supply_workflow = WORKFLOWS / "supply-chain.yml"
 
 gradle_checker = ROOT / "build" / "check-gradle-supply-chain.py"
+runner_checker = ROOT / "build" / "check-runner-policy.py"
+runner_policy = ROOT / "build" / "trusted-runner-policy.json"
+runner_host_audit = ROOT / "build" / "audit-trusted-runner-host.py"
 
-for path in (tool_lock, installer, generator, gradle_checker, supply_workflow):
+for path in (
+    tool_lock,
+    installer,
+    generator,
+    gradle_checker,
+    runner_checker,
+    runner_policy,
+    runner_host_audit,
+    supply_workflow,
+):
     if not path.is_file():
         failures.append(f"INFRA3 supply-chain file missing: {path.relative_to(ROOT)}")
 
@@ -272,6 +284,22 @@ for item in filter(None, tracked):
         ".pfx",
     }:
         failures.append(f"high-risk credential container tracked: {item}")
+
+if runner_checker.is_file():
+    runner_proc = subprocess.run(
+        [sys.executable, str(runner_checker)],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if runner_proc.stdout:
+        print(runner_proc.stdout, end="")
+    if runner_proc.returncode != 0:
+        if runner_proc.stderr:
+            print(runner_proc.stderr, file=sys.stderr, end="")
+        failures.append("INFRA4 trusted-runner policy check failed")
 
 if failures:
     for item in failures:

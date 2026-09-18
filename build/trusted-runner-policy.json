@@ -1,0 +1,33 @@
+{
+  "base_main": "7f85b522afa989e197b09d07c8f7d9f01c62e48d",
+  "dedicated_unprivileged_user_required": true,
+  "encryption_decision": "DEFER_TRUSTED_RUNNER_UNTIL_ENCRYPTED",
+  "ephemeral_required": true,
+  "forbidden_privileged_groups": [
+    "sudo",
+    "wheel",
+    "docker",
+    "lxd",
+    "libvirt",
+    "libvirt-qemu"
+  ],
+  "future_required_labels": [
+    "self-hosted",
+    "linux",
+    "x64",
+    "sable-trusted",
+    "sable-ephemeral"
+  ],
+  "future_runner_root": "/srv/data/sable-build/sableos/runner",
+  "future_work_directory": "/srv/data/sable-build/sableos/runner/work",
+  "persistent_service_forbidden": true,
+  "registration_secrets_must_not_be_persisted": true,
+  "require_at_rest_encryption": true,
+  "runner_activation_status": "BLOCKED_UNTIL_ENCRYPTED",
+  "schema": "sableos-trusted-runner-policy-v1",
+  "self_hosted_jobs_allowed": false,
+  "source_encryption_status": "FAIL_UNENCRYPTED",
+  "source_mount_source": "/dev/nvme1n1p1",
+  "source_storage_root": "/srv/data/sable-build",
+  "untrusted_pull_request_execution_allowed": false
+}
