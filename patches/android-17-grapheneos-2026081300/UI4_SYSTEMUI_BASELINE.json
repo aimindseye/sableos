@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "milestone": "UI4",
+  "base": {
+    "project": "GrapheneOS/platform_frameworks_base",
+    "commit": "aab06a8bd44c4c2b58eeec780fde83baa9d43a40",
+    "release": "GrapheneOS 2026081300 / Android 17"
+  },
+  "scope": {
+    "behavior_changes_allowed": false,
+    "initial_tranche": "visual_theme_geometry_only",
+    "preserves": [
+      "tile behavior and state models",
+      "shade gestures and scene transitions",
+      "notification semantics and actions",
+      "privacy indicators",
+      "media session behavior",
+      "brightness and volume behavior",
+      "accessibility semantics"
+    ]
+  },
+  "files": [
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/ui/composable/QuickSettingsTheme.kt",
+      "blob_sha": "87b6f95b0ae6a0df310eaf3224d7153dc22262db",
+      "role": "QS theme context boundary"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/ui/composable/QuickSettingsContent.kt",
+      "blob_sha": "0fc0146120c5547b29e7eeb043548c8cdb9f129f",
+      "role": "brightness / tiles / media composition"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/ui/composable/QuickSettingsScene.kt",
+      "blob_sha": "368292350a616f39d88b7ccca51c7c6995bce1ae",
+      "role": "QS scene container"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/ui/composable/QuickSettingsShadeOverlay.kt",
+      "blob_sha": "7758a7063e9831cbd1ac2ac0cc9400c64a43ff3b",
+      "role": "QS shade overlay / header / sliders / grid"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/footer/ui/compose/FooterActions.kt",
+      "blob_sha": "f6bf90e8071541062b227c6a47829768f345659f",
+      "role": "QS footer actions"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/notifications/ui/composable/Notifications.kt",
+      "blob_sha": "b302da3e65bdf29ee7b2cd250dc40ce160ba406c",
+      "role": "notification compose primitives"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/notifications/ui/composable/NotificationsShadeOverlay.kt",
+      "blob_sha": "48ae7725b71184fdab27c41d5b4b04bebf3c0154",
+      "role": "notification shade overlay / media placement"
+    },
+    {
+      "path": "packages/SystemUI/compose/features/src/com/android/systemui/qs/ui/composable/QSMediaMeasurePolicy.kt",
+      "blob_sha": "8fe870393dd19b5490bb5163e3e2e45a43b473db",
+      "role": "QS media geometry"
+    }
+  ]
+}
