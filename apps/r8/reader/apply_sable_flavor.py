@@ -250,8 +250,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.sableos.design.SableActionButton
-import org.sableos.design.SablePageHeader
+import org.sableos.design.SableHeroHeader
 import org.sableos.design.SablePanel
+import org.sableos.design.SableValuePanel
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTheme
@@ -287,8 +288,9 @@ class SableTextActivity : ComponentActivity() {
         setContent {
             SableTheme {
                 SableScrollableScreen {
-                    SablePageHeader(
-                        title = "Reader",
+                    SableHeroHeader(
+                        eyebrow = "Sable",
+                        title = "reader",
                         subtitle = payload.source,
                     )
 
@@ -310,34 +312,29 @@ class SableTextActivity : ComponentActivity() {
                         }
                     }
 
-                    SablePanel {
-                        Text(
-                            "Read aloud",
-                            style = MaterialTheme.typography.titleMedium,
+                    SableValuePanel(
+                        label = "read aloud",
+                        value = narrationStatus,
+                        supportingText = "Local Android text-to-speech",
+                    )
+
+                    androidx.compose.foundation.layout.Row(
+                        horizontalArrangement =
+                            androidx.compose.foundation.layout.Arrangement.spacedBy(
+                                SableSpacing.Sm,
+                            ),
+                    ) {
+                        SableActionButton(
+                            text = "Read",
+                            modifier = androidx.compose.ui.Modifier.weight(1f),
+                            onClick = { speaker.speak(payload.text) },
                         )
-                        Text(
-                            narrationStatus,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        SableActionButton(
+                            text = "Stop",
+                            primary = false,
+                            modifier = androidx.compose.ui.Modifier.weight(1f),
+                            onClick = { speaker.stop() },
                         )
-                        androidx.compose.foundation.layout.Row(
-                            horizontalArrangement =
-                                androidx.compose.foundation.layout.Arrangement.spacedBy(
-                                    SableSpacing.Sm,
-                                ),
-                        ) {
-                            SableActionButton(
-                                text = "Read",
-                                modifier = androidx.compose.ui.Modifier.weight(1f),
-                                onClick = { speaker.speak(payload.text) },
-                            )
-                            SableActionButton(
-                                text = "Stop",
-                                primary = false,
-                                modifier = androidx.compose.ui.Modifier.weight(1f),
-                                onClick = { speaker.stop() },
-                            )
-                        }
                     }
 
                     Text(
