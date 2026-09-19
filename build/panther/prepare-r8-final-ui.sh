@@ -33,36 +33,82 @@ echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "WORKSPACE=$WS"
 echo "R8_APP_BUNDLE=$R8_APP_BUNDLE"
 
-apply_or_verify() {
+BRANDING="$ROOT/patches/android-17-grapheneos-2026081300/apply_sable_branding.py"
+UI4="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
+UI5A="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
+UI5B="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
+UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+
+run_self_test() {
     local name="$1"
     local script="$2"
 
     echo
     echo "===== $name SELF-TEST ====="
     python3 "$script" --self-test
-
-    echo
-    echo "===== $name SOURCE STATE ====="
-    if python3 "$script" --source "$WS" verify; then
-        echo "${name}_SOURCE_STATE=ALREADY_APPLIED"
-    else
-        echo "${name}_SOURCE_STATE=APPLYING"
-        python3 "$script" --source "$WS" apply
-        python3 "$script" --source "$WS" verify
-    fi
-
-    echo "${name}=PASS"
+    echo "${name}_SELF_TEST=PASS"
 }
 
-apply_or_verify     SABLE_BRANDING     "$ROOT/patches/android-17-grapheneos-2026081300/apply_sable_branding.py"
+run_self_test SABLE_BRANDING "$BRANDING"
+run_self_test UI4_SYSTEMUI "$UI4"
+run_self_test UI5A_SETTINGS "$UI5A"
+run_self_test UI5B_APP_SECURITY "$UI5B"
+run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
 
-apply_or_verify     UI4_SYSTEMUI     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
+echo
+echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
 
-apply_or_verify     UI5A_SETTINGS     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
+if python3 "$UI5C_UI6" --source "$WS" verify; then
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=ALREADY_APPLIED"
+else
+    # A previously observed UI5C resource-alias failure has a dedicated
+    # fail-closed repair. It only mutates the exact known wrong file hash.
+    if python3 "$UI5C_UI6" --source "$WS" repair-known-setup-strings; then
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE"
+    else
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=ADVANCING_RECOGNIZED_STAGE"
 
-apply_or_verify     UI5B_APP_SECURITY     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
+        # Settings/branding is an ordered cumulative chain. Test the newest
+        # pre-UI5C state first so valid later dirt is never rejected by an
+        # obsolete earlier-scope verifier.
+        if python3 "$UI5B" --source "$WS" verify; then
+            echo "R8_SETTINGS_STAGE=UI5B_ALREADY_APPLIED"
+        elif python3 "$UI5A" --source "$WS" verify; then
+            echo "R8_SETTINGS_STAGE=UI5A_ALREADY_APPLIED"
+            python3 "$UI5B" --source "$WS" apply
+            python3 "$UI5B" --source "$WS" verify
+        elif python3 "$BRANDING" --source "$WS" verify; then
+            echo "R8_SETTINGS_STAGE=BRANDING_ONLY"
+            python3 "$UI5A" --source "$WS" apply
+            python3 "$UI5A" --source "$WS" verify
+            python3 "$UI5B" --source "$WS" apply
+            python3 "$UI5B" --source "$WS" verify
+        else
+            echo "R8_SETTINGS_STAGE=PINNED_BASELINE_EXPECTED"
+            python3 "$BRANDING" --source "$WS" apply
+            python3 "$BRANDING" --source "$WS" verify
+            python3 "$UI5A" --source "$WS" apply
+            python3 "$UI5A" --source "$WS" verify
+            python3 "$UI5B" --source "$WS" apply
+            python3 "$UI5B" --source "$WS" verify
+        fi
 
-apply_or_verify     UI5C_UI6_SYSTEM_SURFACES     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+        # UI4 is independent of the Settings chain but must exist before UI6.
+        if python3 "$UI4" --source "$WS" verify; then
+            echo "R8_UI4_STAGE=ALREADY_APPLIED"
+        else
+            python3 "$UI4" --source "$WS" apply
+            python3 "$UI4" --source "$WS" verify
+            echo "R8_UI4_STAGE=APPLIED"
+        fi
+
+        python3 "$UI5C_UI6" --source "$WS" apply
+        python3 "$UI5C_UI6" --source "$WS" verify
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=APPLIED"
+    fi
+fi
+
+echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
 
 echo
 echo "===== SHARED SABLE DESIGN ====="
@@ -98,13 +144,9 @@ echo "===== R8 FIRST-PARTY PRODUCT APPLICATIONS ====="
 SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" R8_APP_BUNDLE="$R8_APP_BUNDLE"     bash "$ROOT/build/panther/stage-r8-product-apps.sh"
 
 echo
-echo "===== FINAL SOURCE VERIFY ====="
+echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_sable_branding.py"     --source "$WS" verify
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"     --source "$WS" verify
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"     --source "$WS" verify
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"     --source "$WS" verify
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"     --source "$WS" verify
+python3 "$UI5C_UI6" --source "$WS" verify
 
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
 echo "R8_FINAL_UI_PREPARE=PASS"
