@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LauncherAppsRepository
 import org.sableos.start.platform.LiveSurfaceRepository
+import org.sableos.start.platform.StartStateRepository
 import org.sableos.start.ui.SableStartScreen
 
 /**
@@ -28,6 +29,10 @@ class SableStartProductionPreviewActivity : ComponentActivity() {
         LiveSurfaceRepository(this)
     }
 
+    private val startStateRepository by lazy {
+        StartStateRepository(this)
+    }
+
     private val appsState =
         mutableStateOf<List<AppEntry>>(emptyList())
 
@@ -43,6 +48,8 @@ class SableStartProductionPreviewActivity : ComponentActivity() {
                 apps = appsState.value,
                 liveSurfaceRepository = liveSurfaceRepository,
                 refreshGeneration = liveRefreshGeneration,
+                initialPinnedKeys = startStateRepository.loadPinnedKeys(),
+                onPinnedKeysChanged = startStateRepository::savePinnedKeys,
                 onLaunchApp = { entry ->
                     val launched = launcherAppsRepository.launch(entry)
                     if (!launched) {
