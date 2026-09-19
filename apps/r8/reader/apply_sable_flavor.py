@@ -111,7 +111,7 @@ def main() -> None:
         / "sableos"
         / "design"
     )
-    for name in ("SableTheme.kt", "SableComponents.kt"):
+    for name in ("SableTheme.kt", "SableComponents.kt", "SableSystemBars.kt"):
         copy_file(design_source / name, design_destination / name)
 
     # Keep upstream Vaachak appearance unchanged for its own flavor and preserve the
@@ -145,14 +145,8 @@ fun ProductReaderTheme(
         return
     }
 
-    val appearance =
-        when (themeMode) {
-            ThemeMode.DARK -> SableAppearance(mode = AppearanceMode.Dark)
-            else -> SableAppearance(mode = AppearanceMode.Light)
-        }
-
     SableTheme(
-        appearance = appearance,
+        appearance = SableAppearance(mode = AppearanceMode.Dark),
         content = content,
     )
 }
@@ -256,6 +250,7 @@ import org.sableos.design.SableValuePanel
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTheme
+import org.sableos.design.applySableDarkSystemBars
 import org.vaachak.textreader.TextReaderUtil
 import java.io.FilterInputStream
 import java.io.InputStream
@@ -282,6 +277,7 @@ class SableTextActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySableDarkSystemBars(window)
         speaker = PlainTextSpeaker(this) { narrationStatus = it }
         loadIntent(intent)
 
