@@ -14,6 +14,7 @@ import org.sableos.start.bridge.SableStartNative
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LauncherAppsRepository
 import org.sableos.start.platform.LiveSurfaceRepository
+import org.sableos.start.platform.StartStateRepository
 import org.sableos.start.ui.SableStartScreen
 
 class SableStartActivity : ComponentActivity() {
@@ -21,6 +22,7 @@ class SableStartActivity : ComponentActivity() {
 
     private lateinit var launcherAppsRepository: LauncherAppsRepository
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
+    private lateinit var startStateRepository: StartStateRepository
 
     private val appsState =
         mutableStateOf<List<AppEntry>>(emptyList())
@@ -96,6 +98,9 @@ class SableStartActivity : ComponentActivity() {
         liveSurfaceRepository =
             LiveSurfaceRepository(this)
 
+        startStateRepository =
+            StartStateRepository(this)
+
         refreshInventory()
 
         setContent {
@@ -103,6 +108,8 @@ class SableStartActivity : ComponentActivity() {
                 apps = appsState.value,
                 liveSurfaceRepository = liveSurfaceRepository,
                 refreshGeneration = liveRefreshGeneration,
+                initialPinnedKeys = startStateRepository.loadPinnedKeys(),
+                onPinnedKeysChanged = startStateRepository::savePinnedKeys,
                 onLaunchApp = { entry ->
                     val launched = launcherAppsRepository.launch(entry)
                     if (!launched) {
