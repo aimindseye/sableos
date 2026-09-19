@@ -10,6 +10,7 @@ verify="$ROOT/build/host/verify-r8-host-tools.sh"
 migrate="$ROOT/build/host/migrate-r8-final-v1-host-tools.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
 runner="$ROOT/build/panther/run-r8-release-candidate.sh"
+retire="$ROOT/build/panther/retire-r8-obsolete-gradle-residue.sh"
 stage="$ROOT/build/panther/stage-r8-product-apps.sh"
 finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
@@ -19,14 +20,14 @@ start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 android_ci="$ROOT/.github/workflows/r8-android.yml"
 android_static="$ROOT/.github/workflows/r8-android-static.yml"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale"; do
+for f in "$verify" "$migrate" "$render" "$runner" "$retire" "$stage" "$finalbuild" "$nostale"; do
     bash -n "$f"
 done
 
@@ -50,6 +51,33 @@ grep -Fq "libstd-*.rlib" "$verify"
 ! grep -Eq '(^|[[:space:]])rustup([[:space:]]|$).*target[[:space:]]+list' "$verify"
 
 echo "R8_HOST_GATE_OFFLINE_RUST_VERIFICATION=PASS"
+
+grep -Fq 'apps/r8/android/start-preview' "$retire"
+grep -Fq 'apps/r8/android/system-preview' "$retire"
+grep -Fq 'git -C "$ROOT" ls-files -- "$rel"' "$retire"
+grep -Fq 'R8_OBSOLETE_GRADLE_RESIDUE=FAIL_TRACKED_CONTENT' "$retire"
+grep -Fq 'rm -rf --one-file-system -- "$target"' "$retire"
+grep -Fq 'R8_OBSOLETE_GRADLE_RESIDUE=PASS' "$retire"
+grep -Fq 'retire-r8-obsolete-gradle-residue.sh' "$runner"
+grep -Fq 'obsolete-gradle-residue.log' "$runner"
+
+cleanup_line="$(grep -nF '===== RETIRE OBSOLETE GRADLE MODULE RESIDUE =====' "$runner" | head -n1 | cut -d: -f1)"
+host_line="$(grep -nF '===== CANONICAL HOST-TOOL GATE =====' "$runner" | head -n1 | cut -d: -f1)"
+[[ -n "$cleanup_line" && -n "$host_line" && "$cleanup_line" -lt "$host_line" ]]
+
+mkdir -p "$ROOT/apps/r8/android/start-preview/build/test"
+mkdir -p "$ROOT/apps/r8/android/system-preview/build/test"
+printf 'stale\n' > "$ROOT/apps/r8/android/start-preview/build/test/sentinel.txt"
+printf 'stale\n' > "$ROOT/apps/r8/android/system-preview/build/test/sentinel.txt"
+
+SOURCE_MUTATION_AUTHORIZED=YES bash "$retire" > "$ROOT/.r8-retire-self-test.log"
+
+grep -Fxq 'R8_OBSOLETE_GRADLE_RESIDUE=PASS' "$ROOT/.r8-retire-self-test.log"
+test ! -e "$ROOT/apps/r8/android/start-preview"
+test ! -e "$ROOT/apps/r8/android/system-preview"
+rm -f "$ROOT/.r8-retire-self-test.log"
+
+echo "R8_OBSOLETE_GRADLE_RESIDUE_CONTRACT=PASS"
 
 grep -Fq 'LEGACY_PARENT="$WS/vendor/sable/prebuilts"' "$stage"
 grep -Fq 'LEGACY_DEST="$LEGACY_PARENT/r8"' "$stage"
