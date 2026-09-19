@@ -1,6 +1,6 @@
 # R8 Pixel UI Product Closure
 
-Status: **active / final source-bound app refreeze, module compile, full build and physical acceptance pending**
+Status: **active / R8-G global appearance + Sable Mail integration, source-bound eight-APK refreeze, module compile, full build and physical acceptance pending**
 
 Date: 2026-09-19
 
@@ -13,15 +13,17 @@ R8_STANDALONE_ANDROID_QUALIFICATION=PASS
 R8_READER_QUALIFICATION=PASS
 R8_PRE_PR53_SEVEN_APK_FREEZE=PASS_HISTORICAL_EVIDENCE
 R8_FINAL_MEDIA_PREVIEW_CLEANUP=PENDING_PR53_MERGE
-R8_FINAL_SOURCE_BOUND_SEVEN_APK_FREEZE=PENDING
+R8_G_GLOBAL_APPEARANCE=PENDING_STACKED_PR_MERGE_AND_LOCAL_BUILD
+R8_G_SABLE_MAIL=PENDING_STACKED_PR_MERGE_AND_LOCAL_BUILD
+R8_FINAL_SOURCE_BOUND_EIGHT_APK_FREEZE=PENDING
 R8_FINAL_UI_PREPARE=PASS_AT_PRE_PR53_SOURCE
 R8_FINAL_UI_PRODUCT_COMPOSITION=PASS_AT_PRE_PR53_SOURCE
-R8_UI_MODULE_BUILD=PENDING_RERUN_AFTER_PR53_REFREEZE_RESTAGE
+R8_UI_MODULE_BUILD=PENDING_RERUN_AFTER_R8_G_REFREEZE_RESTAGE
 PANTHER_FINAL_UI_BUILD=PENDING
 PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PENDING
 ```
 
-The previously frozen seven-APK bundle at `/srv/data/sable-build/artifacts/panther/r8-final-app-bundle/20260919_113505` remains valid historical qualification evidence, but it is not the final R8 bundle after removal of the obsolete Media UI-C1A preview source. PR #53 adds an exact SableOS source-commit identity to new bundles; the final bundle must be regenerated from the merged PR #53 source, restaged, and pass product composition again before the corrected module gate.
+The previously frozen seven-APK bundle at `/srv/data/sable-build/artifacts/panther/r8-final-app-bundle/20260919_113505` remains valid historical qualification evidence only. The final R8 bundle is now eight APKs because R8-G adds Sable Mail and global appearance consumers. New bundles carry an exact SableOS source-commit identity; after the R8-G stacked PR merges, Calculator/Games/Media/Hub must be rebuilt, Reader and Mail composed from their pinned upstreams, the eight-APK bundle exported, Panther restaged, and product composition passed again before the corrected module gate.
 
 This document is the execution authority for completing the current Pixel 7 / Panther UI refresh before the next full Panther build.
 
@@ -307,6 +309,55 @@ R8_F_SABLE_HUB_MESSAGES=PASS
 
 Tracking: issue #47.
 
+### R8-G — global appearance synchronization + Sable Mail
+
+Current status: **SOURCE IMPLEMENTATION IN STACKED PR / LOCAL BUILD + PRODUCT RESTAGE PENDING**
+
+Global appearance requirements:
+
+- SableStart remains the R8 appearance preference owner;
+- one read-only provider exposes only mode/accent presentation state;
+- writes through the provider are unsupported;
+- Calculator, Games, Media, Reader, Hub and Mail consume the same global state;
+- standalone qualification safely falls back to Follow system + Sable Blue if the provider is unavailable;
+- approved modes remain Follow system / Light / Dark;
+- approved accents remain Sable Blue / Green / Purple / Orange / Slate;
+- platform surfaces keep their current reviewed Sable styling for R8 rather than adding a new privileged theme daemon.
+
+Sable Mail product identity:
+
+```text
+label:   Sable Mail
+package: org.sableos.mail
+upstream: thunderbird/thunderbird-android
+tag:     THUNDERBIRD_23_0
+commit:  c733317d933c22bcd790a4790306f30ccf2026b8
+license: Apache-2.0
+```
+
+Required Sable Mail policy:
+
+- preserve upstream IMAP/POP3/SMTP, MIME, storage, TLS/certificate and message sanitization behavior unless explicitly justified;
+- Sable branding and iconography;
+- telemetry implementation remains no-op with upload disabled;
+- funding and Thunderbird migration/onboarding product paths use upstream no-op modules;
+- Thunderbird Mail service/onboarding product integration is removed;
+- inherited Thunderbird OAuth client IDs are removed from all build variants;
+- generic IMAP/SMTP remains available;
+- Gmail/Microsoft OAuth remains disabled until Sable-owned client registrations are provisioned and qualified;
+- received-message remote network content remains blocked until the existing explicit user action enables it;
+- Follow system / Light / Dark and the five Sable accents map into Mail;
+- final APK must be non-debuggable, package exactly `org.sableos.mail`, source-pinned and hash-sealed.
+
+Closure markers:
+
+```text
+R8_G_GLOBAL_APPEARANCE=PASS
+R8_G_SABLE_MAIL=PASS
+```
+
+Tracking: issue #54.
+
 ## System surfaces
 
 The final R8 UI build also requires closure of the already-implemented platform/system work.
@@ -415,9 +466,15 @@ Sable 2048             PRESENT
 Sable Media            PRESENT
 Sable Reader           PRESENT
 Sable Hub / Messages   PRESENT
+Sable Mail             PRESENT
 
 ExactCalculator         ABSENT_AS_PRODUCT_REPLACEMENT
 legacy list-only Start  ABSENT_AS_PRODUCTION_HOME
+legacy Media preview    ABSENT_FROM_PRODUCT_SOURCE
+Thunderbird/K-9 APK     ABSENT_AS_PRODUCT_PACKAGE
+standalone Convert      ABSENT_AS_PRODUCT_PACKAGE
+aggregate SableGames    ABSENT_AS_PRODUCT_PACKAGE
+standalone TextReader   ABSENT_AS_PRODUCT_PACKAGE
 
 SystemUI UI4           CURRENT
 Settings UI5A/UI5B     CURRENT
@@ -451,7 +508,10 @@ R8-A appearance/accessibility closure
     -> R8-D2 OCR composition/qualification
     -> freeze Calculator/Games/Reader/Media artifacts
     -> R8-F Sable Hub / Messages implementation and qualification
+    -> R8-G global appearance + Sable Mail qualification
+    -> source-bound eight-APK freeze
     -> Panther product integration for all R8 apps
+    -> no-stale product source/package gate
     -> verify UI4/UI5/UI6 source identities
     -> generated product-composition gate
     -> targeted/incremental compile gates
