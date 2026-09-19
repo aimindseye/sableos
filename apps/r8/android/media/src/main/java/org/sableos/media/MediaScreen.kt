@@ -4,6 +4,11 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
-import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
 
 internal val MediaPink = Color(0xFFFF4F9A)
@@ -117,35 +121,61 @@ internal fun MediaScreen(
     onStop: () -> Unit,
     onSeek: (Long) -> Unit,
 ) {
-    SableScrollableScreen {
-        SableHeroHeader(
-            eyebrow = "Sable Media",
-            title = "music",
-            subtitle = "Local playback and user-managed live radio.",
-        )
-
-        PrimaryPivot(
-            destination = destination,
-            onSelect = onDestinationChange,
-        )
-
-        if (
-            destination == MediaDestination.Collection ||
-            destination == MediaDestination.NowPlaying ||
-            destination == MediaDestination.Radio
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .imePadding(),
+            contentPadding =
+                PaddingValues(
+                    horizontal = SableSpacing.ScreenHorizontal,
+                    vertical = SableSpacing.ScreenVertical,
+                ),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
         ) {
-            MediaUtilityBar(
-                queueCount = playback.queue.size,
-                onQueue = {
-                    onDestinationChange(MediaDestination.Queue)
-                },
-                onSettings = {
-                    onDestinationChange(MediaDestination.Settings)
-                },
-            )
-        }
+            item {
+                SableHeroHeader(
+                    eyebrow = "Sable Media",
+                    title = "music",
+                    subtitle = "Local playback and user-managed live radio.",
+                )
+            }
 
-        when (destination) {
+            item {
+                PrimaryPivot(
+                    destination = destination,
+                    onSelect = onDestinationChange,
+                )
+            }
+
+            if (
+                destination == MediaDestination.Collection ||
+                destination == MediaDestination.NowPlaying ||
+                destination == MediaDestination.Radio
+            ) {
+                item {
+                    MediaUtilityBar(
+                        upNextCount =
+                            playback.queue.count { item ->
+                                item.index > playback.currentIndex
+                            },
+                        onQueue = {
+                            onDestinationChange(MediaDestination.Queue)
+                        },
+                        onSettings = {
+                            onDestinationChange(MediaDestination.Settings)
+                        },
+                    )
+                }
+            }
+
+            item {
+                when (destination) {
             MediaDestination.Collection ->
                 CollectionScreen(
                     pivot = libraryPivot,
@@ -261,6 +291,8 @@ internal fun MediaScreen(
                         onDestinationChange(MediaDestination.Collection)
                     },
                 )
+                }
+            }
         }
     }
 }
@@ -337,7 +369,7 @@ private fun PrimaryPivot(
 
 @Composable
 private fun MediaUtilityBar(
-    queueCount: Int,
+    upNextCount: Int,
     onQueue: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -346,14 +378,14 @@ private fun MediaUtilityBar(
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (queueCount > 1) {
+        if (upNextCount > 0) {
             Surface(
                 onClick = onQueue,
                 color = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ) {
                 Text(
-                    text = "up next · ${queueCount - 1}",
+                    text = "up next · $upNextCount",
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.labelLarge,
                 )
