@@ -72,6 +72,16 @@ if ! git -C "$REPO" diff --quiet || ! git -C "$REPO" diff --cached --quiet; then
 fi
 
 echo
+echo "===== RETIRE OBSOLETE GRADLE MODULE RESIDUE ====="
+
+SOURCE_MUTATION_AUTHORIZED=YES \
+    bash "$ROOT/build/panther/retire-r8-obsolete-gradle-residue.sh" \
+    | tee "$EVIDENCE/obsolete-gradle-residue.log"
+
+grep -Fxq 'R8_OBSOLETE_GRADLE_RESIDUE=PASS' \
+    "$EVIDENCE/obsolete-gradle-residue.log"
+
+echo
 echo "===== CANONICAL HOST-TOOL GATE ====="
 bash "$ROOT/build/host/verify-r8-host-tools.sh"
 
