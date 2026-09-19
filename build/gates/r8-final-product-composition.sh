@@ -118,19 +118,14 @@ echo "R8_SABLESTART_SYNC_CONTRACT=PASS"
 echo "R8_START_PRODUCT_INTEGRATION=PASS"
 
 echo
-echo "===== SYSTEM SURFACE SOURCE GATES ====="
+echo "===== CUMULATIVE SYSTEM SURFACE SOURCE GATE ====="
 
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_sable_branding.py"     --source "$WS" verify     || fail R8_BRANDING_SOURCE
+python3 \
+    "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" \
+    --source "$WS" verify \
+    || fail R8_UI4_UI5_UI6_CUMULATIVE_SOURCE
 
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"     --source "$WS" verify     || fail R8_UI4_SYSTEMUI_SOURCE
-
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"     --source "$WS" verify     || fail R8_UI5A_SETTINGS_SOURCE
-
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"     --source "$WS" verify     || fail R8_UI5B_APP_SECURITY_SOURCE
-
-python3     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"     --source "$WS" verify     || fail R8_UI5C_UI6_SYSTEM_SURFACES_SOURCE
-
-echo "R8_SYSTEM_SURFACE_SOURCE_GATES=PASS"
+echo "R8_UI4_UI5_UI6_CUMULATIVE_SOURCE=PASS"
 
 echo
 echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
