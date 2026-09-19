@@ -163,3 +163,36 @@ Semantics:
   remain explicit `UNKNOWN` until qualified evidence sources exist;
 - the UI5B surface is read-only and retains existing Android Settings flows for
   all mutations.
+
+## UI5C + UI6 final system surfaces
+
+Layered after D2+D3 + UI5A + UI5B + UI4, the combined tranche additionally
+modifies:
+
+```text
+packages/apps/SetupWizard2/res/layout/activity_welcome.xml
+packages/apps/SetupWizard2/res/layout/activity_finish.xml
+packages/apps/SetupWizard2/res/values/strings.xml
+
+packages/apps/Settings/res/xml/my_device_info.xml
+packages/apps/Settings/res/xml/top_level_settings.xml
+packages/apps/Settings/res/xml/top_level_settings_expressive.xml
+packages/apps/Settings/res/xml/top_level_settings_expressive_desktop.xml
+
+frameworks/base/packages/SystemUI/src/com/android/systemui/keyguard/ui/view/layout/sections/ClockSection.kt
+frameworks/base/packages/SystemUI/res/values/dimens.xml
+frameworks/base/packages/SystemUI/res/values/strings.xml
+```
+
+and adds:
+
+```text
+packages/apps/SetupWizard2/res/values/colors_sable_ui5c.xml
+packages/apps/SetupWizard2/res/values/strings_sable_ui5c.xml
+packages/apps/Settings/res/values/strings_sable_ui5c.xml
+packages/apps/Settings/src/com/android/settings/deviceinfo/aboutphone/SableAboutPreferenceController.java
+```
+
+The Keyguard changes are presentation-only and do not alter authentication,
+device-entry, biometric, notification-redaction or privacy-indicator state
+machines.
