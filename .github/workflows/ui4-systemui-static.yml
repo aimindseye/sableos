@@ -6,10 +6,8 @@ on:
       - "patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
       - "patches/android-17-grapheneos-2026081300/UI4_SYSTEMUI_BASELINE.json"
       - "docs/UI4_SYSTEMUI_REFRESH.md"
-      - "docs/UI_PREVIEW_BUILD_FLASH.md"
-      - "build/panther/build-ui-preview.sh"
-      - "build/panther/flash-ui-preview-inactive-slot.sh"
-      - "build/panther/validate-ui-preview.sh"
+      - "build/panther/build-r8-final-ui.sh"
+      - "build/gates/r8-no-stale-product-code.sh"
       - ".github/workflows/ui4-systemui-static.yml"
   push:
     branches: [main]
@@ -17,10 +15,8 @@ on:
       - "patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
       - "patches/android-17-grapheneos-2026081300/UI4_SYSTEMUI_BASELINE.json"
       - "docs/UI4_SYSTEMUI_REFRESH.md"
-      - "docs/UI_PREVIEW_BUILD_FLASH.md"
-      - "build/panther/build-ui-preview.sh"
-      - "build/panther/flash-ui-preview-inactive-slot.sh"
-      - "build/panther/validate-ui-preview.sh"
+      - "build/panther/build-r8-final-ui.sh"
+      - "build/gates/r8-no-stale-product-code.sh"
       - ".github/workflows/ui4-systemui-static.yml"
   workflow_dispatch:
 
@@ -35,65 +31,28 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+
       - name: Compile UI4 applicator
         run: python3 -m py_compile patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py
+
       - name: Run UI4 applicator self-test
         run: python3 patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py --self-test
-      - name: Validate UI preview shell syntax
+
+      - name: Validate production UI4 qualification path
+        shell: bash
         run: |
-          bash -n build/panther/build-ui-preview.sh
-          bash -n build/panther/flash-ui-preview-inactive-slot.sh
-          bash -n build/panther/validate-ui-preview.sh
-      - name: Validate inactive-slot flash safety contract
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
+          set -euo pipefail
 
-          path = Path("build/panther/flash-ui-preview-inactive-slot.sh")
-          text = path.read_text(encoding="utf-8")
+          test ! -e build/panther/build-ui-preview.sh
+          test ! -e build/panther/flash-ui-preview-inactive-slot.sh
+          test ! -e build/panther/validate-ui-preview.sh
 
-          required = (
-              'DEVICE_CONTACT_AUTHORIZED',
-              'DEVICE_REBOOT_AUTHORIZED',
-              'FLASH_AUTHORIZED',
-              'SLOT_CHANGE_AUTHORIZED',
-              'FASTBOOT_PACKAGE_CONTRACT=PASS',
-              'FASTBOOT_MINIMUM_REQUIRED',
-              'TARGET_INACTIVE_SLOT',
-              '--slot="$target_slot"',
-              '--skip-secondary',
-              '--skip-reboot',
-              'update "$IMAGE_ZIP"',
-              'FASTBOOT_UPDATE_WIPE=NO',
-              'USERDATA_WIPE=NONE',
-              'METADATA_WIPE=NONE',
-              'ROLLBACK_SLOT_UNTOUCHED_BY_SECONDARY_FLASH',
-          )
-          for token in required:
-              if token not in text:
-                  raise SystemExit(f"missing flash safety token: {token}")
+          build=build/panther/build-r8-final-ui.sh
+          grep -Fq '===== SABLESTART SOONG PREFLIGHT =====' "$build"
+          grep -Fq 'Settings' "$build"
+          grep -Fq 'SystemUI' "$build"
+          grep -Fq 'R8_UI_MODULE_BUILD=PASS' "$build"
 
-          forbidden = (
-              "fastboot -w",
-              ' -w ',
-              " format userdata",
-              " format metadata",
-              'flash "userdata',
-              'flash "metadata',
-              'flash "system_$target_slot"',
-              'flash "product_$target_slot"',
-              'flash "system_ext_$target_slot"',
-              'flash "vbmeta_$target_slot"',
-          )
-          for token in forbidden:
-              if token in text:
-                  raise SystemExit(f"forbidden partial/destructive flash token: {token}")
+          bash build/gates/r8-no-stale-product-code.sh
 
-          update = text.index('update "$IMAGE_ZIP"')
-          post_check = text.index('POST_FLASH_CURRENT_SLOT=')
-          reboot = text.rindex('"${FB[@]}" reboot')
-          if not update < post_check < reboot:
-              raise SystemExit("update/post-flash-check/reboot ordering contract violated")
-
-          print("UI_PREVIEW_FLASH_SAFETY_STATIC=PASS")
-          PY
+          echo "UI4_PRODUCTION_QUALIFICATION_PATH=PASS"
