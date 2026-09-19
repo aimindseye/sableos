@@ -117,3 +117,78 @@ UI6B  remaining SystemUI/accessibility/motion acceptance
 
 After the incremental gates pass, there is no additional UI system-surface
 tranche before the final Panther build.
+
+
+## Production implementation
+
+The combined fail-closed applicator is:
+
+```text
+patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+```
+
+It layers only on the already-qualified cumulative state:
+
+```text
+D2+D3 branding
+UI5A Settings + Applications
+UI5B Application Security & Privacy
+UI4 Quick Settings + notifications + SystemUI media
+```
+
+### SetupWizard production delta
+
+The production welcome and finish layouts retain the existing SetupWizard2
+activity/action implementation and OEM-unlock safety flow.
+
+Visual changes are bounded to:
+
+- canonical SableOS icon already qualified by D2+D3;
+- dark Sable background and light text hierarchy;
+- 72dp welcome mark and large light-weight welcome title;
+- updated privacy/security-oriented copy without changing setup decisions;
+- compact 96dp completion mark and completion note;
+- existing language, accessibility, emergency-call, primary-next/start and
+  OEM-unlock controls remain wired to the upstream actions.
+
+### About SableOS production delta
+
+The About screen becomes **About SableOS** and gains one read-only identity row.
+
+Its summary is populated at runtime from:
+
+```text
+Build.MODEL
+Build.DEVICE
+Build.VERSION.RELEASE
+Build.DISPLAY
+```
+
+No preview/version literal is embedded into Settings.
+
+### Keyguard production delta
+
+UI6 keeps the upstream Keyguard clock controller, binder, clock face selection,
+AOD burn-in state and unlock gesture path.
+
+The bounded visual delta is:
+
+- large lockscreen clock biased to the start edge with a 28dp Sable margin;
+- lockscreen clock top margin 18dp -> 28dp;
+- keyguard indication bottom margin 32dp -> 36dp;
+- upstream unlock indication copy becomes "Swipe up to unlock".
+
+No authentication or device-entry code path is replaced.
+
+### Incremental gate
+
+After apply/verify, compile only:
+
+```bash
+m -j8 SetupWizard2 Settings SystemUI
+```
+
+using the existing `out_sable_ui_preview` tree.
+
+A successful combined incremental build is the authorization point for the
+final full Panther build. Do not clean or clobber before that build.
