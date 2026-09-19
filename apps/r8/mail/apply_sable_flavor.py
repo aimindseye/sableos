@@ -577,6 +577,22 @@ internal object SableMailAppearanceSync {
     core_theme_manager.write_text(text, encoding="utf-8")
 
     manifest = app / "src/main/AndroidManifest.xml"
+    manifest_text = manifest.read_text(encoding="utf-8")
+    application_anchor = "\n    <application"
+    if manifest_text.count(application_anchor) != 1:
+        fail("SABLE_MAIL_MANIFEST=FAIL_APPLICATION_ANCHOR")
+    manifest_text = manifest_text.replace(
+        application_anchor,
+        """
+    <queries>
+        <provider android:authorities="org.sableos.start.appearance" />
+    </queries>
+
+    <application""",
+        1,
+    )
+    manifest.write_text(manifest_text, encoding="utf-8")
+
     replace_once(
         manifest,
         'android:icon="@mipmap/ic_launcher"',
