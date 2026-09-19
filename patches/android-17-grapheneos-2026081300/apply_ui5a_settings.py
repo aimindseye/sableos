@@ -43,6 +43,9 @@ TOP_LEVEL_CONTROLLER = Path(
     "src/com/android/settings/applications/TopLevelApplicationsPreferenceController.java"
 )
 UI5A_STRINGS = Path("res/values/strings_sable_ui5a.xml")
+UI5A_COLORS = Path("res/values/colors_sable_ui5a.xml")
+SETTINGS_HOME_HEADER = Path("res/layout/sable_settings_home_header.xml")
+SETTINGS_HOMEPAGE_CONTAINER = Path("res/layout/settings_homepage_container.xml")
 
 BRANDING_DIRT = {
     " M res/values/strings_app_exploit_protection.xml",
@@ -50,10 +53,13 @@ BRANDING_DIRT = {
 }
 
 UI5A_DIRT = {
+    " M res/layout/settings_homepage_container.xml",
     " M res/xml/top_level_settings.xml",
     " M res/xml/top_level_settings_expressive.xml",
     " M res/xml/top_level_settings_expressive_desktop.xml",
     " M src/com/android/settings/applications/manageapplications/ManageApplications.java",
+    "?? res/layout/sable_settings_home_header.xml",
+    "?? res/values/colors_sable_ui5a.xml",
     "?? res/values/strings_sable_ui5a.xml",
     "?? src/com/android/settings/applications/TopLevelApplicationsPreferenceController.java",
     "?? src/com/android/settings/applications/manageapplications/"
@@ -121,6 +127,8 @@ def template_for(dest: Path) -> Path:
         TOP_LEVEL_CONTROLLER:
             templates_dir() / "TopLevelApplicationsPreferenceController.java",
         UI5A_STRINGS: templates_dir() / "strings_sable_ui5a.xml",
+        UI5A_COLORS: templates_dir() / "colors_sable_ui5a.xml",
+        SETTINGS_HOME_HEADER: templates_dir() / "sable_settings_home_header.xml",
     }
     return mapping[dest]
 
@@ -236,7 +244,13 @@ def transform_apps_xml(text: str, label: str) -> str:
 
 
 def verify_templates() -> None:
-    for dest in (SUMMARY_HELPER, TOP_LEVEL_CONTROLLER, UI5A_STRINGS):
+    for dest in (
+        SUMMARY_HELPER,
+        TOP_LEVEL_CONTROLLER,
+        UI5A_STRINGS,
+        UI5A_COLORS,
+        SETTINGS_HOME_HEADER,
+    ):
         template = template_for(dest)
         if not template.is_file():
             raise SystemExit(f"UI5A_TEMPLATE_MISSING={template}")
@@ -249,7 +263,13 @@ def apply(source: Path) -> None:
 
     settings = source / SETTINGS_REPO
 
-    for dest in (SUMMARY_HELPER, TOP_LEVEL_CONTROLLER, UI5A_STRINGS):
+    for dest in (
+        SUMMARY_HELPER,
+        TOP_LEVEL_CONTROLLER,
+        UI5A_STRINGS,
+        UI5A_COLORS,
+        SETTINGS_HOME_HEADER,
+    ):
         if (settings / dest).exists():
             raise SystemExit(f"UI5A_DEST_ALREADY_EXISTS={dest}")
 
@@ -271,7 +291,36 @@ def apply(source: Path) -> None:
             encoding="utf-8",
         )
 
-    for dest in (SUMMARY_HELPER, TOP_LEVEL_CONTROLLER, UI5A_STRINGS):
+    homepage_path = settings / SETTINGS_HOMEPAGE_CONTAINER
+    homepage = homepage_path.read_text(encoding="utf-8")
+    homepage = replace_once(
+        homepage,
+        'android:id="@+id/app_bar_container"\n'
+        '            android:layout_width="match_parent"\n'
+        '            android:layout_height="wrap_content"\n'
+        '            android:orientation="horizontal"',
+        'android:id="@+id/app_bar_container"\n'
+        '            android:layout_width="match_parent"\n'
+        '            android:layout_height="wrap_content"\n'
+        '            android:orientation="vertical"',
+        "settings-homepage:app-bar-orientation",
+    )
+    homepage = replace_once(
+        homepage,
+        '            <include layout="@layout/search_bar"/>',
+        '            <include layout="@layout/sable_settings_home_header"/>\n\n'
+        '            <include layout="@layout/search_bar"/>',
+        "settings-homepage:sable-header",
+    )
+    homepage_path.write_text(homepage, encoding="utf-8")
+
+    for dest in (
+        SUMMARY_HELPER,
+        TOP_LEVEL_CONTROLLER,
+        UI5A_STRINGS,
+        UI5A_COLORS,
+        SETTINGS_HOME_HEADER,
+    ):
         dst = settings / dest
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(template_for(dest), dst)
@@ -339,13 +388,26 @@ def verify(source: Path) -> None:
         if 'android:order="-125"' not in header:
             raise SystemExit(f"UI5A_SECURITY_ORDER_VERIFY_FAIL={rel}")
 
-    for dest in (SUMMARY_HELPER, TOP_LEVEL_CONTROLLER, UI5A_STRINGS):
+    homepage = (settings / SETTINGS_HOMEPAGE_CONTAINER).read_text(encoding="utf-8")
+    if homepage.count('android:orientation="vertical"') < 2:
+        raise SystemExit("UI5A_SETTINGS_HOME_ORIENTATION_VERIFY_FAIL")
+    if homepage.count('@layout/sable_settings_home_header') != 1:
+        raise SystemExit("UI5A_SETTINGS_HOME_HEADER_VERIFY_FAIL")
+
+    for dest in (
+        SUMMARY_HELPER,
+        TOP_LEVEL_CONTROLLER,
+        UI5A_STRINGS,
+        UI5A_COLORS,
+        SETTINGS_HOME_HEADER,
+    ):
         installed = settings / dest
         template = template_for(dest)
         if sha256(installed) != sha256(template):
             raise SystemExit(f"UI5A_TEMPLATE_COPY_VERIFY_FAIL={dest}")
 
     print("SABLE_UI5A_SETTINGS_SCOPE=PASS")
+    print("SABLE_UI5A_SETTINGS_HOME_HEADER=PRODUCTION_RESOURCE")
     print("SABLE_UI5A_REAL_APP_LABELS=UPSTREAM_APPLICATIONS_STATE")
     print("SABLE_UI5A_APP_COUNT=PACKAGE_MANAGER_CURRENT_USER")
     print("SABLE_UI5A_SENSITIVE_SUMMARY=EFFECTIVE_PERMISSION_GRANTS_ONLY")
