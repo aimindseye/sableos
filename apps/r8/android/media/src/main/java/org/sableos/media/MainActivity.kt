@@ -3,10 +3,12 @@ package org.sableos.media
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +26,9 @@ class MainActivity : ComponentActivity() {
 
         val localAudioRepository = LocalAudioRepository(applicationContext)
         val stationRepository = RadioStationRepository(applicationContext)
+        val libraryStateRepository = MediaLibraryStateRepository(applicationContext)
+        val settingsRepository = MediaSettingsRepository(applicationContext)
+        val initialSettings = settingsRepository.load()
 
         playbackController =
             PlaybackController(applicationContext) { state ->
@@ -31,8 +36,16 @@ class MainActivity : ComponentActivity() {
             }
 
         setContent {
+            var settings by remember {
+                mutableStateOf(initialSettings)
+            }
             var destination by remember {
-                mutableStateOf(MediaDestination.Collection)
+                mutableStateOf(
+                    when (initialSettings.startPage) {
+                        MediaStartPage.Collection -> MediaDestination.Collection
+                        MediaStartPage.Radio -> MediaDestination.Radio
+                    },
+                )
             }
             var libraryPivot by remember {
                 mutableStateOf(LibraryPivot.Songs)
@@ -43,6 +56,24 @@ class MainActivity : ComponentActivity() {
             var stations by remember {
                 mutableStateOf(stationRepository.loadStations())
             }
+            var favoriteAudioUris by remember {
+                mutableStateOf(libraryStateRepository.loadFavoriteAudioUris())
+            }
+            var favoriteStationIds by remember {
+                mutableStateOf(libraryStateRepository.loadFavoriteStationIds())
+            }
+            var playlists by remember {
+                mutableStateOf(
+                    libraryStateRepository.pruneMissingAudio(
+                        current = libraryStateRepository.loadPlaylists(),
+                        validUris = localItems.map { it.uri }.toSet(),
+                    ),
+                )
+            }
+            var showFavoriteStationsOnly by remember {
+                mutableStateOf(false)
+            }
+
             var editingStation by remember {
                 mutableStateOf<RadioStation?>(null)
             }
@@ -52,14 +83,56 @@ class MainActivity : ComponentActivity() {
             var stationUrl by remember {
                 mutableStateOf("")
             }
+
+            var editingPlaylist by remember {
+                mutableStateOf<MediaPlaylist?>(null)
+            }
+            var playlistName by remember {
+                mutableStateOf("")
+            }
+            var selectedPlaylistUris by remember {
+                mutableStateOf(emptySet<String>())
+            }
+
             var message by remember {
                 mutableStateOf<String?>(null)
+            }
+
+            DisposableEffect(
+                settings.keepScreenAwakeWhilePlaying,
+                playbackState.isPlaying,
+            ) {
+                val shouldKeepAwake =
+                    settings.keepScreenAwakeWhilePlaying &&
+                        playbackState.isPlaying
+
+                if (shouldKeepAwake) {
+                    window.addFlags(
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                    )
+                } else {
+                    window.clearFlags(
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                    )
+                }
+
+                onDispose {
+                    window.clearFlags(
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+                    )
+                }
             }
 
             fun clearStationForm() {
                 editingStation = null
                 stationName = ""
                 stationUrl = ""
+            }
+
+            fun clearPlaylistForm() {
+                editingPlaylist = null
+                playlistName = ""
+                selectedPlaylistUris = emptySet()
             }
 
             val localAudioPicker =
@@ -84,6 +157,11 @@ class MainActivity : ComponentActivity() {
                             current = localItems,
                             uris = uris,
                         )
+                    playlists =
+                        libraryStateRepository.pruneMissingAudio(
+                            current = playlists,
+                            validUris = localItems.map { it.uri }.toSet(),
+                        )
                     libraryPivot = LibraryPivot.Songs
                     message =
                         "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
@@ -96,6 +174,14 @@ class MainActivity : ComponentActivity() {
                     localItems = localItems,
                     stations = stations,
                     playback = playbackState,
+                    favoriteAudioUris = favoriteAudioUris,
+                    favoriteStationIds = favoriteStationIds,
+                    playlists = playlists,
+                    settings = settings,
+                    playlistName = playlistName,
+                    selectedPlaylistUris = selectedPlaylistUris,
+                    editingPlaylist = editingPlaylist,
+                    showFavoriteStationsOnly = showFavoriteStationsOnly,
                     stationName = stationName,
                     stationUrl = stationUrl,
                     editingStation = editingStation,
@@ -109,6 +195,10 @@ class MainActivity : ComponentActivity() {
                             next != MediaDestination.AddStation
                         ) {
                             clearStationForm()
+                        }
+
+                        if (next != MediaDestination.PlaylistEditor) {
+                            clearPlaylistForm()
                         }
                     },
                     onLibraryPivotChange = {
@@ -130,7 +220,29 @@ class MainActivity : ComponentActivity() {
                                 current = localItems,
                                 uri = item.uri,
                             )
+
+                        if (item.uri in favoriteAudioUris) {
+                            favoriteAudioUris =
+                                libraryStateRepository.toggleFavoriteAudio(
+                                    current = favoriteAudioUris,
+                                    uri = item.uri,
+                                )
+                        }
+
+                        playlists =
+                            libraryStateRepository.pruneMissingAudio(
+                                current = playlists,
+                                validUris = localItems.map { it.uri }.toSet(),
+                            )
+
                         message = "Removed from the Sable Media collection."
+                    },
+                    onToggleFavoriteAudio = { item ->
+                        favoriteAudioUris =
+                            libraryStateRepository.toggleFavoriteAudio(
+                                current = favoriteAudioUris,
+                                uri = item.uri,
+                            )
                     },
                     onPlayStation = { station ->
                         playUri(
@@ -139,6 +251,16 @@ class MainActivity : ComponentActivity() {
                             source = "live radio",
                         )
                         destination = MediaDestination.NowPlaying
+                    },
+                    onToggleFavoriteStation = { station ->
+                        favoriteStationIds =
+                            libraryStateRepository.toggleFavoriteStation(
+                                current = favoriteStationIds,
+                                stationId = station.id,
+                            )
+                    },
+                    onRadioFavoritesOnlyChange = {
+                        showFavoriteStationsOnly = it
                     },
                     onAddStation = {
                         clearStationForm()
@@ -162,9 +284,19 @@ class MainActivity : ComponentActivity() {
                                 current = stations,
                                 id = station.id,
                             )
+
+                        if (station.id in favoriteStationIds) {
+                            favoriteStationIds =
+                                libraryStateRepository.toggleFavoriteStation(
+                                    current = favoriteStationIds,
+                                    stationId = station.id,
+                                )
+                        }
+
                         if (editingStation?.id == station.id) {
                             clearStationForm()
                         }
+
                         message = "Station removed."
                     },
                     onStationNameChange = {
@@ -226,6 +358,86 @@ class MainActivity : ComponentActivity() {
                             message = null
                         }
                     },
+                    onCreatePlaylist = {
+                        clearPlaylistForm()
+                        message = null
+                        destination = MediaDestination.PlaylistEditor
+                    },
+                    onEditPlaylist = { playlist ->
+                        editingPlaylist = playlist
+                        playlistName = playlist.name
+                        selectedPlaylistUris = playlist.itemUris.toSet()
+                        message = null
+                        destination = MediaDestination.PlaylistEditor
+                    },
+                    onDeletePlaylist = { playlist ->
+                        playlists =
+                            libraryStateRepository.deletePlaylist(
+                                current = playlists,
+                                playlistId = playlist.id,
+                            )
+                        message = "Playlist removed."
+                    },
+                    onPlayPlaylist = { playlist ->
+                        val byUri =
+                            localItems.associateBy { item ->
+                                item.uri
+                            }
+                        val queue =
+                            playlist.itemUris.mapNotNull { uri ->
+                                byUri[uri]
+                            }
+
+                        if (queue.isEmpty()) {
+                            message = "This playlist has no available tracks."
+                        } else {
+                            playLocalQueue(
+                                items = queue,
+                                startIndex = 0,
+                            )
+                            destination = MediaDestination.NowPlaying
+                        }
+                    },
+                    onPlaylistNameChange = {
+                        playlistName = it
+                    },
+                    onTogglePlaylistItem = { uri ->
+                        selectedPlaylistUris =
+                            selectedPlaylistUris
+                                .toMutableSet()
+                                .apply {
+                                    if (!add(uri)) {
+                                        remove(uri)
+                                    }
+                                }
+                                .toSet()
+                    },
+                    onSavePlaylist = {
+                        playlists =
+                            libraryStateRepository.savePlaylist(
+                                current = playlists,
+                                editingId = editingPlaylist?.id,
+                                name = playlistName,
+                                itemUris = selectedPlaylistUris,
+                            )
+                        clearPlaylistForm()
+                        libraryPivot = LibraryPivot.Playlists
+                        destination = MediaDestination.Collection
+                        message = "Playlist saved locally."
+                    },
+                    onCancelPlaylistEditor = {
+                        clearPlaylistForm()
+                        libraryPivot = LibraryPivot.Playlists
+                        destination = MediaDestination.Collection
+                        message = null
+                    },
+                    onSettingsChange = { updated ->
+                        settings = updated
+                        settingsRepository.save(updated)
+                    },
+                    onPlayQueueIndex = playbackController::playQueueIndex,
+                    onMoveQueueItem = playbackController::moveQueueItem,
+                    onRemoveQueueItem = playbackController::removeQueueItem,
                     onPlayPause = {
                         if (playbackState.isPlaying) {
                             playbackController.pause()
@@ -244,6 +456,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         playbackController.close()
+        window.clearFlags(
+            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
+        )
         super.onDestroy()
     }
 
