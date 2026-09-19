@@ -18,7 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
-import org.sableos.design.SablePanel
+import org.sableos.design.SableValuePanel
 import org.sableos.design.SableSpacing
 
 private const val DEFAULT_SUDOKU =
@@ -71,12 +71,11 @@ internal fun SudokuScreen() {
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
 
-        SablePanel {
-            Text(
-                status,
-                style = MaterialTheme.typography.titleMedium,
-            )
-        }
+        SableValuePanel(
+            label = "puzzle",
+            value = status,
+            supportingText = "Tap a cell, then choose a number.",
+        )
 
         Column(
             modifier = Modifier.fillMaxWidth(),
