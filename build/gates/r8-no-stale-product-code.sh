@@ -90,6 +90,33 @@ done
 
 echo "R8_QUALIFICATION_ONLY_PREVIEW_MODULES=PASS_NOT_PRODUCT_SELECTED"
 
+if [[ -n "$WS" ]]; then
+    LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"
+    if [[ -e "$LEGACY_WORKSPACE_PRODUCT_TREE" || -L "$LEGACY_WORKSPACE_PRODUCT_TREE" ]]; then
+        echo "R8_STALE_WORKSPACE_PRODUCT_TREE=FAIL path=$LEGACY_WORKSPACE_PRODUCT_TREE"
+        find "$LEGACY_WORKSPACE_PRODUCT_TREE" -maxdepth 3 -mindepth 1 -print 2>/dev/null | sort || true
+        fail R8_STALE_WORKSPACE_PRODUCT_TREE
+    fi
+    echo "R8_STALE_WORKSPACE_PRODUCT_TREE=PASS_ABSENT"
+
+    mapfile -t sable_r8_blueprints < <(
+        find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
+    )
+    for bp in "${sable_r8_blueprints[@]}"; do
+        case "$bp" in
+            "$WS/vendor/sable/r8/Android.bp")
+                ;;
+            *)
+                if grep -Eq 'Sable(Calculator|Sudoku|Minesweeper|2048|Media|Reader|Hub|Mail)' "$bp"; then
+                    echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=FAIL path=$bp"
+                    fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+                fi
+                ;;
+        esac
+    done
+    echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
+fi
+
 for manifest in \
     "$ROOT/apps/r8/android/calculator/src/main/AndroidManifest.xml" \
     "$ROOT/apps/r8/android/games/src/main/AndroidManifest.xml" \

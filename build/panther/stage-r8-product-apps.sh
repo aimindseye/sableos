@@ -98,6 +98,7 @@ print("R8_BUNDLE_MANIFEST_SET=PASS")
 PY
 
 DEST="$WS/vendor/sable/r8"
+LEGACY_DEST="$WS/vendor/sable/prebuilts/r8"
 PRODUCT_MK="$WS/vendor/google_devices/panther/panther.mk"
 MARKER_BEGIN="# BEGIN SABLEOS R8 PRODUCT INTEGRATION"
 MARKER_END="# END SABLEOS R8 PRODUCT INTEGRATION"
@@ -161,6 +162,44 @@ $MARKER_END"
     echo "R8_PRODUCT_INCLUDE=ALREADY_APPLIED"
 fi
 
+echo
+echo "===== BOUNDED LEGACY R8 PRODUCT TREE RETIREMENT ====="
+echo "LEGACY_PRODUCT_TREE_REMOVAL_AUTHORIZED=YES_EXACT_PATH_ONLY"
+echo "LEGACY_PRODUCT_TREE=$LEGACY_DEST"
+
+if [[ -L "$LEGACY_DEST" ]]; then
+    echo "R8_LEGACY_PRODUCT_TREE=FAIL_SYMLINK path=$LEGACY_DEST"
+    exit 14
+fi
+
+if [[ -e "$LEGACY_DEST" ]]; then
+    [[ -d "$LEGACY_DEST" ]] || {
+        echo "R8_LEGACY_PRODUCT_TREE=FAIL_NOT_DIRECTORY path=$LEGACY_DEST"
+        exit 14
+    }
+
+    expected_legacy="$WS/vendor/sable/prebuilts/r8"
+    [[ "$LEGACY_DEST" == "$expected_legacy" ]] || {
+        echo "R8_LEGACY_PRODUCT_TREE=FAIL_PATH_MISMATCH path=$LEGACY_DEST"
+        exit 14
+    }
+
+    echo "R8_LEGACY_PRODUCT_TREE_INVENTORY_BEGIN"
+    find "$LEGACY_DEST" -maxdepth 3 -mindepth 1 -print | sort
+    echo "R8_LEGACY_PRODUCT_TREE_INVENTORY_END"
+
+    rm -rf --one-file-system -- "$LEGACY_DEST"
+
+    [[ ! -e "$LEGACY_DEST" ]] || {
+        echo "R8_LEGACY_PRODUCT_TREE=FAIL_REMOVE path=$LEGACY_DEST"
+        exit 14
+    }
+
+    echo "R8_LEGACY_PRODUCT_TREE=REMOVED"
+else
+    echo "R8_LEGACY_PRODUCT_TREE=PASS_ABSENT"
+fi
+
 mkdir -p "$DEST/prebuilt"
 rm -f "$DEST/prebuilt/"*.apk
 
@@ -214,6 +253,11 @@ echo "R8_PRODUCT_MK=PASS"
 echo "R8_PRODUCT_MANIFEST=PASS"
 echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_STAGED_PREBUILT_HASHES=PASS"
+[[ ! -e "$LEGACY_DEST" ]] || {
+    echo "R8_LEGACY_PRODUCT_TREE=FAIL_POST_STAGE"
+    exit 16
+}
+echo "R8_LEGACY_PRODUCT_TREE=PASS_ABSENT_POST_STAGE"
 echo "R8_PRODUCT_INCLUDE=PASS"
 echo "R8_PRODUCT_STAGE=PASS"
 echo "R8_PRODUCT_DEST=$DEST"

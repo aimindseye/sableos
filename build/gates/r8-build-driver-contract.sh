@@ -10,15 +10,17 @@ verify="$ROOT/build/host/verify-r8-host-tools.sh"
 migrate="$ROOT/build/host/migrate-r8-final-v1-host-tools.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
 runner="$ROOT/build/panther/run-r8-release-candidate.sh"
+stage="$ROOT/build/panther/stage-r8-product-apps.sh"
+nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$nostale"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$render" "$runner"; do
+for f in "$verify" "$migrate" "$render" "$runner" "$stage" "$nostale"; do
     bash -n "$f"
 done
 
@@ -42,6 +44,15 @@ grep -Fq "libstd-*.rlib" "$verify"
 ! grep -Eq '(^|[[:space:]])rustup([[:space:]]|$).*target[[:space:]]+list' "$verify"
 
 echo "R8_HOST_GATE_OFFLINE_RUST_VERIFICATION=PASS"
+
+grep -Fq 'LEGACY_DEST="$WS/vendor/sable/prebuilts/r8"' "$stage"
+grep -Fq 'rm -rf --one-file-system -- "$LEGACY_DEST"' "$stage"
+grep -Fq 'R8_LEGACY_PRODUCT_TREE=PASS_ABSENT_POST_STAGE' "$stage"
+grep -Fq 'LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"' "$nostale"
+grep -Fq 'R8_STALE_WORKSPACE_PRODUCT_TREE' "$nostale"
+grep -Fq 'R8_DUPLICATE_PRODUCT_BLUEPRINT' "$nostale"
+
+echo "R8_LEGACY_PRODUCT_TREE_REGRESSION=PASS"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
