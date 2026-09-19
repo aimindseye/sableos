@@ -51,6 +51,7 @@ Accepted ADRs include:
 - `NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel device strategy: Panther first, Titan 2 as preferred interim N0 GSI/UI lab, Q27 as future full-QWERTY candidate, Q25 as optional low-level MediaTek/kernel research target.
 - `TITAN2_GSI_PLAN.md` — staged Titan 2 GSI/userspace development plan, stock-artifact qualification, UI/keyboard/5G work, assurance boundaries, and possible later N1 research.
 - `TITAN2_KEYBOARD_FIRST_REFERENCE.md` — normative Titan 2 keyboard-first interaction contract plus pinned Pastiera, OpenMiniLaunch, TypeQ25 and Q25 Toolbox reference review and licensing boundary.
+- `KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md` — common Titan 2/Q27 Sable Tools direction inspired by BB10 power-user/device utilities, with pinned bb10tools revision, GPL boundary, safe capabilities and explicit non-goals.
 - `Q25_PORT_PLAN.md` — optional source-available MediaTek/kernel/QWERTY research-port plan; not a required first non-Pixel purchase or Q27 precursor.
 - `S1_8_PLATFORM_TRANSITION.md` — historical bramble UI/toolchain closure and Panther transition.
 
