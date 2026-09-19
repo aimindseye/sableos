@@ -235,6 +235,65 @@ include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT
 
+if ! python3 - "$DEST/Android.bp" <<'PY'
+import pathlib
+import re
+import sys
+
+path = pathlib.Path(sys.argv[1])
+text = path.read_text(encoding="utf-8")
+
+expected = {
+    "SableCalculator",
+    "SableSudoku",
+    "SableMinesweeper",
+    "Sable2048",
+    "SableMedia",
+    "SableReader",
+    "SableHub",
+    "SableMail",
+}
+
+blocks = re.findall(r"android_app_import\s*\{(.*?)\n\}", text, flags=re.S)
+seen = set()
+
+for block in blocks:
+    match = re.search(r'name:\s*"([^"]+)"', block)
+    if not match:
+        continue
+    name = match.group(1)
+    if name not in expected:
+        continue
+
+    seen.add(name)
+
+    required = (
+        "presigned: true,",
+        "preprocessed: true,",
+        "dex_preopt:",
+        "enabled: false,",
+    )
+    missing = [needle for needle in required if needle not in block]
+    if missing:
+        raise SystemExit(
+            "R8_PRESIGNED_APK_IMPORT=FAIL "
+            f"module={name} missing={missing!r}"
+        )
+
+if seen != expected:
+    raise SystemExit(
+        "R8_PRESIGNED_APK_IMPORT_SET=FAIL "
+        f"missing={sorted(expected - seen)!r} "
+        f"extra={sorted(seen - expected)!r}"
+    )
+
+print("R8_PRESIGNED_APK_IMPORT_SET=PASS")
+print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=8")
+PY
+then
+    fail R8_PRESIGNED_APK_PREPROCESSED
+fi
+
 for module in     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
