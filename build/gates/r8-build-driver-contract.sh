@@ -11,16 +11,22 @@ migrate="$ROOT/build/host/migrate-r8-final-v1-host-tools.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
 runner="$ROOT/build/panther/run-r8-release-candidate.sh"
 stage="$ROOT/build/panther/stage-r8-product-apps.sh"
+finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
+inventory="$ROOT/build/gates/verify-r8-vendor-sable-inventory.py"
+android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
+start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
+android_ci="$ROOT/.github/workflows/r8-android.yml"
+android_static="$ROOT/.github/workflows/r8-android-static.yml"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$nostale"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$render" "$runner" "$stage" "$nostale"; do
+for f in "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale"; do
     bash -n "$f"
 done
 
@@ -45,14 +51,48 @@ grep -Fq "libstd-*.rlib" "$verify"
 
 echo "R8_HOST_GATE_OFFLINE_RUST_VERIFICATION=PASS"
 
-grep -Fq 'LEGACY_DEST="$WS/vendor/sable/prebuilts/r8"' "$stage"
+grep -Fq 'LEGACY_PARENT="$WS/vendor/sable/prebuilts"' "$stage"
+grep -Fq 'LEGACY_DEST="$LEGACY_PARENT/r8"' "$stage"
 grep -Fq 'rm -rf --one-file-system -- "$LEGACY_DEST"' "$stage"
+grep -Fq 'rmdir -- "$LEGACY_PARENT"' "$stage"
 grep -Fq 'R8_LEGACY_PRODUCT_TREE=PASS_ABSENT_POST_STAGE' "$stage"
+grep -Fq 'R8_LEGACY_PRODUCT_PARENT=PASS_ABSENT_POST_STAGE' "$stage"
 grep -Fq 'LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"' "$nostale"
 grep -Fq 'R8_STALE_WORKSPACE_PRODUCT_TREE' "$nostale"
+grep -Fq 'verify-r8-vendor-sable-inventory.py' "$nostale"
 grep -Fq 'R8_DUPLICATE_PRODUCT_BLUEPRINT' "$nostale"
+grep -Fq 'R8_VENDOR_SABLE_EXACT_INVENTORY=PASS' "$inventory"
+grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8' "$inventory"
+python3 "$inventory" --self-test
 
-echo "R8_LEGACY_PRODUCT_TREE_REGRESSION=PASS"
+echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
+
+grep -Fq 'include(":sablestart-production-check")' "$android_settings"
+! grep -Fq 'include(":start-preview")' "$android_settings"
+! grep -Fq 'include(":system-preview")' "$android_settings"
+grep -Fq '../../../../src/android/packages/apps/SableStart/src' "$start_check"
+grep -Fq '../../../../src/android/packages/apps/SableStart/AndroidManifest.xml' "$start_check"
+grep -Fq '../../../../src/android/packages/apps/SableStart/res' "$start_check"
+grep -Fq ':sablestart-production-check:compileDebugKotlin' "$android_ci"
+! grep -Fq ':start-preview:' "$android_ci"
+! grep -Fq ':system-preview:' "$android_ci"
+grep -Fq ':sablestart-production-check:lintDebug' "$android_static"
+! grep -Fq ':start-preview:' "$android_static"
+! grep -Fq ':system-preview:' "$android_static"
+
+echo "R8_SABLESTART_PRODUCTION_GRADLE_COMPILE_CONTRACT=PASS"
+echo "R8_SABLESTART_PRODUCTION_LINT_CONTRACT=PASS"
+
+grep -Fq '===== SABLESTART SOONG PREFLIGHT =====' "$finalbuild"
+grep -Fq 'sablestart-soong-preflight.log' "$finalbuild"
+grep -Fq 'R8_SABLESTART_SOONG_PREFLIGHT=PASS' "$finalbuild"
+grep -Fq 'R8_FINAL_BUILD=FAIL_SABLESTART_PREFLIGHT' "$finalbuild"
+
+preflight_line="$(grep -nF '===== SABLESTART SOONG PREFLIGHT =====' "$finalbuild" | head -n1 | cut -d: -f1)"
+combined_line="$(grep -nF '===== COMBINED UI MODULE COMPILE GATE =====' "$finalbuild" | head -n1 | cut -d: -f1)"
+[[ -n "$preflight_line" && -n "$combined_line" && "$preflight_line" -lt "$combined_line" ]]
+
+echo "R8_SABLESTART_SOONG_PREFLIGHT_CONTRACT=PASS"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT

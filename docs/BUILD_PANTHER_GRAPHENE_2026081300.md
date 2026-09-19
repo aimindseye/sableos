@@ -55,8 +55,10 @@ bash build/host/verify-r8-host-tools.sh
 After the corresponding GitHub workflow passes, use the uploaded driver artifact
 for that exact commit. The driver defaults to tmux and runs the application
 builds, Reader/Mail composition, exact APK freeze, R8 source/product
-preparation, composition gate and final Panther build. It never authorizes
-device contact or flashing.
+preparation, exact `vendor/sable` inventory validation, a focused
+`m SableStart` Soong preflight, the combined application/Settings/SystemUI
+module gate and the final Panther build. It never authorizes device contact or
+flashing.
 
 The historical D3 commands below remain substrate/reference evidence and are
 still useful for forensic comparison, but they are not the normal R8 local

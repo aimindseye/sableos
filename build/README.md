@@ -38,9 +38,10 @@ That CI-produced artifact is the normal executable for `ai-g732`.
 The generated script verifies that the local repository is at the exact GitHub
 commit embedded by CI, then runs the repository-owned release-candidate runner.
 The runner performs the host-tool gate, application builds, Reader/Mail
-composition, exact eight-APK freeze, workspace/product preparation, product
-composition gate, and final Panther build. Device contact and flashing remain
-separate operations.
+composition, exact eight-APK freeze, workspace/product preparation, exact
+`vendor/sable` inventory validation, a focused production `SableStart` Soong
+preflight, the combined Settings/SystemUI module gate, and the final Panther
+target-files build. Device contact and flashing remain separate operations.
 
 ## Other stable Panther entry points
 
@@ -52,9 +53,6 @@ build/panther/verify-sablestart-snapshot.sh
 build/panther/sync-sablestart.sh
 build/panther/build-sablestart.sh
 build/panther/build-target-files.sh
-build/panther/build-ui-preview.sh
-build/panther/flash-ui-preview-inactive-slot.sh
-build/panther/validate-ui-preview.sh
 ```
 
 Authorization remains explicit inside the repository entry points. The canonical
@@ -63,3 +61,21 @@ the build itself. It does not authorize clean, clobber, device contact or flash.
 
 See `docs/BUILD_LAYOUT.md`, `docs/PORTABLE_DEVELOPMENT.md`, and
 `docs/BUILD_PANTHER_GRAPHENE_2026081300.md`.
+
+
+## R8 production-source qualification
+
+The historical `start-preview` and `system-preview` Gradle applications and
+the Panther UI-preview build/flash/validation scripts are retired. GitHub Android
+CI now compiles the complete production SableStart Kotlin source tree through
+`:sablestart-production-check:compileDebugKotlin`, using the production
+manifest and resources.
+
+The local Panther build remains authoritative: after lunch and before the
+combined module gate, `build-r8-final-ui.sh` runs a focused
+`m SableStart` Soong preflight and stores
+`sablestart-soong-preflight.log`.
+
+The R8 no-stale gate also requires the workspace `vendor/sable` tree to match
+the exact canonical R8 inventory: one Android.bp, one product makefile, three
+source/seal control files, and exactly eight canonical APKs.

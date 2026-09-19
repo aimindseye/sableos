@@ -21,6 +21,11 @@ stale_paths=(
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewScreen.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartRoot.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableMetroPreviewActivity.kt"
+    "apps/r8/android/start-preview"
+    "apps/r8/android/system-preview"
+    "build/panther/build-ui-preview.sh"
+    "build/panther/flash-ui-preview-inactive-slot.sh"
+    "build/panther/validate-ui-preview.sh"
 )
 
 for rel in "${stale_paths[@]}"; do
@@ -88,7 +93,12 @@ do
     fi
 done
 
-echo "R8_QUALIFICATION_ONLY_PREVIEW_MODULES=PASS_NOT_PRODUCT_SELECTED"
+GRADLE_SETTINGS="$ROOT/apps/r8/android/settings.gradle.kts"
+grep -Fq 'include(":start-preview")' "$GRADLE_SETTINGS"     && fail R8_STALE_START_PREVIEW_MODULE
+grep -Fq 'include(":system-preview")' "$GRADLE_SETTINGS"     && fail R8_STALE_SYSTEM_PREVIEW_MODULE
+grep -Fq 'include(":sablestart-production-check")' "$GRADLE_SETTINGS"     || fail R8_SABLESTART_PRODUCTION_CHECK_MODULE
+echo "R8_PREVIEW_QUALIFICATION_MODULES=PASS_RETIRED"
+echo "R8_SABLESTART_PRODUCTION_CHECK_MODULE=PASS"
 
 if [[ -n "$WS" ]]; then
     LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"
@@ -99,21 +109,17 @@ if [[ -n "$WS" ]]; then
     fi
     echo "R8_STALE_WORKSPACE_PRODUCT_TREE=PASS_ABSENT"
 
+    python3 "$ROOT/build/gates/verify-r8-vendor-sable-inventory.py" \
+        "$WS/vendor/sable"
+
     mapfile -t sable_r8_blueprints < <(
         find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
     )
-    for bp in "${sable_r8_blueprints[@]}"; do
-        case "$bp" in
-            "$WS/vendor/sable/r8/Android.bp")
-                ;;
-            *)
-                if grep -Eq 'Sable(Calculator|Sudoku|Minesweeper|2048|Media|Reader|Hub|Mail)' "$bp"; then
-                    echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=FAIL path=$bp"
-                    fail R8_DUPLICATE_PRODUCT_BLUEPRINT
-                fi
-                ;;
-        esac
-    done
+    [[ "${#sable_r8_blueprints[@]}" -eq 1 ]] || {
+        printf '%s\n' "${sable_r8_blueprints[@]}"
+        fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+    }
+    [[ "${sable_r8_blueprints[0]}" == "$WS/vendor/sable/r8/Android.bp" ]]         || fail R8_DUPLICATE_PRODUCT_BLUEPRINT
     echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
 fi
 

@@ -6,9 +6,7 @@ on:
       - 'build/panther/**'
       - 'build/config/r8-*.env'
       - 'build/host/**'
-      - 'build/gates/r8-build-driver-contract.sh'
-      - 'build/gates/r8-final-*.sh'
-      - 'build/gates/r8-no-stale-product-code.sh'
+      - 'build/gates/**'
       - 'product/r8/panther/**'
       - 'patches/android-17-grapheneos-2026081300/**'
       - 'src/android/packages/apps/SableStart/**'
@@ -24,9 +22,7 @@ on:
       - 'build/panther/**'
       - 'build/config/r8-*.env'
       - 'build/host/**'
-      - 'build/gates/r8-build-driver-contract.sh'
-      - 'build/gates/r8-final-*.sh'
-      - 'build/gates/r8-no-stale-product-code.sh'
+      - 'build/gates/**'
       - 'product/r8/panther/**'
       - 'patches/android-17-grapheneos-2026081300/**'
       - 'src/android/packages/apps/SableStart/**'
@@ -63,7 +59,7 @@ jobs:
 
       - name: Python syntax
         run: |
-          python3 -m py_compile             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+          python3 -m py_compile             build/gates/verify-r8-vendor-sable-inventory.py             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
           echo "PYTHON_SYNTAX=PASS"
 
       - name: Platform applicator self-tests
@@ -74,6 +70,8 @@ jobs:
           python3 patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py --self-test
           python3 patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py --self-test
           python3 patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py --self-test
+          python3 build/gates/verify-r8-vendor-sable-inventory.py --self-test
+          echo "R8_VENDOR_SABLE_INVENTORY_SELF_TEST=PASS"
           echo "R8_PLATFORM_APPLICATOR_SELF_TESTS=PASS"
 
       - name: Product composition contract
@@ -165,17 +163,28 @@ jobs:
         run: |
           set -euo pipefail
           media_manifest=apps/r8/android/media/src/main/AndroidManifest.xml
+          settings=apps/r8/android/settings.gradle.kts
+          production_check=apps/r8/android/sablestart-production-check/build.gradle.kts
 
           ! grep -Fq 'MediaDesignPreviewActivity' "$media_manifest"
           test ! -e apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewActivity.kt
           test ! -e apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewScreen.kt
 
-          # Standalone preview modules remain qualification-only and are not
-          # selected by product/r8/panther/r8-product.mk.
-          ! grep -Fq 'start-preview' product/r8/panther/r8-product.mk
-          ! grep -Fq 'system-preview' product/r8/panther/r8-product.mk
+          test ! -e apps/r8/android/start-preview
+          test ! -e apps/r8/android/system-preview
+          test ! -e build/panther/build-ui-preview.sh
+          test ! -e build/panther/flash-ui-preview-inactive-slot.sh
+          test ! -e build/panther/validate-ui-preview.sh
 
-          echo "R8_STALE_PRODUCT_PREVIEW_SURFACES=PASS"
+          ! grep -Fq 'include(":start-preview")' "$settings"
+          ! grep -Fq 'include(":system-preview")' "$settings"
+          grep -Fq 'include(":sablestart-production-check")' "$settings"
+          grep -Fq '../../../../src/android/packages/apps/SableStart/src' "$production_check"
+          grep -Fq '../../../../src/android/packages/apps/SableStart/AndroidManifest.xml' "$production_check"
+          grep -Fq '../../../../src/android/packages/apps/SableStart/res' "$production_check"
+
+          echo "R8_STALE_PRODUCT_PREVIEW_SURFACES=PASS_ABSENT"
+          echo "R8_SABLESTART_PRODUCTION_COMPILE_SURFACE=PASS"
 
       - name: No stale R8 product code or packages
         shell: bash

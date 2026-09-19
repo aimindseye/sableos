@@ -94,10 +94,43 @@ GitHub PR
   -> Reader/Mail composition
   -> source-bound eight-APK freeze
   -> Panther source/product preparation
-  -> product-composition gate
+  -> exact vendor/sable inventory gate
+  -> production SableStart Soong preflight
+  -> combined application/Settings/SystemUI module gate
   -> final Panther target-files build
   -> artifact audit
   -> separately authorized device deployment
 ```
 
 A successful build is evidence, not source.
+
+
+## Production SableStart qualification
+
+GitHub does not use a partial Start preview as a production compile proxy.
+`apps/r8/android/sablestart-production-check` points at the complete production
+SableStart `src/`, production manifest and production resources. The Android CI
+lane runs `:sablestart-production-check:compileDebugKotlin`.
+
+The historical `start-preview` and `system-preview` modules and Panther
+UI-preview build/flash/validation scripts are not part of the canonical source
+tree.
+
+On `ai-g732`, the authoritative compiler check is still Soong. The final build
+runs `m SableStart` as a focused preflight before the expensive combined
+Settings/SystemUI module gate.
+
+## Canonical vendor/sable workspace inventory
+
+After R8 staging, `vendor/sable` is fail-closed. Only these directories are
+permitted:
+
+```text
+vendor/sable/r8/
+vendor/sable/r8/prebuilt/
+```
+
+The only permitted files are `Android.bp`, `r8-product.mk`,
+`manifest.tsv`, `SHA256SUMS.txt`, `SABLEOS_SOURCE_COMMIT.txt`, and the
+eight canonical Sable APKs. Extra files, directories, symlinks or blueprints are
+qualification failures.

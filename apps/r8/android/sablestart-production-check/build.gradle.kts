@@ -5,15 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "org.sableos.start.preview"
+    namespace = "org.sableos.start"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "org.sableos.start.preview"
+        applicationId = "org.sableos.start.cicheck"
         minSdk = 30
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
     }
 
     buildFeatures {
@@ -35,12 +33,14 @@ android {
 
     sourceSets {
         getByName("main") {
+            manifest.srcFile(
+                "../../../../src/android/packages/apps/SableStart/AndroidManifest.xml"
+            )
             java.srcDirs(
-                "src/main/java",
-                "../../../../src/android/packages/apps/SableStart/src/com/sable/start/ui",
-                "../../../../src/android/packages/apps/SableStart/src/com/sable/start/live",
-                "../../../../src/android/packages/apps/SableStart/src/com/sable/start/model",
-                "../../../../src/android/packages/apps/SableStart/src/com/sable/start/platform",
+                "../../../../src/android/packages/apps/SableStart/src"
+            )
+            res.srcDirs(
+                "../../../../src/android/packages/apps/SableStart/res"
             )
         }
     }
@@ -54,11 +54,10 @@ dependencies {
     )
 
     implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.compose.runtime:runtime")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.material3:material3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-
-    debugImplementation("androidx.compose.ui:ui-tooling")
 }
