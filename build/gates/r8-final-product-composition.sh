@@ -7,7 +7,7 @@ source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 
 WS="${WS:-$SABLEOS_UPSTREAM}"
 DEST="$WS/vendor/sable/r8"
-DEVICE_MK="$WS/device/google/pantah/device-panther.mk"
+PRODUCT_MK="$WS/vendor/google_devices/panther/panther.mk"
 
 echo "===== R8 FINAL UI PRODUCT COMPOSITION GATE ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
@@ -175,8 +175,16 @@ then
     fail R8_PRODUCT_PACKAGE_SET
 fi
 
+[[ -f "$PRODUCT_MK" ]] || fail R8_PANTHER_PRODUCT_FILE
+grep -Eq '^PRODUCT_NAME[[:space:]]*:=[[:space:]]*panther[[:space:]]*$' "$PRODUCT_MK"     || fail R8_PANTHER_PRODUCT_NAME
+grep -Eq '^PRODUCT_DEVICE[[:space:]]*:=[[:space:]]*panther[[:space:]]*$' "$PRODUCT_MK"     || fail R8_PANTHER_PRODUCT_DEVICE
+
+PRODUCT_MK_SHA256="$(sha256sum "$PRODUCT_MK" | awk '{print $1}')"
+echo "R8_PANTHER_PRODUCT_FILE=$PRODUCT_MK"
+echo "R8_PANTHER_PRODUCT_SHA256=$PRODUCT_MK_SHA256"
+
 INHERIT_LINE='$(call inherit-product, vendor/sable/r8/r8-product.mk)'
-include_count="$(grep -Fc "$INHERIT_LINE" "$DEVICE_MK" || true)"
+include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 [[ "$include_count" -eq 1 ]] || fail R8_PRODUCT_INCLUDE
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT

@@ -74,6 +74,8 @@ jobs:
           bp=product/r8/panther/Android.bp
           mk=product/r8/panther/r8-product.mk
           sync=build/panther/sync-sablestart.sh
+          stage=build/panther/stage-r8-product-apps.sh
+          gate=build/gates/r8-final-product-composition.sh
           manifest=src/android/packages/apps/SableStart/AndroidManifest.xml
 
           for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
@@ -91,6 +93,13 @@ jobs:
           ! grep -Fq 'SableStartRoot.kt' "$sync"
           ! grep -Fq 'SableMetroPreviewActivity' "$manifest"
 
+          for script in "$stage" "$gate"
+          do
+            grep -Fq 'vendor/google_devices/panther/panther.mk' "$script"
+            ! grep -Fq 'device/google/pantah/device-panther.mk' "$script"
+          done
+
+          echo "R8_PANTHER_PRODUCT_PATH_CONTRACT=PASS"
           echo "R8_PRODUCT_COMPOSITION_CONTRACT=PASS"
 
       - name: R8-A appearance contract
