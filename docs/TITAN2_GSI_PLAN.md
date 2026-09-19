@@ -34,6 +34,28 @@ PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PASS
 
 This ensures Titan evaluates the same closed Sable UI/application architecture rather than becoming a parallel fork.
 
+## Keyboard-first product requirement
+
+Titan 2 is not a touch-first SableOS UI with keyboard shortcuts added afterward. Its primary interaction profile is keyboard-first:
+
+```text
+navigation.primary=keyboard
+navigation.secondary=touch
+```
+
+The physical keyboard must be sufficient for core HOME navigation, app/search launch, focus traversal, Settings and major Sable first-party surfaces. Touch remains supported as a secondary input path.
+
+Reference review:
+
+- `palsoftware/pastiera` — physical-keyboard IME/modifier/navigation reference;
+- `katoaapps/openminilaunch` — keyboard-first launcher/type-to-search reference;
+- `sriharshaKanukuntla/TypeQ25` — Q25/Titan physical-keyboard mapping/nav reference;
+- `nozerorma/q25toolbox` — keylayout/scancode/device-behavior forensic reference.
+
+Exact reviewed revisions and licensing constraints are recorded in `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
+
+The first Titan launcher acceptance must prove printable-key type-to-search from HOME with the initial character preserved, visible directional focus, hardware-only navigation through the main launcher flow, and no forced soft-keyboard popup when a physical keyboard is active.
+
 ## Strategic role
 
 The intended sequence is:
