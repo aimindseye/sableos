@@ -34,9 +34,18 @@ android {
     }
 
     lint {
-        // This preview module has no test sources. Avoid resolving unused
-        // androidTest/test lint graphs; production preview sources remain linted.
+        // This preview module has no test sources. Production preview sources
+        // remain linted; test-source lint remains disabled.
         checkTestSources = false
+    }
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        // system-preview has no instrumentation-test sources. Disable creation
+        // of the unused AndroidTest variant so lint cannot resolve an unrelated
+        // debugAndroidTest dependency graph.
+        variantBuilder.enableAndroidTest = false
     }
 }
 
