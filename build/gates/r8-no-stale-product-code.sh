@@ -101,6 +101,22 @@ echo "R8_PREVIEW_QUALIFICATION_MODULES=PASS_RETIRED"
 echo "R8_SABLESTART_PRODUCTION_CHECK_MODULE=PASS"
 
 if [[ -n "$WS" ]]; then
+    LEGACY_SABLE_DEVICE_PRODUCT="$WS/vendor/sable_devices/sable_panther"
+    LEGACY_SABLE_DEVICE_PARENT="$WS/vendor/sable_devices"
+    if [[ -e "$LEGACY_SABLE_DEVICE_PRODUCT" || -L "$LEGACY_SABLE_DEVICE_PRODUCT" ]]; then
+        echo "R8_STALE_SABLE_DEVICE_PRODUCT=FAIL path=$LEGACY_SABLE_DEVICE_PRODUCT"
+        find "$LEGACY_SABLE_DEVICE_PRODUCT" -maxdepth 4 -mindepth 1 -print 2>/dev/null | sort || true
+        fail R8_STALE_SABLE_DEVICE_PRODUCT
+    fi
+    echo "R8_STALE_SABLE_DEVICE_PRODUCT=PASS_ABSENT"
+
+    if [[ -e "$LEGACY_SABLE_DEVICE_PARENT" || -L "$LEGACY_SABLE_DEVICE_PARENT" ]]; then
+        echo "R8_STALE_SABLE_DEVICE_PARENT=FAIL path=$LEGACY_SABLE_DEVICE_PARENT"
+        find "$LEGACY_SABLE_DEVICE_PARENT" -maxdepth 3 -mindepth 1 -print 2>/dev/null | sort || true
+        fail R8_STALE_SABLE_DEVICE_PARENT
+    fi
+    echo "R8_STALE_SABLE_DEVICE_PARENT=PASS_ABSENT"
+
     LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"
     if [[ -e "$LEGACY_WORKSPACE_PRODUCT_TREE" || -L "$LEGACY_WORKSPACE_PRODUCT_TREE" ]]; then
         echo "R8_STALE_WORKSPACE_PRODUCT_TREE=FAIL path=$LEGACY_WORKSPACE_PRODUCT_TREE"
