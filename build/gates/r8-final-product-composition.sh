@@ -104,7 +104,9 @@ if missing or extra or mismatch:
 
 print("R8_SABLESTART_WORKSPACE_FIDELITY=PASS")
 PY
-[[ $? -eq 0 ]] || fail R8_SABLESTART_WORKSPACE_FIDELITY
+then
+    fail R8_SABLESTART_WORKSPACE_FIDELITY
+fi
 
 grep -Fq 'src/com/sable/start/ui/SableStartScreen.kt'     "$ROOT/build/panther/sync-sablestart.sh"     || fail R8_SABLESTART_SYNC_CONTRACT
 
@@ -148,7 +150,7 @@ cmp -s     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"   
     sha256sum -c "$DEST/SHA256SUMS.txt"
 ) || fail R8_PRODUCT_PREBUILT_HASHES
 
-python3 - "$DEST/manifest.tsv" <<'PY'
+if ! python3 - "$DEST/manifest.tsv" <<'PY'
 import csv
 import pathlib
 import sys
@@ -173,7 +175,9 @@ if actual != expected or len(rows) != len(expected):
 
 print("R8_PRODUCT_PACKAGE_SET=PASS")
 PY
-[[ $? -eq 0 ]] || fail R8_PRODUCT_PACKAGE_SET
+then
+    fail R8_PRODUCT_PACKAGE_SET
+fi
 
 INHERIT_LINE='$(call inherit-product, vendor/sable/r8/r8-product.mk)'
 include_count="$(grep -Fc "$INHERIT_LINE" "$DEVICE_MK" || true)"
