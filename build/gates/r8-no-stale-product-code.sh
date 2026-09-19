@@ -30,13 +30,13 @@ for rel in "${stale_paths[@]}"; do
     echo "R8_STALE_SOURCE_PATH=PASS_ABSENT path=$rel"
 done
 
-if git -C "$ROOT" grep -n -E     'MediaDesignPreview(Activity|Screen)|SableStartRoot|UI-C1A Review'     --     apps/r8/android/media     src/android/packages/apps/SableStart     >/tmp/r8-stale-product-grep.$$ 2>/dev/null
-then
-    cat /tmp/r8-stale-product-grep.$$
-    rm -f /tmp/r8-stale-product-grep.$$
+stale_matches="$(
+    git -C "$ROOT" grep -n -E         'MediaDesignPreview(Activity|Screen)|SableStartRoot|UI-C1A Review'         --         apps/r8/android/media         src/android/packages/apps/SableStart         2>/dev/null         || true
+)"
+if [[ -n "$stale_matches" ]]; then
+    printf '%s\n' "$stale_matches"
     fail R8_STALE_PRODUCT_SOURCE_TEXT
 fi
-rm -f /tmp/r8-stale-product-grep.$$ 2>/dev/null || true
 
 START_MANIFEST="$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
 MEDIA_MANIFEST="$ROOT/apps/r8/android/media/src/main/AndroidManifest.xml"
