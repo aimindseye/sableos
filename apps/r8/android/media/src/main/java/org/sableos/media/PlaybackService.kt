@@ -30,9 +30,20 @@ class PlaybackService : MediaSessionService() {
                         source = intent.getStringExtra(EXTRA_SOURCE),
                     )
                 }
+
+            ACTION_PLAY_QUEUE ->
+                playQueue(
+                    uris = intent.getStringArrayListExtra(EXTRA_URIS).orEmpty(),
+                    titles = intent.getStringArrayListExtra(EXTRA_TITLES).orEmpty(),
+                    artists = intent.getStringArrayListExtra(EXTRA_ARTISTS).orEmpty(),
+                    startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0),
+                )
+
             ACTION_PAUSE -> player?.pause()
             ACTION_RESUME -> player?.play()
             ACTION_STOP -> player?.stop()
+            ACTION_PREVIOUS -> player?.seekToPreviousMediaItem()
+            ACTION_NEXT -> player?.seekToNextMediaItem()
         }
         return super.onStartCommand(intent, flags, startId)
     }
@@ -61,6 +72,47 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    private fun playQueue(
+        uris: List<String>,
+        titles: List<String>,
+        artists: List<String>,
+        startIndex: Int,
+    ) {
+        if (uris.isEmpty()) return
+
+        val items =
+            uris.mapIndexed { index, value ->
+                val metadata =
+                    MediaMetadata.Builder()
+                        .setTitle(
+                            titles.getOrNull(index)
+                                ?.takeIf { it.isNotBlank() }
+                                ?: "Local audio",
+                        )
+                        .setArtist(
+                            artists.getOrNull(index)
+                                ?.takeIf { it.isNotBlank() }
+                                ?: "Unknown artist",
+                        )
+                        .build()
+
+                MediaItem.Builder()
+                    .setUri(android.net.Uri.parse(value))
+                    .setMediaMetadata(metadata)
+                    .build()
+            }
+
+        player?.apply {
+            setMediaItems(
+                items,
+                startIndex.coerceIn(0, items.lastIndex),
+                0L,
+            )
+            prepare()
+            play()
+        }
+    }
+
     override fun onDestroy() {
         session?.release()
         session = null
@@ -74,7 +126,15 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_PAUSE = "org.sableos.media.PAUSE"
         const val ACTION_RESUME = "org.sableos.media.RESUME"
         const val ACTION_STOP = "org.sableos.media.STOP"
+        const val ACTION_PREVIOUS = "org.sableos.media.PREVIOUS"
+        const val ACTION_NEXT = "org.sableos.media.NEXT"
+        const val ACTION_PLAY_QUEUE = "org.sableos.media.PLAY_QUEUE"
+
         const val EXTRA_TITLE = "org.sableos.media.TITLE"
         const val EXTRA_SOURCE = "org.sableos.media.SOURCE"
+        const val EXTRA_URIS = "org.sableos.media.URIS"
+        const val EXTRA_TITLES = "org.sableos.media.TITLES"
+        const val EXTRA_ARTISTS = "org.sableos.media.ARTISTS"
+        const val EXTRA_START_INDEX = "org.sableos.media.START_INDEX"
     }
 }
