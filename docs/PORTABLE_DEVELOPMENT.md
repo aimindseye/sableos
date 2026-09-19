@@ -66,6 +66,16 @@ run when the local repository is at a different commit.
 The artifact defaults to a persistent tmux session, so a failed build leaves its
 first error available for inspection rather than destroying the session.
 
+GitHub Android CI compiles the complete production SableStart Kotlin tree through
+`:sablestart-production-check:compileDebugKotlin`. The old Start/System preview
+applications are retired. On the build host, the source-bound driver additionally
+runs an authoritative `m SableStart` Soong preflight before the combined
+Settings/SystemUI module build.
+
+The workspace gate treats `vendor/sable` as an exact inventory rather than an
+open staging area. Any file, directory, symlink, APK or Android.bp outside the
+canonical R8 set fails qualification.
+
 ## Upstream source caches
 
 Reader, TextReader and Thunderbird remain external pinned source inputs. Their
