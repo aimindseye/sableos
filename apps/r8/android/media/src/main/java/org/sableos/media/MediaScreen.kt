@@ -160,6 +160,7 @@ internal fun MediaScreen(
             ) {
                 item {
                     MediaUtilityBar(
+                        queueCount = playback.queue.size,
                         upNextCount =
                             playback.queue.count { item ->
                                 item.index > playback.currentIndex
@@ -369,6 +370,7 @@ private fun PrimaryPivot(
 
 @Composable
 private fun MediaUtilityBar(
+    queueCount: Int,
     upNextCount: Int,
     onQueue: () -> Unit,
     onSettings: () -> Unit,
@@ -378,7 +380,7 @@ private fun MediaUtilityBar(
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (upNextCount > 0) {
+        if (queueCount > 1) {
             Surface(
                 onClick = onQueue,
                 color = Color.Transparent,
