@@ -14,6 +14,9 @@ on:
       - 'build/gates/r8-build-driver-contract.sh'
       - 'product/r8/panther/**'
       - 'apps/r8/**'
+      - 'src/android/packages/apps/SableStart/**'
+      - 'src/android/shared/sabledesign/**'
+      - 'patches/android-17-grapheneos-2026081300/**'
       - '.github/workflows/r8-build-driver.yml'
   push:
     branches: [main]
@@ -25,6 +28,9 @@ on:
       - 'build/gates/r8-build-driver-contract.sh'
       - 'product/r8/panther/**'
       - 'apps/r8/**'
+      - 'src/android/packages/apps/SableStart/**'
+      - 'src/android/shared/sabledesign/**'
+      - 'patches/android-17-grapheneos-2026081300/**'
       - '.github/workflows/r8-build-driver.yml'
   workflow_dispatch:
 
