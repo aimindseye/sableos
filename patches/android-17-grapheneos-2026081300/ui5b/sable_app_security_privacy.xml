@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="sable_app_security_privacy_screen">
+
+    <Preference
+        android:key="sable_evidence_notice"
+        android:title="@string/sable_evidence_notice_title"
+        android:summary="@string/sable_evidence_notice_summary"
+        android:selectable="false" />
+
+    <PreferenceCategory
+        android:key="sable_identity_category"
+        android:title="@string/sable_identity_category_title" />
+
+    <PreferenceCategory
+        android:key="sable_authority_category"
+        android:title="@string/sable_authority_category_title" />
+
+    <PreferenceCategory
+        android:key="sable_components_category"
+        android:title="@string/sable_components_category_title" />
+
+    <PreferenceCategory
+        android:key="sable_code_category"
+        android:title="@string/sable_code_category_title" />
+
+    <PreferenceCategory
+        android:key="sable_network_background_category"
+        android:title="@string/sable_network_background_category_title" />
+
+    <PreferenceCategory
+        android:key="sable_history_category"
+        android:title="@string/sable_history_category_title" />
+
+</PreferenceScreen>
