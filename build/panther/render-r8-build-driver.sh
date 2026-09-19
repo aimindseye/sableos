@@ -37,7 +37,7 @@ run_direct() {
         EXPECTED_SOURCE_COMMIT="$EXPECTED_SOURCE_COMMIT" \
         SOURCE_MUTATION_AUTHORIZED=YES \
         BUILD_AUTHORIZED=YES \
-        "$REPO/build/panther/run-r8-release-candidate.sh"
+        bash "$REPO/build/panther/run-r8-release-candidate.sh"
 }
 
 case "${1:---tmux}" in
