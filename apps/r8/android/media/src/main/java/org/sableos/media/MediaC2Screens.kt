@@ -55,32 +55,30 @@ internal fun QueueScreen(
             )
         }
 
-        if (playback.queue.isEmpty()) {
+        val upcomingItems =
+            if (playback.currentIndex >= 0) {
+                playback.queue.filter { item ->
+                    item.index > playback.currentIndex
+                }
+            } else {
+                playback.queue
+            }
+
+        if (upcomingItems.isEmpty()) {
             C2InfoPanel(
-                title = "Queue is empty",
-                detail = "Start a local track or playlist to create an Up Next queue.",
+                title = "Nothing else queued",
+                detail = "The current track is shown above. Add or play more local audio to build Up Next.",
             )
         } else {
-            playback.queue.forEachIndexed { listIndex, item ->
-                val active = item.index == playback.currentIndex
-
+            upcomingItems.forEachIndexed { listIndex, item ->
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
-                    color =
-                        if (active) {
-                            MaterialTheme.colorScheme.surfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.surface
-                        },
+                    color = MaterialTheme.colorScheme.surface,
                     border =
                         BorderStroke(
                             1.dp,
-                            if (active) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.outlineVariant
-                            },
+                            MaterialTheme.colorScheme.outlineVariant,
                         ),
                     tonalElevation = 0.dp,
                 ) {
@@ -96,19 +94,9 @@ internal fun QueueScreen(
                                 modifier = Modifier.weight(1f),
                             ) {
                                 Text(
-                                    text =
-                                        if (active) {
-                                            "now playing"
-                                        } else {
-                                            "up next"
-                                        },
+                                    text = "up next",
                                     style = MaterialTheme.typography.labelLarge,
-                                    color =
-                                        if (active) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        },
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                                 Text(
                                     text = item.title,
@@ -126,12 +114,9 @@ internal fun QueueScreen(
                             }
 
                             SableActionButton(
-                                text = if (active) "Playing" else "Play",
-                                primary = !active,
+                                text = "Play",
                                 onClick = {
-                                    if (!active) {
-                                        onPlayIndex(item.index)
-                                    }
+                                    onPlayIndex(item.index)
                                 },
                             )
                         }
@@ -145,7 +130,10 @@ internal fun QueueScreen(
                                 primary = false,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
-                                    if (listIndex > 0) {
+                                    if (
+                                        listIndex > 0 ||
+                                        item.index > playback.currentIndex + 1
+                                    ) {
                                         onMove(item.index, item.index - 1)
                                     }
                                 },
@@ -155,7 +143,7 @@ internal fun QueueScreen(
                                 primary = false,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
-                                    if (listIndex < playback.queue.lastIndex) {
+                                    if (item.index < playback.queue.lastIndex) {
                                         onMove(item.index, item.index + 1)
                                     }
                                 },
