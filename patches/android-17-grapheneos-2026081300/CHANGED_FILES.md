@@ -92,3 +92,42 @@ dd16d019fc36aefae3b3d6c624c372bf3d5ed8f4ce88aec3932c1816913f7b9e
 ```
 
 Use `apply_sable_branding.py`, rather than broad search-and-replace, to reconstruct the exact changed source scope from the pinned base.
+
+
+## UI5A Settings + Applications
+
+Base HEAD remains:
+
+```text
+71bd21cda07f4dfdcec2aabb16bc570be5bd8d35
+```
+
+Layered after D2+D3 branding, UI5A additionally changes:
+
+```text
+res/layout/settings_homepage_container.xml
+res/xml/top_level_settings.xml
+res/xml/top_level_settings_expressive.xml
+res/xml/top_level_settings_expressive_desktop.xml
+src/com/android/settings/applications/manageapplications/ManageApplications.java
+```
+
+and adds:
+
+```text
+res/layout/sable_settings_home_header.xml
+res/values/colors_sable_ui5a.xml
+res/values/strings_sable_ui5a.xml
+src/com/android/settings/applications/TopLevelApplicationsPreferenceController.java
+src/com/android/settings/applications/manageapplications/SableSensitiveAccessSummary.java
+```
+
+Semantics:
+
+- Sable Settings home header is a production Android resource;
+- Applications moves into the privacy/security group;
+- Applications opens `ManageApplications` directly;
+- homepage app count is derived from PackageManager for the current user;
+- normal main-list subtitles report only effective sensitive permission grants;
+- AppOps, observed behavior, provenance, components, tracker/library analysis,
+  network destinations and security history remain deferred to UI5B.
