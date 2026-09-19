@@ -91,111 +91,12 @@ INHERIT_LINE='$(call inherit-product, vendor/sable/r8/r8-product.mk)'
     exit 7
 }
 
-grep -Eq '^PRODUCT_NAME[[:space:]]*:=[[:space:]]*panther[[:space:]]*
-mkdir -p "$DEST/prebuilt"
-rm -f "$DEST/prebuilt/"*.apk
-
-install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
-install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
-install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
-install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
-
-for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
-do
-    install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
-done
-
-(
-    cd "$DEST/prebuilt"
-    sha256sum -c "$DEST/SHA256SUMS.txt"
-) || {
-    echo "R8_STAGED_PREBUILT_HASHES=FAIL"
-    exit 11
-}
-
-cmp -s "$ROOT/product/r8/panther/Android.bp" "$DEST/Android.bp" || {
-    echo "R8_PRODUCT_ANDROID_BP=FAIL"
-    exit 12
-}
-cmp -s "$ROOT/product/r8/panther/r8-product.mk" "$DEST/r8-product.mk" || {
-    echo "R8_PRODUCT_MK=FAIL"
-    exit 13
-}
-cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
-    echo "R8_PRODUCT_MANIFEST=FAIL"
-    exit 14
-}
-
-include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
-[[ "$include_count" -eq 1 ]] || {
-    echo "R8_PRODUCT_INCLUDE=FAIL count=$include_count"
-    exit 15
-}
-
-PRODUCT_MK_SHA256_AFTER="$(sha256sum "$PRODUCT_MK" | awk '{print $1}')"
-echo "R8_PANTHER_PRODUCT_SHA256_AFTER=$PRODUCT_MK_SHA256_AFTER"
-
-echo "R8_PRODUCT_ANDROID_BP=PASS"
-echo "R8_PRODUCT_MK=PASS"
-echo "R8_PRODUCT_MANIFEST=PASS"
-echo "R8_STAGED_PREBUILT_HASHES=PASS"
-echo "R8_PRODUCT_INCLUDE=PASS"
-echo "R8_PRODUCT_STAGE=PASS"
-echo "R8_PRODUCT_DEST=$DEST"
- "$PRODUCT_MK" || {
+grep -Eq '^PRODUCT_NAME[[:space:]]*:=[[:space:]]*panther[[:space:]]*$' "$PRODUCT_MK" || {
     echo "R8_PANTHER_PRODUCT_NAME=FAIL path=$PRODUCT_MK"
     exit 8
 }
 
-grep -Eq '^PRODUCT_DEVICE[[:space:]]*:=[[:space:]]*panther[[:space:]]*
-mkdir -p "$DEST/prebuilt"
-rm -f "$DEST/prebuilt/"*.apk
-
-install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
-install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
-install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
-install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
-
-for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
-do
-    install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
-done
-
-(
-    cd "$DEST/prebuilt"
-    sha256sum -c "$DEST/SHA256SUMS.txt"
-) || {
-    echo "R8_STAGED_PREBUILT_HASHES=FAIL"
-    exit 11
-}
-
-cmp -s "$ROOT/product/r8/panther/Android.bp" "$DEST/Android.bp" || {
-    echo "R8_PRODUCT_ANDROID_BP=FAIL"
-    exit 12
-}
-cmp -s "$ROOT/product/r8/panther/r8-product.mk" "$DEST/r8-product.mk" || {
-    echo "R8_PRODUCT_MK=FAIL"
-    exit 13
-}
-cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
-    echo "R8_PRODUCT_MANIFEST=FAIL"
-    exit 14
-}
-
-include_count="$(grep -Fc "$INHERIT_LINE" "$DEVICE_MK" || true)"
-[[ "$include_count" -eq 1 ]] || {
-    echo "R8_PRODUCT_INCLUDE=FAIL count=$include_count"
-    exit 15
-}
-
-echo "R8_PRODUCT_ANDROID_BP=PASS"
-echo "R8_PRODUCT_MK=PASS"
-echo "R8_PRODUCT_MANIFEST=PASS"
-echo "R8_STAGED_PREBUILT_HASHES=PASS"
-echo "R8_PRODUCT_INCLUDE=PASS"
-echo "R8_PRODUCT_STAGE=PASS"
-echo "R8_PRODUCT_DEST=$DEST"
- "$PRODUCT_MK" || {
+grep -Eq '^PRODUCT_DEVICE[[:space:]]*:=[[:space:]]*panther[[:space:]]*$' "$PRODUCT_MK" || {
     echo "R8_PANTHER_PRODUCT_DEVICE=FAIL path=$PRODUCT_MK"
     exit 9
 }
@@ -277,11 +178,14 @@ cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
     exit 14
 }
 
-include_count="$(grep -Fc "$INHERIT_LINE" "$DEVICE_MK" || true)"
+include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 [[ "$include_count" -eq 1 ]] || {
     echo "R8_PRODUCT_INCLUDE=FAIL count=$include_count"
     exit 15
 }
+
+PRODUCT_MK_SHA256_AFTER="$(sha256sum "$PRODUCT_MK" | awk '{print $1}')"
+echo "R8_PANTHER_PRODUCT_SHA256_AFTER=$PRODUCT_MK_SHA256_AFTER"
 
 echo "R8_PRODUCT_ANDROID_BP=PASS"
 echo "R8_PRODUCT_MK=PASS"
