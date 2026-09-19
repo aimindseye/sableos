@@ -58,3 +58,13 @@ android_app_import {
         enabled: false,
     },
 }
+
+android_app_import {
+    name: "SableHub",
+    apk: "prebuilt/SableHub.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}

@@ -24,6 +24,7 @@ declare -A expected=(
     [org.sableos.game2048]=Sable2048.apk
     [org.sableos.media]=SableMedia.apk
     [org.sableos.reader]=SableReader.apk
+    [org.sableos.hub]=SableHub.apk
 )
 
 declare -a candidates=()
@@ -66,7 +67,7 @@ done
 
 printf 'package\tfilename\tsha256\tsize_bytes\tsource\n' > "$OUT/manifest.tsv"
 
-for pkg in     org.sableos.calculator     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.media     org.sableos.reader
+for pkg in     org.sableos.calculator     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.media     org.sableos.reader     org.sableos.hub
 do
     apk="${resolved[$pkg]:-}"
     if [[ -z "$apk" ]]; then

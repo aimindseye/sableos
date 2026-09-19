@@ -62,6 +62,8 @@ jobs:
           gradle-version: '8.13'
       - name: Shared design unit tests
         run: gradle -p apps/r8/android :design:testDebugUnitTest --stacktrace
+      - name: Hub unit tests
+        run: gradle -p apps/r8/android :hub:testDebugUnitTest --stacktrace
       - name: Compile debug APKs
         run: >-
           gradle -p apps/r8/android
@@ -70,6 +72,7 @@ jobs:
           :games:assembleMinesweeperDebug
           :games:assembleGame2048Debug
           :media:assembleDebug
+          :hub:assembleDebug
           :start-preview:assembleDebug
           :system-preview:assembleDebug
           --stacktrace

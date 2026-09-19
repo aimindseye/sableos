@@ -57,6 +57,7 @@ jobs:
           :games:assembleMinesweeperDebug
           :games:assembleGame2048Debug
           :media:assembleDebug
+          :hub:assembleDebug
           --stacktrace
       - name: Seal package identities, permissions and hashes
         shell: bash
@@ -73,13 +74,14 @@ jobs:
           done < <(
             find apps/r8/android -path '*/build/outputs/apk/*' -type f -name '*.apk' | sort
           )
-          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 5
+          test "$(grep -c '^===== ' R8_APK_SEALS.txt)" -eq 6
 
           grep -q "name='org.sableos.calculator'" R8_APK_SEALS.txt
           grep -q "name='org.sableos.media'" R8_APK_SEALS.txt
           grep -q "name='org.sableos.sudoku'" R8_APK_SEALS.txt
           grep -q "name='org.sableos.minesweeper'" R8_APK_SEALS.txt
           grep -q "name='org.sableos.game2048'" R8_APK_SEALS.txt
+          grep -q "name='org.sableos.hub'" R8_APK_SEALS.txt
       - name: Generate deterministic artifact provenance and Rust SBOM
         run: >-
           python3 build/generate-supply-chain-evidence.py

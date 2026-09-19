@@ -10,6 +10,7 @@ on:
       - 'src/android/packages/apps/SableStart/**'
       - 'src/android/shared/sabledesign/**'
       - 'apps/r8/reader/**'
+      - 'apps/r8/android/hub/**'
       - 'build/verify-reader-manifest.py'
       - '.github/workflows/r8-final-ui-closure.yml'
   push:
@@ -75,12 +76,12 @@ jobs:
           sync=build/panther/sync-sablestart.sh
           manifest=src/android/packages/apps/SableStart/AndroidManifest.xml
 
-          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader
+          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
           do
             grep -Fq "name: \"$module\"" "$bp"
           done
 
-          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader
+          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
           do
             grep -Fq "$module" "$mk"
           done
