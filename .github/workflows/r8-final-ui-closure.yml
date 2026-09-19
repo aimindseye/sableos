@@ -75,12 +75,12 @@ jobs:
           sync=build/panther/sync-sablestart.sh
           manifest=src/android/packages/apps/SableStart/AndroidManifest.xml
 
-          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader
+          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
           do
             grep -Fq "name: \"$module\"" "$bp"
           done
 
-          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader
+          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
           do
             grep -Fq "$module" "$mk"
           done
