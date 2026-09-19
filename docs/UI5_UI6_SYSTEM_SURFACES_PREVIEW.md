@@ -128,6 +128,18 @@ adb shell am start -W \
 
 The bottom review navigator exposes all seven surfaces.
 
+## UI5R1 correction pass
+
+The review pass after the first seven-screen capture adds:
+
+- live device-local clock/date in the lockscreen preview;
+- a swipe-up unlock affordance instead of a fake unlock button;
+- an Application Security & Privacy control strip for Permissions, Network,
+  Notifications and standard App Info entry points;
+- explicit copy that preview controls do not replace Android enforcement;
+- the canonical SableOS branding asset remains a production wiring concern and
+  is not duplicated into this preview module.
+
 ## Production handoff after visual approval
 
 ```text
