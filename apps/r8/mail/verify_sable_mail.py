@@ -76,6 +76,16 @@ def main() -> None:
         'isShrinkResources = true',
         "SABLE_MAIL_RESOURCE_SHRINK",
     )
+    funding_settings = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/feature/TbFundingSettings.kt"
+    )
+    if funding_settings.exists():
+        fail(
+            "SABLE_MAIL_FUNDING_SETTINGS_SOURCE",
+            f"unexpected={funding_settings}",
+        )
+    print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=PASS_ABSENT")
     print("SABLE_MAIL_BUILD_CONFIGURATION=PASS")
 
     strings = app / "src/main/res/values/strings.xml"
@@ -171,6 +181,11 @@ def main() -> None:
         manifest,
         'android:theme="@style/Theme.SableMail.Startup"',
         "SABLE_MAIL_STARTUP_THEME",
+    )
+    require_text(
+        manifest,
+        'android:authorities="org.sableos.start.appearance"',
+        "SABLE_MAIL_APPEARANCE_PROVIDER_VISIBILITY",
     )
     app_source = (
         app
