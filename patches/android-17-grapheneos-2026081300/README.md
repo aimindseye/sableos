@@ -63,3 +63,31 @@ frameworks/base:
 ```
 
 See `BASELINE.lock` for exact source heads and validated artifact hashes, `CHANGED_FILES.md` for the exact semantic delta, `assets/README.md` for binary-asset handling, and `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` for the complete build procedure.
+
+
+## UI5A Settings + Applications
+
+UI5A is a separate, fail-closed production applicator layered **after** the
+validated D2+D3 branding delta. It remains pinned to the same Settings HEAD:
+
+```text
+packages/apps/Settings
+71bd21cda07f4dfdcec2aabb16bc570be5bd8d35
+```
+
+It adds the approved Sable Settings-home header, moves Applications into the
+privacy/security group, opens the real installed-app list directly, reports a
+real current-user app count on the homepage, and replaces the normal app-list
+size subtitle with a concise summary of effective sensitive permission grants.
+
+Run:
+
+```bash
+python3 patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py --self-test
+
+python3 patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py \
+  --source /srv/data/sable-build/workspaces/r8-a4-panther-base-2026081300 apply
+```
+
+See `docs/UI5A_SETTINGS_APPLICATIONS.md` for the bounded source ledger and
+incremental Settings build gate.
