@@ -129,6 +129,7 @@ $MARKER_END"
 fi
 
 mkdir -p "$DEST/prebuilt"
+rm -f "$DEST/prebuilt/"*.apk
 
 install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
 install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
