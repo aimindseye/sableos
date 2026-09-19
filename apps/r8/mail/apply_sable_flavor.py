@@ -96,6 +96,16 @@ def main() -> None:
         '"fossImplementation"(projects.feature.funding.link)',
         '"fossImplementation"(projects.feature.funding.noop)',
     )
+    replace_once(
+        build,
+        "    implementation(projects.feature.onboarding.migration.thunderbird)\n",
+        "    implementation(projects.feature.onboarding.migration.noop)\n",
+    )
+    replace_once(
+        build,
+        "    implementation(projects.feature.migration.launcher.thunderbird)\n",
+        "    implementation(projects.feature.migration.launcher.noop)\n",
+    )
 
     for line in (
         "    implementation(projects.feature.thundermail.api)\n",
@@ -720,6 +730,7 @@ internal object SableMailAppearanceSync {
     print("SABLE_MAIL_DEVELOPMENT_SIGNING=DEBUG_KEY_ONLY")
     print("SABLE_MAIL_TELEMETRY=NOOP_UPLOAD_DISABLED")
     print("SABLE_MAIL_FUNDING=NOOP")
+    print("SABLE_MAIL_MIGRATION_UI=NOOP")
     print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION")
