@@ -6,6 +6,7 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 OUT="${1:-$ROOT/apps/r8/out/panther-bundle}"
 READER_APK="${SABLE_READER_APK:-}"
+MAIL_APK="${SABLE_MAIL_APK:-}"
 SOURCE_IDENTITY="$OUT/SABLEOS_SOURCE_COMMIT.txt"
 
 SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
@@ -36,6 +37,7 @@ declare -A expected=(
     [org.sableos.media]=SableMedia.apk
     [org.sableos.reader]=SableReader.apk
     [org.sableos.hub]=SableHub.apk
+    [org.sableos.mail]=SableMail.apk
 )
 
 declare -a candidates=()
@@ -52,6 +54,14 @@ if [[ -n "$READER_APK" ]]; then
         exit 3
     }
     candidates+=("$READER_APK")
+fi
+
+if [[ -n "$MAIL_APK" ]]; then
+    [[ -f "$MAIL_APK" ]] || {
+        echo "R8_MAIL_APK=FAIL_MISSING path=$MAIL_APK"
+        exit 3
+    }
+    candidates+=("$MAIL_APK")
 fi
 
 if [[ ${#candidates[@]} -eq 0 ]]; then
@@ -78,13 +88,15 @@ done
 
 printf 'package\tfilename\tsha256\tsize_bytes\tsource\n' > "$OUT/manifest.tsv"
 
-for pkg in     org.sableos.calculator     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.media     org.sableos.reader     org.sableos.hub
+for pkg in     org.sableos.calculator     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.media     org.sableos.reader     org.sableos.hub     org.sableos.mail
 do
     apk="${resolved[$pkg]:-}"
     if [[ -z "$apk" ]]; then
         echo "R8_BUNDLE_PACKAGE=FAIL_MISSING package=$pkg"
         if [[ "$pkg" == org.sableos.reader ]]; then
             echo "Set SABLE_READER_APK to the qualified composed Reader APK."
+        elif [[ "$pkg" == org.sableos.mail ]]; then
+            echo "Set SABLE_MAIL_APK to the qualified composed Sable Mail APK."
         fi
         exit 6
     fi
