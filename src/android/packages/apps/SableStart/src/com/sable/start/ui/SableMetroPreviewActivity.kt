@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LauncherAppsRepository
 import org.sableos.start.platform.LiveSurfaceRepository
+import org.sableos.start.platform.StartStateRepository
 
 /**
  * Development-only UI-A navigator.
@@ -26,6 +27,10 @@ class SableMetroPreviewActivity : ComponentActivity() {
 
     private val liveSurfaceRepository by lazy {
         LiveSurfaceRepository(this)
+    }
+
+    private val startStateRepository by lazy {
+        StartStateRepository(this)
     }
 
     private val appsState =
@@ -44,6 +49,8 @@ class SableMetroPreviewActivity : ComponentActivity() {
                 liveSurfaceRepository = liveSurfaceRepository,
                 refreshGeneration = liveRefreshGeneration,
                 showDevelopmentNavigator = true,
+                initialPinnedKeys = startStateRepository.loadPinnedKeys(),
+                onPinnedKeysChanged = startStateRepository::savePinnedKeys,
                 onLaunchApp = { entry ->
                     val launched = launcherAppsRepository.launch(entry)
                     if (!launched) {
