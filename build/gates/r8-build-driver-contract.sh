@@ -11,6 +11,7 @@ migrate="$ROOT/build/host/migrate-r8-final-v1-host-tools.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
 runner="$ROOT/build/panther/run-r8-release-candidate.sh"
 retire="$ROOT/build/panther/retire-r8-obsolete-gradle-residue.sh"
+retire_vendor_config="$ROOT/build/panther/retire-r8-legacy-vendor-config.sh"
 stage="$ROOT/build/panther/stage-r8-product-apps.sh"
 finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
@@ -20,14 +21,14 @@ start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 android_ci="$ROOT/.github/workflows/r8-android.yml"
 android_static="$ROOT/.github/workflows/r8-android-static.yml"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$render" "$runner" "$retire" "$stage" "$finalbuild" "$nostale"; do
+for f in "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale"; do
     bash -n "$f"
 done
 
@@ -78,6 +79,20 @@ test ! -e "$ROOT/apps/r8/android/system-preview"
 rm -f "$ROOT/.r8-retire-self-test.log"
 
 echo "R8_OBSOLETE_GRADLE_RESIDUE_CONTRACT=PASS"
+
+grep -Fq 'vendor/sable/config/common.mk' "$retire_vendor_config"
+grep -Fq 'R8_LEGACY_VENDOR_CONFIG=FAIL_REFERENCED' "$retire_vendor_config"
+grep -Fq 'rm -f -- "$target"' "$retire_vendor_config"
+grep -Fq 'R8_LEGACY_VENDOR_CONFIG=REMOVED_UNREFERENCED' "$retire_vendor_config"
+grep -Fq 'R8_LEGACY_VENDOR_CONFIG=PASS' "$retire_vendor_config"
+bash "$retire_vendor_config" --self-test
+
+grep -Fq 'retire-r8-legacy-vendor-config.sh' "$stage"
+vendor_cleanup_line="$(grep -nF '===== LEGACY SABLE VENDOR CONFIG RETIREMENT =====' "$stage" | head -n1 | cut -d: -f1)"
+dest_line="$(grep -nF 'DEST="$WS/vendor/sable/r8"' "$stage" | head -n1 | cut -d: -f1)"
+[[ -n "$vendor_cleanup_line" && -n "$dest_line" && "$vendor_cleanup_line" -lt "$dest_line" ]]
+
+echo "R8_LEGACY_VENDOR_CONFIG_RETIREMENT_CONTRACT=PASS"
 
 grep -Fq 'LEGACY_PARENT="$WS/vendor/sable/prebuilts"' "$stage"
 grep -Fq 'LEGACY_DEST="$LEGACY_PARENT/r8"' "$stage"
