@@ -1,6 +1,6 @@
 # SableOS roadmap
 
-Last updated: 2026-09-18
+Last updated: 2026-09-19
 
 ## Roadmap rule
 
@@ -11,6 +11,29 @@ A milestone is complete only when its implementation, policy boundary, build int
 Portable semantic contracts should remain stable while Android-version/device integration is requalified behind bounded adapters.
 
 The current project priority is to build the SableOS user experience. Production signing/OTA infrastructure is preserved but temporarily non-blocking until release-candidate work.
+
+## 2026-09-19 final Pixel UI closure overlay
+
+The active engineering sequence has changed after the first sandbox-qualified full UI build was flashed successfully but exposed incomplete application/product composition. The build and preserved-data deployment pipeline is proven; the next full Panther build is blocked until the complete R8 UI set is integrated and audited.
+
+```text
+R8-A shared design/appearance/accessibility closure
+    -> production Metro SableStart reconciliation
+    -> R8-D2 OCR completion
+    -> exact artifact freeze for Calculator/Games/Reader/Media
+    -> Panther PRODUCT_PACKAGES/prebuilt/source integration
+    -> UI4/UI5/UI6 source-identity verification
+    -> generated product-composition gate
+    -> targeted/incremental compile gates
+    -> one fresh sandbox-qualified Panther build
+    -> preserved-data physical flash
+    -> full Pixel UI/runtime acceptance
+    -> Titan 2 N0 UI/portability work
+```
+
+Read-only Titan 2 T0 stock/device inventory may proceed in parallel as soon as hardware is available. Titan GSI mutation/flash waits for Panther final UI closure.
+
+Canonical gate: `R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
 
 ## 2026-09-18 execution overlay
 
@@ -55,12 +78,12 @@ A later layer must not paper over an unproven earlier layer.
 ```text
 PANTHER_D4                          CLOSED / PASS
 SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE         PRODUCT_INTEGRATION_START
-SABLE_FLOW_STATUS                  PLANNING_COMPLETE_IMPLEMENTATION_NEXT
-NEXT_PRODUCT_MILESTONE             SABLE_M1_METRO_SHELL_PROTOTYPE
+SABLEOS_CORE_PRODUCT_STAGE         R8_FINAL_UI_PRODUCT_CLOSURE
+SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDING
+NEXT_PRODUCT_MILESTONE             R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
 
 NON_PIXEL_ASSURANCE_MODEL          N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                        PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
+TITAN2_ROLE                        T0_READ_ONLY_ON_ARRIVAL_THEN_N0_AFTER_PANTHER_UI_CLOSURE
 Q27_ROLE                           FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
 Q25_ROLE                           OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
