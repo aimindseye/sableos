@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sable_about_title">About SableOS</string>
+    <string name="sable_about_identity_title">SableOS</string>
+    <string name="sable_about_summary_format">%1$s (%2$s) · Android %3$s · build %4$s</string>
+</resources>
