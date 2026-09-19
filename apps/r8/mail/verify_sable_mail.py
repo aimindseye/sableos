@@ -56,6 +56,26 @@ def main() -> None:
         '"fossImplementation"(projects.feature.funding.noop)',
         "SABLE_MAIL_FUNDING_NOOP",
     )
+    require_text(
+        build,
+        "implementation(projects.feature.onboarding.migration.noop)",
+        "SABLE_MAIL_ONBOARDING_MIGRATION_NOOP",
+    )
+    require_text(
+        build,
+        "implementation(projects.feature.migration.launcher.noop)",
+        "SABLE_MAIL_LAUNCHER_MIGRATION_NOOP",
+    )
+    reject_text(
+        build,
+        "projects.feature.onboarding.migration.thunderbird",
+        "SABLE_MAIL_STALE_THUNDERBIRD_MIGRATION",
+    )
+    reject_text(
+        build,
+        "projects.feature.migration.launcher.thunderbird",
+        "SABLE_MAIL_STALE_THUNDERBIRD_MIGRATION",
+    )
     reject_text(
         build,
         "projects.feature.thundermail",
@@ -197,6 +217,26 @@ def main() -> None:
         "SABLE_MAIL_TELEMETRY_UPLOAD",
     )
     print("SABLE_MAIL_TELEMETRY_UPLOAD=PASS_DISABLED")
+
+    message_container = (
+        root
+        / "legacy/ui/legacy/src/main/java/com/fsck/k9/ui/messageview/MessageContainerView.kt"
+    )
+    require_text(
+        message_container,
+        "messageContentView.blockNetworkData(!enable)",
+        "SABLE_MAIL_REMOTE_CONTENT_PRIVACY",
+    )
+    message_webview = (
+        root
+        / "legacy/ui/legacy/src/main/java/com/fsck/k9/view/MessageWebView.kt"
+    )
+    require_text(
+        message_webview,
+        "settings.blockNetworkLoads = shouldBlockNetworkData",
+        "SABLE_MAIL_REMOTE_CONTENT_PRIVACY",
+    )
+    print("SABLE_MAIL_REMOTE_CONTENT_PRIVACY=PASS_UPSTREAM_PRESERVED")
     print("SABLE_MAIL_PRODUCT_BRANDING_SOURCE=PASS")
 
     if len(sys.argv) == 3:
