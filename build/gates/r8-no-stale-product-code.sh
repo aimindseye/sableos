@@ -21,6 +21,11 @@ stale_paths=(
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewScreen.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartRoot.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableMetroPreviewActivity.kt"
+    "apps/r8/android/start-preview"
+    "apps/r8/android/system-preview"
+    "build/panther/build-ui-preview.sh"
+    "build/panther/flash-ui-preview-inactive-slot.sh"
+    "build/panther/validate-ui-preview.sh"
 )
 
 for rel in "${stale_paths[@]}"; do
@@ -88,7 +93,12 @@ do
     fi
 done
 
-echo "R8_QUALIFICATION_ONLY_PREVIEW_MODULES=PASS_NOT_PRODUCT_SELECTED"
+GRADLE_SETTINGS="$ROOT/apps/r8/android/settings.gradle.kts"
+grep -Fq 'include(":start-preview")' "$GRADLE_SETTINGS"     && fail R8_STALE_START_PREVIEW_MODULE
+grep -Fq 'include(":system-preview")' "$GRADLE_SETTINGS"     && fail R8_STALE_SYSTEM_PREVIEW_MODULE
+grep -Fq 'include(":sablestart-production-check")' "$GRADLE_SETTINGS"     || fail R8_SABLESTART_PRODUCTION_CHECK_MODULE
+echo "R8_PREVIEW_QUALIFICATION_MODULES=PASS_RETIRED"
+echo "R8_SABLESTART_PRODUCTION_CHECK_MODULE=PASS"
 
 if [[ -n "$WS" ]]; then
     LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"
@@ -99,21 +109,77 @@ if [[ -n "$WS" ]]; then
     fi
     echo "R8_STALE_WORKSPACE_PRODUCT_TREE=PASS_ABSENT"
 
+    python3 - "$WS/vendor/sable" <<'PY'
+from pathlib import Path
+import sys
+
+root = Path(sys.argv[1])
+if not root.is_dir() or root.is_symlink():
+    raise SystemExit(f"R8_VENDOR_SABLE_ROOT=FAIL path={root}")
+
+expected_dirs = {
+    "r8",
+    "r8/prebuilt",
+}
+expected_files = {
+    "r8/Android.bp",
+    "r8/r8-product.mk",
+    "r8/manifest.tsv",
+    "r8/SHA256SUMS.txt",
+    "r8/SABLEOS_SOURCE_COMMIT.txt",
+    "r8/prebuilt/SableCalculator.apk",
+    "r8/prebuilt/SableSudoku.apk",
+    "r8/prebuilt/SableMinesweeper.apk",
+    "r8/prebuilt/Sable2048.apk",
+    "r8/prebuilt/SableMedia.apk",
+    "r8/prebuilt/SableReader.apk",
+    "r8/prebuilt/SableHub.apk",
+    "r8/prebuilt/SableMail.apk",
+}
+
+actual_dirs = set()
+actual_files = set()
+special = []
+
+for path in root.rglob("*"):
+    rel = path.relative_to(root).as_posix()
+    if path.is_symlink():
+        special.append(f"{rel}:symlink")
+    elif path.is_dir():
+        actual_dirs.add(rel)
+    elif path.is_file():
+        actual_files.add(rel)
+    else:
+        special.append(f"{rel}:special")
+
+missing_dirs = expected_dirs - actual_dirs
+extra_dirs = actual_dirs - expected_dirs
+missing_files = expected_files - actual_files
+extra_files = actual_files - expected_files
+
+if missing_dirs or extra_dirs or missing_files or extra_files or special:
+    raise SystemExit(
+        "R8_VENDOR_SABLE_EXACT_INVENTORY=FAIL "
+        f"missing_dirs={sorted(missing_dirs)!r} "
+        f"extra_dirs={sorted(extra_dirs)!r} "
+        f"missing_files={sorted(missing_files)!r} "
+        f"extra_files={sorted(extra_files)!r} "
+        f"special={sorted(special)!r}"
+    )
+
+print("R8_VENDOR_SABLE_EXACT_INVENTORY=PASS")
+print("R8_VENDOR_SABLE_CANONICAL_FILE_COUNT=13")
+print("R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8")
+PY
+
     mapfile -t sable_r8_blueprints < <(
         find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
     )
-    for bp in "${sable_r8_blueprints[@]}"; do
-        case "$bp" in
-            "$WS/vendor/sable/r8/Android.bp")
-                ;;
-            *)
-                if grep -Eq 'Sable(Calculator|Sudoku|Minesweeper|2048|Media|Reader|Hub|Mail)' "$bp"; then
-                    echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=FAIL path=$bp"
-                    fail R8_DUPLICATE_PRODUCT_BLUEPRINT
-                fi
-                ;;
-        esac
-    done
+    [[ "${#sable_r8_blueprints[@]}" -eq 1 ]] || {
+        printf '%s\n' "${sable_r8_blueprints[@]}"
+        fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+    }
+    [[ "${sable_r8_blueprints[0]}" == "$WS/vendor/sable/r8/Android.bp" ]]         || fail R8_DUPLICATE_PRODUCT_BLUEPRINT
     echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
 fi
 
