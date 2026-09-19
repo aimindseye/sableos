@@ -1,7 +1,48 @@
 # SableOS build entry points
 
-New development should use these stable repository entry points instead of
-milestone-specific ad hoc commands.
+SableOS local builds use repository-owned orchestration and a canonical host-tool
+profile. Do not create milestone-specific /tmp build drivers or rediscover SDK,
+NDK, Rust, Java or Gradle paths during a build.
+
+## Canonical R8 local build contract
+
+The permanent R8 entry points are:
+
+```text
+build/config/r8-host-tools.env
+build/config/r8-release.env
+build/host/verify-r8-host-tools.sh
+build/host/migrate-r8-final-v1-host-tools.sh
+build/panther/run-r8-release-candidate.sh
+build/panther/render-r8-build-driver.sh
+build/gates/r8-build-driver-contract.sh
+.github/workflows/r8-build-driver.yml
+```
+
+Host tools live outside the build farm under:
+
+```text
+/srv/data/sable-host-tools/
+```
+
+The R8 profile pins Android SDK 36, build-tools 36.0.0, NDK
+30.0.16248370, Rust 1.98.1 with the aarch64-linux-android target, JDK 17
+for first-party Android applications, JDK 21 for Reader/Mail, and a central
+Gradle user home.
+
+The GitHub workflow `R8 canonical local build driver` renders a
+source-commit-bound `sableos-panther-r8-build.sh`, syntax-checks and contract
+checks it, writes SHA-256 metadata, and uploads it as a workflow artifact.
+That CI-produced artifact is the normal executable for `ai-g732`.
+
+The generated script verifies that the local repository is at the exact GitHub
+commit embedded by CI, then runs the repository-owned release-candidate runner.
+The runner performs the host-tool gate, application builds, Reader/Mail
+composition, exact eight-APK freeze, workspace/product preparation, product
+composition gate, and final Panther build. Device contact and flashing remain
+separate operations.
+
+## Other stable Panther entry points
 
 ```text
 build/config/panther-grapheneos-2026081300.env
@@ -14,18 +55,11 @@ build/panther/build-target-files.sh
 build/panther/build-ui-preview.sh
 build/panther/flash-ui-preview-inactive-slot.sh
 build/panther/validate-ui-preview.sh
-build/gates/sablestart-r3-prebuild.sh
-build/gates/sablestart-r3b-soong.sh
 ```
 
-The capture helper copies the complete SableStart module tree (including Rust and binary/resource assets) while excluding common build/cache directories. The snapshot verifier recursively compares the repository copy with the validated upstream workspace before portability is considered closed.
+Authorization remains explicit inside the repository entry points. The canonical
+R8 generated driver authorizes only bounded workspace source synchronization and
+the build itself. It does not authorize clean, clobber, device contact or flash.
 
-See `docs/BUILD_LAYOUT.md` and `docs/PORTABLE_DEVELOPMENT.md`.
-
-Authorization remains explicit. Bootstrap requires `NETWORK_FETCH_AUTHORIZED=YES`, sync requires `SOURCE_MUTATION_AUTHORIZED=YES`, and builds require `BUILD_AUTHORIZED=YES`.
-
-
-For the accelerated UI review path, use `docs/UI_PREVIEW_BUILD_FLASH.md`.
-The preview path combines current SableStart + UI4 SystemUI source preparation,
-Panther target-files generation, exact packaging checks, inactive-slot flashing,
-and runtime evidence. It is a development gate, not a production release path.
+See `docs/BUILD_LAYOUT.md`, `docs/PORTABLE_DEVELOPMENT.md`, and
+`docs/BUILD_PANTHER_GRAPHENE_2026081300.md`.
