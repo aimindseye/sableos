@@ -53,6 +53,7 @@ import org.sableos.start.live.LiveAvailability
 import org.sableos.start.live.LiveDatum
 import org.sableos.start.live.LiveSurfaceSnapshot
 import org.sableos.start.model.AppEntry
+import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
 import java.util.Calendar
 
@@ -169,6 +170,8 @@ fun SableStartScreen(
     liveSurfaceRepository: LiveSurfaceRepository,
     refreshGeneration: Int = 0,
     showDevelopmentNavigator: Boolean = false,
+    initialPinnedKeys: Set<String> = emptySet(),
+    onPinnedKeysChanged: (Set<String>) -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
     onOpenSettings: () -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
@@ -179,7 +182,9 @@ fun SableStartScreen(
         mutableStateOf(SableStartDestination.Apps)
     }
     var selectedApp by remember { mutableStateOf<AppEntry?>(null) }
-    var pinnedKeys by remember { mutableStateOf<List<String>>(emptyList()) }
+    var pinnedKeys by remember(initialPinnedKeys) {
+        mutableStateOf(initialPinnedKeys.toList())
+    }
     var recentKeys by remember { mutableStateOf<List<String>>(emptyList()) }
     var liveSnapshot by remember {
         mutableStateOf(liveSurfaceRepository.initialSnapshot())
@@ -198,7 +203,7 @@ fun SableStartScreen(
 
     fun launchApp(entry: AppEntry) {
         if (onLaunchApp(entry)) {
-            val key = appKey(entry)
+            val key = entry.stableKey()
             recentKeys =
                 (listOf(key) + recentKeys.filterNot { it == key })
                     .take(MAX_RECENT_APPS)
@@ -332,7 +337,7 @@ fun SableStartScreen(
                             if (app == null) {
                                 destination = contextReturnDestination
                             } else {
-                                val key = appKey(app)
+                                val key = app.stableKey()
                                 AppContextScreen(
                                     app = app,
                                     isPinned = key in pinnedKeys,
@@ -346,6 +351,7 @@ fun SableStartScreen(
                                             } else {
                                                 (pinnedKeys + key).distinct()
                                             }
+                                        onPinnedKeysChanged(pinnedKeys.toSet())
                                     },
                                 )
                             }
@@ -1172,21 +1178,21 @@ private fun chooseFeaturedApps(
     val selected = linkedMapOf<String, AppEntry>()
 
     pinnedApps
-        .filter { appKey(it) in candidateKeys }
+        .filter { it.stableKey() in candidateKeys }
         .forEach { app ->
-            selected.putIfAbsent(appKey(app), app)
+            selected.putIfAbsent(app.stableKey(), app)
         }
 
     FEATURED_APP_LABELS.forEach { preferred ->
         candidates.firstOrNull { app ->
             app.label.equals(preferred, ignoreCase = true)
         }?.let { app ->
-            selected.putIfAbsent(appKey(app), app)
+            selected.putIfAbsent(app.stableKey(), app)
         }
     }
 
     candidates.forEach { app ->
-        selected.putIfAbsent(appKey(app), app)
+        selected.putIfAbsent(app.stableKey(), app)
     }
 
     return selected.values.take(MAX_FEATURED_APPS)
@@ -1206,9 +1212,6 @@ private fun greetingFor(epochMs: Long): String {
     }
 }
 
-private fun appKey(app: AppEntry): String =
-    "${app.user}:${app.component.flattenToString()}"
-
 private fun appMark(app: AppEntry): String =
     app.label
         .trim()
@@ -1217,7 +1220,7 @@ private fun appMark(app: AppEntry): String =
         .ifEmpty { "•" }
 
 private fun appColor(app: AppEntry): Color {
-    val index = Math.floorMod(appKey(app).hashCode(), SableTilePalette.size)
+    val index = Math.floorMod(app.stableKey().hashCode(), SableTilePalette.size)
     return SableTilePalette[index]
 }
 
