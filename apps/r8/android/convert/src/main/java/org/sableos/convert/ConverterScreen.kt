@@ -16,7 +16,7 @@ import androidx.compose.ui.Modifier
 import java.math.BigDecimal
 import java.math.RoundingMode
 import org.sableos.design.SableActionButton
-import org.sableos.design.SablePanel
+import org.sableos.design.SableValuePanel
 import org.sableos.design.SableSectionHeader
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTile
@@ -73,7 +73,7 @@ fun ConverterScreen(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        SableSectionHeader("Convert")
+        SableSectionHeader("convert")
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -150,17 +150,11 @@ fun ConverterScreen(
             },
         )
 
-        SablePanel {
-            Text(
-                "Result",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                result,
-                style = MaterialTheme.typography.headlineMedium,
-            )
-        }
+        SableValuePanel(
+            label = "result",
+            value = result,
+            supportingText = "${from.symbol} → ${to.symbol}",
+        )
 
         Text(
             "Length, mass, temperature and volume conversions are local and offline.",
