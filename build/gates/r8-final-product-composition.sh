@@ -60,7 +60,7 @@ echo "R8_SABLE_DESIGN_WORKSPACE_FIDELITY=PASS"
 echo
 echo "===== SABLE START WORKSPACE FIDELITY ====="
 
-python3 -     "$ROOT/src/android/packages/apps/SableStart"     "$WS/packages/apps/SableStart" <<'PY'
+if ! python3 -     "$ROOT/src/android/packages/apps/SableStart"     "$WS/packages/apps/SableStart" <<'PY'
 import hashlib
 import pathlib
 import sys
