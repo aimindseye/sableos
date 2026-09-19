@@ -6,9 +6,20 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 OUT="${1:-$ROOT/apps/r8/out/panther-bundle}"
 READER_APK="${SABLE_READER_APK:-}"
+SOURCE_IDENTITY="$OUT/SABLEOS_SOURCE_COMMIT.txt"
+
+SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
+if ! git -C "$ROOT" diff --quiet || ! git -C "$ROOT" diff --cached --quiet; then
+    echo "R8_BUNDLE_SOURCE_TREE=FAIL_TRACKED_DIRT"
+    git -C "$ROOT" status --short
+    exit 3
+fi
+echo "R8_BUNDLE_SOURCE_TREE=PASS"
+echo "R8_BUNDLE_SOURCE_COMMIT=$SOURCE_COMMIT"
 
 mkdir -p "$OUT/prebuilt"
-rm -f "$OUT/prebuilt/"*.apk "$OUT/manifest.tsv" "$OUT/SHA256SUMS.txt"
+rm -f "$OUT/prebuilt/"*.apk "$OUT/manifest.tsv" "$OUT/SHA256SUMS.txt" "$SOURCE_IDENTITY"
+printf '%s\n' "$SOURCE_COMMIT" > "$SOURCE_IDENTITY"
 
 APKANALYZER="${APKANALYZER:-$(command -v apkanalyzer || true)}"
 if [[ -z "$APKANALYZER" ]]; then
@@ -108,4 +119,6 @@ done
 echo "R8_APP_BUNDLE_DIR=$OUT"
 echo "R8_APP_BUNDLE_MANIFEST=$OUT/manifest.tsv"
 echo "R8_APP_BUNDLE_SHA256SUMS=$OUT/SHA256SUMS.txt"
+echo "R8_APP_BUNDLE_SOURCE_IDENTITY=$SOURCE_IDENTITY"
+echo "R8_APP_BUNDLE_SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "R8_APP_BUNDLE=PASS"
