@@ -5,6 +5,7 @@
 For the current project state and active product direction:
 
 - `../CURRENT_STATUS.md` — current execution handoff, R8 implementation/build-prep priority, paused release work, and validated Panther state.
+- `R8_PIXEL_UI_PRODUCT_CLOSURE.md` — build-blocking final Pixel UI matrix covering R8-A through R8-E, SystemUI/Settings/Setup/Keyguard, Reader OCR, product composition, final Panther build/physical acceptance, and Titan 2 handoff.
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
@@ -72,11 +73,11 @@ validated Panther substrate
 ```text
 PANTHER_D4                          CLOSED / PASS
 SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE         PRODUCT_INTEGRATION_START
-SABLE_FLOW_STATUS                  PLANNING_COMPLETE_IMPLEMENTATION_NEXT
-SABLE_START_STATUS                 NOT_INTEGRATED
+SABLEOS_CORE_PRODUCT_STAGE         R8_FINAL_UI_PRODUCT_CLOSURE
+SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDING
+SABLE_START_STATUS                 IMPLEMENTED_NOT_PRODUCT_PROVEN
 SABLE_HUB_STATUS                   NOT_INTEGRATED
-NEXT_PRODUCT_MILESTONE             SABLE_M1_METRO_SHELL_PROTOTYPE
+NEXT_PRODUCT_MILESTONE             R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
 
 NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
 TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
