@@ -203,6 +203,38 @@ done
 echo "R8_D2_READER_OCR_SOURCE=PASS"
 
 echo
+echo "===== R8-F SABLE HUB SOURCE CLOSURE ====="
+
+HUB_DIR="$ROOT/apps/r8/android/hub"
+HUB_MANIFEST="$HUB_DIR/src/main/AndroidManifest.xml"
+HUB_MODELS="$HUB_DIR/src/main/java/org/sableos/hub/HubModels.kt"
+HUB_REPOSITORY="$HUB_DIR/src/main/java/org/sableos/hub/HubRepository.kt"
+HUB_CAPSULE="$HUB_DIR/src/main/java/org/sableos/hub/web/ProviderCapsuleActivity.kt"
+
+for f in "$HUB_MANIFEST" "$HUB_MODELS" "$HUB_REPOSITORY" "$HUB_CAPSULE"; do
+    [[ -f "$f" ]] || fail R8_F_SABLE_HUB_SOURCE
+done
+
+for permission in     android.permission.INTERNET     android.permission.READ_SMS     android.permission.SEND_SMS     android.permission.READ_CONTACTS
+do
+    grep -Fq "$permission" "$HUB_MANIFEST" || fail R8_F_SABLE_HUB_PERMISSION_CONTRACT
+done
+
+for provider in whatsapp instagram messenger linkedin; do
+    grep -Fq "id = \"$provider\"" "$HUB_MODELS" || fail R8_F_SABLE_HUB_PROVIDER_CONTRACT
+done
+
+grep -Fq 'ProviderCapabilityClass.Web' "$HUB_MODELS"     || fail R8_F_SABLE_HUB_PROVIDER_CONTRACT
+grep -Fq 'RoleManager.ROLE_SMS' "$HUB_REPOSITORY"     || fail R8_F_SABLE_HUB_SMS_ROLE_OBSERVATION
+if grep -Fq 'createRequestRoleIntent' "$HUB_DIR/src/main/java/org/sableos/hub/MainActivity.kt"; then
+    fail R8_F_SABLE_HUB_DEFAULT_SMS_ROLE_REQUEST
+fi
+grep -Fq 'WebView.setDataDirectorySuffix(provider.id)' "$HUB_CAPSULE"     || fail R8_F_SABLE_HUB_WEB_ISOLATION
+grep -Fq 'scheme == "https"' "$HUB_CAPSULE"     || fail R8_F_SABLE_HUB_WEB_HTTPS
+
+echo "R8_F_SABLE_HUB_SOURCE=PASS"
+
+echo
 echo "===== FINAL COMPOSITION RESULT ====="
 echo "R8_A_SHARED_DESIGN=PASS"
 echo "R8_START_PRODUCT_INTEGRATION=PASS"
