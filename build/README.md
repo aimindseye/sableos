@@ -101,3 +101,18 @@ identity and tracked-clean verification. The script is fail-closed:
   no-stale gate and are never auto-deleted.
 
 This is bounded source-checkout hygiene, not a general clean or clobber.
+
+
+## Legacy vendor/sable config retirement
+
+The long-lived Panther workspace predates the canonical R8 product tree and may
+still contain `vendor/sable/config/common.mk`. Historical PR #29 established
+that this file existed in the workspace but did not select GrapheneOS Auditor.
+
+The R8 product model now integrates through `vendor/sable/r8/r8-product.mk`.
+Before staging that tree, the build runs
+`retire-r8-legacy-vendor-config.sh`. It removes the historical
+`vendor/sable/config/common.mk` only when a make/Soong reference scan finds
+zero consumers. The exact file hash and content are emitted before removal.
+If any reference remains, or the directory contains any other object, the build
+fails closed and preserves the file.

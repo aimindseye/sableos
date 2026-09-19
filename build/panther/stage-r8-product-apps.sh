@@ -97,6 +97,12 @@ if seen != expected:
 print("R8_BUNDLE_MANIFEST_SET=PASS")
 PY
 
+echo
+echo "===== LEGACY SABLE VENDOR CONFIG RETIREMENT ====="
+
+SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/panther/retire-r8-legacy-vendor-config.sh"
+
 DEST="$WS/vendor/sable/r8"
 LEGACY_PARENT="$WS/vendor/sable/prebuilts"
 LEGACY_DEST="$LEGACY_PARENT/r8"
