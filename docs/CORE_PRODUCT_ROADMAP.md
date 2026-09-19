@@ -17,9 +17,9 @@ Panther D4 physical acceptance is closed. The Android 17 / GrapheneOS-derived Pa
 Current product state:
 
 ```text
-SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
-SABLE_FLOW_STATUS=PLANNING_COMPLETE_IMPLEMENTATION_NEXT
-SABLE_START_STATUS=NOT_INTEGRATED
+SABLEOS_CORE_PRODUCT_STAGE=R8_FINAL_UI_PRODUCT_CLOSURE
+SABLE_FLOW_STATUS=IMPLEMENTED_IN_REPOSITORY_PRODUCT_INTEGRATION_PENDING
+SABLE_START_STATUS=IMPLEMENTED_NOT_PRODUCT_PROVEN
 SABLE_HUB_STATUS=NOT_INTEGRATED
 PRODUCTION_KEYS_GENERATED=NO
 KEY_GENERATION_AUTHORIZED=NO
@@ -29,6 +29,29 @@ SIGNING_HOST_SELECTION=DEFERRED_NON_BLOCKING
 ```
 
 Release engineering remains preserved as a paused parallel track; it does not block product development.
+
+## R8 final UI product closure
+
+Status: **ACTIVE / BUILD-BLOCKING**.
+
+The repository now contains major completed UI tranches, but the first physically flashed R8 image proved that standalone/emulator completion and Panther product integration had diverged. The current execution authority is `R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+
+Current classification:
+
+```text
+R8_A_SHARED_DESIGN=PARTIAL
+R8_START_METRO_HOME=IMPLEMENTED_IN_REPOSITORY_NOT_PRODUCT_PROVEN
+R8_B_CALCULATOR_CONVERT=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
+R8_C_GAMES=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
+R8_D_READER_PUBLICATION=STANDALONE_QUALIFIED_PRODUCT_PHYSICAL_PENDING
+R8_D2_TEXT_TTS=PASS
+R8_D2_OCR=NOT_INTEGRATED
+R8_E_MEDIA=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
+R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+The final UI closure must complete shared appearance/reset/accessibility behavior, compose Reader OCR, integrate all first-party APKs into Panther, prove the exact generated package/source set, then run one final Panther build and physical acceptance campaign.
 
 ## Dependency rule
 
@@ -73,7 +96,7 @@ Outputs:
 
 ## M1 / CP1 — Sable Flow shell primitives + Sable Start
 
-Status: **NEXT IMPLEMENTATION MILESTONE**.
+Status: **IMPLEMENTED IN REPOSITORY / PRODUCT INTEGRATION AND PHYSICAL ACCEPTANCE PENDING**.
 
 Target: Panther / Pixel 7.
 
@@ -335,14 +358,14 @@ Production adds the signing/security/privacy/update gates in `RELEASE_VALIDATION
 ## Near-term priority order
 
 ```text
-1. M1 Sable Flow shared primitives
-2. M1 Sable Start prototype on Panther
-3. M2 Phone / People / Messages vertical slice
-4. M3 Sable Hub provider capability framework
-5. M4 social web capsules
-6. M5 broader native apps + product polish
-7. Q25/Q27 portability work when hardware/projects justify it
-8. M6 AOD/Voice/Agent as dependencies mature
+1. close R8-A shared appearance/accessibility contract
+2. reconcile current Metro SableStart into the Panther production source tree
+3. complete R8-D2 OCR without importing uncontrolled network/model behavior
+4. freeze and integrate Calculator/Games/Reader/Media into Panther
+5. pass the generated R8 final UI product-composition gate
+6. run one final sandbox-qualified Panther build and full physical UI acceptance
+7. begin Titan 2 N0 GSI/UI work after T0 read-only inventory; T0 may run in parallel
+8. resume M2 Phone / People / Messages and later Hub work on the closed UI foundation
 9. production signing / OTA finalization before release candidate
 ```
 
