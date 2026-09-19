@@ -68,6 +68,22 @@ do
     fi
 done
 
+EXPORTER="$ROOT/apps/r8/export-panther-app-bundle.sh"
+if grep -Fq 'find "$ROOT/apps/r8/android"' "$EXPORTER"; then
+    fail R8_BUNDLE_RECURSIVE_APK_DISCOVERY
+fi
+for expected_apk in \
+    'calculator/build/outputs/apk/debug/calculator-debug.apk' \
+    'games/build/outputs/apk/sudoku/debug/games-sudoku-debug.apk' \
+    'games/build/outputs/apk/minesweeper/debug/games-minesweeper-debug.apk' \
+    'games/build/outputs/apk/game2048/debug/games-game2048-debug.apk' \
+    'media/build/outputs/apk/debug/media-debug.apk' \
+    'hub/build/outputs/apk/debug/hub-debug.apk'
+do
+    grep -Fq "$expected_apk" "$EXPORTER" || fail R8_BUNDLE_EXPLICIT_APK_INPUTS
+done
+echo "R8_BUNDLE_EXPLICIT_APK_INPUTS=PASS"
+
 MAIL_APPLIER="$ROOT/apps/r8/mail/apply_sable_flavor.py"
 MAIL_ENV="$ROOT/apps/r8/mail/upstream.env"
 [[ -f "$MAIL_APPLIER" && -f "$MAIL_ENV" ]] || fail R8_SABLE_MAIL_SOURCE
