@@ -116,3 +116,19 @@ Before staging that tree, the build runs
 zero consumers. The exact file hash and content are emitted before removal.
 If any reference remains, or the directory contains any other object, the build
 fails closed and preserves the file.
+
+
+## Legacy vendor/sable_devices Panther product retirement
+
+The historical Panther workspace may also contain
+`vendor/sable_devices/sable_panther`, an older Sable product-definition tree
+that predates the canonical R8 integration through
+`vendor/google_devices/panther/panther.mk` and
+`vendor/sable/r8/r8-product.mk`.
+
+Before retiring the legacy `vendor/sable/config/common.mk`, R8 now runs
+`retire-r8-legacy-sable-device-product.sh`. The helper removes only the exact
+`vendor/sable_devices/sable_panther` tree and only when no Make/Soong product
+file outside that tree references it. If the legacy parent contains any other
+unexpected device content, the build fails closed without deleting either tree.
+After successful retirement, `vendor/sable_devices` must be absent.
