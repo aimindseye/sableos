@@ -2,6 +2,8 @@ package org.sableos.media
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +46,9 @@ internal enum class MediaDestination(
     Radio("radio"),
     ManageStations("manage"),
     AddStation("add"),
+    Queue("queue"),
+    PlaylistEditor("playlist"),
+    Settings("settings"),
 }
 
 internal enum class LibraryPivot(
@@ -52,6 +57,8 @@ internal enum class LibraryPivot(
     Songs("songs"),
     Artists("artists"),
     Albums("albums"),
+    Favorites("favorites"),
+    Playlists("playlists"),
 }
 
 @Composable
@@ -61,6 +68,14 @@ internal fun MediaScreen(
     localItems: List<LocalAudioItem>,
     stations: List<RadioStation>,
     playback: PlaybackUiState,
+    favoriteAudioUris: Set<String>,
+    favoriteStationIds: Set<String>,
+    playlists: List<MediaPlaylist>,
+    settings: MediaSettings,
+    playlistName: String,
+    selectedPlaylistUris: Set<String>,
+    editingPlaylist: MediaPlaylist?,
+    showFavoriteStationsOnly: Boolean,
     stationName: String,
     stationUrl: String,
     editingStation: RadioStation?,
@@ -70,7 +85,10 @@ internal fun MediaScreen(
     onAddLocalAudio: () -> Unit,
     onPlayLocal: (Int) -> Unit,
     onRemoveLocal: (LocalAudioItem) -> Unit,
+    onToggleFavoriteAudio: (LocalAudioItem) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
+    onToggleFavoriteStation: (RadioStation) -> Unit,
+    onRadioFavoritesOnlyChange: (Boolean) -> Unit,
     onAddStation: () -> Unit,
     onManageStations: () -> Unit,
     onEditStation: (RadioStation) -> Unit,
@@ -80,6 +98,18 @@ internal fun MediaScreen(
     onSaveNewStation: () -> Unit,
     onSaveEditedStation: () -> Unit,
     onCancelStationFlow: () -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onEditPlaylist: (MediaPlaylist) -> Unit,
+    onDeletePlaylist: (MediaPlaylist) -> Unit,
+    onPlayPlaylist: (MediaPlaylist) -> Unit,
+    onPlaylistNameChange: (String) -> Unit,
+    onTogglePlaylistItem: (String) -> Unit,
+    onSavePlaylist: () -> Unit,
+    onCancelPlaylistEditor: () -> Unit,
+    onSettingsChange: (MediaSettings) -> Unit,
+    onPlayQueueIndex: (Int) -> Unit,
+    onMoveQueueItem: (Int, Int) -> Unit,
+    onRemoveQueueItem: (Int) -> Unit,
     onPlayPause: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
@@ -98,16 +128,40 @@ internal fun MediaScreen(
             onSelect = onDestinationChange,
         )
 
+        if (
+            destination == MediaDestination.Collection ||
+            destination == MediaDestination.NowPlaying ||
+            destination == MediaDestination.Radio
+        ) {
+            MediaUtilityBar(
+                queueCount = playback.queue.size,
+                onQueue = {
+                    onDestinationChange(MediaDestination.Queue)
+                },
+                onSettings = {
+                    onDestinationChange(MediaDestination.Settings)
+                },
+            )
+        }
+
         when (destination) {
             MediaDestination.Collection ->
                 CollectionScreen(
                     pivot = libraryPivot,
                     items = localItems,
                     playback = playback,
+                    favoriteAudioUris = favoriteAudioUris,
+                    playlists = playlists,
+                    showMiniPlayer = settings.showMiniPlayer,
                     onPivotChange = onLibraryPivotChange,
                     onAddLocalAudio = onAddLocalAudio,
                     onPlay = onPlayLocal,
                     onRemove = onRemoveLocal,
+                    onToggleFavorite = onToggleFavoriteAudio,
+                    onCreatePlaylist = onCreatePlaylist,
+                    onEditPlaylist = onEditPlaylist,
+                    onDeletePlaylist = onDeletePlaylist,
+                    onPlayPlaylist = onPlayPlaylist,
                     onOpenNowPlaying = {
                         onDestinationChange(MediaDestination.NowPlaying)
                     },
@@ -127,8 +181,13 @@ internal fun MediaScreen(
                 RadioScreen(
                     stations = stations,
                     playback = playback,
+                    favoriteStationIds = favoriteStationIds,
+                    showFavoritesOnly = showFavoriteStationsOnly,
+                    showMiniPlayer = settings.showMiniPlayer,
                     message = message,
                     onPlay = onPlayStation,
+                    onToggleFavorite = onToggleFavoriteStation,
+                    onFavoritesOnlyChange = onRadioFavoritesOnlyChange,
                     onManage = onManageStations,
                     onAdd = onAddStation,
                     onOpenNowPlaying = {
@@ -164,6 +223,38 @@ internal fun MediaScreen(
                     onSave = onSaveNewStation,
                     onCancel = onCancelStationFlow,
                 )
+
+            MediaDestination.Queue ->
+                QueueScreen(
+                    playback = playback,
+                    onPlayIndex = onPlayQueueIndex,
+                    onMove = onMoveQueueItem,
+                    onRemove = onRemoveQueueItem,
+                    onBack = {
+                        onDestinationChange(MediaDestination.NowPlaying)
+                    },
+                )
+
+            MediaDestination.PlaylistEditor ->
+                PlaylistEditorScreen(
+                    editingPlaylist = editingPlaylist,
+                    playlistName = playlistName,
+                    selectedUris = selectedPlaylistUris,
+                    localItems = localItems,
+                    onNameChange = onPlaylistNameChange,
+                    onToggleItem = onTogglePlaylistItem,
+                    onSave = onSavePlaylist,
+                    onCancel = onCancelPlaylistEditor,
+                )
+
+            MediaDestination.Settings ->
+                SettingsScreen(
+                    settings = settings,
+                    onSettingsChange = onSettingsChange,
+                    onBack = {
+                        onDestinationChange(MediaDestination.Collection)
+                    },
+                )
         }
     }
 }
@@ -179,6 +270,9 @@ private fun PrimaryPivot(
             MediaDestination.AddStation,
             -> MediaDestination.Radio
 
+            MediaDestination.Queue -> MediaDestination.NowPlaying
+            MediaDestination.PlaylistEditor -> MediaDestination.Collection
+            MediaDestination.Settings -> null
             else -> destination
         }
 
@@ -191,7 +285,7 @@ private fun PrimaryPivot(
             MediaDestination.NowPlaying,
             MediaDestination.Radio,
         ).forEach { item ->
-            val active = item == current
+            val active = current != null && item == current
             Surface(
                 onClick = { onSelect(item) },
                 modifier = Modifier.heightIn(min = 48.dp),
