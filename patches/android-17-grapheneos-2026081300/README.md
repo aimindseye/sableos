@@ -91,3 +91,28 @@ python3 patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py \
 
 See `docs/UI5A_SETTINGS_APPLICATIONS.md` for the bounded source ledger and
 incremental Settings build gate.
+
+
+## UI5B Application Security & Privacy evidence
+
+UI5B layers on the validated UI5A Settings state and remains pinned to:
+
+```text
+packages/apps/Settings
+71bd21cda07f4dfdcec2aabb16bc570be5bd8d35
+```
+
+It adds a read-only per-app Application Security & Privacy surface backed by
+PackageManager, current permission/AppOps state, component metadata and bounded
+local APK inspection. Unsupported tracker, network-destination and persistent
+permission-history evidence is rendered `UNKNOWN`; UI5B does not fabricate a
+risk score or runtime-use claim.
+
+Run:
+
+```bash
+python3 patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py --self-test
+```
+
+See `docs/UI5B_APP_SECURITY_EVIDENCE.md` for the evidence contract and
+incremental Settings build gate.
