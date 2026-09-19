@@ -27,7 +27,7 @@ scan_references() {
             ! -path "$target/*" \
             -print0 \
         | xargs -0 -r grep -nH -E \
-            'vendor/sable_devices/sable_panther|sable_devices/sable_panther|(^|[^[:alnum:]_])sable_panther\.mk([^[:alnum:]_]|$)' \
+            'vendor/sable_devices/sable_panther|sable_devices/sable_panther|(^|[^[:alnum:]_])sable_panther([^[:alnum:]_]|$)' \
             >> "$out" || true
     fi
 
