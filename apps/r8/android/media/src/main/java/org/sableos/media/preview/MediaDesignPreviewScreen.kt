@@ -49,6 +49,7 @@ private enum class MediaPreviewDestination(
     NowPlaying("now playing"),
     Radio("radio"),
     Stations("stations"),
+    AddStation("add station"),
 }
 
 private enum class LibraryPivot(
@@ -154,7 +155,7 @@ internal fun MediaDesignPreviewScreen() {
         editingStation = null
         stationName = ""
         stationUrl = ""
-        destination = MediaPreviewDestination.Stations
+        destination = MediaPreviewDestination.AddStation
     }
 
     fun beginEditStation(station: PreviewStation) {
@@ -191,10 +192,17 @@ internal fun MediaDesignPreviewScreen() {
                 }
             }
 
+        val nextDestination =
+            if (editing != null) {
+                MediaPreviewDestination.Stations
+            } else {
+                MediaPreviewDestination.Radio
+            }
+
         editingStation = null
         stationName = ""
         stationUrl = ""
-        destination = MediaPreviewDestination.Radio
+        destination = nextDestination
     }
 
     SableScrollableScreen {
@@ -269,13 +277,27 @@ internal fun MediaDesignPreviewScreen() {
                         }
                     },
                     onSave = ::saveStation,
+                    onCancelEdit = {
+                        editingStation = null
+                        stationName = ""
+                        stationUrl = ""
+                    },
+                    onBack = {
+                        destination = MediaPreviewDestination.Radio
+                    },
+                )
+
+            MediaPreviewDestination.AddStation ->
+                AddStationPreview(
+                    stationName = stationName,
+                    stationUrl = stationUrl,
+                    onStationNameChange = { stationName = it },
+                    onStationUrlChange = { stationUrl = it },
+                    onSave = ::saveStation,
                     onCancel = {
                         editingStation = null
                         stationName = ""
                         stationUrl = ""
-                        destination = MediaPreviewDestination.Radio
-                    },
-                    onBack = {
                         destination = MediaPreviewDestination.Radio
                     },
                 )
@@ -307,7 +329,10 @@ private fun MediaPrimaryPivot(
                 active =
                     destination == item ||
                         (
-                            destination == MediaPreviewDestination.Stations &&
+                            (
+                                destination == MediaPreviewDestination.Stations ||
+                                    destination == MediaPreviewDestination.AddStation
+                            ) &&
                                 item == MediaPreviewDestination.Radio
                         ),
                 onClick = onClick,
@@ -836,7 +861,7 @@ private fun StationManagementPreview(
     onEdit: (PreviewStation) -> Unit,
     onRemove: (PreviewStation) -> Unit,
     onSave: () -> Unit,
-    onCancel: () -> Unit,
+    onCancelEdit: () -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
@@ -915,14 +940,77 @@ private fun StationManagementPreview(
             }
         }
 
+        if (editingStation != null) {
+            Text(
+                text = "edit station",
+                style = MaterialTheme.typography.titleLarge,
+            )
+
+            OutlinedTextField(
+                value = stationName,
+                onValueChange = onStationNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Station name") },
+            )
+
+            OutlinedTextField(
+                value = stationUrl,
+                onValueChange = onStationUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Stream URL") },
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Cancel edit",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onCancelEdit,
+                )
+                SableActionButton(
+                    text = "Save changes",
+                    modifier = Modifier.weight(1f),
+                    onClick = onSave,
+                )
+            }
+        }
+
         Text(
             text =
-                if (editingStation == null) {
-                    "add station"
-                } else {
-                    "edit station"
-                },
-            style = MaterialTheme.typography.titleLarge,
+                "Manage existing stations here. Add Station is a separate flow.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun AddStationPreview(
+    stationName: String,
+    stationUrl: String,
+    onStationNameChange: (String) -> Unit,
+    onStationUrlChange: (String) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+    ) {
+        Text(
+            text = "add station",
+            style = MaterialTheme.typography.headlineLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        Text(
+            text = "Add one live-radio stream. Existing stations are managed from Manage.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         OutlinedTextField(
@@ -952,18 +1040,11 @@ private fun StationManagementPreview(
                 onClick = onCancel,
             )
             SableActionButton(
-                text = "Save",
+                text = "Add station",
                 modifier = Modifier.weight(1f),
                 onClick = onSave,
             )
         }
-
-        Text(
-            text =
-                "Preview data only. Production wiring will use the existing local station repository and Media3 session.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
