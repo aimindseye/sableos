@@ -665,24 +665,29 @@ def self_test() -> None:
     verify_templates()
 
     samples = (
-        (WELCOME_ROOT_OLD, WELCOME_ROOT_OLD, WELCOME_ROOT_NEW, "welcome-root"),
-        (WELCOME_ICON_OLD, WELCOME_ICON_OLD, WELCOME_ICON_NEW, "welcome-icon"),
-        (WELCOME_TITLE_OLD, WELCOME_TITLE_OLD, WELCOME_TITLE_NEW, "welcome-title"),
-        (FINISH_IMAGE_OLD, FINISH_IMAGE_OLD, FINISH_IMAGE_NEW, "finish-image"),
-        (ABOUT_HEADER_OLD, ABOUT_HEADER_OLD, ABOUT_HEADER_NEW, "about-header"),
-        (CLOCK_START_OLD, CLOCK_START_OLD, CLOCK_START_NEW, "clock-start"),
-        (DIMENS_OLD, DIMENS_OLD, DIMENS_NEW, "clock-dimens"),
+        (WELCOME_ROOT_OLD, WELCOME_ROOT_OLD, WELCOME_ROOT_NEW, "welcome-root", True),
+        (WELCOME_ICON_OLD, WELCOME_ICON_OLD, WELCOME_ICON_NEW, "welcome-icon", True),
+        (WELCOME_TITLE_OLD, WELCOME_TITLE_OLD, WELCOME_TITLE_NEW, "welcome-title", True),
+        (FINISH_IMAGE_OLD, FINISH_IMAGE_OLD, FINISH_IMAGE_NEW, "finish-image", True),
+        # ABOUT_HEADER_NEW intentionally preserves the existing upstream header and
+        # appends the Sable identity row after it. Therefore ABOUT_HEADER_OLD remains
+        # a valid substring of the transformed result and must not be treated as a
+        # failed replacement.
+        (ABOUT_HEADER_OLD, ABOUT_HEADER_OLD, ABOUT_HEADER_NEW, "about-header", False),
+        (CLOCK_START_OLD, CLOCK_START_OLD, CLOCK_START_NEW, "clock-start", True),
+        (DIMENS_OLD, DIMENS_OLD, DIMENS_NEW, "clock-dimens", True),
         (
             INDICATION_MARGIN_OLD,
             INDICATION_MARGIN_OLD,
             INDICATION_MARGIN_NEW,
             "indication-margin",
+            True,
         ),
-        (UNLOCK_STRING_OLD, UNLOCK_STRING_OLD, UNLOCK_STRING_NEW, "unlock-string"),
+        (UNLOCK_STRING_OLD, UNLOCK_STRING_OLD, UNLOCK_STRING_NEW, "unlock-string", True),
     )
-    for text_value, old, new, label in samples:
+    for text_value, old, new, label, old_must_disappear in samples:
         out = replace_once(text_value, old, new, f"self-test:{label}")
-        if old in out or new not in out:
+        if (old_must_disappear and old in out) or new not in out:
             raise SystemExit(f"UI5C_UI6_SELF_TEST_REPLACEMENT_FAIL={label}")
 
     about_sample = """<PreferenceCategory>
