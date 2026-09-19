@@ -66,11 +66,13 @@ jobs:
           :convert:detekt
           :games:detekt
           :media:detekt
+          :hub:detekt
           :design:ktlintCheck
           :calculator:ktlintCheck
           :convert:ktlintCheck
           :games:ktlintCheck
           :media:ktlintCheck
+          :hub:ktlintCheck
           :design:koverXmlReportDebug
           :design:koverHtmlReportDebug
           --stacktrace
