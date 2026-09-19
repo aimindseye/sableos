@@ -22,6 +22,46 @@ The validated baseline is recorded in:
 patches/android-17-grapheneos-2026081300/BASELINE.lock
 ```
 
+## Canonical R8 local build driver
+
+For current R8 work on `ai-g732`, the normal local build entry point is no
+longer a hand-written shell command sequence. GitHub Actions validates the
+repository build contract and renders a source-bound
+`sableos-panther-r8-build.sh` artifact.
+
+The canonical host-tool root is:
+
+```text
+/srv/data/sable-host-tools
+```
+
+The tool versions and paths are defined by
+`build/config/r8-host-tools.env`; the build/workspace layout and release label
+are defined by `build/config/r8-release.env`.
+
+Before the first build on an existing host, run the one-time migration:
+
+```bash
+HOST_TOOL_MIGRATION_AUTHORIZED=YES \
+  bash build/host/migrate-r8-final-v1-host-tools.sh
+```
+
+Then verify:
+
+```bash
+bash build/host/verify-r8-host-tools.sh
+```
+
+After the corresponding GitHub workflow passes, use the uploaded driver artifact
+for that exact commit. The driver defaults to tmux and runs the application
+builds, Reader/Mail composition, exact APK freeze, R8 source/product
+preparation, composition gate and final Panther build. It never authorizes
+device contact or flashing.
+
+The historical D3 commands below remain substrate/reference evidence and are
+still useful for forensic comparison, but they are not the normal R8 local
+entry point.
+
 ## Host requirements
 
 The validated Sable run used the GrapheneOS Android build system with Node.js 24 LTS for `adevtool` vendor extraction.
