@@ -17,8 +17,9 @@ inventory="$ROOT/build/gates/verify-r8-vendor-sable-inventory.py"
 android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
 start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 android_ci="$ROOT/.github/workflows/r8-android.yml"
+android_static="$ROOT/.github/workflows/r8-android-static.yml"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
@@ -75,8 +76,12 @@ grep -Fq '../../../../src/android/packages/apps/SableStart/res' "$start_check"
 grep -Fq ':sablestart-production-check:compileDebugKotlin' "$android_ci"
 ! grep -Fq ':start-preview:' "$android_ci"
 ! grep -Fq ':system-preview:' "$android_ci"
+grep -Fq ':sablestart-production-check:lintDebug' "$android_static"
+! grep -Fq ':start-preview:' "$android_static"
+! grep -Fq ':system-preview:' "$android_static"
 
 echo "R8_SABLESTART_PRODUCTION_GRADLE_COMPILE_CONTRACT=PASS"
+echo "R8_SABLESTART_PRODUCTION_LINT_CONTRACT=PASS"
 
 grep -Fq '===== SABLESTART SOONG PREFLIGHT =====' "$finalbuild"
 grep -Fq 'sablestart-soong-preflight.log' "$finalbuild"
