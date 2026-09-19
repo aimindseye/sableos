@@ -2,6 +2,13 @@ package org.sableos.media
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,7 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
-import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
 
 internal val MediaPink = Color(0xFFFF4F9A)
@@ -44,6 +50,9 @@ internal enum class MediaDestination(
     Radio("radio"),
     ManageStations("manage"),
     AddStation("add"),
+    Queue("queue"),
+    PlaylistEditor("playlist"),
+    Settings("settings"),
 }
 
 internal enum class LibraryPivot(
@@ -52,6 +61,8 @@ internal enum class LibraryPivot(
     Songs("songs"),
     Artists("artists"),
     Albums("albums"),
+    Favorites("favorites"),
+    Playlists("playlists"),
 }
 
 @Composable
@@ -61,6 +72,14 @@ internal fun MediaScreen(
     localItems: List<LocalAudioItem>,
     stations: List<RadioStation>,
     playback: PlaybackUiState,
+    favoriteAudioUris: Set<String>,
+    favoriteStationIds: Set<String>,
+    playlists: List<MediaPlaylist>,
+    settings: MediaSettings,
+    playlistName: String,
+    selectedPlaylistUris: Set<String>,
+    editingPlaylist: MediaPlaylist?,
+    showFavoriteStationsOnly: Boolean,
     stationName: String,
     stationUrl: String,
     editingStation: RadioStation?,
@@ -68,9 +87,13 @@ internal fun MediaScreen(
     onDestinationChange: (MediaDestination) -> Unit,
     onLibraryPivotChange: (LibraryPivot) -> Unit,
     onAddLocalAudio: () -> Unit,
+    onAddLocalFolder: () -> Unit,
     onPlayLocal: (Int) -> Unit,
     onRemoveLocal: (LocalAudioItem) -> Unit,
+    onToggleFavoriteAudio: (LocalAudioItem) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
+    onToggleFavoriteStation: (RadioStation) -> Unit,
+    onRadioFavoritesOnlyChange: (Boolean) -> Unit,
     onAddStation: () -> Unit,
     onManageStations: () -> Unit,
     onEditStation: (RadioStation) -> Unit,
@@ -80,34 +103,98 @@ internal fun MediaScreen(
     onSaveNewStation: () -> Unit,
     onSaveEditedStation: () -> Unit,
     onCancelStationFlow: () -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onEditPlaylist: (MediaPlaylist) -> Unit,
+    onDeletePlaylist: (MediaPlaylist) -> Unit,
+    onPlayPlaylist: (MediaPlaylist) -> Unit,
+    onPlaylistNameChange: (String) -> Unit,
+    onTogglePlaylistItem: (String) -> Unit,
+    onSavePlaylist: () -> Unit,
+    onCancelPlaylistEditor: () -> Unit,
+    onSettingsChange: (MediaSettings) -> Unit,
+    onPlayQueueIndex: (Int) -> Unit,
+    onMoveQueueItem: (Int, Int) -> Unit,
+    onRemoveQueueItem: (Int) -> Unit,
     onPlayPause: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onStop: () -> Unit,
     onSeek: (Long) -> Unit,
 ) {
-    SableScrollableScreen {
-        SableHeroHeader(
-            eyebrow = "Sable Media",
-            title = "music",
-            subtitle = "Local playback and user-managed live radio.",
-        )
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+    ) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .imePadding(),
+            contentPadding =
+                PaddingValues(
+                    horizontal = SableSpacing.ScreenHorizontal,
+                    vertical = SableSpacing.ScreenVertical,
+                ),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        ) {
+            item {
+                SableHeroHeader(
+                    eyebrow = "Sable Media",
+                    title = "music",
+                    subtitle = "Local playback and user-managed live radio.",
+                )
+            }
 
-        PrimaryPivot(
-            destination = destination,
-            onSelect = onDestinationChange,
-        )
+            item {
+                PrimaryPivot(
+                    destination = destination,
+                    onSelect = onDestinationChange,
+                )
+            }
 
-        when (destination) {
+            if (
+                destination == MediaDestination.Collection ||
+                destination == MediaDestination.NowPlaying ||
+                destination == MediaDestination.Radio
+            ) {
+                item {
+                    MediaUtilityBar(
+                        queueCount = playback.queue.size,
+                        upNextCount =
+                            playback.queue.count { item ->
+                                item.index > playback.currentIndex
+                            },
+                        onQueue = {
+                            onDestinationChange(MediaDestination.Queue)
+                        },
+                        onSettings = {
+                            onDestinationChange(MediaDestination.Settings)
+                        },
+                    )
+                }
+            }
+
+            item {
+                when (destination) {
             MediaDestination.Collection ->
                 CollectionScreen(
                     pivot = libraryPivot,
                     items = localItems,
                     playback = playback,
+                    favoriteAudioUris = favoriteAudioUris,
+                    playlists = playlists,
+                    showMiniPlayer = settings.showMiniPlayer,
                     onPivotChange = onLibraryPivotChange,
                     onAddLocalAudio = onAddLocalAudio,
+                    onAddLocalFolder = onAddLocalFolder,
                     onPlay = onPlayLocal,
                     onRemove = onRemoveLocal,
+                    onToggleFavorite = onToggleFavoriteAudio,
+                    onCreatePlaylist = onCreatePlaylist,
+                    onEditPlaylist = onEditPlaylist,
+                    onDeletePlaylist = onDeletePlaylist,
+                    onPlayPlaylist = onPlayPlaylist,
                     onOpenNowPlaying = {
                         onDestinationChange(MediaDestination.NowPlaying)
                     },
@@ -127,8 +214,13 @@ internal fun MediaScreen(
                 RadioScreen(
                     stations = stations,
                     playback = playback,
+                    favoriteStationIds = favoriteStationIds,
+                    showFavoritesOnly = showFavoriteStationsOnly,
+                    showMiniPlayer = settings.showMiniPlayer,
                     message = message,
                     onPlay = onPlayStation,
+                    onToggleFavorite = onToggleFavoriteStation,
+                    onFavoritesOnlyChange = onRadioFavoritesOnlyChange,
                     onManage = onManageStations,
                     onAdd = onAddStation,
                     onOpenNowPlaying = {
@@ -164,6 +256,44 @@ internal fun MediaScreen(
                     onSave = onSaveNewStation,
                     onCancel = onCancelStationFlow,
                 )
+
+            MediaDestination.Queue ->
+                QueueScreen(
+                    playback = playback,
+                    onPlayIndex = onPlayQueueIndex,
+                    onMove = onMoveQueueItem,
+                    onRemove = onRemoveQueueItem,
+                    onPlayPause = onPlayPause,
+                    onPrevious = onPrevious,
+                    onNext = onNext,
+                    onStop = onStop,
+                    onBack = {
+                        onDestinationChange(MediaDestination.NowPlaying)
+                    },
+                )
+
+            MediaDestination.PlaylistEditor ->
+                PlaylistEditorScreen(
+                    editingPlaylist = editingPlaylist,
+                    playlistName = playlistName,
+                    selectedUris = selectedPlaylistUris,
+                    localItems = localItems,
+                    onNameChange = onPlaylistNameChange,
+                    onToggleItem = onTogglePlaylistItem,
+                    onSave = onSavePlaylist,
+                    onCancel = onCancelPlaylistEditor,
+                )
+
+            MediaDestination.Settings ->
+                SettingsScreen(
+                    settings = settings,
+                    onSettingsChange = onSettingsChange,
+                    onBack = {
+                        onDestinationChange(MediaDestination.Collection)
+                    },
+                )
+                }
+            }
         }
     }
 }
@@ -179,6 +309,9 @@ private fun PrimaryPivot(
             MediaDestination.AddStation,
             -> MediaDestination.Radio
 
+            MediaDestination.Queue -> MediaDestination.NowPlaying
+            MediaDestination.PlaylistEditor -> MediaDestination.Collection
+            MediaDestination.Settings -> null
             else -> destination
         }
 
@@ -191,7 +324,7 @@ private fun PrimaryPivot(
             MediaDestination.NowPlaying,
             MediaDestination.Radio,
         ).forEach { item ->
-            val active = item == current
+            val active = current != null && item == current
             Surface(
                 onClick = { onSelect(item) },
                 modifier = Modifier.heightIn(min = 48.dp),
@@ -236,14 +369,62 @@ private fun PrimaryPivot(
 }
 
 @Composable
+private fun MediaUtilityBar(
+    queueCount: Int,
+    upNextCount: Int,
+    onQueue: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (queueCount > 1) {
+            Surface(
+                onClick = onQueue,
+                color = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ) {
+                Text(
+                    text = "up next · $upNextCount",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+        Surface(
+            onClick = onSettings,
+            color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) {
+            Text(
+                text = "settings",
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+    }
+}
+
+@Composable
 private fun CollectionScreen(
     pivot: LibraryPivot,
     items: List<LocalAudioItem>,
     playback: PlaybackUiState,
+    favoriteAudioUris: Set<String>,
+    playlists: List<MediaPlaylist>,
+    showMiniPlayer: Boolean,
     onPivotChange: (LibraryPivot) -> Unit,
     onAddLocalAudio: () -> Unit,
+    onAddLocalFolder: () -> Unit,
     onPlay: (Int) -> Unit,
     onRemove: (LocalAudioItem) -> Unit,
+    onToggleFavorite: (LocalAudioItem) -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onEditPlaylist: (MediaPlaylist) -> Unit,
+    onDeletePlaylist: (MediaPlaylist) -> Unit,
+    onPlayPlaylist: (MediaPlaylist) -> Unit,
     onOpenNowPlaying: () -> Unit,
 ) {
     Column(
@@ -255,7 +436,10 @@ private fun CollectionScreen(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
         ) {
             LibraryPivot.entries.forEach { item ->
@@ -278,11 +462,22 @@ private fun CollectionScreen(
             }
         }
 
-        SableActionButton(
-            text = "Add local audio",
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onAddLocalAudio,
-        )
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            SableActionButton(
+                text = "Add audio files",
+                modifier = Modifier.weight(1f),
+                onClick = onAddLocalAudio,
+            )
+            SableActionButton(
+                text = "Import folder",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = onAddLocalFolder,
+            )
+        }
 
         if (items.isEmpty()) {
             EmptyPanel(
@@ -297,6 +492,8 @@ private fun CollectionScreen(
                         LocalTrackRow(
                             item = item,
                             accent = accentFor(index),
+                            favorite = item.uri in favoriteAudioUris,
+                            onToggleFavorite = { onToggleFavorite(item) },
                             onPlay = { onPlay(index) },
                             onRemove = { onRemove(item) },
                         )
@@ -333,10 +530,61 @@ private fun CollectionScreen(
                                 },
                             )
                         }
+
+                LibraryPivot.Favorites -> {
+                    val favorites =
+                        items.filter { item ->
+                            item.uri in favoriteAudioUris
+                        }
+
+                    if (favorites.isEmpty()) {
+                        C2InfoPanel(
+                            title = "No favorite tracks",
+                            detail = "Mark local tracks with ★ to keep a quick local favorites view.",
+                        )
+                    } else {
+                        favorites.forEach { item ->
+                            val index = items.indexOf(item)
+                            LocalTrackRow(
+                                item = item,
+                                accent = accentFor(index),
+                                favorite = true,
+                                onToggleFavorite = { onToggleFavorite(item) },
+                                onPlay = { onPlay(index) },
+                                onRemove = { onRemove(item) },
+                            )
+                        }
+                    }
+                }
+
+                LibraryPivot.Playlists -> {
+                    SableActionButton(
+                        text = "Create playlist",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onCreatePlaylist,
+                    )
+
+                    if (playlists.isEmpty()) {
+                        C2InfoPanel(
+                            title = "No playlists yet",
+                            detail = "Create a local playlist from audio already added to Sable Media.",
+                        )
+                    } else {
+                        playlists.forEach { playlist ->
+                            PlaylistCard(
+                                playlist = playlist,
+                                availableItems = items,
+                                onPlay = { onPlayPlaylist(playlist) },
+                                onEdit = { onEditPlaylist(playlist) },
+                                onDelete = { onDeletePlaylist(playlist) },
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        if (playback.title != "Nothing queued") {
+        if (showMiniPlayer && playback.title != "Nothing queued") {
             MiniPlayer(
                 playback = playback,
                 onClick = onOpenNowPlaying,
@@ -349,6 +597,8 @@ private fun CollectionScreen(
 private fun LocalTrackRow(
     item: LocalAudioItem,
     accent: Color,
+    favorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onPlay: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -399,6 +649,10 @@ private fun LocalTrackRow(
             }
 
             CompactAction(
+                text = if (favorite) "★" else "☆",
+                onClick = onToggleFavorite,
+            )
+            CompactAction(
                 text = "×",
                 onClick = onRemove,
             )
@@ -407,6 +661,64 @@ private fun LocalTrackRow(
                 active = true,
                 onClick = onPlay,
             )
+        }
+    }
+}
+
+@Composable
+private fun PlaylistCard(
+    playlist: MediaPlaylist,
+    availableItems: List<LocalAudioItem>,
+    onPlay: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val trackCount =
+        playlist.itemUris.count { uri ->
+            availableItems.any { it.uri == uri }
+        }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(SableSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+        ) {
+            Text(
+                text = playlist.name,
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text = "$trackCount track${if (trackCount == 1) "" else "s"}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Play",
+                    modifier = Modifier.weight(1f),
+                    onClick = onPlay,
+                )
+                SableActionButton(
+                    text = "Edit",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onEdit,
+                )
+                SableActionButton(
+                    text = "Remove",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onDelete,
+                )
+            }
         }
     }
 }
@@ -470,7 +782,7 @@ private fun NowPlayingScreen(
     onSeek: (Long) -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
     ) {
         Text(
             text = "now playing",
@@ -483,17 +795,23 @@ private fun NowPlayingScreen(
             large = true,
         )
 
-        Text(
-            text = playback.title,
-            style = MaterialTheme.typography.headlineLarge,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = playback.source,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+        ) {
+            Text(
+                text = playback.title,
+                style = MaterialTheme.typography.headlineMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = playback.source,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
 
         val duration = playback.durationMs.coerceAtLeast(0L)
         val sliderMax = duration.takeIf { it > 0L }?.toFloat() ?: 1f
@@ -569,16 +887,6 @@ private fun NowPlayingScreen(
             )
         }
 
-        Text(
-            text =
-                if (duration > 0L) {
-                    "Playback position and metadata come from the active Media3 session."
-                } else {
-                    "Live streams do not expose a fixed duration. Playback state still comes from Media3."
-                },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -586,8 +894,13 @@ private fun NowPlayingScreen(
 private fun RadioScreen(
     stations: List<RadioStation>,
     playback: PlaybackUiState,
+    favoriteStationIds: Set<String>,
+    showFavoritesOnly: Boolean,
+    showMiniPlayer: Boolean,
     message: String?,
     onPlay: (RadioStation) -> Unit,
+    onToggleFavorite: (RadioStation) -> Unit,
+    onFavoritesOnlyChange: (Boolean) -> Unit,
     onManage: () -> Unit,
     onAdd: () -> Unit,
     onOpenNowPlaying: () -> Unit,
@@ -611,6 +924,44 @@ private fun RadioScreen(
             )
         }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        ) {
+            Surface(
+                onClick = { onFavoritesOnlyChange(false) },
+                color = Color.Transparent,
+                contentColor =
+                    if (!showFavoritesOnly) {
+                        MediaPink
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            ) {
+                Text(
+                    text = "stations",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            Surface(
+                onClick = { onFavoritesOnlyChange(true) },
+                color = Color.Transparent,
+                contentColor =
+                    if (showFavoritesOnly) {
+                        MediaPink
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            ) {
+                Text(
+                    text = "favorites",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+        }
+
         message?.let {
             Text(
                 text = it,
@@ -619,15 +970,34 @@ private fun RadioScreen(
             )
         }
 
-        if (stations.isEmpty()) {
+        val visibleStations =
+            if (showFavoritesOnly) {
+                stations.filter { it.id in favoriteStationIds }
+            } else {
+                stations
+            }
+
+        if (visibleStations.isEmpty()) {
             EmptyPanel(
-                title = "No saved stations",
-                detail = "Add a station by name and direct HTTP(S) stream URL.",
+                title =
+                    if (showFavoritesOnly) {
+                        "No favorite stations"
+                    } else {
+                        "No saved stations"
+                    },
+                detail =
+                    if (showFavoritesOnly) {
+                        "Mark stations with ★ to keep a quick local favorites view."
+                    } else {
+                        "Add a station by name and direct HTTP(S) stream URL."
+                    },
             )
         } else {
-            stations.forEach { station ->
+            visibleStations.forEach { station ->
                 RadioStationRow(
                     station = station,
+                    favorite = station.id in favoriteStationIds,
+                    onToggleFavorite = { onToggleFavorite(station) },
                     onPlay = { onPlay(station) },
                 )
             }
@@ -639,7 +1009,7 @@ private fun RadioScreen(
             onClick = onAdd,
         )
 
-        if (playback.title != "Nothing queued") {
+        if (showMiniPlayer && playback.title != "Nothing queued") {
             MiniPlayer(
                 playback = playback,
                 onClick = onOpenNowPlaying,
@@ -651,6 +1021,8 @@ private fun RadioScreen(
 @Composable
 private fun RadioStationRow(
     station: RadioStation,
+    favorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onPlay: () -> Unit,
 ) {
     Surface(
@@ -700,6 +1072,10 @@ private fun RadioStationRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            CompactAction(
+                text = if (favorite) "★" else "☆",
+                onClick = onToggleFavorite,
+            )
             CompactAction(
                 text = "▶",
                 active = true,
@@ -995,7 +1371,7 @@ private fun ArtworkTile(
     Box(
         modifier =
             modifier
-                .aspectRatio(1f)
+                .aspectRatio(if (large) 1.9f else 1f)
                 .background(
                     brush =
                         Brush.linearGradient(

@@ -9,6 +9,12 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 
+internal data class QueueItemUiState(
+    val index: Int,
+    val title: String,
+    val source: String,
+)
+
 internal data class PlaybackUiState(
     val connected: Boolean = false,
     val title: String = "Nothing queued",
@@ -18,6 +24,8 @@ internal data class PlaybackUiState(
     val durationMs: Long = 0L,
     val hasPrevious: Boolean = false,
     val hasNext: Boolean = false,
+    val currentIndex: Int = -1,
+    val queue: List<QueueItemUiState> = emptyList(),
 )
 
 internal class PlaybackController(
@@ -107,6 +115,35 @@ internal class PlaybackController(
         controller?.seekToNextMediaItem()
     }
 
+    fun playQueueIndex(index: Int) {
+        val player = controller ?: return
+        if (index !in 0 until player.mediaItemCount) return
+        player.seekToDefaultPosition(index)
+        player.play()
+    }
+
+    fun moveQueueItem(
+        fromIndex: Int,
+        toIndex: Int,
+    ) {
+        val player = controller ?: return
+        if (
+            fromIndex !in 0 until player.mediaItemCount ||
+            toIndex !in 0 until player.mediaItemCount ||
+            fromIndex == toIndex
+        ) {
+            return
+        }
+
+        player.moveMediaItem(fromIndex, toIndex)
+    }
+
+    fun removeQueueItem(index: Int) {
+        val player = controller ?: return
+        if (index !in 0 until player.mediaItemCount) return
+        player.removeMediaItem(index)
+    }
+
     fun close() {
         closed = true
         handler.removeCallbacksAndMessages(null)
@@ -140,6 +177,28 @@ internal class PlaybackController(
                 ?.takeIf { it.isNotBlank() }
                 ?: "Local music or radio"
 
+        val queue =
+            buildList {
+                for (index in 0 until player.mediaItemCount) {
+                    val item = player.getMediaItemAt(index)
+                    add(
+                        QueueItemUiState(
+                            index = index,
+                            title =
+                                item.mediaMetadata.title
+                                    ?.toString()
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?: "Untitled audio",
+                            source =
+                                item.mediaMetadata.artist
+                                    ?.toString()
+                                    ?.takeIf { it.isNotBlank() }
+                                    ?: "Local audio",
+                        ),
+                    )
+                }
+            }
+
         onStateChanged(
             PlaybackUiState(
                 connected = true,
@@ -150,6 +209,11 @@ internal class PlaybackController(
                 durationMs = duration,
                 hasPrevious = player.hasPreviousMediaItem(),
                 hasNext = player.hasNextMediaItem(),
+                currentIndex =
+                    player.currentMediaItemIndex
+                        .takeIf { it != C.INDEX_UNSET }
+                        ?: -1,
+                queue = queue,
             ),
         )
     }
