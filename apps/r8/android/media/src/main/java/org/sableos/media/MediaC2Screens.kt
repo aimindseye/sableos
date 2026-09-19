@@ -31,6 +31,10 @@ internal fun QueueScreen(
     onPlayIndex: (Int) -> Unit,
     onMove: (Int, Int) -> Unit,
     onRemove: (Int) -> Unit,
+    onPlayPause: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onStop: () -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
@@ -40,6 +44,16 @@ internal fun QueueScreen(
             title = "up next",
             onBack = onBack,
         )
+
+        if (playback.queue.isNotEmpty()) {
+            QueueTransportControls(
+                playback = playback,
+                onPlayPause = onPlayPause,
+                onPrevious = onPrevious,
+                onNext = onNext,
+                onStop = onStop,
+            )
+        }
 
         if (playback.queue.isEmpty()) {
             C2InfoPanel(
@@ -167,6 +181,75 @@ internal fun QueueScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun QueueTransportControls(
+    playback: PlaybackUiState,
+    onPlayPause: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onStop: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(SableSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+            ) {
+                Text(
+                    text = playback.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = playback.source,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Previous",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onPrevious,
+                )
+                SableActionButton(
+                    text = if (playback.isPlaying) "Pause" else "Play",
+                    modifier = Modifier.weight(1f),
+                    onClick = onPlayPause,
+                )
+                SableActionButton(
+                    text = "Next",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onNext,
+                )
+                SableActionButton(
+                    text = "Stop",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onStop,
+                )
+            }
+        }
     }
 }
 
