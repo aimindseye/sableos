@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
@@ -56,13 +57,45 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         applySableDarkSystemBars(window)
 
+        val stationRepository = RadioStationRepository(applicationContext)
+
         setContent {
             SableTheme {
                 var page by remember { mutableStateOf(MediaPage.Collection) }
-                var stationUrl by remember { mutableStateOf("") }
                 var playbackState by remember { mutableStateOf("ready") }
                 var sourceTitle by remember { mutableStateOf("nothing queued") }
                 var sourceKind by remember { mutableStateOf("local music or radio") }
+
+                var stations by remember {
+                    mutableStateOf(stationRepository.loadStations())
+                }
+                var stationName by remember { mutableStateOf("") }
+                var stationUrl by remember { mutableStateOf("") }
+                var radioStatus by remember {
+                    mutableStateOf(
+                        if (stations.isEmpty()) {
+                            "No saved stations yet."
+                        } else {
+                            "${stations.size} saved station${if (stations.size == 1) "" else "s"}."
+                        },
+                    )
+                }
+
+                fun startPlayback(
+                    uri: Uri,
+                    title: String,
+                    source: String,
+                ) {
+                    playUri(
+                        uri = uri,
+                        title = title,
+                        source = source,
+                    )
+                    playbackState = "playing"
+                    sourceTitle = title
+                    sourceKind = source
+                    page = MediaPage.NowPlaying
+                }
 
                 val picker =
                     rememberLauncherForActivityResult(
@@ -78,15 +111,17 @@ class MainActivity : ComponentActivity() {
                                 // Some providers grant transient access only.
                             }
 
-                            playUri(uri)
-                            playbackState = "playing"
-                            sourceTitle =
+                            val title =
                                 uri.lastPathSegment
                                     ?.substringAfterLast('/')
                                     ?.ifBlank { "local audio" }
                                     ?: "local audio"
-                            sourceKind = "local audio"
-                            page = MediaPage.NowPlaying
+
+                            startPlayback(
+                                uri = uri,
+                                title = title,
+                                source = "local audio",
+                            )
                         }
                     }
 
@@ -137,25 +172,63 @@ class MainActivity : ComponentActivity() {
 
                         MediaPage.Radio ->
                             RadioPage(
+                                stations = stations,
+                                stationName = stationName,
                                 stationUrl = stationUrl,
+                                status = radioStatus,
+                                onStationNameChange = { stationName = it },
                                 onStationUrlChange = { stationUrl = it },
-                                onPlayStation = {
+                                onSaveStation = {
                                     val candidate = stationUrl.trim()
-                                    if (
-                                        candidate.startsWith("http://") ||
-                                        candidate.startsWith("https://")
-                                    ) {
-                                        playUri(Uri.parse(candidate))
-                                        playbackState = "playing"
-                                        sourceTitle = candidate
-                                        sourceKind = "internet radio"
-                                        page = MediaPage.NowPlaying
+                                    if (!RadioStationRepository.isSupportedUrl(candidate)) {
+                                        radioStatus = "Station URL must use HTTP or HTTPS."
                                     } else {
-                                        playbackState = "check URL"
-                                        sourceTitle = "Enter an HTTP or HTTPS stream"
-                                        sourceKind = "radio"
-                                        page = MediaPage.NowPlaying
+                                        stations =
+                                            stationRepository.saveStation(
+                                                current = stations,
+                                                name = stationName,
+                                                url = candidate,
+                                            )
+                                        radioStatus = "Station saved locally."
+                                        stationName = ""
+                                        stationUrl = ""
                                     }
+                                },
+                                onPlayDirect = {
+                                    val candidate = stationUrl.trim()
+                                    if (RadioStationRepository.isSupportedUrl(candidate)) {
+                                        val title =
+                                            stationName.trim().ifBlank {
+                                                Uri.parse(candidate).host ?: "live radio"
+                                            }
+                                        startPlayback(
+                                            uri = Uri.parse(candidate),
+                                            title = title,
+                                            source = "internet radio",
+                                        )
+                                    } else {
+                                        radioStatus = "Station URL must use HTTP or HTTPS."
+                                    }
+                                },
+                                onPlayStation = { station ->
+                                    startPlayback(
+                                        uri = Uri.parse(station.url),
+                                        title = station.name,
+                                        source = "saved radio station",
+                                    )
+                                },
+                                onDeleteStation = { station ->
+                                    stations =
+                                        stationRepository.deleteStation(
+                                            current = stations,
+                                            id = station.id,
+                                        )
+                                    radioStatus =
+                                        if (stations.isEmpty()) {
+                                            "No saved stations yet."
+                                        } else {
+                                            "Station removed."
+                                        }
                                 },
                             )
                     }
@@ -164,11 +237,17 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun playUri(uri: Uri) {
+    private fun playUri(
+        uri: Uri,
+        title: String,
+        source: String,
+    ) {
         startService(
             Intent(this, PlaybackService::class.java)
                 .setAction(PlaybackService.ACTION_PLAY_URI)
-                .setData(uri),
+                .setData(uri)
+                .putExtra(PlaybackService.EXTRA_TITLE, title)
+                .putExtra(PlaybackService.EXTRA_SOURCE, source),
         )
     }
 
@@ -264,13 +343,13 @@ private fun CollectionPage(
                 verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
             ) {
                 Text(
-                    text = "history",
+                    text = "privacy",
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Text(
                     text =
                         "Sable Media does not create a persistent listening-history feed. " +
-                            "Playback state stays focused on what you explicitly open.",
+                            "Saved radio stations are stored locally on this device.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -338,6 +417,7 @@ private fun NowPlayingPage(
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = sourceKind,
@@ -382,24 +462,60 @@ private fun NowPlayingPage(
 
 @Composable
 private fun RadioPage(
+    stations: List<RadioStation>,
+    stationName: String,
     stationUrl: String,
+    status: String,
+    onStationNameChange: (String) -> Unit,
     onStationUrlChange: (String) -> Unit,
-    onPlayStation: () -> Unit,
+    onSaveStation: () -> Unit,
+    onPlayDirect: () -> Unit,
+    onPlayStation: (RadioStation) -> Unit,
+    onDeleteStation: (RadioStation) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
         Text(
-            text = "radio",
+            text = "live radio",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
         )
 
-        MediaSourceTile(
-            title = "direct stream",
-            subtitle = "No discovery feed. Paste the station you want.",
-            accent = MediaPink,
-            onClick = {},
+        Text(
+            text = status,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (stations.isNotEmpty()) {
+            Text(
+                text = "saved stations",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+
+            stations.forEach { station ->
+                RadioStationCard(
+                    station = station,
+                    onPlay = { onPlayStation(station) },
+                    onDelete = { onDeleteStation(station) },
+                )
+            }
+        }
+
+        Text(
+            text = "add station",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+
+        OutlinedTextField(
+            value = stationName,
+            onValueChange = onStationNameChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Station name") },
         )
 
         OutlinedTextField(
@@ -410,19 +526,78 @@ private fun RadioPage(
             label = { Text("HTTP(S) stream URL") },
         )
 
-        SableActionButton(
-            text = "Play station",
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onPlayStation,
-        )
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            SableActionButton(
+                text = "Play now",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = onPlayDirect,
+            )
+            SableActionButton(
+                text = "Save station",
+                modifier = Modifier.weight(1f),
+                onClick = onSaveStation,
+            )
+        }
 
         Text(
             text =
-                "Radio connects only to the URL you enter. " +
-                    "Sable does not add a tracking or recommendation service.",
+                "Station presets stay local. Playing a station connects directly to the " +
+                    "stream URL you selected; no radio directory or recommendation service is contacted.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun RadioStationCard(
+    station: RadioStation,
+    onPlay: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(SableSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+        ) {
+            Text(
+                text = station.name,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = station.url,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Play",
+                    modifier = Modifier.weight(1f),
+                    onClick = onPlay,
+                )
+                SableActionButton(
+                    text = "Remove",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onDelete,
+                )
+            }
+        }
     }
 }
 
@@ -473,9 +648,7 @@ private fun MediaSourceTile(
 
             Text(
                 text = "→",
-                modifier =
-                    Modifier
-                        .padding(end = SableSpacing.Lg),
+                modifier = Modifier.padding(end = SableSpacing.Lg),
                 style = MaterialTheme.typography.titleLarge,
                 color = accent,
             )
