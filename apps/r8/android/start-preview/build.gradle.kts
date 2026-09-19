@@ -36,6 +36,7 @@ android {
     sourceSets {
         getByName("main") {
             java.srcDirs(
+                "src/main/java",
                 "../../../../src/android/packages/apps/SableStart/src/com/sable/start/ui",
                 "../../../../src/android/packages/apps/SableStart/src/com/sable/start/live",
                 "../../../../src/android/packages/apps/SableStart/src/com/sable/start/model",

@@ -8,3 +8,7 @@ data class AppEntry(
     val component: ComponentName,
     val user: UserHandle,
 )
+
+
+fun AppEntry.stableKey(): String =
+    "${user.hashCode()}:${component.flattenToString()}"

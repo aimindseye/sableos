@@ -27,6 +27,9 @@ class LauncherAppsRepository(
             .flatMap { user ->
                 launcherApps
                     .getActivityList(null, user)
+                    .filter { info ->
+                        info.componentName.packageName != appContext.packageName
+                    }
                     .map { info ->
                         AppEntry(
                             label = info.label.toString(),
@@ -70,6 +73,24 @@ class LauncherAppsRepository(
                 )
             }
 
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
+        } catch (_: SecurityException) {
+            false
+        } catch (_: RuntimeException) {
+            false
+        }
+    }
+
+    fun openAppDetails(entry: AppEntry): Boolean {
+        return try {
+            launcherApps.startAppDetailsActivity(
+                entry.component,
+                entry.user,
+                null,
+                null,
+            )
             true
         } catch (_: ActivityNotFoundException) {
             false
