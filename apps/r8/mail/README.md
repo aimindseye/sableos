@@ -62,20 +62,21 @@ Sable Mail uses two CI tiers:
 
 1. **Product gate — `.github/workflows/r8-mail.yml`**
    - runs for ordinary Sable Mail, SableDesign and SableStart changes;
-   - runs the app-scoped Thunderbird `:app-thunderbird:testsOnCi` task;
+   - verifies the composed Sable Mail source policy;
    - lints the shipped `fossRelease` variant;
    - proves the exact FOSS release runtime dependency policy;
    - builds `:app-thunderbird:assembleFossRelease -Pci=true`;
    - verifies the APK identity/policy and records its SHA-256.
-2. **Upstream qualification — `.github/workflows/r8-mail-upstream.yml`**
-   - runs automatically when the pinned Thunderbird identity changes;
-   - is also available by manual dispatch;
+2. **Manual upstream qualification — `.github/workflows/r8-mail-upstream.yml`**
+   - runs only by explicit manual dispatch;
    - applies the Sable adaptation and source-policy verifier first;
-   - then runs Thunderbird's repository-wide `testsOnCi --parallel` suite.
+   - runs Thunderbird's repository-wide `testsOnCi --parallel` suite, including
+     upstream unit tests that may require Sable-specific expectation updates.
 
-The full Thunderbird repository-wide suite is intentionally not part of every
-ordinary Sable Mail pull request. It qualifies a new upstream pin, while the
-product gate continuously qualifies the actual Sable-shipped application graph.
+Unit tests are intentionally not a blocking ordinary PR gate while the
+Thunderbird adaptation stabilizes. Run the manual upstream qualification after
+changing the Thunderbird pin, adaptation-sensitive dependency wiring, or
+upstream-derived test expectations.
 
 A successful standalone build does not authorize Panther inclusion. The APK
 must enter the source-bound R8 app bundle and pass the Panther product and
