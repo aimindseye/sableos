@@ -98,7 +98,8 @@ print("R8_BUNDLE_MANIFEST_SET=PASS")
 PY
 
 DEST="$WS/vendor/sable/r8"
-LEGACY_DEST="$WS/vendor/sable/prebuilts/r8"
+LEGACY_PARENT="$WS/vendor/sable/prebuilts"
+LEGACY_DEST="$LEGACY_PARENT/r8"
 PRODUCT_MK="$WS/vendor/google_devices/panther/panther.mk"
 MARKER_BEGIN="# BEGIN SABLEOS R8 PRODUCT INTEGRATION"
 MARKER_END="# END SABLEOS R8 PRODUCT INTEGRATION"
@@ -200,6 +201,23 @@ else
     echo "R8_LEGACY_PRODUCT_TREE=PASS_ABSENT"
 fi
 
+if [[ -L "$LEGACY_PARENT" ]]; then
+    echo "R8_LEGACY_PRODUCT_PARENT=FAIL_SYMLINK path=$LEGACY_PARENT"
+    exit 14
+fi
+
+if [[ -d "$LEGACY_PARENT" ]]; then
+    if find "$LEGACY_PARENT" -mindepth 1 -print -quit | grep -q .; then
+        echo "R8_LEGACY_PRODUCT_PARENT=FAIL_NONEMPTY path=$LEGACY_PARENT"
+        find "$LEGACY_PARENT" -mindepth 1 -maxdepth 3 -print | sort
+        exit 14
+    fi
+    rmdir -- "$LEGACY_PARENT"
+    echo "R8_LEGACY_PRODUCT_PARENT=REMOVED_EMPTY"
+else
+    echo "R8_LEGACY_PRODUCT_PARENT=PASS_ABSENT"
+fi
+
 mkdir -p "$DEST/prebuilt"
 rm -f "$DEST/prebuilt/"*.apk
 
@@ -258,6 +276,11 @@ echo "R8_STAGED_PREBUILT_HASHES=PASS"
     exit 16
 }
 echo "R8_LEGACY_PRODUCT_TREE=PASS_ABSENT_POST_STAGE"
+[[ ! -e "$LEGACY_PARENT" && ! -L "$LEGACY_PARENT" ]] || {
+    echo "R8_LEGACY_PRODUCT_PARENT=FAIL_POST_STAGE"
+    exit 16
+}
+echo "R8_LEGACY_PRODUCT_PARENT=PASS_ABSENT_POST_STAGE"
 echo "R8_PRODUCT_INCLUDE=PASS"
 echo "R8_PRODUCT_STAGE=PASS"
 echo "R8_PRODUCT_DEST=$DEST"
