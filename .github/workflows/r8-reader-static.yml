@@ -84,8 +84,8 @@ jobs:
           ocr=/tmp/vaachak/leisure/src/sable/java/org/vaachak/reader/leisure/SableOcrActivity.kt
           scanner=/tmp/vaachak/leisure/src/sable/java/org/vaachak/textreader/CameraScannerView.kt
 
-          grep -Fq 'sableImplementation("com.google.mlkit:text-recognition:16.0.1")' "$gradle"
-          grep -Fq 'sableImplementation("com.google.mlkit:text-recognition-devanagari:16.0.1")' "$gradle"
+          grep -Fq 'add("sableImplementation", "com.google.mlkit:text-recognition:16.0.1")' "$gradle"
+          grep -Fq 'add("sableImplementation", "com.google.mlkit:text-recognition-devanagari:16.0.1")' "$gradle"
           ! grep -Fq 'play-services-mlkit-text-recognition' "$gradle"
           grep -Fq 'tools:node="remove"' "$manifest"
           grep -Fq 'android.permission.CAMERA' "$manifest"
