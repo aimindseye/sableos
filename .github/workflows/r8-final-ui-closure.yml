@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'build/panther/**'
+      - 'build/config/r8-*.env'
+      - 'build/host/**'
+      - 'build/gates/r8-build-driver-contract.sh'
       - 'build/gates/r8-final-*.sh'
       - 'build/gates/r8-no-stale-product-code.sh'
       - 'product/r8/panther/**'
@@ -19,6 +22,9 @@ on:
     branches: [main]
     paths:
       - 'build/panther/**'
+      - 'build/config/r8-*.env'
+      - 'build/host/**'
+      - 'build/gates/r8-build-driver-contract.sh'
       - 'build/gates/r8-final-*.sh'
       - 'build/gates/r8-no-stale-product-code.sh'
       - 'product/r8/panther/**'
@@ -49,7 +55,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for script in             apps/r8/export-panther-app-bundle.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh             build/gates/r8-no-stale-product-code.sh
+          for script in             apps/r8/export-panther-app-bundle.sh             build/host/verify-r8-host-tools.sh             build/host/migrate-r8-final-v1-host-tools.sh             build/panther/render-r8-build-driver.sh             build/panther/run-r8-release-candidate.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-build-driver-contract.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh             build/gates/r8-no-stale-product-code.sh
           do
             bash -n "$script"
             echo "SHELL_SYNTAX=PASS $script"
@@ -94,6 +100,7 @@ jobs:
           grep -Fq 'overrides: ["ExactCalculator"]' "$bp"
           grep -Fq 'SableStartScreen.kt' "$sync"
           ! grep -Fq 'SableStartRoot.kt' "$sync"
+          ! grep -Fq 'SableMetroPreviewActivity' "$sync"
           ! grep -Fq 'SableMetroPreviewActivity' "$manifest"
 
           for script in "$stage" "$gate"
@@ -203,4 +210,17 @@ jobs:
           grep -Fq 'unset BUILD_DATETIME' "$build"
           grep -Fq 'unset BUILD_NUMBER' "$build"
 
+          host_profile=build/config/r8-host-tools.env
+          release_profile=build/config/r8-release.env
+          runner=build/panther/run-r8-release-candidate.sh
+
+          grep -Fq '/srv/data/sable-host-tools' "$host_profile"
+          ! grep -Fq '/srv/data/sable-build/host-tools/r8-final-v1' "$host_profile"
+          grep -Fq 'SABLEOS_RELEASE_VERSION' "$release_profile"
+          grep -Fq 'verify-r8-host-tools.sh' "$runner"
+          grep -Fq 'prepare-r8-final-ui.sh' "$runner"
+          grep -Fq 'build-r8-final-ui.sh' "$runner"
+          bash build/gates/r8-build-driver-contract.sh
+
+          echo "R8_CANONICAL_HOST_TOOL_CONTRACT=PASS"
           echo "R8_FINAL_BUILD_ENVIRONMENT_CONTRACT=PASS"
