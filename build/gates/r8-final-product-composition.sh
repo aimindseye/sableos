@@ -50,6 +50,28 @@ done
 
 echo "R8_A_SHARED_DESIGN_SOURCE=PASS"
 
+GLOBAL_APPEARANCE="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
+START_PROVIDER="$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt"
+
+for needle in     'org.sableos.start.appearance'     'rememberGlobalSableAppearance'     'SableGlobalTheme'
+do
+    grep -Fq "$needle" "$GLOBAL_APPEARANCE" || fail R8_GLOBAL_APPEARANCE_SOURCE
+done
+
+for needle in     'SableGlobalAppearanceContract.CONTENT_URI'     'SableAppearanceProvider'
+do
+    grep -R -Fq "$needle"         "$ROOT/src/android/packages/apps/SableStart"         || fail R8_GLOBAL_APPEARANCE_PROVIDER
+done
+
+for source in     "$ROOT/apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt"     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt"     "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt"     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt"
+do
+    grep -Fq 'SableGlobalTheme(window = window)' "$source"         || fail R8_GLOBAL_APPEARANCE_CONSUMER
+done
+
+grep -Fq 'SableGlobalAppearance.kt'     "$ROOT/apps/r8/reader/apply_sable_flavor.py"     || fail R8_GLOBAL_APPEARANCE_READER
+
+echo "R8_GLOBAL_APPEARANCE_SOURCE=PASS"
+
 echo
 echo "===== SHARED DESIGN WORKSPACE FIDELITY ====="
 
@@ -164,6 +186,7 @@ expected = {
     "org.sableos.media": "SableMedia.apk",
     "org.sableos.reader": "SableReader.apk",
     "org.sableos.hub": "SableHub.apk",
+    "org.sableos.mail": "SableMail.apk",
 }
 
 with pathlib.Path(sys.argv[1]).open(newline="", encoding="utf-8") as f:
@@ -207,7 +230,7 @@ include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT
 
-for module in     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub
+for module in     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
 done
@@ -262,6 +285,24 @@ grep -Fq 'scheme == "https"' "$HUB_CAPSULE"     || fail R8_F_SABLE_HUB_WEB_HTTPS
 echo "R8_F_SABLE_HUB_SOURCE=PASS"
 
 echo
+echo "===== R8-G SABLE MAIL SOURCE CLOSURE ====="
+
+MAIL_ENV="$ROOT/apps/r8/mail/upstream.env"
+MAIL_APPLIER="$ROOT/apps/r8/mail/apply_sable_flavor.py"
+MAIL_POLICY="$ROOT/apps/r8/mail/verify_sable_mail.py"
+
+for f in "$MAIL_ENV" "$MAIL_APPLIER" "$MAIL_POLICY"; do
+    [[ -f "$f" ]] || fail R8_G_SABLE_MAIL_SOURCE
+done
+
+grep -Fq 'THUNDERBIRD_COMMIT=c733317d933c22bcd790a4790306f30ccf2026b8'     "$MAIL_ENV" || fail R8_G_SABLE_MAIL_PIN
+grep -Fq 'SABLE_MAIL_APPLICATION_ID=org.sableos.mail'     "$MAIL_ENV" || fail R8_G_SABLE_MAIL_ID
+grep -Fq 'SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION'     "$MAIL_APPLIER" || fail R8_G_SABLE_MAIL_OAUTH_POLICY
+grep -Fq 'SABLE_MAIL_GLOBAL_APPEARANCE=FOLLOW_SYSTEM_LIGHT_DARK_PLUS_5_ACCENTS'     "$MAIL_APPLIER" || fail R8_G_SABLE_MAIL_THEME_POLICY
+
+echo "R8_G_SABLE_MAIL_SOURCE=PASS"
+
+echo
 echo "===== FINAL COMPOSITION RESULT ====="
 echo "R8_A_SHARED_DESIGN=PASS"
 echo "R8_START_PRODUCT_INTEGRATION=PASS"
@@ -271,6 +312,8 @@ echo "R8_D_READER_PUBLICATION=PASS_PRODUCT_STAGED"
 echo "R8_D2_READER_TEXT_ACCESSIBILITY_OCR=PASS_SOURCE_AND_PRODUCT_STAGED"
 echo "R8_E_MEDIA=PASS_PRODUCT_STAGED"
 echo "R8_F_SABLE_HUB_MESSAGES=PASS_PRODUCT_STAGED"
+echo "R8_G_GLOBAL_APPEARANCE=PASS_SOURCE_AND_PRODUCT_STAGED"
+echo "R8_G_SABLE_MAIL=PASS_PRODUCT_STAGED"
 echo "R8_UI4_SYSTEMUI=PASS_SOURCE"
 echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
