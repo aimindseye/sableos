@@ -1,12 +1,60 @@
 # Unihertz Titan 2 SableOS GSI development plan
 
-Status: **preferred interim non-Pixel development candidate; not yet acquired, validated or supported**.
+Status: **preferred interim non-Pixel development candidate; expected 2026-09-19, not yet validated or supported**.
 
 The Titan 2 is the preferred interim physical-QWERTY development target after the Pixel 7 / Panther baseline is closed. Its initial role is a **development GSI/userspace lab**, not a production-security SableOS target.
 
 The goal is to accelerate SableStart, square-display, keyboard/pointer and Android/MediaTek portability work while waiting for the Zinwa Q27 hardware and support situation to mature.
 
 This plan is governed by `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `AOSP_CAPABILITY_POLICY.md`, `SECURITY_MODEL.md`, `RELEASE_VALIDATION.md` and the project authorization/evidence methodology.
+
+## 2026-09-19 arrival / concurrency rule
+
+Titan 2 is expected to become physically available on 2026-09-19.
+
+Two work classes are deliberately separated:
+
+```text
+T0 read-only stock/device inventory
+    MAY START IMMEDIATELY ON ARRIVAL
+
+T1/T2 GSI build, bootloader mutation or flashing
+    BLOCKED UNTIL PANTHER FINAL UI CLOSURE
+```
+
+T0 is observational and may run in parallel with the remaining Pixel UI source/integration work. It should capture exact stock identity, display/input geometry, keyboard devices/keylayout, Treble/VINTF/VNDK, partition topology, bootloader/unlock behavior, stock restore artifacts, kernel/modules, vendor/ODM/HALs, modem/IMS and firmware.
+
+Before any Titan GSI mutation/flash, require:
+
+```text
+R8_FINAL_UI_PRODUCT_COMPOSITION=PASS
+PANTHER_FINAL_UI_BUILD=PASS
+PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PASS
+```
+
+This ensures Titan evaluates the same closed Sable UI/application architecture rather than becoming a parallel fork.
+
+## Keyboard-first product requirement
+
+Titan 2 is not a touch-first SableOS UI with keyboard shortcuts added afterward. Its primary interaction profile is keyboard-first:
+
+```text
+navigation.primary=keyboard
+navigation.secondary=touch
+```
+
+The physical keyboard must be sufficient for core HOME navigation, app/search launch, focus traversal, Settings and major Sable first-party surfaces. Touch remains supported as a secondary input path.
+
+Reference review:
+
+- `palsoftware/pastiera` — physical-keyboard IME/modifier/navigation reference;
+- `katoaapps/openminilaunch` — keyboard-first launcher/type-to-search reference;
+- `sriharshaKanukuntla/TypeQ25` — Q25/Titan physical-keyboard mapping/nav reference;
+- `nozerorma/q25toolbox` — keylayout/scancode/device-behavior forensic reference.
+
+Exact reviewed revisions and licensing constraints are recorded in `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
+
+The first Titan launcher acceptance must prove printable-key type-to-search from HOME with the initial character preserved, visible directional focus, hardware-only navigation through the main launcher flow, and no forced soft-keyboard popup when a physical keyboard is active.
 
 ## Strategic role
 

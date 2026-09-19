@@ -285,6 +285,22 @@ cc284d3841c243a91d6a43efcf6aea81dc0cfa95d4107426c9c4112d0808a789
 
 Changing `framework-res.apk` also regenerates its fs-verity metadata, the fs-verity `BuildManifest.apk` / V4 signature, and a PRODUCT auto-generated framework characteristics RRO. Those downstream changes were proven and are recorded in `PANTHER_D3_VALIDATION.md`.
 
+## R8 UI product-integration builds
+
+The D3 procedure above remains historical/canonical substrate evidence. Current R8 UI work adds an additional pre-build requirement defined by `R8_PIXEL_UI_PRODUCT_CLOSURE.md` and `RELEASE_VALIDATION.md`.
+
+For an R8 final UI build, do not infer product completeness from the output-directory name, an incremental module build, or successful `target-files-package`. Before the long build begins, prove the exact application/system source and package set in the generated product graph.
+
+In particular, the R8 gate must prove SableStart, Sable Calculator, three separate Sable game APKs, Sable Media and Sable Reader are integrated, and must classify retained/replaced Android packages such as `ExactCalculator`.
+
+The current development R8 target remains:
+
+```text
+lunch panther-cur-userdebug
+```
+
+A preview-named `OUT_DIR` is not itself a failure, but it must never be treated as evidence that all accepted UI work is integrated.
+
 ## 9. Deployment is a separate authorized operation
 
 Do not treat the build procedure as authorization to flash a device. The validated D3 physical test needed `system_b`, `product_b`, and matching `vbmeta_b` together because D3 `vbmeta` binds the regenerated PRODUCT hashtree.

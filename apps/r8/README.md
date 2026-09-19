@@ -1,5 +1,24 @@
 # R8 standalone application qualification workspace
 
+## 2026-09-19 final Pixel integration requirement
+
+The standalone qualification boundary remains useful, but the next Panther build is now gated by `docs/R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+
+Current classification:
+
+```text
+R8-B Calculator + Convert       standalone/emulator PASS; Panther integration missing
+R8-C Games                      standalone/emulator PASS; Panther integration missing
+R8-D Reader publication        standalone CI qualified; product/physical review pending
+R8-D2 TXT/share/process/TTS     composed
+R8-D2 OCR                       NOT integrated
+R8-E Media                      standalone/emulator PASS; Panther integration missing
+```
+
+OCR is required for the current R8-D2 UI closure. Translation/model download is not. The OCR integration must keep camera permission optional, support user-directed camera/gallery inputs, qualify Latin and Devanagari recognition, and define truthful offline/model-availability behavior without silent network fallback.
+
+A successful standalone APK build is no longer sufficient to authorize the final Panther UI build. The generated Panther product graph/target-files must prove the exact intended Sable APK set before the full build begins.
+
 This directory is the source/application qualification side of the R8 split pipeline. It is intentionally independent from the Panther/AOSP image build.
 
 ## Pipelines

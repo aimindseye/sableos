@@ -103,6 +103,31 @@ Dense layouts are acceptable when they remain readable and navigable from the ke
 
 This is inspiration, not an attempt to clone BlackBerry OS/BB10.
 
+## Titan 2 keyboard-first profile
+
+Titan 2 is the first near-term hardware target where the keyboard-first profile is mandatory rather than optional.
+
+```text
+TITAN2_INTERACTION_PROFILE=KEYBOARD_FIRST
+navigation.primary=keyboard
+navigation.secondary=touch
+touch_required_for_core_navigation=false
+```
+
+Required first-class behaviors:
+
+- printable-key type-to-search from HOME with the first key preserved;
+- deterministic directional focus and visible focus state;
+- Enter activation, Back/Escape navigation and predictable Home/Recents behavior;
+- Tab/Shift+Tab traversal where appropriate;
+- key hold/repeat handling;
+- explicit held vs one-shot vs latched modifier state;
+- keyboard navigation across SableStart, SystemUI, Settings and first-party apps;
+- physical-keyboard text entry without summoning the soft keyboard by default;
+- touch/keyboard coexistence rather than touch fallback as the normal path.
+
+The normative external reference review and licensing/provenance boundary is `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
+
 ## Do not branch on model name
 
 Applications should not contain logic such as:
@@ -148,7 +173,7 @@ Capabilities should describe behavior, not branding.
 
 ## Q25 profile
 
-The Zinwa Q25 is the first planned keyboard-first SableOS port.
+The Zinwa Q25 remains a useful keyboard-first engineering reference, but Titan 2 is now the first near-term physical keyboard-first SableOS evaluation target.
 
 Its purpose is broader than supporting one handset. It is the validation target for:
 

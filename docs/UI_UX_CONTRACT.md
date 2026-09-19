@@ -10,6 +10,35 @@ SableOS uses one visual and interaction language across launcher, system surface
 
 The design is influenced by the clarity and information hierarchy of Microsoft Metro/Modern UI without copying Windows branding or layouts. SableOS should feel direct, lightweight and recognizably its own product.
 
+## Appearance contract
+
+R8-A closure requires one shared appearance model for Sable-owned Compose surfaces.
+
+Required modes:
+
+```text
+Follow system
+Light
+Dark
+```
+
+Required accent policy:
+
+- accent selection is bounded to the approved `AccentPreset` set;
+- arbitrary unrestricted color entry is not part of the R8 baseline;
+- Sable Blue is the reset/default accent;
+- accent is semantic state/orientation, not decorative fill everywhere.
+
+Required reset behavior:
+
+```text
+appearance mode -> Follow system
+accent          -> Sable Blue
+local overrides -> cleared
+```
+
+`Follow system` is the normal default unless a surface has an explicit reviewed exception. Sable-owned screens should consume shared semantic color roles from `SableTheme`; a production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
+
 ## Core principles
 
 1. **Content first.** Large readable titles, strong section hierarchy and minimal decorative chrome.

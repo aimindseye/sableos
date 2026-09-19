@@ -55,7 +55,11 @@ Why it is useful:
 
 Titan 2 is not assumed to have public kernel source or full SableOS security ownership. Initial development reuses stock kernel/vendor/firmware and is explicitly classified as development-only.
 
+Titan 2 UI qualification is explicitly **keyboard-first**: physical QWERTY is the primary navigation/input path and touch is secondary. The product must not be implemented as a Panther touch layout with optional keyboard shortcuts layered on top. See `TITAN2_KEYBOARD_FIRST_REFERENCE.md` and `INTERACTION_PROFILES.md`.
+
 See `TITAN2_GSI_PLAN.md`.
+
+Titan 2 hardware is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival and may run in parallel with final Panther UI source/integration work. GSI mutation/flash remains gated on Panther final UI product-composition, build and physical-acceptance closure.
 
 ## Q27: preferred future full QWERTY candidate
 
