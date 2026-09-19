@@ -148,6 +148,14 @@ def main() -> None:
         'override val filePrefix: String = "sable-mail"',
     )
 
+    funding_settings = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/feature/TbFundingSettings.kt"
+    )
+    if not funding_settings.is_file():
+        fail(f"SABLE_MAIL_FUNDING_SOURCE=FAIL_MISSING path={funding_settings}")
+    funding_settings.unlink()
+
     feature_module = (
         app
         / "src/main/kotlin/net/thunderbird/android/feature/FeatureModule.kt"
@@ -159,6 +167,14 @@ def main() -> None:
     remove_once(
         feature_module,
         "    includes(featureThundermailModule)\n",
+    )
+    remove_once(
+        feature_module,
+        "import net.thunderbird.feature.funding.api.FundingSettings\n",
+    )
+    remove_once(
+        feature_module,
+        "    single<FundingSettings> { TbFundingSettings() }\n",
     )
 
     di_test = app / "src/test/kotlin/net/thunderbird/android/DependencyInjectionTest.kt"
@@ -704,6 +720,7 @@ internal object SableMailAppearanceSync {
     print("SABLE_MAIL_DEVELOPMENT_SIGNING=DEBUG_KEY_ONLY")
     print("SABLE_MAIL_TELEMETRY=NOOP_UPLOAD_DISABLED")
     print("SABLE_MAIL_FUNDING=NOOP")
+    print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION")
     print("SABLE_MAIL_GENERIC_IMAP_SMTP=UPSTREAM")
