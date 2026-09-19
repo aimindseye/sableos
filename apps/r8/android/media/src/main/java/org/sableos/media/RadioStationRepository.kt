@@ -93,6 +93,38 @@ internal class RadioStationRepository(
         return updated
     }
 
+    fun updateStation(
+        current: List<RadioStation>,
+        id: String,
+        name: String,
+        url: String,
+    ): List<RadioStation> {
+        val normalizedUrl = url.trim()
+        require(isSupportedUrl(normalizedUrl)) {
+            "Station URL must use HTTP or HTTPS."
+        }
+
+        val normalizedName =
+            name.trim().ifBlank {
+                Uri.parse(normalizedUrl).host ?: "Saved station"
+            }
+
+        val updated =
+            current.map { station ->
+                if (station.id == id) {
+                    station.copy(
+                        name = normalizedName,
+                        url = normalizedUrl,
+                    )
+                } else {
+                    station
+                }
+            }
+
+        persist(updated)
+        return updated
+    }
+
     fun deleteStation(
         current: List<RadioStation>,
         id: String,
