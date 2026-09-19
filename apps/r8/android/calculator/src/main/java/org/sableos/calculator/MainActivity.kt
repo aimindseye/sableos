@@ -3,18 +3,23 @@ package org.sableos.calculator
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.sableos.convert.ConverterScreen
 import org.sableos.design.applySableDarkSystemBars
 import org.sableos.design.SableActionButton
@@ -357,9 +362,9 @@ private fun Keypad(
                         Modifier.weight(1f)
                     }
 
-                SableActionButton(
-                    text = label,
-                    primary =
+                CalculatorKey(
+                    label = label,
+                    accent =
                         label == "=" ||
                             label in operationLabels,
                     modifier = modifier,
@@ -379,6 +384,53 @@ private fun Keypad(
                     },
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun CalculatorKey(
+    label: String,
+    accent: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val utility = label == "C" || label == "±" || label == "⌫"
+    val container =
+        when {
+            accent -> MaterialTheme.colorScheme.primary
+            utility -> MaterialTheme.colorScheme.surfaceVariant
+            else -> MaterialTheme.colorScheme.surface
+        }
+    val content =
+        if (accent) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 58.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = container,
+        contentColor = content,
+        border =
+            if (accent) {
+                null
+            } else {
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            },
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleLarge,
+            )
         }
     }
 }
