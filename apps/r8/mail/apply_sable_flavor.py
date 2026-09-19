@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -121,8 +120,16 @@ def main() -> None:
         )
 
     strings = app / "src/main/res/values/strings.xml"
-    replace_once(strings, ">Thunderbird</string>", ">Sable Mail</string>")
-    replace_once(strings, ">Thunderbird</string>", ">Sable Mail</string>")
+    replace_once(
+        strings,
+        '<string name="app_name" translatable="false">Thunderbird</string>',
+        '<string name="app_name" translatable="false">Sable Mail</string>',
+    )
+    replace_once(
+        strings,
+        '<string name="brand_name" translatable="false">Thunderbird</string>',
+        '<string name="brand_name" translatable="false">Sable Mail</string>',
+    )
 
     debug_strings = app / "src/debug/res/values/strings.xml"
     replace_once(
