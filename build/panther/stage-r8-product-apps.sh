@@ -81,34 +81,144 @@ print("R8_BUNDLE_MANIFEST_SET=PASS")
 PY
 
 DEST="$WS/vendor/sable/r8"
-DEVICE_MK="$WS/device/google/pantah/device-panther.mk"
+PRODUCT_MK="$WS/vendor/google_devices/panther/panther.mk"
 MARKER_BEGIN="# BEGIN SABLEOS R8 PRODUCT INTEGRATION"
 MARKER_END="# END SABLEOS R8 PRODUCT INTEGRATION"
 INHERIT_LINE='$(call inherit-product, vendor/sable/r8/r8-product.mk)'
 
-[[ -f "$DEVICE_MK" ]] || {
-    echo "R8_DEVICE_PRODUCT_FILE=FAIL path=$DEVICE_MK"
+[[ -f "$PRODUCT_MK" ]] || {
+    echo "R8_PANTHER_PRODUCT_FILE=FAIL path=$PRODUCT_MK"
     exit 7
 }
 
-DEVICE_REPO="$WS/device/google/pantah"
-DEVICE_HEAD="$(git -C "$DEVICE_REPO" rev-parse HEAD)"
-echo "R8_DEVICE_GOOGLE_PANTAH_HEAD=$DEVICE_HEAD"
+grep -Eq '^PRODUCT_NAME[[:space:]]*:=[[:space:]]*panther[[:space:]]*
+mkdir -p "$DEST/prebuilt"
+rm -f "$DEST/prebuilt/"*.apk
 
-marker_count="$(grep -Fc "$MARKER_BEGIN" "$DEVICE_MK" || true)"
+install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
+install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
+install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
+install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
+
+for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
+do
+    install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
+done
+
+(
+    cd "$DEST/prebuilt"
+    sha256sum -c "$DEST/SHA256SUMS.txt"
+) || {
+    echo "R8_STAGED_PREBUILT_HASHES=FAIL"
+    exit 11
+}
+
+cmp -s "$ROOT/product/r8/panther/Android.bp" "$DEST/Android.bp" || {
+    echo "R8_PRODUCT_ANDROID_BP=FAIL"
+    exit 12
+}
+cmp -s "$ROOT/product/r8/panther/r8-product.mk" "$DEST/r8-product.mk" || {
+    echo "R8_PRODUCT_MK=FAIL"
+    exit 13
+}
+cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
+    echo "R8_PRODUCT_MANIFEST=FAIL"
+    exit 14
+}
+
+include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
+[[ "$include_count" -eq 1 ]] || {
+    echo "R8_PRODUCT_INCLUDE=FAIL count=$include_count"
+    exit 15
+}
+
+PRODUCT_MK_SHA256_AFTER="$(sha256sum "$PRODUCT_MK" | awk '{print $1}')"
+echo "R8_PANTHER_PRODUCT_SHA256_AFTER=$PRODUCT_MK_SHA256_AFTER"
+
+echo "R8_PRODUCT_ANDROID_BP=PASS"
+echo "R8_PRODUCT_MK=PASS"
+echo "R8_PRODUCT_MANIFEST=PASS"
+echo "R8_STAGED_PREBUILT_HASHES=PASS"
+echo "R8_PRODUCT_INCLUDE=PASS"
+echo "R8_PRODUCT_STAGE=PASS"
+echo "R8_PRODUCT_DEST=$DEST"
+ "$PRODUCT_MK" || {
+    echo "R8_PANTHER_PRODUCT_NAME=FAIL path=$PRODUCT_MK"
+    exit 8
+}
+
+grep -Eq '^PRODUCT_DEVICE[[:space:]]*:=[[:space:]]*panther[[:space:]]*
+mkdir -p "$DEST/prebuilt"
+rm -f "$DEST/prebuilt/"*.apk
+
+install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
+install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
+install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
+install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
+
+for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
+do
+    install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
+done
+
+(
+    cd "$DEST/prebuilt"
+    sha256sum -c "$DEST/SHA256SUMS.txt"
+) || {
+    echo "R8_STAGED_PREBUILT_HASHES=FAIL"
+    exit 11
+}
+
+cmp -s "$ROOT/product/r8/panther/Android.bp" "$DEST/Android.bp" || {
+    echo "R8_PRODUCT_ANDROID_BP=FAIL"
+    exit 12
+}
+cmp -s "$ROOT/product/r8/panther/r8-product.mk" "$DEST/r8-product.mk" || {
+    echo "R8_PRODUCT_MK=FAIL"
+    exit 13
+}
+cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
+    echo "R8_PRODUCT_MANIFEST=FAIL"
+    exit 14
+}
+
+include_count="$(grep -Fc "$INHERIT_LINE" "$DEVICE_MK" || true)"
+[[ "$include_count" -eq 1 ]] || {
+    echo "R8_PRODUCT_INCLUDE=FAIL count=$include_count"
+    exit 15
+}
+
+echo "R8_PRODUCT_ANDROID_BP=PASS"
+echo "R8_PRODUCT_MK=PASS"
+echo "R8_PRODUCT_MANIFEST=PASS"
+echo "R8_STAGED_PREBUILT_HASHES=PASS"
+echo "R8_PRODUCT_INCLUDE=PASS"
+echo "R8_PRODUCT_STAGE=PASS"
+echo "R8_PRODUCT_DEST=$DEST"
+ "$PRODUCT_MK" || {
+    echo "R8_PANTHER_PRODUCT_DEVICE=FAIL path=$PRODUCT_MK"
+    exit 9
+}
+
+PRODUCT_MK_SHA256_BEFORE="$(sha256sum "$PRODUCT_MK" | awk '{print $1}')"
+echo "R8_PANTHER_PRODUCT_FILE=$PRODUCT_MK"
+echo "R8_PANTHER_PRODUCT_SHA256_BEFORE=$PRODUCT_MK_SHA256_BEFORE"
+
+marker_count="$(grep -Fc "$MARKER_BEGIN" "$PRODUCT_MK" || true)"
+inherit_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
+
 if [[ "$marker_count" -gt 1 ]]; then
     echo "R8_PRODUCT_INCLUDE=FAIL_DUPLICATE_MARKER"
-    exit 8
+    exit 10
 fi
 
 if [[ "$marker_count" -eq 0 ]]; then
-    if ! git -C "$DEVICE_REPO" diff --quiet -- device-panther.mk; then
-        echo "R8_DEVICE_PRODUCT_FILE=FAIL_PREEXISTING_DIRT"
-        git -C "$DEVICE_REPO" status --short -- device-panther.mk
-        exit 9
-    fi
+    [[ "$inherit_count" -eq 0 ]] || {
+        echo "R8_PRODUCT_INCLUDE=FAIL_UNMARKED_EXISTING_INCLUDE count=$inherit_count"
+        exit 11
+    }
 
-    cat >> "$DEVICE_MK" <<EOF
+    cat >> "$PRODUCT_MK" <<EOF
 
 $MARKER_BEGIN
 $INHERIT_LINE
@@ -117,14 +227,18 @@ EOF
     echo "R8_PRODUCT_INCLUDE=APPLIED"
 else
     block="$(
-        sed -n "/^$MARKER_BEGIN$/,/^$MARKER_END$/p" "$DEVICE_MK"
+        sed -n "/^$MARKER_BEGIN$/,/^$MARKER_END$/p" "$PRODUCT_MK"
     )"
     expected_block="$MARKER_BEGIN
 $INHERIT_LINE
 $MARKER_END"
     [[ "$block" == "$expected_block" ]] || {
         echo "R8_PRODUCT_INCLUDE=FAIL_EXISTING_BLOCK_MISMATCH"
-        exit 10
+        exit 12
+    }
+    [[ "$inherit_count" -eq 1 ]] || {
+        echo "R8_PRODUCT_INCLUDE=FAIL count=$inherit_count"
+        exit 13
     }
     echo "R8_PRODUCT_INCLUDE=ALREADY_APPLIED"
 fi
