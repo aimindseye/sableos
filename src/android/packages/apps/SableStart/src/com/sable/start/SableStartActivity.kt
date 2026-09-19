@@ -9,7 +9,9 @@ import android.os.UserHandle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import org.sableos.design.SableAppearance
 import org.sableos.design.applySableSystemBars
 import org.sableos.design.resolveSableDarkAppearance
