@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -97,9 +98,12 @@ internal fun SudokuScreen() {
         )
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
         ) {
-            (1..9).chunked(3).forEach { values ->
+            listOf(
+                listOf(1, 2, 3, 4, 5),
+                listOf(6, 7, 8, 9),
+            ).forEach { values ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
@@ -241,7 +245,7 @@ private fun SudokuNumberKey(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier,
+        modifier = modifier.heightIn(min = 48.dp),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurface,
@@ -253,12 +257,11 @@ private fun SudokuNumberKey(
         tonalElevation = 0.dp,
     ) {
         Box(
-            modifier = Modifier.aspectRatio(2.05f),
             contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = value.toString(),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
             )
         }
     }
