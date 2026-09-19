@@ -1,0 +1,60 @@
+android_app_import {
+    name: "SableCalculator",
+    apk: "prebuilt/SableCalculator.apk",
+    presigned: true,
+    product_specific: true,
+    overrides: ["ExactCalculator"],
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableSudoku",
+    apk: "prebuilt/SableSudoku.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableMinesweeper",
+    apk: "prebuilt/SableMinesweeper.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "Sable2048",
+    apk: "prebuilt/Sable2048.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableMedia",
+    apk: "prebuilt/SableMedia.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableReader",
+    apk: "prebuilt/SableReader.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
