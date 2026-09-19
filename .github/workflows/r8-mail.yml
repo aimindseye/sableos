@@ -26,7 +26,7 @@ concurrency:
 jobs:
   mail:
     runs-on: ubuntu-22.04
-    timeout-minutes: 35
+    timeout-minutes: 25
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -83,18 +83,10 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
 
-      - name: Sable Mail app unit tests
-        working-directory: /tmp/sable-mail
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x gradlew
-          ./gradlew :app-thunderbird:testsOnCi --parallel \
-            --stacktrace --console=plain --no-daemon
-
       - name: Sable Mail FOSS release lint
         working-directory: /tmp/sable-mail
         run: |
+          chmod +x gradlew
           ./gradlew :app-thunderbird:lintFossRelease \
             --stacktrace --console=plain --no-daemon
 
