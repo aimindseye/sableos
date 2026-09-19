@@ -6,9 +6,7 @@ on:
       - 'build/panther/**'
       - 'build/config/r8-*.env'
       - 'build/host/**'
-      - 'build/gates/r8-build-driver-contract.sh'
-      - 'build/gates/r8-final-*.sh'
-      - 'build/gates/r8-no-stale-product-code.sh'
+      - 'build/gates/**'
       - 'product/r8/panther/**'
       - 'patches/android-17-grapheneos-2026081300/**'
       - 'src/android/packages/apps/SableStart/**'
@@ -24,9 +22,7 @@ on:
       - 'build/panther/**'
       - 'build/config/r8-*.env'
       - 'build/host/**'
-      - 'build/gates/r8-build-driver-contract.sh'
-      - 'build/gates/r8-final-*.sh'
-      - 'build/gates/r8-no-stale-product-code.sh'
+      - 'build/gates/**'
       - 'product/r8/panther/**'
       - 'patches/android-17-grapheneos-2026081300/**'
       - 'src/android/packages/apps/SableStart/**'
@@ -63,7 +59,7 @@ jobs:
 
       - name: Python syntax
         run: |
-          python3 -m py_compile             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+          python3 -m py_compile             build/gates/verify-r8-vendor-sable-inventory.py             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
           echo "PYTHON_SYNTAX=PASS"
 
       - name: Platform applicator self-tests
@@ -74,6 +70,8 @@ jobs:
           python3 patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py --self-test
           python3 patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py --self-test
           python3 patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py --self-test
+          python3 build/gates/verify-r8-vendor-sable-inventory.py --self-test
+          echo "R8_VENDOR_SABLE_INVENTORY_SELF_TEST=PASS"
           echo "R8_PLATFORM_APPLICATOR_SELF_TESTS=PASS"
 
       - name: Product composition contract
