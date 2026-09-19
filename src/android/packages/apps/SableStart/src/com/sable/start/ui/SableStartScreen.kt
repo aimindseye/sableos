@@ -197,7 +197,7 @@ fun SableStartScreen(
         }
     }
 
-    val appByKey = apps.associateBy({ it.stableKey() })
+    val appByKey = apps.associateBy { it.stableKey() }
     val pinnedApps = pinnedKeys.mapNotNull(appByKey::get)
     val recentApps = recentKeys.mapNotNull(appByKey::get)
 
@@ -1174,7 +1174,7 @@ private fun chooseFeaturedApps(
             app.label.equals("Settings", ignoreCase = true) ||
                 app.component.packageName == "com.android.settings"
         }
-    val candidateKeys = candidates.mapTo(mutableSetOf(), { it.stableKey() })
+    val candidateKeys = candidates.mapTo(mutableSetOf()) { it.stableKey() }
     val selected = linkedMapOf<String, AppEntry>()
 
     pinnedApps
