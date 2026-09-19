@@ -330,6 +330,44 @@ private fun PrimaryPivot(
 }
 
 @Composable
+private fun MediaUtilityBar(
+    queueCount: Int,
+    onQueue: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (queueCount > 0) {
+            Surface(
+                onClick = onQueue,
+                color = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ) {
+                Text(
+                    text = "up next · $queueCount",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+        Surface(
+            onClick = onSettings,
+            color = Color.Transparent,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ) {
+            Text(
+                text = "settings",
+                modifier = Modifier.padding(12.dp),
+                style = MaterialTheme.typography.labelLarge,
+            )
+        }
+    }
+}
+
+@Composable
 private fun CollectionScreen(
     pivot: LibraryPivot,
     items: List<LocalAudioItem>,
@@ -808,8 +846,13 @@ private fun NowPlayingScreen(
 private fun RadioScreen(
     stations: List<RadioStation>,
     playback: PlaybackUiState,
+    favoriteStationIds: Set<String>,
+    showFavoritesOnly: Boolean,
+    showMiniPlayer: Boolean,
     message: String?,
     onPlay: (RadioStation) -> Unit,
+    onToggleFavorite: (RadioStation) -> Unit,
+    onFavoritesOnlyChange: (Boolean) -> Unit,
     onManage: () -> Unit,
     onAdd: () -> Unit,
     onOpenNowPlaying: () -> Unit,
@@ -833,6 +876,44 @@ private fun RadioScreen(
             )
         }
 
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        ) {
+            Surface(
+                onClick = { onFavoritesOnlyChange(false) },
+                color = Color.Transparent,
+                contentColor =
+                    if (!showFavoritesOnly) {
+                        MediaPink
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            ) {
+                Text(
+                    text = "stations",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            Surface(
+                onClick = { onFavoritesOnlyChange(true) },
+                color = Color.Transparent,
+                contentColor =
+                    if (showFavoritesOnly) {
+                        MediaPink
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+            ) {
+                Text(
+                    text = "favorites",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+        }
+
         message?.let {
             Text(
                 text = it,
@@ -841,15 +922,34 @@ private fun RadioScreen(
             )
         }
 
-        if (stations.isEmpty()) {
+        val visibleStations =
+            if (showFavoritesOnly) {
+                stations.filter { it.id in favoriteStationIds }
+            } else {
+                stations
+            }
+
+        if (visibleStations.isEmpty()) {
             EmptyPanel(
-                title = "No saved stations",
-                detail = "Add a station by name and direct HTTP(S) stream URL.",
+                title =
+                    if (showFavoritesOnly) {
+                        "No favorite stations"
+                    } else {
+                        "No saved stations"
+                    },
+                detail =
+                    if (showFavoritesOnly) {
+                        "Mark stations with ★ to keep a quick local favorites view."
+                    } else {
+                        "Add a station by name and direct HTTP(S) stream URL."
+                    },
             )
         } else {
-            stations.forEach { station ->
+            visibleStations.forEach { station ->
                 RadioStationRow(
                     station = station,
+                    favorite = station.id in favoriteStationIds,
+                    onToggleFavorite = { onToggleFavorite(station) },
                     onPlay = { onPlay(station) },
                 )
             }
@@ -861,7 +961,7 @@ private fun RadioScreen(
             onClick = onAdd,
         )
 
-        if (playback.title != "Nothing queued") {
+        if (showMiniPlayer && playback.title != "Nothing queued") {
             MiniPlayer(
                 playback = playback,
                 onClick = onOpenNowPlaying,
@@ -873,6 +973,8 @@ private fun RadioScreen(
 @Composable
 private fun RadioStationRow(
     station: RadioStation,
+    favorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onPlay: () -> Unit,
 ) {
     Surface(
@@ -922,6 +1024,10 @@ private fun RadioStationRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            CompactAction(
+                text = if (favorite) "★" else "☆",
+                onClick = onToggleFavorite,
+            )
             CompactAction(
                 text = "▶",
                 active = true,
