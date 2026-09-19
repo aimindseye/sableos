@@ -25,20 +25,20 @@ The standalone qualification boundary remains useful, but the next Panther build
 Current pre-build classification:
 
 ```text
-R8-B Calculator + Convert       standalone PASS; Panther product staged
-R8-C Games                      standalone PASS; Panther product staged
-R8-D Reader publication        composed/qualified; Panther product staged
+R8-B Calculator + Convert       standalone PASS; final refreeze pending PR53 merge
+R8-C Games                      standalone PASS; final refreeze pending PR53 merge
+R8-D Reader publication        composed/qualified; final refreeze pending PR53 merge
 R8-D2 TXT/share/process/TTS     composed/qualified
 R8-D2 OCR                       camera/gallery Latin+Devanagari composed/qualified
-R8-E Media                      standalone PASS; Panther product staged
-R8-F Sable Hub / Messages      standalone PASS; Panther product staged
-R8 product composition         PASS
+R8-E Media                      obsolete UI-C1A preview removed in PR53; rebuild/refreeze required
+R8-F Sable Hub / Messages      standalone PASS; final refreeze pending PR53 merge
+R8 product composition         pre-PR53 PASS; rerun required with source-bound bundle
 physical Panther acceptance    pending final build/flash
 ```
 
 The Sable Reader flavor removes INTERNET, keeps translation/model-download paths excluded, uses bundled Latin and Devanagari ML Kit recognizers, and requests camera permission only for user-directed camera OCR. Gallery OCR and ordinary TXT/EPUB/TTS remain camera-independent.
 
-A successful standalone APK build is no longer sufficient to authorize the final Panther UI build. The generated Panther product graph/target-files must prove the exact intended Sable APK set before the full build begins.
+A successful standalone APK build is no longer sufficient to authorize the final Panther UI build. New Panther bundles record the exact SableOS source commit and staging refuses a stale-source bundle. The generated Panther product graph/target-files must prove the exact intended Sable APK set before the full build begins.
 
 This directory is the source/application qualification side of the R8 split pipeline. It is intentionally independent from the Panther/AOSP image build.
 
