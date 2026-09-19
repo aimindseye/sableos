@@ -98,6 +98,12 @@ print("R8_BUNDLE_MANIFEST_SET=PASS")
 PY
 
 echo
+echo "===== LEGACY SABLE DEVICE PRODUCT RETIREMENT ====="
+
+SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/panther/retire-r8-legacy-sable-device-product.sh"
+
+echo
 echo "===== LEGACY SABLE VENDOR CONFIG RETIREMENT ====="
 
 SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" \
