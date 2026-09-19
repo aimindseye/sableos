@@ -1,5 +1,31 @@
 # R8 standalone application qualification workspace
 
+## R8-G — global appearance + Sable Mail
+
+R8-G makes the existing Start appearance choice global across Sable-owned apps and adds `org.sableos.mail` / **Sable Mail** from the pinned Thunderbird for Android 23.0 engine.
+
+Global appearance:
+
+- Start owns the setting and exposes only read-only mode/accent state;
+- modes: Follow system / Light / Dark;
+- accents: Sable Blue / Green / Purple / Orange / Slate;
+- Calculator, Games, Media, Reader, Hub and Mail consume the same state;
+- no privileged theme daemon or cross-app write authority is added.
+
+Sable Mail:
+
+- pinned Thunderbird commit `c733317d933c22bcd790a4790306f30ccf2026b8`;
+- Apache-2.0 upstream;
+- Sable branding/package/icon;
+- no-op telemetry/funding/migration product paths;
+- Thunderbird Mail service integration removed;
+- inherited OAuth client registrations removed;
+- generic IMAP/SMTP retained;
+- remote received-message network content remains blocked until explicit user action;
+- final product artifact is `SableMail.apk` with package `org.sableos.mail`.
+
+The final Panther application freeze is therefore **eight** standalone APKs plus source-built SableStart.
+
 ## R8-F — Sable Hub / Messages
 
 R8-F adds `org.sableos.hub` as the common central communication surface before the final Panther build.
@@ -25,14 +51,16 @@ The standalone qualification boundary remains useful, but the next Panther build
 Current pre-build classification:
 
 ```text
-R8-B Calculator + Convert       standalone PASS; final refreeze pending PR53 merge
-R8-C Games                      standalone PASS; final refreeze pending PR53 merge
-R8-D Reader publication        composed/qualified; final refreeze pending PR53 merge
+R8-B Calculator + Convert       standalone PASS; rebuild/refreeze after R8-G merge
+R8-C Games                      standalone PASS; rebuild/refreeze after R8-G merge
+R8-D Reader publication        composed/qualified; recompose for global appearance
 R8-D2 TXT/share/process/TTS     composed/qualified
 R8-D2 OCR                       camera/gallery Latin+Devanagari composed/qualified
-R8-E Media                      obsolete UI-C1A preview removed in PR53; rebuild/refreeze required
-R8-F Sable Hub / Messages      standalone PASS; final refreeze pending PR53 merge
-R8 product composition         pre-PR53 PASS; rerun required with source-bound bundle
+R8-E Media                      obsolete UI-C1A preview removed; rebuild/refreeze required
+R8-F Sable Hub / Messages      standalone PASS; rebuild/refreeze after R8-G merge
+R8-G global appearance         source implemented; CI/local qualification pending
+R8-G Sable Mail                pinned composition implemented; CI/local qualification pending
+R8 product composition         pre-R8-G PASS; rerun required with source-bound eight-APK bundle
 physical Panther acceptance    pending final build/flash
 ```
 
@@ -52,6 +80,7 @@ This directory is the source/application qualification side of the R8 split pipe
 | Android static | Android Lint independent of build success | `R8 Android static analysis` |
 | Reader build | pinned Vaachak Mobile core/Sable flavor tests + APK compile | `R8 Reader compile and tests` |
 | Reader policy | Sable Reader lint + offline-manifest policy | `R8 Reader static and policy` |
+| Sable Mail | pinned Thunderbird composition, unit tests, lint, runtime-dependency policy + APK seal | `R8 Sable Mail compile and policy` |
 | Text Reader build | pinned Vaachak Text Reader unit tests + qualification APK | `R8 Text Reader compile and tests` |
 | Text Reader policy | lint + TXT/share/TTS/OCR capability/provenance checks | `R8 Text Reader static and capability policy` |
 | Artifact seal | package IDs, permissions, APK SHA-256 + uploaded qualification artifacts | `R8 APK artifact seal` |
