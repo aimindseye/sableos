@@ -1,0 +1,86 @@
+name: R8 Sable Mail upstream qualification
+
+on:
+  pull_request:
+    paths:
+      - 'apps/r8/mail/upstream.env'
+      - '.github/workflows/r8-mail-upstream.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/r8/mail/upstream.env'
+      - '.github/workflows/r8-mail-upstream.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r8-mail-upstream-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upstream-qualification:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 75
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Read pinned Thunderbird identity
+        id: pin
+        shell: bash
+        run: |
+          set -euo pipefail
+          source apps/r8/mail/upstream.env
+          echo "repository=$THUNDERBIRD_REPOSITORY" >> "$GITHUB_OUTPUT"
+          echo "commit=$THUNDERBIRD_COMMIT" >> "$GITHUB_OUTPUT"
+
+      - name: Locate Android SDK tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME"
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -maxdepth 4 -type f -name sdkmanager -print -quit 2>/dev/null || true)"
+          test -n "$SDKMANAGER"
+          echo "SDKMANAGER=$SDKMANAGER" >> "$GITHUB_ENV"
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+
+      - name: Install Android SDK 36
+        shell: bash
+        run: "$SDKMANAGER 'platforms;android-36' 'build-tools;36.0.0'"
+
+      - name: Checkout pinned Thunderbird Android source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-tags --filter=blob:none "${{ steps.pin.outputs.repository }}" /tmp/sable-mail
+          git -C /tmp/sable-mail fetch --depth=1 origin "${{ steps.pin.outputs.commit }}"
+          git -C /tmp/sable-mail checkout --detach "${{ steps.pin.outputs.commit }}"
+          test "$(git -C /tmp/sable-mail rev-parse HEAD)" = "${{ steps.pin.outputs.commit }}"
+
+      - name: Apply Sable Mail product adaptation
+        run: python3 apps/r8/mail/apply_sable_flavor.py /tmp/sable-mail
+
+      - name: Verify composed Sable Mail source policy
+        run: python3 apps/r8/mail/verify_sable_mail.py /tmp/sable-mail
+
+      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
+
+      - name: Thunderbird full upstream unit-test qualification
+        working-directory: /tmp/sable-mail
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew testsOnCi --parallel \
+            --stacktrace --console=plain --no-daemon
