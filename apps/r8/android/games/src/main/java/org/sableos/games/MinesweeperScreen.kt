@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
-import org.sableos.design.SablePanel
+import org.sableos.design.SableValuePanel
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTile
 
@@ -90,12 +90,11 @@ internal fun MinesweeperScreen() {
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
 
-        SablePanel {
-            Text(
-                status,
-                style = MaterialTheme.typography.titleMedium,
-            )
-        }
+        SableValuePanel(
+            label = if (flagMode) "flag mode" else "reveal mode",
+            value = status,
+            supportingText = "9 × 9 field · 10 mines",
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
