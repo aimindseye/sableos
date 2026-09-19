@@ -38,6 +38,8 @@ concurrency:
 jobs:
   build-driver:
     runs-on: ubuntu-22.04
+    env:
+      SABLE_DRIVER_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
@@ -55,7 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          bash build/panther/render-r8-build-driver.sh             "$GITHUB_SHA"             dist/sableos-panther-r8-build.sh
+          bash build/panther/render-r8-build-driver.sh             "$SABLE_DRIVER_SOURCE_SHA"             dist/sableos-panther-r8-build.sh
 
           bash -n dist/sableos-panther-r8-build.sh
 
@@ -63,7 +65,7 @@ jobs:
           {
             echo "SABLEOS_RELEASE_VERSION=$SABLEOS_RELEASE_VERSION"
             echo "SABLEOS_BUILD_PROFILE_VERSION=$SABLEOS_BUILD_PROFILE_VERSION"
-            echo "SOURCE_COMMIT=$GITHUB_SHA"
+            echo "SOURCE_COMMIT=$SABLE_DRIVER_SOURCE_SHA"
             echo "WORKFLOW_RUN_ID=$GITHUB_RUN_ID"
           } > dist/BUILD_DRIVER_METADATA.txt
 
@@ -79,7 +81,7 @@ jobs:
 
       - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
         with:
-          name: sableos-panther-r8-build-driver-${{ github.sha }}
+          name: sableos-panther-r8-build-driver-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             dist/sableos-panther-r8-build.sh
             dist/BUILD_DRIVER_METADATA.txt
