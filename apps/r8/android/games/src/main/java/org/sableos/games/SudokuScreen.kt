@@ -14,15 +14,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.sableos.design.SableActionButton
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableValuePanel
 
@@ -40,12 +41,14 @@ internal fun SudokuScreen() {
     var selectedRow by remember { mutableIntStateOf(0) }
     var selectedCol by remember { mutableIntStateOf(2) }
     var status by remember { mutableStateOf("Choose a cell") }
+    val history = remember { mutableStateListOf<String>() }
 
     fun reset() {
         state = requireOk(NativeBridge.sudokuStart(DEFAULT_SUDOKU))
         board = requireOk(NativeBridge.sudokuBoard(state))
         selectedRow = 0
         selectedCol = 2
+        history.clear()
         status = "New puzzle"
     }
 
@@ -59,17 +62,35 @@ internal fun SudokuScreen() {
             )
 
         if (response.startsWith("OK:")) {
+            history.add(state)
             state = response.removePrefix("OK:")
             board = requireOk(NativeBridge.sudokuBoard(state))
             status =
                 if (NativeBridge.sudokuSolved(state)) {
                     "Solved"
+                } else if (value == 0) {
+                    "Cell erased"
                 } else {
                     "Move accepted"
                 }
         } else {
             status = humanize(response)
         }
+    }
+
+    fun undo() {
+        if (history.isEmpty()) {
+            status = "Nothing to undo"
+            return
+        }
+
+        state = history.removeAt(history.lastIndex)
+        board = requireOk(NativeBridge.sudokuBoard(state))
+        status = "Last move undone"
+    }
+
+    fun erase() {
+        setValue(0)
     }
 
     Column(
@@ -97,34 +118,41 @@ internal fun SudokuScreen() {
             },
         )
 
-        Column(
-            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            listOf(
-                listOf(1, 2, 3, 4, 5),
-                listOf(6, 7, 8, 9),
-            ).forEach { values ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-                ) {
-                    values.forEach { value ->
-                        SudokuNumberKey(
-                            value = value,
-                            modifier = Modifier.weight(1f),
-                            onClick = { setValue(value) },
-                        )
-                    }
-                }
+            (1..9).forEach { value ->
+                SudokuNumberKey(
+                    value = value,
+                    modifier = Modifier.weight(1f),
+                    onClick = { setValue(value) },
+                )
             }
         }
 
-        SableActionButton(
-            text = "New puzzle",
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            primary = false,
-            onClick = ::reset,
-        )
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            SudokuBottomAction(
+                symbol = "↶",
+                label = "Undo",
+                modifier = Modifier.weight(1f),
+                onClick = ::undo,
+            )
+            SudokuBottomAction(
+                symbol = "⌫",
+                label = "Erase",
+                modifier = Modifier.weight(1f),
+                onClick = ::erase,
+            )
+            SudokuBottomAction(
+                symbol = "↻",
+                label = "New game",
+                modifier = Modifier.weight(1f),
+                onClick = ::reset,
+            )
+        }
     }
 }
 
@@ -245,15 +273,10 @@ private fun SudokuNumberKey(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 48.dp),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        contentColor = MaterialTheme.colorScheme.onSurface,
-        border =
-            BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant,
-            ),
+        modifier = modifier.heightIn(min = 44.dp),
+        shape = MaterialTheme.shapes.extraSmall,
+        color = Color.Transparent,
+        contentColor = MaterialTheme.colorScheme.primary,
         tonalElevation = 0.dp,
     ) {
         Box(
@@ -262,6 +285,44 @@ private fun SudokuNumberKey(
             Text(
                 text = value.toString(),
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SudokuBottomAction(
+    symbol: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 56.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        border =
+            BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant,
+            ),
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = symbol,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
             )
         }
     }
