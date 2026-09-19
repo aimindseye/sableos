@@ -21,12 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.sableos.convert.ConverterScreen
-import org.sableos.design.applySableDarkSystemBars
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
-import org.sableos.design.SableTheme
+import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableTile
 import org.sableos.design.SableValuePanel
 
@@ -57,13 +56,11 @@ private val scientificChoices = listOf(
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        applySableDarkSystemBars(window)
-
         val nativeQualification = NativeBridge.selfTest()
         check(nativeQualification.startsWith("PASS:")) { nativeQualification }
 
         setContent {
-            SableTheme {
+            SableGlobalTheme(window = window) {
                 CalculatorApp()
             }
         }

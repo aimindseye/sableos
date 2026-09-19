@@ -3,21 +3,18 @@ package org.sableos.games
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import org.sableos.design.applySableDarkSystemBars
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
-import org.sableos.design.SableTheme
+import org.sableos.design.SableGlobalTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        applySableDarkSystemBars(window)
-
         val qualification = NativeBridge.selfTest()
         check(qualification.startsWith("PASS:")) { qualification }
 
         setContent {
-            SableTheme {
+            SableGlobalTheme(window = window) {
                 SableScrollableScreen {
                     when (BuildConfig.SABLE_GAME) {
                         "sudoku" -> {

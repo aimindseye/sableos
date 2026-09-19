@@ -5,6 +5,7 @@ import org.sableos.design.AccentPreset
 import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
 import org.sableos.design.SableDesignContract
+import org.sableos.design.SableGlobalAppearanceContract
 
 /**
  * Stores launcher presentation state only. Recent activity intentionally stays
@@ -13,8 +14,10 @@ import org.sableos.design.SableDesignContract
 class StartStateRepository(
     context: Context,
 ) {
+    private val appContext = context.applicationContext
+
     private val preferences =
-        context.applicationContext.getSharedPreferences(
+        appContext.getSharedPreferences(
             PREFERENCES_NAME,
             Context.MODE_PRIVATE,
         )
@@ -62,6 +65,8 @@ class StartStateRepository(
                 appearance.accent.stableValue,
             )
             .apply()
+
+        notifyAppearanceChanged()
     }
 
     fun resetAppearance(): SableAppearance {
@@ -71,7 +76,16 @@ class StartStateRepository(
             .remove(SableDesignContract.KEY_APPEARANCE_MODE)
             .remove(SableDesignContract.KEY_ACCENT)
             .apply()
+
+        notifyAppearanceChanged()
         return appearance
+    }
+
+    private fun notifyAppearanceChanged() {
+        appContext.contentResolver.notifyChange(
+            SableGlobalAppearanceContract.CONTENT_URI,
+            null,
+        )
     }
 
     private companion object {

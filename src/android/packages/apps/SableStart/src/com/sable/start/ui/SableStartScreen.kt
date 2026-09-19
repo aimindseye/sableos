@@ -103,7 +103,6 @@ fun SableStartScreen(
     liveSurfaceRepository: LiveSurfaceRepository,
     appearance: SableAppearance = SableAppearance(),
     refreshGeneration: Int = 0,
-    showDevelopmentNavigator: Boolean = false,
     initialPinnedKeys: Set<String> = emptySet(),
     onPinnedKeysChanged: (Set<String>) -> Unit = {},
     onAppearanceChanged: (SableAppearance) -> Unit = {},
@@ -189,15 +188,7 @@ fun SableStartScreen(
                 Box(
                     modifier =
                         Modifier
-                            .fillMaxSize()
-                            .padding(
-                                bottom =
-                                    if (showDevelopmentNavigator) {
-                                        DEVELOPMENT_NAV_HEIGHT
-                                    } else {
-                                        0.dp
-                                    },
-                            ),
+                            .fillMaxSize(),
                 ) {
                     when (destination) {
                         SableStartDestination.Start ->
@@ -307,17 +298,6 @@ fun SableStartScreen(
                     }
                 }
 
-                if (showDevelopmentNavigator) {
-                    DevelopmentNavigator(
-                        current = destination,
-                        onChange = { next ->
-                            if (next != SableStartDestination.Context) {
-                                destination = next
-                            }
-                        },
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                    )
-                }
             }
         }
     }
@@ -1170,87 +1150,6 @@ private fun EmptyState(text: String) {
     )
 }
 
-@Composable
-private fun DevelopmentNavigator(
-    current: SableStartDestination,
-    onChange: (SableStartDestination) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val screens =
-        listOf(
-            SableStartDestination.Start,
-            SableStartDestination.Apps,
-            SableStartDestination.Search,
-            SableStartDestination.Pinned,
-            SableStartDestination.Live,
-            SableStartDestination.Appearance,
-        )
-    val normalizedCurrent =
-        if (current in screens) {
-            current
-        } else {
-            SableStartDestination.Apps
-        }
-    val index = screens.indexOf(normalizedCurrent)
-
-    Surface(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .height(DEVELOPMENT_NAV_HEIGHT),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
-    ) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            TextButton(
-                onClick = {
-                    onChange(screens[(index - 1 + screens.size) % screens.size])
-                },
-                modifier = Modifier.heightIn(min = 48.dp),
-            ) {
-                Text("‹")
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text =
-                        if (current == SableStartDestination.Context) {
-                            "context"
-                        } else {
-                            "${index + 1} / ${screens.size}"
-                        },
-                    style = MaterialTheme.typography.labelLarge,
-                )
-                Text(
-                    text =
-                        if (current == SableStartDestination.Context) {
-                            "app"
-                        } else {
-                            normalizedCurrent.title
-                        },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            TextButton(
-                onClick = {
-                    onChange(screens[(index + 1) % screens.size])
-                },
-                modifier = Modifier.heightIn(min = 48.dp),
-            ) {
-                Text("›")
-            }
-        }
-    }
-}
-
 private fun chooseFeaturedApps(
     apps: List<AppEntry>,
     pinnedApps: List<AppEntry>,
@@ -1312,6 +1211,7 @@ private fun appColor(app: AppEntry): Color {
 
 private val FEATURED_APP_LABELS =
     listOf(
+        "Sable Mail",
         "Sable Messages",
         "Messages",
         "Photos",
@@ -1328,4 +1228,3 @@ private val FEATURED_APP_LABELS =
 private const val MAX_FEATURED_APPS = 3
 private const val MAX_HOME_TILES = 4
 private const val MAX_RECENT_APPS = 8
-private val DEVELOPMENT_NAV_HEIGHT = 60.dp

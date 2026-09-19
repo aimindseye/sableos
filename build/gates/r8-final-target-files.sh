@@ -63,6 +63,7 @@ expected_packages = {
     "SableMedia.apk": "org.sableos.media",
     "SableReader.apk": "org.sableos.reader",
     "SableHub.apk": "org.sableos.hub",
+    "SableMail.apk": "org.sableos.mail",
 }
 
 with (staged / "manifest.tsv").open(newline="", encoding="utf-8") as f:
@@ -125,6 +126,9 @@ with zipfile.ZipFile(tf) as z:
         "SableGames.apk",
         "VaachakTextReader.apk",
         "TextReader.apk",
+        "Thunderbird.apk",
+        "K9Mail.apk",
+        "k9mail.apk",
     )
     for basename in stale_apks:
         legacy = matches(basename)
@@ -147,9 +151,10 @@ declare -A expected_package=(
     [SableMedia.apk]=org.sableos.media
     [SableReader.apk]=org.sableos.reader
     [SableHub.apk]=org.sableos.hub
+    [SableMail.apk]=org.sableos.mail
 )
 
-for apk in     SableStart.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
+for apk in     SableStart.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
@@ -167,5 +172,6 @@ echo "R8_D_READER_TARGET_FILES=PASS"
 echo "R8_D2_READER_OCR_TARGET_FILES=PASS"
 echo "R8_E_MEDIA_TARGET_FILES=PASS"
 echo "R8_F_SABLE_HUB_MESSAGES_TARGET_FILES=PASS"
+echo "R8_G_SABLE_MAIL_TARGET_FILES=PASS"
 echo "R8_UI4_UI5_UI6_TARGET_FILES=PASS"
 echo "R8_FINAL_TARGET_FILES=PASS"

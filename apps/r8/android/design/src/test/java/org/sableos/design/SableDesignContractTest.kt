@@ -33,6 +33,26 @@ class SableDesignContractTest {
     }
 
     @Test
+    fun globalAppearanceContractIsStableAndNarrow() {
+        assertEquals(
+            "org.sableos.start.appearance",
+            SableGlobalAppearanceContract.AUTHORITY,
+        )
+        assertEquals(
+            "appearance",
+            SableGlobalAppearanceContract.PATH_APPEARANCE,
+        )
+        assertEquals(
+            "mode",
+            SableGlobalAppearanceContract.COLUMN_MODE,
+        )
+        assertEquals(
+            "accent",
+            SableGlobalAppearanceContract.COLUMN_ACCENT,
+        )
+    }
+
+    @Test
     fun motionDurationsIncreaseByEmphasis() {
         assertTrue(
             SableDesignContract.FAST_MOTION_MS <
