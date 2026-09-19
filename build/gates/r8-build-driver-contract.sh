@@ -35,6 +35,14 @@ grep -Fq 'verify-r8-host-tools.sh' "$runner"
 grep -Fq 'prepare-r8-final-ui.sh' "$runner"
 grep -Fq 'build-r8-final-ui.sh' "$runner"
 
+grep -Fq 'NETWORK_FETCH_AUTHORIZED=NO' "$verify"
+grep -Fq 'lib/rustlib/$SABLE_RUST_TARGET/lib' "$verify"
+grep -Fq "libstd-*.rlib" "$verify"
+! grep -Fq '"$SABLE_RUSTUP" target list' "$verify"
+! grep -Eq '(^|[[:space:]])rustup([[:space:]]|$).*target[[:space:]]+list' "$verify"
+
+echo "R8_HOST_GATE_OFFLINE_RUST_VERIFICATION=PASS"
+
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
 bash "$render" 0123456789abcdef0123456789abcdef01234567 "$tmp" >/dev/null

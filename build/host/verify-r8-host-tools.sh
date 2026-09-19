@@ -12,6 +12,7 @@ fail() {
 }
 
 echo "===== R8 CANONICAL HOST-TOOL GATE ====="
+echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "HOST_TOOLS_ROOT=$SABLE_HOST_TOOLS_ROOT"
 echo "ANDROID_SDK=$SABLE_ANDROID_SDK"
 echo "RUSTUP_HOME=$SABLE_RUSTUP_HOME"
@@ -36,7 +37,15 @@ grep -Fq "Pkg.Revision = $SABLE_ANDROID_NDK_VERSION"     "$SABLE_ANDROID_SDK/ndk
 "$SABLE_RUSTC" --version | grep -Fq "rustc $SABLE_RUST_VERSION "     || fail R8_RUSTC_VERSION
 "$SABLE_CARGO" --version | grep -Fq "cargo $SABLE_RUST_VERSION "     || fail R8_CARGO_VERSION
 
-"$SABLE_RUSTUP" target list     --toolchain "$SABLE_RUST_TOOLCHAIN"     --installed     | grep -Fxq "$SABLE_RUST_TARGET"     || fail R8_RUST_ANDROID_TARGET
+rust_target_lib="$SABLE_RUST_TOOLCHAIN_ROOT/lib/rustlib/$SABLE_RUST_TARGET/lib"
+[[ -d "$rust_target_lib" ]] || {
+    echo "MISSING_RUST_TARGET_LIB=$rust_target_lib"
+    fail R8_RUST_ANDROID_TARGET
+}
+
+find "$rust_target_lib" -maxdepth 1 -type f -name 'libstd-*.rlib' -print -quit \
+    | grep -q . \
+    || fail R8_RUST_ANDROID_STD
 
 "$SABLE_JDK17/bin/java" -version 2>&1 | head -n1 | grep -Eq '"17\.'     || fail R8_JDK17
 "$SABLE_JDK21/bin/java" -version 2>&1 | head -n1 | grep -Eq '"21\.'     || fail R8_JDK21
