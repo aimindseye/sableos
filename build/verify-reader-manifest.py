@@ -74,7 +74,7 @@ android_ns = "http://schemas.android.com/apk/res/android"
 a = f"{{{android_ns}}}"
 manifest = ET.fromstring(text)
 package_name = manifest.attrib.get("package", "")
-if not package_name.startswith("org.sableos.reader"):
+if package_name != "org.sableos.reader":
     raise SystemExit(f"unexpected Sable Reader package: {package_name}")
 print(f"SABLE_READER_PACKAGE={package_name}")
 
