@@ -75,6 +75,10 @@ do
     fi
 done
 
+HUB_WEB="$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/web/ProviderCapsuleActivity.kt"
+grep -Fq 'readGlobalSableAppearance(this)' "$HUB_WEB"     || fail R8_GLOBAL_APPEARANCE_HUB_WEB
+grep -Fq 'applySableSystemBars(' "$HUB_WEB"     || fail R8_GLOBAL_APPEARANCE_HUB_WEB
+
 EXPORTER="$ROOT/apps/r8/export-panther-app-bundle.sh"
 if grep -Fq 'find "$ROOT/apps/r8/android"' "$EXPORTER"; then
     fail R8_BUNDLE_RECURSIVE_APK_DISCOVERY
