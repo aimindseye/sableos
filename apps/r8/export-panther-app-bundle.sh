@@ -42,11 +42,20 @@ declare -A expected=(
 
 declare -a candidates=()
 
-while IFS= read -r -d '' apk; do
-    candidates+=("$apk")
-done < <(
-    find "$ROOT/apps/r8/android"         -type f         -path '*/build/outputs/apk/*'         -name '*.apk'         -print0
-)
+# Explicit build outputs only. Do not recursively scan the standalone build tree:
+# stale variant APKs must never become accidental Panther bundle candidates.
+for apk in \
+    "$ROOT/apps/r8/android/calculator/build/outputs/apk/debug/calculator-debug.apk" \
+    "$ROOT/apps/r8/android/games/build/outputs/apk/sudoku/debug/games-sudoku-debug.apk" \
+    "$ROOT/apps/r8/android/games/build/outputs/apk/minesweeper/debug/games-minesweeper-debug.apk" \
+    "$ROOT/apps/r8/android/games/build/outputs/apk/game2048/debug/games-game2048-debug.apk" \
+    "$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk" \
+    "$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
+do
+    if [[ -f "$apk" ]]; then
+        candidates+=("$apk")
+    fi
+done
 
 if [[ -n "$READER_APK" ]]; then
     [[ -f "$READER_APK" ]] || {
