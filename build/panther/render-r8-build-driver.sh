@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
 SOURCE_COMMIT="${1:-}"
 OUT="${2:-}"
 
@@ -16,11 +13,11 @@ OUT="${2:-}"
     exit 3
 }
 
-cat > "$OUT" <<EOF
+cat > "$OUT" <<'DRIVER'
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXPECTED_SOURCE_COMMIT="$SOURCE_COMMIT"
+EXPECTED_SOURCE_COMMIT="@@SOURCE_COMMIT@@"
 REPO="${SABLEOS_REPO:-/srv/data/sable-build/sableos/repo}"
 SESSION="${SABLE_TMUX_SESSION:-sable-r8-panther}"
 
@@ -52,9 +49,11 @@ case "${1:---tmux}" in
             echo "R8_DRIVER_TMUX=FAIL_SESSION_EXISTS session=$SESSION"
             exit 12
         fi
+
         self="$(readlink -f "$0")"
         tmux new-session -d -s "$SESSION" \
-            "bash -lc 'bash \"'$self'\" --direct; rc=\$?; echo; echo R8_BUILD_DRIVER_RC=\$rc; echo BUILD_DRIVER_EXITED=YES; exec bash'"
+            "bash \"$self\" --direct; rc=\$?; echo; echo R8_BUILD_DRIVER_RC=\$rc; echo BUILD_DRIVER_EXITED=YES; exec bash"
+
         echo "R8_DRIVER_TMUX=PASS session=$SESSION"
         echo "ATTACH=tmux attach -t $SESSION"
         ;;
@@ -63,10 +62,26 @@ case "${1:---tmux}" in
         exit 64
         ;;
 esac
-EOF
+DRIVER
+
+python3 - "$OUT" "$SOURCE_COMMIT" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+commit = sys.argv[2]
+text = path.read_text()
+count = text.count("@@SOURCE_COMMIT@@")
+if count != 1:
+    raise SystemExit(f"R8_DRIVER_RENDER=FAIL_TOKEN_COUNT count={count}")
+path.write_text(text.replace("@@SOURCE_COMMIT@@", commit))
+PY
 
 chmod 0755 "$OUT"
 bash -n "$OUT"
+
+grep -Fq "EXPECTED_SOURCE_COMMIT=\"$SOURCE_COMMIT\"" "$OUT"
+! grep -Fq '@@SOURCE_COMMIT@@' "$OUT"
 
 echo "R8_DRIVER_RENDER=PASS"
 echo "R8_DRIVER_SOURCE_COMMIT=$SOURCE_COMMIT"
