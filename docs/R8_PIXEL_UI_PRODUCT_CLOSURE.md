@@ -1,6 +1,6 @@
 # R8 Pixel UI Product Closure
 
-Status: **active / product composition PASS; module compile, full build and physical acceptance pending**
+Status: **active / final source-bound app refreeze, module compile, full build and physical acceptance pending**
 
 Date: 2026-09-19
 
@@ -11,16 +11,17 @@ Current execution evidence:
 R8_STANDALONE_RUST_QUALIFICATION=PASS
 R8_STANDALONE_ANDROID_QUALIFICATION=PASS
 R8_READER_QUALIFICATION=PASS
-R8_SEVEN_APK_FREEZE=PASS
-R8_FINAL_UI_PREPARE=PASS
-R8_FINAL_UI_PRODUCT_COMPOSITION=PASS
-R8_PRODUCT_PREBUILT_HASHES=PASS
-R8_UI_MODULE_BUILD=PENDING_RERUN_AFTER_LUNCH_ENV_FIX
+R8_PRE_PR53_SEVEN_APK_FREEZE=PASS_HISTORICAL_EVIDENCE
+R8_FINAL_MEDIA_PREVIEW_CLEANUP=PENDING_PR53_MERGE
+R8_FINAL_SOURCE_BOUND_SEVEN_APK_FREEZE=PENDING
+R8_FINAL_UI_PREPARE=PASS_AT_PRE_PR53_SOURCE
+R8_FINAL_UI_PRODUCT_COMPOSITION=PASS_AT_PRE_PR53_SOURCE
+R8_UI_MODULE_BUILD=PENDING_RERUN_AFTER_PR53_REFREEZE_RESTAGE
 PANTHER_FINAL_UI_BUILD=PENDING
 PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PENDING
 ```
 
-The frozen seven-APK bundle is `/srv/data/sable-build/artifacts/panther/r8-final-app-bundle/20260919_113505`. Product composition is no longer the blocker; the next build authorization depends on the corrected combined module compile gate.
+The previously frozen seven-APK bundle at `/srv/data/sable-build/artifacts/panther/r8-final-app-bundle/20260919_113505` remains valid historical qualification evidence, but it is not the final R8 bundle after removal of the obsolete Media UI-C1A preview source. PR #53 adds an exact SableOS source-commit identity to new bundles; the final bundle must be regenerated from the merged PR #53 source, restaged, and pass product composition again before the corrected module gate.
 
 This document is the execution authority for completing the current Pixel 7 / Panther UI refresh before the next full Panther build.
 
@@ -518,8 +519,9 @@ PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PASS
 Current operational state:
 
 ```text
-R8_FINAL_UI_PRODUCT_COMPOSITION=PASS
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_CORRECTED_MODULE_GATE
+R8_FINAL_UI_PRODUCT_COMPOSITION=PASS_PRE_PR53_EVIDENCE
+R8_FINAL_SOURCE_BOUND_SEVEN_APK_FREEZE=PENDING
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_REFREEZE_RESTAGE_AND_CORRECTED_MODULE_GATE
 ```
 
 After the corrected combined module compile gate passes, the one final sandbox-qualified Panther target-files build is authorized.
