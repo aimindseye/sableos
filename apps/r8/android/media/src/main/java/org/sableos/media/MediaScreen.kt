@@ -780,7 +780,7 @@ private fun NowPlayingScreen(
     onSeek: (Long) -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
     ) {
         Text(
             text = "now playing",
@@ -793,17 +793,23 @@ private fun NowPlayingScreen(
             large = true,
         )
 
-        Text(
-            text = playback.title,
-            style = MaterialTheme.typography.headlineLarge,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = playback.source,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+        ) {
+            Text(
+                text = playback.title,
+                style = MaterialTheme.typography.headlineMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = playback.source,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
 
         val duration = playback.durationMs.coerceAtLeast(0L)
         val sliderMax = duration.takeIf { it > 0L }?.toFloat() ?: 1f
@@ -879,16 +885,6 @@ private fun NowPlayingScreen(
             )
         }
 
-        Text(
-            text =
-                if (duration > 0L) {
-                    "Playback position and metadata come from the active Media3 session."
-                } else {
-                    "Live streams do not expose a fixed duration. Playback state still comes from Media3."
-                },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -1373,7 +1369,7 @@ private fun ArtworkTile(
     Box(
         modifier =
             modifier
-                .aspectRatio(if (large) 1.35f else 1f)
+                .aspectRatio(if (large) 1.9f else 1f)
                 .background(
                     brush =
                         Brush.linearGradient(
