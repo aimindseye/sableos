@@ -226,7 +226,7 @@ private fun QueueTransportControls(
                 horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
             ) {
                 SableActionButton(
-                    text = "Previous",
+                    text = "Prev",
                     primary = false,
                     modifier = Modifier.weight(1f),
                     onClick = onPrevious,
