@@ -43,10 +43,11 @@ abstract class ProviderCapsuleActivity : ComponentActivity() {
                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                 settings.safeBrowsingEnabled = true
 
-                CookieManager.getInstance().apply {
-                    setAcceptCookie(true)
-                    setAcceptThirdPartyCookies(this@apply, false)
-                }
+                CookieManager.getInstance().setAcceptCookie(true)
+                CookieManager.getInstance().setAcceptThirdPartyCookies(
+                    this,
+                    false,
+                )
 
                 webViewClient =
                     ProviderWebViewClient(
