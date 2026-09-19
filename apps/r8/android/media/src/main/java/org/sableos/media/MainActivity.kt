@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
         applySableDarkSystemBars(window)
 
         val localAudioRepository = LocalAudioRepository(applicationContext)
+        val audioFolderScanner = AudioFolderScanner(applicationContext)
         val stationRepository = RadioStationRepository(applicationContext)
         val libraryStateRepository = MediaLibraryStateRepository(applicationContext)
         val settingsRepository = MediaSettingsRepository(applicationContext)
@@ -167,6 +168,42 @@ class MainActivity : ComponentActivity() {
                         "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
                 }
 
+            val localAudioFolderPicker =
+                rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocumentTree(),
+                ) { treeUri ->
+                    if (treeUri == null) {
+                        return@rememberLauncherForActivityResult
+                    }
+
+                    runCatching {
+                        contentResolver.takePersistableUriPermission(
+                            treeUri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                        )
+                    }
+
+                    val uris = audioFolderScanner.scan(treeUri)
+
+                    if (uris.isEmpty()) {
+                        message = "No audio files found in that folder."
+                    } else {
+                        localItems =
+                            localAudioRepository.addUris(
+                                current = localItems,
+                                uris = uris,
+                            )
+                        playlists =
+                            libraryStateRepository.pruneMissingAudio(
+                                current = playlists,
+                                validUris = localItems.map { it.uri }.toSet(),
+                            )
+                        libraryPivot = LibraryPivot.Songs
+                        message =
+                            "${uris.size} audio file${if (uris.size == 1) "" else "s"} imported from folder."
+                    }
+                }
+
             SableTheme {
                 MediaScreen(
                     destination = destination,
@@ -206,6 +243,9 @@ class MainActivity : ComponentActivity() {
                     },
                     onAddLocalAudio = {
                         localAudioPicker.launch(arrayOf("audio/*"))
+                    },
+                    onAddLocalFolder = {
+                        localAudioFolderPicker.launch(null)
                     },
                     onPlayLocal = { selectedIndex ->
                         playLocalQueue(
