@@ -92,9 +92,14 @@ class SableMetroPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            SableMetroPreviewApp(
+            SableStartScreen(
+                apps = launcherAppsRepository.loadApps(),
                 liveSurfaceRepository = liveSurfaceRepository,
                 refreshGeneration = liveRefreshGeneration,
+                showPreviewNavigator = true,
+                onLaunchApp = { entry ->
+                    launcherAppsRepository.launch(entry)
+                },
                 onOpenFiles = ::openFiles,
                 onOpenFilesAppInfo = ::openFilesAppInfo,
                 onRequestLivePermissions = ::requestLivePermissions,
@@ -275,12 +280,15 @@ private val DemoApps =
     )
 
 @Composable
-private fun SableMetroPreviewApp(
+fun SableStartScreen(
+    apps: List<AppEntry>,
     liveSurfaceRepository: LiveSurfaceRepository,
-    refreshGeneration: Int,
-    onOpenFiles: () -> Unit,
-    onOpenFilesAppInfo: () -> Unit,
-    onRequestLivePermissions: () -> Unit,
+    refreshGeneration: Int = 0,
+    showPreviewNavigator: Boolean = false,
+    onLaunchApp: (AppEntry) -> Unit,
+    onOpenFiles: () -> Unit = {},
+    onOpenFilesAppInfo: () -> Unit = {},
+    onRequestLivePermissions: () -> Unit = {},
 ) {
     var screen by remember { mutableStateOf(PreviewScreen.Start) }
     var liveSnapshot by remember {
@@ -292,6 +300,12 @@ private fun SableMetroPreviewApp(
             liveSnapshot = liveSurfaceRepository.snapshot()
             delay(60_000L)
         }
+    }
+
+    val launchNamedApp: (String) -> Unit = { label ->
+        apps.firstOrNull { entry ->
+            entry.label.equals(label, ignoreCase = true)
+        }?.let(onLaunchApp)
     }
 
     MaterialTheme(
@@ -312,19 +326,28 @@ private fun SableMetroPreviewApp(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .padding(bottom = 66.dp),
+                            .padding(bottom = if (showPreviewNavigator) 66.dp else 0.dp),
                 ) {
                     when (screen) {
                         PreviewScreen.Start ->
                             StartScreen(
                                 dateText = liveSnapshot.dateText,
                                 onAllApps = { screen = PreviewScreen.Apps },
-                                onPinned = { screen = PreviewScreen.Pinned },
-                                onSettings = { screen = PreviewScreen.Settings },
+                                onPinned =
+                                    if (showPreviewNavigator) {
+                                        { screen = PreviewScreen.Pinned }
+                                    } else {
+                                        null
+                                    },
+                                onMessages = { launchNamedApp("Messages") },
+                                onPhotos = { launchNamedApp("Photos") },
+                                onPlayStore = { launchNamedApp("Play Store") },
+                                onSettings = { launchNamedApp("Settings") },
                             )
                         PreviewScreen.Apps ->
                             AppsScreen(
-                                onFiles = { screen = PreviewScreen.Context },
+                                apps = apps,
+                                onLaunchApp = onLaunchApp,
                                 onSearch = { screen = PreviewScreen.Search },
                             )
                         PreviewScreen.Context ->
@@ -334,7 +357,8 @@ private fun SableMetroPreviewApp(
                             )
                         PreviewScreen.Search ->
                             SearchScreen(
-                                onSettings = { screen = PreviewScreen.Settings },
+                                apps = apps,
+                                onLaunchApp = onLaunchApp,
                             )
                         PreviewScreen.Pinned ->
                             PinnedRecentScreen()
@@ -353,11 +377,13 @@ private fun SableMetroPreviewApp(
                     }
                 }
 
-                PreviewNavigator(
-                    current = screen,
-                    onChange = { screen = it },
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                )
+                if (showPreviewNavigator) {
+                    PreviewNavigator(
+                        current = screen,
+                        onChange = { screen = it },
+                        modifier = Modifier.align(Alignment.BottomCenter),
+                    )
+                }
             }
         }
     }
@@ -367,7 +393,10 @@ private fun SableMetroPreviewApp(
 private fun StartScreen(
     dateText: String,
     onAllApps: () -> Unit,
-    onPinned: () -> Unit,
+    onPinned: (() -> Unit)?,
+    onMessages: () -> Unit,
+    onPhotos: () -> Unit,
+    onPlayStore: () -> Unit,
     onSettings: () -> Unit,
 ) {
     LazyColumn(
@@ -424,17 +453,19 @@ private fun StartScreen(
                 ) {
                     MetroTile(
                         title = "Messages",
-                        subtitle = "2 new",
+                        subtitle = null,
                         mark = "M",
                         color = SableBlue,
                         modifier = Modifier.weight(1f),
+                        onClick = onMessages,
                     )
                     MetroTile(
                         title = "Photos",
-                        subtitle = "Recent",
+                        subtitle = null,
                         mark = "P",
                         color = SableGreen,
                         modifier = Modifier.weight(1f),
+                        onClick = onPhotos,
                     )
                 }
                 Spacer(Modifier.height(10.dp))
@@ -448,6 +479,7 @@ private fun StartScreen(
                         mark = "▶",
                         color = SablePurple,
                         modifier = Modifier.weight(1f),
+                        onClick = onPlayStore,
                     )
                     MetroTile(
                         title = "Settings",
@@ -460,15 +492,17 @@ private fun StartScreen(
                 }
 
                 Spacer(Modifier.height(20.dp))
-                Text(
-                    text = "pinned & recent  →",
-                    modifier =
-                        Modifier
-                            .heightIn(min = 48.dp)
-                            .clickable(onClick = onPinned)
-                            .padding(vertical = 12.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
+                if (onPinned != null) {
+                    Text(
+                        text = "pinned & recent  →",
+                        modifier =
+                            Modifier
+                                .heightIn(min = 48.dp)
+                                .clickable(onClick = onPinned)
+                                .padding(vertical = 12.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                }
                 Text(
                     text = "all apps  →",
                     modifier =
@@ -526,7 +560,8 @@ private fun MetroTile(
 
 @Composable
 private fun AppsScreen(
-    onFiles: () -> Unit,
+    apps: List<AppEntry>,
+    onLaunchApp: (AppEntry) -> Unit,
     onSearch: () -> Unit,
 ) {
     Column(
@@ -565,17 +600,14 @@ private fun AppsScreen(
                         .padding(end = 22.dp),
             ) {
                 items(
-                    items = DemoApps,
-                    key = { it.name },
+                    items = apps,
+                    key = { app ->
+                        "${app.user}:${app.component.flattenToString()}"
+                    },
                 ) { app ->
                     AppRow(
                         app = app,
-                        onClick =
-                            if (app.name == "Files") {
-                                onFiles
-                            } else {
-                                {}
-                            },
+                        onClick = { onLaunchApp(app) },
                     )
                 }
             }
@@ -593,7 +625,7 @@ private fun AppsScreen(
 
 @Composable
 private fun AppRow(
-    app: DemoApp,
+    app: AppEntry,
     onClick: () -> Unit,
 ) {
     Row(
@@ -610,17 +642,17 @@ private fun AppRow(
                 Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(app.color),
+                    .background(SableSlate),
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = app.mark,
+                text = app.label.trim().take(1).uppercase(),
                 fontWeight = FontWeight.Bold,
             )
         }
         Spacer(Modifier.width(14.dp))
         Text(
-            text = app.name,
+            text = app.label,
             style = MaterialTheme.typography.bodyLarge,
         )
     }
@@ -721,9 +753,19 @@ private fun ContextAction(
 
 @Composable
 private fun SearchScreen(
-    onSettings: () -> Unit,
+    apps: List<AppEntry>,
+    onLaunchApp: (AppEntry) -> Unit,
 ) {
-    var query by remember { mutableStateOf("set") }
+    var query by remember { mutableStateOf("") }
+    val normalizedQuery = query.trim()
+    val filteredApps =
+        if (normalizedQuery.isEmpty()) {
+            apps
+        } else {
+            apps.filter { app ->
+                app.label.contains(normalizedQuery, ignoreCase = true)
+            }
+        }
 
     Column(
         modifier =
@@ -740,21 +782,26 @@ private fun SearchScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(28.dp),
-            label = { Text("Search apps and settings") },
+            label = { Text("Search apps") },
         )
 
         Spacer(Modifier.height(18.dp))
-        SearchResult("⚙", "Settings", onClick = onSettings)
-        SearchResult("▶", "Play Store")
-        SearchResult("S", "Security")
-        SearchResult("▣", "Set up device")
 
-        Spacer(Modifier.height(26.dp))
-        Text(
-            text = "results update as you type",
-            style = MaterialTheme.typography.bodyMedium,
-            color = SableMuted,
-        )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            items(
+                items = filteredApps,
+                key = { app ->
+                    "${app.user}:${app.component.flattenToString()}"
+                },
+            ) { app ->
+                AppRow(
+                    app = app,
+                    onClick = { onLaunchApp(app) },
+                )
+            }
+        }
     }
 }
 
