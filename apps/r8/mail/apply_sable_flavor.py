@@ -88,8 +88,8 @@ def main() -> None:
     )
     replace_once(
         build,
-        'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Thunderbird for Android\"")',
-        'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Sable Mail\"")',
+        r'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Thunderbird for Android\"")',
+        r'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Sable Mail\"")',
     )
     replace_once(
         build,
