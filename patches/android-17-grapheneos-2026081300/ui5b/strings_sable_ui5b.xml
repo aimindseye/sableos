@@ -68,6 +68,16 @@
     <string name="sable_ignored">Ignored</string>
     <string name="sable_default">Default</string>
     <string name="sable_unavailable">Unavailable</string>
+    <string name="sable_not_applicable">Not applicable</string>
+    <string name="sable_no_sensitive_authority_title">Sensitive runtime authority</string>
+    <string name="sable_no_sensitive_authority_summary">No monitored sensitive runtime permissions are declared for this package.</string>
+    <string name="sable_elevated_accessibility">Accessibility service</string>
+    <string name="sable_elevated_notification_listener">Notification listener</string>
+    <string name="sable_elevated_vpn">VPN service</string>
+    <string name="sable_elevated_input_method">Input method</string>
+    <string name="sable_elevated_autofill">Autofill service</string>
+    <string name="sable_elevated_device_admin">Device admin receiver</string>
+    <string name="sable_appop_mode_format">Mode %1$d</string>
     <string name="sable_none">None</string>
     <string name="sable_system_image">System image</string>
     <string name="sable_updated_system_app">Updated system app</string>
