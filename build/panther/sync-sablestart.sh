@@ -26,7 +26,6 @@ required=(
   src/com/sable/start/platform/LiveSurfaceRepository.kt
   src/com/sable/start/platform/StartStateRepository.kt
   src/com/sable/start/live/LiveSurfaceModels.kt
-  src/com/sable/start/ui/SableMetroPreviewActivity.kt
   src/com/sable/start/ui/SableStartScreen.kt
 )
 

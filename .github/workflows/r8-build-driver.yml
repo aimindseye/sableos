@@ -1,0 +1,90 @@
+name: R8 canonical local build driver
+
+on:
+  pull_request:
+    paths:
+      - 'build/config/r8-host-tools.env'
+      - 'build/config/r8-release.env'
+      - 'build/host/**'
+      - 'build/panther/render-r8-build-driver.sh'
+      - 'build/panther/run-r8-release-candidate.sh'
+      - 'build/panther/sync-sablestart.sh'
+      - 'build/panther/prepare-r8-final-ui.sh'
+      - 'build/panther/build-r8-final-ui.sh'
+      - 'build/gates/r8-build-driver-contract.sh'
+      - 'product/r8/panther/**'
+      - 'apps/r8/**'
+      - '.github/workflows/r8-build-driver.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'build/config/r8-host-tools.env'
+      - 'build/config/r8-release.env'
+      - 'build/host/**'
+      - 'build/panther/**'
+      - 'build/gates/r8-build-driver-contract.sh'
+      - 'product/r8/panther/**'
+      - 'apps/r8/**'
+      - '.github/workflows/r8-build-driver.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r8-canonical-build-driver-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-driver:
+    runs-on: ubuntu-22.04
+    env:
+      SABLE_DRIVER_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Shell syntax and build-driver contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build/gates/r8-build-driver-contract.sh
+
+      - name: Render source-bound ai-g732 driver
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          bash build/panther/render-r8-build-driver.sh             "$SABLE_DRIVER_SOURCE_SHA"             dist/sableos-panther-r8-build.sh
+
+          bash -n dist/sableos-panther-r8-build.sh
+
+          source build/config/r8-release.env
+          {
+            echo "SABLEOS_RELEASE_VERSION=$SABLEOS_RELEASE_VERSION"
+            echo "SABLEOS_BUILD_PROFILE_VERSION=$SABLEOS_BUILD_PROFILE_VERSION"
+            echo "SOURCE_COMMIT=$SABLE_DRIVER_SOURCE_SHA"
+            echo "WORKFLOW_RUN_ID=$GITHUB_RUN_ID"
+          } > dist/BUILD_DRIVER_METADATA.txt
+
+          (
+            cd dist
+            sha256sum               sableos-panther-r8-build.sh               BUILD_DRIVER_METADATA.txt               > SHA256SUMS.txt
+            sha256sum -c SHA256SUMS.txt
+          )
+
+          echo "R8_CI_BUILD_DRIVER=PASS"
+          cat dist/BUILD_DRIVER_METADATA.txt
+          cat dist/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4
+        with:
+          name: sableos-panther-r8-build-driver-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/sableos-panther-r8-build.sh
+            dist/BUILD_DRIVER_METADATA.txt
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
