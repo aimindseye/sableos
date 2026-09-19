@@ -9,12 +9,14 @@ import androidx.compose.runtime.mutableStateOf
 import org.sableos.start.bridge.SableStartNative
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LauncherAppsRepository
-import org.sableos.start.ui.SableStartRoot
+import org.sableos.start.platform.LiveSurfaceRepository
+import org.sableos.start.ui.SableStartScreen
 
 class SableStartActivity : ComponentActivity() {
     private var nativeHandle: Long = 0
 
     private lateinit var launcherAppsRepository: LauncherAppsRepository
+    private lateinit var liveSurfaceRepository: LiveSurfaceRepository
 
     private val appsState =
         mutableStateOf<List<AppEntry>>(emptyList())
@@ -85,12 +87,15 @@ class SableStartActivity : ComponentActivity() {
 
         launcherAppsRepository =
             LauncherAppsRepository(this)
+        liveSurfaceRepository =
+            LiveSurfaceRepository(this)
 
         refreshInventory()
 
         setContent {
-            SableStartRoot(
+            SableStartScreen(
                 apps = appsState.value,
+                liveSurfaceRepository = liveSurfaceRepository,
                 onLaunchApp = { entry ->
                     if (!launcherAppsRepository.launch(entry)) {
                         refreshInventory()
