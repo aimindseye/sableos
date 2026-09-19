@@ -21,6 +21,12 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
+        <provider
+            android:name=".platform.SableAppearanceProvider"
+            android:authorities="org.sableos.start.appearance"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
         <activity
             android:name=".SableStartActivity"
             android:exported="true">
