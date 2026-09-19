@@ -116,5 +116,25 @@ jobs:
           grep -Fq 'AccentPreset.entries' "$start"
           grep -Fq 'Reset to Follow system · Sable Blue' "$start"
           grep -Fq 'fun resetAppearance()' "$state"
+          ! grep -Fq 'private val SableColors' "$start"
+          ! grep -Fq 'private val SableTypography' "$start"
+          ! grep -Fq 'darkColorScheme(' "$start"
 
           echo "R8_A_APPEARANCE_CONTRACT=PASS"
+
+      - name: Final build environment contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          config=build/config/panther-grapheneos-2026081300.env
+          build=build/panther/build-r8-final-ui.sh
+
+          grep -Fq 'export SABLEOS_LUNCH_TARGET=panther-cur-userdebug' "$config"
+          grep -Fq 'lunch "$SABLEOS_LUNCH_TARGET" > >(tee "$EVIDENCE_DIR/lunch.log") 2>&1' "$build"
+          ! grep -Eq 'lunch .*\|[[:space:]]*tee' "$build"
+          grep -Fq 'TARGET_RELEASE:-' "$build"
+          grep -Fq '== cur' "$build"
+          grep -Fq 'unset BUILD_DATETIME' "$build"
+          grep -Fq 'unset BUILD_NUMBER' "$build"
+
+          echo "R8_FINAL_BUILD_ENVIRONMENT_CONTRACT=PASS"
