@@ -138,12 +138,16 @@ jobs:
 
           global=src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt
           provider=src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt
+          activity=src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt
 
           grep -Fq 'org.sableos.start.appearance' "$global"
           grep -Fq 'rememberGlobalSableAppearance' "$global"
           grep -Fq 'SableGlobalTheme' "$global"
           grep -Fq 'SableGlobalAppearanceContract.CONTENT_URI' "$state"
           grep -Fq 'SableAppearanceProvider' src/android/packages/apps/SableStart/AndroidManifest.xml
+          grep -Fq 'private var liveRefreshGeneration by mutableStateOf(0)' "$activity"
+          grep -Fq 'import androidx.compose.runtime.getValue' "$activity"
+          grep -Fq 'import androidx.compose.runtime.setValue' "$activity"
 
           for source in             apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt             apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt             apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt             apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt
           do
@@ -152,6 +156,7 @@ jobs:
 
           grep -Fq 'SableGlobalAppearance.kt' apps/r8/reader/apply_sable_flavor.py
 
+          echo "R8_SABLESTART_COMPOSE_DELEGATE_IMPORTS=PASS"
           echo "R8_A_APPEARANCE_CONTRACT=PASS"
           echo "R8_GLOBAL_APPEARANCE_CONTRACT=PASS"
 
