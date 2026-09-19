@@ -57,16 +57,18 @@ if selected is None:
 print(f"SABLE_READER_MERGED_MANIFEST={selected}")
 text = selected.read_text(encoding="utf-8", errors="strict")
 
-for permission in (
-    "android.permission.INTERNET",
-    "android.permission.CAMERA",
-):
-    if permission in text:
-        print(f"SABLE_READER_FORBIDDEN_PERMISSION={permission}", file=sys.stderr)
-        raise SystemExit(1)
+if "android.permission.INTERNET" in text:
+    print(
+        "SABLE_READER_FORBIDDEN_PERMISSION=android.permission.INTERNET",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
 
 print("SABLE_READER_INTERNET_PERMISSION=PASS_ABSENT")
-print("SABLE_READER_CAMERA_PERMISSION=PASS_ABSENT")
+
+if "android.permission.CAMERA" not in text:
+    raise SystemExit("Sable Reader OCR camera permission missing")
+print("SABLE_READER_CAMERA_PERMISSION=PASS_DECLARED_OPTIONAL_FLOW")
 
 android_ns = "http://schemas.android.com/apk/res/android"
 a = f"{{{android_ns}}}"
@@ -76,11 +78,25 @@ if not package_name.startswith("org.sableos.reader"):
     raise SystemExit(f"unexpected Sable Reader package: {package_name}")
 print(f"SABLE_READER_PACKAGE={package_name}")
 
+camera_features = [
+    feature
+    for feature in manifest.findall("uses-feature")
+    if feature.attrib.get(a + "name") == "android.hardware.camera"
+]
+if len(camera_features) != 1:
+    raise SystemExit(
+        f"expected one optional camera feature, found {len(camera_features)}"
+    )
+if camera_features[0].attrib.get(a + "required") != "false":
+    raise SystemExit("Sable Reader camera hardware must remain optional")
+print("SABLE_READER_CAMERA_HARDWARE=PASS_OPTIONAL")
+
 application = manifest.find("application")
 if application is None:
     raise SystemExit("Sable Reader application element missing")
 
 text_activity = None
+ocr_activity = None
 launcher_components: list[str] = []
 
 for tag in ("activity", "activity-alias"):
@@ -103,6 +119,8 @@ for tag in ("activity", "activity-alias"):
 
         if name.endswith("SableTextActivity"):
             text_activity = component
+        if name.endswith("SableOcrActivity"):
+            ocr_activity = component
 
 if len(launcher_components) != 1:
     raise SystemExit(
@@ -112,6 +130,11 @@ print(f"SABLE_READER_LAUNCHER_COMPONENT={launcher_components[0]}")
 
 if text_activity is None:
     raise SystemExit("SableTextActivity missing from composed manifest")
+if ocr_activity is None:
+    raise SystemExit("SableOcrActivity missing from composed manifest")
+if ocr_activity.attrib.get(a + "exported") != "false":
+    raise SystemExit("SableOcrActivity must remain non-exported")
+print("SABLE_READER_OCR_ACTIVITY=PASS_INTERNAL")
 
 actions_seen: set[str] = set()
 mime_types: set[str] = set()
@@ -158,3 +181,4 @@ print("SABLE_READER_TEXT_SEND=PASS")
 print("SABLE_READER_PROCESS_TEXT=PASS")
 print("SABLE_READER_TEXT_MIME=PASS")
 print("SABLE_READER_SINGLE_LAUNCHER=PASS")
+print("SABLE_READER_OCR_CAMERA_PERMISSION_SCOPE=PASS_RUNTIME_REQUEST")
