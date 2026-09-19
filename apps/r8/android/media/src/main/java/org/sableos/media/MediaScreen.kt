@@ -83,6 +83,7 @@ internal fun MediaScreen(
     onDestinationChange: (MediaDestination) -> Unit,
     onLibraryPivotChange: (LibraryPivot) -> Unit,
     onAddLocalAudio: () -> Unit,
+    onAddLocalFolder: () -> Unit,
     onPlayLocal: (Int) -> Unit,
     onRemoveLocal: (LocalAudioItem) -> Unit,
     onToggleFavoriteAudio: (LocalAudioItem) -> Unit,
@@ -155,6 +156,7 @@ internal fun MediaScreen(
                     showMiniPlayer = settings.showMiniPlayer,
                     onPivotChange = onLibraryPivotChange,
                     onAddLocalAudio = onAddLocalAudio,
+                    onAddLocalFolder = onAddLocalFolder,
                     onPlay = onPlayLocal,
                     onRemove = onRemoveLocal,
                     onToggleFavorite = onToggleFavoriteAudio,
@@ -230,6 +232,10 @@ internal fun MediaScreen(
                     onPlayIndex = onPlayQueueIndex,
                     onMove = onMoveQueueItem,
                     onRemove = onRemoveQueueItem,
+                    onPlayPause = onPlayPause,
+                    onPrevious = onPrevious,
+                    onNext = onNext,
+                    onStop = onStop,
                     onBack = {
                         onDestinationChange(MediaDestination.NowPlaying)
                     },
@@ -377,6 +383,7 @@ private fun CollectionScreen(
     showMiniPlayer: Boolean,
     onPivotChange: (LibraryPivot) -> Unit,
     onAddLocalAudio: () -> Unit,
+    onAddLocalFolder: () -> Unit,
     onPlay: (Int) -> Unit,
     onRemove: (LocalAudioItem) -> Unit,
     onToggleFavorite: (LocalAudioItem) -> Unit,
@@ -421,11 +428,22 @@ private fun CollectionScreen(
             }
         }
 
-        SableActionButton(
-            text = "Add local audio",
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            onClick = onAddLocalAudio,
-        )
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            SableActionButton(
+                text = "Add audio files",
+                modifier = Modifier.weight(1f),
+                onClick = onAddLocalAudio,
+            )
+            SableActionButton(
+                text = "Import folder",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = onAddLocalFolder,
+            )
+        }
 
         if (items.isEmpty()) {
             EmptyPanel(
