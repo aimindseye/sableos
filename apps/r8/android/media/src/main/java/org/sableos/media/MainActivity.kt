@@ -13,8 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import org.sableos.design.SableTheme
-import org.sableos.design.applySableDarkSystemBars
+import org.sableos.design.SableGlobalTheme
 
 class MainActivity : ComponentActivity() {
     private var playbackState by mutableStateOf(PlaybackUiState())
@@ -22,8 +21,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        applySableDarkSystemBars(window)
-
         val localAudioRepository = LocalAudioRepository(applicationContext)
         val audioFolderScanner = AudioFolderScanner(applicationContext)
         val stationRepository = RadioStationRepository(applicationContext)
@@ -204,7 +201,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-            SableTheme {
+            SableGlobalTheme(window = window) {
                 MediaScreen(
                     destination = destination,
                     libraryPivot = libraryPivot,
