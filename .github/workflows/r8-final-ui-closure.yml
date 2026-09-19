@@ -51,7 +51,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for script in             apps/r8/export-panther-app-bundle.sh             build/host/verify-r8-host-tools.sh             build/host/migrate-r8-final-v1-host-tools.sh             build/panther/render-r8-build-driver.sh             build/panther/run-r8-release-candidate.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-build-driver-contract.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh             build/gates/r8-no-stale-product-code.sh
+          for script in             apps/r8/export-panther-app-bundle.sh             build/host/verify-r8-host-tools.sh             build/host/migrate-r8-final-v1-host-tools.sh             build/panther/render-r8-build-driver.sh             build/panther/run-r8-release-candidate.sh             build/panther/retire-r8-obsolete-gradle-residue.sh             build/panther/retire-r8-legacy-sable-device-product.sh             build/panther/retire-r8-legacy-vendor-config.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-build-driver-contract.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh             build/gates/r8-no-stale-product-code.sh
           do
             bash -n "$script"
             echo "SHELL_SYNTAX=PASS $script"
