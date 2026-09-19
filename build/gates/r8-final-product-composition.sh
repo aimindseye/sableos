@@ -27,6 +27,11 @@ fail() {
 [[ -d "$WS/.repo" ]] || fail R8_ANDROID_WORKSPACE 2
 
 echo
+echo "===== NO-STALE PRODUCT CODE / PACKAGE GATE ====="
+
+WS="$WS" SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/gates/r8-no-stale-product-code.sh"     || fail R8_NO_STALE_PRODUCT_CODE
+
+echo
 echo "===== R8-A SHARED DESIGN ====="
 
 THEME="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableTheme.kt"
