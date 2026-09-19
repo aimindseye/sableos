@@ -37,6 +37,8 @@ R8-D2 is explicitly incomplete: TXT, VIEW/SEND/PROCESS_TEXT and local Android TT
 
 Titan 2 is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival. Titan 2 GSI mutation/flash remains blocked until the final Panther UI product-composition, build and physical-acceptance gates pass.
 
+Titan 2 interaction is now explicitly **keyboard-first** (`navigation.primary=keyboard`, `navigation.secondary=touch`). The pinned physical-keyboard/launcher reference review is `docs/TITAN2_KEYBOARD_FIRST_REFERENCE.md`; implementation tracking is issue #45.
+
 ## 2026-09-18 UI refresh handoff
 
 The product UI refresh is now a cross-surface contract rather than a collection of app-specific restyles.
