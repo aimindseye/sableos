@@ -159,6 +159,54 @@ Before the revised core product is release-qualified:
 - no Sable surface may gain broader privilege merely because it centralizes multiple capabilities;
 - the product tagline/principle must remain architecturally true: applications provide capabilities while Sable organizes people, attention and actions through authorized interfaces.
 
+## R8 Final UI Product-Composition Gate
+
+For the current Panther R8 UI milestone, the generic product-integration gate is specialized by `R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+
+A full Panther build must not be described as the final R8 UI build merely because `target-files-package` succeeds. Before starting that build, generated product/build evidence must prove the intended source/package set.
+
+Required application identities include:
+
+```text
+org.sableos.start
+org.sableos.calculator
+org.sableos.sudoku
+org.sableos.minesweeper
+org.sableos.game2048
+org.sableos.media
+org.sableos.reader
+```
+
+The gate must also prove the current UI4/UI5/UI6 source/applicator identities for SystemUI, Settings, SetupWizard2 and Keyguard/frameworks/base.
+
+For each Sable application bind:
+
+- source commit/blob or qualified upstream/composition identity;
+- exact APK package name;
+- exact APK hash;
+- expected install partition/path;
+- target-files membership;
+- launcher/default role when applicable;
+- replacement/retention disposition for the prior Android application.
+
+For the R8 Calculator replacement, `ExactCalculator` must not remain as an accidental competing product implementation. Any intentional retention must be explicit and must not own the intended Sable Calculator role.
+
+The gate fails closed if a standalone Gradle/emulator artifact is qualified but absent from the actual Panther product graph.
+
+Required pre-build marker:
+
+```text
+R8_FINAL_UI_PRODUCT_COMPOSITION=PASS
+```
+
+Until that marker exists:
+
+```text
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+Reader-specific requirement: R8-D2 closure includes TXT/share/process-text/TTS plus OCR. Translation/model-download support remains separate and is not required for the current UI milestone. OCR must have an explicit model/offline/network policy and camera permission must remain optional to the camera-OCR flow.
+
 ## Kernel Baseline and Independent Security Update Gate
 
 SableOS supports independent kernel security updates according to `KERNEL_SECURITY_UPDATE_POLICY.md` and ADR-0005.
