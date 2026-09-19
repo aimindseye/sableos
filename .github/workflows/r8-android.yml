@@ -12,6 +12,7 @@ on:
     paths:
       - 'apps/r8/android/**'
       - 'src/android/shared/sabledesign/**'
+      - 'src/android/packages/apps/SableStart/**'
       - '.github/workflows/r8-android.yml'
   workflow_dispatch:
 
@@ -64,6 +65,12 @@ jobs:
         run: gradle -p apps/r8/android :design:testDebugUnitTest --stacktrace
       - name: Hub unit tests
         run: gradle -p apps/r8/android :hub:testDebugUnitTest --stacktrace
+      - name: Compile production SableStart Kotlin source
+        run: >-
+          gradle -p apps/r8/android
+          :sablestart-production-check:compileDebugKotlin
+          --stacktrace
+
       - name: Compile debug APKs
         run: >-
           gradle -p apps/r8/android
@@ -73,6 +80,4 @@ jobs:
           :games:assembleGame2048Debug
           :media:assembleDebug
           :hub:assembleDebug
-          :start-preview:assembleDebug
-          :system-preview:assembleDebug
           --stacktrace
