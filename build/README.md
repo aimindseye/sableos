@@ -79,3 +79,25 @@ combined module gate, `build-r8-final-ui.sh` runs a focused
 The R8 no-stale gate also requires the workspace `vendor/sable` tree to match
 the exact canonical R8 inventory: one Android.bp, one product makefile, three
 source/seal control files, and exactly eight canonical APKs.
+
+
+## Retired Gradle module residue
+
+Git does not remove untracked files when switching between source commits.
+Historical `start-preview` and `system-preview` modules can therefore leave
+untracked Gradle build directories on a long-lived build host even after their
+tracked source has been deleted.
+
+The canonical R8 release driver runs
+`build/panther/retire-r8-obsolete-gradle-residue.sh` immediately after source
+identity and tracked-clean verification. The script is fail-closed:
+
+- only `apps/r8/android/start-preview` and `apps/r8/android/system-preview`
+  are eligible for automatic retirement;
+- Git must report zero tracked files beneath each path;
+- symlinks and non-directory objects are refused;
+- the exact residue inventory is emitted before bounded removal;
+- all other stale source/scripts remain the responsibility of the strict
+  no-stale gate and are never auto-deleted.
+
+This is bounded source-checkout hygiene, not a general clean or clobber.
