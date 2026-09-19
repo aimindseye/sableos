@@ -118,12 +118,21 @@ with zipfile.ZipFile(tf) as z:
             )
         print(f"R8_SYSTEM_APK=PASS file={basename} member={found[0]}")
 
-    legacy = matches("ExactCalculator.apk")
-    if legacy:
-        raise SystemExit(
-            f"R8_LEGACY_EXACT_CALCULATOR=FAIL members={legacy!r}"
-        )
-    print("R8_LEGACY_EXACT_CALCULATOR=PASS_ABSENT")
+    stale_apks = (
+        "ExactCalculator.apk",
+        "SableConvert.apk",
+        "SableConverter.apk",
+        "SableGames.apk",
+        "VaachakTextReader.apk",
+        "TextReader.apk",
+    )
+    for basename in stale_apks:
+        legacy = matches(basename)
+        if legacy:
+            raise SystemExit(
+                f"R8_STALE_PRODUCT_APK=FAIL file={basename} members={legacy!r}"
+            )
+        print(f"R8_STALE_PRODUCT_APK=PASS_ABSENT file={basename}")
 PY
 
 AAPT2="${AAPT2:-$OUT_ABS/host/linux-x86/bin/aapt2}"
