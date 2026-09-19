@@ -24,9 +24,10 @@ required=(
   src/com/sable/start/model/AppEntry.kt
   src/com/sable/start/platform/LauncherAppsRepository.kt
   src/com/sable/start/platform/LiveSurfaceRepository.kt
+  src/com/sable/start/platform/StartStateRepository.kt
   src/com/sable/start/live/LiveSurfaceModels.kt
   src/com/sable/start/ui/SableMetroPreviewActivity.kt
-  src/com/sable/start/ui/SableStartRoot.kt
+  src/com/sable/start/ui/SableStartScreen.kt
 )
 
 missing=0
