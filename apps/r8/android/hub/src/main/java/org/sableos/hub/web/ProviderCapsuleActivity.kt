@@ -13,6 +13,9 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
+import org.sableos.design.applySableSystemBars
+import org.sableos.design.readGlobalSableAppearance
+import org.sableos.design.resolveSableDarkAppearance
 import org.sableos.hub.HubProvider
 import org.sableos.hub.HubProviderCatalog
 
@@ -30,11 +33,28 @@ abstract class ProviderCapsuleActivity : ComponentActivity() {
         WebView.setDataDirectorySuffix(provider.id)
         super.onCreate(savedInstanceState)
 
+        val appearance = readGlobalSableAppearance(this)
+        val darkAppearance =
+            resolveSableDarkAppearance(
+                context = this,
+                appearance = appearance,
+            )
+        applySableSystemBars(
+            window = window,
+            darkTheme = darkAppearance,
+        )
+
         title = provider.displayName + " · WEB"
 
         webView =
             WebView(this).apply {
-                setBackgroundColor(Color.BLACK)
+                setBackgroundColor(
+                    if (darkAppearance) {
+                        Color.rgb(5, 7, 10)
+                    } else {
+                        Color.rgb(245, 247, 249)
+                    },
+                )
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.allowFileAccess = false
