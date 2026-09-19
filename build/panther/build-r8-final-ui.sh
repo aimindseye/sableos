@@ -104,6 +104,24 @@ echo "R8_TARGET_BUILD_VARIANT=PASS value=$TARGET_BUILD_VARIANT"
 echo "R8_LUNCH=PASS"
 
 echo
+echo "===== SABLESTART SOONG PREFLIGHT ====="
+
+set +e
+m -j"$JOBS" SableStart 2>&1 | tee "$EVIDENCE_DIR/sablestart-soong-preflight.log"
+SABLESTART_RC=${PIPESTATUS[0]}
+set -e
+
+echo "R8_SABLESTART_SOONG_PREFLIGHT_RC=$SABLESTART_RC"
+
+if [[ "$SABLESTART_RC" -ne 0 ]]; then
+    echo "R8_SABLESTART_SOONG_PREFLIGHT=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_SABLESTART_PREFLIGHT"
+    exit 5
+fi
+
+echo "R8_SABLESTART_SOONG_PREFLIGHT=PASS"
+
+echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
