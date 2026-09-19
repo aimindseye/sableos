@@ -83,11 +83,11 @@ object SableSize {
 }
 
 object SableColorTokens {
-    val DarkBackground = Color(0xFF07090C)
-    val DarkSurface = Color(0xFF12161B)
-    val DarkSurfaceRaised = Color(0xFF1B2027)
-    val DarkText = Color(0xFFF4F7FA)
-    val DarkTextMuted = Color(0xFFB7C0CA)
+    val DarkBackground = Color(0xFF05070A)
+    val DarkSurface = Color(0xFF0D1117)
+    val DarkSurfaceRaised = Color(0xFF161C24)
+    val DarkText = Color(0xFFF7F9FC)
+    val DarkTextMuted = Color(0xFFAAB4C0)
 
     val LightBackground = Color(0xFFF5F7F9)
     val LightSurface = Color(0xFFFFFFFF)
@@ -151,7 +151,7 @@ private val SableShapes = Shapes(
 
 @Composable
 fun SableTheme(
-    appearance: SableAppearance = SableAppearance(),
+    appearance: SableAppearance = SableAppearance(mode = AppearanceMode.Dark),
     content: @Composable () -> Unit,
 ) {
     val dark = when (appearance.mode) {
@@ -170,8 +170,8 @@ fun SableTheme(
             onSurface = SableColorTokens.DarkText,
             surfaceVariant = SableColorTokens.DarkSurfaceRaised,
             onSurfaceVariant = SableColorTokens.DarkTextMuted,
-            outline = Color(0xFF45505D),
-            outlineVariant = Color(0xFF2A313A),
+            outline = Color(0xFF526170),
+            outlineVariant = Color(0xFF26313D),
             error = Color(0xFFFFB4AB),
             onError = Color(0xFF690005),
         )
