@@ -34,12 +34,6 @@
 
         </activity>
 
-    
-        <!-- Development-only UI-A review navigator; not a HOME handler. -->
-        <activity
-            android:name=".ui.SableMetroPreviewActivity"
-            android:exported="true"
-            android:label="Sable Start UI-A Review" />
     </application>
 
 </manifest>

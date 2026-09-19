@@ -116,3 +116,19 @@ python3 patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py --se
 
 See `docs/UI5B_APP_SECURITY_EVIDENCE.md` for the evidence contract and
 incremental Settings build gate.
+
+## UI5C + UI6 final system surfaces
+
+The final system-surface applicator layers on the qualified D2+D3, UI5A, UI5B
+and UI4 deltas:
+
+```bash
+python3 patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py --self-test
+```
+
+It integrates the dark Sable SetupWizard welcome/finish presentation, a real
+build-property-backed About SableOS identity row, and a bounded Keyguard visual
+delta. Authentication, biometric, trust, emergency-call, notification-redaction,
+AOD/doze, privacy-indicator and unlock-gesture behavior remain upstream.
+
+See `docs/UI5C_UI6_FINAL_SYSTEM_SURFACES.md`.

@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/r8/android/**'
       - 'src/android/shared/sabledesign/**'
+      - 'src/android/packages/apps/SableStart/**'
       - '.github/workflows/r8-android.yml'
   push:
     branches: [main]
@@ -69,4 +70,6 @@ jobs:
           :games:assembleMinesweeperDebug
           :games:assembleGame2048Debug
           :media:assembleDebug
+          :start-preview:assembleDebug
+          :system-preview:assembleDebug
           --stacktrace

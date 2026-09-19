@@ -5,6 +5,7 @@ on:
     paths:
       - 'apps/r8/android/**'
       - 'src/android/shared/sabledesign/**'
+      - 'src/android/packages/apps/SableStart/**'
       - '.github/workflows/r8-android-static.yml'
   push:
     branches: [main]
@@ -58,4 +59,6 @@ jobs:
           :games:lintMinesweeperDebug
           :games:lintGame2048Debug
           :media:lintDebug
+          :start-preview:lintDebug
+          :system-preview:lintDebug
           --stacktrace

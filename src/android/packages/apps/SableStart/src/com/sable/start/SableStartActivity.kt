@@ -10,6 +10,9 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
+import org.sableos.design.SableAppearance
+import org.sableos.design.applySableSystemBars
+import org.sableos.design.resolveSableDarkAppearance
 import org.sableos.start.bridge.SableStartNative
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LauncherAppsRepository
@@ -26,6 +29,9 @@ class SableStartActivity : ComponentActivity() {
 
     private val appsState =
         mutableStateOf<List<AppEntry>>(emptyList())
+
+    private val appearanceState =
+        mutableStateOf(SableAppearance())
 
     private var liveRefreshGeneration by mutableStateOf(0)
     private var callbackRegistered = false
@@ -101,15 +107,28 @@ class SableStartActivity : ComponentActivity() {
         startStateRepository =
             StartStateRepository(this)
 
+        appearanceState.value = startStateRepository.loadAppearance()
+        applyCurrentSystemBars()
+
         refreshInventory()
 
         setContent {
             SableStartScreen(
                 apps = appsState.value,
                 liveSurfaceRepository = liveSurfaceRepository,
+                appearance = appearanceState.value,
                 refreshGeneration = liveRefreshGeneration,
                 initialPinnedKeys = startStateRepository.loadPinnedKeys(),
                 onPinnedKeysChanged = startStateRepository::savePinnedKeys,
+                onAppearanceChanged = { appearance ->
+                    appearanceState.value = appearance
+                    startStateRepository.saveAppearance(appearance)
+                    applyCurrentSystemBars()
+                },
+                onResetAppearance = {
+                    appearanceState.value = startStateRepository.resetAppearance()
+                    applyCurrentSystemBars()
+                },
                 onLaunchApp = { entry ->
                     val launched = launcherAppsRepository.launch(entry)
                     if (!launched) {
@@ -193,6 +212,17 @@ class SableStartActivity : ComponentActivity() {
     private fun refreshInventory() {
         appsState.value =
             launcherAppsRepository.loadApps()
+    }
+
+    private fun applyCurrentSystemBars() {
+        applySableSystemBars(
+            window = window,
+            darkTheme =
+                resolveSableDarkAppearance(
+                    context = this,
+                    appearance = appearanceState.value,
+                ),
+        )
     }
 
     private fun openSettings() {

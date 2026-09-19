@@ -250,6 +250,44 @@ Closure marker:
 R8_E_MEDIA=PASS
 ```
 
+### R8-F — Sable Hub / central messaging baseline
+
+Current status: **BUILD-BLOCKING / IMPLEMENTATION NEXT**
+
+This promotes the previously accepted Sable Hub communication model into the first usable R8 product gate.
+
+Required product identity:
+
+```text
+user-visible: Sable Messages
+architecture: Sable Hub
+package: org.sableos.hub
+```
+
+Required before closure:
+
+- one Sable communication surface with ALL / MESSAGES / PEOPLE / SERVICES;
+- SMS conversation presentation over Android Telephony provider data;
+- SMS text compose/send through Android telephony APIs;
+- ContactsProvider identity/display integration;
+- retain the proven underlying Android messaging transport for MMS/RCS until Sable owns those responsibilities completely;
+- do not become the default SMS handler until full default-handler SMS/MMS responsibilities are qualified;
+- isolated web capability capsules for WhatsApp, Instagram, Facebook/Messenger and LinkedIn where a suitable consumer API is unavailable;
+- provider capability classification remains truthful: NATIVE_DATA / ANDROID_NOTIFICATION / SUPPORTED_API / WEB / UNAVAILABLE;
+- no private third-party database/protocol scraping;
+- no claim that WEB capability is a native unified inbox;
+- Start Messages tile routes into Sable Hub;
+- shared R8-A visual/accessibility contract;
+- interaction semantics are capability-driven so Titan 2 can use the same app with keyboard-first presentation later.
+
+Closure marker:
+
+```text
+R8_F_SABLE_HUB_MESSAGES=PASS
+```
+
+Tracking: issue #47.
+
 ## System surfaces
 
 The final R8 UI build also requires closure of the already-implemented platform/system work.
@@ -357,6 +395,7 @@ Sable Minesweeper      PRESENT
 Sable 2048             PRESENT
 Sable Media            PRESENT
 Sable Reader           PRESENT
+Sable Hub / Messages   PRESENT
 
 ExactCalculator         ABSENT_AS_PRODUCT_REPLACEMENT
 legacy list-only Start  ABSENT_AS_PRODUCTION_HOME
@@ -392,6 +431,7 @@ R8-A appearance/accessibility closure
     -> final SableStart Metro HOME reconciliation
     -> R8-D2 OCR composition/qualification
     -> freeze Calculator/Games/Reader/Media artifacts
+    -> R8-F Sable Hub / Messages implementation and qualification
     -> Panther product integration for all R8 apps
     -> verify UI4/UI5/UI6 source identities
     -> generated product-composition gate
@@ -448,6 +488,7 @@ R8_C_GAMES=PASS
 R8_D_READER_PUBLICATION=PASS
 R8_D2_READER_TEXT_ACCESSIBILITY_OCR=PASS
 R8_E_MEDIA=PASS
+R8_F_SABLE_HUB_MESSAGES=PASS
 R8_UI4_SYSTEMUI=PASS
 R8_UI5_SETTINGS=PASS
 R8_UI5C_UI6_SYSTEM_SURFACES=PASS

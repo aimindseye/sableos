@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Compose the bounded Sable Reader product from pinned Vaachak inputs.
 
-UI3 keeps Vaachak Mobile / Readium as the publication engine and composes only a
-small plain-text accessibility path from the separately pinned Vaachak Text
-Reader capability source.
+UI3 keeps Vaachak Mobile / Readium as the publication engine and composes the
+bounded text-accessibility path from the separately pinned Vaachak Text Reader
+capability source: local text, Android sharing/process-text, TTS and
+user-directed camera/gallery OCR. Translation remains intentionally excluded.
 
 The script mutates only ephemeral CI checkouts. Canonical upstream repositories
 remain untouched.
@@ -77,10 +78,39 @@ def main() -> None:
     # qualification checkout does not need upstream debug tooling, so remove only
     # this debug dependency from the ephemeral composed source tree. Canonical
     # Vaachak source remains untouched.
+    # The composed Sable debug APK is the development product artifact, not a
+    # side-by-side upstream debug app. Keep the canonical package identity so
+    # Panther product integration can bind exactly org.sableos.reader.
+    debug_app_id_suffix = '            applicationIdSuffix = ".debug"\n'
+    if debug_app_id_suffix not in gradle_text:
+        fail("Vaachak debug applicationIdSuffix anchor changed; inspect upstream")
+    gradle_text = gradle_text.replace(debug_app_id_suffix, "", 1)
+
     leakcanary_dependency = "    debugImplementation(libs.leakcanary.android)\n"
     if leakcanary_dependency not in gradle_text:
         fail("Vaachak LeakCanary dependency anchor changed; inspect upstream")
     gradle_text = gradle_text.replace(leakcanary_dependency, "", 1)
+
+    dependencies_anchor = "dependencies {\n"
+    if gradle_text.count(dependencies_anchor) != 1:
+        fail("Vaachak dependencies anchor changed; inspect upstream")
+
+    # The Sable flavor is injected into an upstream Kotlin DSL build. Generated
+    # type-safe dependency accessors such as sableImplementation(...) do not
+    # exist when the script itself is compiled, because that configuration is
+    # created by this same script. Use the stable named-configuration API.
+    sable_ocr_dependencies = """dependencies {
+    add("sableImplementation", "androidx.camera:camera-camera2:1.3.1")
+    add("sableImplementation", "androidx.camera:camera-lifecycle:1.3.1")
+    add("sableImplementation", "androidx.camera:camera-view:1.3.1")
+    add("sableImplementation", "com.google.mlkit:text-recognition:16.0.1")
+    add("sableImplementation", "com.google.mlkit:text-recognition-devanagari:16.0.1")
+"""
+    gradle_text = gradle_text.replace(
+        dependencies_anchor,
+        sable_ocr_dependencies,
+        1,
+    )
 
     gradle_file.write_text(
         gradle_text,
@@ -146,7 +176,15 @@ fun ProductReaderTheme(
     }
 
     SableTheme(
-        appearance = SableAppearance(mode = AppearanceMode.Dark),
+        appearance =
+            SableAppearance(
+                mode =
+                    when (themeMode) {
+                        ThemeMode.LIGHT -> AppearanceMode.Light
+                        ThemeMode.DARK -> AppearanceMode.Dark
+                        ThemeMode.E_INK -> AppearanceMode.FollowSystem
+                    },
+            ),
         content = content,
     )
 }
@@ -182,9 +220,8 @@ fun ProductReaderTheme(
     )
     main_activity.write_text(main_text, encoding="utf-8")
 
-    # Compose the pinned, MIT-licensed pure stream reader from Text Reader into only
-    # the Sable product flavor. No Text Reader launcher activity/theme/translation/OCR
-    # implementation is imported in this tranche.
+    # Compose the pinned MIT-licensed text capability into only the Sable product
+    # flavor. Translation and the Text Reader launcher/theme remain excluded.
     text_reader_util = (
         text_root
         / "app"
@@ -207,6 +244,30 @@ fun ProductReaderTheme(
         / "vaachak"
         / "textreader"
         / "TextReaderUtil.kt",
+    )
+
+    camera_scanner = (
+        text_root
+        / "app"
+        / "src"
+        / "main"
+        / "java"
+        / "org"
+        / "vaachak"
+        / "textreader"
+        / "CameraScannerView.kt"
+    )
+    copy_file(
+        camera_scanner,
+        mobile_root
+        / "leisure"
+        / "src"
+        / "sable"
+        / "java"
+        / "org"
+        / "vaachak"
+        / "textreader"
+        / "CameraScannerView.kt",
     )
 
     text_activity = (
@@ -333,9 +394,21 @@ class SableTextActivity : ComponentActivity() {
                         )
                     }
 
+                    SableActionButton(
+                        text = "Camera / image OCR",
+                        onClick = {
+                            startActivity(
+                                Intent(
+                                    this@SableTextActivity,
+                                    SableOcrActivity::class.java,
+                                ),
+                            )
+                        },
+                    )
+
                     Text(
-                        "Plain-text reading is local. Translation and OCR are not enabled " +
-                            "in this first Sable Reader composition tranche.",
+                        "Text reading and OCR stay on-device in the Sable Reader path. " +
+                            "Translation remains disabled in this tranche.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -545,6 +618,260 @@ private class PlainTextSpeaker(
 ''',
     )
 
+    ocr_activity = (
+        mobile_root
+        / "leisure"
+        / "src"
+        / "sable"
+        / "java"
+        / "org"
+        / "vaachak"
+        / "reader"
+        / "leisure"
+        / "SableOcrActivity.kt"
+    )
+    write(
+        ocr_activity,
+        r'''package org.vaachak.reader.leisure
+
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.devanagari.DevanagariTextRecognizerOptions
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import org.sableos.design.SableActionButton
+import org.sableos.design.SableHeroHeader
+import org.sableos.design.SablePanel
+import org.sableos.design.SableScrollableScreen
+import org.sableos.design.SableSpacing
+import org.sableos.design.SableTheme
+import org.sableos.design.applySableDarkSystemBars
+import org.vaachak.textreader.CameraScannerView
+
+private enum class OcrScript(val label: String) {
+    Latin("Latin"),
+    Devanagari("Devanagari"),
+}
+
+class SableOcrActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        applySableDarkSystemBars(window)
+
+        setContent {
+            var script by remember { mutableStateOf(OcrScript.Latin) }
+            var scannedText by remember { mutableStateOf("") }
+            var status by remember { mutableStateOf("Choose camera or an image") }
+            var showCamera by remember { mutableStateOf(false) }
+
+            fun recognize(uri: Uri) {
+                status = "Recognizing local image"
+                val image =
+                    runCatching {
+                        InputImage.fromFilePath(this, uri)
+                    }.getOrElse {
+                        status = "Unable to read that image"
+                        return
+                    }
+                val recognizer =
+                    if (script == OcrScript.Devanagari) {
+                        TextRecognition.getClient(
+                            DevanagariTextRecognizerOptions.Builder().build(),
+                        )
+                    } else {
+                        TextRecognition.getClient(
+                            TextRecognizerOptions.DEFAULT_OPTIONS,
+                        )
+                    }
+                recognizer
+                    .process(image)
+                    .addOnSuccessListener { result ->
+                        scannedText = result.text
+                        status =
+                            if (result.text.isBlank()) {
+                                "No text recognized"
+                            } else {
+                                "Text recognized locally"
+                            }
+                    }
+                    .addOnFailureListener {
+                        status = "OCR unavailable for this image"
+                    }
+                    .addOnCompleteListener {
+                        recognizer.close()
+                    }
+            }
+
+            val gallery =
+                rememberLauncherForActivityResult(
+                    ActivityResultContracts.GetContent(),
+                ) { uri ->
+                    if (uri != null) {
+                        recognize(uri)
+                    }
+                }
+
+            val cameraPermission =
+                rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission(),
+                ) { granted ->
+                    showCamera = granted
+                    if (!granted) {
+                        status = "Camera permission was not granted"
+                    }
+                }
+
+            SableTheme {
+                if (showCamera) {
+                    CameraScannerView(
+                        isDevanagari = script == OcrScript.Devanagari,
+                        onScriptChange = { useDevanagari ->
+                            script =
+                                if (useDevanagari) {
+                                    OcrScript.Devanagari
+                                } else {
+                                    OcrScript.Latin
+                                }
+                        },
+                        onTextScanned = { text ->
+                            scannedText = text
+                            status =
+                                if (text.isBlank()) {
+                                    "No text recognized"
+                                } else {
+                                    "Text recognized locally"
+                                }
+                        },
+                        onOpenGallery = {
+                            showCamera = false
+                            gallery.launch("image/*")
+                        },
+                        onDismiss = {
+                            showCamera = false
+                        },
+                    )
+                } else {
+                    SableScrollableScreen {
+                        SableHeroHeader(
+                            eyebrow = "Sable Reader",
+                            title = "OCR",
+                            subtitle = "Camera or image · on-device recognition",
+                        )
+
+                        Row(
+                            horizontalArrangement =
+                                Arrangement.spacedBy(SableSpacing.Sm),
+                        ) {
+                            OcrScript.entries.forEach { choice ->
+                                SableActionButton(
+                                    text = choice.label,
+                                    primary = choice == script,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        script = choice
+                                    },
+                                )
+                            }
+                        }
+
+                        Row(
+                            horizontalArrangement =
+                                Arrangement.spacedBy(SableSpacing.Sm),
+                        ) {
+                            SableActionButton(
+                                text = "Camera",
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    cameraPermission.launch(
+                                        Manifest.permission.CAMERA,
+                                    )
+                                },
+                            )
+                            SableActionButton(
+                                text = "Image",
+                                primary = false,
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    gallery.launch("image/*")
+                                },
+                            )
+                        }
+
+                        SablePanel {
+                            Text(
+                                text = status,
+                                style = MaterialTheme.typography.labelLarge,
+                                color =
+                                    MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            SelectionContainer {
+                                Text(
+                                    text =
+                                        scannedText.ifBlank {
+                                            "Recognized text will appear here."
+                                        },
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            }
+                        }
+
+                        SableActionButton(
+                            text = "Read recognized text",
+                            primary = scannedText.isNotBlank(),
+                            onClick = {
+                                if (scannedText.isNotBlank()) {
+                                    startActivity(
+                                        Intent(
+                                            this@SableOcrActivity,
+                                            SableTextActivity::class.java,
+                                        ).apply {
+                                            action = Intent.ACTION_SEND
+                                            type = "text/plain"
+                                            putExtra(
+                                                Intent.EXTRA_TEXT,
+                                                scannedText,
+                                            )
+                                        },
+                                    )
+                                }
+                            },
+                        )
+
+                        Text(
+                            text =
+                                "Camera permission is requested only when Camera " +
+                                    "OCR is chosen. Gallery OCR does not require it. " +
+                                    "Translation and network fallback are disabled.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color =
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+''',
+    )
+
     test_source = (
         mobile_root
         / "leisure"
@@ -598,6 +925,10 @@ class SableTextReaderUtilTest {
     <uses-permission
         android:name="android.permission.INTERNET"
         tools:node="remove" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <application>
         <activity
@@ -625,6 +956,11 @@ class SableTextReaderUtilTest {
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="org.vaachak.reader.leisure.SableOcrActivity"
+            android:exported="false"
+            android:label="Sable Reader OCR" />
     </application>
 </manifest>
 ''',
@@ -637,7 +973,9 @@ class SableTextReaderUtilTest {
     print("SABLE_READER_TEXT_VIEW=ENABLED")
     print("SABLE_READER_TEXT_SEND=ENABLED")
     print("SABLE_READER_PROCESS_TEXT=ENABLED")
-    print("SABLE_READER_OCR=DEFERRED")
+    print("SABLE_READER_OCR=CAMERA_GALLERY_LATIN_DEVANAGARI_ENABLED")
+    print("SABLE_READER_OCR_CAMERA_PERMISSION=OPTIONAL_RUNTIME_ONLY")
+    print("SABLE_READER_OCR_NETWORK_FALLBACK=DISABLED")
     print("SABLE_READER_TRANSLATION=DEFERRED")
     print("SABLE_READER_UPSTREAM_PUBLICATION_CORE=UNCHANGED")
 

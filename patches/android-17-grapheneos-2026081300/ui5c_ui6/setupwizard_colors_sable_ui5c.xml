@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sable_ui_background">#05070A</color>
+    <color name="sable_ui_surface">#0C1117</color>
+    <color name="sable_ui_text_primary">#F3F6FA</color>
+    <color name="sable_ui_text_secondary">#AAB4C0</color>
+    <color name="sable_ui_accent">#4D9CFF</color>
+</resources>
