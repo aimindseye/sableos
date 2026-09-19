@@ -107,7 +107,7 @@ echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
-m -j"$JOBS"     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
+m -j"$JOBS"     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
 MODULE_RC=${PIPESTATUS[0]}
 set -e
 
