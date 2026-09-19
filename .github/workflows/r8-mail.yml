@@ -26,7 +26,7 @@ concurrency:
 jobs:
   mail:
     runs-on: ubuntu-22.04
-    timeout-minutes: 75
+    timeout-minutes: 35
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
@@ -83,19 +83,19 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
 
-      - name: Thunderbird upstream unit tests under Sable composition
+      - name: Sable Mail app unit tests
         working-directory: /tmp/sable-mail
         shell: bash
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew testsOnCi --parallel \
+          ./gradlew :app-thunderbird:testsOnCi --parallel \
             --stacktrace --console=plain --no-daemon
 
-      - name: Sable Mail Android Lint
+      - name: Sable Mail FOSS release lint
         working-directory: /tmp/sable-mail
         run: |
-          ./gradlew lint \
+          ./gradlew :app-thunderbird:lintFossRelease \
             --stacktrace --console=plain --no-daemon
 
       - name: Prove excluded product dependencies
@@ -108,16 +108,18 @@ jobs:
             --console=plain --no-daemon \
             | tee /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
 
-          if grep -E             'feature:thundermail|feature:funding:(link|googleplay)|feature:telemetry:glean|feature:onboarding:migration:thunderbird|feature:migration:launcher:thunderbird|backend:demo|autodiscovery:demo'             /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
+          if grep -E \
+            'feature:thundermail|feature:funding:(link|googleplay)|feature:telemetry:glean|feature:onboarding:migration:thunderbird|feature:migration:launcher:thunderbird|backend:demo|autodiscovery:demo' \
+            /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
           then
             echo "SABLE_MAIL_STALE_RUNTIME_DEPENDENCY=FAIL"
             exit 1
           fi
 
-          grep -Fq 'feature:funding:noop'             /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
-          grep -Fq 'feature:telemetry:noop'             /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
-          grep -Fq 'feature:onboarding:migration:noop'             /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
-          grep -Fq 'feature:migration:launcher:noop'             /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
+          grep -Fq 'feature:funding:noop' /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
+          grep -Fq 'feature:telemetry:noop' /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
+          grep -Fq 'feature:onboarding:migration:noop' /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
+          grep -Fq 'feature:migration:launcher:noop' /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
 
           echo "SABLE_MAIL_STALE_RUNTIME_DEPENDENCY=PASS_ABSENT"
 
