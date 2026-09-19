@@ -42,5 +42,8 @@ bash -n "$tmp"
 grep -Fq 'EXPECTED_SOURCE_COMMIT="0123456789abcdef0123456789abcdef01234567"' "$tmp"
 grep -Fq 'SOURCE_MUTATION_AUTHORIZED=YES' "$tmp"
 grep -Fq 'BUILD_AUTHORIZED=YES' "$tmp"
+grep -Fq 'bash "$REPO/build/panther/run-r8-release-candidate.sh"' "$tmp"
+! grep -Fq '        "$REPO/build/panther/run-r8-release-candidate.sh"' "$tmp"
 
+echo "R8_BUILD_DRIVER_RUNNER_INVOCATION=PASS"
 echo "R8_BUILD_DRIVER_CONTRACT=PASS"
