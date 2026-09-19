@@ -63,8 +63,18 @@ def main() -> None:
     )
     require_text(
         build,
-        'applicationIdSuffix = ""',
-        "SABLE_MAIL_DEBUG_PACKAGE_SUFFIX",
+        'signingConfig = signingConfigs.getByName("debug")',
+        "SABLE_MAIL_DEVELOPMENT_SIGNING",
+    )
+    require_text(
+        build,
+        'isMinifyEnabled = true',
+        "SABLE_MAIL_MINIFY",
+    )
+    require_text(
+        build,
+        'isShrinkResources = true',
+        "SABLE_MAIL_RESOURCE_SHRINK",
     )
     print("SABLE_MAIL_BUILD_CONFIGURATION=PASS")
 
@@ -83,6 +93,18 @@ def main() -> None:
         "SABLE_MAIL_THUNDERMAIL_MODULE",
     )
     print("SABLE_MAIL_THUNDERMAIL=PASS_ABSENT")
+
+    for variant in ("debug", "beta", "daily", "release"):
+        feature_flags = (
+            app
+            / f"src/{variant}/kotlin/net/thunderbird/android/featureflag/"
+            "TbFeatureFlagFactory.kt"
+        )
+        reject_text(
+            feature_flags,
+            "ThundermailFeatureFlags",
+            "SABLE_MAIL_THUNDERMAIL_FEATURE_FLAG",
+        )
 
     for variant in ("debug", "beta", "daily", "release"):
         oauth = (
@@ -150,6 +172,16 @@ def main() -> None:
         'android:theme="@style/Theme.SableMail.Startup"',
         "SABLE_MAIL_STARTUP_THEME",
     )
+    app_source = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/ThunderbirdApp.kt"
+    )
+    require_text(
+        app_source,
+        "uploadEnabled = false",
+        "SABLE_MAIL_TELEMETRY_UPLOAD",
+    )
+    print("SABLE_MAIL_TELEMETRY_UPLOAD=PASS_DISABLED")
     print("SABLE_MAIL_PRODUCT_BRANDING_SOURCE=PASS")
 
     if len(sys.argv) == 3:
@@ -162,6 +194,15 @@ def main() -> None:
             [apkanalyzer, "manifest", "application-id", str(apk)],
             text=True,
         ).strip()
+        debuggable = subprocess.check_output(
+            [apkanalyzer, "manifest", "debuggable", str(apk)],
+            text=True,
+        ).strip().lower()
+        if debuggable != "false":
+            fail(
+                "SABLE_MAIL_APK_DEBUGGABLE",
+                f"expected=false actual={debuggable}",
+            )
         if package != EXPECTED_PACKAGE:
             fail(
                 "SABLE_MAIL_APK_PACKAGE",
@@ -173,6 +214,7 @@ def main() -> None:
             text=True,
         ).split()[0]
         print(f"SABLE_MAIL_APK_PACKAGE=PASS value={package}")
+        print("SABLE_MAIL_APK_DEBUGGABLE=PASS_FALSE")
         print(f"SABLE_MAIL_APK_SHA256={digest}")
 
     print("SABLE_MAIL_POLICY=PASS")
