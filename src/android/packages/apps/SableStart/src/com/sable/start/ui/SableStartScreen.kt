@@ -582,32 +582,19 @@ private fun AppsScreen(
         if (apps.isEmpty()) {
             EmptyState("No launchable apps are available.")
         } else {
-            Box(modifier = Modifier.fillMaxSize()) {
-                LazyColumn(
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .padding(end = 22.dp),
-                ) {
-                    items(
-                        items = apps,
-                        key = { it.stableKey() },
-                    ) { app ->
-                        AppRow(
-                            app = app,
-                            onClick = { onLaunchApp(app) },
-                            onContext = { onOpenContext(app) },
-                        )
-                    }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                items(
+                    items = apps,
+                    key = { it.stableKey() },
+                ) { app ->
+                    AppRow(
+                        app = app,
+                        onClick = { onLaunchApp(app) },
+                        onContext = { onOpenContext(app) },
+                    )
                 }
-
-                Text(
-                    text = ALPHABET_INDEX,
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    fontSize = 9.sp,
-                    lineHeight = 13.sp,
-                    color = SableMuted,
-                )
             }
         }
     }
@@ -1014,11 +1001,13 @@ private fun LiveCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.76f),
             )
-            Text(
-                status,
-                style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.58f),
-            )
+            if (!datum.detail.equals(status, ignoreCase = true)) {
+                Text(
+                    status,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White.copy(alpha = 0.58f),
+                )
+            }
         }
     }
 }
@@ -1242,5 +1231,3 @@ private const val MAX_FEATURED_APPS = 3
 private const val MAX_HOME_TILES = 4
 private const val MAX_RECENT_APPS = 8
 private val DEVELOPMENT_NAV_HEIGHT = 60.dp
-private const val ALPHABET_INDEX =
-    "A\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL\nM\nN\nO\nP\nQ\nR\nS\nT\nU\nV\nW\nX\nY\nZ"
