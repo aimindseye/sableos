@@ -49,6 +49,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import org.sableos.design.AccentPreset
+import org.sableos.design.AppearanceMode
+import org.sableos.design.SableAppearance
+import org.sableos.design.SableTheme
 import org.sableos.start.live.LiveAvailability
 import org.sableos.start.live.LiveDatum
 import org.sableos.start.live.LiveSurfaceSnapshot
@@ -63,6 +67,7 @@ private enum class SableStartDestination(val title: String) {
     Search("search"),
     Pinned("pinned"),
     Live("live"),
+    Appearance("appearance"),
     Context("app"),
 }
 
@@ -168,10 +173,13 @@ private val SableTypography =
 fun SableStartScreen(
     apps: List<AppEntry>,
     liveSurfaceRepository: LiveSurfaceRepository,
+    appearance: SableAppearance = SableAppearance(),
     refreshGeneration: Int = 0,
     showDevelopmentNavigator: Boolean = false,
     initialPinnedKeys: Set<String> = emptySet(),
     onPinnedKeysChanged: (Set<String>) -> Unit = {},
+    onAppearanceChanged: (SableAppearance) -> Unit = {},
+    onResetAppearance: () -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
     onOpenSettings: () -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
@@ -228,6 +236,7 @@ fun SableStartScreen(
                 SableStartDestination.Apps,
                 SableStartDestination.Pinned,
                 SableStartDestination.Live,
+                SableStartDestination.Appearance,
                 -> SableStartDestination.Start
             }
     }
@@ -236,13 +245,12 @@ fun SableStartScreen(
         navigateBack()
     }
 
-    MaterialTheme(
-        colorScheme = SableColors,
-        typography = SableTypography,
+    SableTheme(
+        appearance = appearance,
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
-            color = Color.Black,
+            color = MaterialTheme.colorScheme.background,
         ) {
             Box(
                 modifier =
@@ -269,6 +277,7 @@ fun SableStartScreen(
                                 dateText = liveSnapshot.dateText,
                                 greeting = greetingFor(liveSnapshot.observedAtEpochMs),
                                 featuredApps = chooseFeaturedApps(apps, pinnedApps),
+                                appearance = appearance,
                                 onLaunchApp = ::launchApp,
                                 onOpenSettings = onOpenSettings,
                                 onAllApps = {
@@ -279,6 +288,9 @@ fun SableStartScreen(
                                 },
                                 onLive = {
                                     destination = SableStartDestination.Live
+                                },
+                                onAppearance = {
+                                    destination = SableStartDestination.Appearance
                                 },
                             )
 
@@ -332,6 +344,14 @@ fun SableStartScreen(
                                 onRequestPermissions = onRequestLivePermissions,
                             )
 
+                        SableStartDestination.Appearance ->
+                            AppearanceScreen(
+                                appearance = appearance,
+                                onBack = ::navigateBack,
+                                onAppearanceChanged = onAppearanceChanged,
+                                onReset = onResetAppearance,
+                            )
+
                         SableStartDestination.Context -> {
                             val app = selectedApp
                             if (app == null) {
@@ -380,11 +400,13 @@ private fun StartScreen(
     dateText: String,
     greeting: String,
     featuredApps: List<AppEntry>,
+    appearance: SableAppearance,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenSettings: () -> Unit,
     onAllApps: () -> Unit,
     onPinned: () -> Unit,
     onLive: () -> Unit,
+    onAppearance: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -399,9 +421,9 @@ private fun StartScreen(
                         .background(
                             Brush.verticalGradient(
                                 listOf(
-                                    Color(0xFF6676A8),
-                                    Color(0xFF3D536D),
-                                    Color.Black,
+                                    appearance.accent.color.copy(alpha = 0.76f),
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    MaterialTheme.colorScheme.background,
                                 ),
                             ),
                         )
@@ -434,12 +456,15 @@ private fun StartScreen(
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
             ) {
+                val tilePalette =
+                    listOf(appearance.accent.color) +
+                        SableTilePalette.filterNot { it == appearance.accent.color }
                 val appTiles =
                     featuredApps.mapIndexed { index, app ->
                         HomeTile(
                             title = app.label,
                             mark = appMark(app),
-                            color = SableTilePalette[index % SableTilePalette.size],
+                            color = tilePalette[index % tilePalette.size],
                             onClick = { onLaunchApp(app) },
                         )
                     }
@@ -459,6 +484,7 @@ private fun StartScreen(
                 MetroLink("all apps  →", onAllApps)
                 MetroLink("pinned & recent  →", onPinned)
                 MetroLink("live local data  →", onLive)
+                MetroLink("appearance  →", onAppearance)
             }
         }
     }
@@ -499,6 +525,18 @@ private fun MetroTile(
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
 ) {
+    val tileContentColor =
+        if (
+            (0.2126f * color.red) +
+                (0.7152f * color.green) +
+                (0.0722f * color.blue) >
+            0.52f
+        ) {
+            Color(0xFF06111F)
+        } else {
+            Color.White
+        }
+
     Column(
         modifier =
             modifier
@@ -513,11 +551,13 @@ private fun MetroTile(
             text = mark,
             fontSize = 28.sp,
             fontWeight = FontWeight.Medium,
+            color = tileContentColor,
         )
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Medium,
+            color = tileContentColor,
             maxLines = 2,
         )
     }
@@ -538,6 +578,124 @@ private fun MetroLink(
                 .padding(vertical = 12.dp),
         style = MaterialTheme.typography.titleLarge,
     )
+}
+
+@Composable
+private fun AppearanceScreen(
+    appearance: SableAppearance,
+    onBack: () -> Unit,
+    onAppearanceChanged: (SableAppearance) -> Unit,
+    onReset: () -> Unit,
+) {
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 22.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        item {
+            MetroHeader(
+                title = "appearance",
+                onBack = onBack,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "Theme",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+
+        items(AppearanceMode.entries) { mode ->
+            val selected = appearance.mode == mode
+            Button(
+                onClick = {
+                    onAppearanceChanged(
+                        appearance.copy(mode = mode),
+                    )
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                shape = RoundedCornerShape(5.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor =
+                            if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                        contentColor =
+                            if (selected) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    ),
+            ) {
+                Text(
+                    when (mode) {
+                        AppearanceMode.FollowSystem -> "Follow system"
+                        AppearanceMode.Light -> "Light"
+                        AppearanceMode.Dark -> "Dark"
+                    },
+                )
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(4.dp))
+            Text(
+                text = "Accent",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+
+        items(AccentPreset.entries) { accent ->
+            val selected = appearance.accent == accent
+            Button(
+                onClick = {
+                    onAppearanceChanged(
+                        appearance.copy(accent = accent),
+                    )
+                },
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+                shape = RoundedCornerShape(5.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = accent.color,
+                        contentColor = accent.onColor,
+                    ),
+            ) {
+                Text(
+                    text =
+                        if (selected) {
+                            "✓  ${accent.displayName}"
+                        } else {
+                            accent.displayName
+                        },
+                )
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(6.dp))
+            TextButton(
+                onClick = onReset,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp),
+            ) {
+                Text("Reset to Follow system · Sable Blue")
+            }
+        }
+    }
 }
 
 @Composable
@@ -566,14 +724,14 @@ private fun AppsScreen(
                     .fillMaxWidth()
                     .heightIn(min = 52.dp)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(SablePanelRaised)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable(onClick = onSearch)
                     .padding(horizontal = 18.dp, vertical = 15.dp),
         ) {
             Text(
                 text = "⌕   Search apps…",
                 style = MaterialTheme.typography.bodyLarge,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
 
@@ -719,7 +877,7 @@ private fun AppRow(
             Text(
                 text = "⋯",
                 fontSize = 24.sp,
-                color = SableMuted,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -769,7 +927,7 @@ private fun AppContextScreen(
         Text(
             text = "Installed application",
             style = MaterialTheme.typography.bodyMedium,
-            color = SableMuted,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Spacer(Modifier.height(22.dp))
@@ -889,7 +1047,7 @@ private fun LiveSurfaceScreen(
                         listOf(
                             Color(0xFF704836),
                             Color(0xFF273A34),
-                            Color.Black,
+                            MaterialTheme.colorScheme.background,
                         ),
                     ),
                 ),
@@ -1080,7 +1238,7 @@ private fun EmptyState(text: String) {
         text = text,
         modifier = Modifier.padding(vertical = 18.dp),
         style = MaterialTheme.typography.bodyLarge,
-        color = SableMuted,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
 
@@ -1097,6 +1255,7 @@ private fun DevelopmentNavigator(
             SableStartDestination.Search,
             SableStartDestination.Pinned,
             SableStartDestination.Live,
+            SableStartDestination.Appearance,
         )
     val normalizedCurrent =
         if (current in screens) {
@@ -1111,7 +1270,7 @@ private fun DevelopmentNavigator(
             modifier
                 .fillMaxWidth()
                 .height(DEVELOPMENT_NAV_HEIGHT),
-        color = Color(0xF216171A),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
     ) {
         Row(
             modifier =
@@ -1148,7 +1307,7 @@ private fun DevelopmentNavigator(
                             normalizedCurrent.title
                         },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = SableMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
