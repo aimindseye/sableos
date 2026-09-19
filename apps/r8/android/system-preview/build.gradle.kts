@@ -32,6 +32,12 @@ android {
             )
         }
     }
+
+    lint {
+        // This preview module has no test sources. Avoid resolving unused
+        // androidTest/test lint graphs; production preview sources remain linted.
+        checkTestSources = false
+    }
 }
 
 dependencies {
