@@ -1,7 +1,7 @@
 # SableOS UI/UX contract
 
 Status: active R8 product contract  
-Contract version: 1  
+Contract version: 2  
 Design implementation schema: `SableDesignContract.SCHEMA_VERSION = 2`
 
 ## Purpose
@@ -20,7 +20,7 @@ The design is influenced by the clarity and information hierarchy of Microsoft M
 6. **Visible state.** Selected, disabled, active, warning and destructive states must be visually distinguishable without relying on color alone.
 7. **Touch accessibility.** Interactive targets are at least 48dp, text must remain usable with Android font scaling, and controls require meaningful accessibility labels.
 8. **Fast restrained motion.** UI motion uses 120/180/240ms timing classes and should explain navigation or state changes rather than decorate them.
-9. **Theme consistency.** Light, dark and accent selection are semantic theme inputs. Screens do not hard-code their own background/surface palettes.
+9. **Theme consistency.** The R8 first-party color-phone baseline is dark: black/near-black backgrounds, dark raised surfaces, light text and Sable Blue for primary state/action. Light mode is deferred until it can be qualified across the whole product; individual apps must not silently follow the host light theme and split the product appearance.
 10. **Truthful branding.** User-facing product branding should say SableOS where SableOS owns the surface. Internal package/API identifiers and technically truthful provider/service ownership references are not blindly renamed.
 
 ## Shared primitives
@@ -47,11 +47,14 @@ Shared primitives currently include:
 - `SableScrollableScreen`
 - `SablePanel`
 - `SableActionButton`
+- `SableHeroHeader`
+- `SableValuePanel`
 - `SablePageHeader`
 - `SableSectionHeader`
 - `SableListRow`
 - `SableTile`
 - `SableDivider`
+- `applySableDarkSystemBars`
 
 Screens should extend these primitives before introducing local visual conventions.
 
@@ -109,10 +112,10 @@ The Applications surface is a strategic SableOS privacy/security surface, not on
 
 ### First-party apps
 
-- Calculator: Regular, Scientific and Converter are modes within one product shell.
-- Games: each game should present as a professional game experience rather than a developer test card. Shared game screens may be developed together, but the product target remains separate Sudoku, Minesweeper and 2048 launcher APKs.
-- Media: use a media-library/player hierarchy influenced by Zune/modern Windows media design while retaining Sable typography, spacing and state rules.
-- Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent.
+- Calculator: Basic, Scientific and Converter are modes within one product shell. The phone UI uses a dark calculator display, filled touch-first keypad surfaces and an accent hierarchy for operators/results rather than desktop-style form controls.
+- Games: each game should present as a professional color-phone game rather than a developer test card. Sudoku uses visible cell borders and stronger 3×3 boundaries; Minesweeper uses explicit covered/revealed/flagged tile states and visible board structure; 2048 uses a bordered board, value-specific color tiles and swipe-first movement. Shared game screens may be developed together, but the product target remains separate Sudoku, Minesweeper and 2048 launcher APKs.
+- Media: use a dark, immersive media-library/player hierarchy influenced by Zune/modern Windows media design while retaining Sable typography, spacing and state rules. Album/now-playing art may use richer color than ordinary system surfaces; playback and source state must remain truthful rather than displaying invented metadata.
+- Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent. The current Sable color-phone tranche uses the same dark baseline; the upstream E-ink-specific theme remains a separately selected compatibility mode rather than the visual default.
 
 ## Rollout sequence
 
