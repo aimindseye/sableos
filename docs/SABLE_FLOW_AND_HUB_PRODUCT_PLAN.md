@@ -80,6 +80,33 @@ keyboard focus and shortcut hooks
 
 The rendering framework remains evidence-driven. Sable Flow semantics must not depend on one renderer or one Android platform Rust compiler.
 
+## Keyboard-first Sable Flow adaptation
+
+Sable Flow has two presentation profiles over one semantic model:
+
+```text
+Panther / conventional slab:
+    navigation.primary = touch
+
+Titan 2 / physical-QWERTY:
+    navigation.primary = keyboard
+    navigation.secondary = touch
+```
+
+For Titan 2, keyboard-first is a product requirement rather than a compatibility enhancement.
+
+SableStart must support:
+
+- instant printable-key type-to-search from HOME;
+- preservation of the triggering character during focus transition;
+- deterministic visible focus;
+- Enter/Back/Escape/Home/Recents semantics;
+- configurable semantic shortcuts;
+- no soft-keyboard popup merely because hardware-keyboard search gains focus;
+- keyboard operation of the app list and major Start surfaces without touch.
+
+The launcher interaction reference is OpenMiniLaunch/MinkLauncher; Pastiera and TypeQ25 inform physical-keyboard/IME/modifier behavior; q25toolbox informs keylayout/scancode/device-forensics only. See `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
+
 ## Native core-phone baseline
 
 The first usable Sable product should provide a coherent phone experience before broad social integration.
