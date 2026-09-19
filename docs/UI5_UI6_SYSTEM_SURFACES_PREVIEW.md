@@ -145,10 +145,22 @@ The review pass after the first seven-screen capture adds:
 ```text
 UI5A  Settings home + Applications list
 UI5B  Application Security & Privacy detail and evidence wiring
-UI5C  SetupWizard + About/branding
-UI6A  Lockscreen / Keyguard visual refresh
-UI6B  remaining SystemUI/accessibility/motion acceptance
+UI5C+UI6  combined final production tranche:
+          SetupWizard + About/branding
+          Lockscreen / Keyguard visual refresh
+          remaining SystemUI/accessibility/motion acceptance
 ```
 
 Each production tranche must retain fail-closed source binding and must not
 weaken Android security behavior merely to simplify presentation.
+
+
+## Combined final production decision
+
+UI5C and UI6 are implemented as one final production tranche on
+`ui/ui5c-setupwizard-about-branding-production-20260919`.
+
+See `docs/UI5C_UI6_FINAL_SYSTEM_SURFACES.md`. The branch name is retained to
+avoid checkout churn; scope is explicitly broadened to include UI6. A full
+Panther build follows only after the combined incremental SetupWizard / Settings
+/ SystemUI qualification gates pass.
