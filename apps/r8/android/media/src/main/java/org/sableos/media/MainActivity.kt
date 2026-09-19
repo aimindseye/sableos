@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import org.sableos.design.applySableDarkSystemBars
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
@@ -30,6 +31,7 @@ import org.sableos.design.SableValuePanel
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySableDarkSystemBars(window)
 
         setContent {
             SableTheme {
