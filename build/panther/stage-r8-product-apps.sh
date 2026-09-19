@@ -26,9 +26,10 @@ WS="$SABLEOS_UPSTREAM"
 
 BUNDLE_MANIFEST="$R8_APP_BUNDLE/manifest.tsv"
 BUNDLE_SUMS="$R8_APP_BUNDLE/SHA256SUMS.txt"
+BUNDLE_SOURCE_IDENTITY="$R8_APP_BUNDLE/SABLEOS_SOURCE_COMMIT.txt"
 BUNDLE_PREBUILT="$R8_APP_BUNDLE/prebuilt"
 
-for f in "$BUNDLE_MANIFEST" "$BUNDLE_SUMS"; do
+for f in "$BUNDLE_MANIFEST" "$BUNDLE_SUMS" "$BUNDLE_SOURCE_IDENTITY"; do
     [[ -f "$f" ]] || {
         echo "R8_APP_BUNDLE_CONTROL_FILE=FAIL path=$f"
         exit 5
@@ -43,6 +44,21 @@ done
     exit 6
 }
 echo "R8_APP_BUNDLE_HASHES=PASS"
+
+CURRENT_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
+BUNDLE_SOURCE_COMMIT="$(tr -d '[:space:]' < "$BUNDLE_SOURCE_IDENTITY")"
+
+[[ "$BUNDLE_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
+    echo "R8_APP_BUNDLE_SOURCE_COMMIT=FAIL_INVALID value=$BUNDLE_SOURCE_COMMIT"
+    exit 7
+}
+
+[[ "$BUNDLE_SOURCE_COMMIT" == "$CURRENT_SOURCE_COMMIT" ]] || {
+    echo "R8_APP_BUNDLE_SOURCE_COMMIT=FAIL_STALE bundle=$BUNDLE_SOURCE_COMMIT current=$CURRENT_SOURCE_COMMIT"
+    exit 7
+}
+
+echo "R8_APP_BUNDLE_SOURCE_COMMIT=PASS value=$BUNDLE_SOURCE_COMMIT"
 
 python3 - "$BUNDLE_MANIFEST" <<'PY'
 import csv
@@ -151,6 +167,7 @@ install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
 install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
 install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
 install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
+install -m 0644     "$BUNDLE_SOURCE_IDENTITY"     "$DEST/SABLEOS_SOURCE_COMMIT.txt"
 
 for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
 do
@@ -177,6 +194,10 @@ cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
     echo "R8_PRODUCT_MANIFEST=FAIL"
     exit 14
 }
+cmp -s "$BUNDLE_SOURCE_IDENTITY" "$DEST/SABLEOS_SOURCE_COMMIT.txt" || {
+    echo "R8_PRODUCT_SOURCE_IDENTITY=FAIL"
+    exit 14
+}
 
 include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 [[ "$include_count" -eq 1 ]] || {
@@ -190,6 +211,7 @@ echo "R8_PANTHER_PRODUCT_SHA256_AFTER=$PRODUCT_MK_SHA256_AFTER"
 echo "R8_PRODUCT_ANDROID_BP=PASS"
 echo "R8_PRODUCT_MK=PASS"
 echo "R8_PRODUCT_MANIFEST=PASS"
+echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_STAGED_PREBUILT_HASHES=PASS"
 echo "R8_PRODUCT_INCLUDE=PASS"
 echo "R8_PRODUCT_STAGE=PASS"

@@ -135,6 +135,12 @@ echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
 [[ -f "$DEST/r8-product.mk" ]] || fail R8_PRODUCT_MK
 [[ -f "$DEST/manifest.tsv" ]] || fail R8_PRODUCT_MANIFEST
 [[ -f "$DEST/SHA256SUMS.txt" ]] || fail R8_PRODUCT_SHA256SUMS
+[[ -f "$DEST/SABLEOS_SOURCE_COMMIT.txt" ]] || fail R8_PRODUCT_SOURCE_IDENTITY
+
+CURRENT_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
+STAGED_SOURCE_COMMIT="$(tr -d '[:space:]' < "$DEST/SABLEOS_SOURCE_COMMIT.txt")"
+[[ "$STAGED_SOURCE_COMMIT" == "$CURRENT_SOURCE_COMMIT" ]] || fail R8_PRODUCT_SOURCE_IDENTITY
+echo "R8_PRODUCT_SOURCE_COMMIT=PASS value=$STAGED_SOURCE_COMMIT"
 
 cmp -s     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"     || fail R8_PRODUCT_ANDROID_BP
 
@@ -145,7 +151,7 @@ cmp -s     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"   
     sha256sum -c "$DEST/SHA256SUMS.txt"
 ) || fail R8_PRODUCT_PREBUILT_HASHES
 
-if ! python3 - "$DEST/manifest.tsv" <<'PY'
+if ! python3 - "$DEST/manifest.tsv" "$DEST/prebuilt" <<'PY'
 import csv
 import pathlib
 import sys
@@ -169,7 +175,19 @@ if actual != expected or len(rows) != len(expected):
     print(f"R8_PRODUCT_PACKAGE_SET=FAIL actual={actual!r}")
     raise SystemExit(1)
 
+prebuilt = pathlib.Path(sys.argv[2])
+actual_apks = sorted(path.name for path in prebuilt.glob("*.apk"))
+expected_apks = sorted(expected.values())
+
+if actual_apks != expected_apks:
+    print(
+        "R8_PRODUCT_PREBUILT_SET=FAIL "
+        f"expected={expected_apks!r} actual={actual_apks!r}"
+    )
+    raise SystemExit(1)
+
 print("R8_PRODUCT_PACKAGE_SET=PASS")
+print("R8_PRODUCT_PREBUILT_SET=PASS")
 PY
 then
     fail R8_PRODUCT_PACKAGE_SET
@@ -195,6 +213,7 @@ do
 done
 
 echo "R8_PRODUCT_INCLUDE=PASS"
+echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_PRODUCT_PREBUILT_HASHES=PASS"
 echo "R8_EXACT_CALCULATOR_REPLACEMENT=PASS"
 

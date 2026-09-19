@@ -1,8 +1,27 @@
 # R8 Pixel UI Product Closure
 
-Status: **active / build-blocking final UI integration gate**
+Status: **active / final source-bound app refreeze, module compile, full build and physical acceptance pending**
 
 Date: 2026-09-19
+
+
+Current execution evidence:
+
+```text
+R8_STANDALONE_RUST_QUALIFICATION=PASS
+R8_STANDALONE_ANDROID_QUALIFICATION=PASS
+R8_READER_QUALIFICATION=PASS
+R8_PRE_PR53_SEVEN_APK_FREEZE=PASS_HISTORICAL_EVIDENCE
+R8_FINAL_MEDIA_PREVIEW_CLEANUP=PENDING_PR53_MERGE
+R8_FINAL_SOURCE_BOUND_SEVEN_APK_FREEZE=PENDING
+R8_FINAL_UI_PREPARE=PASS_AT_PRE_PR53_SOURCE
+R8_FINAL_UI_PRODUCT_COMPOSITION=PASS_AT_PRE_PR53_SOURCE
+R8_UI_MODULE_BUILD=PENDING_RERUN_AFTER_PR53_REFREEZE_RESTAGE
+PANTHER_FINAL_UI_BUILD=PENDING
+PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PENDING
+```
+
+The previously frozen seven-APK bundle at `/srv/data/sable-build/artifacts/panther/r8-final-app-bundle/20260919_113505` remains valid historical qualification evidence, but it is not the final R8 bundle after removal of the obsolete Media UI-C1A preview source. PR #53 adds an exact SableOS source-commit identity to new bundles; the final bundle must be regenerated from the merged PR #53 source, restaged, and pass product composition again before the corrected module gate.
 
 This document is the execution authority for completing the current Pixel 7 / Panther UI refresh before the next full Panther build.
 
@@ -38,7 +57,7 @@ It remains useful build/flash evidence but must not be reused as the final R8 UI
 
 ### R8-A — shared design and appearance
 
-Current status: **PARTIAL**
+Current status: **SOURCE/PRODUCT COMPOSITION PASS / PHYSICAL ACCESSIBILITY ACCEPTANCE PENDING**
 
 Already implemented:
 
@@ -67,7 +86,7 @@ R8_A_SHARED_DESIGN=PASS
 
 ### UI-A / SableStart — production Metro HOME
 
-Current status: **IMPLEMENTED IN REPOSITORY / NOT PROVEN IN PANTHER PRODUCT**
+Current status: **PANTHER PRODUCT INTEGRATION PASS / PHYSICAL ACCEPTANCE PENDING**
 
 Merged implementation includes:
 
@@ -99,7 +118,7 @@ R8_START_PRODUCT_INTEGRATION=PASS
 
 ### R8-B — Calculator + Convert
 
-Current status: **STANDALONE UI/FUNCTIONAL REVIEW PASS / PRODUCT INTEGRATION MISSING**
+Current status: **STANDALONE + PANTHER PRODUCT INTEGRATION PASS / PHYSICAL ACCEPTANCE PENDING**
 
 Already implemented:
 
@@ -125,7 +144,7 @@ R8_B_CALCULATOR_CONVERT=PASS
 
 ### R8-C — Sudoku, Minesweeper and 2048
 
-Current status: **STANDALONE UI/FUNCTIONAL REVIEW PASS / PRODUCT INTEGRATION MISSING**
+Current status: **STANDALONE + PANTHER PRODUCT INTEGRATION PASS / PHYSICAL ACCEPTANCE PENDING**
 
 Already implemented:
 
@@ -152,7 +171,7 @@ R8_C_GAMES=PASS
 
 ### R8-D — Reader publication path
 
-Current status: **STANDALONE COMPOSITION/CI QUALIFIED / PRODUCT + PHYSICAL REVIEW PENDING**
+Current status: **COMPOSED/QUALIFIED + PANTHER PRODUCT INTEGRATION PASS / PHYSICAL REVIEW PENDING**
 
 Already implemented:
 
@@ -178,7 +197,7 @@ R8_D_READER_PUBLICATION=PASS
 
 ### R8-D2 — Reader text/accessibility capability
 
-Current status: **PARTIAL**
+Current status: **SOURCE/PRODUCT STAGED PASS / PHYSICAL OCR ACCEPTANCE PENDING**
 
 Already implemented in the composed Sable Reader:
 
@@ -190,16 +209,16 @@ Already implemented in the composed Sable Reader:
 - one launcher-visible Reader identity;
 - no mandatory INTERNET permission in the composed Sable flavor.
 
-Not completed:
+Completed in the current composed Sable Reader:
 
-- OCR is still deferred;
-- CameraX/gallery OCR path is not composed into Sable Reader;
-- Latin and Devanagari OCR model/runtime availability is not qualified;
-- camera authority is not yet bounded to an explicit optional OCR flow;
-- offline OCR model provenance/availability is not yet proven;
-- translation/model download remains separately deferred unless a later explicit policy approves it.
+- user-directed camera and gallery OCR are composed;
+- bundled ML Kit Latin and Devanagari recognizers are qualified by the Reader build/policy gates;
+- camera permission is requested only for the optional camera OCR flow;
+- ordinary TXT/EPUB/TTS and gallery OCR remain camera-independent;
+- the Sable flavor removes INTERNET and has no network OCR fallback;
+- translation/model-download behavior remains deliberately excluded from R8.
 
-R8-D2 closure for the current UI milestone requires OCR, but does **not** require translation.
+R8-D2 physical closure still requires on-device OCR/accessibility acceptance, but does **not** require translation.
 
 Required OCR gate:
 
@@ -220,7 +239,7 @@ R8_D2_READER_TEXT_ACCESSIBILITY_OCR=PASS
 
 ### R8-E — Media
 
-Current status: **STANDALONE PRODUCTION/EMULATOR REVIEW PASS / PRODUCT INTEGRATION MISSING**
+Current status: **STANDALONE + PANTHER PRODUCT INTEGRATION PASS / PHYSICAL ACCEPTANCE PENDING**
 
 Already implemented:
 
@@ -252,7 +271,7 @@ R8_E_MEDIA=PASS
 
 ### R8-F — Sable Hub / central messaging baseline
 
-Current status: **BUILD-BLOCKING / IMPLEMENTATION NEXT**
+Current status: **SOURCE/PRODUCT INTEGRATION PASS / PHYSICAL ACCEPTANCE PENDING**
 
 This promotes the previously accepted Sable Hub communication model into the first usable R8 product gate.
 
@@ -497,8 +516,12 @@ PANTHER_FINAL_UI_BUILD=PASS
 PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PASS
 ```
 
-Until then:
+Current operational state:
 
 ```text
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+R8_FINAL_UI_PRODUCT_COMPOSITION=PASS_PRE_PR53_EVIDENCE
+R8_FINAL_SOURCE_BOUND_SEVEN_APK_FREEZE=PENDING
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_REFREEZE_RESTAGE_AND_CORRECTED_MODULE_GATE
 ```
+
+After the corrected combined module compile gate passes, the one final sandbox-qualified Panther target-files build is authorized.

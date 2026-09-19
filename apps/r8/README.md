@@ -22,20 +22,23 @@ The final Panther bundle/product/target-files gates require `SableHub.apk` / `or
 
 The standalone qualification boundary remains useful, but the next Panther build is now gated by `docs/R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
 
-Current classification:
+Current pre-build classification:
 
 ```text
-R8-B Calculator + Convert       standalone/emulator PASS; Panther integration missing
-R8-C Games                      standalone/emulator PASS; Panther integration missing
-R8-D Reader publication        standalone CI qualified; product/physical review pending
-R8-D2 TXT/share/process/TTS     composed
-R8-D2 OCR                       NOT integrated
-R8-E Media                      standalone/emulator PASS; Panther integration missing
+R8-B Calculator + Convert       standalone PASS; final refreeze pending PR53 merge
+R8-C Games                      standalone PASS; final refreeze pending PR53 merge
+R8-D Reader publication        composed/qualified; final refreeze pending PR53 merge
+R8-D2 TXT/share/process/TTS     composed/qualified
+R8-D2 OCR                       camera/gallery Latin+Devanagari composed/qualified
+R8-E Media                      obsolete UI-C1A preview removed in PR53; rebuild/refreeze required
+R8-F Sable Hub / Messages      standalone PASS; final refreeze pending PR53 merge
+R8 product composition         pre-PR53 PASS; rerun required with source-bound bundle
+physical Panther acceptance    pending final build/flash
 ```
 
-OCR is required for the current R8-D2 UI closure. Translation/model download is not. The OCR integration must keep camera permission optional, support user-directed camera/gallery inputs, qualify Latin and Devanagari recognition, and define truthful offline/model-availability behavior without silent network fallback.
+The Sable Reader flavor removes INTERNET, keeps translation/model-download paths excluded, uses bundled Latin and Devanagari ML Kit recognizers, and requests camera permission only for user-directed camera OCR. Gallery OCR and ordinary TXT/EPUB/TTS remain camera-independent.
 
-A successful standalone APK build is no longer sufficient to authorize the final Panther UI build. The generated Panther product graph/target-files must prove the exact intended Sable APK set before the full build begins.
+A successful standalone APK build is no longer sufficient to authorize the final Panther UI build. New Panther bundles record the exact SableOS source commit and staging refuses a stale-source bundle. The generated Panther product graph/target-files must prove the exact intended Sable APK set before the full build begins.
 
 This directory is the source/application qualification side of the R8 split pipeline. It is intentionally independent from the Panther/AOSP image build.
 
@@ -88,7 +91,9 @@ gradle -p apps/r8/android :design:testDebugUnitTest \
   :games:assembleSudokuDebug \
   :games:assembleMinesweeperDebug \
   :games:assembleGame2048Debug \
-  :media:assembleDebug
+  :media:assembleDebug \
+  :hub:testDebugUnitTest \
+  :hub:assembleDebug
 
 gradle -p apps/r8/android \
   :design:lintDebug \
@@ -97,7 +102,8 @@ gradle -p apps/r8/android \
   :games:lintSudokuDebug \
   :games:lintMinesweeperDebug \
   :games:lintGame2048Debug \
-  :media:lintDebug
+  :media:lintDebug \
+  :hub:lintDebug
 ```
 
 ### Reader
@@ -117,7 +123,7 @@ Sable Reader
         TXT / share / process-text / TTS / OCR
 ```
 
-Upstream currently declares `INTERNET`, and the translation path downloads ML Kit models when needed. A passing upstream Text Reader qualification therefore does not prove strict Sable offline policy. Translation/model acquisition and OCR model availability remain explicit integration gates.
+Upstream Text Reader still declares `INTERNET` and contains translation model-download behavior, but those upstream behaviors are not the Sable product policy. The composed Sable Reader removes INTERNET, excludes translation/model-download paths, and qualifies bundled Latin and Devanagari OCR behavior separately.
 
 ## Integration boundary
 
@@ -127,7 +133,7 @@ Sable Convert is no longer intended to be a separate launcher-visible APK. The `
 
 UI2 is merged. UI2G packages the shared touch-first Sudoku, Minesweeper and 2048 screens as three distinct launcher APKs using product flavors in the qualified `:games` module. The three APKs retain one Rust/JNI implementation boundary while receiving distinct package identities and launcher labels. Reader/Text Reader composition follows UI2/UI2G, then the existing standalone qualification and exact artifact-freeze gates apply.
 
-UI3 composes one Sable Reader qualification APK from the pinned Vaachak Mobile publication path plus the bounded Vaachak Text Reader plain-text stream capability. The composed manifest must prove one launcher, no INTERNET/CAMERA authority, and text/plain VIEW/SEND/PROCESS_TEXT support. OCR and translation remain deferred gates.
+UI3/R8-D2 composes one Sable Reader APK from the pinned Vaachak Mobile publication path plus bounded Vaachak Text Reader capabilities. The composed manifest proves one launcher, no INTERNET permission, text/plain VIEW/SEND/PROCESS_TEXT support, optional camera hardware/permission for camera OCR, and internal OCR activity. Camera/gallery Latin and Devanagari OCR are included; translation remains deferred.
 
 INFRA5 encrypted trusted-runner activation is intentionally deferred and does not block this R8 work. Current qualification remains on GitHub-hosted CI; see `docs/INFRA5_DEFERRED_TRUSTED_RUNNER.md`.
 

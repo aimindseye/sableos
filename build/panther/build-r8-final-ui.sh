@@ -54,13 +54,54 @@ echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="
 
 cd "$WS"
+
+# Never inherit historical D3/preview build identity into the final R8 build.
+unset BUILD_DATETIME
+unset BUILD_NUMBER
+unset SABLEOS_UI_PREVIEW_BUILD_NUMBER
+
 source build/envsetup.sh
 
 export OUT_DIR
 export SOONG_NINJA=ninja
 export SOONG_INCREMENTAL_ANALYSIS=false
 
-lunch panther-cur-userdebug     | tee "$EVIDENCE_DIR/lunch.log"
+echo
+echo "===== LUNCH PANTHER USERDEBUG ====="
+
+# IMPORTANT: lunch mutates the current shell environment. Do not pipe lunch
+# directly into tee, because Bash would execute it in a pipeline subshell and
+# lose TARGET_PRODUCT/TARGET_RELEASE/TARGET_BUILD_VARIANT before m runs.
+set +e
+lunch "$SABLEOS_LUNCH_TARGET" > >(tee "$EVIDENCE_DIR/lunch.log") 2>&1
+LUNCH_RC=$?
+set -e
+
+echo "R8_LUNCH_RC=$LUNCH_RC"
+
+if [[ "$LUNCH_RC" -ne 0 ]]; then
+    echo "R8_LUNCH=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_LUNCH"
+    exit 5
+fi
+
+[[ "${TARGET_PRODUCT:-}" == panther ]] || {
+    echo "R8_TARGET_PRODUCT=FAIL actual=${TARGET_PRODUCT:-UNSET}"
+    exit 5
+}
+[[ "${TARGET_RELEASE:-}" == cur ]] || {
+    echo "R8_TARGET_RELEASE=FAIL actual=${TARGET_RELEASE:-UNSET}"
+    exit 5
+}
+[[ "${TARGET_BUILD_VARIANT:-}" == userdebug ]] || {
+    echo "R8_TARGET_BUILD_VARIANT=FAIL actual=${TARGET_BUILD_VARIANT:-UNSET}"
+    exit 5
+}
+
+echo "R8_TARGET_PRODUCT=PASS value=$TARGET_PRODUCT"
+echo "R8_TARGET_RELEASE=PASS value=$TARGET_RELEASE"
+echo "R8_TARGET_BUILD_VARIANT=PASS value=$TARGET_BUILD_VARIANT"
+echo "R8_LUNCH=PASS"
 
 echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="

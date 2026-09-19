@@ -49,7 +49,7 @@ local overrides -> cleared
 6. **Visible state.** Selected, disabled, active, warning and destructive states must be visually distinguishable without relying on color alone.
 7. **Touch accessibility.** Interactive targets are at least 48dp, text must remain usable with Android font scaling, and controls require meaningful accessibility labels.
 8. **Fast restrained motion.** UI motion uses 120/180/240ms timing classes and should explain navigation or state changes rather than decorate them.
-9. **Theme consistency.** The R8 first-party color-phone baseline is dark: black/near-black backgrounds, dark raised surfaces, light text and Sable Blue for primary state/action. Light mode is deferred until it can be qualified across the whole product; individual apps must not silently follow the host light theme and split the product appearance.
+9. **Theme consistency.** R8 supports Follow system, Light and Dark through the shared `SableTheme` semantic roles. Follow system is the default, Sable Blue is the reset accent, and individual apps must not maintain an unrelated private hard-coded light/dark palette.
 10. **Truthful branding.** User-facing product branding should say SableOS where SableOS owns the surface. Internal package/API identifiers and technically truthful provider/service ownership references are not blindly renamed.
 
 ## Shared primitives
