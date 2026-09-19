@@ -1,11 +1,13 @@
 package org.sableos.hub
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telephony.PhoneNumberUtils
@@ -67,6 +69,7 @@ class HubRepository(
         )
     }
 
+    @SuppressLint("MissingPermission")
     fun sendSms(
         recipient: String,
         body: String,
@@ -77,6 +80,10 @@ class HubRepository(
         require(body.isNotBlank()) {
             "Message is empty."
         }
+
+        // Lint cannot infer this project-local permission predicate. Keep the
+        // suppression scoped to this method and fail closed before any
+        // telephony API is called.
         check(hasPermission(Manifest.permission.SEND_SMS)) {
             "SMS sending permission is not available."
         }
@@ -85,10 +92,9 @@ class HubRepository(
             SubscriptionManager.getDefaultSmsSubscriptionId()
         val smsManager =
             if (SubscriptionManager.isValidSubscriptionId(subscriptionId)) {
-                context.getSystemService(SmsManager::class.java)
-                    .createForSubscriptionId(subscriptionId)
+                smsManagerForSubscription(subscriptionId)
             } else {
-                SmsManager.getDefault()
+                defaultSmsManager()
             }
 
         val parts = smsManager.divideMessage(body)
@@ -110,6 +116,25 @@ class HubRepository(
             )
         }
     }
+
+    private fun smsManagerForSubscription(
+        subscriptionId: Int,
+    ): SmsManager =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(SmsManager::class.java)
+                .createForSubscriptionId(subscriptionId)
+        } else {
+            @Suppress("DEPRECATION")
+            SmsManager.getSmsManagerForSubscriptionId(subscriptionId)
+        }
+
+    private fun defaultSmsManager(): SmsManager =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(SmsManager::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            SmsManager.getDefault()
+        }
 
     fun openAndroidMessaging(
         recipient: String? = null,
