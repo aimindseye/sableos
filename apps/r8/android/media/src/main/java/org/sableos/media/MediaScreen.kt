@@ -1341,7 +1341,7 @@ private fun ArtworkTile(
     Box(
         modifier =
             modifier
-                .aspectRatio(1f)
+                .aspectRatio(if (large) 1.35f else 1f)
                 .background(
                     brush =
                         Brush.linearGradient(
