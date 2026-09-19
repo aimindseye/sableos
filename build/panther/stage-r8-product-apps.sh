@@ -57,6 +57,7 @@ expected = {
     "org.sableos.game2048": "Sable2048.apk",
     "org.sableos.media": "SableMedia.apk",
     "org.sableos.reader": "SableReader.apk",
+    "org.sableos.hub": "SableHub.apk",
 }
 
 with manifest.open(newline="", encoding="utf-8") as f:
@@ -136,7 +137,7 @@ install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-produ
 install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
 install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
 
-for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk
+for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk
 do
     install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
 done
