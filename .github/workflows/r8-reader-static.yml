@@ -75,6 +75,30 @@ jobs:
           /tmp/vaachak
           /tmp/vaachak-textreader
 
+      - name: Verify bounded OCR composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          gradle=/tmp/vaachak/leisure/build.gradle.kts
+          manifest=/tmp/vaachak/leisure/src/sable/AndroidManifest.xml
+          ocr=/tmp/vaachak/leisure/src/sable/java/org/vaachak/reader/leisure/SableOcrActivity.kt
+          scanner=/tmp/vaachak/leisure/src/sable/java/org/vaachak/textreader/CameraScannerView.kt
+
+          grep -Fq 'sableImplementation("com.google.mlkit:text-recognition:16.0.1")' "$gradle"
+          grep -Fq 'sableImplementation("com.google.mlkit:text-recognition-devanagari:16.0.1")' "$gradle"
+          ! grep -Fq 'play-services-mlkit-text-recognition' "$gradle"
+          grep -Fq 'tools:node="remove"' "$manifest"
+          grep -Fq 'android.permission.CAMERA' "$manifest"
+          grep -Fq 'android:required="false"' "$manifest"
+          grep -Fq 'ActivityResultContracts.RequestPermission' "$ocr"
+          grep -Fq 'ActivityResultContracts.GetContent' "$ocr"
+          grep -Fq 'DevanagariTextRecognizerOptions' "$scanner"
+          grep -Fq 'TextRecognizerOptions.DEFAULT_OPTIONS' "$scanner"
+
+          echo 'SABLE_READER_OCR_COMPOSITION=PASS'
+          echo 'SABLE_READER_OCR_NETWORK_FALLBACK=ABSENT'
+          echo 'SABLE_READER_OCR_CAMERA_AUTHORITY=OPTIONAL_RUNTIME'
+
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
 
       - name: Lint composed Sable Reader
