@@ -24,7 +24,7 @@ import org.sableos.design.SableTile
 private enum class UnitCategory(val label: String) {
     Length("Length"),
     Mass("Mass"),
-    Temperature("Temp"),
+    Temperature("Temperature"),
     Volume("Volume"),
 }
 
@@ -75,23 +75,25 @@ fun ConverterScreen(
     ) {
         SableSectionHeader("convert")
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-        ) {
-            UnitCategory.entries.forEach { choice ->
-                SableTile(
-                    title = choice.label,
-                    active = category == choice,
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        category = choice
-                        val available = units.filter { it.category == choice }
-                        from = available.first()
-                        to = available.getOrElse(1) { available.first() }
-                        result = "Ready"
-                    },
-                )
+        UnitCategory.entries.chunked(2).forEach { rowChoices ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                rowChoices.forEach { choice ->
+                    SableTile(
+                        title = choice.label,
+                        active = category == choice,
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            category = choice
+                            val available = units.filter { it.category == choice }
+                            from = available.first()
+                            to = available.getOrElse(1) { available.first() }
+                            result = "Ready"
+                        },
+                    )
+                }
             }
         }
 
