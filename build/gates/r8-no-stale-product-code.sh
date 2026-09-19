@@ -35,8 +35,10 @@ stale_matches="$(
     git -C "$ROOT" grep -n -E \
         'MediaDesignPreview(Activity|Screen)|SableStartRoot|SableMetroPreviewActivity|DevelopmentNavigator|showDevelopmentNavigator|UI-C1A Review' \
         -- \
-        apps/r8/android/media \
-        src/android/packages/apps/SableStart \
+        apps/r8/android/media/src \
+        apps/r8/android/media/src/main/AndroidManifest.xml \
+        src/android/packages/apps/SableStart/src \
+        src/android/packages/apps/SableStart/AndroidManifest.xml \
         2>/dev/null \
         || true
 )"
