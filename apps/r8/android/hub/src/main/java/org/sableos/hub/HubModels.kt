@@ -105,6 +105,11 @@ data class HubSnapshot(
     val people: List<HubPerson>,
 )
 
+data class HubSendResult(
+    val success: Boolean,
+    val message: String,
+)
+
 object HubConversationReducer {
     fun reduce(
         messages: List<HubMessage>,
