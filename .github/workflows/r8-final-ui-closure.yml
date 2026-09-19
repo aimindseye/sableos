@@ -122,6 +122,23 @@ jobs:
 
           echo "R8_A_APPEARANCE_CONTRACT=PASS"
 
+      - name: No stale product preview surfaces
+        shell: bash
+        run: |
+          set -euo pipefail
+          media_manifest=apps/r8/android/media/src/main/AndroidManifest.xml
+
+          ! grep -Fq 'MediaDesignPreviewActivity' "$media_manifest"
+          test ! -e apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewActivity.kt
+          test ! -e apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewScreen.kt
+
+          # Standalone preview modules remain qualification-only and are not
+          # selected by product/r8/panther/r8-product.mk.
+          ! grep -Fq 'start-preview' product/r8/panther/r8-product.mk
+          ! grep -Fq 'system-preview' product/r8/panther/r8-product.mk
+
+          echo "R8_STALE_PRODUCT_PREVIEW_SURFACES=PASS"
+
       - name: Final build environment contract
         shell: bash
         run: |
