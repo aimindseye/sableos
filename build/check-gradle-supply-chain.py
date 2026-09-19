@@ -9,13 +9,15 @@ EXPECTED_LOCKFILES = {
     "design/gradle.lockfile", "games/gradle.lockfile", "media/gradle.lockfile",
 }
 VERIFICATION_REL = "gradle/verification-metadata.xml"
-EXPECTED_VERIFICATION_SHA256 = "d957a59609966206ba71077175032e8b13b4d71a0f51e513d5cbf7370b907905"
+EXPECTED_VERIFICATION_SHA256 = "eafab8b218696216e0ade22a1ee771bf45551f2f4c2cee4fc0182dfac51eab81"
 EXPECTED_COMPONENT_COUNT = 600
-EXPECTED_SHA256_COUNT = 1011
+EXPECTED_SHA256_COUNT = 1012
 NS = {"v": "https://schema.gradle.org/dependency-verification"}
 EXPECTED_AAPT2 = {
     ("com.android.tools.build","aapt2","8.13.2-14304508","aapt2-8.13.2-14304508-linux.jar"):
         "839609d6d776d6dd60a02aa577d97193ce3e650cf1deaabf062321e23bbd6bf6",
+    ("com.android.tools.build","aapt2","8.13.2-14304508","aapt2-8.13.2-14304508-osx.jar"):
+        "0d47f17c3924e5472b6125aa608d949dd7f46510889729671f31f2f4d801e8e7",
     ("com.android.tools.build","aapt2","8.13.2-14304508","aapt2-8.13.2-14304508.pom"):
         "7e085634f503d42a4f3ea14488c25d4a573914db23c64a5a05a0c5c186c93112",
 }
