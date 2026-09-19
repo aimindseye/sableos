@@ -157,6 +157,7 @@ expected = {
     "org.sableos.game2048": "Sable2048.apk",
     "org.sableos.media": "SableMedia.apk",
     "org.sableos.reader": "SableReader.apk",
+    "org.sableos.hub": "SableHub.apk",
 }
 
 with pathlib.Path(sys.argv[1]).open(newline="", encoding="utf-8") as f:
@@ -180,7 +181,7 @@ include_count="$(grep -Fc "$INHERIT_LINE" "$DEVICE_MK" || true)"
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT
 
-for module in     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader
+for module in     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
 done
@@ -210,6 +211,7 @@ echo "R8_C_GAMES=PASS_PRODUCT_STAGED"
 echo "R8_D_READER_PUBLICATION=PASS_PRODUCT_STAGED"
 echo "R8_D2_READER_TEXT_ACCESSIBILITY_OCR=PASS_SOURCE_AND_PRODUCT_STAGED"
 echo "R8_E_MEDIA=PASS_PRODUCT_STAGED"
+echo "R8_F_SABLE_HUB_MESSAGES=PASS_PRODUCT_STAGED"
 echo "R8_UI4_SYSTEMUI=PASS_SOURCE"
 echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
