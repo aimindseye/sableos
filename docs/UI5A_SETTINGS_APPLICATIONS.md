@@ -93,9 +93,12 @@ UI5A requires only an incremental Settings build:
 ```bash
 cd /srv/data/sable-build/workspaces/r8-a4-panther-base-2026081300
 source build/envsetup.sh
-lunch sable_panther-userdebug
+export OUT_DIR=out_sable_ui_preview
+export SOONG_NINJA=ninja
+export SOONG_INCREMENTAL_ANALYSIS=false
+lunch panther-cur-userdebug
 
-OUT_DIR=out_sable_ui_preview m -j8 Settings
+m -j8 Settings
 ```
 
 Do not clean or clobber the existing output tree.
