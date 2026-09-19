@@ -57,6 +57,8 @@ Titan 2 is not assumed to have public kernel source or full SableOS security own
 
 See `TITAN2_GSI_PLAN.md`.
 
+Titan 2 hardware is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival and may run in parallel with final Panther UI source/integration work. GSI mutation/flash remains gated on Panther final UI product-composition, build and physical-acceptance closure.
+
 ## Q27: preferred future full QWERTY candidate
 
 Q27 should not be treated as supported until real shipped hardware is available and the following are verified:
