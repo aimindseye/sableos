@@ -109,68 +109,8 @@ if [[ -n "$WS" ]]; then
     fi
     echo "R8_STALE_WORKSPACE_PRODUCT_TREE=PASS_ABSENT"
 
-    python3 - "$WS/vendor/sable" <<'PY'
-from pathlib import Path
-import sys
-
-root = Path(sys.argv[1])
-if not root.is_dir() or root.is_symlink():
-    raise SystemExit(f"R8_VENDOR_SABLE_ROOT=FAIL path={root}")
-
-expected_dirs = {
-    "r8",
-    "r8/prebuilt",
-}
-expected_files = {
-    "r8/Android.bp",
-    "r8/r8-product.mk",
-    "r8/manifest.tsv",
-    "r8/SHA256SUMS.txt",
-    "r8/SABLEOS_SOURCE_COMMIT.txt",
-    "r8/prebuilt/SableCalculator.apk",
-    "r8/prebuilt/SableSudoku.apk",
-    "r8/prebuilt/SableMinesweeper.apk",
-    "r8/prebuilt/Sable2048.apk",
-    "r8/prebuilt/SableMedia.apk",
-    "r8/prebuilt/SableReader.apk",
-    "r8/prebuilt/SableHub.apk",
-    "r8/prebuilt/SableMail.apk",
-}
-
-actual_dirs = set()
-actual_files = set()
-special = []
-
-for path in root.rglob("*"):
-    rel = path.relative_to(root).as_posix()
-    if path.is_symlink():
-        special.append(f"{rel}:symlink")
-    elif path.is_dir():
-        actual_dirs.add(rel)
-    elif path.is_file():
-        actual_files.add(rel)
-    else:
-        special.append(f"{rel}:special")
-
-missing_dirs = expected_dirs - actual_dirs
-extra_dirs = actual_dirs - expected_dirs
-missing_files = expected_files - actual_files
-extra_files = actual_files - expected_files
-
-if missing_dirs or extra_dirs or missing_files or extra_files or special:
-    raise SystemExit(
-        "R8_VENDOR_SABLE_EXACT_INVENTORY=FAIL "
-        f"missing_dirs={sorted(missing_dirs)!r} "
-        f"extra_dirs={sorted(extra_dirs)!r} "
-        f"missing_files={sorted(missing_files)!r} "
-        f"extra_files={sorted(extra_files)!r} "
-        f"special={sorted(special)!r}"
-    )
-
-print("R8_VENDOR_SABLE_EXACT_INVENTORY=PASS")
-print("R8_VENDOR_SABLE_CANONICAL_FILE_COUNT=13")
-print("R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8")
-PY
+    python3 "$ROOT/build/gates/verify-r8-vendor-sable-inventory.py" \
+        "$WS/vendor/sable"
 
     mapfile -t sable_r8_blueprints < <(
         find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
