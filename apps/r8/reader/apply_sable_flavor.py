@@ -95,12 +95,16 @@ def main() -> None:
     if gradle_text.count(dependencies_anchor) != 1:
         fail("Vaachak dependencies anchor changed; inspect upstream")
 
+    # The Sable flavor is injected into an upstream Kotlin DSL build. Generated
+    # type-safe dependency accessors such as sableImplementation(...) do not
+    # exist when the script itself is compiled, because that configuration is
+    # created by this same script. Use the stable named-configuration API.
     sable_ocr_dependencies = """dependencies {
-    sableImplementation("androidx.camera:camera-camera2:1.3.1")
-    sableImplementation("androidx.camera:camera-lifecycle:1.3.1")
-    sableImplementation("androidx.camera:camera-view:1.3.1")
-    sableImplementation("com.google.mlkit:text-recognition:16.0.1")
-    sableImplementation("com.google.mlkit:text-recognition-devanagari:16.0.1")
+    add("sableImplementation", "androidx.camera:camera-camera2:1.3.1")
+    add("sableImplementation", "androidx.camera:camera-lifecycle:1.3.1")
+    add("sableImplementation", "androidx.camera:camera-view:1.3.1")
+    add("sableImplementation", "com.google.mlkit:text-recognition:16.0.1")
+    add("sableImplementation", "com.google.mlkit:text-recognition-devanagari:16.0.1")
 """
     gradle_text = gradle_text.replace(
         dependencies_anchor,
