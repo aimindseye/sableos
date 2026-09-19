@@ -917,6 +917,10 @@ class SableTextReaderUtilTest {
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <queries>
+        <provider android:authorities="org.sableos.start.appearance" />
+    </queries>
+
     <application>
         <activity
             android:name="org.vaachak.reader.leisure.SableTextActivity"
