@@ -340,14 +340,14 @@ private fun MediaUtilityBar(
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (queueCount > 0) {
+        if (queueCount > 1) {
             Surface(
                 onClick = onQueue,
                 color = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
             ) {
                 Text(
-                    text = "up next · $queueCount",
+                    text = "up next · ${queueCount - 1}",
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.labelLarge,
                 )
