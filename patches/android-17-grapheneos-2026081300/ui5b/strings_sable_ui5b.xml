@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sable_app_security_privacy_title">Application Security &amp; Privacy</string>
+    <string name="sable_app_security_privacy_entry_title">Application Security &amp; Privacy</string>
+    <string name="sable_app_security_privacy_entry_summary">Identity, authority, components and local evidence</string>
+
+    <string name="sable_evidence_notice_title">Evidence model</string>
+    <string name="sable_evidence_notice_summary">Read-only local evidence. DECLARED is package metadata, ENFORCED is current Android policy state, OBSERVED is locally recorded platform state, INFERRED is bounded static analysis, and UNKNOWN means the OS cannot support a reliable conclusion here.</string>
+
+    <string name="sable_identity_category_title">identity &amp; provenance</string>
+    <string name="sable_authority_category_title">effective authority</string>
+    <string name="sable_components_category_title">components &amp; attack surface</string>
+    <string name="sable_code_category_title">code, libraries &amp; privacy signals</string>
+    <string name="sable_network_background_category_title">data, network &amp; background</string>
+    <string name="sable_history_category_title">security &amp; privacy history</string>
+
+    <string name="sable_package_name">Package</string>
+    <string name="sable_version">Version</string>
+    <string name="sable_sdk">SDK</string>
+    <string name="sable_installer">Installer</string>
+    <string name="sable_signing">Signing certificate</string>
+    <string name="sable_signing_lineage">Signing lineage</string>
+    <string name="sable_install_class">Install class</string>
+    <string name="sable_build_flags">Build flags</string>
+    <string name="sable_native_code">Packaged native code</string>
+    <string name="sable_shared_libraries">Shared libraries</string>
+    <string name="sable_tracker_signals">Tracker/library signatures</string>
+
+    <string name="sable_activities">Activities</string>
+    <string name="sable_services">Services</string>
+    <string name="sable_receivers">Receivers</string>
+    <string name="sable_providers">Providers</string>
+    <string name="sable_instrumentation">Instrumentation</string>
+    <string name="sable_elevated_components">Elevated component declarations</string>
+
+    <string name="sable_capability_camera">Camera</string>
+    <string name="sable_capability_microphone">Microphone</string>
+    <string name="sable_capability_location">Location</string>
+    <string name="sable_capability_contacts">Contacts</string>
+    <string name="sable_capability_calendar">Calendar</string>
+    <string name="sable_capability_phone">Phone</string>
+    <string name="sable_capability_messages">Messages</string>
+    <string name="sable_capability_nearby">Nearby devices</string>
+    <string name="sable_capability_media">Photos, video &amp; audio</string>
+    <string name="sable_capability_sensors">Sensors</string>
+    <string name="sable_capability_notifications">Notifications</string>
+
+    <string name="sable_network_authority">Network authority</string>
+    <string name="sable_network_usage">Network usage</string>
+    <string name="sable_background_policy">Background policy</string>
+    <string name="sable_package_stopped_state">Package stopped state</string>
+
+    <string name="sable_first_install">First install</string>
+    <string name="sable_last_update">Last update</string>
+    <string name="sable_change_history">Permission/AppOps change history</string>
+
+    <string name="sable_evidence_declared">DECLARED</string>
+    <string name="sable_evidence_enforced">ENFORCED</string>
+    <string name="sable_evidence_observed">OBSERVED</string>
+    <string name="sable_evidence_inferred">INFERRED</string>
+    <string name="sable_evidence_unknown">UNKNOWN</string>
+
+    <string name="sable_yes">Yes</string>
+    <string name="sable_no">No</string>
+    <string name="sable_allowed">Allowed</string>
+    <string name="sable_denied">Denied</string>
+    <string name="sable_foreground_only">Foreground only</string>
+    <string name="sable_ignored">Ignored</string>
+    <string name="sable_default">Default</string>
+    <string name="sable_unavailable">Unavailable</string>
+    <string name="sable_none">None</string>
+    <string name="sable_system_image">System image</string>
+    <string name="sable_updated_system_app">Updated system app</string>
+    <string name="sable_user_installed">User installed</string>
+    <string name="sable_debuggable">Debuggable</string>
+    <string name="sable_test_only">Test only</string>
+    <string name="sable_release_build">Release-like flags</string>
+    <string name="sable_battery_unrestricted">Exempt from battery optimization</string>
+    <string name="sable_battery_managed">Subject to battery optimization</string>
+    <string name="sable_stopped">Stopped</string>
+    <string name="sable_not_stopped">Not stopped</string>
+
+    <string name="sable_identity_version_format">%1$s · code %2$d</string>
+    <string name="sable_sdk_format">min %1$d · target %2$d</string>
+    <string name="sable_signing_lineage_format">%1$s · %2$d certificate(s)</string>
+    <string name="sable_component_summary_format">%1$s · %2$d total · %3$d enabled · %4$d exported · %5$d exported without component permission</string>
+    <string name="sable_component_summary_with_names_format">%1$s · %2$d total · %3$d enabled · %4$d exported · %5$d exported without component permission · exposed: %6$s</string>
+    <string name="sable_authority_format">%1$s · declared %2$s · granted %3$s · AppOp %4$s</string>
+    <string name="sable_network_authority_format">%1$s · INTERNET declared %2$s · currently granted %3$s</string>
+    <string name="sable_native_summary_format">%1$s · %2$d packaged .so file(s) · ABI(s): %3$s</string>
+    <string name="sable_shared_libraries_format">%1$s · %2$d path(s)</string>
+    <string name="sable_unknown_tracker_summary">%1$s · No local tracker-signature dataset is wired into UI5B; no execution claim is made.</string>
+    <string name="sable_unknown_network_usage_summary">%1$s · Per-app transport counters/destinations are not collected by UI5B.</string>
+    <string name="sable_unknown_history_summary">%1$s · UI5B does not yet retain a permission/AppOps event journal.</string>
+    <string name="sable_elevated_components_none">%1$s · None detected in packaged component permissions.</string>
+    <string name="sable_elevated_components_format">%1$s · %2$s</string>
+</resources>
