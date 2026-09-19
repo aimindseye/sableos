@@ -247,24 +247,34 @@ def templates_dir() -> Path:
     return Path(__file__).resolve().parent / "ui5c_ui6"
 
 
-def template_for(dest: Path) -> Path:
+def setup_template_for(dest: Path) -> Path:
     mapping = {
         SETUP_COLORS: templates_dir() / "setupwizard_colors_sable_ui5c.xml",
         SETUP_UI5C_STRINGS: templates_dir() / "setupwizard_strings_sable_ui5c.xml",
+    }
+    if dest not in mapping:
+        raise SystemExit(f"UI5C_SETUP_TEMPLATE_KEY_INVALID={dest}")
+    return mapping[dest]
+
+
+def settings_template_for(dest: Path) -> Path:
+    mapping = {
         SETTINGS_UI5C_STRINGS: templates_dir() / "settings_strings_sable_ui5c.xml",
         ABOUT_CONTROLLER: templates_dir() / "SableAboutPreferenceController.java",
     }
+    if dest not in mapping:
+        raise SystemExit(f"UI5C_SETTINGS_TEMPLATE_KEY_INVALID={dest}")
     return mapping[dest]
 
 
 def verify_templates() -> None:
-    for dest in (
-        SETUP_COLORS,
-        SETUP_UI5C_STRINGS,
-        SETTINGS_UI5C_STRINGS,
-        ABOUT_CONTROLLER,
-    ):
-        path = template_for(dest)
+    templates = (
+        setup_template_for(SETUP_COLORS),
+        setup_template_for(SETUP_UI5C_STRINGS),
+        settings_template_for(SETTINGS_UI5C_STRINGS),
+        settings_template_for(ABOUT_CONTROLLER),
+    )
+    for path in templates:
         if not path.is_file():
             raise SystemExit(f"UI5C_UI6_TEMPLATE_MISSING={path}")
 
@@ -469,7 +479,7 @@ def apply(source: Path) -> None:
 
     for dest in (SETUP_COLORS, SETUP_UI5C_STRINGS):
         dst = setup / dest
-        shutil.copyfile(template_for(dest), dst)
+        shutil.copyfile(setup_template_for(dest), dst)
 
     about = (settings / MY_DEVICE_INFO).read_text(encoding="utf-8")
     about = replace_once(
@@ -496,7 +506,7 @@ def apply(source: Path) -> None:
     for dest in (SETTINGS_UI5C_STRINGS, ABOUT_CONTROLLER):
         dst = settings / dest
         dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(template_for(dest), dst)
+        shutil.copyfile(settings_template_for(dest), dst)
 
     clock = (framework / CLOCK_SECTION).read_text(encoding="utf-8")
     clock = replace_once(clock, CLOCK_START_OLD, CLOCK_START_NEW, "ui6:clock-start")
@@ -520,6 +530,77 @@ def apply(source: Path) -> None:
 
     verify(source)
     print("SABLE_UI5C_UI6_APPLY=PASS")
+
+
+def repair_known_setup_strings_alias(source: Path) -> None:
+    """Repair the exact UI5C template-alias bug from commit e744e494 only.
+
+    The original applicator keyed both SetupWizard2 and Settings strings templates
+    by the same relative Path ("res/values/strings_sable_ui5c.xml"), so Python's
+    dict key collision selected the Settings template for SetupWizard2 too.
+
+    This recovery is fail-closed: it requires the full post-apply dirty scopes and
+    the SetupWizard2 strings file to be byte-identical to the known wrong Settings
+    template before replacing that single file with the intended SetupWizard2
+    template. No file is deleted and no other source path is mutated.
+    """
+    assert_heads(source)
+    verify_templates()
+
+    branding = load_module("apply_sable_branding.py", "sable_branding_repair")
+    ui5b = load_module("apply_ui5b_app_security.py", "sable_ui5b_repair")
+    ui4 = load_module("apply_ui4_systemui.py", "sable_ui4_repair")
+
+    setup = source / SETUP_REPO
+    settings = source / SETTINGS_REPO
+    framework = source / FRAMEWORK_REPO
+
+    expected_setup = set(branding.EXPECTED_DIRT[branding.SETUP_REPO]) | SETUP_EXTRA_DIRT
+    if status_set(setup) != expected_setup:
+        raise SystemExit("UI5C_REPAIR_SETUP_SCOPE_MISMATCH")
+
+    expected_settings = expected_settings_pre_dirt(ui5b) | SETTINGS_EXTRA_DIRT
+    if status_set(settings) != expected_settings:
+        raise SystemExit("UI5C_REPAIR_SETTINGS_SCOPE_MISMATCH")
+
+    actual_framework = status_set(framework)
+    framework_pre = actual_framework - UI6_NEW_DIRT
+    valid_framework_pre = tuple(
+        set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
+    )
+    if framework_pre not in valid_framework_pre:
+        raise SystemExit("UI5C_REPAIR_FRAMEWORK_SCOPE_MISMATCH")
+    if actual_framework != framework_pre | UI6_NEW_DIRT:
+        raise SystemExit("UI5C_REPAIR_FRAMEWORK_FINAL_SCOPE_MISMATCH")
+
+    setup_strings_path = setup / SETUP_UI5C_STRINGS
+    wrong_template = settings_template_for(SETTINGS_UI5C_STRINGS)
+    correct_template = setup_template_for(SETUP_UI5C_STRINGS)
+
+    if not setup_strings_path.is_file():
+        raise SystemExit("UI5C_REPAIR_SETUP_STRINGS_MISSING")
+
+    actual_hash = sha256(setup_strings_path)
+    wrong_hash = sha256(wrong_template)
+    correct_hash = sha256(correct_template)
+
+    if actual_hash == correct_hash:
+        print("SABLE_UI5C_SETUP_STRINGS_RESOURCE=ALREADY_CORRECT")
+        verify(source)
+        print("SABLE_UI5C_UI6_RESOURCE_REPAIR=PASS")
+        return
+
+    if actual_hash != wrong_hash:
+        raise SystemExit(
+            "UI5C_REPAIR_UNKNOWN_SETUP_STRINGS_STATE="
+            f"actual={actual_hash} expected_known_wrong={wrong_hash}"
+        )
+
+    shutil.copyfile(correct_template, setup_strings_path)
+
+    verify(source)
+    print("SABLE_UI5C_SETUP_STRINGS_RESOURCE=REPAIRED_KNOWN_TEMPLATE_ALIAS")
+    print("SABLE_UI5C_UI6_RESOURCE_REPAIR=PASS")
 
 
 def verify_ui4_tokens(framework: Path, ui4) -> None:
@@ -575,11 +656,11 @@ def verify(source: Path) -> None:
         raise SystemExit("UI6_FINAL_BRANDING_SCOPE_MISSING")
 
     for dest in (SETUP_COLORS, SETUP_UI5C_STRINGS):
-        if sha256(setup / dest) != sha256(template_for(dest)):
+        if sha256(setup / dest) != sha256(setup_template_for(dest)):
             raise SystemExit(f"UI5C_SETUP_TEMPLATE_VERIFY_FAIL={dest}")
 
     for dest in (SETTINGS_UI5C_STRINGS, ABOUT_CONTROLLER):
-        if sha256(settings / dest) != sha256(template_for(dest)):
+        if sha256(settings / dest) != sha256(settings_template_for(dest)):
             raise SystemExit(f"UI5C_SETTINGS_TEMPLATE_VERIFY_FAIL={dest}")
 
     welcome = (setup / WELCOME_LAYOUT).read_text(encoding="utf-8")
@@ -704,16 +785,20 @@ def self_test() -> None:
 
     with tempfile.TemporaryDirectory(prefix="sable-ui5c-ui6-selftest-") as td:
         root = Path(td)
-        for dest in (
-            SETUP_COLORS,
-            SETUP_UI5C_STRINGS,
-            SETTINGS_UI5C_STRINGS,
-            ABOUT_CONTROLLER,
-        ):
-            out = root / dest.name
-            shutil.copyfile(template_for(dest), out)
-            if sha256(out) != sha256(template_for(dest)):
-                raise SystemExit(f"UI5C_UI6_SELF_TEST_TEMPLATE_FAIL={dest}")
+
+        for dest in (SETUP_COLORS, SETUP_UI5C_STRINGS):
+            out = root / "setup" / dest.name
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(setup_template_for(dest), out)
+            if sha256(out) != sha256(setup_template_for(dest)):
+                raise SystemExit(f"UI5C_UI6_SELF_TEST_SETUP_TEMPLATE_FAIL={dest}")
+
+        for dest in (SETTINGS_UI5C_STRINGS, ABOUT_CONTROLLER):
+            out = root / "settings" / dest.name
+            out.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(settings_template_for(dest), out)
+            if sha256(out) != sha256(settings_template_for(dest)):
+                raise SystemExit(f"UI5C_UI6_SELF_TEST_SETTINGS_TEMPLATE_FAIL={dest}")
 
     print("SABLE_UI5C_UI6_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
@@ -723,7 +808,7 @@ def self_test() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
+    parser.add_argument("mode", nargs="?", choices=("apply", "verify", "repair-known-setup-strings"))
     parser.add_argument("--source", type=Path)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -745,8 +830,10 @@ def main() -> int:
 
     if args.mode == "apply":
         apply(source)
-    else:
+    elif args.mode == "verify":
         verify(source)
+    else:
+        repair_known_setup_strings_alias(source)
     return 0
 
 
