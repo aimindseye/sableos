@@ -22,8 +22,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,6 +38,10 @@ import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTile
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.delay
 
 private enum class PreviewPage(
     val label: String,
@@ -346,6 +352,10 @@ private fun AppSecurityPreview(
 
         item {
             AppIdentityCard()
+        }
+
+        item {
+            AppControlStrip()
         }
 
         item {
@@ -702,6 +712,34 @@ private fun AboutPreview(
 
 @Composable
 private fun LockscreenPreview() {
+    var nowMillis by remember {
+        mutableLongStateOf(System.currentTimeMillis())
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            nowMillis = System.currentTimeMillis()
+            delay(30_000L)
+        }
+    }
+
+    val now =
+        Instant
+            .ofEpochMilli(nowMillis)
+            .atZone(ZoneId.systemDefault())
+    val timeText =
+        remember(nowMillis) {
+            DateTimeFormatter
+                .ofPattern("h:mm")
+                .format(now)
+        }
+    val dateText =
+        remember(nowMillis) {
+            DateTimeFormatter
+                .ofPattern("EEEE, MMMM d")
+                .format(now)
+        }
+
     Box(
         modifier =
             Modifier
@@ -720,12 +758,12 @@ private fun LockscreenPreview() {
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
         ) {
             Text(
-                text = "12:34",
+                text = timeText,
                 style = MaterialTheme.typography.displayLarge,
                 fontWeight = FontWeight.Light,
             )
             Text(
-                text = "Saturday, September 19",
+                text = dateText,
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -750,20 +788,31 @@ private fun LockscreenPreview() {
             )
 
             Surface(
+                modifier = Modifier.size(56.dp),
                 shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                border =
+                    BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant,
+                    ),
             ) {
-                Text(
-                    text = "unlock",
-                    modifier =
-                        Modifier.padding(
-                            horizontal = 28.dp,
-                            vertical = 14.dp,
-                        ),
-                    style = MaterialTheme.typography.titleMedium,
-                )
+                Box(
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "↑",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
             }
+
+            Text(
+                text = "swipe up to unlock",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
 
             Text(
                 text = "UI6 visual preview · authentication behavior unchanged",
@@ -913,6 +962,60 @@ private fun AppSummaryRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun AppControlStrip() {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+    ) {
+        Text(
+            text = "controls",
+            style = MaterialTheme.typography.titleLarge,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            SableActionButton(
+                text = "Permissions",
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+            SableActionButton(
+                text = "Network",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            SableActionButton(
+                text = "Notifications",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+            SableActionButton(
+                text = "App info",
+                primary = false,
+                modifier = Modifier.weight(1f),
+                onClick = {},
+            )
+        }
+
+        Text(
+            text =
+                "Preview entry points only. Production actions delegate to qualified Android Settings and permission surfaces.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
