@@ -1,5 +1,6 @@
 package org.sableos.design
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -86,6 +87,7 @@ fun SablePanel(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         tonalElevation = 0.dp,
     ) {
         Column(
@@ -206,6 +208,7 @@ fun SableValuePanel(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         tonalElevation = 0.dp,
     ) {
         Column(
@@ -337,6 +340,15 @@ fun SableTile(
         shape = MaterialTheme.shapes.medium,
         color = container,
         contentColor = content,
+        border =
+            BorderStroke(
+                1.dp,
+                if (active) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+            ),
         tonalElevation = 0.dp,
     ) {
         Column(
