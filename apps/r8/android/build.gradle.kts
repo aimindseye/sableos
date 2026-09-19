@@ -94,11 +94,28 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
                 "ANDROID_SDK_ROOT or ANDROID_HOME must be set"
             )
 
-        val linker = file(
-            "$sdkRoot/ndk/$rustNdkVersion/" +
-                "toolchains/llvm/prebuilt/linux-x86_64/bin/" +
-                "aarch64-linux-android${rustAndroidApi}-clang"
+        val prebuiltRoot = file(
+            "$sdkRoot/ndk/$rustNdkVersion/toolchains/llvm/prebuilt"
         )
+        val hostTags =
+            when {
+                System.getProperty("os.name").startsWith("Mac") ->
+                    listOf("darwin-aarch64", "darwin-x86_64")
+                System.getProperty("os.name").startsWith("Linux") ->
+                    listOf("linux-x86_64")
+                else ->
+                    emptyList()
+            }
+        val hostTag =
+            hostTags.firstOrNull { candidate ->
+                prebuiltRoot.resolve(candidate).isDirectory
+            } ?: throw GradleException(
+                "Pinned Android NDK has no supported host toolchain under $prebuiltRoot"
+            )
+        val linker =
+            prebuiltRoot.resolve(
+                "$hostTag/bin/aarch64-linux-android${rustAndroidApi}-clang"
+            )
 
         if (!linker.canExecute()) {
             throw GradleException(
