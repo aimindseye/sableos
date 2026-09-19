@@ -93,6 +93,20 @@ Q25 is no longer a required precursor to Q27 and no longer the preferred interim
 
 See `Q25_PORT_PLAN.md`.
 
+## Shared keyboard-device tools
+
+Titan 2 and Q27 should share a common Sable Tools application/semantic layer for device diagnostics and keyboard-first utilities.
+
+Reference direction:
+
+- bb10root/bb10tools at revision 68d2e42a471b46b53ff5567edac4293ef0f3d5d6 is retained as a GPL-3.0 BB10/QNX engineering-tooling reference;
+- its useful product lesson is compact on-device diagnostics/service tooling;
+- production SableOS must not inherit its kernel patching, arbitrary memory/NVRAM writes, security bypasses or unauthenticated service mechanisms.
+
+Initial reusable Sable Tools targets include keyboard/input inspection, build/device reports, radio/IMS status, storage/partition summaries, application/process evidence, logs/report export and safe file/share workflows.
+
+See KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md.
+
 ## Promotion model
 
 Non-Pixel devices move through explicit assurance classes:

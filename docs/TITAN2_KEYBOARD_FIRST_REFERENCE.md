@@ -164,6 +164,23 @@ For SableOS:
 - do not copy q25toolbox implementation because no repository license was detected;
 - retain its empirical lessons about effective keylayout discovery, scancodes, SELinux labels, firmware quirks and failure modes.
 
+### BB10 Tools / Sable Tools reference
+
+A second keyboard-device reference is now pinned for power-user/device-tooling ideas:
+
+~~~text
+repository: bb10root/bb10tools
+revision: 68d2e42a471b46b53ff5567edac4293ef0f3d5d6
+license: GPL-3.0
+role: BB10/QNX engineering and device-tooling reference
+~~~
+
+Use it as a capability/reference inventory for a future common Sable Tools app on Titan 2 and Q27. Useful inspiration includes structured device/radio inspection, keyboard/input diagnostics, file/report workflows, storage/device inspection and compact service tooling.
+
+Do **not** port its BB10-specific kernel patching, memory writes, NVRAM mutation, trust/security bypass or unauthenticated service mechanisms into production SableOS.
+
+The normative Sable interpretation is in KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md.
+
 ## Titan 2 keyboard-first UX contract
 
 ### HOME / SableStart

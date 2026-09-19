@@ -128,6 +128,24 @@ Required first-class behaviors:
 
 The normative external reference review and licensing/provenance boundary is `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
 
+## Keyboard-first tools surface
+
+Physical-keyboard devices should also have a compact Sable-native power-user/device toolbox.
+
+The common direction is documented in KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md and is inspired in part by bb10root/bb10tools, while preserving Android/SableOS security ownership.
+
+Required interaction properties:
+
+- type-to-filter/search tools;
+- keyboard-only navigation of core diagnostics;
+- visible deterministic focus;
+- copy/export shortcuts;
+- read-only diagnostics by default;
+- touch as a secondary path;
+- no root/accessibility/bind-mount hacks for functionality SableOS owns at platform level.
+
+Titan 2 and Q27 should consume the same Sable Tools semantics and source where compatible.
+
 ## Do not branch on model name
 
 Applications should not contain logic such as:
