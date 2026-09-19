@@ -74,13 +74,23 @@ def main() -> None:
     )
     replace_once(
         build,
-        'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Thunderbird for Android\"")',
-        'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Sable Mail\"")',
+        'signingConfig = signingConfigs.getByType(SigningType.TB_RELEASE)',
+        'signingConfig = signingConfigs.getByName("debug")',
     )
     replace_once(
         build,
-        'applicationIdSuffix = ".debug"',
-        'applicationIdSuffix = ""',
+        'isMinifyEnabled = !isCI.get()',
+        'isMinifyEnabled = true',
+    )
+    replace_once(
+        build,
+        'isShrinkResources = !isCI.get()',
+        'isShrinkResources = true',
+    )
+    replace_once(
+        build,
+        'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Thunderbird for Android\"")',
+        'buildConfigField("String", "CLIENT_INFO_APP_NAME", "\"Sable Mail\"")',
     )
     replace_once(
         build,
@@ -94,6 +104,21 @@ def main() -> None:
         "    testImplementation(projects.feature.thundermail.internal.common)\n",
     ):
         remove_once(build, line)
+
+    for variant in ("debug", "beta", "daily", "release"):
+        feature_flags = (
+            app
+            / f"src/{variant}/kotlin/net/thunderbird/android/featureflag/"
+            "TbFeatureFlagFactory.kt"
+        )
+        remove_once(
+            feature_flags,
+            "import net.thunderbird.feature.thundermail.featureflag.ThundermailFeatureFlags\n",
+        )
+        remove_once(
+            feature_flags,
+            "                FeatureFlag(ThundermailFeatureFlags.ThundermailOnboardingEnabled, enabled = true),\n",
+        )
 
     strings = app / "src/main/res/values/strings.xml"
     replace_once(strings, ">Thunderbird</string>", ">Sable Mail</string>")
@@ -234,7 +259,6 @@ class TbAppIconNotificationProvider : NotificationIconResourceProvider {
         '''package net.thunderbird.android
 
 import app.k9mail.feature.telemetry.api.TelemetryManager
-import com.fsck.k9.K9
 import net.thunderbird.app.common.BaseApplication
 import net.thunderbird.core.preference.GeneralSettingsManager
 import org.koin.android.ext.android.inject
@@ -258,7 +282,7 @@ class ThunderbirdApp : BaseApplication() {
 
     private fun initializeTelemetry() {
         telemetryManager.init(
-            uploadEnabled = K9.isTelemetryEnabled,
+            uploadEnabled = false,
             releaseChannel = BuildConfig.GLEAN_RELEASE_CHANNEL,
             versionCode = BuildConfig.VERSION_CODE,
             versionName = BuildConfig.VERSION_NAME,
@@ -373,26 +397,65 @@ internal object SableMailThemeResources {
         appearance: SableMailAppearance,
         dark: Boolean,
         kind: Kind,
-    ): Int {
-        val accent =
-            when (appearance.accent) {
-                "green" -> "Green"
-                "purple" -> "Purple"
-                "orange" -> "Orange"
-                "slate" -> "Slate"
-                else -> "Blue"
-            }
-        val tone = if (dark) "Dark" else "Light"
-        val name =
-            when (kind) {
-                Kind.MAIN -> "Theme_SableMail_${tone}_${accent}"
-                Kind.DIALOG -> "Theme_SableMail_${tone}_${accent}_Dialog"
-                Kind.TRANSLUCENT ->
-                    "Theme_SableMail_${tone}_${accent}_Dialog_Translucent"
-            }
+    ): Int =
+        when (kind) {
+            Kind.MAIN ->
+                if (dark) {
+                    when (appearance.accent) {
+                        "green" -> R.style.Theme_SableMail_Dark_Green
+                        "purple" -> R.style.Theme_SableMail_Dark_Purple
+                        "orange" -> R.style.Theme_SableMail_Dark_Orange
+                        "slate" -> R.style.Theme_SableMail_Dark_Slate
+                        else -> R.style.Theme_SableMail_Dark_Blue
+                    }
+                } else {
+                    when (appearance.accent) {
+                        "green" -> R.style.Theme_SableMail_Light_Green
+                        "purple" -> R.style.Theme_SableMail_Light_Purple
+                        "orange" -> R.style.Theme_SableMail_Light_Orange
+                        "slate" -> R.style.Theme_SableMail_Light_Slate
+                        else -> R.style.Theme_SableMail_Light_Blue
+                    }
+                }
 
-        return R.style::class.java.getField(name).getInt(null)
-    }
+            Kind.DIALOG ->
+                if (dark) {
+                    when (appearance.accent) {
+                        "green" -> R.style.Theme_SableMail_Dark_Green_Dialog
+                        "purple" -> R.style.Theme_SableMail_Dark_Purple_Dialog
+                        "orange" -> R.style.Theme_SableMail_Dark_Orange_Dialog
+                        "slate" -> R.style.Theme_SableMail_Dark_Slate_Dialog
+                        else -> R.style.Theme_SableMail_Dark_Blue_Dialog
+                    }
+                } else {
+                    when (appearance.accent) {
+                        "green" -> R.style.Theme_SableMail_Light_Green_Dialog
+                        "purple" -> R.style.Theme_SableMail_Light_Purple_Dialog
+                        "orange" -> R.style.Theme_SableMail_Light_Orange_Dialog
+                        "slate" -> R.style.Theme_SableMail_Light_Slate_Dialog
+                        else -> R.style.Theme_SableMail_Light_Blue_Dialog
+                    }
+                }
+
+            Kind.TRANSLUCENT ->
+                if (dark) {
+                    when (appearance.accent) {
+                        "green" -> R.style.Theme_SableMail_Dark_Green_Dialog_Translucent
+                        "purple" -> R.style.Theme_SableMail_Dark_Purple_Dialog_Translucent
+                        "orange" -> R.style.Theme_SableMail_Dark_Orange_Dialog_Translucent
+                        "slate" -> R.style.Theme_SableMail_Dark_Slate_Dialog_Translucent
+                        else -> R.style.Theme_SableMail_Dark_Blue_Dialog_Translucent
+                    }
+                } else {
+                    when (appearance.accent) {
+                        "green" -> R.style.Theme_SableMail_Light_Green_Dialog_Translucent
+                        "purple" -> R.style.Theme_SableMail_Light_Purple_Dialog_Translucent
+                        "orange" -> R.style.Theme_SableMail_Light_Orange_Dialog_Translucent
+                        "slate" -> R.style.Theme_SableMail_Light_Slate_Dialog_Translucent
+                        else -> R.style.Theme_SableMail_Light_Blue_Dialog_Translucent
+                    }
+                }
+        }
 }
 
 internal object SableMailAppearanceSync {
@@ -614,7 +677,9 @@ internal object SableMailAppearanceSync {
     print(f"SABLE_MAIL_UPSTREAM_COMMIT={actual}")
     print(f"SABLE_MAIL_APPLICATION_ID={SABLE_APPLICATION_ID}")
     print("SABLE_MAIL_BRANDING=SABLE_MAIL")
-    print("SABLE_MAIL_TELEMETRY=NOOP_UPSTREAM_DEBUG_LANE")
+    print("SABLE_MAIL_BUILD_TYPE=FOSS_RELEASE_NON_DEBUGGABLE_MINIFIED")
+    print("SABLE_MAIL_DEVELOPMENT_SIGNING=DEBUG_KEY_ONLY")
+    print("SABLE_MAIL_TELEMETRY=NOOP_UPLOAD_DISABLED")
     print("SABLE_MAIL_FUNDING=NOOP")
     print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION")
