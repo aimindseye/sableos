@@ -1163,21 +1163,29 @@ private fun chooseFeaturedApps(
     apps: List<AppEntry>,
     pinnedApps: List<AppEntry>,
 ): List<AppEntry> {
+    val candidates =
+        apps.filterNot { app ->
+            app.label.equals("Settings", ignoreCase = true) ||
+                app.component.packageName == "com.android.settings"
+        }
+    val candidateKeys = candidates.mapTo(mutableSetOf(), ::appKey)
     val selected = linkedMapOf<String, AppEntry>()
 
-    pinnedApps.forEach { app ->
-        selected.putIfAbsent(appKey(app), app)
-    }
+    pinnedApps
+        .filter { appKey(it) in candidateKeys }
+        .forEach { app ->
+            selected.putIfAbsent(appKey(app), app)
+        }
 
     FEATURED_APP_LABELS.forEach { preferred ->
-        apps.firstOrNull { app ->
+        candidates.firstOrNull { app ->
             app.label.equals(preferred, ignoreCase = true)
         }?.let { app ->
             selected.putIfAbsent(appKey(app), app)
         }
     }
 
-    apps.forEach { app ->
+    candidates.forEach { app ->
         selected.putIfAbsent(appKey(app), app)
     }
 
