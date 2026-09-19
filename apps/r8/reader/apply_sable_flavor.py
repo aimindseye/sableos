@@ -78,6 +78,14 @@ def main() -> None:
     # qualification checkout does not need upstream debug tooling, so remove only
     # this debug dependency from the ephemeral composed source tree. Canonical
     # Vaachak source remains untouched.
+    # The composed Sable debug APK is the development product artifact, not a
+    # side-by-side upstream debug app. Keep the canonical package identity so
+    # Panther product integration can bind exactly org.sableos.reader.
+    debug_app_id_suffix = '            applicationIdSuffix = ".debug"\n'
+    if debug_app_id_suffix not in gradle_text:
+        fail("Vaachak debug applicationIdSuffix anchor changed; inspect upstream")
+    gradle_text = gradle_text.replace(debug_app_id_suffix, "", 1)
+
     leakcanary_dependency = "    debugImplementation(libs.leakcanary.android)\n"
     if leakcanary_dependency not in gradle_text:
         fail("Vaachak LeakCanary dependency anchor changed; inspect upstream")
