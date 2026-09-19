@@ -99,6 +99,12 @@ jobs:
             ! grep -Fq 'device/google/pantah/device-panther.mk' "$script"
           done
 
+          exporter=apps/r8/export-panther-app-bundle.sh
+          grep -Fq 'SABLEOS_SOURCE_COMMIT.txt' "$exporter"
+          grep -Fq 'R8_APP_BUNDLE_SOURCE_COMMIT=FAIL_STALE' "$stage"
+          grep -Fq 'R8_PRODUCT_SOURCE_IDENTITY' "$gate"
+
+          echo "R8_BUNDLE_SOURCE_IDENTITY_CONTRACT=PASS"
           echo "R8_PANTHER_PRODUCT_PATH_CONTRACT=PASS"
           echo "R8_PRODUCT_COMPOSITION_CONTRACT=PASS"
 
