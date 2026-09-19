@@ -151,7 +151,7 @@ private val SableShapes = Shapes(
 
 @Composable
 fun SableTheme(
-    appearance: SableAppearance = SableAppearance(mode = AppearanceMode.Dark),
+    appearance: SableAppearance = SableAppearance(),
     content: @Composable () -> Unit,
 ) {
     val dark = when (appearance.mode) {
