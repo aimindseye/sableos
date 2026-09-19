@@ -29,8 +29,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -83,10 +81,6 @@ private val SableGreen = Color(0xFF35C66B)
 private val SablePurple = Color(0xFF7A42E8)
 private val SableSlate = Color(0xFF45515F)
 private val SableOrange = Color(0xFFF28C45)
-private val SablePanel = Color(0xFF17191D)
-private val SablePanelRaised = Color(0xFF22252A)
-private val SableMuted = Color(0xFFB8BBC3)
-
 private val SableTilePalette =
     listOf(
         SableBlue,
@@ -94,72 +88,6 @@ private val SableTilePalette =
         SablePurple,
         SableOrange,
         SableSlate,
-    )
-
-private val SableColors =
-    darkColorScheme(
-        primary = SableBlue,
-        onPrimary = Color.Black,
-        background = Color.Black,
-        onBackground = Color.White,
-        surface = SablePanel,
-        onSurface = Color.White,
-        surfaceVariant = SablePanelRaised,
-        onSurfaceVariant = SableMuted,
-    )
-
-private val SableTypography =
-    Typography(
-        displayLarge =
-            TextStyle(
-                fontSize = 58.sp,
-                lineHeight = 60.sp,
-                fontWeight = FontWeight.Light,
-                letterSpacing = (-1.2).sp,
-            ),
-        displayMedium =
-            TextStyle(
-                fontSize = 42.sp,
-                lineHeight = 46.sp,
-                fontWeight = FontWeight.Light,
-                letterSpacing = (-0.6).sp,
-            ),
-        headlineLarge =
-            TextStyle(
-                fontSize = 34.sp,
-                lineHeight = 40.sp,
-                fontWeight = FontWeight.Light,
-            ),
-        headlineMedium =
-            TextStyle(
-                fontSize = 27.sp,
-                lineHeight = 32.sp,
-                fontWeight = FontWeight.Normal,
-            ),
-        titleLarge =
-            TextStyle(
-                fontSize = 21.sp,
-                lineHeight = 27.sp,
-                fontWeight = FontWeight.Medium,
-            ),
-        bodyLarge =
-            TextStyle(
-                fontSize = 17.sp,
-                lineHeight = 24.sp,
-                fontWeight = FontWeight.Normal,
-            ),
-        bodyMedium =
-            TextStyle(
-                fontSize = 15.sp,
-                lineHeight = 21.sp,
-                fontWeight = FontWeight.Normal,
-            ),
-        labelLarge =
-            TextStyle(
-                fontSize = 14.sp,
-                lineHeight = 20.sp,
-                fontWeight = FontWeight.Medium,
-            ),
     )
 
 /**
