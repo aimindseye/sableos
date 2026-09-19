@@ -10,10 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import org.sableos.design.SableAppearance
-import org.sableos.design.SableTheme
-import org.sableos.design.applySableSystemBars
-import org.sableos.design.resolveSableDarkAppearance
+import org.sableos.design.SableGlobalTheme
 import org.sableos.hub.ui.HubScreen
 import org.sableos.hub.web.ProviderCapsuleLauncher
 
@@ -25,15 +22,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         repository = HubRepository(applicationContext)
-        applySableSystemBars(
-            window = window,
-            darkTheme =
-                resolveSableDarkAppearance(
-                    context = this,
-                    appearance = SableAppearance(),
-                ),
-        )
-
         setContent {
             val permissionLauncher =
                 rememberLauncherForActivityResult(
@@ -47,7 +35,7 @@ class MainActivity : ComponentActivity() {
                     repository.snapshot()
                 }
 
-            SableTheme {
+            SableGlobalTheme(window = window) {
                 HubScreen(
                     snapshot = snapshot,
                     providers = HubProviderCatalog.providers,

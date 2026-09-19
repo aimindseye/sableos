@@ -68,3 +68,13 @@ android_app_import {
         enabled: false,
     },
 }
+
+android_app_import {
+    name: "SableMail",
+    apk: "prebuilt/SableMail.apk",
+    presigned: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}

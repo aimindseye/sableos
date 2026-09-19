@@ -37,7 +37,7 @@ accent          -> Sable Blue
 local overrides -> cleared
 ```
 
-`Follow system` is the normal default unless a surface has an explicit reviewed exception. Sable-owned screens should consume shared semantic color roles from `SableTheme`; a production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
+`Follow system` is the normal default unless a surface has an explicit reviewed exception. R8 uses one SableStart-owned, read-only global appearance contract for `Follow system` / `Light` / `Dark` plus the bounded Blue / Green / Purple / Orange / Slate accents. Sable-owned apps consume that state through `SableGlobalTheme`; standalone qualification falls back to Follow system + Sable Blue when the provider is unavailable. A production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
 
 ## Core principles
 
@@ -49,7 +49,7 @@ local overrides -> cleared
 6. **Visible state.** Selected, disabled, active, warning and destructive states must be visually distinguishable without relying on color alone.
 7. **Touch accessibility.** Interactive targets are at least 48dp, text must remain usable with Android font scaling, and controls require meaningful accessibility labels.
 8. **Fast restrained motion.** UI motion uses 120/180/240ms timing classes and should explain navigation or state changes rather than decorate them.
-9. **Theme consistency.** R8 supports Follow system, Light and Dark through the shared `SableTheme` semantic roles. Follow system is the default, Sable Blue is the reset accent, and individual apps must not maintain an unrelated private hard-coded light/dark palette.
+9. **Theme consistency.** R8 supports Follow system, Light and Dark through shared semantic roles and one global Sable appearance state. Follow system is the default, Sable Blue is the reset accent, and Start, Calculator, Games, Media, Reader, Hub and Mail must consume the same mode/accent selection. Individual apps must not maintain an unrelated private hard-coded palette.
 10. **Truthful branding.** User-facing product branding should say SableOS where SableOS owns the surface. Internal package/API identifiers and technically truthful provider/service ownership references are not blindly renamed.
 
 ## Shared primitives

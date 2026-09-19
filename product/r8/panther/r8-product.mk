@@ -12,4 +12,5 @@ PRODUCT_PACKAGES += \
     Sable2048 \
     SableMedia \
     SableReader \
-    SableHub
+    SableHub \
+    SableMail

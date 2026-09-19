@@ -5,12 +5,14 @@ on:
     paths:
       - 'build/panther/**'
       - 'build/gates/r8-final-*.sh'
+      - 'build/gates/r8-no-stale-product-code.sh'
       - 'product/r8/panther/**'
       - 'patches/android-17-grapheneos-2026081300/**'
       - 'src/android/packages/apps/SableStart/**'
       - 'src/android/shared/sabledesign/**'
       - 'apps/r8/reader/**'
-      - 'apps/r8/android/hub/**'
+      - 'apps/r8/mail/**'
+      - 'apps/r8/android/**'
       - 'build/verify-reader-manifest.py'
       - '.github/workflows/r8-final-ui-closure.yml'
   push:
@@ -18,6 +20,7 @@ on:
     paths:
       - 'build/panther/**'
       - 'build/gates/r8-final-*.sh'
+      - 'build/gates/r8-no-stale-product-code.sh'
       - 'product/r8/panther/**'
       - 'patches/android-17-grapheneos-2026081300/**'
       - 'src/android/packages/apps/SableStart/**'
@@ -46,7 +49,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for script in             apps/r8/export-panther-app-bundle.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh
+          for script in             apps/r8/export-panther-app-bundle.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh             build/gates/r8-no-stale-product-code.sh
           do
             bash -n "$script"
             echo "SHELL_SYNTAX=PASS $script"
@@ -54,7 +57,7 @@ jobs:
 
       - name: Python syntax
         run: |
-          python3 -m py_compile             apps/r8/reader/apply_sable_flavor.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+          python3 -m py_compile             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
           echo "PYTHON_SYNTAX=PASS"
 
       - name: Platform applicator self-tests
@@ -78,12 +81,12 @@ jobs:
           gate=build/gates/r8-final-product-composition.sh
           manifest=src/android/packages/apps/SableStart/AndroidManifest.xml
 
-          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
+          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub             SableMail
           do
             grep -Fq "name: \"$module\"" "$bp"
           done
 
-          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub
+          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader             SableHub             SableMail
           do
             grep -Fq "$module" "$mk"
           done
@@ -126,7 +129,24 @@ jobs:
           ! grep -Fq 'private val SableTypography' "$start"
           ! grep -Fq 'darkColorScheme(' "$start"
 
+          global=src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt
+          provider=src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt
+
+          grep -Fq 'org.sableos.start.appearance' "$global"
+          grep -Fq 'rememberGlobalSableAppearance' "$global"
+          grep -Fq 'SableGlobalTheme' "$global"
+          grep -Fq 'SableGlobalAppearanceContract.CONTENT_URI' "$state"
+          grep -Fq 'SableAppearanceProvider' src/android/packages/apps/SableStart/AndroidManifest.xml
+
+          for source in             apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt             apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt             apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt             apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt
+          do
+            grep -Fq 'SableGlobalTheme(window = window)' "$source"
+          done
+
+          grep -Fq 'SableGlobalAppearance.kt' apps/r8/reader/apply_sable_flavor.py
+
           echo "R8_A_APPEARANCE_CONTRACT=PASS"
+          echo "R8_GLOBAL_APPEARANCE_CONTRACT=PASS"
 
       - name: No stale product preview surfaces
         shell: bash
@@ -144,6 +164,29 @@ jobs:
           ! grep -Fq 'system-preview' product/r8/panther/r8-product.mk
 
           echo "R8_STALE_PRODUCT_PREVIEW_SURFACES=PASS"
+
+      - name: No stale R8 product code or packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build/gates/r8-no-stale-product-code.sh
+
+      - name: Sable Mail source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          envfile=apps/r8/mail/upstream.env
+          apply=apps/r8/mail/apply_sable_flavor.py
+          verify=apps/r8/mail/verify_sable_mail.py
+
+          grep -Fq 'THUNDERBIRD_COMMIT=c733317d933c22bcd790a4790306f30ccf2026b8' "$envfile"
+          grep -Fq 'SABLE_MAIL_APPLICATION_ID=org.sableos.mail' "$envfile"
+          grep -Fq 'projects.feature.funding.noop' "$apply"
+          grep -Fq 'SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION' "$apply"
+          grep -Fq 'SABLE_MAIL_GLOBAL_APPEARANCE=FOLLOW_SYSTEM_LIGHT_DARK_PLUS_5_ACCENTS' "$apply"
+          grep -Fq 'EXPECTED_PACKAGE = "org.sableos.mail"' "$verify"
+
+          echo "R8_G_SABLE_MAIL_SOURCE_CONTRACT=PASS"
 
       - name: Final build environment contract
         shell: bash
