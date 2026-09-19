@@ -59,6 +59,7 @@ jobs:
           :games:lintMinesweeperDebug
           :games:lintGame2048Debug
           :media:lintDebug
+          :hub:lintDebug
           :start-preview:lintDebug
           :system-preview:lintDebug
           --stacktrace
