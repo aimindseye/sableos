@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import org.sableos.convert.ConverterScreen
+import org.sableos.design.applySableDarkSystemBars
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
@@ -51,6 +52,7 @@ private val scientificChoices = listOf(
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySableDarkSystemBars(window)
 
         val nativeQualification = NativeBridge.selfTest()
         check(nativeQualification.startsWith("PASS:")) { nativeQualification }
