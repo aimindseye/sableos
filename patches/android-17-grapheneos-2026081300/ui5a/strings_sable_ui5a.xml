@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sable_settings_eyebrow">SableOS</string>
+    <string name="sable_settings_title">settings</string>
+    <string name="sable_settings_subtitle">Device controls with security and privacy state kept visible.</string>
+
+    <string name="sable_applications_title">Applications</string>
+    <string name="sable_applications_summary_loading">Access, privacy and app controls</string>
+
+    <plurals name="sable_installed_apps_summary">
+        <item quantity="one">%1$d app · access, privacy and app controls</item>
+        <item quantity="other">%1$d apps · access, privacy and app controls</item>
+    </plurals>
+
+    <string name="sable_no_sensitive_access_granted">No sensitive permissions granted</string>
+    <string name="sable_sensitive_access_unknown">Sensitive access unavailable</string>
+    <string name="sable_sensitive_camera">Camera</string>
+    <string name="sable_sensitive_microphone">Microphone</string>
+    <string name="sable_sensitive_location">Location</string>
+    <string name="sable_sensitive_contacts">Contacts</string>
+    <string name="sable_sensitive_calendar">Calendar</string>
+    <string name="sable_sensitive_phone">Phone</string>
+    <string name="sable_sensitive_messages">Messages</string>
+    <string name="sable_sensitive_nearby_devices">Nearby devices</string>
+    <string name="sable_sensitive_photos_videos">Photos &amp; videos</string>
+    <string name="sable_sensitive_music_audio">Music &amp; audio</string>
+    <string name="sable_sensitive_sensors">Sensors</string>
+    <string name="sable_sensitive_notifications">Notifications</string>
+
+    <plurals name="sable_sensitive_more_count">
+        <item quantity="one">+%1$d more</item>
+        <item quantity="other">+%1$d more</item>
+    </plurals>
+</resources>

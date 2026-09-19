@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="8dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/sable_settings_eyebrow"
+        android:textColor="@color/sable_ui_accent"
+        android:textSize="12sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="@*android:string/config_headlineFontFamily"
+        android:text="@string/sable_settings_title"
+        android:textColor="?android:attr/textColorPrimary"
+        android:textSize="40sp"
+        android:fontWeight="300" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/sable_settings_subtitle"
+        android:textColor="?android:attr/textColorSecondary"
+        android:textSize="15sp" />
+
+    <View
+        android:layout_width="42dp"
+        android:layout_height="3dp"
+        android:layout_marginTop="14dp"
+        android:background="@color/sable_ui_accent" />
+
+</LinearLayout>
