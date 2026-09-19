@@ -89,13 +89,13 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x gradlew
-          ./gradlew :app-thunderbird:testFossReleaseUnitTest \
+          ./gradlew testsOnCi --parallel \
             --stacktrace --console=plain --no-daemon
 
       - name: Sable Mail Android Lint
         working-directory: /tmp/sable-mail
         run: |
-          ./gradlew :app-thunderbird:lintFossRelease \
+          ./gradlew lint \
             --stacktrace --console=plain --no-daemon
 
       - name: Prove excluded product dependencies
@@ -124,7 +124,7 @@ jobs:
       - name: Build Sable Mail APK
         working-directory: /tmp/sable-mail
         run: |
-          ./gradlew :app-thunderbird:assembleFossRelease \
+          ./gradlew :app-thunderbird:assembleFossRelease -Pci=true \
             --stacktrace --console=plain --no-daemon
 
       - name: Verify and seal Sable Mail APK
