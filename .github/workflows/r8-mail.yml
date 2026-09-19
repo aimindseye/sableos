@@ -90,13 +90,13 @@ jobs:
           set -euo pipefail
           chmod +x gradlew
           ./gradlew :app-thunderbird:testFossReleaseUnitTest \
-            --stacktrace --console=plain --no-daemon --no-configuration-cache
+            --stacktrace --console=plain --no-daemon
 
       - name: Sable Mail Android Lint
         working-directory: /tmp/sable-mail
         run: |
           ./gradlew :app-thunderbird:lintFossRelease \
-            --stacktrace --console=plain --no-daemon --no-configuration-cache
+            --stacktrace --console=plain --no-daemon
 
       - name: Prove excluded product dependencies
         working-directory: /tmp/sable-mail
@@ -105,7 +105,7 @@ jobs:
           set -euo pipefail
           ./gradlew :app-thunderbird:dependencies \
             --configuration fossReleaseRuntimeClasspath \
-            --console=plain --no-daemon --no-configuration-cache \
+            --console=plain --no-daemon \
             | tee /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
 
           if grep -E             'feature:thundermail|feature:funding:(link|googleplay)|feature:telemetry:glean|feature:onboarding:migration:thunderbird|feature:migration:launcher:thunderbird|backend:demo|autodiscovery:demo'             /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
@@ -125,7 +125,7 @@ jobs:
         working-directory: /tmp/sable-mail
         run: |
           ./gradlew :app-thunderbird:assembleFossRelease \
-            --stacktrace --console=plain --no-daemon --no-configuration-cache
+            --stacktrace --console=plain --no-daemon
 
       - name: Verify and seal Sable Mail APK
         shell: bash
