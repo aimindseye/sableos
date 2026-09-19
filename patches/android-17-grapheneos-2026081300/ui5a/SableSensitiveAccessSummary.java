@@ -40,51 +40,51 @@ final class SableSensitiveAccessSummary {
         final PackageManager pm = userContext.getPackageManager();
         final List<String> capabilities = new ArrayList<>();
 
-        addIfGranted(pm, info.packageName, capabilities,
+        addIfGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_camera,
                 Manifest.permission.CAMERA);
-        addIfGranted(pm, info.packageName, capabilities,
+        addIfGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_microphone,
                 Manifest.permission.RECORD_AUDIO);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_location,
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_contacts,
                 Manifest.permission.READ_CONTACTS,
                 Manifest.permission.WRITE_CONTACTS);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_calendar,
                 Manifest.permission.READ_CALENDAR,
                 Manifest.permission.WRITE_CALENDAR);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_phone,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.CALL_PHONE,
                 Manifest.permission.READ_CALL_LOG,
                 Manifest.permission.WRITE_CALL_LOG);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_messages,
                 Manifest.permission.READ_SMS,
                 Manifest.permission.SEND_SMS,
                 Manifest.permission.RECEIVE_SMS);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_nearby_devices,
                 Manifest.permission.BLUETOOTH_CONNECT,
                 Manifest.permission.BLUETOOTH_SCAN);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_photos_videos,
                 Manifest.permission.READ_MEDIA_IMAGES,
                 Manifest.permission.READ_MEDIA_VIDEO);
-        addIfGranted(pm, info.packageName, capabilities,
+        addIfGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_music_audio,
                 Manifest.permission.READ_MEDIA_AUDIO);
-        addIfAnyGranted(pm, info.packageName, capabilities,
+        addIfAnyGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_sensors,
                 Manifest.permission.BODY_SENSORS,
                 Manifest.permission.BODY_SENSORS_BACKGROUND);
-        addIfGranted(pm, info.packageName, capabilities,
+        addIfGranted(userContext, pm, info.packageName, capabilities,
                 R.string.sable_sensitive_notifications,
                 Manifest.permission.POST_NOTIFICATIONS);
 
@@ -114,6 +114,7 @@ final class SableSensitiveAccessSummary {
     }
 
     private static void addIfGranted(
+            Context context,
             PackageManager pm,
             String packageName,
             List<String> out,
@@ -121,11 +122,12 @@ final class SableSensitiveAccessSummary {
             String permission) {
         if (pm.checkPermission(permission, packageName)
                 == PackageManager.PERMISSION_GRANTED) {
-            out.add(pm.getResources().getString(labelRes));
+            out.add(context.getString(labelRes));
         }
     }
 
     private static void addIfAnyGranted(
+            Context context,
             PackageManager pm,
             String packageName,
             List<String> out,
@@ -134,7 +136,7 @@ final class SableSensitiveAccessSummary {
         for (String permission : permissions) {
             if (pm.checkPermission(permission, packageName)
                     == PackageManager.PERMISSION_GRANTED) {
-                out.add(pm.getResources().getString(labelRes));
+                out.add(context.getString(labelRes));
                 return;
             }
         }
