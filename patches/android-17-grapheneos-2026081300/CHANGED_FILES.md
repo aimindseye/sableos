@@ -131,3 +131,35 @@ Semantics:
 - normal main-list subtitles report only effective sensitive permission grants;
 - AppOps, observed behavior, provenance, components, tracker/library analysis,
   network destinations and security history remain deferred to UI5B.
+
+
+## UI5B Application Security & Privacy evidence
+
+Layered after UI5A, UI5B additionally changes:
+
+```text
+res/xml/app_info_settings.xml
+src/com/android/settings/applications/appinfo/AppInfoDashboardFragment.java
+```
+
+and adds:
+
+```text
+res/xml/sable_app_security_privacy.xml
+res/values/strings_sable_ui5b.xml
+src/com/android/settings/applications/appinfo/SableAppSecurityPrivacyFragment.java
+src/com/android/settings/applications/appinfo/SableAppSecurityPrivacyPreferenceController.java
+```
+
+Semantics:
+
+- identity/provenance comes from PackageManager and signing metadata;
+- sensitive authority separates manifest declaration, permission grant and
+  mapped AppOps state;
+- component counts/export state come from parsed package metadata;
+- packaged native-code presence is bounded local APK static inference;
+- install/update timestamps are local PackageManager-observed state;
+- tracker execution, network destinations and permission/AppOps event history
+  remain explicit `UNKNOWN` until qualified evidence sources exist;
+- the UI5B surface is read-only and retains existing Android Settings flows for
+  all mutations.
