@@ -1,0 +1,110 @@
+name: R8 final UI closure static
+
+on:
+  pull_request:
+    paths:
+      - 'build/panther/**'
+      - 'build/gates/r8-final-*.sh'
+      - 'product/r8/panther/**'
+      - 'patches/android-17-grapheneos-2026081300/**'
+      - 'src/android/packages/apps/SableStart/**'
+      - 'src/android/shared/sabledesign/**'
+      - 'apps/r8/reader/**'
+      - 'build/verify-reader-manifest.py'
+      - '.github/workflows/r8-final-ui-closure.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'build/panther/**'
+      - 'build/gates/r8-final-*.sh'
+      - 'product/r8/panther/**'
+      - 'patches/android-17-grapheneos-2026081300/**'
+      - 'src/android/packages/apps/SableStart/**'
+      - 'src/android/shared/sabledesign/**'
+      - 'apps/r8/reader/**'
+      - 'build/verify-reader-manifest.py'
+      - '.github/workflows/r8-final-ui-closure.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: r8-final-ui-static-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  closure-static:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+
+      - name: Shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          for script in             apps/r8/export-panther-app-bundle.sh             build/panther/sync-sablestart.sh             build/panther/stage-r8-product-apps.sh             build/panther/prepare-r8-final-ui.sh             build/panther/build-r8-final-ui.sh             build/gates/r8-final-product-composition.sh             build/gates/r8-final-target-files.sh
+          do
+            bash -n "$script"
+            echo "SHELL_SYNTAX=PASS $script"
+          done
+
+      - name: Python syntax
+        run: |
+          python3 -m py_compile             apps/r8/reader/apply_sable_flavor.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+          echo "PYTHON_SYNTAX=PASS"
+
+      - name: Platform applicator self-tests
+        run: |
+          set -euo pipefail
+          python3 patches/android-17-grapheneos-2026081300/apply_sable_branding.py --self-test
+          python3 patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py --self-test
+          python3 patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py --self-test
+          python3 patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py --self-test
+          python3 patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py --self-test
+          echo "R8_PLATFORM_APPLICATOR_SELF_TESTS=PASS"
+
+      - name: Product composition contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          bp=product/r8/panther/Android.bp
+          mk=product/r8/panther/r8-product.mk
+          sync=build/panther/sync-sablestart.sh
+          manifest=src/android/packages/apps/SableStart/AndroidManifest.xml
+
+          for module in             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader
+          do
+            grep -Fq "name: \"$module\"" "$bp"
+          done
+
+          for module in             SableStart             SableCalculator             SableSudoku             SableMinesweeper             Sable2048             SableMedia             SableReader
+          do
+            grep -Fq "$module" "$mk"
+          done
+
+          grep -Fq 'overrides: ["ExactCalculator"]' "$bp"
+          grep -Fq 'SableStartScreen.kt' "$sync"
+          ! grep -Fq 'SableStartRoot.kt' "$sync"
+          ! grep -Fq 'SableMetroPreviewActivity' "$manifest"
+
+          echo "R8_PRODUCT_COMPOSITION_CONTRACT=PASS"
+
+      - name: R8-A appearance contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          theme=src/android/shared/sabledesign/src/main/java/org/sableos/design/SableTheme.kt
+          start=src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt
+          state=src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt
+
+          grep -Fq 'FollowSystem("follow-system")' "$theme"
+          grep -Fq 'appearance: SableAppearance = SableAppearance()' "$theme"
+          grep -Fq 'AppearanceMode.entries' "$start"
+          grep -Fq 'AccentPreset.entries' "$start"
+          grep -Fq 'Reset to Follow system · Sable Blue' "$start"
+          grep -Fq 'fun resetAppearance()' "$state"
+
+          echo "R8_A_APPEARANCE_CONTRACT=PASS"
