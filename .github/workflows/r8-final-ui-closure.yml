@@ -96,6 +96,55 @@ jobs:
           done
 
           grep -Fq 'overrides: ["ExactCalculator"]' "$bp"
+
+          test "$(grep -Fc 'presigned: true,' "$bp")" -eq 8
+          test "$(grep -Fc 'preprocessed: true,' "$bp")" -eq 8
+          test "$(grep -Fc 'enabled: false,' "$bp")" -eq 8
+
+          python3 - "$bp" <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+          expected = {
+              "SableCalculator",
+              "SableSudoku",
+              "SableMinesweeper",
+              "Sable2048",
+              "SableMedia",
+              "SableReader",
+              "SableHub",
+              "SableMail",
+          }
+
+          blocks = re.findall(r"android_app_import\s*\{(.*?)\n\}", text, flags=re.S)
+          seen = set()
+          for block in blocks:
+              match = re.search(r'name:\s*"([^"]+)"', block)
+              if not match or match.group(1) not in expected:
+                  continue
+              name = match.group(1)
+              seen.add(name)
+              for token in (
+                  "presigned: true,",
+                  "preprocessed: true,",
+                  "dex_preopt:",
+                  "enabled: false,",
+              ):
+                  if token not in block:
+                      raise SystemExit(
+                          f"missing {token!r} from {name}"
+                      )
+
+          if seen != expected:
+              raise SystemExit(
+                  f"wrong import set missing={sorted(expected-seen)!r}"
+              )
+
+          print("R8_PRESIGNED_APK_PREPROCESSED_STATIC=PASS")
+          PY
+
           grep -Fq 'SableStartScreen.kt' "$sync"
           ! grep -Fq 'SableStartRoot.kt' "$sync"
           ! grep -Fq 'SableMetroPreviewActivity' "$sync"

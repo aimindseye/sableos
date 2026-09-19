@@ -132,3 +132,17 @@ Before retiring the legacy `vendor/sable/config/common.mk`, R8 now runs
 file outside that tree references it. If the legacy parent contains any other
 unexpected device content, the build fails closed without deleting either tree.
 After successful retirement, `vendor/sable_devices` must be absent.
+
+
+## Presigned R8 APK preservation
+
+The eight standalone R8 application APKs are already signed before they enter the
+Panther product graph. Their `android_app_import` definitions therefore set both
+`presigned: true` and `preprocessed: true`, with dex preopt disabled.
+
+For targetSdkVersion 30 and newer, Soong requires presigned imports to be marked
+preprocessed so the product build does not rewrite the APK and invalidate its
+APK Signature Scheme v2+ signature.
+
+The final product-composition gate validates this contract for all eight
+canonical APK imports before Soong module compilation begins.
