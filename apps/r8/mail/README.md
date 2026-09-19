@@ -58,9 +58,24 @@ python3 apps/r8/mail/apply_sable_flavor.py /path/to/thunderbird-android
 python3 apps/r8/mail/verify_sable_mail.py /path/to/thunderbird-android
 ```
 
-The build lane additionally runs Thunderbird unit tests, Android Lint and a
-FOSS debug APK build, then verifies the APK application ID is exactly
-`org.sableos.mail`.
+Sable Mail uses two CI tiers:
+
+1. **Product gate — `.github/workflows/r8-mail.yml`**
+   - runs for ordinary Sable Mail, SableDesign and SableStart changes;
+   - runs the app-scoped Thunderbird `:app-thunderbird:testsOnCi` task;
+   - lints the shipped `fossRelease` variant;
+   - proves the exact FOSS release runtime dependency policy;
+   - builds `:app-thunderbird:assembleFossRelease -Pci=true`;
+   - verifies the APK identity/policy and records its SHA-256.
+2. **Upstream qualification — `.github/workflows/r8-mail-upstream.yml`**
+   - runs automatically when the pinned Thunderbird identity changes;
+   - is also available by manual dispatch;
+   - applies the Sable adaptation and source-policy verifier first;
+   - then runs Thunderbird's repository-wide `testsOnCi --parallel` suite.
+
+The full Thunderbird repository-wide suite is intentionally not part of every
+ordinary Sable Mail pull request. It qualifies a new upstream pin, while the
+product gate continuously qualifies the actual Sable-shipped application graph.
 
 A successful standalone build does not authorize Panther inclusion. The APK
 must enter the source-bound R8 app bundle and pass the Panther product and
