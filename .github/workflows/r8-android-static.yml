@@ -12,6 +12,7 @@ on:
     paths:
       - 'apps/r8/android/**'
       - 'src/android/shared/sabledesign/**'
+      - 'src/android/packages/apps/SableStart/**'
       - '.github/workflows/r8-android-static.yml'
   workflow_dispatch:
 
@@ -60,6 +61,5 @@ jobs:
           :games:lintGame2048Debug
           :media:lintDebug
           :hub:lintDebug
-          :start-preview:lintDebug
-          :system-preview:lintDebug
+          :sablestart-production-check:lintDebug
           --stacktrace
