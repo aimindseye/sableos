@@ -1132,11 +1132,21 @@ private fun DevelopmentNavigator(
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "${index + 1} / ${screens.size}",
+                    text =
+                        if (current == SableStartDestination.Context) {
+                            "context"
+                        } else {
+                            "${index + 1} / ${screens.size}"
+                        },
                     style = MaterialTheme.typography.labelLarge,
                 )
                 Text(
-                    text = normalizedCurrent.title,
+                    text =
+                        if (current == SableStartDestination.Context) {
+                            "app"
+                        } else {
+                            normalizedCurrent.title
+                        },
                     style = MaterialTheme.typography.bodyMedium,
                     color = SableMuted,
                 )
