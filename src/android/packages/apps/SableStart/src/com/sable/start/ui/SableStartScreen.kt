@@ -1384,6 +1384,7 @@ private fun appColor(app: AppEntry): Color {
 
 private val FEATURED_APP_LABELS =
     listOf(
+        "Sable Messages",
         "Messages",
         "Photos",
         "Camera",
