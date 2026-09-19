@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="sable_settings_eyebrow">SableOS</string>
+    <string name="sable_settings_title">settings</string>
+    <string name="sable_settings_subtitle">Device controls with security and privacy state kept visible.</string>
+
     <string name="sable_applications_title">Applications</string>
     <string name="sable_applications_summary_loading">Access, privacy and app controls</string>
 
