@@ -18,7 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
-import org.sableos.design.SablePanel
+import org.sableos.design.SableValuePanel
 import org.sableos.design.SableSpacing
 
 @Composable
@@ -49,17 +49,11 @@ internal fun Game2048Screen() {
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
 
-        SablePanel {
-            Text(
-                "Score",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                score.toString(),
-                style = MaterialTheme.typography.headlineMedium,
-            )
-        }
+        SableValuePanel(
+            label = "score",
+            value = score.toString(),
+            supportingText = "Combine equal tiles to keep climbing.",
+        )
 
         Column(
             modifier = Modifier.fillMaxWidth(),
