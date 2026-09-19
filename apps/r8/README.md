@@ -1,5 +1,23 @@
 # R8 standalone application qualification workspace
 
+## R8-F — Sable Hub / Messages
+
+R8-F adds `org.sableos.hub` as the common central communication surface before the final Panther build.
+
+The standalone Android module provides:
+
+- Metro/Sable ALL / MESSAGES / PEOPLE / SERVICES pivots;
+- Android Telephony SMS history/send capability when the Sable build/user grants it;
+- ContactsProvider person display without creating a separate cloud/history database;
+- explicit fallback to the proven Android messaging transport for MMS/RCS and when restricted SMS access is unavailable;
+- isolated WEB provider processes for WhatsApp, Instagram, Facebook/Messenger and LinkedIn;
+- truthful provider capability classification rather than private-protocol scraping;
+- common semantics intended for later Titan 2/Q27 keyboard-first presentation.
+
+R8-F does not take the default SMS role in this tranche. Full default-handler SMS/MMS ownership is a later independent qualification gate.
+
+The final Panther bundle/product/target-files gates require `SableHub.apk` / `org.sableos.hub`.
+
 ## 2026-09-19 final Pixel integration requirement
 
 The standalone qualification boundary remains useful, but the next Panther build is now gated by `docs/R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
