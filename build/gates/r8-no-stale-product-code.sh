@@ -20,6 +20,7 @@ stale_paths=(
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewActivity.kt"
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewScreen.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartRoot.kt"
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableMetroPreviewActivity.kt"
 )
 
 for rel in "${stale_paths[@]}"; do
@@ -31,7 +32,7 @@ for rel in "${stale_paths[@]}"; do
 done
 
 stale_matches="$(
-    git -C "$ROOT" grep -n -E         'MediaDesignPreview(Activity|Screen)|SableStartRoot|UI-C1A Review'         --         apps/r8/android/media         src/android/packages/apps/SableStart         2>/dev/null         || true
+    git -C "$ROOT" grep -n -E         'MediaDesignPreview(Activity|Screen)|SableStartRoot|SableMetroPreviewActivity|DevelopmentNavigator|showDevelopmentNavigator|UI-C1A Review'         --         apps/r8/android/media         src/android/packages/apps/SableStart         2>/dev/null         || true
 )"
 if [[ -n "$stale_matches" ]]; then
     printf '%s\n' "$stale_matches"
@@ -53,6 +54,11 @@ for forbidden in start-preview system-preview ExactCalculator SableConvert Sable
 done
 
 echo "R8_QUALIFICATION_ONLY_PREVIEW_MODULES=PASS_NOT_PRODUCT_SELECTED"
+
+for manifest in     "$ROOT/apps/r8/android/calculator/src/main/AndroidManifest.xml"     "$ROOT/apps/r8/android/games/src/main/AndroidManifest.xml"     "$ROOT/apps/r8/android/media/src/main/AndroidManifest.xml"     "$ROOT/apps/r8/android/hub/src/main/AndroidManifest.xml"
+do
+    grep -Fq 'android:authorities="org.sableos.start.appearance"' "$manifest"         || fail R8_GLOBAL_APPEARANCE_VISIBILITY
+done
 
 for source in     "$ROOT/apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt"     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt"     "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt"     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt"
 do
