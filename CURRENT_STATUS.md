@@ -1,8 +1,41 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-18
+Last updated: 2026-09-19
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
+
+## 2026-09-19 R8 final Pixel UI closure handoff
+
+The 2026-09-19 sandbox-qualified Panther build and preserved-data flash proved the development build/deployment pipeline, but physical review exposed a product-composition gap: the flashed image did not contain the completed R8 application/UI set. The exact flashed target-files SHA-256 was `b5c9d9804db8ac3173f2b17c3c95dd02925880b001b7ef9ead1d7b5388bc5cbd`; it is retained as build/flash evidence, not accepted as the final UI candidate.
+
+The execution authority is now `docs/R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+
+```text
+R8_SANDBOX_QUALIFICATION_BUILD=PASS
+R8_PANTHER_FLASH_AND_BOOT=PASS
+R8_PRESERVED_DATA=PASS
+
+R8_A_SHARED_DESIGN=PARTIAL
+R8_START_METRO_HOME=IMPLEMENTED_IN_REPOSITORY_NOT_PRODUCT_PROVEN
+R8_B_CALCULATOR_CONVERT=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
+R8_C_GAMES=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
+R8_D_READER_PUBLICATION=STANDALONE_QUALIFIED_PRODUCT_PHYSICAL_PENDING
+R8_D2_TEXT_TTS=PASS
+R8_D2_OCR=NOT_INTEGRATED
+R8_E_MEDIA=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
+
+UI4_SYSTEMUI=SOURCE_AND_INCREMENTAL_BUILD_PASS_PHYSICAL_PENDING
+UI5_SETTINGS_APP_SECURITY=SOURCE_AND_INCREMENTAL_BUILD_PASS_PHYSICAL_PENDING
+UI5C_UI6_SETUP_ABOUT_KEYGUARD=SOURCE_AND_INCREMENTAL_BUILD_PASS_PHYSICAL_PENDING
+
+R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+NEXT_ACTIVE_DELIVERABLE=R8_PIXEL_UI_PRODUCT_CLOSURE
+```
+
+R8-D2 is explicitly incomplete: TXT, VIEW/SEND/PROCESS_TEXT and local Android TTS are composed, while OCR/camera/gallery recognition and offline model/runtime qualification remain to be implemented. Translation/model-download support is not required for the current UI closure unless separately approved.
+
+Titan 2 is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival. Titan 2 GSI mutation/flash remains blocked until the final Panther UI product-composition, build and physical-acceptance gates pass.
 
 ## 2026-09-18 UI refresh handoff
 
@@ -58,8 +91,8 @@ The accepted near-term product direction is **Sable Flow**: a Metro-inspired, in
 
 ```text
 SABLEOS_PRODUCT_DEVELOPMENT=ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
-NEXT_PRODUCT_MILESTONE=SABLE_M1_METRO_SHELL_PROTOTYPE
+SABLEOS_CORE_PRODUCT_STAGE=R8_FINAL_UI_PRODUCT_CLOSURE
+NEXT_PRODUCT_MILESTONE=R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
 TARGET=panther
 ```
 
