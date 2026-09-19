@@ -141,7 +141,7 @@ def main() -> None:
         / "sableos"
         / "design"
     )
-    for name in ("SableTheme.kt", "SableComponents.kt", "SableSystemBars.kt"):
+    for name in ("SableTheme.kt", "SableComponents.kt", "SableSystemBars.kt", "SableGlobalAppearance.kt"):
         copy_file(design_source / name, design_destination / name)
 
     # Keep upstream Vaachak appearance unchanged for its own flavor and preserve the
@@ -154,9 +154,8 @@ def main() -> None:
         '''package org.vaachak.reader.leisure.ui.theme
 
 import androidx.compose.runtime.Composable
-import org.sableos.design.AppearanceMode
-import org.sableos.design.SableAppearance
 import org.sableos.design.SableTheme
+import org.sableos.design.rememberGlobalSableAppearance
 import org.vaachak.reader.core.domain.model.ThemeMode
 import org.vaachak.reader.leisure.BuildConfig
 
@@ -176,15 +175,7 @@ fun ProductReaderTheme(
     }
 
     SableTheme(
-        appearance =
-            SableAppearance(
-                mode =
-                    when (themeMode) {
-                        ThemeMode.LIGHT -> AppearanceMode.Light
-                        ThemeMode.DARK -> AppearanceMode.Dark
-                        ThemeMode.E_INK -> AppearanceMode.FollowSystem
-                    },
-            ),
+        appearance = rememberGlobalSableAppearance(),
         content = content,
     )
 }
@@ -310,8 +301,7 @@ import org.sableos.design.SablePanel
 import org.sableos.design.SableValuePanel
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
-import org.sableos.design.SableTheme
-import org.sableos.design.applySableDarkSystemBars
+import org.sableos.design.SableGlobalTheme
 import org.vaachak.textreader.TextReaderUtil
 import java.io.FilterInputStream
 import java.io.InputStream
@@ -338,12 +328,11 @@ class SableTextActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        applySableDarkSystemBars(window)
         speaker = PlainTextSpeaker(this) { narrationStatus = it }
         loadIntent(intent)
 
         setContent {
-            SableTheme {
+            SableGlobalTheme(window = window) {
                 SableScrollableScreen {
                     SableHeroHeader(
                         eyebrow = "Sable",
@@ -661,8 +650,7 @@ import org.sableos.design.SableHeroHeader
 import org.sableos.design.SablePanel
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
-import org.sableos.design.SableTheme
-import org.sableos.design.applySableDarkSystemBars
+import org.sableos.design.SableGlobalTheme
 import org.vaachak.textreader.CameraScannerView
 
 private enum class OcrScript(val label: String) {
@@ -673,7 +661,6 @@ private enum class OcrScript(val label: String) {
 class SableOcrActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        applySableDarkSystemBars(window)
 
         setContent {
             var script by remember { mutableStateOf(OcrScript.Latin) }
@@ -738,7 +725,7 @@ class SableOcrActivity : ComponentActivity() {
                     }
                 }
 
-            SableTheme {
+            SableGlobalTheme(window = window) {
                 if (showCamera) {
                     CameraScannerView(
                         isDevanagari = script == OcrScript.Devanagari,
