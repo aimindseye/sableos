@@ -1,9 +1,13 @@
 package org.sableos.start.platform
 
 import android.content.Context
+import org.sableos.design.AccentPreset
+import org.sableos.design.AppearanceMode
+import org.sableos.design.SableAppearance
+import org.sableos.design.SableDesignContract
 
 /**
- * Stores only launcher presentation state. Recent activity intentionally stays
+ * Stores launcher presentation state only. Recent activity intentionally stays
  * in-memory so Sable Start does not build a persistent app-usage history.
  */
 class StartStateRepository(
@@ -26,6 +30,48 @@ class StartStateRepository(
             .edit()
             .putStringSet(KEY_PINNED_APPS, keys.toSet())
             .apply()
+    }
+
+    fun loadAppearance(): SableAppearance =
+        SableAppearance(
+            mode =
+                AppearanceMode.fromStableValue(
+                    preferences.getString(
+                        SableDesignContract.KEY_APPEARANCE_MODE,
+                        null,
+                    ),
+                ),
+            accent =
+                AccentPreset.fromStableValue(
+                    preferences.getString(
+                        SableDesignContract.KEY_ACCENT,
+                        null,
+                    ),
+                ),
+        )
+
+    fun saveAppearance(appearance: SableAppearance) {
+        preferences
+            .edit()
+            .putString(
+                SableDesignContract.KEY_APPEARANCE_MODE,
+                appearance.mode.stableValue,
+            )
+            .putString(
+                SableDesignContract.KEY_ACCENT,
+                appearance.accent.stableValue,
+            )
+            .apply()
+    }
+
+    fun resetAppearance(): SableAppearance {
+        val appearance = SableAppearance()
+        preferences
+            .edit()
+            .remove(SableDesignContract.KEY_APPEARANCE_MODE)
+            .remove(SableDesignContract.KEY_ACCENT)
+            .apply()
+        return appearance
     }
 
     private companion object {
