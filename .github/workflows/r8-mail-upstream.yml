@@ -1,22 +1,13 @@
 name: R8 Sable Mail upstream qualification
 
 on:
-  pull_request:
-    paths:
-      - 'apps/r8/mail/upstream.env'
-      - '.github/workflows/r8-mail-upstream.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'apps/r8/mail/upstream.env'
-      - '.github/workflows/r8-mail-upstream.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: r8-mail-upstream-${{ github.ref }}
+  group: r8-mail-upstream-manual
   cancel-in-progress: true
 
 jobs:
