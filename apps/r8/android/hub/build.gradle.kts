@@ -30,6 +30,19 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
         }
     }
+
+    lint {
+        // Hub has JVM unit tests but no instrumentation-test sources.
+        // Keep production-source lint enabled without resolving an unused
+        // debugAndroidTest dependency graph.
+        checkTestSources = false
+    }
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        variantBuilder.enableAndroidTest = false
+    }
 }
 
 dependencies {
