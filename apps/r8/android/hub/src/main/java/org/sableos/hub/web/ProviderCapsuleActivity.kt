@@ -92,7 +92,7 @@ private class ProviderWebViewClient(
         val uri = request.url
         val scheme = uri.scheme?.lowercase()
         if (
-            scheme in setOf("https", "http") &&
+            scheme == "https" &&
             provider.allowsHost(uri.host)
         ) {
             return false
