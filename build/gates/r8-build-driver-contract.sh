@@ -13,11 +13,12 @@ runner="$ROOT/build/panther/run-r8-release-candidate.sh"
 stage="$ROOT/build/panther/stage-r8-product-apps.sh"
 finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
+inventory="$ROOT/build/gates/verify-r8-vendor-sable-inventory.py"
 android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
 start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 android_ci="$ROOT/.github/workflows/r8-android.yml"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale" "$android_settings" "$start_check" "$android_ci"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
@@ -57,10 +58,11 @@ grep -Fq 'R8_LEGACY_PRODUCT_TREE=PASS_ABSENT_POST_STAGE' "$stage"
 grep -Fq 'R8_LEGACY_PRODUCT_PARENT=PASS_ABSENT_POST_STAGE' "$stage"
 grep -Fq 'LEGACY_WORKSPACE_PRODUCT_TREE="$WS/vendor/sable/prebuilts/r8"' "$nostale"
 grep -Fq 'R8_STALE_WORKSPACE_PRODUCT_TREE' "$nostale"
-grep -Fq 'R8_VENDOR_SABLE_EXACT_INVENTORY=PASS' "$nostale"
-grep -Fq 'R8_VENDOR_SABLE_CANONICAL_FILE_COUNT=13' "$nostale"
-grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8' "$nostale"
+grep -Fq 'verify-r8-vendor-sable-inventory.py' "$nostale"
 grep -Fq 'R8_DUPLICATE_PRODUCT_BLUEPRINT' "$nostale"
+grep -Fq 'R8_VENDOR_SABLE_EXACT_INVENTORY=PASS' "$inventory"
+grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8' "$inventory"
+python3 "$inventory" --self-test
 
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
 
