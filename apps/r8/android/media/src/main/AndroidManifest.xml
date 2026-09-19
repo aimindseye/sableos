@@ -11,6 +11,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".preview.MediaDesignPreviewActivity"
+            android:exported="false"
+            android:label="Sable Media UI-C1A Review" />
         <service
             android:name=".PlaybackService"
             android:exported="false"

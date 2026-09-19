@@ -3,13 +3,15 @@ package org.sableos.games
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import org.sableos.design.SablePageHeader
+import org.sableos.design.applySableDarkSystemBars
+import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applySableDarkSystemBars(window)
 
         val qualification = NativeBridge.selfTest()
         check(qualification.startsWith("PASS:")) { qualification }
@@ -19,30 +21,36 @@ class MainActivity : ComponentActivity() {
                 SableScrollableScreen {
                     when (BuildConfig.SABLE_GAME) {
                         "sudoku" -> {
-                            SablePageHeader(
-                                title = "Sudoku",
-                                subtitle = "Sable Games",
+                            SableHeroHeader(
+                                eyebrow = "Sable Games",
+                                title = "sudoku",
+                                subtitle = "A focused number puzzle.",
                             )
                             SudokuScreen()
                         }
 
                         "minesweeper" -> {
-                            SablePageHeader(
-                                title = "Minesweeper",
-                                subtitle = "Sable Games",
+                            SableHeroHeader(
+                                eyebrow = "Sable Games",
+                                title = "minesweeper",
+                                subtitle = "Clear the field without touching a mine.",
                             )
                             MinesweeperScreen()
                         }
 
                         "2048" -> {
-                            SablePageHeader(
+                            SableHeroHeader(
+                                eyebrow = "Sable Games",
                                 title = "2048",
-                                subtitle = "Sable Games",
+                                subtitle = "Slide, merge and build the highest tile.",
                             )
                             Game2048Screen()
                         }
 
-                        else -> error("Unsupported Sable game flavor: ${BuildConfig.SABLE_GAME}")
+                        else ->
+                            error(
+                                "Unsupported Sable game flavor: ${BuildConfig.SABLE_GAME}",
+                            )
                     }
                 }
             }

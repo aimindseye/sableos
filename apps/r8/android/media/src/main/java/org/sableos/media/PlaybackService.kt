@@ -2,6 +2,7 @@ package org.sableos.media
 
 import android.content.Intent
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -21,17 +22,92 @@ class PlaybackService : MediaSessionService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY_URI -> intent.data?.let(::play)
+            ACTION_PLAY_URI ->
+                intent.data?.let { uri ->
+                    play(
+                        uri = uri,
+                        title = intent.getStringExtra(EXTRA_TITLE),
+                        source = intent.getStringExtra(EXTRA_SOURCE),
+                    )
+                }
+
+            ACTION_PLAY_QUEUE ->
+                playQueue(
+                    uris = intent.getStringArrayListExtra(EXTRA_URIS).orEmpty(),
+                    titles = intent.getStringArrayListExtra(EXTRA_TITLES).orEmpty(),
+                    artists = intent.getStringArrayListExtra(EXTRA_ARTISTS).orEmpty(),
+                    startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0),
+                )
+
             ACTION_PAUSE -> player?.pause()
             ACTION_RESUME -> player?.play()
             ACTION_STOP -> player?.stop()
+            ACTION_PREVIOUS -> player?.seekToPreviousMediaItem()
+            ACTION_NEXT -> player?.seekToNextMediaItem()
         }
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun play(uri: android.net.Uri) {
+    private fun play(
+        uri: android.net.Uri,
+        title: String?,
+        source: String?,
+    ) {
+        val metadata =
+            MediaMetadata.Builder()
+                .setTitle(title?.takeIf { it.isNotBlank() } ?: "Sable Media")
+                .setArtist(source?.takeIf { it.isNotBlank() })
+                .build()
+
+        val mediaItem =
+            MediaItem.Builder()
+                .setUri(uri)
+                .setMediaMetadata(metadata)
+                .build()
+
         player?.apply {
-            setMediaItem(MediaItem.fromUri(uri))
+            setMediaItem(mediaItem)
+            prepare()
+            play()
+        }
+    }
+
+    private fun playQueue(
+        uris: List<String>,
+        titles: List<String>,
+        artists: List<String>,
+        startIndex: Int,
+    ) {
+        if (uris.isEmpty()) return
+
+        val items =
+            uris.mapIndexed { index, value ->
+                val metadata =
+                    MediaMetadata.Builder()
+                        .setTitle(
+                            titles.getOrNull(index)
+                                ?.takeIf { it.isNotBlank() }
+                                ?: "Local audio",
+                        )
+                        .setArtist(
+                            artists.getOrNull(index)
+                                ?.takeIf { it.isNotBlank() }
+                                ?: "Unknown artist",
+                        )
+                        .build()
+
+                MediaItem.Builder()
+                    .setUri(android.net.Uri.parse(value))
+                    .setMediaMetadata(metadata)
+                    .build()
+            }
+
+        player?.apply {
+            setMediaItems(
+                items,
+                startIndex.coerceIn(0, items.lastIndex),
+                0L,
+            )
             prepare()
             play()
         }
@@ -50,5 +126,15 @@ class PlaybackService : MediaSessionService() {
         const val ACTION_PAUSE = "org.sableos.media.PAUSE"
         const val ACTION_RESUME = "org.sableos.media.RESUME"
         const val ACTION_STOP = "org.sableos.media.STOP"
+        const val ACTION_PREVIOUS = "org.sableos.media.PREVIOUS"
+        const val ACTION_NEXT = "org.sableos.media.NEXT"
+        const val ACTION_PLAY_QUEUE = "org.sableos.media.PLAY_QUEUE"
+
+        const val EXTRA_TITLE = "org.sableos.media.TITLE"
+        const val EXTRA_SOURCE = "org.sableos.media.SOURCE"
+        const val EXTRA_URIS = "org.sableos.media.URIS"
+        const val EXTRA_TITLES = "org.sableos.media.TITLES"
+        const val EXTRA_ARTISTS = "org.sableos.media.ARTISTS"
+        const val EXTRA_START_INDEX = "org.sableos.media.START_INDEX"
     }
 }

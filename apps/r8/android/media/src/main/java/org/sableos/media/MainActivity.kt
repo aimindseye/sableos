@@ -7,156 +7,285 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import org.sableos.design.SableActionButton
-import org.sableos.design.SablePageHeader
-import org.sableos.design.SablePanel
-import org.sableos.design.SableScrollableScreen
-import org.sableos.design.SableSectionHeader
-import org.sableos.design.SableSpacing
 import org.sableos.design.SableTheme
-import org.sableos.design.SableTile
+import org.sableos.design.applySableDarkSystemBars
 
 class MainActivity : ComponentActivity() {
+    private var playbackState by mutableStateOf(PlaybackUiState())
+    private lateinit var playbackController: PlaybackController
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            SableTheme {
-                var stationUrl by remember { mutableStateOf("") }
-                var status by remember { mutableStateOf("Ready") }
+        applySableDarkSystemBars(window)
 
-                val picker = rememberLauncherForActivityResult(
-                    ActivityResultContracts.OpenDocument(),
-                ) { uri ->
-                    if (uri != null) {
-                        try {
+        val localAudioRepository = LocalAudioRepository(applicationContext)
+        val stationRepository = RadioStationRepository(applicationContext)
+
+        playbackController =
+            PlaybackController(applicationContext) { state ->
+                playbackState = state
+            }
+
+        setContent {
+            var destination by remember {
+                mutableStateOf(MediaDestination.Collection)
+            }
+            var libraryPivot by remember {
+                mutableStateOf(LibraryPivot.Songs)
+            }
+            var localItems by remember {
+                mutableStateOf(localAudioRepository.loadItems())
+            }
+            var stations by remember {
+                mutableStateOf(stationRepository.loadStations())
+            }
+            var editingStation by remember {
+                mutableStateOf<RadioStation?>(null)
+            }
+            var stationName by remember {
+                mutableStateOf("")
+            }
+            var stationUrl by remember {
+                mutableStateOf("")
+            }
+            var message by remember {
+                mutableStateOf<String?>(null)
+            }
+
+            fun clearStationForm() {
+                editingStation = null
+                stationName = ""
+                stationUrl = ""
+            }
+
+            val localAudioPicker =
+                rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenMultipleDocuments(),
+                ) { uris ->
+                    if (uris.isEmpty()) {
+                        return@rememberLauncherForActivityResult
+                    }
+
+                    uris.forEach { uri ->
+                        runCatching {
                             contentResolver.takePersistableUriPermission(
                                 uri,
                                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
                             )
-                        } catch (_: SecurityException) {
-                            // Some providers grant transient access only.
                         }
-                        playUri(uri)
-                        status = "Playing local audio"
                     }
+
+                    localItems =
+                        localAudioRepository.addUris(
+                            current = localItems,
+                            uris = uris,
+                        )
+                    libraryPivot = LibraryPivot.Songs
+                    message =
+                        "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
                 }
 
-                SableScrollableScreen {
-                    SablePageHeader(
-                        title = "Media",
-                        subtitle = "Music · Radio",
-                    )
+            SableTheme {
+                MediaScreen(
+                    destination = destination,
+                    libraryPivot = libraryPivot,
+                    localItems = localItems,
+                    stations = stations,
+                    playback = playbackState,
+                    stationName = stationName,
+                    stationUrl = stationUrl,
+                    editingStation = editingStation,
+                    message = message,
+                    onDestinationChange = { next ->
+                        destination = next
+                        message = null
 
-                    SablePanel {
-                        Text(
-                            "Now playing",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (
+                            next != MediaDestination.ManageStations &&
+                            next != MediaDestination.AddStation
+                        ) {
+                            clearStationForm()
+                        }
+                    },
+                    onLibraryPivotChange = {
+                        libraryPivot = it
+                    },
+                    onAddLocalAudio = {
+                        localAudioPicker.launch(arrayOf("audio/*"))
+                    },
+                    onPlayLocal = { selectedIndex ->
+                        playLocalQueue(
+                            items = localItems,
+                            startIndex = selectedIndex,
                         )
-                        Text(
-                            status,
-                            style = MaterialTheme.typography.headlineMedium,
+                        destination = MediaDestination.NowPlaying
+                    },
+                    onRemoveLocal = { item ->
+                        localItems =
+                            localAudioRepository.remove(
+                                current = localItems,
+                                uri = item.uri,
+                            )
+                        message = "Removed from the Sable Media collection."
+                    },
+                    onPlayStation = { station ->
+                        playUri(
+                            uri = Uri.parse(station.url),
+                            title = station.name,
+                            source = "live radio",
                         )
-                    }
+                        destination = MediaDestination.NowPlaying
+                    },
+                    onAddStation = {
+                        clearStationForm()
+                        message = null
+                        destination = MediaDestination.AddStation
+                    },
+                    onManageStations = {
+                        clearStationForm()
+                        message = null
+                        destination = MediaDestination.ManageStations
+                    },
+                    onEditStation = { station ->
+                        editingStation = station
+                        stationName = station.name
+                        stationUrl = station.url
+                        message = null
+                    },
+                    onDeleteStation = { station ->
+                        stations =
+                            stationRepository.deleteStation(
+                                current = stations,
+                                id = station.id,
+                            )
+                        if (editingStation?.id == station.id) {
+                            clearStationForm()
+                        }
+                        message = "Station removed."
+                    },
+                    onStationNameChange = {
+                        stationName = it
+                        message = null
+                    },
+                    onStationUrlChange = {
+                        stationUrl = it
+                        message = null
+                    },
+                    onSaveNewStation = {
+                        val candidate = stationUrl.trim()
 
-                    SableSectionHeader("Music")
-                    SableTile(
-                        title = "Open local audio",
-                        subtitle = "Choose a track from this device",
-                        onClick = {
-                            picker.launch(arrayOf("audio/*"))
-                        },
-                    )
+                        if (!RadioStationRepository.isSupportedUrl(candidate)) {
+                            message = "Station URL must use HTTP or HTTPS."
+                        } else {
+                            stations =
+                                stationRepository.saveStation(
+                                    current = stations,
+                                    name = stationName,
+                                    url = candidate,
+                                )
+                            clearStationForm()
+                            message = "Station saved locally."
+                            destination = MediaDestination.Radio
+                        }
+                    },
+                    onSaveEditedStation = {
+                        val editing = editingStation
+                        val candidate = stationUrl.trim()
 
-                    SableSectionHeader("Internet radio")
-                    OutlinedTextField(
-                        value = stationUrl,
-                        onValueChange = { stationUrl = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        label = { Text("HTTP(S) stream URL") },
-                    )
-                    SableActionButton(
-                        text = "Play station",
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = {
-                            val candidate = stationUrl.trim()
-                            if (
-                                candidate.startsWith("http://") ||
-                                candidate.startsWith("https://")
-                            ) {
-                                playUri(Uri.parse(candidate))
-                                status = "Playing radio stream"
-                            } else {
-                                status = "Enter an HTTP or HTTPS station URL"
+                        when {
+                            editing == null ->
+                                message = "Choose a station to edit."
+
+                            !RadioStationRepository.isSupportedUrl(candidate) ->
+                                message = "Station URL must use HTTP or HTTPS."
+
+                            else -> {
+                                stations =
+                                    stationRepository.updateStation(
+                                        current = stations,
+                                        id = editing.id,
+                                        name = stationName,
+                                        url = candidate,
+                                    )
+                                clearStationForm()
+                                message = "Station updated."
                             }
-                        },
-                    )
-
-                    SableSectionHeader("Playback")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-                    ) {
-                        SableActionButton(
-                            text = "Pause",
-                            primary = false,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                sendPlaybackAction(PlaybackService.ACTION_PAUSE)
-                                status = "Paused"
-                            },
-                        )
-                        SableActionButton(
-                            text = "Resume",
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                sendPlaybackAction(PlaybackService.ACTION_RESUME)
-                                status = "Playing"
-                            },
-                        )
-                        SableActionButton(
-                            text = "Stop",
-                            primary = false,
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                sendPlaybackAction(PlaybackService.ACTION_STOP)
-                                status = "Stopped"
-                            },
-                        )
-                    }
-
-                    Text(
-                        "Media3 owns playback, audio routing, focus and session lifecycle. " +
-                            "Sable keeps the player surface direct and content-first.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                        }
+                    },
+                    onCancelStationFlow = {
+                        if (destination == MediaDestination.AddStation) {
+                            clearStationForm()
+                            message = null
+                            destination = MediaDestination.Radio
+                        } else {
+                            clearStationForm()
+                            message = null
+                        }
+                    },
+                    onPlayPause = {
+                        if (playbackState.isPlaying) {
+                            playbackController.pause()
+                        } else {
+                            playbackController.play()
+                        }
+                    },
+                    onPrevious = playbackController::previous,
+                    onNext = playbackController::next,
+                    onStop = playbackController::stop,
+                    onSeek = playbackController::seekTo,
+                )
             }
         }
     }
 
-    private fun playUri(uri: Uri) {
+    override fun onDestroy() {
+        playbackController.close()
+        super.onDestroy()
+    }
+
+    private fun playUri(
+        uri: Uri,
+        title: String,
+        source: String,
+    ) {
         startService(
             Intent(this, PlaybackService::class.java)
                 .setAction(PlaybackService.ACTION_PLAY_URI)
-                .setData(uri),
+                .setData(uri)
+                .putExtra(PlaybackService.EXTRA_TITLE, title)
+                .putExtra(PlaybackService.EXTRA_SOURCE, source),
         )
     }
 
-    private fun sendPlaybackAction(action: String) {
-        startService(Intent(this, PlaybackService::class.java).setAction(action))
+    private fun playLocalQueue(
+        items: List<LocalAudioItem>,
+        startIndex: Int,
+    ) {
+        if (items.isEmpty()) return
+
+        startService(
+            Intent(this, PlaybackService::class.java)
+                .setAction(PlaybackService.ACTION_PLAY_QUEUE)
+                .putStringArrayListExtra(
+                    PlaybackService.EXTRA_URIS,
+                    ArrayList(items.map { it.uri }),
+                )
+                .putStringArrayListExtra(
+                    PlaybackService.EXTRA_TITLES,
+                    ArrayList(items.map { it.title }),
+                )
+                .putStringArrayListExtra(
+                    PlaybackService.EXTRA_ARTISTS,
+                    ArrayList(items.map { it.artist }),
+                )
+                .putExtra(
+                    PlaybackService.EXTRA_START_INDEX,
+                    startIndex.coerceIn(0, items.lastIndex),
+                ),
+        )
     }
 }
