@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.OutlinedButton
@@ -150,6 +151,86 @@ fun SablePageHeader(
                 .height(SableSize.AccentBarWidth)
                 .background(MaterialTheme.colorScheme.primary),
         )
+    }
+}
+
+@Composable
+fun SableHeroHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+    eyebrow: String? = null,
+    subtitle: String? = null,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+    ) {
+        if (eyebrow != null) {
+            Text(
+                text = eyebrow,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Light,
+        )
+        if (subtitle != null) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .padding(top = SableSpacing.Sm)
+                .width(SableSpacing.Xxxl)
+                .height(SableSize.AccentBarWidth)
+                .background(MaterialTheme.colorScheme.primary),
+        )
+    }
+}
+
+@Composable
+fun SableValuePanel(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    supportingText: String? = null,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(SableSpacing.Lg),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (supportingText != null) {
+                Text(
+                    text = supportingText,
+                    modifier = Modifier.wrapContentWidth(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
