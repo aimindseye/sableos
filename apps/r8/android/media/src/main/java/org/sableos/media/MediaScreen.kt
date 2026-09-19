@@ -334,10 +334,18 @@ private fun CollectionScreen(
     pivot: LibraryPivot,
     items: List<LocalAudioItem>,
     playback: PlaybackUiState,
+    favoriteAudioUris: Set<String>,
+    playlists: List<MediaPlaylist>,
+    showMiniPlayer: Boolean,
     onPivotChange: (LibraryPivot) -> Unit,
     onAddLocalAudio: () -> Unit,
     onPlay: (Int) -> Unit,
     onRemove: (LocalAudioItem) -> Unit,
+    onToggleFavorite: (LocalAudioItem) -> Unit,
+    onCreatePlaylist: () -> Unit,
+    onEditPlaylist: (MediaPlaylist) -> Unit,
+    onDeletePlaylist: (MediaPlaylist) -> Unit,
+    onPlayPlaylist: (MediaPlaylist) -> Unit,
     onOpenNowPlaying: () -> Unit,
 ) {
     Column(
@@ -349,7 +357,10 @@ private fun CollectionScreen(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
         ) {
             LibraryPivot.entries.forEach { item ->
@@ -391,6 +402,8 @@ private fun CollectionScreen(
                         LocalTrackRow(
                             item = item,
                             accent = accentFor(index),
+                            favorite = item.uri in favoriteAudioUris,
+                            onToggleFavorite = { onToggleFavorite(item) },
                             onPlay = { onPlay(index) },
                             onRemove = { onRemove(item) },
                         )
@@ -427,10 +440,61 @@ private fun CollectionScreen(
                                 },
                             )
                         }
+
+                LibraryPivot.Favorites -> {
+                    val favorites =
+                        items.filter { item ->
+                            item.uri in favoriteAudioUris
+                        }
+
+                    if (favorites.isEmpty()) {
+                        C2InfoPanel(
+                            title = "No favorite tracks",
+                            detail = "Mark local tracks with ★ to keep a quick local favorites view.",
+                        )
+                    } else {
+                        favorites.forEach { item ->
+                            val index = items.indexOf(item)
+                            LocalTrackRow(
+                                item = item,
+                                accent = accentFor(index),
+                                favorite = true,
+                                onToggleFavorite = { onToggleFavorite(item) },
+                                onPlay = { onPlay(index) },
+                                onRemove = { onRemove(item) },
+                            )
+                        }
+                    }
+                }
+
+                LibraryPivot.Playlists -> {
+                    SableActionButton(
+                        text = "Create playlist",
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onCreatePlaylist,
+                    )
+
+                    if (playlists.isEmpty()) {
+                        C2InfoPanel(
+                            title = "No playlists yet",
+                            detail = "Create a local playlist from audio already added to Sable Media.",
+                        )
+                    } else {
+                        playlists.forEach { playlist ->
+                            PlaylistCard(
+                                playlist = playlist,
+                                availableItems = items,
+                                onPlay = { onPlayPlaylist(playlist) },
+                                onEdit = { onEditPlaylist(playlist) },
+                                onDelete = { onDeletePlaylist(playlist) },
+                            )
+                        }
+                    }
+                }
             }
         }
 
-        if (playback.title != "Nothing queued") {
+        if (showMiniPlayer && playback.title != "Nothing queued") {
             MiniPlayer(
                 playback = playback,
                 onClick = onOpenNowPlaying,
@@ -443,6 +507,8 @@ private fun CollectionScreen(
 private fun LocalTrackRow(
     item: LocalAudioItem,
     accent: Color,
+    favorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onPlay: () -> Unit,
     onRemove: () -> Unit,
 ) {
@@ -493,6 +559,10 @@ private fun LocalTrackRow(
             }
 
             CompactAction(
+                text = if (favorite) "★" else "☆",
+                onClick = onToggleFavorite,
+            )
+            CompactAction(
                 text = "×",
                 onClick = onRemove,
             )
@@ -501,6 +571,64 @@ private fun LocalTrackRow(
                 active = true,
                 onClick = onPlay,
             )
+        }
+    }
+}
+
+@Composable
+private fun PlaylistCard(
+    playlist: MediaPlaylist,
+    availableItems: List<LocalAudioItem>,
+    onPlay: () -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val trackCount =
+        playlist.itemUris.count { uri ->
+            availableItems.any { it.uri == uri }
+        }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(
+            modifier = Modifier.padding(SableSpacing.Md),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+        ) {
+            Text(
+                text = playlist.name,
+                style = MaterialTheme.typography.titleLarge,
+            )
+            Text(
+                text = "$trackCount track${if (trackCount == 1) "" else "s"}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Play",
+                    modifier = Modifier.weight(1f),
+                    onClick = onPlay,
+                )
+                SableActionButton(
+                    text = "Edit",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onEdit,
+                )
+                SableActionButton(
+                    text = "Remove",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onDelete,
+                )
+            }
         }
     }
 }
