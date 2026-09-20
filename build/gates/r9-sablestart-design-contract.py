@@ -32,17 +32,22 @@ def check() -> None:
         start,
         (
             "SectionLabel(\"favorites\")",
-            "Search / Command",
+            "search + command",
+            "search apps + Sable actions",
             "SableStartDestination.Peek",
-            "Sable Peek",
+            'text = "peek"',
             "rememberLazyListState()",
             "detectDragGestures(",
             ".align(Alignment.CenterStart)",
             ".fillMaxHeight()",
             "listState.scrollToItem(index)",
-            "Pin to Favorites",
+            "pin to favorites",
+            "permissions + app info",
             "apps · settings · Sable actions",
-            "SableStart does not perform ambient network search",
+            "local only · no ambient network search",
+            "AppearanceChoiceRow(",
+            "AccentChoiceRow(",
+            "reset · follow system + Sable Blue",
         ),
         "R9_SABLESTART_COMBINED_SOURCE",
     )
@@ -92,7 +97,9 @@ def check() -> None:
             "R9-L4  Sable Peek",
             "R9-L5  contextual media/calendar live block",
             "R9-L6  production-source screenshot review",
-            "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO",
+            "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES",
+            "HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher",
+            "HOME_ROLE_HOLDER=com.android.launcher3",
         ),
         "R9_SABLESTART_DESIGN_CONTRACT",
     )
@@ -102,7 +109,7 @@ def check() -> None:
     print("R9_L3_SEARCH_COMMAND=PASS_SOURCE")
     print("R9_L4_SABLE_PEEK=PASS_SOURCE")
     print("R9_L5_CONTEXTUAL_LOCAL_DATA=PASS_SOURCE")
-    print("R9_L6_VISUAL_REVIEW_GATE=PASS_BLOCKING_BUILD")
+    print("R9_L6_VISUAL_REVIEW_GATE=PASS_FULL_BUILD_AUTHORIZED")
     print("R9_SABLESTART_COMBINED_DESIGN_CONTRACT=PASS")
 
 
