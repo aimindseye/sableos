@@ -21,6 +21,11 @@ stale_paths=(
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewScreen.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartRoot.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableMetroPreviewActivity.kt"
+    "src/android/packages/apps/SableStart/AndroidManifest.xml"
+    "src/android/packages/apps/SableStart/rust/src/lib.rs"
+    "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt"
+    "src/android/packages/apps/SableStart/src/com/sable/start/bridge/SableStartNative.kt"
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt"
     "apps/r8/android/start-preview"
     "apps/r8/android/system-preview"
     "build/panther/build-ui-preview.sh"
@@ -38,7 +43,7 @@ done
 
 stale_matches="$(
     git -C "$ROOT" grep -n -E \
-        'MediaDesignPreview(Activity|Screen)|SableStartRoot|SableMetroPreviewActivity|DevelopmentNavigator|showDevelopmentNavigator|UI-C1A Review' \
+        'MediaDesignPreview(Activity|Screen)|SableStartRoot|SableMetroPreviewActivity|SableStartActivity|LauncherAppsRepository|SableStartNative|DevelopmentNavigator|showDevelopmentNavigator|UI-C1A Review' \
         -- \
         apps/r8/android/media/src \
         apps/r8/android/media/src/main/AndroidManifest.xml \
@@ -69,16 +74,17 @@ if [[ -n "$stale_tracked_paths" ]]; then
 fi
 echo "R8_STALE_PRODUCT_TRACKED_PATH=PASS_ABSENT"
 
-START_MANIFEST="$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
+START_BP="$ROOT/src/android/packages/apps/SableStart/Android.bp"
 MEDIA_MANIFEST="$ROOT/apps/r8/android/media/src/main/AndroidManifest.xml"
 PRODUCT_MK="$ROOT/product/r8/panther/r8-product.mk"
 
-grep -Fq 'SableMetroPreviewActivity' "$START_MANIFEST" \
-    && fail R8_STALE_START_PREVIEW_COMPONENT
-grep -Fq 'MediaDesignPreviewActivity' "$MEDIA_MANIFEST" \
-    && fail R8_STALE_MEDIA_PREVIEW_COMPONENT
+grep -Fq 'android_app {' "$START_BP" && fail R9_STANDALONE_SABLESTART_ANDROID_APP
+grep -Fq 'rust_ffi_shared {' "$START_BP" && fail R9_STANDALONE_SABLESTART_RUST_JNI
+grep -Fq 'name: "sable_start_presentation_srcs"' "$START_BP" || fail R9_SABLESTART_PRESENTATION_FILEGROUP
+grep -Fq 'MediaDesignPreviewActivity' "$MEDIA_MANIFEST" && fail R8_STALE_MEDIA_PREVIEW_COMPONENT
 
 for forbidden in \
+    SableStart \
     start-preview \
     system-preview \
     ExactCalculator \
@@ -97,8 +103,11 @@ GRADLE_SETTINGS="$ROOT/apps/r8/android/settings.gradle.kts"
 grep -Fq 'include(":start-preview")' "$GRADLE_SETTINGS"     && fail R8_STALE_START_PREVIEW_MODULE
 grep -Fq 'include(":system-preview")' "$GRADLE_SETTINGS"     && fail R8_STALE_SYSTEM_PREVIEW_MODULE
 grep -Fq 'include(":sablestart-production-check")' "$GRADLE_SETTINGS"     || fail R8_SABLESTART_PRODUCTION_CHECK_MODULE
+START_CHECK="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
+grep -Fq 'manifest.srcFile("src/main/AndroidManifest.xml")' "$START_CHECK" || fail R9_SABLESTART_PRESENTATION_CHECK_MANIFEST
+! grep -Fq 'src/android/packages/apps/SableStart/AndroidManifest.xml' "$START_CHECK" || fail R9_STANDALONE_SABLESTART_MANIFEST_REFERENCE
 echo "R8_PREVIEW_QUALIFICATION_MODULES=PASS_RETIRED"
-echo "R8_SABLESTART_PRODUCTION_CHECK_MODULE=PASS"
+echo "R8_SABLESTART_PRODUCTION_CHECK_MODULE=PASS_PRESENTATION_ONLY"
 
 if [[ -n "$WS" ]]; then
     LEGACY_SABLE_DEVICE_PRODUCT="$WS/vendor/sable_devices/sable_panther"
@@ -245,6 +254,8 @@ fi
 
 echo "R8_STALE_PRODUCT_SOURCE_TEXT=PASS_ABSENT"
 echo "R8_STALE_PRODUCT_COMPONENTS=PASS_ABSENT"
+echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
+echo "R9_SABLESTART_PRESENTATION_SOURCE=PASS"
 echo "R8_STALE_PRODUCT_MODULES=PASS_ABSENT"
 echo "R8_GLOBAL_APPEARANCE_CONSUMERS=PASS"
 echo "R8_SABLE_MAIL_POLICY_SOURCE=PASS"
