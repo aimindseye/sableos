@@ -24,7 +24,9 @@ python3 -m py_compile \
 echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
 python3 "$ROOT/build/deploy/target_files_plan.py" --self-test
+python3 "$ROOT/build/deploy/artifact_registry.py" self-test
 echo "SABLE_PIPELINE_FASTBOOT_PLAN_SELF_TEST=PASS"
+echo "SABLE_PIPELINE_ARTIFACT_REGISTRY_SELF_TEST=PASS"
 
 grep -Fq 'usage:' "$ROOT/build/sable.sh"
 grep -Fq 'build/sable.sh <device> <release> <function>' "$ROOT/build/sable.sh"
@@ -34,6 +36,7 @@ done
 echo "SABLE_PIPELINE_CANONICAL_ENTRYPOINT=PASS"
 
 grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
+grep -Fq 'sable_device_artifact_gate' "$ROOT/build/devices/panther.sh"
 for d in titan2 titan2-elite q27; do
   f="$ROOT/build/devices/$d.sh"
   grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$f"
@@ -52,6 +55,7 @@ grep -Fq 'FASTBOOT_WIPE_FLAG=ABSENT' "$FLASH"
 grep -Fq -- '--skip-secondary' "$FLASH"
 grep -Fq -- '--skip-reboot' "$FLASH"
 grep -Fq 'SABLE_BLOCKER_ISSUE_REQUIRED=YES' "$FLASH"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE' "$FLASH"
 
 if grep -Eq '(^|[[:space:]])-w([[:space:]]|$)' "$FLASH"; then
   echo "SABLE_PIPELINE_NO_WIPE_FLAG=FAIL"
