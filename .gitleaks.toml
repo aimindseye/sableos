@@ -30,16 +30,7 @@ description = "Historical R1-R2 encrypted factory archive key type label; not ke
 targetRules = ["generic-api-key"]
 condition = "AND"
 commits = ["b2d109edca7c254566e5f9bbdac4646cf50eed61"]
-paths = ['''^docs/SABLE_R1_R2_STATIC_PREP_AND_DISK_AUDIT\.md
-[[allowlists]]
-description = "Historical R1-R0 policy PASS expression; not a credential"
-targetRules = ["generic-api-key"]
-condition = "AND"
-commits = ["dc2fa126ef805a49dde4c98ffe0f18cfed09f37b"]
-paths = ['''^tools/validation/release-r1/SABLE_R1_R0_RELEASE_PREFLIGHT\.py$''']
-regexTarget = "line"
-regexes = ['''^\s*"PASS" if common_keys == SIGNING_KEYS_2026081300 else "ERROR",\s*$''']
-'']
+paths = ['''^docs/SABLE_R1_R2_STATIC_PREP_AND_DISK_AUDIT\.md$''']
 
 [[allowlists]]
 description = "Historical R1-R0 policy PASS expression; not a credential"
