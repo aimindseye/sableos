@@ -154,6 +154,8 @@ bash build/panther/qualify-r9-launcher3-foundation.sh
 
 The qualifier resolves the current build workspace from `build/config/r8-release.env` and then layers Panther device/lunch constants from `build/config/panther-grapheneos-2026081300.env`. This avoids the retired `/srv/data/sableos/upstream/...` layout.
 
+The focused compile also reuses the canonical warmed Panther output (`SABLE_R8_OUT_DIR`, currently `out_sable_r8_final`) by default. It refuses a cold output unless `ALLOW_COLD_OUT=YES` is explicitly supplied. A warm output must already contain a Ninja graph and `target/product/panther`; this prevents a nominally module-only `m Launcher3QuickStep` request from triggering a many-thousand-action cold dependency rebuild.
+
 The qualifier performs:
 
 1. repository foundation contract;
