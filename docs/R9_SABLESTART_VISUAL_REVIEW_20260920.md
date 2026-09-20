@@ -586,3 +586,31 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_APPEARANCE_THEME
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L14 Appearance pre-capture refinement
+
+Local Context is accepted. Before capturing Appearance, the source was reviewed
+for visual consistency. Its existing implementation still used rounded Material
+Buttons for each theme and accent choice, which conflicts with the accepted
+Start/Search/Peek/Local Context language.
+
+R9L14 source changes:
+
+- replaces theme Buttons with flat `AppearanceChoiceRow` rows;
+- uses an accent rule plus check mark for the selected theme;
+- replaces full-width colored accent Buttons with compact color swatches,
+  labels, hairlines, and a selected check mark;
+- keeps the bounded appearance model: Follow System / Light / Dark plus the
+  existing Sable accent presets;
+- keeps reset explicit as `reset · follow system + Sable Blue`.
+
+```text
+R9_L13_LOCAL_CONTEXT_VISUAL_REVIEW=PASS
+R9_L14_APPEARANCE_REFINEMENT=SOURCE_READY
+R9_L14_APPEARANCE_VISUAL_REVIEW=PENDING_CAPTURE
+R9_L14_LIGHT_DARK_VISUAL_REVIEW=PENDING_CAPTURE
+R9_L14_ALTERNATE_ACCENT_VISUAL_REVIEW=PENDING_CAPTURE
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_APPEARANCE_THEME
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
