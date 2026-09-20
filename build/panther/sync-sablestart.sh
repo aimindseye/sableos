@@ -16,19 +16,13 @@ DST="$SABLEOS_UPSTREAM/$SABLEOS_SABLESTART_REL"
 
 required=(
   Android.bp
-  AndroidManifest.xml
-  res/values/strings.xml
-  rust/src/lib.rs
-  src/com/sable/start/SableStartActivity.kt
-  src/com/sable/start/bridge/SableStartNative.kt
   src/com/sable/start/model/AppEntry.kt
-  src/com/sable/start/platform/LauncherAppsRepository.kt
   src/com/sable/start/platform/LiveSurfaceRepository.kt
+  src/com/sable/start/platform/SableAppearanceProvider.kt
   src/com/sable/start/platform/StartStateRepository.kt
   src/com/sable/start/live/LiveSurfaceModels.kt
   src/com/sable/start/ui/SableStartScreen.kt
 )
-
 missing=0
 for rel in "${required[@]}"; do
     if [[ ! -f "$SRC/$rel" ]]; then
