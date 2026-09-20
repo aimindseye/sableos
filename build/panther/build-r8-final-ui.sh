@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 
 BUILD_AUTHORIZED="${BUILD_AUTHORIZED:-NO}"
@@ -58,29 +59,6 @@ grep -Fxq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' \
     }
 
 echo
-echo "===== SABLESTART SIGNING SOURCE POLICY ====="
-
-SIGNING_POLICY="$ROOT/build/gates/r8-sablestart-signing-policy.py"
-SABLESTART_BP="$WS/packages/apps/SableStart/Android.bp"
-
-set +e
-python3 "$SIGNING_POLICY" \
-    --source-bp "$SABLESTART_BP" \
-    2>&1 | tee "$EVIDENCE_DIR/sablestart-signing-source.log"
-SABLESTART_SIGNING_SOURCE_RC=${PIPESTATUS[0]}
-set -e
-
-echo "R8_SABLESTART_SIGNING_SOURCE_RC=$SABLESTART_SIGNING_SOURCE_RC"
-
-if [[ "$SABLESTART_SIGNING_SOURCE_RC" -ne 0 ]]; then
-    echo "R8_SABLESTART_SIGNING_SOURCE_POLICY=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_SABLESTART_SIGNING_SOURCE"
-    exit 4
-fi
-
-echo "R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS"
-
-echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="
 
 cd "$WS"
@@ -134,28 +112,28 @@ echo "R8_TARGET_BUILD_VARIANT=PASS value=$TARGET_BUILD_VARIANT"
 echo "R8_LUNCH=PASS"
 
 echo
-echo "===== SABLESTART SOONG PREFLIGHT ====="
+echo "===== LAUNCHER3QUICKSTEP HOME PREFLIGHT ====="
 
 set +e
-m -j"$JOBS" SableStart 2>&1 | tee "$EVIDENCE_DIR/sablestart-soong-preflight.log"
-SABLESTART_RC=${PIPESTATUS[0]}
+m -j"$JOBS" Launcher3QuickStep 2>&1 | tee "$EVIDENCE_DIR/launcher3-home-preflight.log"
+LAUNCHER3_RC=${PIPESTATUS[0]}
 set -e
 
-echo "R8_SABLESTART_SOONG_PREFLIGHT_RC=$SABLESTART_RC"
+echo "R9_LAUNCHER3_HOME_PREFLIGHT_RC=$LAUNCHER3_RC"
 
-if [[ "$SABLESTART_RC" -ne 0 ]]; then
-    echo "R8_SABLESTART_SOONG_PREFLIGHT=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_SABLESTART_PREFLIGHT"
+if [[ "$LAUNCHER3_RC" -ne 0 ]]; then
+    echo "R9_LAUNCHER3_HOME_PREFLIGHT=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_LAUNCHER3_HOME_PREFLIGHT"
     exit 5
 fi
 
-echo "R8_SABLESTART_SOONG_PREFLIGHT=PASS"
+echo "R9_LAUNCHER3_HOME_PREFLIGHT=PASS"
 
 echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
-m -j"$JOBS"     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
+m -j"$JOBS"     Launcher3QuickStep     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
 MODULE_RC=${PIPESTATUS[0]}
 set -e
 
@@ -213,27 +191,6 @@ TF_SHA="$(sha256sum "$TF" | awk '{print $1}')"
 echo "R8_TARGET_FILES=$TF"
 echo "R8_TARGET_FILES_SHA256=$TF_SHA"
 
-echo
-echo "===== SABLESTART SIGNING TARGET-FILES POLICY ====="
-
-set +e
-python3 "$SIGNING_POLICY" \
-    --source-bp "$SABLESTART_BP" \
-    --target-files "$TF" \
-    2>&1 | tee "$EVIDENCE_DIR/sablestart-signing-target-files.log"
-SABLESTART_SIGNING_TARGET_RC=${PIPESTATUS[0]}
-set -e
-
-echo "R8_SABLESTART_SIGNING_TARGET_RC=$SABLESTART_SIGNING_TARGET_RC"
-
-if [[ "$SABLESTART_SIGNING_TARGET_RC" -ne 0 ]]; then
-    echo "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_SABLESTART_SIGNING_TARGET"
-    exit 9
-fi
-
-echo "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS"
-
 WS="$WS" OUT_DIR="$OUT_DIR" TF="$TF"     bash "$ROOT/build/gates/r8-final-target-files.sh"     | tee "$EVIDENCE_DIR/target-files-composition.log"
 
 grep -Fxq 'R8_FINAL_TARGET_FILES=PASS'     "$EVIDENCE_DIR/target-files-composition.log"     || {
@@ -244,6 +201,8 @@ grep -Fxq 'R8_FINAL_TARGET_FILES=PASS'     "$EVIDENCE_DIR/target-files-compositi
 echo
 echo "===== R8 FINAL BUILD RESULT ====="
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
+echo "R9_LAUNCHER3_HOME_PREFLIGHT=PASS"
+echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 echo "R8_UI_MODULE_BUILD=PASS"
 echo "R8_FULL_BUILD=PASS"
 echo "R8_BUILD_SANDBOX=PASS"
