@@ -120,6 +120,28 @@ Sable deliberately differs in several areas:
 - privacy/security context remains part of Sable Peek;
 - Metro/Modern typography and Sable identity remain the visual language.
 
+## Audited fallback Quickstep residue
+
+Before the first v2 foundation apply, the canonical Panther workspace contained exactly two pre-existing Launcher3 modifications while the repository HEAD remained pinned at `e5fde8f4368539554b07ee136abd27bc7b4284c1`:
+
+```text
+quickstep/src/com/android/quickstep/FallbackActivityInterface.java
+HEAD blob:     d9f14ac530bc9f81910e305536f1e39a0ef6e564
+worktree blob: 8387af17a577a6720cccbc5ca952aefffafa6157
+change:        interactor == null -> interactor == null || callbacks == null
+
+quickstep/tests/multivalentTests/src/com/android/quickstep/FallbackSwipeHandlerTestCase.java
+HEAD blob:     e68f0d2d9d242104b9ce05685e83708704b6dd5f
+worktree blob: 23239ce5180bee05da6ea52afe889e00523619c4
+change:        local null-callback regression test
+```
+
+Review found that current GrapheneOS Launcher3 already applies the same null-callback guard in the normal `LauncherActivityInterface`, while the pinned/current fallback implementation lacks it. The production fallback guard is therefore retained as an explicit Sable compatibility delta.
+
+The local regression-test residue is not retained because it constructs the Dagger singleton incorrectly for the pinned API. The applicator recognizes that exact audited test blob only, restores that file to pinned `HEAD`, and then requires it to remain clean. The production fallback file is accepted before apply only at the exact audited `8387af...` blob; any other pre-existing fallback edit fails closed.
+
+After apply, the complete allowed Launcher3 dirty set is exactly five files: the Quickstep library build file, Quickstep launcher manifest, Quickstep label resources, Sable host source, and `FallbackActivityInterface.java`.
+
 ## Focused qualification
 
 Run only after synchronizing this repository branch locally:
