@@ -115,6 +115,7 @@ def check() -> list[str]:
             "KNOWN_LEGACY_FALLBACK_BLOB",
             "KNOWN_LEGACY_FALLBACK_TEST_BLOB",
             "normalize_known_legacy_residue",
+            "validate_preexisting_fallback_compat",
             "R9_LAUNCHER3_DIRTY_PATHS=PASS",
             "R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
