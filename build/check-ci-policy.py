@@ -73,6 +73,7 @@ r8_target_files_gate = ROOT / "build" / "gates" / "r8-final-target-files.sh"
 r8_closure_workflow = WORKFLOWS / "r8-final-ui-closure.yml"
 r8_mail_workflow = WORKFLOWS / "r8-mail.yml"
 r8_product_composition_gate = ROOT / "build" / "gates" / "r8-final-product-composition.sh"
+r9_sablestart_design_gate = ROOT / "build" / "gates" / "r9-sablestart-design-contract.py"
 sablestart_bp = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "Android.bp"
 sablestart_manifest = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "AndroidManifest.xml"
 sable_system_bars = ROOT / "src" / "android" / "shared" / "sabledesign" / "src" / "main" / "java" / "org" / "sableos" / "design" / "SableSystemBars.kt"
@@ -91,6 +92,7 @@ for path in (
     r8_closure_workflow,
     r8_mail_workflow,
     r8_product_composition_gate,
+    r9_sablestart_design_gate,
     sablestart_bp,
     sablestart_manifest,
     sable_system_bars,
@@ -156,6 +158,71 @@ for path, tokens in (
             if token not in text:
                 failures.append(
                     f"R8 SableStart signing-policy token missing: "
+                    f"{path.relative_to(ROOT)}: {token}"
+                )
+
+if r9_sablestart_design_gate.is_file():
+    r9_proc = subprocess.run(
+        [sys.executable, str(r9_sablestart_design_gate), "--self-test"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if r9_proc.stdout:
+        print(r9_proc.stdout, end="")
+    if r9_proc.returncode != 0:
+        if r9_proc.stderr:
+            print(r9_proc.stderr, file=sys.stderr, end="")
+        failures.append("R9 SableStart design-contract self-test failed")
+
+    r9_check = subprocess.run(
+        [sys.executable, str(r9_sablestart_design_gate)],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if r9_check.stdout:
+        print(r9_check.stdout, end="")
+    if r9_check.returncode != 0:
+        if r9_check.stderr:
+            print(r9_check.stderr, file=sys.stderr, end="")
+        failures.append("R9 SableStart combined design contract failed")
+
+for path, tokens in (
+    (
+        r8_product_composition_gate,
+        (
+            "r9-sablestart-design-contract.py",
+            "R9_L6_VISUAL_REVIEW_STATUS=PENDING",
+            "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO",
+        ),
+    ),
+    (
+        r8_final_build,
+        (
+            "R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW",
+            "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES",
+        ),
+    ),
+    (
+        r8_closure_workflow,
+        (
+            "R9 combined SableStart contract",
+            "R9_SABLESTART_COMBINED_CI=PASS",
+            "build/gates/r9-sablestart-design-contract.py --self-test",
+        ),
+    ),
+):
+    if path.is_file():
+        policy_text = path.read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in policy_text:
+                failures.append(
+                    f"R9 SableStart design/build-hold token missing: "
                     f"{path.relative_to(ROOT)}: {token}"
                 )
 

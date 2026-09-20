@@ -50,6 +50,13 @@ grep -Fxq 'R8_FINAL_UI_PRODUCT_COMPOSITION=PASS'     "$EVIDENCE_DIR/prebuild-com
         exit 4
     }
 
+grep -Fxq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' \
+    "$EVIDENCE_DIR/prebuild-composition.log" || {
+        echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING"
+        echo "R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW"
+        exit 5
+    }
+
 echo
 echo "===== SABLESTART SIGNING SOURCE POLICY ====="
 

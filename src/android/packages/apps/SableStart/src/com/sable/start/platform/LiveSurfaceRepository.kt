@@ -165,17 +165,13 @@ class LiveSurfaceRepository(
             )
         }
 
-        val dayStart =
+        val dayEnd =
             Calendar.getInstance().apply {
                 timeInMillis = nowEpochMs
                 set(Calendar.HOUR_OF_DAY, 0)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
-            }.timeInMillis
-        val dayEnd =
-            Calendar.getInstance().apply {
-                timeInMillis = dayStart
                 add(Calendar.DAY_OF_YEAR, 1)
             }.timeInMillis
 
@@ -183,34 +179,75 @@ class LiveSurfaceRepository(
             val selection =
                 "${CalendarContract.Events.DTSTART} < ? AND " +
                     "${CalendarContract.Events.DTEND} > ?"
-            val args = arrayOf(dayEnd.toString(), dayStart.toString())
-            val count =
-                resolver
-                    .query(
-                        CalendarContract.Events.CONTENT_URI,
-                        arrayOf(CalendarContract.Events._ID),
-                        selection,
-                        args,
-                        null,
-                    )
-                    ?.use { cursor -> cursor.count }
-                    ?: 0
+            val args = arrayOf(dayEnd.toString(), nowEpochMs.toString())
+            val projection =
+                arrayOf(
+                    CalendarContract.Events._ID,
+                    CalendarContract.Events.TITLE,
+                    CalendarContract.Events.DTSTART,
+                    CalendarContract.Events.ALL_DAY,
+                )
 
-            LiveDatum(
-                title = "Calendar",
-                detail =
-                    if (count == 0) {
-                        "no events today"
+            resolver
+                .query(
+                    CalendarContract.Events.CONTENT_URI,
+                    projection,
+                    selection,
+                    args,
+                    "${CalendarContract.Events.DTSTART} ASC",
+                )
+                ?.use { cursor ->
+                    val count = cursor.count
+                    if (count == 0 || !cursor.moveToFirst()) {
+                        LiveDatum(
+                            title = "Calendar",
+                            detail = "nothing else today",
+                            availability = LiveAvailability.EMPTY,
+                        )
                     } else {
-                        "$count ${if (count == 1) "event" else "events"} today"
-                    },
-                availability =
-                    if (count == 0) {
-                        LiveAvailability.EMPTY
-                    } else {
-                        LiveAvailability.LIVE
-                    },
-            )
+                        val title =
+                            cursor
+                                .getString(
+                                    cursor.getColumnIndexOrThrow(
+                                        CalendarContract.Events.TITLE,
+                                    ),
+                                )
+                                ?.trim()
+                                .orEmpty()
+                                .ifEmpty { "Calendar event" }
+                        val startEpochMs =
+                            cursor.getLong(
+                                cursor.getColumnIndexOrThrow(
+                                    CalendarContract.Events.DTSTART,
+                                ),
+                            )
+                        val allDay =
+                            cursor.getInt(
+                                cursor.getColumnIndexOrThrow(
+                                    CalendarContract.Events.ALL_DAY,
+                                ),
+                            ) != 0
+                        val whenText =
+                            if (allDay) {
+                                "all day"
+                            } else {
+                                DateFormat
+                                    .getTimeFormat(appContext)
+                                    .format(Date(startEpochMs))
+                            }
+
+                        LiveDatum(
+                            title = "Calendar",
+                            detail = "$whenText · $title",
+                            availability = LiveAvailability.LIVE,
+                        )
+                    }
+                }
+                ?: LiveDatum(
+                    title = "Calendar",
+                    detail = "calendar unavailable",
+                    availability = LiveAvailability.ERROR,
+                )
         } catch (_: SecurityException) {
             LiveDatum(
                 title = "Calendar",
