@@ -465,3 +465,42 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L12 Sable Peek review
+
+The first Pixel 7 Peek capture proves the contextual behavior and action set,
+but the visual treatment is not accepted.
+
+Behavior confirmed:
+
+- app identity is clear;
+- Open is primary;
+- pin/unpin state is exposed;
+- Permissions & app info is directly reachable;
+- no nested menu is introduced.
+
+Visual issues in the first capture:
+
+- the rounded gray bottom sheet reads as generic Material UI;
+- the oversized blue button is visually heavier than the accepted Start/Search
+  language;
+- the large blank upper area makes the layer feel detached from the product;
+- the long capability note competes too much with the actions.
+
+R9L12 source changes:
+
+- removes the rounded Material-style sheet surface;
+- uses a flat bottom contextual layer with a Sable accent rule;
+- replaces the Button with a flat Metro-style primary action strip;
+- simplifies the close affordance;
+- reduces the capability/privacy note to subordinate body-small text;
+- keeps the same Open, pin/unpin, and permissions actions.
+
+```text
+R9_L12_PEEK_BEHAVIOR=PASS
+R9_L12_PEEK_VISUAL_REVIEW=RECAPTURE_REQUIRED
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_SEARCH_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
