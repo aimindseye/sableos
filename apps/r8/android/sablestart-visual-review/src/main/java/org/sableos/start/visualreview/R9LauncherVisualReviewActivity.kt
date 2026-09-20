@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import android.os.UserManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -92,11 +91,10 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     }
 
     private fun refreshInventory() {
-        val userManager = getSystemService(UserManager::class.java)
         val locale = Locale.getDefault()
 
         appsState.value =
-            userManager.userProfiles
+            launcherApps.profiles
                 .flatMap { user ->
                     launcherApps.getActivityList(null, user).mapNotNull { info ->
                         val label = info.label?.toString()?.trim().orEmpty()
