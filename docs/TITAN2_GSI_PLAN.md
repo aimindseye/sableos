@@ -1,10 +1,13 @@
-# Unihertz Titan 2 SableOS GSI development plan
+# Unihertz Titan 2 family SableOS GSI development plan
 
 Status: **preferred interim non-Pixel development candidate; keyboard-first N0 portability work queued after Panther R9 physical acceptance; not yet validated or supported**.
 
-The Titan 2 is the preferred interim physical-QWERTY development target after the Pixel 7 / Panther baseline is closed. Its initial role is a **development GSI/userspace lab**, not a production-security SableOS target.
+The Titan 2 family now includes two owned development targets:
 
-The goal is to accelerate SableStart, square-display, keyboard/pointer and Android/MediaTek portability work while waiting for the Zinwa Q27 hardware and support situation to mature.
+- **Titan 2** — large 1440x1440 keyboard-first/dual-screen reference;
+- **Titan 2 Elite** — compact 1080x1200 AMOLED keyboard-first reference.
+
+Their initial role is a **development GSI/userspace lab**, not a production-security SableOS target. The goal is to accelerate SableStart, square/near-square display, keyboard/pointer, camera and Android/MediaTek portability work while the Zinwa Q27 hardware/support situation matures.
 
 This plan is governed by `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `AOSP_CAPABILITY_POLICY.md`, `SECURITY_MODEL.md`, `RELEASE_VALIDATION.md` and the project authorization/evidence methodology.
 
@@ -33,6 +36,55 @@ R9_PIXEL7_PHYSICAL_ACCEPTANCE=PASS
 ```
 
 This ensures Titan evaluates the same closed Sable UI/application architecture rather than becoming a parallel fork.
+
+## GSI feasibility by device
+
+### Titan 2 — demonstrated
+
+Community evidence includes a LineageOS 23 GSI port for Titan 2 and Peter Cai's
+AOSP-oriented GSI explicitly listing Titan 2 as a regularly used/tested device.
+SableOS can therefore treat the **GSI architecture as demonstrated**, while still
+requiring our own stock-recovery and exact-device acceptance before flashing.
+
+```text
+TITAN2_GSI_ARCHITECTURE=DEMONSTRATED_EXTERNALLY
+TITAN2_SABLE_GSI=NOT_YET_QUALIFIED
+```
+
+### Titan 2 Elite — strong candidate, local proof required
+
+Titan 2 Elite ships with Android 16 on a Dimensity 7400 and therefore sits in the
+modern Treble architecture where a GSI is the right first portability mechanism.
+However, GSI flashing also requires an unlockable bootloader and working
+fastboot/fastbootd path. Community reports around early Elite units include
+bootloader-unlock uncertainty, so SableOS must not label the device GSI-qualified
+from Android version alone.
+
+Required T0/T1 proof:
+
+```text
+ro.treble.enabled=true
+VINTF manifest/matrix captured
+CPU/ABI and system-as-root/dynamic partitions captured
+fastboot / fastbootd reachable
+OEM unlock ability measured
+bootloader unlock completed only after explicit mutation authorization
+vbmeta / AVB behavior understood
+stock firmware + restore path sealed
+generic arm64 GSI boots
+userdata/storage works
+keyboard/touch/display/camera/telephony baseline classified
+```
+
+Only then:
+
+```text
+TITAN2_ELITE_GSI=PASS
+```
+
+The Android GSI contract itself requires Treble plus a method to unlock and flash
+the device; Sable therefore distinguishes **Treble-capable** from **flashing
+qualified**.
 
 ## Keyboard-first product requirement
 
@@ -66,11 +118,13 @@ Pixel 7 / panther
     -> close SableStart and core product integration
 
 Titan 2
-    -> development GSI/userspace lab
-    -> physical QWERTY and square-display UI work
-    -> MediaTek/Treble compatibility research
-    -> 5G/IMS compatibility inventory
-    -> no full-security-support claim
+    -> large square / rear-display GSI lab
+    -> proven external GSI feasibility
+
+Titan 2 Elite
+    -> compact near-square AMOLED GSI lab
+    -> independent unlock/recovery/GSI proof
+    -> camera/system-camera research
 
 Zinwa Q27
     -> evaluate shipped hardware
@@ -80,9 +134,12 @@ Zinwa Q27
 
 Q25 remains optional for low-level MediaTek/kernel work when its available source provides specific engineering value.
 
-## Why Titan 2 is useful
+## Why the Titan 2 family is useful
 
-Titan 2 offers a larger physical-QWERTY form factor and 5G-capable MediaTek platform suitable for exercising SableOS interaction assumptions which a Pixel slab cannot expose.
+The two devices deliberately cover different physical-keyboard/display envelopes:
+Titan 2 is the larger square/dual-screen case, while Titan 2 Elite is the compact
+near-square case. Both are 5G MediaTek platforms suitable for exercising SableOS
+interaction assumptions which a Pixel slab cannot expose.
 
 Expected development value:
 
@@ -114,7 +171,7 @@ Expected initial ownership:
 ```text
 SableOS/AOSP system userspace
 +
-stock Titan 2 kernel
+stock Titan-family kernel
 +
 stock vendor/ODM
 +
@@ -313,7 +370,7 @@ The Brax3/iodéOS implementation proves this model can be practical without publ
 
 ## N2 production-support gate
 
-Titan 2 becomes a production-supported SableOS target only if the complete device security/update model is acceptable.
+A Titan 2-family device becomes a production-supported SableOS target only if its complete device security/update model is acceptable.
 
 In addition to functional parity require:
 
