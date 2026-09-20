@@ -1116,7 +1116,7 @@ private fun loadLauncherIcon(
                 .toInt()
                 .coerceAtLeast(1)
         val insetPx = (iconSizePx * 0.06f).toInt()
-        val drawable = activityInfo.getIcon(densityDpi)
+        val drawable = activityInfo.getBadgedIcon(densityDpi)
         val bitmap =
             Bitmap.createBitmap(
                 iconSizePx,
