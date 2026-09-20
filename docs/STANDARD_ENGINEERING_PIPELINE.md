@@ -89,7 +89,7 @@ After boot, `sablectl smoke` revalidates exact packaged BuildManifest/ART identi
 
 ### Bootloader/baseband requirements
 
-Before writes, deployment reads the registered `android-info.txt` and verifies live fastboot bootloader/baseband requirements when declared. Required partitions declared by `partition-exists=` must be observable.
+Before writes, deployment reads the registered `android-info.txt` and verifies live fastboot bootloader/baseband requirements when declared. Required partitions declared by `partition-exists=` are verified with `getvar has-slot:<partition>` and only `yes|no` is accepted, matching AOSP fastboot's requirement semantics. `partition-size:<partition>` is not used as an existence predicate because a bootloader may legitimately not expose that variable for a present partition.
 
 ### Bounded failure and GitHub issue policy
 
