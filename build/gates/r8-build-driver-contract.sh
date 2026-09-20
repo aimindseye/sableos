@@ -28,7 +28,7 @@ start_check="$ROOT/apps/r8/android/sablestart-presentation-check/build.gradle.kt
 local_ci="$ROOT/build/local-ci/run.sh"
 ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale"$inventory" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
