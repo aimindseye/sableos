@@ -112,6 +112,7 @@ def check() -> list[str]:
             '":sable_design_shared_srcs",',
             "com.android.launcher3.sable.SableQuickstepLauncher",
             'android:authorities="org.sableos.start.appearance"',
+            "R9_LAUNCHER3_DIRTY_PATHS=PASS",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
             "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
         ):
