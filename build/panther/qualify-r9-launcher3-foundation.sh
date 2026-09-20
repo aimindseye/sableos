@@ -3,6 +3,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# The release profile owns the current ai-g732 build-farm paths. Source it
+# before the Panther substrate profile so the latter contributes device/lunch
+# constants without replacing the canonical relocated workspace.
+source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 
 SOURCE_MUTATION_AUTHORIZED="${SOURCE_MUTATION_AUTHORIZED:-NO}"
