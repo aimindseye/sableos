@@ -1,6 +1,6 @@
 # R9L9 — Mac mini / Pixel 7 launcher visual validation
 
-Status: **source ready / emulator execution pending**
+Status: **Pixel 7 emulator build/install/capture PASS / visual review pending**
 
 Date: 2026-09-20
 
@@ -259,10 +259,25 @@ Those remain later device/runtime gates.
 
 ## Acceptance state
 
+Current execution evidence (2026-09-20, commit
+`2bcdc6699a705a965dc0a4a89c98314cdaaa1162`):
+
+```text
+R9_VISUAL_REVIEW_APK_BUILD=PASS
+R9_VISUAL_REVIEW_PIXEL7_AVD=PASS
+R9_VISUAL_REVIEW_INSTALL=PASS
+R9_VISUAL_REVIEW_INITIAL_CAPTURE=PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_USER_REVIEW
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+The initial frame exists as runtime evidence, but the visual set is not accepted
+until the captured PNGs are actually reviewed.
+
 Before screenshots are reviewed:
 
 ```text
-R9_L9_VISUAL_REVIEW_HARNESS=SOURCE_READY
+R9_L9_VISUAL_REVIEW_HARNESS=RUNTIME_READY
 R9_SABLESTART_VISUAL_REVIEW_SET=PENDING
 R9_SABLESTART_PRODUCT_IDENTITY=PENDING_USER_REVIEW
 R9_L6_VISUAL_REVIEW_STATUS=PENDING
