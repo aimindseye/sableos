@@ -166,6 +166,73 @@ ensure_pinned_cli_tools() {
   export PATH="$PINNED_TOOLS_DIR:$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$PATH"
 }
 
+rust_component_installed() {
+  local component="$1"
+  local installed
+
+  installed="$(
+    "$SABLE_RUSTUP" component list \
+      --installed \
+      --toolchain "$SABLE_RUST_TOOLCHAIN"
+  )"
+
+  case "$component" in
+    llvm-tools-preview)
+      grep -Eq '^llvm-tools(-|$)' <<<"$installed"
+      ;;
+    rust-src)
+      grep -Eq '^rust-src($|-)' <<<"$installed"
+      ;;
+    *)
+      echo "SABLE_LOCAL_CI=FAIL_UNKNOWN_RUST_COMPONENT component=$component"
+      return 2
+      ;;
+  esac
+}
+
+ensure_rust_coverage_components() {
+  export CARGO_HOME="$SABLE_CARGO_HOME"
+  export RUSTUP_HOME="$SABLE_RUSTUP_HOME"
+  export RUSTUP_TOOLCHAIN="$SABLE_RUST_TOOLCHAIN"
+  export PATH="$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$PATH"
+
+  local components=(llvm-tools-preview rust-src)
+  local component
+  local missing=()
+
+  for component in "${components[@]}"; do
+    rust_component_installed "$component" || missing+=("$component")
+  done
+
+  if [[ "${#missing[@]}" -gt 0 ]]; then
+    [[ "${SABLE_LOCAL_CI_ALLOW_NETWORK:-NO}" == YES ]] || {
+      echo "SABLE_LOCAL_CI=FAIL_RUST_COVERAGE_COMPONENTS_MISSING"
+      printf 'MISSING_RUST_COMPONENT=%s\n' "${missing[@]}"
+      echo "HINT=SABLE_LOCAL_CI_ALLOW_NETWORK=YES bash build/local-ci/run.sh $PROFILE"
+      return 1
+    }
+
+    # Install one component at a time before cargo-llvm-cov starts. Allowing
+    # cargo-llvm-cov/rustup wrappers to auto-install during parallel rustc
+    # execution can race on rustup's shared download directory.
+    for component in "${missing[@]}"; do
+      echo "SABLE_LOCAL_CI_RUST_COMPONENT_INSTALL=$component"
+      "$SABLE_RUSTUP" component add \
+        --toolchain "$SABLE_RUST_TOOLCHAIN" \
+        "$component"
+    done
+  fi
+
+  for component in "${components[@]}"; do
+    rust_component_installed "$component" || {
+      echo "SABLE_LOCAL_CI=FAIL_RUST_COVERAGE_COMPONENT_VERIFY component=$component"
+      return 1
+    }
+  done
+
+  echo "SABLE_LOCAL_CI_RUST_COVERAGE_COMPONENTS=PASS"
+}
+
 run_quality() {
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
   export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
@@ -179,8 +246,11 @@ run_quality() {
   )
 
   ensure_pinned_cli_tools
+  ensure_rust_coverage_components
   (
     cd "$ROOT/apps/r8/rust"
+    export CARGO_LLVM_COV_SETUP=no
+    export RUSTUP_TOOLCHAIN="$SABLE_RUST_TOOLCHAIN"
     "$SABLE_CARGO" llvm-cov "${CARGO_NETWORK_ARGS[@]}"       --workspace --locked --lcov       --output-path "$EVIDENCE_DIR/rust-coverage.lcov"
     test -s "$EVIDENCE_DIR/rust-coverage.lcov"
   )
