@@ -7,6 +7,7 @@ For the current project state and active product direction:
 - `../CURRENT_STATUS.md` — current execution handoff, R8 implementation/build-prep priority, paused release work, and validated Panther state.
 - `R8_PIXEL_UI_PRODUCT_CLOSURE.md` — build-blocking final Pixel UI matrix covering R8-A through R8-E, SystemUI/Settings/Setup/Keyguard, Reader OCR, product composition, final Panther build/physical acceptance, and Titan 2 handoff.
 - `R8_SABLESTART_V4_SIGNING_INCIDENT_20260919.md` — R8 physical PackageManager failure, confirmed v4 `.idsig`/fs-verity/SELinux causal chain, source fix, CI/build gates, and requalification contract.
+- `R8_SABLESTART_HOME_RUNTIME_INCIDENT_20260920.md` — R8 physical HOME-role selection gap and SableStart early-window startup crash, lifecycle-safe system-bar fix, HOME priority contract, and cold-launch acceptance requirements.
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.

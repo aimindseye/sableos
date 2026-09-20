@@ -72,7 +72,10 @@ r8_final_build = ROOT / "build" / "panther" / "build-r8-final-ui.sh"
 r8_target_files_gate = ROOT / "build" / "gates" / "r8-final-target-files.sh"
 r8_closure_workflow = WORKFLOWS / "r8-final-ui-closure.yml"
 r8_mail_workflow = WORKFLOWS / "r8-mail.yml"
+r8_product_composition_gate = ROOT / "build" / "gates" / "r8-final-product-composition.sh"
 sablestart_bp = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "Android.bp"
+sablestart_manifest = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "AndroidManifest.xml"
+sable_system_bars = ROOT / "src" / "android" / "shared" / "sabledesign" / "src" / "main" / "java" / "org" / "sableos" / "design" / "SableSystemBars.kt"
 runner_checker = ROOT / "build" / "check-runner-policy.py"
 runner_policy = ROOT / "build" / "trusted-runner-policy.json"
 runner_host_audit = ROOT / "build" / "audit-trusted-runner-host.py"
@@ -87,7 +90,10 @@ for path in (
     r8_target_files_gate,
     r8_closure_workflow,
     r8_mail_workflow,
+    r8_product_composition_gate,
     sablestart_bp,
+    sablestart_manifest,
+    sable_system_bars,
     runner_checker,
     runner_policy,
     runner_host_audit,
@@ -150,6 +156,53 @@ for path, tokens in (
             if token not in text:
                 failures.append(
                     f"R8 SableStart signing-policy token missing: "
+                    f"{path.relative_to(ROOT)}: {token}"
+                )
+
+if sable_system_bars.is_file():
+    system_bars_text = sable_system_bars.read_text(encoding="utf-8")
+    for required in (
+        "val decorView = window.decorView",
+        "decorView.windowInsetsController?.setSystemBarsAppearance(",
+        "if (decorView.isAttachedToWindow)",
+        "decorView.post { applyAppearance() }",
+    ):
+        if required not in system_bars_text:
+            failures.append(f"Sable system-bar lifecycle guard missing: {required}")
+    if "window.insetsController" in system_bars_text:
+        failures.append(
+            "direct Window.insetsController access is forbidden in SableSystemBars"
+        )
+
+if sablestart_manifest.is_file():
+    manifest_text = sablestart_manifest.read_text(encoding="utf-8")
+    if '<intent-filter android:priority="1">' not in manifest_text:
+        failures.append("SableStart HOME intent must retain priority=1")
+    if 'android.intent.category.HOME' not in manifest_text:
+        failures.append("SableStart HOME category missing")
+
+for path, tokens in (
+    (
+        r8_product_composition_gate,
+        (
+            "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS",
+            "R8_SABLESTART_HOME_PRIORITY=PASS",
+        ),
+    ),
+    (
+        r8_closure_workflow,
+        (
+            "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS",
+            "R8_SABLESTART_HOME_PRIORITY=PASS",
+        ),
+    ),
+):
+    if path.is_file():
+        policy_text = path.read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in policy_text:
+                failures.append(
+                    f"SableStart runtime policy token missing: "
                     f"{path.relative_to(ROOT)}: {token}"
                 )
 

@@ -56,7 +56,9 @@ done
 echo "R8_A_SHARED_DESIGN_SOURCE=PASS"
 
 GLOBAL_APPEARANCE="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
+SYSTEM_BARS="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableSystemBars.kt"
 START_PROVIDER="$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt"
+START_MANIFEST="$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
 
 for needle in     'org.sableos.start.appearance'     'rememberGlobalSableAppearance'     'SableGlobalTheme'
 do
@@ -76,6 +78,27 @@ done
 grep -Fq 'SableGlobalAppearance.kt'     "$ROOT/apps/r8/reader/apply_sable_flavor.py"     || fail R8_GLOBAL_APPEARANCE_READER
 
 echo "R8_GLOBAL_APPEARANCE_SOURCE=PASS"
+
+for needle in \
+    'val decorView = window.decorView' \
+    'decorView.windowInsetsController?.setSystemBarsAppearance(' \
+    'if (decorView.isAttachedToWindow)' \
+    'decorView.post { applyAppearance() }'
+do
+    grep -Fq "$needle" "$SYSTEM_BARS" || fail R8_SABLESTART_SYSTEM_BARS_LIFECYCLE
+done
+
+if grep -Fq 'window.insetsController' "$SYSTEM_BARS"; then
+    fail R8_SABLESTART_SYSTEM_BARS_DIRECT_PHONEWINDOW_ACCESS
+fi
+
+grep -Fq '<intent-filter android:priority="1">' "$START_MANIFEST" \
+    || fail R8_SABLESTART_HOME_PRIORITY
+grep -Fq 'android.intent.category.HOME' "$START_MANIFEST" \
+    || fail R8_SABLESTART_HOME_PRIORITY
+
+echo "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS"
+echo "R8_SABLESTART_HOME_PRIORITY=PASS"
 
 echo
 echo "===== SHARED DESIGN WORKSPACE FIDELITY ====="

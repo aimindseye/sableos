@@ -37,10 +37,24 @@ fun applySableSystemBars(
         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
             WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
 
-    window.insetsController?.setSystemBarsAppearance(
-        if (darkTheme) 0 else lightAppearance,
-        lightAppearance,
-    )
+    // PhoneWindow.insetsController dereferences its DecorView internally.
+    // SableStart applies system bars during Activity.onCreate(), before the
+    // framework is guaranteed to have installed that DecorView. Resolve the
+    // view explicitly so early startup is safe and defer icon appearance until
+    // attachment if the controller is not ready yet.
+    val decorView = window.decorView
+    val applyAppearance = {
+        decorView.windowInsetsController?.setSystemBarsAppearance(
+            if (darkTheme) 0 else lightAppearance,
+            lightAppearance,
+        )
+    }
+
+    if (decorView.isAttachedToWindow) {
+        applyAppearance()
+    } else {
+        decorView.post { applyAppearance() }
+    }
 }
 
 fun applySableDarkSystemBars(window: Window) {
