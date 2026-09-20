@@ -100,10 +100,11 @@ if [[ -d "$SABLE_MOBSFSCAN_SOURCE/.git" ]]; then
 else
     echo "CANONICAL_MOBSFSCAN_SOURCE=NONE"
 fi
-if [[ -x "$SABLE_MOBSFSCAN_PYTHON" ]]; then
-    echo "CANONICAL_MOBSFSCAN_PYTHON=$SABLE_MOBSFSCAN_PYTHON"
+if [[ -x "$SABLE_MOBSFSCAN" ]]; then
+    echo "CANONICAL_MOBSFSCAN_EXEC=$SABLE_MOBSFSCAN"
+    "$SABLE_MOBSFSCAN" --version 2>&1 | sed 's/^/CANONICAL_MOBSFSCAN_VERSION=/'
 else
-    echo "CANONICAL_MOBSFSCAN_PYTHON=NONE"
+    echo "CANONICAL_MOBSFSCAN_EXEC=NONE"
 fi
 
 if [[ -d "$CACHE_ROOT/mobsfscan-source/.git" ]]; then
