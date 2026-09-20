@@ -105,7 +105,32 @@ EVIDENCE_DIR="$EVIDENCE_ROOT/$DEVICE/${RELEASE,,}-physical/${STAMP}_flash"
 STAGE_DIR="$EVIDENCE_DIR/flash-payload"
 mkdir -p "$EVIDENCE_DIR"
 
-exec > >(tee "$EVIDENCE_DIR/flash.log") 2>&1
+exec 3>&1 4>&2
+exec > >(tee "$EVIDENCE_DIR/flash.log" >&3) 2>&1
+
+FINAL_RESULT=FAIL
+finalize_run() {
+  local rc=$?
+  trap - EXIT
+  if [[ "$FINAL_RESULT" != PASS ]]; then
+    echo "SABLE_BLOCKER_ISSUE_REQUIRED=YES"
+    echo "SABLE_STANDARD_FLASH=FAIL rc=$rc"
+  fi
+
+  exec 1>&3 2>&4
+  wait || true
+
+  if [[ -d "$EVIDENCE_DIR" ]]; then
+    sable_seal_evidence_dir "$EVIDENCE_DIR" || true
+    echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+  fi
+
+  if [[ "$FINAL_RESULT" == PASS ]]; then
+    echo "SABLE_STANDARD_FLASH=PASS"
+  fi
+  exit "$rc"
+}
+trap finalize_run EXIT
 
 TOOL_SOURCE="$(git -C "$ROOT" rev-parse HEAD)"
 echo "===== SABLEOS STANDARD DEVICE FLASH ====="
@@ -350,6 +375,4 @@ echo "POST_SLOT_SUFFIX=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.slot_suff
 echo "POST_BUILD_FINGERPRINT=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.build.fingerprint </dev/null | tr -d '\r')"
 echo "POST_VERIFIED_BOOT_STATE=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.verifiedbootstate </dev/null | tr -d '\r')"
 
-sable_seal_evidence_dir "$EVIDENCE_DIR"
-echo "EVIDENCE_DIR=$EVIDENCE_DIR"
-echo "SABLE_STANDARD_FLASH=PASS"
+FINAL_RESULT=PASS
