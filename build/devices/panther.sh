@@ -11,7 +11,9 @@ SABLE_DEVICE_DEFAULT_ACCEPTANCE_SUITE=launcher
 sable_device_build() {
   local release="$1"
   local mode="$2"
-  bash "$ROOT/build/panther/run-release.sh" "$release" "$mode"
+  SABLE_AUTO_REGISTER_ARTIFACT=YES \
+  SABLEOS_DEVICE=panther \
+    bash "$ROOT/build/panther/run-release.sh" "$release" "$mode"
 }
 
 sable_device_accept() {
