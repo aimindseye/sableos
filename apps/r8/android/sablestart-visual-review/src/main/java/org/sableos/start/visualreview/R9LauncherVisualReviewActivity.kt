@@ -10,6 +10,7 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
 import org.sableos.design.SableAppearance
 import org.sableos.start.model.AppEntry
@@ -31,6 +32,12 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     private val appsState = mutableStateOf<List<AppEntry>>(emptyList())
     private val appearanceState = mutableStateOf(SableAppearance())
     private val refreshGeneration = mutableStateOf(0)
+    private val livePermissionLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions(),
+        ) {
+            refreshGeneration.value += 1
+        }
 
     private lateinit var launcherApps: LauncherApps
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
@@ -75,18 +82,6 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         super.onResume()
         if (::launcherApps.isInitialized) {
             refreshInventory()
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray,
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == LIVE_PERMISSION_REQUEST_CODE) {
-            refreshGeneration.value += 1
         }
     }
 
@@ -163,9 +158,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 }
             }
 
-        requestPermissions(
+        livePermissionLauncher.launch(
             permissions.toTypedArray(),
-            LIVE_PERMISSION_REQUEST_CODE,
         )
     }
 
@@ -192,7 +186,6 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val LIVE_PERMISSION_REQUEST_CODE = 0x5239
         const val REVIEW_PIN_COUNT = 3
 
         val REVIEW_PIN_LABELS =
