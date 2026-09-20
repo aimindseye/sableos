@@ -103,6 +103,9 @@ else
     mobsfscan_path="$(command -v mobsfscan 2>/dev/null || true)"
     mobsfscan_candidates=(
         "$HOME/.local/bin/mobsfscan"
+        "$HOME/.local/share/pipx/venvs/mobsfscan/bin/mobsfscan"
+        "$HOME/.local/pipx/venvs/mobsfscan/bin/mobsfscan"
+        "/opt/pipx/venvs/mobsfscan/bin/mobsfscan"
         "/usr/local/bin/mobsfscan"
         "/usr/bin/mobsfscan"
     )
@@ -120,7 +123,35 @@ else
     done
 
     if [[ "$mobsfscan_adopted" != YES ]]; then
+        if "$SABLE_PYTHON" - <<'PY' >/dev/null 2>&1
+import libsast
+import sarif_om
+import semgrep
+import yaml
+import xmltodict
+PY
+        then
+            wrapper="$SABLE_MOBSFSCAN"
+            cat > "$wrapper" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+export PYTHONPATH="$SABLE_MOBSFSCAN_SOURCE"
+exec "$SABLE_PYTHON" -m mobsfscan "\$@"
+EOF
+            chmod 0755 "$wrapper"
+
+            if verify_mobsfscan_candidate "$wrapper"; then
+                echo "SABLE_MOBSFSCAN=CENTRALIZED_PINNED_SOURCE_SYSTEM_PYTHON destination=$wrapper"
+                mobsfscan_adopted=YES
+            else
+                rm -f "$wrapper"
+            fi
+        fi
+    fi
+
+    if [[ "$mobsfscan_adopted" != YES ]]; then
         echo "SABLE_MOBSFSCAN=FAIL_NO_EXACT_EXISTING_STABLE_CANDIDATE"
+        echo "SABLE_MOBSFSCAN=NO_PACKAGE_INSTALL_PERFORMED"
         rc=1
     fi
 fi
