@@ -27,6 +27,7 @@ required = (
     ROOT / "build" / "check-runner-policy.py",
     ROOT / "build" / "audit-trusted-runner-host.py",
     ROOT / "build" / "host" / "verify-r8-host-tools.sh",
+    ROOT / "build" / "host" / "bootstrap-r8-host-tools.sh",
     ROOT / "build" / "host" / "audit-r8-host-tools.sh",
     ROOT / "build" / "host" / "centralize-r8-security-tools.sh",
     ROOT / "build" / "host" / "cleanup-r8-host-tool-duplicates.sh",
