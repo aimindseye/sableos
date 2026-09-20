@@ -154,6 +154,11 @@ def main() -> int:
         'GRADLE_NETWORK_ARGS=()',
         "R9_VISUAL_REVIEW_MAC_BASH3_EMPTY_ARRAY",
     )
+    forbid(
+        mac_runner,
+        ":sablestart-visual-review:lintDebug",
+        "R9_VISUAL_REVIEW_MAC_BUILD_BLOCKED_BY_LINT",
+    )
 
     forbid(
         manifest,
@@ -200,7 +205,16 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
     print("R9_PRODUCTION_REAL_ICONS=PASS")
+    local_ci = (ROOT / "build/local-ci/run.sh").read_text()
+    require(
+        local_ci,
+        ":sablestart-visual-review:lintDebug",
+        "R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE",
+    )
+
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
+    print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
+    print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
     print("R9_L9_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
