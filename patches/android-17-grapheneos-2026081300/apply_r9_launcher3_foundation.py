@@ -1250,6 +1250,16 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         ADD_ITEM_ACTIVITY_REL: (
             "widgetProviderInfo.loadLabel(packageManager)",
         ),
+        DISPLAY_CONTROLLER_IMPL_REL: (
+            "import com.android.launcher3.concurrent.annotations.Ui",
+            "@Ui private val uiExecutor: LooperExecutor",
+            "displayManager.registerDisplayListener(this, uiExecutor.handler)",
+            "threadSafePerDisplayInfo.getOrPut(displayId)",
+            "threadSafePerDisplayInfo.remove(displayId)?.cleanup()",
+        ),
+        TASKBAR_DEVICE_PROFILE_FACTORY_REL: (
+            "workspaceProfile.copy(iconSizePx = deviceProfile.taskbarProfile.iconSize)",
+        ),
     }
     for rel, tokens in cleanup_expectations.items():
         source_text = (launcher / rel).read_text(encoding="utf-8")
@@ -1304,6 +1314,8 @@ def apply_tree(source: pathlib.Path) -> None:
     preload_icon_delegate_path = launcher / PRELOAD_ICON_DELEGATE_REL
     db_entry_path = launcher / DB_ENTRY_REL
     add_item_activity_path = launcher / ADD_ITEM_ACTIVITY_REL
+    display_controller_impl_path = launcher / DISPLAY_CONTROLLER_IMPL_REL
+    taskbar_device_profile_factory_path = launcher / TASKBAR_DEVICE_PROFILE_FACTORY_REL
 
     bp_path.write_text(
         patch_android_bp(bp_path.read_text(encoding="utf-8")),
@@ -1445,6 +1457,18 @@ def apply_tree(source: pathlib.Path) -> None:
     )
     add_item_activity_path.write_text(
         patch_add_item_activity(add_item_activity_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    display_controller_impl_path.write_text(
+        patch_display_controller_impl(
+            display_controller_impl_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    taskbar_device_profile_factory_path.write_text(
+        patch_taskbar_device_profile_factory(
+            taskbar_device_profile_factory_path.read_text(encoding="utf-8")
+        ),
         encoding="utf-8",
     )
 
@@ -1736,6 +1760,78 @@ import com.android.launcher3.config.FeatureFlags
     assert "BuildConfig.IS_DEBUG_DEVICE" in patched_model_writer
     assert "BuildConfig.IS_STUDIO_BUILD" in patched_model_writer
     assert patch_model_writer(patched_model_writer) == patched_model_writer
+
+    display_controller = """import android.util.SparseArray
+import androidx.core.util.forEach
+import com.android.launcher3.Flags
+import com.android.launcher3.dagger.ApplicationContext
+import com.android.launcher3.util.DaggerSingletonTracker
+import com.android.launcher3.util.Executors
+    overlayChangeHandler: OverlayChangeHandler,
+    lifecycle: DaggerSingletonTracker,
+    @Deprecated("Will replace it with threadSafePerDisplayInfo")
+    private val perDisplayInfo = SparseArray<DisplayInfoContainer>()
+
+    private val threadSafePerDisplayInfo = ConcurrentHashMap<Int, DisplayInfoContainer>()
+        displayManager.registerDisplayListener(this, Executors.MAIN_EXECUTOR.handler)
+        lifecycle.addCloseable {
+            displayManager.unregisterDisplayListener(this)
+            if (Flags.enableTaskbarUiThread()) {
+                threadSafePerDisplayInfo.forEach { (_, container) -> container.cleanup() }
+            } else {
+                perDisplayInfo.forEach { _, container -> container.cleanup() }
+            }
+        }
+    private fun getOrCreatePerDisplayInfo(display: Display): DisplayInfoContainer {
+        val displayId = display.displayId
+        return if (Flags.enableTaskbarUiThread()) {
+            threadSafePerDisplayInfo.getOrPut(displayId) {
+                createDisplayInfoContainer(display, displayId)
+            }
+        } else {
+            perDisplayInfo[displayId]
+                ?: createDisplayInfoContainer(display, displayId).apply {
+                    perDisplayInfo[displayId] = this
+                }
+        }
+    }
+    @AnyThread
+    override fun getPerDisplayInfoById(displayId: Int): DisplayInfoContainer? =
+        if (Flags.enableTaskbarUiThread()) threadSafePerDisplayInfo[displayId]
+        else perDisplayInfo[displayId]
+    override fun onDisplayRemoved(displayId: Int) {
+        if (Flags.enableTaskbarUiThread()) {
+            threadSafePerDisplayInfo.remove(displayId)?.cleanup()
+        } else {
+            perDisplayInfo[displayId]?.cleanup()
+            perDisplayInfo.remove(displayId)
+        }
+    }
+    override fun dump(pw: PrintWriter) {
+        if (Flags.enableTaskbarUiThread()) {
+            threadSafePerDisplayInfo.forEach { (displayId, container) ->
+                dumpInternal(pw, displayId, container.info.value)
+            }
+        } else {
+            perDisplayInfo.forEach { displayId, container ->
+                dumpInternal(pw, displayId, container.info.value)
+            }
+        }
+    }
+"""
+    patched_display_controller = patch_display_controller_impl(display_controller)
+    assert "SparseArray" not in patched_display_controller
+    assert "Executors.MAIN_EXECUTOR" not in patched_display_controller
+    assert "@Ui private val uiExecutor: LooperExecutor" in patched_display_controller
+    assert "threadSafePerDisplayInfo.getOrPut(displayId)" in patched_display_controller
+    assert patch_display_controller_impl(patched_display_controller) == patched_display_controller
+
+    taskbar_profile = (
+        "deviceProfile.workspaceProfile.changeIconSize(deviceProfile.taskbarProfile.iconSize)"
+    )
+    patched_taskbar_profile = patch_taskbar_device_profile_factory(taskbar_profile)
+    assert "workspaceProfile.copy(iconSizePx =" in patched_taskbar_profile
+    assert patch_taskbar_device_profile_factory(patched_taskbar_profile) == patched_taskbar_profile
 
     try:
         replace_once("x", "missing", "new", "negative")
