@@ -67,7 +67,9 @@ generator = ROOT / "build" / "generate-supply-chain-evidence.py"
 supply_workflow = WORKFLOWS / "supply-chain.yml"
 
 gradle_checker = ROOT / "build" / "check-gradle-supply-chain.py"
-sablestart_signing_gate = ROOT / "build" / "gates" / "r8-sablestart-signing-policy.py"
+launcher3_foundation_applier = ROOT / "patches" / "android-17-grapheneos-2026081300" / "apply_r9_launcher3_foundation.py"
+launcher3_foundation_gate = ROOT / "build" / "gates" / "r9-launcher3-foundation-contract.py"
+launcher3_foundation_qualifier = ROOT / "build" / "panther" / "qualify-r9-launcher3-foundation.sh"
 r8_final_build = ROOT / "build" / "panther" / "build-r8-final-ui.sh"
 r8_target_files_gate = ROOT / "build" / "gates" / "r8-final-target-files.sh"
 r8_closure_workflow = WORKFLOWS / "r8-final-ui-closure.yml"
@@ -75,7 +77,6 @@ r8_mail_workflow = WORKFLOWS / "r8-mail.yml"
 r8_product_composition_gate = ROOT / "build" / "gates" / "r8-final-product-composition.sh"
 r9_sablestart_design_gate = ROOT / "build" / "gates" / "r9-sablestart-design-contract.py"
 sablestart_bp = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "Android.bp"
-sablestart_manifest = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "AndroidManifest.xml"
 sable_system_bars = ROOT / "src" / "android" / "shared" / "sabledesign" / "src" / "main" / "java" / "org" / "sableos" / "design" / "SableSystemBars.kt"
 runner_checker = ROOT / "build" / "check-runner-policy.py"
 runner_policy = ROOT / "build" / "trusted-runner-policy.json"
@@ -86,7 +87,9 @@ for path in (
     installer,
     generator,
     gradle_checker,
-    sablestart_signing_gate,
+    launcher3_foundation_applier,
+    launcher3_foundation_gate,
+    launcher3_foundation_qualifier,
     r8_final_build,
     r8_target_files_gate,
     r8_closure_workflow,
@@ -94,7 +97,6 @@ for path in (
     r8_product_composition_gate,
     r9_sablestart_design_gate,
     sablestart_bp,
-    sablestart_manifest,
     sable_system_bars,
     runner_checker,
     runner_policy,
@@ -104,62 +106,46 @@ for path in (
     if not path.is_file():
         failures.append(f"INFRA3 supply-chain file missing: {path.relative_to(ROOT)}")
 
-if sablestart_signing_gate.is_file():
-    signing_proc = subprocess.run(
-        [sys.executable, str(sablestart_signing_gate), "--self-test"],
+if launcher3_foundation_applier.is_file():
+    foundation_apply_proc = subprocess.run(
+        [sys.executable, str(launcher3_foundation_applier), "--self-test"],
         cwd=ROOT,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         check=False,
     )
-    if signing_proc.stdout:
-        print(signing_proc.stdout, end="")
-    if signing_proc.returncode != 0:
-        if signing_proc.stderr:
-            print(signing_proc.stderr, file=sys.stderr, end="")
-        failures.append("R8 SableStart signing-policy self-test failed")
+    if foundation_apply_proc.stdout:
+        print(foundation_apply_proc.stdout, end="")
+    if foundation_apply_proc.returncode != 0:
+        if foundation_apply_proc.stderr:
+            print(foundation_apply_proc.stderr, file=sys.stderr, end="")
+        failures.append("R9 Launcher3 foundation applicator self-test failed")
+
+if launcher3_foundation_gate.is_file():
+    foundation_gate_proc = subprocess.run(
+        [sys.executable, str(launcher3_foundation_gate), "--self-test"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if foundation_gate_proc.stdout:
+        print(foundation_gate_proc.stdout, end="")
+    if foundation_gate_proc.returncode != 0:
+        if foundation_gate_proc.stderr:
+            print(foundation_gate_proc.stderr, file=sys.stderr, end="")
+        failures.append("R9 Launcher3 foundation contract self-test failed")
 
 if sablestart_bp.is_file():
     bp_text = sablestart_bp.read_text(encoding="utf-8")
-    if "v4_signature: false," not in bp_text:
-        failures.append("SableStart must explicitly disable v4_signature")
-    if "v4_signature: true," in bp_text:
-        failures.append("SableStart v4_signature true is forbidden")
-
-for path, tokens in (
-    (
-        r8_final_build,
-        (
-            "r8-sablestart-signing-policy.py",
-            "R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS",
-            "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS",
-        ),
-    ),
-    (
-        r8_target_files_gate,
-        (
-            "r8-sablestart-signing-policy.py",
-            "R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS",
-        ),
-    ),
-    (
-        r8_closure_workflow,
-        (
-            "SableStart signing policy contract",
-            "R8_SABLESTART_SIGNING_POLICY_CI=PASS",
-            "build/gates/r8-sablestart-signing-policy.py --self-test",
-        ),
-    ),
-):
-    if path.is_file():
-        text = path.read_text(encoding="utf-8")
-        for token in tokens:
-            if token not in text:
-                failures.append(
-                    f"R8 SableStart signing-policy token missing: "
-                    f"{path.relative_to(ROOT)}: {token}"
-                )
+    if 'name: "sable_start_presentation_srcs"' not in bp_text:
+        failures.append("SableStart presentation filegroup missing")
+    if "android_app {" in bp_text:
+        failures.append("standalone SableStart android_app is forbidden after R9 foundation")
+    if "rust_ffi_shared {" in bp_text:
+        failures.append("standalone SableStart Rust/JNI is forbidden after R9 foundation")
 
 if r9_sablestart_design_gate.is_file():
     r9_proc = subprocess.run(
@@ -241,26 +227,26 @@ if sable_system_bars.is_file():
             "direct Window.insetsController access is forbidden in SableSystemBars"
         )
 
-if sablestart_manifest.is_file():
-    manifest_text = sablestart_manifest.read_text(encoding="utf-8")
-    if '<intent-filter android:priority="1">' not in manifest_text:
-        failures.append("SableStart HOME intent must retain priority=1")
-    if 'android.intent.category.HOME' not in manifest_text:
-        failures.append("SableStart HOME category missing")
-
 for path, tokens in (
     (
         r8_product_composition_gate,
         (
-            "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS",
-            "R8_SABLESTART_HOME_PRIORITY=PASS",
+            "R9_LAUNCHER3_FOUNDATION=PASS",
+            "r9-launcher3-foundation-contract.py",
         ),
     ),
     (
-        r8_closure_workflow,
+        r8_final_build,
         (
-            "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS",
-            "R8_SABLESTART_HOME_PRIORITY=PASS",
+            "===== LAUNCHER3 QUICKSTEP SOONG PREFLIGHT =====",
+            "R9_LAUNCHER3_QUICKSTEP_SOONG_PREFLIGHT=PASS",
+        ),
+    ),
+    (
+        r8_target_files_gate,
+        (
+            "Launcher3QuickStep.apk",
+            "R9_STANDALONE_SABLESTART_TARGET=PASS_ABSENT",
         ),
     ),
 ):
@@ -269,7 +255,7 @@ for path, tokens in (
         for token in tokens:
             if token not in policy_text:
                 failures.append(
-                    f"SableStart runtime policy token missing: "
+                    f"R9 Launcher3 foundation token missing: "
                     f"{path.relative_to(ROOT)}: {token}"
                 )
 
