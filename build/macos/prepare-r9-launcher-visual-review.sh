@@ -152,6 +152,11 @@ if [[ "$gradle_rc" -ne 0 ]]; then
         exit 10
     fi
 
+    if grep -Fq "Dependency verification failed" "$GRADLE_LOG"; then
+        echo "R9_VISUAL_REVIEW_DEPENDENCY_VERIFICATION=FAIL"
+        echo "R9_VISUAL_REVIEW_DEPENDENCY_VERIFICATION_ACTION=DO_NOT_DISABLE_VERIFICATION"
+    fi
+
     echo "R9_VISUAL_REVIEW_GRADLE=FAIL rc=$gradle_rc log=$GRADLE_LOG"
     exit "$gradle_rc"
 fi
