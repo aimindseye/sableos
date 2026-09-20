@@ -579,11 +579,25 @@ def patch_seascape_handler(text: str) -> str:
         "        iconView: IconAppChipView,",
         "SeascapePagedViewHandler override parameter",
     )
-    for old, new in (
-        ("appChipView.layoutParams", "iconView.layoutParams"),
-        ("appChipView.setSplitTranslationX", "iconView.setSplitTranslationX"),
-        ("appChipView.setSplitTranslationY", "iconView.setSplitTranslationY"),
-    ):
+    replacements = (
+        (
+            "        val layoutParams = appChipView.layoutParams as FrameLayout.LayoutParams",
+            "        val layoutParams = iconView.layoutParams as FrameLayout.LayoutParams",
+        ),
+        (
+            "        appChipView.layoutParams = layoutParams",
+            "        iconView.layoutParams = layoutParams",
+        ),
+        (
+            "        appChipView.setSplitTranslationX(0f)",
+            "        iconView.setSplitTranslationX(0f)",
+        ),
+        (
+            "        appChipView.setSplitTranslationY(translationY.toFloat())",
+            "        iconView.setSplitTranslationY(translationY.toFloat())",
+        ),
+    )
+    for old, new in replacements:
         text = replace_once(text, old, new, "SeascapePagedViewHandler parameter usage")
     return text
 
