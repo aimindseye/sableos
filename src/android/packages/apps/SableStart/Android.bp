@@ -1,6 +1,9 @@
 android_app {
     name: "SableStart",
-    v4_signature: true,
+    // SableStart is a read-only system app and must not emit an APK v4 .idsig.
+    // Panther PackageManager cannot fs-verity-measure this /system APK under the
+    // current SELinux policy, so a v4 sidecar makes certificate collection fail.
+    v4_signature: false,
 
     manifest: "AndroidManifest.xml",
 
