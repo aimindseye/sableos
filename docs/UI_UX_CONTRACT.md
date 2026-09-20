@@ -63,7 +63,7 @@ src/android/shared/sabledesign/
 It is consumed by:
 
 - the Gradle `:design` module used by R8 first-party apps;
-- the Soong-built `SableStart` launcher through `:sable_design_shared_srcs`.
+- `Launcher3QuickStep`, where the SableStart presentation sources and `:sable_design_shared_srcs` are composed into the pinned platform launcher during Panther preparation.
 
 Shared primitives currently include:
 
@@ -101,9 +101,12 @@ Screens should extend these primitives before introducing local visual conventio
 - Persistent usage-ranked app ordering is not the default. User pinning and exact alphabetical order remain the privacy-preserving baseline; session recents may remain memory-only.
 - Search is local-first. SableStart itself must not become an ambient network search client; remote/provider results require an explicit provider and privacy boundary.
 - Sable Peek may expose Open, Pin/Unpin, published app shortcuts, App Security & Privacy and Android App info. Notification/widget content is optional and requires explicit access/redaction policy.
-- Quickstep remains available for Android Recents/Overview and gesture integration until Sable separately owns and qualifies those surfaces.
+- Launcher3/Quickstep is the launcher engineering foundation: it owns HOME lifecycle, app model/loading, package/profile updates, launch semantics, shortcuts/widgets infrastructure and Recents/Overview; the SableStart Compose surface owns the NORMAL-state presentation.
 - Pinned/live content must use the same tile/state primitives rather than a separate visual system.
 - Before the next full Panther image build after a launcher redesign, a production-source visual review set is mandatory. Required states are defined in `R9_SABLESTART_LAUNCHER_DESIGN.md`.
+
+- The product must not package a second standalone `org.sableos.start` HOME APK after the R9 foundation migration; `Launcher3QuickStep` / `com.android.launcher3` is the single launcher product identity.
+- HOME/Back navigation from Sable presentation must be host-driven so Quickstep predictive-back and Overview state handling remain authoritative.
 
 ### Quick settings / pulldown / notifications
 
