@@ -35,6 +35,11 @@ The emulator answers a visual/product question:
 It does not replace the later physical Panther proof for HOME, Quickstep,
 Overview/Recents, task animation, role ownership, or boot behavior.
 
+The Mac visual-review runner is intentionally not blocked by Android lint. It
+compiles and assembles the production-linked review APK, while
+`:sablestart-visual-review:lintDebug` remains a separate local-CI quality gate.
+This keeps visual validation fast without weakening the maintained lint policy.
+
 ## Prior evidence reused
 
 The repository already established this style of review before the R9
@@ -167,7 +172,7 @@ The preparation step:
 1. verifies macOS;
 2. finds or starts the established Pixel 7 AVD;
 3. compiles the production presentation source;
-4. assembles and lints the review APK;
+4. assembles the review APK;
 5. installs and launches the review activity;
 6. records AVD/device/display identity;
 7. captures the initial Start frame;
