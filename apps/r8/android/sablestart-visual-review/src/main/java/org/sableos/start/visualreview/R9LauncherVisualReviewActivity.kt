@@ -93,7 +93,10 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 .flatMap { user ->
                     launcherApps.getActivityList(null, user).mapNotNull { info ->
                         val label = info.label?.toString()?.trim().orEmpty()
-                        if (label.isEmpty()) {
+                        if (
+                            label.isEmpty() ||
+                            info.componentName.packageName == packageName
+                        ) {
                             null
                         } else {
                             AppEntry(
