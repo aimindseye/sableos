@@ -58,7 +58,6 @@ echo "R8_A_SHARED_DESIGN_SOURCE=PASS"
 GLOBAL_APPEARANCE="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
 SYSTEM_BARS="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableSystemBars.kt"
 START_PROVIDER="$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt"
-START_MANIFEST="$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
 
 for needle in     'org.sableos.start.appearance'     'rememberGlobalSableAppearance'     'SableGlobalTheme'
 do
@@ -92,13 +91,15 @@ if grep -Fq 'window.insetsController' "$SYSTEM_BARS"; then
     fail R8_SABLESTART_SYSTEM_BARS_DIRECT_PHONEWINDOW_ACCESS
 fi
 
-grep -Fq '<intent-filter android:priority="1">' "$START_MANIFEST" \
-    || fail R8_SABLESTART_HOME_PRIORITY
-grep -Fq 'android.intent.category.HOME' "$START_MANIFEST" \
-    || fail R8_SABLESTART_HOME_PRIORITY
+START_BP="$ROOT/src/android/packages/apps/SableStart/Android.bp"
+grep -Fq 'name: "sable_start_presentation_srcs"' "$START_BP" \
+    || fail R9_SABLESTART_PRESENTATION_FILEGROUP
+if grep -Fq 'android_app {' "$START_BP"; then
+    fail R9_STANDALONE_SABLESTART_ANDROID_APP
+fi
 
 echo "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS"
-echo "R8_SABLESTART_HOME_PRIORITY=PASS"
+echo "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS"
 
 echo
 echo "===== SHARED DESIGN WORKSPACE FIDELITY ====="
@@ -165,7 +166,21 @@ if grep -Fq 'SableStartRoot.kt' "$ROOT/build/panther/sync-sablestart.sh"; then
 fi
 
 echo "R8_SABLESTART_SYNC_CONTRACT=PASS"
-echo "R8_START_PRODUCT_INTEGRATION=PASS"
+
+echo
+echo "===== R9 LAUNCHER3 / QUICKSTEP FOUNDATION VERIFY ====="
+
+python3 \
+    "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py" \
+    --source "$WS" verify \
+    || fail R9_LAUNCHER3_FOUNDATION
+
+if grep -Fq 'SableStart' "$ROOT/product/r8/panther/r8-product.mk"; then
+    fail R9_STANDALONE_SABLESTART_PRODUCT
+fi
+
+echo "R9_LAUNCHER3_FOUNDATION=PASS"
+echo "R8_START_PRODUCT_INTEGRATION=PASS_LAUNCHER3_FOUNDATION"
 
 echo
 echo "===== CUMULATIVE SYSTEM SURFACE SOURCE GATE ====="
@@ -395,10 +410,14 @@ echo "===== R9 SABLESTART COMBINED DESIGN GATE ====="
 python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" \
     || fail R9_SABLESTART_COMBINED_DESIGN_CONTRACT
 
+python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" \
+    || fail R9_LAUNCHER3_FOUNDATION_CONTRACT
+
 echo
 echo "===== FINAL COMPOSITION RESULT ====="
 echo "R8_A_SHARED_DESIGN=PASS"
-echo "R8_START_PRODUCT_INTEGRATION=PASS"
+echo "R8_START_PRODUCT_INTEGRATION=PASS_LAUNCHER3_FOUNDATION"
+echo "R9_L7_LAUNCHER3_FOUNDATION_SOURCE=PASS"
 echo "R8_B_CALCULATOR_CONVERT=PASS_PRODUCT_STAGED"
 echo "R8_C_GAMES=PASS_PRODUCT_STAGED"
 echo "R8_D_READER_PUBLICATION=PASS_PRODUCT_STAGED"
