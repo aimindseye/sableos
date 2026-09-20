@@ -142,6 +142,23 @@ def check() -> list[str]:
             "patch_wallpaper_theme_manager",
             "patch_double_shadow_icon_drawable",
             "patch_item_info_translators",
+            "patch_utilities_kt",
+            "patch_cacheable_shortcut",
+            "patch_display_info_container",
+            "patch_model_writer",
+            "patch_fake_model_writer",
+            "patch_desktop_visibility",
+            "patch_overflown_apps",
+            "patch_bubble_bar_background",
+            "patch_phone_landscape_nav",
+            "patch_stats_log_compat",
+            "patch_seascape_handler",
+            "patch_group_task",
+            "patch_desktop_task_view",
+            "patch_floating_app_pair_background",
+            "patch_preload_icon_delegate",
+            "patch_db_entry",
+            "patch_add_item_activity",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
             "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
         ):
@@ -176,7 +193,8 @@ def check() -> list[str]:
             "R9_LAUNCHER3_R8_API37_DEBT",
             "R9_LAUNCHER3_WARNING_DEBT_STATUS",
             "R9_LAUNCHER3_WARNING_GATE=PASS",
-            "MIGRATED_WARNING_MARKERS",
+            "GLOBAL_MIGRATED_WARNING_MARKERS",
+            "MIGRATED_WARNING_RULES",
         ):
             require(warning_text, token, "Launcher3 warning gate", failures)
 
