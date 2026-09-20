@@ -168,8 +168,12 @@ verify_shared_security_tools() {
     echo "SABLE_LOCAL_CI=FAIL_MOBSFSCAN_COMMIT"
     return 1
   }
-  [[ -x "$SABLE_MOBSFSCAN_PYTHON" ]] || {
-    echo "SABLE_LOCAL_CI=FAIL_MOBSFSCAN_PYTHON path=$SABLE_MOBSFSCAN_PYTHON"
+  [[ -x "$SABLE_MOBSFSCAN" ]] || {
+    echo "SABLE_LOCAL_CI=FAIL_MOBSFSCAN_EXEC path=$SABLE_MOBSFSCAN"
+    return 1
+  }
+  "$SABLE_MOBSFSCAN" --version 2>&1 | grep -Fq "$SABLE_MOBSFSCAN_VERSION" || {
+    echo "SABLE_LOCAL_CI=FAIL_MOBSFSCAN_VERSION"
     return 1
   }
 
@@ -221,7 +225,7 @@ run_security() {
 
   "$SABLE_GITLEAKS" git --log-opts="--all" --redact --no-banner "$ROOT"
 
-  PYTHONPATH="$SABLE_MOBSFSCAN_SOURCE" "$SABLE_MOBSFSCAN_PYTHON" -m mobsfscan     "$ROOT/apps/r8/android"     --sarif     --output "$EVIDENCE_DIR/mobsfscan-results.sarif"     --type android     --no-fail
+  "$SABLE_MOBSFSCAN"     "$ROOT/apps/r8/android"     --sarif     --output "$EVIDENCE_DIR/mobsfscan-results.sarif"     --type android     --no-fail
   test -s "$EVIDENCE_DIR/mobsfscan-results.sarif"
 }
 
