@@ -203,6 +203,15 @@ python3 "$visual_acceptance"
 
 echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_BUILD_GATE=PASS"
 
+grep -Fq 'reset · follow system + Sable Blue' "$ROOT/build/gates/r8-final-product-composition.sh"
+! grep -Fq 'Reset to Follow system · Sable Blue' "$ROOT/build/gates/r8-final-product-composition.sh"
+grep -Fq 'search + command' "$ROOT/build/gates/r9-sablestart-design-contract.py"
+grep -Fq 'HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md"
+grep -Fq 'HOME_ROLE_HOLDER=com.android.launcher3' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md"
+
+echo "R9_SHARED_DESIGN_ACCEPTED_COPY_CONTRACT=PASS"
+
+
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
 bash "$render" 0123456789abcdef0123456789abcdef01234567 "$tmp" >/dev/null
