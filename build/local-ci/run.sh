@@ -226,6 +226,7 @@ run_security() {
   gitleaks_report="$EVIDENCE_DIR/gitleaks-results.json"
   set +e
   "$SABLE_GITLEAKS" git \
+    --config "$ROOT/.gitleaks.toml" \
     --log-opts="--all" \
     --redact \
     --no-banner \
