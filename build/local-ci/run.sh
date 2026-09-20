@@ -195,7 +195,7 @@ run_quality() {
   verify_shared_security_tools
   (
     cd "$ROOT/apps/r8/rust"
-    export PATH="$SABLE_SECURITY_BIN:$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$PATH"
+    export PATH="$SABLE_SECURITY_BIN:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_CARGO_HOME/bin:$PATH"
     export CARGO_LLVM_COV_SETUP=no
     export RUSTUP_TOOLCHAIN="$SABLE_RUST_TOOLCHAIN"
     "$SABLE_CARGO" llvm-cov "${CARGO_NETWORK_ARGS[@]}"       --workspace --locked --lcov       --output-path "$EVIDENCE_DIR/rust-coverage.lcov"
@@ -214,7 +214,7 @@ need_tool() {
 run_security() {
   export CARGO_HOME="$SABLE_CARGO_HOME"
   export RUSTUP_HOME="$SABLE_RUSTUP_HOME"
-  export PATH="$SABLE_SECURITY_BIN:$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$PATH"
+  export PATH="$SABLE_SECURITY_BIN:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_CARGO_HOME/bin:$PATH"
   verify_shared_security_tools
 
   (
