@@ -116,6 +116,8 @@ run_static() {
   bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
+  python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
 }
 
 run_rust() {
