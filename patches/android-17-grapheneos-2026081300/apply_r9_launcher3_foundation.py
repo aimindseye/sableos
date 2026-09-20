@@ -636,6 +636,25 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         PREVIEW_CONTEXT_REL: (
             "mDbDir.listFiles()?.forEach",
         ),
+        WALLPAPER_THEME_MANAGER_REL: (
+            '@Deprecated("Deprecated framework callback")',
+        ),
+        DOUBLE_SHADOW_ICON_DRAWABLE_REL: (
+            '@Deprecated("Deprecated Drawable API")',
+        ),
+        ITEM_INFO_TRANSLATORS_REL: (
+            "toSpec(info: ItemContext<WorkspaceItemInfo>)",
+            "toSpec(info: WorkspaceItemInfo)",
+            "toSpec(info: ItemContext<LauncherAppWidgetInfo>)",
+            "toSpec(info: ItemContext<FolderInfo>)",
+        ),
+        UNPLACED_APP_TRANSLATOR_REL: (
+            "toSpec(info: LauncherActivityInfo)",
+        ),
+        WORKSPACE_TRANSLATOR_REL: (
+            "toSpec(info: WorkspaceData)",
+            "val filteredItems = info.filter",
+        ),
     }
     for rel, tokens in cleanup_expectations.items():
         source_text = (launcher / rel).read_text(encoding="utf-8")
@@ -667,6 +686,11 @@ def apply_tree(source: pathlib.Path) -> None:
     retrying_executor_path = launcher / RETRYING_EXECUTOR_REL
     widget_size_handler_path = launcher / WIDGET_SIZE_HANDLER_REL
     preview_context_path = launcher / PREVIEW_CONTEXT_REL
+    wallpaper_theme_manager_path = launcher / WALLPAPER_THEME_MANAGER_REL
+    double_shadow_icon_drawable_path = launcher / DOUBLE_SHADOW_ICON_DRAWABLE_REL
+    item_info_translators_path = launcher / ITEM_INFO_TRANSLATORS_REL
+    unplaced_app_translator_path = launcher / UNPLACED_APP_TRANSLATOR_REL
+    workspace_translator_path = launcher / WORKSPACE_TRANSLATOR_REL
 
     bp_path.write_text(
         patch_android_bp(bp_path.read_text(encoding="utf-8")),
@@ -698,6 +722,36 @@ def apply_tree(source: pathlib.Path) -> None:
     )
     preview_context_path.write_text(
         patch_preview_context(preview_context_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    wallpaper_theme_manager_path.write_text(
+        patch_wallpaper_theme_manager(
+            wallpaper_theme_manager_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    double_shadow_icon_drawable_path.write_text(
+        patch_double_shadow_icon_drawable(
+            double_shadow_icon_drawable_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    item_info_translators_path.write_text(
+        patch_item_info_translators(
+            item_info_translators_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    unplaced_app_translator_path.write_text(
+        patch_unplaced_app_translator(
+            unplaced_app_translator_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    workspace_translator_path.write_text(
+        patch_workspace_translator(
+            workspace_translator_path.read_text(encoding="utf-8")
+        ),
         encoding="utf-8",
     )
 
