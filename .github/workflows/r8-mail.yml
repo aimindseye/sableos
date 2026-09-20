@@ -3,17 +3,15 @@ name: R8 Sable Mail compile and policy
 on:
   pull_request:
     paths:
-      - 'apps/r8/mail/**'
-      - 'src/android/shared/sabledesign/**'
-      - 'src/android/packages/apps/SableStart/**'
-      - '.github/workflows/r8-mail.yml'
+      - 'apps/r8/mail/apply_sable_flavor.py'
+      - 'apps/r8/mail/verify_sable_mail.py'
+      - 'apps/r8/mail/upstream.env'
   push:
     branches: [main]
     paths:
-      - 'apps/r8/mail/**'
-      - 'src/android/shared/sabledesign/**'
-      - 'src/android/packages/apps/SableStart/**'
-      - '.github/workflows/r8-mail.yml'
+      - 'apps/r8/mail/apply_sable_flavor.py'
+      - 'apps/r8/mail/verify_sable_mail.py'
+      - 'apps/r8/mail/upstream.env'
   workflow_dispatch:
 
 permissions:
