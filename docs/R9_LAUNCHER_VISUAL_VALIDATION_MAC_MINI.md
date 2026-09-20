@@ -138,6 +138,18 @@ NETWORK_FETCH_AUTHORIZED=YES \
 
 After that successful fetch, normal review reruns return to offline mode.
 
+The presentation-check and visual-review modules also constrain AndroidX core and
+process lifecycle to the already verified repository baseline:
+
+```text
+androidx.core:core-ktx:1.16.0
+androidx.lifecycle:lifecycle-process:2.9.4
+```
+
+These are dependency-resolution constraints, not new Sable runtime requirements.
+They prevent older unverified transitive variants from entering the review
+compile classpath while keeping Gradle dependency verification enabled.
+
 The runner is intentionally compatible with the older Bash shipped by macOS.
 It does not use an empty array expansion for the network-enabled Gradle path,
 because Bash 3.x plus `set -u` treats that expansion as an unbound variable.
