@@ -172,6 +172,38 @@ No blanket deprecation suppression is accepted as closure. The migration gate ma
 
 The R8 API-37 warning is tracked separately as `R9_LAUNCHER3_R8_API37_DEBT`; lowering the platform/target API is not an acceptable fix.
 
+## Easy Dagger executor migration before HOME cutover
+
+Before retiring standalone SableStart, R9 migrates the low-risk constructor-injected users of the deprecated static `Executors` bridge. The mapping is limited to bindings that already have an explicit Dagger equivalent in `LauncherExecutorsModule`:
+
+```text
+Executors.MAIN_EXECUTOR
+  -> @Ui Executor / LooperExecutor
+
+Executors.UI_HELPER_EXECUTOR
+  -> @LightweightBackground(priority = UI) LooperExecutor
+
+Executors.ORDERED_BG_EXECUTOR
+  -> @Background Executor / LooperExecutor
+```
+
+The first Dagger tranche covers:
+
+```text
+WidgetAppIconsRepositoryImpl
+WallpaperColorHints
+FirstScreenBroadcastHelper
+ModelTaskController
+RefreshRateTracker.RefreshRateTrackerImpl
+RemoveAnimationSettingsTracker (obsolete deprecated import)
+```
+
+`FirstScreenBroadcastHelper` retains its one-argument unit-test constructor via a `@VisibleForTesting` main-looper executor while production construction uses injected `@Ui LooperExecutor`. Its nullable-installer-map unchecked cast is also removed.
+
+This tranche intentionally does **not** replace `MODEL_EXECUTOR` with a generic background executor. The pinned Launcher3 tree does not expose a dedicated Dagger model-thread qualifier, and model ordering semantics must not be changed merely to silence deprecation warnings.
+
+The 2026-09-20 focused baseline attributes 17 warnings to this tranche: 16 deprecated static-executor warnings and one unchecked cast. Qualification requires those exact warning signatures to stay absent through the path-specific warning regression gate.
+
 ## Focused qualification
 
 Run only after synchronizing this repository branch locally:
