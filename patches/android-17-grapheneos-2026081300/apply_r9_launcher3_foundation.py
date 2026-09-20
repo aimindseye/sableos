@@ -30,6 +30,17 @@ LEGACY_FALLBACK_TEST_REL = pathlib.Path(
     "FallbackSwipeHandlerTestCase.java"
 )
 
+USER_CACHE_REL = pathlib.Path("src/com/android/launcher3/pm/UserCache.kt")
+RETRYING_EXECUTOR_REL = pathlib.Path(
+    "src/com/android/launcher3/util/RetryingExecutor.kt"
+)
+WIDGET_SIZE_HANDLER_REL = pathlib.Path(
+    "src/com/android/launcher3/widget/util/WidgetSizeHandler.kt"
+)
+PREVIEW_CONTEXT_REL = pathlib.Path(
+    "src/com/android/launcher3/preview/PreviewContext.kt"
+)
+
 # Observed ai-g732 residue from the prior standalone-HOME debugging session.
 # The production blob is retained as an explicit Sable compatibility patch.
 # The test blob is known malformed against the pinned Dagger singleton API and
@@ -43,6 +54,10 @@ FOUNDATION_DIRTY_PATHS = {
     "quickstep/res/values/strings.xml",
     HOST_REL.as_posix(),
     FALLBACK_ACTIVITY_REL.as_posix(),
+    USER_CACHE_REL.as_posix(),
+    RETRYING_EXECUTOR_REL.as_posix(),
+    WIDGET_SIZE_HANDLER_REL.as_posix(),
+    PREVIEW_CONTEXT_REL.as_posix(),
 }
 
 FALLBACK_NULL_ANCHOR = "        if (interactor == null) {"
@@ -73,6 +88,16 @@ BP_LIB_REPLACEMENT = '''        "SystemUI-statsd",
         "androidx.core_core-ktx",
         "kotlinx_coroutines_android",
         // Compose dep
+'''
+
+BP_KOTLIN_FLAGS_ANCHOR = '''    kotlincflags: [
+        "-Xjvm-default=all",
+    ],
+'''
+BP_KOTLIN_FLAGS_REPLACEMENT = '''    kotlincflags: [
+        "-Xjvm-default=all",
+        "-Xannotation-default-target=param-property",
+    ],
 '''
 
 MANIFEST_HEADER = '''<manifest
@@ -156,6 +181,12 @@ def patch_android_bp(text: str) -> str:
         BP_LIB_REPLACEMENT,
         "Launcher3QuickStepLib Compose dependencies",
     )
+    module = replace_once(
+        module,
+        BP_KOTLIN_FLAGS_ANCHOR,
+        BP_KOTLIN_FLAGS_REPLACEMENT,
+        "Launcher3QuickStepLib Kotlin annotation targets",
+    )
     return text[:start] + module + text[end:]
 
 
@@ -196,6 +227,54 @@ def patch_fallback_activity(text: str) -> str:
         FALLBACK_NULL_ANCHOR,
         FALLBACK_NULL_REPLACEMENT,
         "Fallback Quickstep null-callback guard",
+    )
+
+
+def patch_user_cache(text: str) -> str:
+    return replace_once(
+        text,
+        "val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER) ?: return",
+        "val user = intent.getParcelableExtra(Intent.EXTRA_USER, UserHandle::class.java) ?: return",
+        "UserCache typed parcelable extra",
+    )
+
+
+def patch_retrying_executor(text: str) -> str:
+    text = replace_once(
+        text,
+        "import android.os.Handler\\n",
+        "import android.os.Handler\\nimport android.os.Looper\\n",
+        "RetryingExecutor explicit Looper import",
+    )
+    return replace_once(
+        text,
+        "class RetryingExecutor(private val handler: Handler = Handler()) {",
+        "class RetryingExecutor(private val handler: Handler = Handler(Looper.myLooper() ?: error(\\\"RetryingExecutor requires a Looper thread\\\"))) {",
+        "RetryingExecutor explicit Looper",
+    )
+
+
+def patch_widget_size_handler(text: str) -> str:
+    return replace_once(
+        text,
+        "fun Bundle.getWidgetSizeList() = getParcelableArrayList<SizeF>(OPTION_APPWIDGET_SIZES)",
+        "fun Bundle.getWidgetSizeList() = getParcelableArrayList(OPTION_APPWIDGET_SIZES, SizeF::class.java)",
+        "WidgetSizeHandler typed parcelable list",
+    )
+
+
+def patch_preview_context(text: str) -> str:
+    text = replace_once(
+        text,
+        "import java.util.Arrays\\n",
+        "",
+        "PreviewContext obsolete Arrays import",
+    )
+    return replace_once(
+        text,
+        "            Arrays.stream(mDbDir.listFiles()).forEach { obj: File -> obj.delete() }",
+        "            mDbDir.listFiles()?.forEach { file -> file.delete() }",
+        "PreviewContext nullable listFiles",
     )
 
 
