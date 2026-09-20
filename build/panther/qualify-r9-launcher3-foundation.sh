@@ -183,7 +183,7 @@ echo "===== LAUNCHER3 WARNING QUALITY GATE ====="
 python3 "$ROOT/build/gates/r9-launcher-warning-gate.py" \
     "$EVIDENCE_DIR/launcher3-quickstep-build.log" \
     | tee "$EVIDENCE_DIR/launcher3-warning-gate.log"
-echo "R9_LAUNCHER3_WARNING_QUALITY=PASS"
+echo "R9_LAUNCHER3_WARNING_MIGRATIONS=PASS"
 
 echo
 echo "===== R9 FOUNDATION V2 RESULT ====="
