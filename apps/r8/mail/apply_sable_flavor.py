@@ -311,6 +311,32 @@ def main() -> None:
         "                onScanQrCodeClick = { onFinish(AccountSetupRoute.ThundermailScanQrCode) },\n",
     )
 
+    account_setup_route = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "navigation/AccountSetupRoute.kt"
+    )
+    remove_once(
+        account_setup_route,
+        '''    data object ThundermailSignIn : AccountSetupRoute {
+        override val basePath: String = ACCOUNT_SETUP_BASE_PATH
+
+        override fun route(): String = "$basePath/thundermail-sign-in"
+    }
+
+''',
+    )
+    remove_once(
+        account_setup_route,
+        '''    data object ThundermailScanQrCode : AccountSetupRoute {
+        override val basePath: String = ACCOUNT_SETUP_BASE_PATH
+
+        override fun route(): String = "$basePath/thundermail-scan-qr-code"
+    }
+
+''',
+    )
+
     onboarding_nav = (
         root
         / "feature/onboarding/main/src/main/kotlin/app/k9mail/feature/onboarding/main/"
@@ -325,6 +351,62 @@ def main() -> None:
         onboarding_nav,
         "                onThundermailClick = { onFinish(OnboardingRoute.ThundermailSignIn) },",
         "                onThundermailClick = { navController.navigateToAccountSetup() },",
+    )
+
+    replace_once(
+        onboarding_nav,
+        '''                    when (route) {
+                        is AccountSetupRoute.AccountSetup -> {
+                            navController.navigateToPermissions()
+                        }
+
+                        AccountSetupRoute.ThundermailScanQrCode -> onFinish(OnboardingRoute.ThundermailScanQrCode)
+
+                        AccountSetupRoute.ThundermailSignIn -> onFinish(OnboardingRoute.ThundermailSignIn)
+                    }
+''',
+        '''                    when (route) {
+                        is AccountSetupRoute.AccountSetup -> {
+                            navController.navigateToPermissions()
+                        }
+                    }
+''',
+    )
+
+    onboarding_route = (
+        root
+        / "feature/onboarding/main/src/main/kotlin/app/k9mail/feature/onboarding/main/"
+        "navigation/OnboardingRoute.kt"
+    )
+    remove_once(
+        onboarding_route,
+        '''    data object ThundermailSignIn : OnboardingRoute {
+        override val basePath: String = ONBOARDING_BASE_PATH
+
+        override fun route(): String = "$basePath/thundermail-sign-in"
+    }
+
+''',
+    )
+    remove_once(
+        onboarding_route,
+        '''    data object ThundermailScanQrCode : OnboardingRoute {
+        override val basePath: String = ONBOARDING_BASE_PATH
+
+        override fun route(): String = "$basePath/thundermail-scan-qr-code"
+    }
+
+''',
+    )
+    remove_once(
+        onboarding_route,
+        '''    data object ThundermailAddAccount : OnboardingRoute {
+        override val basePath: String = ONBOARDING_BASE_PATH
+
+        override fun route(): String = "${ThundermailScanQrCode.basePath}/thundermail-add-account"
+    }
+
+''',
     )
 
     launcher_nav = (
@@ -1036,6 +1118,7 @@ internal object SableMailAppearanceSync {
     print("SABLE_MAIL_AUTODISCOVERY_DEMO=REMOVED_FROM_PRODUCT_RUNTIME_GRAPH")
     print("SABLE_MAIL_AUTODISCOVERY_DEMO_SOURCE_SPECIAL_CASES=REMOVED")
     print("SABLE_MAIL_ACCOUNT_ENTRY=STANDARD_IMAP_SMTP_SETUP")
+    print("SABLE_MAIL_THUNDERMAIL_ROUTES=REMOVED_FROM_COMPOSED_SOURCE")
     print("SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION")
     print("SABLE_MAIL_GENERIC_IMAP_SMTP=UPSTREAM")
     print("SABLE_MAIL_GLOBAL_APPEARANCE=FOLLOW_SYSTEM_LIGHT_DARK_PLUS_5_ACCENTS")
