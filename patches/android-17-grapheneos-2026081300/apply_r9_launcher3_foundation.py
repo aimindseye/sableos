@@ -845,6 +845,52 @@ after
     assert "listFiles()?.forEach" in patched_preview
     assert "java.util.Arrays" not in patched_preview
 
+    wallpaper = "    override fun onLowMemory() {}"
+    assert '@Deprecated("Deprecated framework callback")' in patch_wallpaper_theme_manager(
+        wallpaper
+    )
+
+    drawable = "    override fun getOpacity() = PixelFormat.TRANSPARENT"
+    assert '@Deprecated("Deprecated Drawable API")' in patch_double_shadow_icon_drawable(
+        drawable
+    )
+
+    translators = """override fun toSpec(obj: ItemContext<WorkspaceItemInfo>): WorkspaceItemSpec {
+        val item = obj.item
+override fun toSpec(obj: ItemContext<WorkspaceItemInfo>): HotseatItemSpec {
+        val item = obj.item
+override fun toSpec(obj: WorkspaceItemInfo): AppInFolderSpec {
+        label = obj.title
+override fun toSpec(obj: ItemContext<LauncherAppWidgetInfo>): WorkspaceItemSpec {
+        val item = obj.item
+override fun toSpec(obj: ItemContext<FolderInfo>): WorkspaceItemSpec {
+        val item = obj.item
+        obj.folderContentsMap
+override fun toSpec(obj: ItemContext<FolderInfo>): HotseatItemSpec {
+        val item = obj.item
+        obj.folderContentsMap
+"""
+    patched_translators = patch_item_info_translators(translators)
+    assert "toSpec(info:" in patched_translators
+    assert "obj.item" not in patched_translators
+    assert "obj.folderContentsMap" not in patched_translators
+
+    unplaced = """override fun toSpec(app: LauncherActivityInfo): UnplacedAppSpec {
+app.componentName
+app.label
+app.getApplicationInfo()
+"""
+    patched_unplaced = patch_unplaced_app_translator(unplaced)
+    assert "toSpec(info: LauncherActivityInfo)" in patched_unplaced
+    assert "app.componentName" not in patched_unplaced
+
+    workspace = """override fun toSpec(workspace: WorkspaceData): WorkspaceSpec {
+        val filteredItems = workspace.filter {
+"""
+    patched_workspace = patch_workspace_translator(workspace)
+    assert "toSpec(info: WorkspaceData)" in patched_workspace
+    assert "val filteredItems = info.filter" in patched_workspace
+
     try:
         replace_once("x", "missing", "new", "negative")
     except FoundationError:
