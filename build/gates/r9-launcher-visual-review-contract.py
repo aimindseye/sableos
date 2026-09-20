@@ -65,6 +65,20 @@ def main() -> int:
         "androidx.core:core-ktx:1.17.0",
         "R9_PRESENTATION_UNVERIFIED_ANDROIDX_CORE",
     )
+    for build_text, label in (
+        (module_build, "R9_VISUAL_REVIEW"),
+        (presentation_build, "R9_PRESENTATION"),
+    ):
+        require(
+            build_text,
+            'implementation("androidx.core:core-ktx:1.16.0")',
+            f"{label}_VERIFIED_CORE_CONSTRAINT",
+        )
+        require(
+            build_text,
+            'implementation("androidx.lifecycle:lifecycle-process:2.9.4")',
+            f"{label}_VERIFIED_LIFECYCLE_CONSTRAINT",
+        )
     require(
         activity,
         "SableStartScreen(",
@@ -143,6 +157,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MODULE_REGISTERED=PASS")
     print("R9_VISUAL_REVIEW_PRODUCTION_SOURCE_DEPENDENCY=PASS")
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_GRAPH=PASS")
+    print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_CONSTRAINTS=PASS")
     print("R9_VISUAL_REVIEW_PRODUCTION_SCREEN=PASS")
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
