@@ -135,6 +135,36 @@ def main() -> int:
         "activityInfo.getBadgedIcon(densityDpi)",
         "R9_PRODUCTION_REAL_ICON_DRAWABLE",
     )
+    require(
+        production_ui,
+        "favoriteApps.filterNot { it.stableKey() in primaryKeys }",
+        "R9_START_NO_PRIMARY_FAVORITE_DUPLICATION",
+    )
+    require(
+        production_ui,
+        ".height(96.dp)",
+        "R9_START_COMPACT_TILE_HEIGHT",
+    )
+    require(
+        production_ui,
+        'text = "search + command"',
+        "R9_START_METRO_SEARCH_TREATMENT",
+    )
+    require(
+        production_ui,
+        'text = "appearance"',
+        "R9_START_APPEARANCE_SHORTCUT",
+    )
+    require(
+        production_ui,
+        "StartNavigationRow(",
+        "R9_START_COMPACT_NAVIGATION",
+    )
+    require(
+        activity,
+        "info.componentName.packageName == packageName",
+        "R9_VISUAL_REVIEW_HOST_FILTERED",
+    )
 
     mac_runner = (
         ROOT / "build/macos/prepare-r9-launcher-visual-review.sh"
@@ -205,6 +235,9 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
     print("R9_PRODUCTION_REAL_ICONS=PASS")
+    print("R9_START_NO_PRIMARY_FAVORITE_DUPLICATION=PASS")
+    print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
+    print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
     require(
         local_ci,
@@ -215,7 +248,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
     print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
-    print("R9_L9_VISUAL_REVIEW_CONTRACT=PASS")
+    print("R9_L10_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
 
