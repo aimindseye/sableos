@@ -2,6 +2,71 @@
 
 Last updated: 2026-09-20
 
+
+## 2026-09-20 R9 launcher / fresh-build handoff
+
+This section is the current execution authority when older R8 handoff text below conflicts with it.
+
+```text
+GITHUB_HOSTED_BUILD_CI=RETIRED
+TRUSTED_SELF_HOSTED_GITHUB_RUNNER=DISABLED
+LOCAL_DIRECT_CI=ACTIVE
+CANONICAL_RELEASE_ENTRYPOINT=build/panther/run-release.sh <release-version>
+
+R8_FIRST_PARTY_PRODUCT_COMPOSITION=PASS
+R9_LAUNCHER3_FOUNDATION=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PASS
+R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
+R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT
+
+R9_INCREMENTAL_PRODUCT_BUILD=PASS
+R9_FRESH_FULL_BUILD=IN_PROGRESS
+R9_PIXEL7_PHYSICAL_ACCEPTANCE=PENDING
+TITAN2_KEYBOARD_FIRST_PORTABILITY=QUEUED_AFTER_PANTHER
+PRODUCTION_SIGNING=DEFERRED
+```
+
+The accepted HOME architecture is now:
+
+```text
+package  com.android.launcher3
+activity com.android.launcher3.sable.SableQuickstepLauncher
+module   Launcher3QuickStep
+
+Launcher3/Quickstep
+    HOME + Overview/Recents + lifecycle/task/gesture authority
+
+SableStartScreen
+    Start + All Apps/Sable Rail + Search/Command + Peek
+    + Local Context + Appearance
+```
+
+The old standalone SableStart HOME APK is retired from the product graph.
+
+The R9 visual set is closed PASS on Pixel 7 emulator review: Start, All Apps,
+Sable Rail active state, Search/Command, Peek, Local Context, Appearance,
+Light, Dark/system bars and alternate accent.
+
+The prior fast target-files/product run is retained as valid incremental
+composition evidence. It is **not** fresh-build proof because it used a warmed
+OUT. The current R9 release candidate must start from an absent source-bound
+OUT and close:
+
+```text
+R9_RELEASE_CANDIDATE_FRESH_OUT=PASS_ABSENT
+R9_FRESH_FULL_BUILD_OUT_PRECONDITION=PASS_ABSENT
+R9_TARGET_FILES_FRESHNESS=PASS
+R9_FRESH_FULL_BUILD=PASS
+R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
+```
+
+Physical Pixel 7 flashing remains blocked until that fresh-build proof passes.
+
+Titan 2 is explicitly keyboard-first
+(`navigation.primary=keyboard`, `navigation.secondary=touch`). T0 read-only
+stock inventory may begin when hardware is available; GSI mutation/flash waits
+for Panther R9 physical acceptance.
+
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
 
 ## 2026-09-19 R8 final Pixel UI closure handoff
