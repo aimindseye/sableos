@@ -1528,12 +1528,10 @@ private fun LiveSurfaceScreen(
         }
 
         item {
-            LiveCard("17", snapshot.calendar)
-            Spacer(Modifier.height(8.dp))
-            LiveCard("♪", snapshot.music)
-            Spacer(Modifier.height(8.dp))
-            LiveCard("▣", snapshot.photos)
-            Spacer(Modifier.height(14.dp))
+            LocalDatumRow("17", snapshot.calendar)
+            LocalDatumRow("♪", snapshot.music)
+            LocalDatumRow("▣", snapshot.photos)
+            Spacer(Modifier.height(10.dp))
         }
 
         if (
@@ -1542,12 +1540,29 @@ private fun LiveSurfaceScreen(
                 snapshot.calendar.availability == LiveAvailability.PERMISSION_REQUIRED
         ) {
             item {
-                Button(
-                    onClick = onRequestPermissions,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(6.dp),
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 54.dp)
+                            .background(MaterialTheme.colorScheme.primary)
+                            .clickable(onClick = onRequestPermissions)
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Enable local live data")
+                    Text(
+                        text = "enable local data",
+                        fontSize = 20.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = "→",
+                        fontSize = 22.sp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                    )
                 }
                 Spacer(Modifier.height(14.dp))
             }
@@ -1555,14 +1570,14 @@ private fun LiveSurfaceScreen(
 
         item {
             Text(
-                text = "Weather and tasks remain unavailable until explicit providers are configured.",
+                text = "weather + tasks · provider not configured",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
             Text(
-                text = "SableStart does not perform ambient network search or invent remote context.",
-                style = MaterialTheme.typography.bodyMedium,
+                text = "local only · no ambient network search",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -1570,7 +1585,7 @@ private fun LiveSurfaceScreen(
 }
 
 @Composable
-private fun LiveCard(
+private fun LocalDatumRow(
     mark: String,
     datum: LiveDatum,
 ) {
@@ -1588,30 +1603,47 @@ private fun LiveCard(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 72.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .heightIn(min = 76.dp)
+                .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(mark, fontSize = 26.sp)
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(datum.title, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = mark,
+            modifier = Modifier.width(44.dp),
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Light,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(8.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
             Text(
-                datum.detail,
+                text = datum.title.lowercase(Locale.getDefault()),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = datum.detail.lowercase(Locale.getDefault()),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (!datum.detail.equals(status, ignoreCase = true)) {
                 Text(
-                    status,
+                    text = status,
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
 }
 
 @Composable
