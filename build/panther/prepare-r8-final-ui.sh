@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 
 SOURCE_MUTATION_AUTHORIZED="${SOURCE_MUTATION_AUTHORIZED:-NO}"
@@ -38,6 +39,7 @@ UI4="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
 UI5A="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
 UI5B="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
 UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
 
 run_self_test() {
     local name="$1"
@@ -54,6 +56,7 @@ run_self_test UI4_SYSTEMUI "$UI4"
 run_self_test UI5A_SETTINGS "$UI5A"
 run_self_test UI5B_APP_SECURITY "$UI5B"
 run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
+run_self_test R9_LAUNCHER3_FOUNDATION "$LAUNCHER3_FOUNDATION"
 
 echo
 echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
@@ -132,11 +135,20 @@ diff -qr "$DESIGN_SRC" "$DESIGN_DST" >/dev/null || {
 echo "R8_SABLE_DESIGN_SYNC=PASS"
 
 echo
-echo "===== PRODUCTION SABLE START ====="
+echo "===== SABLE START PRESENTATION-ONLY SYNC ====="
 
 SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/panther/sync-sablestart.sh"
 
-echo "R8_SABLESTART_SYNC=PASS"
+echo "R9_SABLESTART_PRESENTATION_SYNC=PASS"
+
+echo
+echo "===== LAUNCHER3 HOME OWNERSHIP APPLY ====="
+
+python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply
+python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
+
+echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
+echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 
 echo
 echo "===== R8 FIRST-PARTY PRODUCT APPLICATIONS ====="
@@ -149,5 +161,7 @@ echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 python3 "$UI5C_UI6" --source "$WS" verify
 
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
+echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
+echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 echo "R8_FINAL_UI_PREPARE=PASS"
 echo "BUILD_PERFORMED=NO"
