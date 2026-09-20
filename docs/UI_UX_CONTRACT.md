@@ -1,7 +1,7 @@
 # SableOS UI/UX contract
 
-Status: active R8 product contract  
-Contract version: 2  
+Status: active R8 baseline + R9 launcher-extension product contract  
+Contract version: 3  
 Design implementation schema: `SableDesignContract.SCHEMA_VERSION = 2`
 
 ## Purpose
@@ -94,8 +94,16 @@ Screens should extend these primitives before introducing local visual conventio
 - Display the page as **Start**.
 - Display launcher entries by app label only.
 - Do not show package names in the normal list.
-- Keep the primary app list fast, vertically scannable and compatible with one-handed use.
-- Future pinned/live content must use the same tile/state primitives rather than a separate visual system.
+- Keep the primary app list fast, vertically scannable and explicitly designed for one-handed use.
+- Start remains Sable/Metro-derived: large typography, restrained flat geometry, live information and user-controlled pinned capabilities rather than a generic Android icon grid.
+- R9 adds a compact favorites surface, a locale-aware edge alphabet rail, local Search/Command, and one-level **Sable Peek** contextual actions.
+- The alphabet rail must be reachable from the right edge and through a left-edge activation region without mirroring the entire list.
+- Persistent usage-ranked app ordering is not the default. User pinning and exact alphabetical order remain the privacy-preserving baseline; session recents may remain memory-only.
+- Search is local-first. SableStart itself must not become an ambient network search client; remote/provider results require an explicit provider and privacy boundary.
+- Sable Peek may expose Open, Pin/Unpin, published app shortcuts, App Security & Privacy and Android App info. Notification/widget content is optional and requires explicit access/redaction policy.
+- Quickstep remains available for Android Recents/Overview and gesture integration until Sable separately owns and qualifies those surfaces.
+- Pinned/live content must use the same tile/state primitives rather than a separate visual system.
+- Before the next full Panther image build after a launcher redesign, a production-source visual review set is mandatory. Required states are defined in `R9_SABLESTART_LAUNCHER_DESIGN.md`.
 
 ### Quick settings / pulldown / notifications
 
@@ -166,3 +174,5 @@ The sequence is implementation order, not permission for later screens to invent
 - `SableDesignContractTest` seals stable preference values and core accessibility/geometry constraints.
 - Product-image integration remains a separate gate; a successful standalone Compose build does not prove SystemUI/SetupWizard integration.
 - Visual review is required in addition to compile/static gates before a screen is called UI-complete.
+- Launcher redesigns are build-blocking until the production-source review set is accepted; prototype/demo-only launcher screenshots do not satisfy this gate.
+- SableStart launcher acceptance separately proves HOME resolution, HOME role ownership, cold-launch survival and Quickstep/Recents preservation. Package presence alone is insufficient.
