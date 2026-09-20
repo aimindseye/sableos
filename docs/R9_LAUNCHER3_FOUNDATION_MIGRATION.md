@@ -130,6 +130,8 @@ BUILD_AUTHORIZED=YES \
 bash build/panther/qualify-r9-launcher3-foundation.sh
 ```
 
+The qualifier resolves the current build workspace from `build/config/r8-release.env` and then layers Panther device/lunch constants from `build/config/panther-grapheneos-2026081300.env`. This avoids the retired `/srv/data/sableos/upstream/...` layout.
+
 The qualifier performs:
 
 1. repository foundation contract;
