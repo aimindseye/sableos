@@ -138,6 +138,10 @@ NETWORK_FETCH_AUTHORIZED=YES \
 
 After that successful fetch, normal review reruns return to offline mode.
 
+The runner is intentionally compatible with the older Bash shipped by macOS.
+It does not use an empty array expansion for the network-enabled Gradle path,
+because Bash 3.x plus `set -u` treats that expansion as an unbound variable.
+
 It refuses a non-Pixel-7 AVD unless an explicit reviewed exception sets:
 
 ```bash
