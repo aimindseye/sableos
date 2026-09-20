@@ -109,8 +109,14 @@ Use the existing Pixel 7 AVD from the earlier UI review work.
 From the repository checkout:
 
 ```bash
-git fetch origin r9/launcher-visual-review-r9l9-20260920
+git fetch origin \
+  r9/launcher3-quickstep-foundation-v2-20260920 \
+  r9/launcher-visual-review-r9l9-20260920
+
 git switch --detach origin/r9/launcher-visual-review-r9l9-20260920
+
+git diff --check \
+  origin/r9/launcher3-quickstep-foundation-v2-20260920...HEAD
 
 export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
 
@@ -120,8 +126,19 @@ export AVD_NAME="<existing Pixel 7 AVD name>"
 bash build/macos/prepare-r9-launcher-visual-review.sh
 ```
 
-The runner defaults to Gradle offline mode. It refuses a non-Pixel-7 AVD unless
-an explicit reviewed exception sets:
+The runner defaults to Gradle offline mode. On a Mac that has not yet cached
+the pinned AndroidX graph, it reports `R9_VISUAL_REVIEW_DEPENDENCY_CACHE=MISS`
+instead of silently using the network. Authorize the one-time dependency
+bootstrap explicitly:
+
+```bash
+NETWORK_FETCH_AUTHORIZED=YES \
+  bash build/macos/prepare-r9-launcher-visual-review.sh
+```
+
+After that successful fetch, normal review reruns return to offline mode.
+
+It refuses a non-Pixel-7 AVD unless an explicit reviewed exception sets:
 
 ```bash
 ALLOW_NON_PIXEL7_AVD=YES
