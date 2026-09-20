@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import pathlib
+import subprocess
+import sys
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+LAUNCHER3_HEAD = "e5fde8f4368539554b07ee136abd27bc7b4284c1"
+
+
+def require(text: str, token: str, label: str, failures: list[str]) -> None:
+    if token not in text:
+        failures.append(f"{label}: missing {token!r}")
+
+
+def forbid(text: str, token: str, label: str, failures: list[str]) -> None:
+    if token in text:
+        failures.append(f"{label}: forbidden {token!r}")
+
+
+def check() -> list[str]:
+    failures: list[str] = []
+
+    baseline = (
+        ROOT / "patches/android-17-grapheneos-2026081300/BASELINE.lock"
+    ).read_text(encoding="utf-8")
+    require(
+        baseline,
+        f"LAUNCHER3_HEAD={LAUNCHER3_HEAD}",
+        "Launcher3 baseline",
+        failures,
+    )
+
+    start_root = ROOT / "src/android/packages/apps/SableStart"
+    start_bp = (start_root / "Android.bp").read_text(encoding="utf-8")
+    require(
+        start_bp,
+        'name: "sable_start_presentation_srcs"',
+        "Sable presentation filegroup",
+        failures,
+    )
+
+    # Phase 1 is intentionally non-destructive. The existing standalone module
+    # remains buildable until Launcher3QuickStep proves the hosted presentation
+    # compiles. Phase 2 will retire these definitions before any full image.
+    require(start_bp, "android_app {", "phase-1 standalone app retained", failures)
+    require(start_bp, "rust_ffi_shared {", "phase-1 standalone JNI retained", failures)
+
+    screen = (
+        start_root / "src/com/sable/start/ui/SableStartScreen.kt"
+    ).read_text(encoding="utf-8")
+    for token in (
+        "homeGeneration: Int = 0",
+        "backGeneration: Int = 0",
+        "onCanNavigateBackChanged: (Boolean) -> Unit = {}",
+        "LaunchedEffect(homeGeneration)",
+        "LaunchedEffect(backGeneration)",
+        "LaunchedEffect(destination)",
+    ):
+        require(screen, token, "host-driven Sable navigation", failures)
+    forbid(screen, "BackHandler(", "Quickstep-owned Back dispatch", failures)
+    forbid(
+        screen,
+        "androidx.activity.compose.BackHandler",
+        "Quickstep-owned Back import",
+        failures,
+    )
+
+    host_path = (
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "r9_launcher3"
+        / "SableQuickstepLauncher.kt"
+    )
+    if not host_path.is_file():
+        failures.append("SableQuickstepLauncher canonical host missing")
+        host = ""
+    else:
+        host = host_path.read_text(encoding="utf-8")
+
+    for token in (
+        "class SableQuickstepLauncher : QuickstepLauncher()",
+        "activityComponent.appsStore",
+        "store.addUpdateListener(appsUpdateListener)",
+        "store.removeUpdateListener(appsUpdateListener)",
+        "startActivitySafely(",
+        "PackageManagerHelper.startDetailsActivityForInfo(",
+        "override fun onStateSetStart(state: LauncherState)",
+        "override fun onStateSetEnd(state: LauncherState)",
+        "protected override fun getOnBackAnimationCallback()",
+        "SableStartScreen(",
+        "homeGeneration = homeGeneration.value",
+        "backGeneration = backGeneration.value",
+        "updateSableVisibility(isInState(LauncherState.NORMAL))",
+    ):
+        require(host, token, "Sable Quickstep host", failures)
+
+    applicator = (
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_launcher3_foundation.py"
+    )
+    if not applicator.is_file():
+        failures.append("Launcher3 foundation applicator missing")
+    else:
+        text = applicator.read_text(encoding="utf-8")
+        for token in (
+            f'LAUNCHER3_HEAD = "{LAUNCHER3_HEAD}"',
+            '":sable_start_presentation_srcs",',
+            '":sable_design_shared_srcs",',
+            "com.android.launcher3.sable.SableQuickstepLauncher",
+            'android:authorities="org.sableos.start.appearance"',
+            "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
+            "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
+        ):
+            require(text, token, "Launcher3 foundation applicator", failures)
+
+        proc = subprocess.run(
+            [sys.executable, str(applicator), "--self-test"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if proc.stdout:
+            print(proc.stdout, end="")
+        if proc.returncode != 0:
+            if proc.stderr:
+                print(proc.stderr, file=sys.stderr, end="")
+            failures.append("Launcher3 foundation applicator self-test failed")
+
+    qualifier = ROOT / "build/panther/qualify-r9-launcher3-foundation.sh"
+    if not qualifier.is_file():
+        failures.append("focused Launcher3 qualifier missing")
+    else:
+        q = qualifier.read_text(encoding="utf-8")
+        for token in (
+            "FULL_IMAGE_BUILD_AUTHORIZED=NO",
+            "DEVICE_CONTACT_AUTHORIZED=NO",
+            'm -j"$JOBS" Launcher3QuickStep',
+            "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
+            "RETAINED_PENDING_CUTOVER",
+        ):
+            require(q, token, "focused Launcher3 qualifier", failures)
+
+    workflows = list((ROOT / ".github/workflows").glob("*.yml"))
+    workflows += list((ROOT / ".github/workflows").glob("*.yaml"))
+    if workflows:
+        failures.append(
+            "hosted workflow files reintroduced: "
+            + ", ".join(sorted(path.name for path in workflows))
+        )
+
+    return failures
+
+
+def self_test() -> None:
+    failures: list[str] = []
+    require("abc", "a", "require-positive", failures)
+    forbid("abc", "z", "forbid-positive", failures)
+    assert not failures
+
+    failures = []
+    require("abc", "z", "require-negative", failures)
+    forbid("abc", "a", "forbid-negative", failures)
+    assert len(failures) == 2
+
+    print("R9_LAUNCHER3_FOUNDATION_CONTRACT_SELF_TEST=PASS")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--self-test", action="store_true")
+    args = parser.parse_args()
+
+    if args.self_test:
+        self_test()
+        return 0
+
+    failures = check()
+    if failures:
+        for item in failures:
+            print(f"FAIL: {item}", file=sys.stderr)
+        print("R9_LAUNCHER3_FOUNDATION_CONTRACT=FAIL", file=sys.stderr)
+        return 1
+
+    print("R9_LAUNCHER3_PHASE=HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT")
+    print("R9_LAUNCHER3_FOUNDATION_CONTRACT=PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
