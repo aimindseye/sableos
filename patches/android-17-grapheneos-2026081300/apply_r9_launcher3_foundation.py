@@ -290,12 +290,14 @@ def patch_widget_size_handler(text: str) -> str:
 
 
 def patch_preview_context(text: str) -> str:
-    text = replace_once(
-        text,
-        "import java.util.Arrays\n",
-        "",
-        "PreviewContext obsolete Arrays import",
-    )
+    obsolete_import = "import java.util.Arrays\n"
+    if obsolete_import in text:
+        if text.count(obsolete_import) != 1:
+            raise FoundationError(
+                "PreviewContext obsolete Arrays import: expected exactly one anchor"
+            )
+        text = text.replace(obsolete_import, "", 1)
+
     return replace_once(
         text,
         "            Arrays.stream(mDbDir.listFiles()).forEach { obj: File -> obj.delete() }",
