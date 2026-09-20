@@ -141,6 +141,8 @@ GitHub
   -> source hosting / PR review / issues only
 
 local build machine
+  -> one shared host toolchain under /srv/data/sable-host-tools
+  -> build and CI source build/config/r8-host-tools.env
   -> build/local-ci/run.sh core
   -> build/local-ci/run.sh full
   -> build/local-ci/run.sh release
@@ -149,8 +151,10 @@ local build machine
 
 This is not a self-hosted GitHub Actions runner. Remote execution from GitHub
 remains disabled, and the prior encryption requirement for any future Actions
-runner remains intact. A governed update of `main` requires a successful local
-`full` or `release` attestation for the exact candidate commit.
+runner remains intact. Local CI does not maintain a parallel tool installation:
+the canonical build-machine toolchain is verified and reused by both build and
+CI. A governed update of `main` requires a successful local `full` or
+`release` attestation for the exact candidate commit.
 
 See `build/local-ci/README.md`, `docs/INFRA2C_FREE_GOVERNANCE.md` and
 `docs/INFRA4_TRUSTED_RUNNER_ENCRYPTION.md`.
