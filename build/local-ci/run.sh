@@ -68,13 +68,43 @@ run_policy() {
 }
 
 run_static() {
+  local shell_count=0
   while IFS= read -r script; do
+    [[ -n "$script" ]] || continue
     bash -n "$ROOT/$script"
-  done < <(git -C "$ROOT" ls-files '*.sh')
+    shell_count=$((shell_count + 1))
+  done < <(
+    git -C "$ROOT" ls-files -- \
+      '.githooks/pre-push' \
+      'apps/r8/*.sh' \
+      'apps/r8/**/*.sh' \
+      'build/*.sh' \
+      'build/host/*.sh' \
+      'build/panther/*.sh' \
+      'build/gates/*.sh' \
+      'tests/sablestart/host/*.sh' \
+      'tests/sablestart/device/*.sh'
+  )
+  echo "SABLE_LOCAL_CI_ACTIVE_SHELL_SYNTAX_COUNT=$shell_count"
 
+  local python_count=0
   while IFS= read -r py; do
+    [[ -n "$py" ]] || continue
     python3 -m py_compile "$ROOT/$py"
-  done < <(git -C "$ROOT" ls-files '*.py')
+    python_count=$((python_count + 1))
+  done < <(
+    git -C "$ROOT" ls-files -- \
+      'apps/r8/*.py' \
+      'apps/r8/**/*.py' \
+      'build/*.py' \
+      'build/gates/*.py' \
+      'patches/android-17-grapheneos-2026081300/*.py'
+  )
+  echo "SABLE_LOCAL_CI_ACTIVE_PYTHON_SYNTAX_COUNT=$python_count"
+
+  # tools/validation/** is a byte-preserved historical evidence archive, not
+  # the maintained CI execution surface. Its SHA-bound artifacts are not
+  # rewritten or syntax-qualified as current tooling.
 
   for applicator in "$ROOT"/patches/android-17-grapheneos-2026081300/apply_*.py; do
     [[ -f "$applicator" ]] || continue
