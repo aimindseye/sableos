@@ -9,6 +9,7 @@ release="$ROOT/build/config/r8-release.env"
 verify="$ROOT/build/host/verify-r8-host-tools.sh"
 migrate="$ROOT/build/host/migrate-r8-final-v1-host-tools.sh"
 host_audit="$ROOT/build/host/audit-r8-host-tools.sh"
+host_bootstrap="$ROOT/build/host/bootstrap-r8-host-tools.sh"
 host_centralize="$ROOT/build/host/centralize-r8-security-tools.sh"
 host_cleanup="$ROOT/build/host/cleanup-r8-host-tool-duplicates.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
@@ -28,7 +29,7 @@ start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 local_ci="$ROOT/build/local-ci/run.sh"
 ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
@@ -62,6 +63,10 @@ grep -Fq 'SABLE_SECURITY_BIN' "$profile"
 grep -Fq 'SABLE_CARGO_LLVM_COV' "$profile"
 grep -Fq 'SABLE_GITLEAKS' "$profile"
 grep -Fq 'SABLE_MOBSFSCAN' "$profile"
+grep -Fq 'HOST_TOOL_BOOTSTRAP_AUTHORIZED' "$host_bootstrap"
+grep -Fq 'HOST_PACKAGE_INSTALL_AUTHORIZED' "$host_bootstrap"
+grep -Fq 'NETWORK_FETCH_AUTHORIZED' "$host_bootstrap"
+grep -Fq 'SABLE_MOBSFSCAN_VENV' "$profile"
 grep -Fq -- '--verify-dir "$SABLE_SECURITY_BIN"' "$verify"
 grep -Fq 'R8_MOBSFSCAN_VERSION' "$verify"
 ! grep -Fq 'component add' "$local_ci"
