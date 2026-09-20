@@ -6,6 +6,7 @@ import hashlib
 import json
 import pathlib
 import sys
+import tempfile
 from datetime import datetime, timezone
 
 
@@ -125,6 +126,37 @@ def field(args: argparse.Namespace) -> int:
     return 0
 
 
+def self_test() -> int:
+    with tempfile.TemporaryDirectory() as td:
+        root = pathlib.Path(td)
+        tf = root / "target_files.zip"
+        ai = root / "android-info.txt"
+        tf.write_bytes(b"target-files")
+        ai.write_text("require board=panther\n", encoding="utf-8")
+        digest = sha256_file(tf)
+        ns = argparse.Namespace(
+            registry_root=str(root / "registry"),
+            device="panther",
+            release="R9",
+            build_source="0" * 40,
+            target_files=str(tf),
+            sha256=digest,
+            android_info=str(ai),
+            out_dir=str(root / "out"),
+            build_evidence_dir=str(root / "evidence"),
+            replace=False,
+        )
+        assert register(ns) == 0
+        assert register(ns) == 0
+        path = registry_path(root / "registry", "panther", "R9", "0" * 40)
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        assert doc["target_files_sha256"] == digest
+        assert doc["device"] == "panther"
+        assert doc["release"] == "R9"
+    print("SABLE_ARTIFACT_REGISTRY_SELF_TEST=PASS")
+    return 0
+
+
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser()
     p.add_argument(
@@ -132,6 +164,8 @@ def parser() -> argparse.ArgumentParser:
         default="/srv/data/sable-build/release-registry",
     )
     sub = p.add_subparsers(dest="command", required=True)
+
+    sub.add_parser("self-test")
 
     r = sub.add_parser("register")
     r.add_argument("--device", required=True)
@@ -159,6 +193,8 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = parser().parse_args()
+    if args.command == "self-test":
+        return self_test()
     if args.command == "register":
         return register(args)
     if args.command == "show":
