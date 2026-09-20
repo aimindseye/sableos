@@ -205,6 +205,31 @@ def main() -> int:
         'label = "permissions + app info"',
         "R9_PEEK_PRIVACY_ACTION",
     )
+    require(
+        production_ui,
+        "LocalDatumRow(",
+        "R9_LOCAL_CONTEXT_FLAT_ROWS",
+    )
+    require(
+        production_ui,
+        'text = "enable local data"',
+        "R9_LOCAL_CONTEXT_FLAT_PERMISSION_ACTION",
+    )
+    require(
+        production_ui,
+        'text = "weather + tasks · provider not configured"',
+        "R9_LOCAL_CONTEXT_PROVIDER_STATUS",
+    )
+    require(
+        production_ui,
+        'text = "local only · no ambient network search"',
+        "R9_LOCAL_CONTEXT_NETWORK_TRUTH",
+    )
+    forbid(
+        production_ui,
+        "LiveCard(",
+        "R9_LOCAL_CONTEXT_OLD_CARD_SURFACE",
+    )
     forbid(
         production_ui,
         'text = "Sable Peek"',
@@ -298,6 +323,8 @@ def main() -> int:
     print("R9_SEARCH_COMMAND_APP_HIERARCHY=PASS")
     print("R9_PEEK_FLAT_CONTEXTUAL_LAYER=PASS")
     print("R9_PEEK_ACTION_HIERARCHY=PASS")
+    print("R9_LOCAL_CONTEXT_FLAT_ROWS=PASS")
+    print("R9_LOCAL_CONTEXT_TRUTHFUL_STATUS=PASS")
     print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
     require(
@@ -309,7 +336,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
     print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
-    print("R9_L12_VISUAL_REVIEW_CONTRACT=PASS")
+    print("R9_L13_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
 
