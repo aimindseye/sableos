@@ -396,7 +396,18 @@ def main() -> None:
         if not apk.is_file():
             fail("SABLE_MAIL_APK", f"path={apk}")
 
-        apkanalyzer = os.environ.get("APKANALYZER", "apkanalyzer")
+        apkanalyzer = (
+            os.environ.get("APKANALYZER")
+            or os.environ.get("SABLE_APKANALYZER")
+            or "apkanalyzer"
+        )
+        apkanalyzer_path = pathlib.Path(apkanalyzer)
+        if "/" in apkanalyzer and not apkanalyzer_path.is_file():
+            fail(
+                "SABLE_MAIL_APKANALYZER",
+                f"path={apkanalyzer_path}",
+            )
+
         package = subprocess.check_output(
             [apkanalyzer, "manifest", "application-id", str(apk)],
             text=True,
