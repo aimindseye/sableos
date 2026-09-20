@@ -143,6 +143,8 @@ The qualifier performs:
 
 It does not clean, clobber, fetch network content, contact a device, flash, retire the current standalone SableStart app, or build a full Panther image.
 
+Before mutation, the applicator inspects the Launcher3 Git worktree and refuses any dirty path outside the reviewed foundation set (`Android.bp`, Quickstep launcher manifest, Quickstep label resources, and the Sable host source). After apply, it requires exactly that bounded dirty set.
+
 Required success marker:
 
 ```text
