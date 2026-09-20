@@ -121,6 +121,7 @@ run_static() {
   python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
   python3 "$ROOT/build/gates/r9-launcher-visual-review-contract.py"
+  python3 "$ROOT/build/gates/r9-launcher-visual-acceptance.py"
 }
 
 run_rust() {
