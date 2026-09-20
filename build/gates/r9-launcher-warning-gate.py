@@ -34,6 +34,23 @@ MIGRATED_WARNING_RULES = (
     ("packages/apps/Launcher3/src/com/android/launcher3/preview/PreviewLifecycleObserver.kt", "MESSAGE_ID_UPDATE_ICON_THEMED: Int' is deprecated"),
     ("packages/apps/SableDesign/", "statusBarColor: Int' is deprecated"),
     ("packages/apps/SableDesign/", "navigationBarColor: Int' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/UtilitiesKt.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/icons/CacheableShortcutInfo.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayInfoContainer.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/ModelWriter.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/testing/FakeModelWriter.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/launcher3/statehandlers/DesktopVisibilityController.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/launcher3/taskbar/OverflownAppsContainerView.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/launcher3/taskbar/bubbles/BubbleBarBackground.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/launcher3/taskbar/navbutton/PhoneLandscapeNavLayoutter.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/quickstep/logging/StatsLogCompatManager.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/quickstep/orientation/SeascapePagedViewHandler.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/quickstep/util/GroupTask.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/DesktopTaskView.kt", "corresponding parameter in the supertype"),
+    ("packages/apps/Launcher3/quickstep/src/com/android/quickstep/views/FloatingAppPairBackground.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/graphics/PreloadIconDelegate.kt", "fun getColor(p0: Int): Int' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/DbEntry.kt", "fun toURI(): String!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/dragndrop/AddItemActivity.kt", "field label: String!' is deprecated"),
 )
 
 
