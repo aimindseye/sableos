@@ -27,6 +27,9 @@ required = (
     ROOT / "build" / "check-runner-policy.py",
     ROOT / "build" / "audit-trusted-runner-host.py",
     ROOT / "build" / "host" / "verify-r8-host-tools.sh",
+    ROOT / "build" / "host" / "audit-r8-host-tools.sh",
+    ROOT / "build" / "host" / "centralize-r8-security-tools.sh",
+    ROOT / "build" / "host" / "cleanup-r8-host-tool-duplicates.sh",
     ROOT / ".githooks" / "pre-push",
     ROOT / "build" / "supply-chain-lock.json",
     ROOT / "build" / "generate-supply-chain-evidence.py",
@@ -68,16 +71,27 @@ if local_ci.is_file():
         "build/check-runner-policy.py",
         "build/check-repo-layout.sh",
         "build/host/verify-r8-host-tools.sh",
-        "cargo-audit",
-        "cargo-deny",
-        "gitleaks",
-        "mobsfscan",
+        "SABLE_SECURITY_BIN",
+        "SABLE_GITLEAKS",
+        "SABLE_MOBSFSCAN",
         "run-r8-release-candidate.sh",
         "sable-local-ci",
         "SABLE_LOCAL_CI=PASS",
     ):
         if token not in text:
             failures.append(f"local CI contract token missing: {token}")
+
+    forbidden_install_tokens = (
+        "--dest \"$PINNED_TOOLS_DIR\"",
+        "component add",
+        "python3 -m venv",
+        "pip install",
+    )
+    for token in forbidden_install_tokens:
+        if token in text:
+            failures.append(
+                f"local CI must not install host tools; forbidden token present: {token}"
+            )
 
 stage = subprocess.check_output(
     ["git", "-C", str(ROOT), "ls-files", "--stage", ".githooks/pre-push"],
