@@ -36,7 +36,7 @@ for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstr
     }
 done
 
-for f in "$verify" "$migrate" "$host_audit" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
+for f in "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
     bash -n "$f"
 done
 
