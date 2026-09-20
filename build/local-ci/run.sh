@@ -223,7 +223,45 @@ run_security() {
     "$SABLE_CARGO" deny check advisories bans sources
   )
 
-  "$SABLE_GITLEAKS" git --log-opts="--all" --redact --no-banner "$ROOT"
+  gitleaks_report="$EVIDENCE_DIR/gitleaks-results.json"
+  set +e
+  "$SABLE_GITLEAKS" git \
+    --log-opts="--all" \
+    --redact \
+    --no-banner \
+    --report-format json \
+    --report-path "$gitleaks_report" \
+    "$ROOT"
+  gitleaks_rc=$?
+  set -e
+
+  python3 - "$gitleaks_report" <<'PY'
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+if not path.exists():
+    print("GITLEAKS_REPORT=ABSENT")
+    raise SystemExit(0)
+
+findings = json.loads(path.read_text(encoding="utf-8"))
+print(f"GITLEAKS_FINDING_COUNT={len(findings)}")
+for item in findings:
+    print(
+        "GITLEAKS_FINDING "
+        f"rule={item.get('RuleID', 'UNKNOWN')} "
+        f"file={item.get('File', 'UNKNOWN')} "
+        f"commit={item.get('Commit', 'UNKNOWN')} "
+        f"line={item.get('StartLine', 'UNKNOWN')}"
+    )
+PY
+
+  if [[ "$gitleaks_rc" -ne 0 ]]; then
+    echo "SABLE_GITLEAKS=FAIL report=$gitleaks_report"
+    return "$gitleaks_rc"
+  fi
+  echo "SABLE_GITLEAKS=PASS report=$gitleaks_report"
 
   "$SABLE_MOBSFSCAN"     "$ROOT/apps/r8/android"     --sarif     --output "$EVIDENCE_DIR/mobsfscan-results.sarif"     --type android     --no-fail
   test -s "$EVIDENCE_DIR/mobsfscan-results.sarif"
