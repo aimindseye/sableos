@@ -41,6 +41,9 @@ android {
 dependencies {
     constraints {
         implementation("androidx.core:core-ktx:1.16.0")
+        implementation("androidx.collection:collection:1.5.0")
+        implementation("androidx.collection:collection-jvm:1.5.0")
+        implementation("androidx.collection:collection-ktx:1.5.0")
         implementation("androidx.lifecycle:lifecycle-common:2.9.4")
         implementation("androidx.lifecycle:lifecycle-common-java8:2.9.4")
         implementation("androidx.lifecycle:lifecycle-common-jvm:2.9.4")
