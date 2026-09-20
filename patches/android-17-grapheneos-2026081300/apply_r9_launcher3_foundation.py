@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -309,12 +310,10 @@ def patch_preview_lifecycle(text: str) -> str:
         ("MESSAGE_ID_UPDATE_ICON_THEMED", "LEGACY_MESSAGE_ID_UPDATE_ICON_THEMED"),
     )
     for old, new in replacements:
-        text = text.replace(old, new)
+        text = re.sub(rf"(?<![A-Za-z0-9_]){re.escape(old)}(?![A-Za-z0-9_])", new, text)
 
-    for annotation in (
-        '        @Deprecated("Use [MESSAGE_ID_UPDATE_COMMAND] instead")\n',
-    ):
-        text = text.replace(annotation, "")
+    annotation = '        @Deprecated("Use [MESSAGE_ID_UPDATE_COMMAND] instead")\n'
+    text = text.replace(annotation, "")
     return text
 
 
@@ -920,6 +919,27 @@ app.getApplicationInfo()
     patched_workspace = patch_workspace_translator(workspace)
     assert "toSpec(info: WorkspaceData)" in patched_workspace
     assert "val filteredItems = info.filter" in patched_workspace
+
+    preview_lifecycle = """        @Deprecated("Use [MESSAGE_ID_UPDATE_COMMAND] instead")
+        private const val MESSAGE_ID_UPDATE_SHAPE = 2586
+        @Deprecated("Use [MESSAGE_ID_UPDATE_COMMAND] instead")
+        private const val MESSAGE_ID_UPDATE_GRID = 7414
+        @Deprecated("Use [MESSAGE_ID_UPDATE_COMMAND] instead")
+        private const val MESSAGE_ID_UPDATE_ICON_THEMED = 311
+        MESSAGE_ID_UPDATE_SHAPE
+        MESSAGE_ID_UPDATE_GRID
+        MESSAGE_ID_UPDATE_ICON_THEMED
+"""
+    patched_preview_lifecycle = patch_preview_lifecycle(preview_lifecycle)
+    assert "LEGACY_MESSAGE_ID_UPDATE_SHAPE" in patched_preview_lifecycle
+    assert "LEGACY_MESSAGE_ID_UPDATE_GRID" in patched_preview_lifecycle
+    assert "LEGACY_MESSAGE_ID_UPDATE_ICON_THEMED" in patched_preview_lifecycle
+    assert "@Deprecated" not in patched_preview_lifecycle
+    assert (
+        patch_preview_lifecycle(patched_preview_lifecycle)
+        == patched_preview_lifecycle
+    )
+    assert "LEGACY_LEGACY_" not in patched_preview_lifecycle
 
     try:
         replace_once("x", "missing", "new", "negative")
