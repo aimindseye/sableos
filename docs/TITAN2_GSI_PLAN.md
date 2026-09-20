@@ -132,8 +132,6 @@ Zinwa Q27
     -> preferred future full physical-QWERTY candidate if qualified
 ```
 
-Q25 remains optional for low-level MediaTek/kernel work when its available source provides specific engineering value.
-
 ## Why the Titan 2 family is useful
 
 The two devices deliberately cover different physical-keyboard/display envelopes:
@@ -406,18 +404,6 @@ Panther remains the authoritative full-stack SableOS development target.
 
 Titan 2 work must not interrupt or redefine Panther architecture. Common SableStart/application/service changes should first preserve Panther correctness, then prove portability on Titan 2.
 
-## Relationship to Q25
-
-Q25 is no longer the assumed first non-Pixel purchase or required portability step.
-
-Use Q25 when we specifically need:
-
-- maintainable/community kernel source;
-- lower-level MediaTek kernel experimentation;
-- device-tree experimentation which Titan 2's opaque kernel/BSP blocks.
-
-See `Q25_PORT_PLAN.md`.
-
 ## Relationship to Q27
 
 Q27 remains the preferred future full physical-QWERTY candidate if its shipped hardware, source/BSP, firmware, AVB, recovery and support lifecycle pass acceptance.
@@ -437,7 +423,6 @@ Do not assume common SoC family or branding means device-specific code is reusab
 
 - `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`
 - `BRAX3_IODEOS_REFERENCE.md`
-- `Q25_PORT_PLAN.md`
 - `ROADMAP.md`
 - `RELEASE_VALIDATION.md`
 - https://source.android.com/docs/core/tests/vts/gsi
