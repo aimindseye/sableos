@@ -25,6 +25,12 @@ echo "CANONICAL_ROOT=$SABLE_HOST_TOOLS_ROOT"
 
 mkdir -p "$SABLE_SECURITY_BIN" "$SABLE_MOBSFSCAN_ROOT"
 
+python3 "$ROOT/build/install-pinned-tool.py" --verify-dir "$SABLE_SECURITY_BIN" || {
+    echo "SABLE_HOST_TOOL_BOOTSTRAP=FAIL_NATIVE_SECURITY_TOOLS_NOT_CENTRALIZED"
+    echo "NEXT=HOST_TOOL_CENTRALIZATION_AUTHORIZED=YES bash build/host/centralize-r8-security-tools.sh"
+    exit 3
+}
+
 component_installed() {
     local pattern="$1"
     "$SABLE_RUSTUP" component list --installed --toolchain "$SABLE_RUST_TOOLCHAIN"         | grep -Eq "$pattern"
