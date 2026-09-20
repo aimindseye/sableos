@@ -57,7 +57,7 @@ case "$resolver" in
 esac
 
 role_holders="$(
-    "${ADB[@]}" shell cmd role get-role-holders android.app.role.HOME --user 0         2>/dev/null | tr -d '\r'
+    "${ADB[@]}" shell cmd role get-role-holders --user 0 android.app.role.HOME         2>/dev/null | tr -d '\r'
 )"
 printf '%s\n' "$role_holders" > "$EVIDENCE_DIR/home-role-holders.txt"
 grep -Fxq "$EXPECTED_PACKAGE" <<<"$role_holders" || fail HOME_ROLE_HOLDER
