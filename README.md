@@ -1,5 +1,12 @@
 # SableOS
 
+![Local CI](https://img.shields.io/badge/CI-local%20direct-active-2ea44f)
+![R9 Launcher](https://img.shields.io/badge/R9%20launcher%20visual-PASS-2ea44f)
+![Product composition](https://img.shields.io/badge/product%20composition-PASS-2ea44f)
+![Fresh Panther](https://img.shields.io/badge/fresh%20Panther%20build-IN%20PROGRESS-f0ad4e)
+![Pixel 7](https://img.shields.io/badge/Pixel%207%20physical-PENDING-lightgrey)
+![Titan 2](https://img.shields.io/badge/Titan%202-keyboard--first%20QUEUED-6f42c1)
+
 SableOS is an experimental privacy- and security-focused Android-compatible mobile OS with narrow privilege boundaries, a Rust-first userspace direction, and one common product core across hardware and interaction profiles.
 
 The project is moving beyond substrate bring-up into a distinct user experience built around **Sable Flow**: a Metro-inspired, information-first shell with live tiles, people-centric communication and a central Sable Hub.
@@ -73,7 +80,7 @@ MESSAGES
 SETTINGS
 ```
 
-Launcher3 remains a development/reference fallback until Sable Start passes replacement qualification.
+Launcher3/Quickstep is now the production HOME/Overview/Recents foundation. Sable Start is the Sable-owned presentation rendered in Launcher3's NORMAL state; the standalone SableStart HOME APK is retired from the product graph.
 
 ## Sable Hub
 
@@ -105,26 +112,26 @@ See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`.
 
 ## Current milestone
 
-Panther D4 physical acceptance is closed. The current product phase is:
+Panther D4 physical acceptance remains historical baseline evidence. The active development milestone is **R9**:
 
 ```text
-SABLEOS_PRODUCT_DEVELOPMENT=ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
-NEXT_PRODUCT_MILESTONE=SABLE_M1_METRO_SHELL_PROTOTYPE
-TARGET=panther
+R8 application/design/product-composition foundation        PASS
+R9 Launcher3/Quickstep + Sable Start visual gate            PASS
+R9 source-bound fresh Panther full build                    IN PROGRESS
+R9 physical Pixel 7 HOME/Overview/Recents/runtime gate      PENDING
+Titan 2 keyboard-first portability/GSI campaign             QUEUED_AFTER_PANTHER
+production signing / OTA                                    DEFERRED
 ```
 
 Near-term sequence:
 
 ```text
-Sable Flow shared primitives
-    -> Sable Start M1
-    -> Phone / People / Messages
-    -> Sable Hub provider framework
-    -> social web capsules
-    -> broader native apps and polish
-    -> Q25/Q27 portability when justified
-    -> production signing/OTA closure before release candidate
+fresh Panther build causality
+    -> exact target-files/image proof
+    -> physical Pixel 7 Launcher3/Quickstep runtime acceptance
+    -> Titan 2 T0 inventory + keyboard-first N0 portability
+    -> broader common Sable product work
+    -> production signing/OTA closure before an actual release candidate
 ```
 
 See `CURRENT_STATUS.md` and `docs/CORE_PRODUCT_ROADMAP.md`.
@@ -266,7 +273,7 @@ Panther establishes the Sable Flow touch profile:
 
 ### Keyboard-first / compact
 
-Future Q25/Q27 work should reuse the same semantic model with:
+Titan 2 is now the next keyboard-first portability target; Q27 remains the preferred future full-QWERTY candidate if shipped hardware qualifies. They should reuse the same semantic model with:
 
 - physical keyboard as first-class input;
 - deterministic focus;
@@ -277,10 +284,11 @@ Future Q25/Q27 work should reuse the same semantic model with:
 
 Device roles:
 
-- `panther` / Pixel 7 — active touch-first reference;
+- `panther` / Pixel 7 — active touch-first full-stack reference;
+- Titan 2 — next keyboard-first N0 GSI/userspace portability lab;
 - `bramble` / Pixel 4a 5G — frozen architecture/regression reference;
-- Zinwa Q25 — optional MediaTek/QWERTY engineering reference;
-- Zinwa Q27 — future preferred modern QWERTY direction subject to platform/hardware acceptance.
+- Zinwa Q25 — optional low-level MediaTek/QWERTY engineering reference;
+- Zinwa Q27 — future preferred modern full-QWERTY direction subject to platform/hardware acceptance.
 
 The Sable Start/Hub data and capability model must remain common across these form factors.
 
