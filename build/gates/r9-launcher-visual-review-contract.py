@@ -69,7 +69,7 @@ def main() -> int:
     )
     require(
         production_ui,
-        "activityInfo.getIcon(densityDpi)",
+        "activityInfo.getBadgedIcon(densityDpi)",
         "R9_PRODUCTION_REAL_ICON_DRAWABLE",
     )
 
