@@ -22,12 +22,33 @@ HOST_SOURCE = (
     / "SableQuickstepLauncher.kt"
 )
 
+FALLBACK_ACTIVITY_REL = pathlib.Path(
+    "quickstep/src/com/android/quickstep/FallbackActivityInterface.java"
+)
+LEGACY_FALLBACK_TEST_REL = pathlib.Path(
+    "quickstep/tests/multivalentTests/src/com/android/quickstep/"
+    "FallbackSwipeHandlerTestCase.java"
+)
+
+# Observed ai-g732 residue from the prior standalone-HOME debugging session.
+# The production blob is retained as an explicit Sable compatibility patch.
+# The test blob is known malformed against the pinned Dagger singleton API and
+# is normalized back to pinned HEAD before foundation mutation continues.
+KNOWN_LEGACY_FALLBACK_BLOB = "8387af17a577a6720cccbc5ca952aefffafa6157"
+KNOWN_LEGACY_FALLBACK_TEST_BLOB = "23239ce5180bee05da6ea52afe889e00523619c4"
+
 FOUNDATION_DIRTY_PATHS = {
     "Android.bp",
     "quickstep/AndroidManifest-launcher.xml",
     "quickstep/res/values/strings.xml",
     HOST_REL.as_posix(),
+    FALLBACK_ACTIVITY_REL.as_posix(),
 }
+
+FALLBACK_NULL_ANCHOR = "        if (interactor == null) {"
+FALLBACK_NULL_REPLACEMENT = (
+    "        if (interactor == null || callbacks == null) {"
+)
 
 BP_SRC_ANCHOR = '''        ":launcher-quickstep-dagger",
         ":launcher-build-config",
@@ -169,6 +190,15 @@ def patch_strings(text: str) -> str:
     )
 
 
+def patch_fallback_activity(text: str) -> str:
+    return replace_once(
+        text,
+        FALLBACK_NULL_ANCHOR,
+        FALLBACK_NULL_REPLACEMENT,
+        "Fallback Quickstep null-callback guard",
+    )
+
+
 def git_head(path: pathlib.Path) -> str:
     proc = subprocess.run(
         ["git", "-C", str(path), "rev-parse", "HEAD"],
@@ -213,6 +243,73 @@ def launcher_dirty_paths(launcher: pathlib.Path) -> set[str]:
             path = path.split(" -> ", 1)[1]
         paths.add(path)
     return paths
+
+
+def worktree_blob(launcher: pathlib.Path, rel: pathlib.Path) -> str:
+    proc = subprocess.run(
+        ["git", "-C", str(launcher), "hash-object", rel.as_posix()],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise FoundationError(
+            f"cannot hash Launcher3 path {rel}: {proc.stderr.strip()}"
+        )
+    return proc.stdout.strip()
+
+
+def restore_head_file(launcher: pathlib.Path, rel: pathlib.Path) -> None:
+    proc = subprocess.run(
+        ["git", "-C", str(launcher), "show", f"HEAD:{rel.as_posix()}"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise FoundationError(
+            f"cannot read pinned Launcher3 path {rel}: "
+            + proc.stderr.decode(errors="replace").strip()
+        )
+    (launcher / rel).write_bytes(proc.stdout)
+
+
+def normalize_known_legacy_residue(launcher: pathlib.Path) -> None:
+    dirty = launcher_dirty_paths(launcher)
+    test_path = LEGACY_FALLBACK_TEST_REL.as_posix()
+    fallback_path = FALLBACK_ACTIVITY_REL.as_posix()
+
+    if test_path not in dirty:
+        return
+
+    if fallback_path not in dirty:
+        raise FoundationError(
+            "known fallback test residue exists without its production patch"
+        )
+
+    fallback_blob = worktree_blob(launcher, FALLBACK_ACTIVITY_REL)
+    test_blob = worktree_blob(launcher, LEGACY_FALLBACK_TEST_REL)
+
+    if fallback_blob != KNOWN_LEGACY_FALLBACK_BLOB:
+        raise FoundationError(
+            "fallback compatibility residue blob mismatch "
+            f"expected={KNOWN_LEGACY_FALLBACK_BLOB} actual={fallback_blob}"
+        )
+    if test_blob != KNOWN_LEGACY_FALLBACK_TEST_BLOB:
+        raise FoundationError(
+            "fallback regression-test residue blob mismatch "
+            f"expected={KNOWN_LEGACY_FALLBACK_TEST_BLOB} actual={test_blob}"
+        )
+
+    restore_head_file(launcher, LEGACY_FALLBACK_TEST_REL)
+
+    if LEGACY_FALLBACK_TEST_REL.as_posix() in launcher_dirty_paths(launcher):
+        raise FoundationError(
+            "failed to normalize malformed fallback regression-test residue"
+        )
+
+    print("R9_LAUNCHER3_LEGACY_FALLBACK_TEST=NORMALIZED_TO_PINNED_HEAD")
 
 
 def require_recognized_launcher_dirt(
@@ -337,6 +434,16 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         if token not in host:
             raise FoundationError(f"Sable Quickstep host token missing: {token}")
 
+    fallback = (launcher / FALLBACK_ACTIVITY_REL).read_text(encoding="utf-8")
+    if FALLBACK_NULL_REPLACEMENT not in fallback:
+        raise FoundationError(
+            "Fallback Quickstep null-callback compatibility guard missing"
+        )
+    if FALLBACK_NULL_ANCHOR in fallback:
+        raise FoundationError(
+            "Fallback Quickstep unguarded taskbar bridge remains"
+        )
+
 
 def apply_tree(source: pathlib.Path) -> None:
     launcher = source / "packages/apps/Launcher3"
@@ -345,6 +452,7 @@ def apply_tree(source: pathlib.Path) -> None:
             "refusing Launcher3 mutation because the pinned base HEAD differs"
         )
 
+    normalize_known_legacy_residue(launcher)
     require_recognized_launcher_dirt(launcher, require_complete=False)
     require_workspace_sources(source)
 
@@ -352,6 +460,7 @@ def apply_tree(source: pathlib.Path) -> None:
     manifest_path = launcher / "quickstep/AndroidManifest-launcher.xml"
     strings_path = launcher / "quickstep/res/values/strings.xml"
     host_path = launcher / HOST_REL
+    fallback_path = launcher / FALLBACK_ACTIVITY_REL
 
     bp_path.write_text(
         patch_android_bp(bp_path.read_text(encoding="utf-8")),
@@ -363,6 +472,10 @@ def apply_tree(source: pathlib.Path) -> None:
     )
     strings_path.write_text(
         patch_strings(strings_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    fallback_path.write_text(
+        patch_fallback_activity(fallback_path.read_text(encoding="utf-8")),
         encoding="utf-8",
     )
 
@@ -417,6 +530,17 @@ suffix
     assert patch_strings(patched_strings) == patched_strings
     assert LABEL_NEW in patched_strings
 
+    fallback = """before
+        if (interactor == null) {
+            return superAnimator;
+        }
+after
+"""
+    patched_fallback = patch_fallback_activity(fallback)
+    assert patch_fallback_activity(patched_fallback) == patched_fallback
+    assert FALLBACK_NULL_REPLACEMENT in patched_fallback
+    assert FALLBACK_NULL_ANCHOR not in patched_fallback
+
     try:
         replace_once("x", "missing", "new", "negative")
     except FoundationError:
@@ -451,6 +575,7 @@ def main() -> int:
         else:
             verify_tree(source)
             print("R9_LAUNCHER3_DIRTY_PATHS=PASS")
+            print("R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS")
             print("R9_LAUNCHER3_FOUNDATION_VERIFY=PASS")
     except FoundationError as exc:
         print(f"R9_LAUNCHER3_FOUNDATION=FAIL {exc}", file=sys.stderr)
