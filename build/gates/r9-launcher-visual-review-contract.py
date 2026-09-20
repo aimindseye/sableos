@@ -187,6 +187,31 @@ def main() -> int:
     )
     require(
         production_ui,
+        'text = "peek"',
+        "R9_PEEK_SABLE_IDENTITY",
+    )
+    require(
+        production_ui,
+        'text = "open"',
+        "R9_PEEK_FLAT_OPEN_ACTION",
+    )
+    require(
+        production_ui,
+        'label = if (isPinned) "unpin from favorites" else "pin to favorites"',
+        "R9_PEEK_FAVORITE_ACTION",
+    )
+    require(
+        production_ui,
+        'label = "permissions + app info"',
+        "R9_PEEK_PRIVACY_ACTION",
+    )
+    forbid(
+        production_ui,
+        'text = "Sable Peek"',
+        "R9_PEEK_OLD_MATERIAL_SHEET_COPY",
+    )
+    require(
+        production_ui,
         "color = MaterialTheme.colorScheme.primary",
         "R9_SEARCH_COMMAND_ACCENT",
     )
@@ -271,6 +296,8 @@ def main() -> int:
     print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
     print("R9_SEARCH_FLAT_METRO_INPUT=PASS")
     print("R9_SEARCH_COMMAND_APP_HIERARCHY=PASS")
+    print("R9_PEEK_FLAT_CONTEXTUAL_LAYER=PASS")
+    print("R9_PEEK_ACTION_HIERARCHY=PASS")
     print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
     require(
@@ -282,7 +309,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
     print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
-    print("R9_L11_VISUAL_REVIEW_CONTRACT=PASS")
+    print("R9_L12_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
 
