@@ -1493,6 +1493,9 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         ),
         FIRST_SCREEN_BROADCAST_HELPER_REL: (
             "@Ui private val uiExecutor: LooperExecutor",
+            "@VisibleForTesting",
+            "LooperExecutor(Looper.getMainLooper(), Process.THREAD_PRIORITY_DEFAULT)",
+            "grouped.mapKeys",
             "uiExecutor.submit<ArrayList<WorkspaceItemInfo>>",
         ),
         MODEL_TASK_CONTROLLER_REL: (
@@ -1513,6 +1516,26 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
                 raise FoundationError(
                     f"Launcher warning-cleanup token missing {rel}: {token}"
                 )
+
+    dagger_migrated_paths = (
+        WIDGET_APP_ICONS_REPOSITORY_REL,
+        WALLPAPER_COLOR_HINTS_REL,
+        FIRST_SCREEN_BROADCAST_HELPER_REL,
+        MODEL_TASK_CONTROLLER_REL,
+        REFRESH_RATE_TRACKER_REL,
+        REMOVE_ANIMATION_SETTINGS_TRACKER_REL,
+    )
+    for rel in dagger_migrated_paths:
+        source_text = (launcher / rel).read_text(encoding="utf-8")
+        if "Executors" in source_text:
+            raise FoundationError(
+                f"Deprecated static Executors bridge remains after Dagger migration: {rel}"
+            )
+    first_screen_text = (launcher / FIRST_SCREEN_BROADCAST_HELPER_REL).read_text(
+        encoding="utf-8"
+    )
+    if " as Map<String, List<ItemInfo>>" in first_screen_text:
+        raise FoundationError("FirstScreenBroadcastHelper unchecked installer-map cast remains")
 
 
 def apply_tree(source: pathlib.Path) -> None:
@@ -2146,14 +2169,20 @@ constructor(@ApplicationContext private val context: Context, tracker: DaggerSin
     assert "UI_HELPER_EXECUTOR" not in patched_wallpaper_hints
     assert patch_wallpaper_color_hints(patched_wallpaper_hints) == patched_wallpaper_hints
 
-    first_screen = """import androidx.annotation.WorkerThread
+    first_screen = """import android.os.Process
+import androidx.annotation.WorkerThread
 import com.android.launcher3.util.Executors
 import com.android.launcher3.util.PackageUserKey
 constructor(private val packageManagerHelper: PackageManagerHelper) {
+            .apply { remove(null) } as Map<String, List<ItemInfo>>
             return Executors.MAIN_EXECUTOR.submit<ArrayList<WorkspaceItemInfo>> { ArrayList(list) }
 """
     patched_first_screen = patch_first_screen_broadcast_helper(first_screen)
     assert "@Ui private val uiExecutor: LooperExecutor" in patched_first_screen
+    assert "@VisibleForTesting" in patched_first_screen
+    assert "LooperExecutor(Looper.getMainLooper(), Process.THREAD_PRIORITY_DEFAULT)" in patched_first_screen
+    assert "grouped.mapKeys" in patched_first_screen
+    assert " as Map<String, List<ItemInfo>>" not in patched_first_screen
     assert "Executors.MAIN_EXECUTOR" not in patched_first_screen
     assert patch_first_screen_broadcast_helper(patched_first_screen) == patched_first_screen
 
