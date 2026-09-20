@@ -4,9 +4,25 @@ SableOS local builds use repository-owned orchestration and a canonical host-too
 profile. Do not create milestone-specific /tmp build drivers or rediscover SDK,
 NDK, Rust, Java or Gradle paths during a build.
 
-## Canonical R8 local build contract
+## Canonical local release build contract
 
-The permanent R8 entry points are:
+The user-facing release entry point is:
+
+```text
+build/panther/run-release.sh <release-version>
+```
+
+Example:
+
+```bash
+bash build/panther/run-release.sh R9
+```
+
+The release version is the release-specific input. Do not create a new build
+script, a new /tmp driver, or a new command sequence for each release.
+
+Current R8-named files remain implementation details of the present product
+baseline while they are incrementally generalized:
 
 ```text
 build/config/r8-host-tools.env
@@ -14,10 +30,12 @@ build/config/r8-release.env
 build/host/verify-r8-host-tools.sh
 build/host/migrate-r8-final-v1-host-tools.sh
 build/panther/run-r8-release-candidate.sh
-build/panther/render-r8-build-driver.sh
 build/gates/r8-build-driver-contract.sh
-.github/workflows/r8-build-driver.yml
 ```
+
+`build/panther/render-r8-build-driver.sh` is retained only for compatibility
+with historical PR #57 / CI-produced driver evidence. It is not the normal
+operator entry point.
 
 Host tools live outside the build farm under:
 
@@ -30,13 +48,13 @@ The R8 profile pins Android SDK 36, build-tools 36.0.0, NDK
 for first-party Android applications, JDK 21 for Reader/Mail, and a central
 Gradle user home.
 
-The GitHub workflow `R8 canonical local build driver` renders a
-source-commit-bound `sableos-panther-r8-build.sh`, syntax-checks and contract
-checks it, writes SHA-256 metadata, and uploads it as a workflow artifact.
-That CI-produced artifact is the normal executable for `ai-g732`.
+PR #57 originally used a CI-rendered source-bound driver. After the
+repository moved to local direct CI/execution, the permanent
+`run-release.sh` entry point owns source binding and tmux execution directly,
+without generating a milestone-specific /tmp script.
 
-The generated script verifies that the local repository is at the exact GitHub
-commit embedded by CI, then runs the repository-owned release-candidate runner.
+The entry point verifies the repository source identity and passes the release
+version into the repository-owned release-candidate runner.
 The runner performs the host-tool gate, application builds, Reader/Mail
 composition, exact eight-APK freeze, workspace/product preparation, exact
 `vendor/sable` inventory validation, a focused production `SableStart` Soong
