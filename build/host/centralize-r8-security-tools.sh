@@ -77,8 +77,8 @@ mkdir -p "$SABLE_MOBSFSCAN_ROOT"
 if [[ ! -d "$SABLE_MOBSFSCAN_SOURCE/.git" && -d "$CACHE_ROOT/mobsfscan-source/.git" ]]; then
     cached_commit="$(git -C "$CACHE_ROOT/mobsfscan-source" rev-parse HEAD 2>/dev/null || true)"
     if [[ "$cached_commit" == "$SABLE_MOBSFSCAN_COMMIT" ]]; then
-        mv "$CACHE_ROOT/mobsfscan-source" "$SABLE_MOBSFSCAN_SOURCE"
-        echo "SABLE_MOBSFSCAN_SOURCE=CENTRALIZED_FROM_LOCAL_CI_CACHE"
+        cp -a "$CACHE_ROOT/mobsfscan-source" "$SABLE_MOBSFSCAN_SOURCE"
+        echo "SABLE_MOBSFSCAN_SOURCE=COPIED_FROM_LOCAL_CI_CACHE"
     fi
 fi
 
