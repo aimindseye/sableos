@@ -1,0 +1,194 @@
+# R9 Launcher3 / Quickstep Foundation Migration v2
+
+Status: **phase 1 implemented in source / focused local compile pending**
+
+Date: 2026-09-20
+
+## Product decision
+
+SableOS will use the pinned Android 17 GrapheneOS Launcher3/Quickstep implementation as the single launcher/HOME foundation.
+
+Pinned source:
+
+```text
+Repository: GrapheneOS/platform_packages_apps_Launcher3
+Commit: e5fde8f4368539554b07ee136abd27bc7b4284c1
+Product module: Launcher3QuickStep
+Package: com.android.launcher3
+Sable host: com.android.launcher3.sable.SableQuickstepLauncher
+```
+
+SableStart becomes the presentation layer hosted by Quickstep. Launcher3 remains responsible for lifecycle, app model, package/profile updates, launching, shortcuts/widgets, Recents/Overview and Android launcher integration.
+
+## Why v2 is phased
+
+The earlier R9 foundation branch attempted source retirement and product cutover before the focused Launcher3 compile had been proven. That branch also diverged from the pre-INFRA5 main line.
+
+v2 starts from the locally qualified post-INFRA5 main and separates proof from retirement:
+
+```text
+Phase 1: host-compile proof
+    -> expose Sable presentation as a Soong filegroup
+    -> patch pinned Launcher3QuickStep in the workspace
+    -> compile Launcher3QuickStep only
+    -> retain standalone SableStart source/product temporarily
+
+Phase 2: ownership cutover
+    -> remove standalone SableStart app/JNI/activity/app-loading implementation
+    -> remove SableStart from product packages
+    -> move active build/target-files gates to Launcher3QuickStep
+    -> require SableStart.apk absent
+
+Phase 3: visual + physical acceptance
+    -> final Sable presentation review
+    -> full Panther image only after visual approval
+    -> verify HOME/Recents/package refresh/theme behavior on device
+```
+
+A full Panther image is not authorized during Phase 1.
+
+## Phase 1 ownership
+
+Launcher3/Quickstep supplies:
+
+- `QuickstepLauncher` HOME lifecycle and state machine;
+- `AllAppsStore` inventory and package/profile refresh;
+- `AppInfo` launch metadata;
+- `startActivitySafely(...)` app-launch semantics;
+- app-details integration;
+- Recents/Overview and transition machinery;
+- predictive-back authority.
+
+Sable supplies:
+
+- Start presentation;
+- Favorites;
+- session-only recent presentation;
+- All Apps label-first list and alphabet rail;
+- local Search/Command;
+- Sable Peek;
+- local calendar/media context;
+- appearance state and Sable accent selection.
+
+## Host bridge
+
+`SableQuickstepLauncher` subclasses `QuickstepLauncher` and attaches one Compose surface to the Launcher drag layer.
+
+The surface is visible only in `LauncherState.NORMAL`. Native Quickstep surfaces remain visible for non-normal states such as Overview and All Apps transitions.
+
+The app inventory is projected from Launcher3's `AllAppsStore`; Sable does not register a second `LauncherApps.Callback` in the hosted path.
+
+Launch requests resolve back to Launcher3 `AppInfo` and call `startActivitySafely(...)`. App information uses `PackageManagerHelper.startDetailsActivityForInfo(...)`.
+
+## Back and Home ownership
+
+The Compose presentation no longer installs its own Android `BackHandler`.
+
+The host sends two monotonic generations:
+
+```text
+homeGeneration -> reset Sable presentation to Start
+backGeneration -> perform one Sable nested-navigation back step
+```
+
+The presentation reports whether it can navigate back. Quickstep keeps predictive-back ownership and delegates to Sable only while the Sable surface is visible and nested navigation can consume the event.
+
+## Niagara-inspired interaction rules
+
+Sable adopts interaction lessons, not Niagara code or branding.
+
+Useful Niagara principles confirmed from its public documentation:
+
+- the app list is a primary navigation surface rather than a secondary grid;
+- alphabet navigation is a first-class fast-access mechanism;
+- one-hand reach is a core interaction constraint;
+- feature/settings growth should be restrained so optional features do not make the default experience complex.
+
+References:
+
+- https://help.niagaralauncher.app/article/8-niagaras-design-principles
+- https://help.niagaralauncher.app/article/171-alphabet-settings
+- https://help.niagaralauncher.app/article/39-left-hand-mode
+- https://help.niagaralauncher.app/article/77-missing-customization-features
+
+Sable deliberately differs in several areas:
+
+- no usage-ranked All Apps ordering by default;
+- no persistent usage-learning requirement;
+- session recents remain memory-only;
+- no ambient network search;
+- privacy/security context remains part of Sable Peek;
+- Metro/Modern typography and Sable identity remain the visual language.
+
+## Focused qualification
+
+Run only after synchronizing this repository branch locally:
+
+```bash
+SOURCE_MUTATION_AUTHORIZED=YES \
+BUILD_AUTHORIZED=YES \
+bash build/panther/qualify-r9-launcher3-foundation.sh
+```
+
+The qualifier performs:
+
+1. repository foundation contract;
+2. shared Sable design sync;
+3. Sable source sync;
+4. pinned Launcher3 applicator self-test;
+5. pinned Launcher3 apply + verify;
+6. Panther lunch;
+7. `m Launcher3QuickStep` only;
+8. post-build foundation verification.
+
+It does not clean, clobber, fetch network content, contact a device, flash, retire the current standalone SableStart app, or build a full Panther image.
+
+Required success marker:
+
+```text
+R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS
+```
+
+Only after that marker may Phase 2 retire the standalone launcher implementation.
+
+## Phase 2 acceptance target
+
+After retirement, repository/product gates must prove:
+
+```text
+Launcher3QuickStep.apk = exactly one
+package = com.android.launcher3
+HOME activity = com.android.launcher3.sable.SableQuickstepLauncher
+SableStart.apk = absent
+org.sableos.start standalone HOME package = absent
+```
+
+The existing appearance provider authority remains `org.sableos.start.appearance` for first-party compatibility, even though its implementation executes inside the Launcher3 process.
+
+## Panther physical acceptance
+
+The eventual full-image/device gate must prove:
+
+```text
+HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher
+HOME_ROLE_HOLDER=com.android.launcher3
+COLD_HOME_LAUNCH_CRASHES=0
+HOME_KEY_RETURNS_TO_START=PASS
+QUICKSTEP_RECENTS_PRESERVED=PASS
+PACKAGE_INSTALL_REMOVE_REFRESH=PASS
+MULTI_USER_PROFILE_LAUNCH=PASS_WHERE_AVAILABLE
+ALL_APPS_TOUCH_NAVIGATION=PASS
+SEARCH_LOCAL_RESULTS=PASS
+SABLE_PEEK=PASS
+THEME_PROPAGATION=PASS
+```
+
+## Titan 2 consequence
+
+Titan 2 inherits the same launcher foundation. Its later acceptance can focus on keyboard and square-display behavior rather than duplicating launcher model/lifecycle work:
+
+- first-character-preserving type-to-search;
+- hardware focus traversal;
+- Enter/Back/navigation keys;
+- square geometry;
+- pointer/trackpad behavior when exposed.
