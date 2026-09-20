@@ -441,3 +441,27 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L11 Search acceptance
+
+The recaptured Pixel 7 Search frames are accepted.
+
+Accepted characteristics:
+
+- the flat accent-rule field matches the Start Search + Command language;
+- empty-query placeholder is clear without Material outlined-field chrome;
+- quick actions use direct accent glyphs rather than rounded gray icon tiles;
+- command titles/subtitles retain a clear hierarchy;
+- query `set` keeps `System Settings` under commands and the actual
+  `Settings` launcher activity under apps;
+- real app icons remain consistent with Start and All Apps;
+- no web/cloud search affordance is implied.
+
+```text
+R9_L11_SEARCH_BEHAVIOR=PASS
+R9_L11_SEARCH_VISUAL_REVIEW=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_SEARCH_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
