@@ -1,6 +1,26 @@
 # SableOS roadmap
 
-Last updated: 2026-09-19
+Last updated: 2026-09-20
+
+## 2026-09-20 R9 fresh-build closure overlay
+
+The exact source-bound Panther build for
+`20f6ed40b78e205b39bf2d657eaad29432a0016a` is PASS. Fresh target-files
+SHA-256 is
+`7a9b81c6f9f37c783bcf6d7bb8760a7bcf918dc56a1fc89bb6babc1d6e402e71`.
+
+```text
+R9_LAUNCHER3_FOUNDATION=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PASS
+R8_FIRST_PARTY_PRODUCT_COMPOSITION=PASS
+R9_FRESH_FULL_BUILD=PASS
+R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
+R9_PIXEL7_PHYSICAL_ACCEPTANCE=NEXT
+```
+
+The remaining R9 closure is physical Pixel 7 HOME/Overview/Recents/runtime
+acceptance of the built image. Titan 2/Titan 2 Elite mutation remains behind that
+physical gate; their read-only T0 inventory remains independently allowed.
 
 ## Roadmap rule
 
@@ -83,7 +103,7 @@ SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDI
 NEXT_PRODUCT_MILESTONE             R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
 
 NON_PIXEL_ASSURANCE_MODEL          N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                        T0_READ_ONLY_ON_ARRIVAL_THEN_N0_AFTER_PANTHER_UI_CLOSURE
+TITAN2_ROLE                        T0_READ_ONLY_ALLOWED; N0_MUTATION_AFTER_R9_PIXEL7_PHYSICAL_PASS
 Q27_ROLE                           FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
