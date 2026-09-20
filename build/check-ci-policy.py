@@ -71,6 +71,7 @@ sablestart_signing_gate = ROOT / "build" / "gates" / "r8-sablestart-signing-poli
 r8_final_build = ROOT / "build" / "panther" / "build-r8-final-ui.sh"
 r8_target_files_gate = ROOT / "build" / "gates" / "r8-final-target-files.sh"
 r8_closure_workflow = WORKFLOWS / "r8-final-ui-closure.yml"
+r8_mail_workflow = WORKFLOWS / "r8-mail.yml"
 sablestart_bp = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "Android.bp"
 runner_checker = ROOT / "build" / "check-runner-policy.py"
 runner_policy = ROOT / "build" / "trusted-runner-policy.json"
@@ -85,6 +86,7 @@ for path in (
     r8_final_build,
     r8_target_files_gate,
     r8_closure_workflow,
+    r8_mail_workflow,
     sablestart_bp,
     runner_checker,
     runner_policy,
@@ -150,6 +152,34 @@ for path, tokens in (
                     f"R8 SableStart signing-policy token missing: "
                     f"{path.relative_to(ROOT)}: {token}"
                 )
+
+if r8_mail_workflow.is_file():
+    mail_text = r8_mail_workflow.read_text(encoding="utf-8")
+    for forbidden in (
+        "'src/android/shared/sabledesign/**'",
+        "'src/android/packages/apps/SableStart/**'",
+    ):
+        if forbidden in mail_text:
+            failures.append(
+                f"Sable Mail heavy CI must not trigger on unrelated source path: {forbidden}"
+            )
+
+    for required in (
+        "'apps/r8/mail/apply_sable_flavor.py'",
+        "'apps/r8/mail/verify_sable_mail.py'",
+        "'apps/r8/mail/upstream.env'",
+        "Lint and build Sable Mail FOSS release",
+        ":app-thunderbird:lintFossRelease",
+        ":app-thunderbird:assembleFossRelease",
+        "--parallel",
+    ):
+        if required not in mail_text:
+            failures.append(f"Sable Mail optimized CI token missing: {required}")
+
+    if "name: Build Sable Mail APK" in mail_text:
+        failures.append(
+            "Sable Mail lint/build must remain one Gradle invocation; duplicate build step found"
+        )
 
 if tool_lock.is_file():
     try:
