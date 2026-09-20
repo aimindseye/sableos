@@ -55,6 +55,28 @@ MIGRATED_WARNING_RULES = (
 )
 
 
+def is_migrated_warning_regression(line: str) -> bool:
+    if any(marker in line for marker in GLOBAL_MIGRATED_WARNING_MARKERS):
+        return True
+    return any(path in line and marker in line for path, marker in MIGRATED_WARNING_RULES)
+
+
+def self_test() -> None:
+    assert is_migrated_warning_regression(
+        "packages/apps/Launcher3/src/com/android/launcher3/UtilitiesKt.kt:77: "
+        "warning: the corresponding parameter in the supertype is named 'attr'."
+    )
+    assert not is_migrated_warning_regression(
+        "packages/apps/Launcher3/src/com/android/launcher3/Unmigrated.kt:77: "
+        "warning: the corresponding parameter in the supertype is named 'attr'."
+    )
+    assert is_migrated_warning_regression(
+        "packages/apps/Launcher3/src/com/android/launcher3/Anything.kt:77: "
+        "warning: this annotation is currently applied to the value parameter only"
+    )
+    print("R9_LAUNCHER3_WARNING_GATE_SELF_TEST=PASS")
+
+
 def classify(line: str) -> str:
     if "[removal]" in line:
         return "removal"
@@ -69,8 +91,16 @@ def classify(line: str) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("log", type=pathlib.Path)
+    parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("log", type=pathlib.Path, nargs="?")
     args = parser.parse_args()
+
+    if args.self_test:
+        self_test()
+        return 0
+
+    if args.log is None:
+        parser.error("log is required unless --self-test is used")
 
     if not args.log.is_file():
         print(f"R9_LAUNCHER3_WARNING_GATE=FAIL missing_log={args.log}", file=sys.stderr)
@@ -86,10 +116,7 @@ def main() -> int:
         if any(marker in line for marker in SABLE_PATH_MARKERS):
             fatal.append(f"SABLE_WARNING {line}")
             continue
-        if any(marker in line for marker in GLOBAL_MIGRATED_WARNING_MARKERS):
-            fatal.append(f"MIGRATED_WARNING_REGRESSION {line}")
-            continue
-        if any(path in line && marker in line for path, marker in MIGRATED_WARNING_RULES):
+        if is_migrated_warning_regression(line):
             fatal.append(f"MIGRATED_WARNING_REGRESSION {line}")
 
     print(f"R9_LAUNCHER3_WARNING_COUNT={len(warnings)}")
