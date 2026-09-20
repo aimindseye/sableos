@@ -1,5 +1,33 @@
 # SableOS build entry points
 
+## Canonical multi-device entry point
+
+The operator-facing SableOS engineering entry point is now:
+
+```text
+build/sable.sh <device> <release> <function>
+```
+
+It owns the stable interface for local CI, release builds, artifact registration,
+flash-plan validation, device deployment and acceptance. Device-specific behavior
+is selected through `build/devices/<device>.sh`; release-specific behavior is an
+input, not a new top-level script.
+
+Examples:
+
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 build --tmux
+bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --preserve-data --authorize
+bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
+```
+
+`build/panther/run-release.sh` remains the qualified Panther release-build
+implementation behind the common entry point. It is no longer the desired
+cross-device operator contract.
+
+See `docs/STANDARD_ENGINEERING_PIPELINE.md`.
+
 SableOS local builds use repository-owned orchestration and a canonical host-tool
 profile. Do not create milestone-specific /tmp build drivers or rediscover SDK,
 NDK, Rust, Java or Gradle paths during a build.
