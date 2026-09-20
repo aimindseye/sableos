@@ -272,6 +272,28 @@ def check() -> list[str]:
         ):
             require(q, token, "focused Launcher3 qualifier", failures)
 
+    device_gate = ROOT / "tests/launcher3/device/r9_home_acceptance.sh"
+    if not device_gate.is_file():
+        failures.append("Launcher3 HOME device acceptance gate missing")
+    else:
+        device_text = device_gate.read_text(encoding="utf-8")
+        for token in (
+            "EXPECTED_PACKAGE=\"com.android.launcher3\"",
+            "EXPECTED_ACTIVITY=\"com.android.launcher3.sable.SableQuickstepLauncher\"",
+            "RETIRED_PACKAGE=\"org.sableos.start\"",
+            "HOME_RESOLVER",
+            "HOME_ROLE_HOLDER",
+            "RETIRED_SABLESTART_PACKAGE_ABSENT",
+            "COLD_HOME_LAUNCH_CRASHES",
+            "QUICKSTEP_RECENTS_PRESERVED",
+            "HOME_KEY_RETURNS_TO_START",
+            "R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE",
+            "PACKAGE_INSTALL_REMOVE_AUTHORIZED=NO",
+            "WIPE_AUTHORIZED=NO",
+            "SLOT_CHANGE_AUTHORIZED=NO",
+        ):
+            require(device_text, token, "Launcher3 HOME device gate", failures)
+
     workflows = list((ROOT / ".github/workflows").glob("*.yml"))
     workflows += list((ROOT / ".github/workflows").glob("*.yaml"))
     if workflows:
