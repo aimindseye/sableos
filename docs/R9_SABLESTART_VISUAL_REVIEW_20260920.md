@@ -614,3 +614,40 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_APPEARANCE_THEME
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L15 Appearance / theme review
+
+The R9L14 Appearance capture, light Start capture, and alternate-accent Start
+capture are accepted.
+
+Accepted:
+
+- Appearance uses flat theme rows and compact accent swatches consistently with
+  the rest of the launcher;
+- Follow System / Light / Dark selection hierarchy is clear;
+- accent selection and reset affordances are legible;
+- light Start preserves the accepted Start hierarchy;
+- alternate accent correctly changes the Start accent affordance, Search +
+  Command rule, and primary tile ordering without changing layout.
+
+Dark Start content also renders correctly, but the first dark capture exposed a
+system-bar parity defect in the non-product visual-review host: status-bar
+content remained in light-theme appearance and became effectively invisible on
+the dark background.
+
+The production Launcher3 host already uses `applySableSystemBars` with
+`resolveSableDarkAppearance` on appearance changes. R9L15 now makes the
+visual-review activity exercise the same production helper, and
+`SableQuickstepLauncher` also reapplies Sable system-bar appearance whenever
+Quickstep returns to `LauncherState.NORMAL`.
+
+```text
+R9_L14_APPEARANCE_VISUAL_REVIEW=PASS
+R9_L14_LIGHT_VISUAL_REVIEW=PASS
+R9_L14_ALTERNATE_ACCENT_VISUAL_REVIEW=PASS
+R9_L15_DARK_CONTENT_VISUAL_REVIEW=PASS
+R9_L15_DARK_SYSTEM_BAR_VISUAL_REVIEW=RECAPTURE_REQUIRED
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_DARK_SYSTEM_BAR_RECAPTURE
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
