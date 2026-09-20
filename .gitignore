@@ -16,3 +16,11 @@ out_*/
 *.swp
 *~
 .DS_Store
+
+# Local language/tool build residue
+**/__pycache__/
+**/*.pyc
+apps/r8/rust/target/
+
+# Locally rendered source-bound R8 build-driver bundles
+/r8-driver-*/
