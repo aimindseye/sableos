@@ -13,7 +13,11 @@ source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 SOURCE_MUTATION_AUTHORIZED="${SOURCE_MUTATION_AUTHORIZED:-NO}"
 BUILD_AUTHORIZED="${BUILD_AUTHORIZED:-NO}"
 WS="${WS:-$SABLEOS_UPSTREAM}"
-OUT_DIR="${OUT_DIR:-out_sable_r9_launcher_foundation_v2}"
+# Reuse the already-qualified Panther output graph. A new OUT_DIR would make a
+# module-only Launcher3QuickStep request rebuild thousands of transitive host
+# and target dependencies even though no full image was requested.
+OUT_DIR="${OUT_DIR:-$SABLE_R8_OUT_DIR}"
+ALLOW_COLD_OUT="${ALLOW_COLD_OUT:-NO}"
 JOBS="${JOBS:-8}"
 
 if [[ "$SOURCE_MUTATION_AUTHORIZED" != YES ]]; then
@@ -31,6 +35,20 @@ fi
     exit 4
 }
 
+OUT_ABS="$WS/$OUT_DIR"
+if [[ "$OUT_DIR" == /* ]]; then
+    OUT_ABS="$OUT_DIR"
+fi
+
+if [[ "$ALLOW_COLD_OUT" != YES ]]; then
+    if [[ ! -f "$OUT_ABS/build.ninja" && ! -f "$OUT_ABS/soong/build.ninja" ]]; then
+        echo "R9_LAUNCHER3_FOUNDATION_WARM_OUT=FAIL path=$OUT_ABS"
+        echo "R9_LAUNCHER3_FOUNDATION_COLD_BUILD_REFUSED=YES"
+        echo "HINT=Set OUT_DIR to an existing Panther output with build.ninja/soong/build.ninja."
+        exit 5
+    fi
+fi
+
 STAMP="$(date +%Y%m%d_%H%M%S)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-/srv/data/sable-build/evidence/panther/r9-launcher-foundation-v2/$STAMP}"
 mkdir -p "$EVIDENCE_DIR"
@@ -44,9 +62,14 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FULL_IMAGE_BUILD_AUTHORIZED=NO"
 echo "STANDALONE_SABLESTART_RETIREMENT_AUTHORIZED=NO"
+echo "COLD_OUT_BUILD_AUTHORIZED=$ALLOW_COLD_OUT"
 echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
+echo "OUT_ABS=$OUT_ABS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+if [[ -f "$OUT_ABS/build.ninja" || -f "$OUT_ABS/soong/build.ninja" ]]; then
+    echo "R9_LAUNCHER3_FOUNDATION_WARM_OUT=PASS"
+fi
 
 echo
 echo "===== REPOSITORY FOUNDATION CONTRACT ====="
