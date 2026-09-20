@@ -44,6 +44,11 @@ def main() -> int:
         / "src/android/packages/apps/SableStart/src/com/sable/start/ui"
         / "SableStartScreen.kt"
     ).read_text()
+    quickstep = (
+        ROOT
+        / "patches/android-17-grapheneos-2026081300/r9_launcher3"
+        / "SableQuickstepLauncher.kt"
+    ).read_text()
 
     require(
         settings,
@@ -120,6 +125,16 @@ def main() -> int:
         "ActivityResultContracts.RequestMultiplePermissions()",
         "R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS",
     )
+    require(
+        activity,
+        "applySableSystemBars(",
+        "R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY",
+    )
+    require(
+        activity,
+        "resolveSableDarkAppearance(",
+        "R9_VISUAL_REVIEW_DARK_BAR_RESOLUTION",
+    )
     forbid(
         activity,
         "onRequestPermissionsResult(",
@@ -134,6 +149,16 @@ def main() -> int:
         production_ui,
         "activityInfo.getBadgedIcon(densityDpi)",
         "R9_PRODUCTION_REAL_ICON_DRAWABLE",
+    )
+    require(
+        quickstep,
+        "if (state == LauncherState.NORMAL) {",
+        "R9_QUICKSTEP_NORMAL_STATE_HOOK",
+    )
+    require(
+        quickstep,
+        "refreshAppsFromLauncherModel()\n            applyCurrentSystemBars()",
+        "R9_QUICKSTEP_SYSTEM_BAR_RESTORE",
     )
     require(
         production_ui,
@@ -330,6 +355,8 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_GRAPH=PASS")
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_CONSTRAINTS=PASS")
     print("R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS=PASS")
+    print("R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY=PASS")
+    print("R9_QUICKSTEP_SYSTEM_BAR_RESTORE=PASS")
     print("R9_VISUAL_REVIEW_LINT_TEST_SURFACE=PASS")
     print("R9_VISUAL_REVIEW_PRODUCTION_SCREEN=PASS")
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
@@ -358,7 +385,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
     print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
-    print("R9_L14_VISUAL_REVIEW_CONTRACT=PASS")
+    print("R9_L15_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
 
