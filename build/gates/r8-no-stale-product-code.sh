@@ -26,6 +26,7 @@ stale_paths=(
     "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/bridge/SableStartNative.kt"
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt"
+    "build/gates/r8-sablestart-signing-policy.py"
     "apps/r8/android/start-preview"
     "apps/r8/android/system-preview"
     "build/panther/build-ui-preview.sh"
