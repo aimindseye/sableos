@@ -1,6 +1,6 @@
 # R9 Launcher3 / Quickstep Foundation Migration v2
 
-Status: **phase 1 implemented in source / focused local compile pending**
+Status: **phase 2 HOME ownership cutover implemented in source / focused cutover compile pending**
 
 Date: 2026-09-20
 
@@ -45,7 +45,7 @@ Phase 3: visual + physical acceptance
     -> verify HOME/Recents/package refresh/theme behavior on device
 ```
 
-A full Panther image is not authorized during Phase 1.
+A full Panther image remains unauthorized until the Phase 2 focused cutover compile passes and the Sable launcher visual review is accepted.
 
 ## Phase 1 ownership
 
@@ -220,26 +220,30 @@ The focused compile also reuses the canonical warmed Panther output (`SABLE_R8_O
 
 The qualifier performs:
 
-1. repository foundation contract;
+1. repository Phase 2 foundation contract;
 2. shared Sable design sync;
-3. Sable source sync;
+3. presentation-only Sable Start sync, which deletes retired standalone runtime files from the workspace;
 4. pinned Launcher3 applicator self-test;
-5. pinned Launcher3 apply + verify;
+5. pinned Launcher3 HOME ownership apply + verify;
 6. Panther lunch;
 7. `m Launcher3QuickStep` only;
-8. post-build foundation verification.
+8. post-build foundation verification;
+9. path-specific warning/deprecation regression gate.
 
-It does not clean, clobber, fetch network content, contact a device, flash, retire the current standalone SableStart app, or build a full Panther image.
+It does not clean, clobber, fetch network content, contact a device, flash, or build a full Panther image.
 
-Before mutation, the applicator inspects the Launcher3 Git worktree and refuses any dirty path outside the reviewed foundation set (`Android.bp`, Quickstep launcher manifest, Quickstep label resources, and the Sable host source). After apply, it requires exactly that bounded dirty set.
+Before mutation, the applicator inspects the Launcher3 Git worktree and refuses any dirty path outside the reviewed `FOUNDATION_DIRTY_PATHS` set. After apply, it requires exactly that bounded set. The set now includes the Sable host integration plus the explicitly reviewed warning/Dagger migration files; unknown Launcher3 dirt still fails closed.
 
-Required success marker:
+Required Phase 2 success markers:
 
 ```text
+R9_SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT
+R9_LAUNCHER3_HOME_OWNERSHIP=PASS
 R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS
+R9_L8_HOME_CUTOVER_COMPILE=PASS
 ```
 
-Only after that marker may Phase 2 retire the standalone launcher implementation.
+A full Panther image remains blocked after these markers until the launcher visual review is accepted.
 
 ## Phase 2 acceptance target
 
@@ -256,6 +260,14 @@ org.sableos.start standalone HOME package = absent
 The existing appearance provider authority remains `org.sableos.start.appearance` for first-party compatibility, even though its implementation executes inside the Launcher3 process.
 
 ## Panther physical acceptance
+
+After visual approval and a full Panther image, run:
+
+```bash
+bash tests/launcher3/device/r9_home_acceptance.sh
+```
+
+The gate is non-destructive: it does not flash, reboot, wipe, change slots, install, or uninstall packages. It performs resolver/role/package/process/crash checks plus HOME/Recents navigation, then records bounded manual confirmations for the presentation interactions that cannot be proven from shell state alone.
 
 The eventual full-image/device gate must prove:
 
