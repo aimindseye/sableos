@@ -59,7 +59,7 @@ Titan 2 UI qualification is explicitly **keyboard-first**: physical QWERTY is th
 
 See `TITAN2_GSI_PLAN.md`.
 
-Titan 2 hardware is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival and may run in parallel with final Panther UI source/integration work. GSI mutation/flash remains gated on Panther final UI product-composition, build and physical-acceptance closure.
+Read-only Titan 2 T0 stock/device inventory may begin whenever hardware is available. GSI mutation/flash remains gated on the R9 Panther source-bound fresh build and physical Pixel 7 acceptance. Titan 2 remains a keyboard-first N0 portability lab, not a production-security target.
 
 ## Q27: preferred future full QWERTY candidate
 
