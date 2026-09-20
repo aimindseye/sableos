@@ -1287,79 +1287,100 @@ private fun SablePeekScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background),
     ) {
-        TextButton(
-            onClick = onClose,
+        Text(
+            text = "close",
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
-                    .padding(10.dp),
-        ) {
-            Text("Close")
-        }
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onClose)
+                    .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
 
-        Surface(
+        Column(
             modifier =
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(6.dp),
+                    .padding(horizontal = 20.dp, vertical = 28.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
+            Box(
+                modifier =
+                    Modifier
+                        .width(54.dp)
+                        .height(4.dp)
+                        .background(MaterialTheme.colorScheme.primary),
+            )
+            Spacer(Modifier.height(18.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppMark(app = app, size = 54)
-                    Spacer(Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = app.label,
-                            style = MaterialTheme.typography.headlineLarge,
-                        )
-                        Text(
-                            text = "Sable Peek",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                AppMark(app = app, size = 58)
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = app.label,
+                        fontSize = 34.sp,
+                        lineHeight = 38.sp,
+                        fontWeight = FontWeight.Light,
+                    )
+                    Text(
+                        text = "peek",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+            }
 
-                Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(18.dp))
 
-                Button(
-                    onClick = onOpen,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                    shape = RoundedCornerShape(6.dp),
-                ) {
-                    Text("Open")
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                ContextAction(
-                    mark = if (isPinned) "−" else "+",
-                    label = if (isPinned) "Unpin from Favorites" else "Pin to Favorites",
-                    onClick = onTogglePinned,
-                )
-                ContextAction(
-                    mark = "ⓘ",
-                    label = "Permissions & app info",
-                    onClick = onOpenAppInfo,
-                )
-
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 54.dp)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable(onClick = onOpen)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text = "Published app shortcuts and notification content stay hidden until their Android capability and privacy gates are wired.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 12.dp),
+                    text = "open",
+                    fontSize = 20.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "→",
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
+
+            Spacer(Modifier.height(6.dp))
+
+            ContextAction(
+                mark = if (isPinned) "−" else "+",
+                label = if (isPinned) "unpin from favorites" else "pin to favorites",
+                onClick = onTogglePinned,
+            )
+            ContextAction(
+                mark = "ⓘ",
+                label = "permissions + app info",
+                onClick = onOpenAppInfo,
+            )
+
+            Text(
+                text = "Shortcuts and notification content stay hidden until Android capability and privacy gates are wired.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp),
+            )
         }
     }
 }
