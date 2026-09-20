@@ -26,16 +26,23 @@ evidence.
 Text Reader and Mail qualification. Cargo security tools and Gitleaks are
 installed into the persistent local cache from the committed checksum lock;
 MobSFScan is built in a cached Python virtual environment from the exact commit
-previously used by the Actions workflow. Upstream checkouts and tool downloads
-are network-disabled by default, so the first cache population should be run
-explicitly with:
+previously used by the Actions workflow. Rust coverage uses the pinned Rust
+toolchain and requires the `llvm-tools-preview` and `rust-src` components.
+Local CI provisions any missing coverage components serially before coverage
+starts; cargo-llvm-cov's implicit interactive setup is disabled so parallel
+rustc workers cannot race while mutating rustup state.
+
+Upstream checkouts, tool downloads and missing Rust component downloads are
+network-disabled by default, so the first cache/toolchain population should be
+run explicitly with:
 
 ```bash
 SABLE_LOCAL_CI_ALLOW_NETWORK=YES bash build/local-ci/run.sh full
 ```
 
 Subsequent runs can use the persistent
-`/srv/data/sable-build/sableos/local-ci-cache` cache offline.
+`/srv/data/sable-build/sableos/local-ci-cache` cache and the provisioned
+pinned Rust toolchain offline.
 
 `release` runs `full` and then the source-bound Panther release-candidate
 driver.
