@@ -1,3 +1,18 @@
+// R9L7 phase 1: reusable Sable presentation sources for Launcher3QuickStep.
+// The standalone SableStart app remains temporarily until the focused Quickstep
+// compile passes; full-image cutover is not authorized in this intermediate state.
+filegroup {
+    name: "sable_start_presentation_srcs",
+    srcs: [
+        "src/com/sable/start/live/LiveSurfaceModels.kt",
+        "src/com/sable/start/model/AppEntry.kt",
+        "src/com/sable/start/platform/LiveSurfaceRepository.kt",
+        "src/com/sable/start/platform/SableAppearanceProvider.kt",
+        "src/com/sable/start/platform/StartStateRepository.kt",
+        "src/com/sable/start/ui/SableStartScreen.kt",
+    ],
+}
+
 android_app {
     name: "SableStart",
     // SableStart is a read-only system app and must not emit an APK v4 .idsig.
