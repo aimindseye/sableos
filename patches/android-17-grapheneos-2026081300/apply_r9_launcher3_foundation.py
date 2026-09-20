@@ -41,6 +41,22 @@ PREVIEW_CONTEXT_REL = pathlib.Path(
     "src/com/android/launcher3/preview/PreviewContext.kt"
 )
 
+WALLPAPER_THEME_MANAGER_REL = pathlib.Path(
+    "src/com/android/launcher3/util/WallpaperThemeManager.kt"
+)
+DOUBLE_SHADOW_ICON_DRAWABLE_REL = pathlib.Path(
+    "src/com/android/launcher3/views/DoubleShadowIconDrawable.kt"
+)
+ITEM_INFO_TRANSLATORS_REL = pathlib.Path(
+    "src/com/android/launcher3/workspacefunctions/translators/ItemInfoTranslators.kt"
+)
+UNPLACED_APP_TRANSLATOR_REL = pathlib.Path(
+    "src/com/android/launcher3/workspacefunctions/translators/LauncherUnplacedAppTranslator.kt"
+)
+WORKSPACE_TRANSLATOR_REL = pathlib.Path(
+    "src/com/android/launcher3/workspacefunctions/translators/LauncherWorkspaceTypeTranslator.kt"
+)
+
 # Observed ai-g732 residue from the prior standalone-HOME debugging session.
 # The production blob is retained as an explicit Sable compatibility patch.
 # The test blob is known malformed against the pinned Dagger singleton API and
@@ -58,6 +74,11 @@ FOUNDATION_DIRTY_PATHS = {
     RETRYING_EXECUTOR_REL.as_posix(),
     WIDGET_SIZE_HANDLER_REL.as_posix(),
     PREVIEW_CONTEXT_REL.as_posix(),
+    WALLPAPER_THEME_MANAGER_REL.as_posix(),
+    DOUBLE_SHADOW_ICON_DRAWABLE_REL.as_posix(),
+    ITEM_INFO_TRANSLATORS_REL.as_posix(),
+    UNPLACED_APP_TRANSLATOR_REL.as_posix(),
+    WORKSPACE_TRANSLATOR_REL.as_posix(),
 }
 
 FALLBACK_NULL_ANCHOR = "        if (interactor == null) {"
@@ -276,6 +297,67 @@ def patch_preview_context(text: str) -> str:
         "            mDbDir.listFiles()?.forEach { file -> file.delete() }",
         "PreviewContext nullable listFiles",
     )
+
+def patch_wallpaper_theme_manager(text: str) -> str:
+    return replace_once(
+        text,
+        "    override fun onLowMemory() {}",
+        "    @Deprecated(\\\"Deprecated framework callback\\\")\\n    override fun onLowMemory() {}",
+        "WallpaperThemeManager deprecated override",
+    )
+
+
+def patch_double_shadow_icon_drawable(text: str) -> str:
+    return replace_once(
+        text,
+        "    override fun getOpacity() = PixelFormat.TRANSPARENT",
+        "    @Deprecated(\\\"Deprecated Drawable API\\\")\\n    override fun getOpacity() = PixelFormat.TRANSPARENT",
+        "DoubleShadowIconDrawable deprecated override",
+    )
+
+
+def patch_item_info_translators(text: str) -> str:
+    replacements = (
+        ("override fun toSpec(obj: ItemContext<WorkspaceItemInfo>): WorkspaceItemSpec {", "override fun toSpec(info: ItemContext<WorkspaceItemInfo>): WorkspaceItemSpec {"),
+        ("override fun toSpec(obj: ItemContext<WorkspaceItemInfo>): HotseatItemSpec {", "override fun toSpec(info: ItemContext<WorkspaceItemInfo>): HotseatItemSpec {"),
+        ("override fun toSpec(obj: WorkspaceItemInfo): AppInFolderSpec {", "override fun toSpec(info: WorkspaceItemInfo): AppInFolderSpec {"),
+        ("override fun toSpec(obj: ItemContext<LauncherAppWidgetInfo>): WorkspaceItemSpec {", "override fun toSpec(info: ItemContext<LauncherAppWidgetInfo>): WorkspaceItemSpec {"),
+        ("override fun toSpec(obj: ItemContext<FolderInfo>): WorkspaceItemSpec {", "override fun toSpec(info: ItemContext<FolderInfo>): WorkspaceItemSpec {"),
+        ("override fun toSpec(obj: ItemContext<FolderInfo>): HotseatItemSpec {", "override fun toSpec(info: ItemContext<FolderInfo>): HotseatItemSpec {"),
+    )
+    for index, (old, new) in enumerate(replacements):
+        text = replace_once(text, old, new, f"ItemInfoTranslators signature {index}")
+    text = text.replace("obj.item", "info.item")
+    text = text.replace("obj.folderContentsMap", "info.folderContentsMap")
+    text = text.replace("obj.intent", "info.intent")
+    text = text.replace("obj.title", "info.title")
+    return text
+
+
+def patch_unplaced_app_translator(text: str) -> str:
+    text = replace_once(
+        text,
+        "override fun toSpec(app: LauncherActivityInfo): UnplacedAppSpec {",
+        "override fun toSpec(info: LauncherActivityInfo): UnplacedAppSpec {",
+        "LauncherUnplacedAppTranslator signature",
+    )
+    return text.replace("app.componentName", "info.componentName").replace("app.label", "info.label").replace("app.getApplicationInfo()", "info.getApplicationInfo()")
+
+
+def patch_workspace_translator(text: str) -> str:
+    text = replace_once(
+        text,
+        "override fun toSpec(workspace: WorkspaceData): WorkspaceSpec {",
+        "override fun toSpec(info: WorkspaceData): WorkspaceSpec {",
+        "LauncherWorkspaceTypeTranslator signature",
+    )
+    return replace_once(
+        text,
+        "        val filteredItems = workspace.filter {",
+        "        val filteredItems = info.filter {",
+        "LauncherWorkspaceTypeTranslator usage",
+    )
+
 
 def git_head(path: pathlib.Path) -> str:
     proc = subprocess.run(
