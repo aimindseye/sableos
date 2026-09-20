@@ -142,6 +142,36 @@ The local regression-test residue is not retained because it constructs the Dagg
 
 After apply, the complete allowed Launcher3 dirty set is exactly five files: the Quickstep library build file, Quickstep launcher manifest, Quickstep label resources, Sable host source, and `FallbackActivityInterface.java`.
 
+## Warning-quality policy
+
+The Launcher3 foundation compile is not considered quality-closed merely because it compiles. The focused build log is parsed by `build/gates/r9-launcher-warning-gate.py`.
+
+The first successful hosted-Launcher build exposed 126 source warnings plus one R8 toolchain warning. The warning cleanup is intentionally split into two classes:
+
+```text
+SAFE MIGRATIONS
+- Kotlin KT-73255 annotation default-target warnings
+- typed Parcelable APIs
+- explicit Handler Looper binding
+- nullable File.listFiles handling
+- deprecated framework overrides marked explicitly
+- legacy preview message IDs retained without deprecated symbols
+- override parameter-name mismatches
+- Sable system-bar deprecated color setters
+
+STRUCTURAL / UPSTREAM DEBT
+- deprecated Launcher3 Executors bridge and call sites
+- deprecated LauncherAppState access paths
+- deprecated ModelDbController.db uses that still require raw SQLiteDatabase
+- DesktopModeStatus APIs marked for removal
+- remaining generic Bundle/value and unchecked-cast warnings
+- R8 prebuilt lacking API-level 37 support
+```
+
+No blanket deprecation suppression is accepted as closure. The migration gate may pass when all Sable-owned and already-migrated warning classes are clean, but it reports `R9_LAUNCHER3_WARNING_DEBT_STATUS=OPEN` while inherited or toolchain debt remains. Final launcher quality closure requires that debt to be either migrated with evidence or resolved at the appropriate upstream/toolchain boundary.
+
+The R8 API-37 warning is tracked separately as `R9_LAUNCHER3_R8_API37_DEBT`; lowering the platform/target API is not an acceptable fix.
+
 ## Focused qualification
 
 Run only after synchronizing this repository branch locally:
