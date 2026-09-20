@@ -1561,6 +1561,21 @@ app.getApplicationInfo()
     assert "widgetProviderInfo.loadLabel(packageManager)" in patched_add_item
     assert patch_add_item_activity(patched_add_item) == patched_add_item
 
+    model_writer = """import com.android.launcher3.Flags
+import com.android.launcher3.Utilities
+import com.android.launcher3.config.FeatureFlags
+    override fun getNotifier(): LauncherUiStateNotifier = launcherStateNotifier
+                !Utilities.IS_DEBUG_DEVICE &&
+                    !FeatureFlags.IS_STUDIO_BUILD &&
+"""
+    patched_model_writer = patch_model_writer(model_writer)
+    assert "import com.android.launcher3.BuildConfig" in patched_model_writer
+    assert "import com.android.launcher3.Utilities" not in patched_model_writer
+    assert "import com.android.launcher3.config.FeatureFlags" not in patched_model_writer
+    assert "BuildConfig.IS_DEBUG_DEVICE" in patched_model_writer
+    assert "BuildConfig.IS_STUDIO_BUILD" in patched_model_writer
+    assert patch_model_writer(patched_model_writer) == patched_model_writer
+
     try:
         replace_once("x", "missing", "new", "negative")
     except FoundationError:
