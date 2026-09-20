@@ -27,7 +27,7 @@ do
     [[ -d "$path" ]] || fail R8_HOST_TOOL_PATH
 done
 
-for tool in     "$SABLE_SDKMANAGER"     "$SABLE_APKANALYZER"     "$SABLE_CARGO"     "$SABLE_RUSTC"     "$SABLE_RUSTUP"     "$SABLE_JDK17/bin/java"     "$SABLE_JDK21/bin/java"     "$SABLE_PYTHON"     "$SABLE_MOBSFSCAN"
+for tool in     "$SABLE_SDKMANAGER"     "$SABLE_APKANALYZER"     "$SABLE_CARGO"     "$SABLE_RUSTC"     "$SABLE_RUSTUP"     "$SABLE_JDK17/bin/java"     "$SABLE_JDK21/bin/java"     "$SABLE_PYTHON"     "$SABLE_MOBSFSCAN"     "$SABLE_MOBSFSCAN_PYTHON"     "$SABLE_MOBSFSCAN_PIP"
 do
     [[ -x "$tool" ]] || {
         echo "MISSING_EXECUTABLE=$tool"
@@ -70,6 +70,31 @@ python3 "$ROOT/build/install-pinned-tool.py" --verify-dir "$SABLE_SECURITY_BIN" 
 "$SABLE_MOBSFSCAN" --version 2>&1 | grep -Fq "$SABLE_MOBSFSCAN_VERSION" \
     || fail R8_MOBSFSCAN_VERSION
 
+PYTHONPATH="$SABLE_MOBSFSCAN_SOURCE" "$SABLE_MOBSFSCAN_PYTHON" - <<'PY' \
+    || fail R8_MOBSFSCAN_RUNTIME
+import mobsfscan
+import libsast
+import sarif_om
+import semgrep
+import yaml
+import xmltodict
+
+if mobsfscan.__version__ != "1.0.0":
+    raise SystemExit(mobsfscan.__version__)
+PY
+
+manifest="$SABLE_MOBSFSCAN_ROOT/INSTALLATION_MANIFEST.txt"
+manifest_sha="$manifest.sha256"
+[[ -s "$manifest" && -s "$manifest_sha" ]] || fail R8_MOBSFSCAN_MANIFEST
+(
+    cd "$SABLE_MOBSFSCAN_ROOT"
+    sha256sum -c "$(basename "$manifest_sha")" >/dev/null
+) || fail R8_MOBSFSCAN_MANIFEST_SHA
+grep -Fq "SABLE_MOBSFSCAN_COMMIT=$SABLE_MOBSFSCAN_COMMIT" "$manifest" \
+    || fail R8_MOBSFSCAN_MANIFEST_COMMIT
+grep -Fq "SABLE_MOBSFSCAN_VERSION=$SABLE_MOBSFSCAN_VERSION" "$manifest" \
+    || fail R8_MOBSFSCAN_MANIFEST_VERSION
+
 "$SABLE_JDK17/bin/java" -version 2>&1 | head -n1 | grep -Eq '"17\.'     || fail R8_JDK17
 "$SABLE_JDK21/bin/java" -version 2>&1 | head -n1 | grep -Eq '"21\.'     || fail R8_JDK21
 
@@ -81,7 +106,7 @@ echo "R8_RUST_TARGET=PASS value=$SABLE_RUST_TARGET"
 echo "R8_RUST_LLVM_TOOLS=PASS path=$llvm_bin"
 echo "R8_RUST_SRC=PASS path=$rust_src_root"
 echo "R8_SECURITY_PINNED_TOOLS=PASS"
-echo "R8_MOBSFSCAN=PASS commit=$SABLE_MOBSFSCAN_COMMIT version=$SABLE_MOBSFSCAN_VERSION"
+echo "R8_MOBSFSCAN=PASS commit=$SABLE_MOBSFSCAN_COMMIT version=$SABLE_MOBSFSCAN_VERSION runtime=$SABLE_MOBSFSCAN_VENV"
 echo "R8_GRADLE_HOME=PASS"
 echo "R8_JDK17=PASS"
 echo "R8_JDK21=PASS"
