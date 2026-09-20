@@ -148,12 +148,7 @@ Titan 2 and Q27 should consume the same Sable Tools semantics and source where c
 
 ## Do not branch on model name
 
-Applications should not contain logic such as:
-
-```text
-if device == Q25:
-    use_keyboard_ui()
-```
+Applications should not branch on model names. Prefer capability-driven interaction profiles instead of checks such as `device == <model>`.
 
 Prefer capability-driven behavior such as:
 
@@ -188,19 +183,6 @@ display.orientation_preference
 ```
 
 Capabilities should describe behavior, not branding.
-
-## Q25 profile
-
-The Zinwa Q25 remains a useful keyboard-first engineering reference, but Titan 2 is now the first near-term physical keyboard-first SableOS evaluation target.
-
-Its purpose is broader than supporting one handset. It is the validation target for:
-
-- MediaTek hardware adaptation
-- square/compact display handling
-- keyboard-first shell behavior
-- common Sable application semantics across touch-first and keyboard-first devices
-
-The Q25 shell should use the same contacts, messages, notifications, settings, search and telephony service models as the Pixel shell.
 
 ## Q27 and future QWERTY hardware
 
