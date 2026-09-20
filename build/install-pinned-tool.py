@@ -101,6 +101,28 @@ def extract_binary(archive: pathlib.Path, binary: str, destination: pathlib.Path
         os.replace(tmp, destination)
 
 
+def verify_tool(name: str, item: dict, dest: pathlib.Path) -> None:
+    binary_path = dest / item["binary"]
+    if not binary_path.is_file() or not os.access(binary_path, os.X_OK):
+        raise SystemExit(f"missing executable for {name}: {binary_path}")
+
+    output = subprocess.check_output(
+        [str(binary_path), *item["version_args"]],
+        text=True,
+        stderr=subprocess.STDOUT,
+    ).strip()
+    if item["version_contains"] not in output:
+        raise SystemExit(
+            f"unexpected {name} version output: {output!r}; "
+            f"expected substring {item['version_contains']!r}"
+        )
+
+    print(f"PINNED_TOOL={name}")
+    print(f"PINNED_TOOL_VERSION={item['version']}")
+    print(f"PINNED_TOOL_BINARY={binary_path}")
+    print(f"PINNED_TOOL_VERSION_OUTPUT={output}")
+
+
 def install_tool(name: str, item: dict, dest: pathlib.Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
     binary_path = dest / item["binary"]
@@ -119,22 +141,8 @@ def install_tool(name: str, item: dict, dest: pathlib.Path) -> None:
     finally:
         archive.unlink(missing_ok=True)
 
-    output = subprocess.check_output(
-        [str(binary_path), *item["version_args"]],
-        text=True,
-        stderr=subprocess.STDOUT,
-    ).strip()
-    if item["version_contains"] not in output:
-        raise SystemExit(
-            f"unexpected {name} version output: {output!r}; "
-            f"expected substring {item['version_contains']!r}"
-        )
-
-    print(f"PINNED_TOOL={name}")
-    print(f"PINNED_TOOL_VERSION={item['version']}")
+    verify_tool(name, item, dest)
     print(f"PINNED_TOOL_ARCHIVE_SHA256={item['sha256']}")
-    print(f"PINNED_TOOL_BINARY={binary_path}")
-    print(f"PINNED_TOOL_VERSION_OUTPUT={output}")
 
 
 def main() -> None:
@@ -143,6 +151,7 @@ def main() -> None:
     group.add_argument("--tool")
     group.add_argument("--all", action="store_true")
     parser.add_argument("--dest")
+    parser.add_argument("--verify-dir")
     parser.add_argument("--validate-lock", action="store_true")
     args = parser.parse_args()
 
@@ -155,6 +164,20 @@ def main() -> None:
         print("SABLE_PINNED_TOOL_LOCK=PASS")
         if not args.tool and not args.all:
             return
+
+    if args.verify_dir:
+        if args.tool:
+            if args.tool not in tools:
+                raise SystemExit(f"unknown tool: {args.tool}")
+            selected = [(args.tool, tools[args.tool])]
+        else:
+            selected = sorted(tools.items())
+
+        verify_dir = pathlib.Path(args.verify_dir).resolve()
+        for name, item in selected:
+            verify_tool(name, item, verify_dir)
+        print("SABLE_PINNED_TOOL_VERIFY=PASS")
+        return
 
     if not args.tool and not args.all:
         raise SystemExit("select --tool NAME or --all")
