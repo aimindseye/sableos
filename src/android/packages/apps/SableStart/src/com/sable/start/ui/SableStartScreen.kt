@@ -30,8 +30,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -1397,103 +1395,179 @@ private fun AppearanceScreen(
             Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(bottom = 28.dp),
     ) {
         item {
             MetroHeader(
                 title = "appearance",
                 onBack = onBack,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             SectionLabel("theme")
+            Spacer(Modifier.height(4.dp))
         }
 
         items(AppearanceMode.entries) { mode ->
             val selected = appearance.mode == mode
-            Button(
+            AppearanceChoiceRow(
+                title =
+                    when (mode) {
+                        AppearanceMode.FollowSystem -> "follow system"
+                        AppearanceMode.Light -> "light"
+                        AppearanceMode.Dark -> "dark"
+                    },
+                selected = selected,
+                accent = appearance.accent.color,
                 onClick = {
                     onAppearanceChanged(
                         appearance.copy(mode = mode),
                     )
                 },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(5.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        contentColor =
-                            if (selected) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    ),
-            ) {
-                Text(
-                    when (mode) {
-                        AppearanceMode.FollowSystem -> "Follow system"
-                        AppearanceMode.Light -> "Light"
-                        AppearanceMode.Dark -> "Dark"
-                    },
-                )
-            }
+            )
         }
 
         item {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(14.dp))
             SectionLabel("accent")
+            Spacer(Modifier.height(4.dp))
         }
 
         items(AccentPreset.entries) { accent ->
             val selected = appearance.accent == accent
-            Button(
+            AccentChoiceRow(
+                accent = accent,
+                selected = selected,
                 onClick = {
                     onAppearanceChanged(
                         appearance.copy(accent = accent),
                     )
                 },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(5.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = accent.color,
-                        contentColor = accent.onColor,
-                    ),
-            ) {
-                Text(
-                    text =
-                        if (selected) {
-                            "✓  ${accent.displayName}"
-                        } else {
-                            accent.displayName
-                        },
-                )
-            }
+            )
         }
 
         item {
-            TextButton(
-                onClick = onReset,
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = "reset · follow system + Sable Blue",
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-            ) {
-                Text("Reset to Follow system · Sable Blue")
-            }
+                        .heightIn(min = 48.dp)
+                        .clickable(onClick = onReset)
+                        .padding(vertical = 12.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
+}
+
+@Composable
+private fun AppearanceChoiceRow(
+    title: String,
+    selected: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 54.dp)
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .height(34.dp)
+                    .background(
+                        if (selected) {
+                            accent
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                    ),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight =
+                if (selected) {
+                    FontWeight.Medium
+                } else {
+                    FontWeight.Normal
+                },
+        )
+        if (selected) {
+            Text(
+                text = "✓",
+                fontSize = 20.sp,
+                color = accent,
+            )
+        }
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
+}
+
+@Composable
+private fun AccentChoiceRow(
+    accent: AccentPreset,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 54.dp)
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(22.dp)
+                    .background(accent.color),
+        )
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = accent.displayName.lowercase(Locale.getDefault()),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight =
+                if (selected) {
+                    FontWeight.Medium
+                } else {
+                    FontWeight.Normal
+                },
+        )
+        if (selected) {
+            Text(
+                text = "✓",
+                fontSize = 20.sp,
+                color = accent.color,
+            )
+        }
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
 }
 
 @Composable
