@@ -281,8 +281,10 @@ class SableQuickstepLauncher : QuickstepLauncher() {
     }
 
     private fun applyCurrentSystemBars() {
+        val activityWindow = window ?: return
+
         applySableSystemBars(
-            window = window,
+            window = activityWindow,
             darkTheme =
                 resolveSableDarkAppearance(
                     context = this,
