@@ -81,6 +81,39 @@ the exact canonical R8 inventory: one Android.bp, one product makefile, three
 source/seal control files, and exactly eight canonical APKs.
 
 
+## SableStart signing/package-scan policy
+
+SableStart is source-built as a normal system application and must explicitly
+disable APK Signature Scheme v4 sidecar generation in its Soong module:
+
+```bp
+v4_signature: false,
+```
+
+The R8 physical validation on 2026-09-19 proved that packaging
+`SableStart.apk.idsig` caused PackageManager to enter the v4 certificate path,
+attempt fs-verity measurement of the `/system` APK, hit the current Panther
+SELinux denial, and reject the package during boot.
+
+The reusable gate
+`build/gates/r8-sablestart-signing-policy.py` enforces both sides of the
+contract:
+
+- canonical/workspace Android.bp must explicitly disable v4 signing;
+- final target-files must contain SableStart.apk and must not contain
+  SableStart.apk.idsig.
+
+`build-r8-final-ui.sh` records a source-policy check before compilation and a
+target-files-policy check after the final target-files build. The authoritative
+target-files composition gate independently reruns the policy.
+
+Do not replace this with an `unzip -l | grep -q` check under `pipefail`.
+An early successful `grep -q` can SIGPIPE `unzip`, making the pipeline
+non-zero and falsely certifying an archive that actually contains the forbidden
+sidecar.
+
+See `docs/R8_SABLESTART_V4_SIGNING_INCIDENT_20260919.md`.
+
 ## Retired Gradle module residue
 
 Git does not remove untracked files when switching between source commits.
