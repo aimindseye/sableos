@@ -270,9 +270,15 @@ fi
 
 while IFS= read -r part; do
   [[ -n "$part" ]] || continue
-  size="$(sable_fastboot_getvar "$FASTBOOT_BIN" "$SERIAL" "partition-size:$part")"
-  echo "FASTBOOT_PARTITION_SIZE partition=$part value=${size:-UNOBSERVABLE}"
-  [[ -n "$size" ]] || sable_die "SABLE_REQUIRED_PARTITION" "partition not observable: $part" 45
+  has_slot="$(sable_fastboot_getvar "$FASTBOOT_BIN" "$SERIAL" "has-slot:$part")"
+  echo "FASTBOOT_PARTITION_EXISTS partition=$part has_slot=${has_slot:-UNOBSERVABLE}"
+  case "$has_slot" in
+    yes|no) ;;
+    *)
+      sable_die "SABLE_REQUIRED_PARTITION" \
+        "fastboot has-slot requirement failed for partition: $part" 45
+      ;;
+  esac
 done < <(sed -n 's/^require partition-exists=//p' "$ANDROID_INFO")
 
 echo "SABLE_FASTBOOT_PREFLASH_REQUIREMENTS=PASS"
