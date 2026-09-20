@@ -159,6 +159,8 @@ def check() -> list[str]:
             "patch_preload_icon_delegate",
             "patch_db_entry",
             "patch_add_item_activity",
+            "patch_display_controller_impl",
+            "patch_taskbar_device_profile_factory",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
             "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
         ):
@@ -235,6 +237,7 @@ def check() -> list[str]:
             'm -j"$JOBS" Launcher3QuickStep',
             "r9-launcher-warning-gate.py",
             "R9_LAUNCHER3_WARNING_MIGRATIONS=PASS",
+            "R9_LAUNCHER3_WARNING_QUALITY=OPEN_DEBT_REMAINS",
             "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
             "RETAINED_PENDING_CUTOVER",
         ):
