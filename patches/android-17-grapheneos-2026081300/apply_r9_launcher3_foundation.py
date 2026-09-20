@@ -513,11 +513,31 @@ def patch_display_info_container(text: str) -> str:
 
 
 def patch_model_writer(text: str) -> str:
-    return mark_deprecated_override(
+    text = mark_deprecated_override(
         text,
         "    override fun getNotifier(): LauncherUiStateNotifier = launcherStateNotifier",
         "Temporary interface for ui notification",
         "ModelWriter deprecated override",
+    )
+    text = replace_once(
+        text,
+        "import com.android.launcher3.Flags\n",
+        "import com.android.launcher3.BuildConfig\nimport com.android.launcher3.Flags\n",
+        "ModelWriter BuildConfig import",
+    )
+    text = text.replace("import com.android.launcher3.Utilities\n", "")
+    text = text.replace("import com.android.launcher3.config.FeatureFlags\n", "")
+    text = replace_once(
+        text,
+        "Utilities.IS_DEBUG_DEVICE",
+        "BuildConfig.IS_DEBUG_DEVICE",
+        "ModelWriter debug-device flag",
+    )
+    return replace_once(
+        text,
+        "FeatureFlags.IS_STUDIO_BUILD",
+        "BuildConfig.IS_STUDIO_BUILD",
+        "ModelWriter studio-build flag",
     )
 
 
@@ -1022,6 +1042,8 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         ),
         MODEL_WRITER_REL: (
             '@Deprecated("Temporary interface for ui notification")',
+            "BuildConfig.IS_DEBUG_DEVICE",
+            "BuildConfig.IS_STUDIO_BUILD",
         ),
         FAKE_MODEL_WRITER_REL: (
             '@Deprecated("Temporary interface for ui notification")',
