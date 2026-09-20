@@ -18,13 +18,16 @@ echo "ANDROID_SDK=$SABLE_ANDROID_SDK"
 echo "RUSTUP_HOME=$SABLE_RUSTUP_HOME"
 echo "CARGO_HOME=$SABLE_CARGO_HOME"
 echo "GRADLE_USER_HOME=$SABLE_GRADLE_USER_HOME"
+echo "SECURITY_TOOLS_ROOT=$SABLE_SECURITY_TOOLS_ROOT"
+echo "SECURITY_BIN=$SABLE_SECURITY_BIN"
+echo "MOBSFSCAN_ROOT=$SABLE_MOBSFSCAN_ROOT"
 
 for path in     "$SABLE_ANDROID_SDK/platforms/android-$SABLE_ANDROID_API"     "$SABLE_ANDROID_SDK/build-tools/$SABLE_ANDROID_BUILD_TOOLS_VERSION"     "$SABLE_ANDROID_SDK/ndk/$SABLE_ANDROID_NDK_VERSION"     "$SABLE_GRADLE_USER_HOME"
 do
     [[ -d "$path" ]] || fail R8_HOST_TOOL_PATH
 done
 
-for tool in     "$SABLE_SDKMANAGER"     "$SABLE_APKANALYZER"     "$SABLE_CARGO"     "$SABLE_RUSTC"     "$SABLE_RUSTUP"     "$SABLE_JDK17/bin/java"     "$SABLE_JDK21/bin/java"
+for tool in     "$SABLE_SDKMANAGER"     "$SABLE_APKANALYZER"     "$SABLE_CARGO"     "$SABLE_RUSTC"     "$SABLE_RUSTUP"     "$SABLE_JDK17/bin/java"     "$SABLE_JDK21/bin/java"     "$SABLE_PYTHON"
 do
     [[ -x "$tool" ]] || {
         echo "MISSING_EXECUTABLE=$tool"
@@ -47,6 +50,32 @@ find "$rust_target_lib" -maxdepth 1 -type f -name 'libstd-*.rlib' -print -quit \
     | grep -q . \
     || fail R8_RUST_ANDROID_STD
 
+installed_components="$("$SABLE_RUSTUP" component list --installed --toolchain "$SABLE_RUST_TOOLCHAIN")"
+grep -Eq '^llvm-tools(-|$)' <<<"$installed_components" || fail R8_RUST_LLVM_TOOLS
+grep -Eq '^rust-src($|-)' <<<"$installed_components" || fail R8_RUST_SRC
+
+python3 "$ROOT/build/install-pinned-tool.py" --verify-dir "$SABLE_SECURITY_BIN" \
+    || fail R8_SECURITY_PINNED_TOOLS
+
+[[ -d "$SABLE_MOBSFSCAN_SOURCE/.git" ]] || fail R8_MOBSFSCAN_SOURCE
+[[ "$(git -C "$SABLE_MOBSFSCAN_SOURCE" rev-parse HEAD 2>/dev/null || true)" == "$SABLE_MOBSFSCAN_COMMIT" ]] \
+    || fail R8_MOBSFSCAN_COMMIT
+[[ -x "$SABLE_MOBSFSCAN_PYTHON" ]] || fail R8_MOBSFSCAN_PYTHON
+
+PYTHONPATH="$SABLE_MOBSFSCAN_SOURCE" "$SABLE_MOBSFSCAN_PYTHON" - <<'PY' \
+    || fail R8_MOBSFSCAN_RUNTIME
+import mobsfscan
+import libsast
+import sarif_om
+import semgrep
+
+expected = "1.0.0"
+if mobsfscan.__version__ != expected:
+    raise SystemExit(
+        f"mobsfscan version mismatch: expected={expected} actual={mobsfscan.__version__}"
+    )
+PY
+
 "$SABLE_JDK17/bin/java" -version 2>&1 | head -n1 | grep -Eq '"17\.'     || fail R8_JDK17
 "$SABLE_JDK21/bin/java" -version 2>&1 | head -n1 | grep -Eq '"21\.'     || fail R8_JDK21
 
@@ -55,6 +84,10 @@ echo "R8_ANDROID_BUILD_TOOLS=PASS value=$SABLE_ANDROID_BUILD_TOOLS_VERSION"
 echo "R8_ANDROID_NDK=PASS value=$SABLE_ANDROID_NDK_VERSION"
 echo "R8_RUST=PASS value=$SABLE_RUST_VERSION"
 echo "R8_RUST_TARGET=PASS value=$SABLE_RUST_TARGET"
+echo "R8_RUST_LLVM_TOOLS=PASS"
+echo "R8_RUST_SRC=PASS"
+echo "R8_SECURITY_PINNED_TOOLS=PASS"
+echo "R8_MOBSFSCAN=PASS commit=$SABLE_MOBSFSCAN_COMMIT version=$SABLE_MOBSFSCAN_VERSION"
 echo "R8_GRADLE_HOME=PASS"
 echo "R8_JDK17=PASS"
 echo "R8_JDK21=PASS"
