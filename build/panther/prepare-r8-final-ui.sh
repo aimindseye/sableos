@@ -38,6 +38,7 @@ UI4="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
 UI5A="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
 UI5B="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
 UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+R9_LAUNCHER3="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
 
 run_self_test() {
     local name="$1"
@@ -54,6 +55,7 @@ run_self_test UI4_SYSTEMUI "$UI4"
 run_self_test UI5A_SETTINGS "$UI5A"
 run_self_test UI5B_APP_SECURITY "$UI5B"
 run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
+run_self_test R9_LAUNCHER3_FOUNDATION "$R9_LAUNCHER3"
 
 echo
 echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
@@ -137,6 +139,12 @@ echo "===== PRODUCTION SABLE START ====="
 SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/panther/sync-sablestart.sh"
 
 echo "R8_SABLESTART_SYNC=PASS"
+
+echo
+echo "===== R9 LAUNCHER3 / QUICKSTEP FOUNDATION ====="
+python3 "$R9_LAUNCHER3" --source "$WS" apply
+python3 "$R9_LAUNCHER3" --source "$WS" verify
+echo "R9_LAUNCHER3_FOUNDATION_PREPARE=PASS"
 
 echo
 echo "===== R8 FIRST-PARTY PRODUCT APPLICATIONS ====="
