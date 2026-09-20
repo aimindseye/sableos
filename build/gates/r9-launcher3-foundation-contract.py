@@ -68,6 +68,18 @@ def check() -> list[str]:
         failures,
     )
 
+    system_bars = (
+        ROOT
+        / "src/android/shared/sabledesign/src/main/java/org/sableos/design/SableSystemBars.kt"
+    ).read_text(encoding="utf-8")
+    forbid(system_bars, "statusBarColor", "deprecated status bar color API", failures)
+    forbid(
+        system_bars,
+        "navigationBarColor",
+        "deprecated navigation bar color API",
+        failures,
+    )
+
     host_path = (
         ROOT
         / "patches/android-17-grapheneos-2026081300"
@@ -120,6 +132,15 @@ def check() -> list[str]:
             "validate_preexisting_fallback_compat",
             "R9_LAUNCHER3_DIRTY_PATHS=PASS",
             "R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS",
+            "R9_LAUNCHER3_WARNING_CLEANUP_SAFE_MIGRATIONS=PASS",
+            "-Xannotation-default-target=param-property",
+            "patch_user_cache",
+            "patch_retrying_executor",
+            "patch_widget_size_handler",
+            "patch_preview_context",
+            "patch_wallpaper_theme_manager",
+            "patch_double_shadow_icon_drawable",
+            "patch_item_info_translators",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
             "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
         ):
@@ -140,6 +161,21 @@ def check() -> list[str]:
                 print(proc.stderr, file=sys.stderr, end="")
             failures.append("Launcher3 foundation applicator self-test failed")
 
+    warning_gate = ROOT / "build/gates/r9-launcher-warning-gate.py"
+    if not warning_gate.is_file():
+        failures.append("Launcher3 warning gate missing")
+    else:
+        warning_text = warning_gate.read_text(encoding="utf-8")
+        for token in (
+            "R9_LAUNCHER3_WARNING_COUNT",
+            "R9_LAUNCHER3_DEPRECATION_COUNT",
+            "R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT",
+            "R9_LAUNCHER3_SABLE_WARNING_COUNT=0",
+            "R9_LAUNCHER3_WARNING_GATE=PASS",
+            "MIGRATED_WARNING_MARKERS",
+        ):
+            require(warning_text, token, "Launcher3 warning gate", failures)
+
     qualifier = ROOT / "build/panther/qualify-r9-launcher3-foundation.sh"
     if not qualifier.is_file():
         failures.append("focused Launcher3 qualifier missing")
@@ -159,6 +195,8 @@ def check() -> list[str]:
             "FULL_IMAGE_BUILD_AUTHORIZED=NO",
             "DEVICE_CONTACT_AUTHORIZED=NO",
             'm -j"$JOBS" Launcher3QuickStep',
+            "r9-launcher-warning-gate.py",
+            "R9_LAUNCHER3_WARNING_QUALITY=PASS",
             "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
             "RETAINED_PENDING_CUTOVER",
         ):
