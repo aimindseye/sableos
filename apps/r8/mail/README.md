@@ -61,13 +61,12 @@ python3 apps/r8/mail/verify_sable_mail.py /path/to/thunderbird-android
 Sable Mail uses two CI tiers:
 
 1. **Product gate — `.github/workflows/r8-mail.yml`**
-   - runs only when the Mail adaptation, Mail verifier, upstream pin, or Mail workflow changes;
-   - does not rerun for unrelated SableStart or shared-design changes because those sources are not compiled into the Mail APK;
+   - runs for ordinary Sable Mail, SableDesign and SableStart changes;
    - verifies the composed Sable Mail source policy;
-   - runs `lintFossRelease` and `assembleFossRelease` in one Gradle invocation so shared configuration/compile work is reused;
+   - lints the shipped `fossRelease` variant;
    - proves the exact FOSS release runtime dependency policy;
+   - builds `:app-thunderbird:assembleFossRelease -Pci=true`;
    - verifies the APK identity/policy and records its SHA-256.
-   Cross-app appearance/provider compatibility remains covered by the fast R8 final-UI closure static workflow.
 2. **Manual upstream qualification — `.github/workflows/r8-mail-upstream.yml`**
    - runs only by explicit manual dispatch;
    - applies the Sable adaptation and source-policy verifier first;
