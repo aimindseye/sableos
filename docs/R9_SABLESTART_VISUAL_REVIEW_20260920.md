@@ -346,3 +346,33 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L10 third-frame Start acceptance
+
+The third Pixel 7 Start frame is accepted as the R9 Start presentation baseline.
+
+Accepted characteristics:
+
+- clock/date hierarchy is clear and intentionally dominant;
+- appearance is a compact secondary affordance rather than competing chrome;
+- real launcher icons render correctly;
+- two compact square tiles plus one full-width Settings tile form a deliberate
+  Metro composition when launcher inventory is sparse;
+- no Start/Favorites duplication remains;
+- empty Favorites is omitted instead of showing placeholder copy;
+- Search + Command is visually distinct without reverting to a generic
+  Material card;
+- All Apps and Local Context share one compact lower navigation row;
+- the non-product visual-review host is absent from launcher fixture inventory.
+
+```text
+R9_L10_START_VISUAL_REVIEW=PASS
+R9_L10_START_PRODUCT_IDENTITY=APPROVED
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+Remaining required surfaces are All Apps / Sable Rail, Search / Command,
+Sable Peek, Local Context, Appearance, and light/dark theme behavior.
+
