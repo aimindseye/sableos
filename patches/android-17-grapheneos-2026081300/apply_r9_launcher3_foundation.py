@@ -312,6 +312,19 @@ def normalize_known_legacy_residue(launcher: pathlib.Path) -> None:
     print("R9_LAUNCHER3_LEGACY_FALLBACK_TEST=NORMALIZED_TO_PINNED_HEAD")
 
 
+def validate_preexisting_fallback_compat(launcher: pathlib.Path) -> None:
+    fallback_path = FALLBACK_ACTIVITY_REL.as_posix()
+    if fallback_path not in launcher_dirty_paths(launcher):
+        return
+
+    actual = worktree_blob(launcher, FALLBACK_ACTIVITY_REL)
+    if actual != KNOWN_LEGACY_FALLBACK_BLOB:
+        raise FoundationError(
+            "unrecognized preexisting fallback compatibility blob "
+            f"expected={KNOWN_LEGACY_FALLBACK_BLOB} actual={actual}"
+        )
+
+
 def require_recognized_launcher_dirt(
     launcher: pathlib.Path,
     *,
@@ -453,6 +466,7 @@ def apply_tree(source: pathlib.Path) -> None:
         )
 
     normalize_known_legacy_residue(launcher)
+    validate_preexisting_fallback_compat(launcher)
     require_recognized_launcher_dirt(launcher, require_complete=False)
     require_workspace_sources(source)
 
