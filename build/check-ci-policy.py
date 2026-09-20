@@ -5,6 +5,7 @@ import json
 import pathlib
 import re
 import subprocess
+import tomllib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -43,6 +44,17 @@ required = (
 for path in required:
     if not path.is_file():
         failures.append(f"required CI/supply-chain file missing: {path.relative_to(ROOT)}")
+
+gitleaks_config = ROOT / ".gitleaks.toml"
+if gitleaks_config.is_file():
+    try:
+        parsed_gitleaks = tomllib.loads(gitleaks_config.read_text(encoding="utf-8"))
+    except Exception as exc:
+        failures.append(f"invalid .gitleaks.toml: {exc}")
+    else:
+        allowlists = parsed_gitleaks.get("allowlists")
+        if not isinstance(allowlists, list) or len(allowlists) != 4:
+            failures.append(".gitleaks.toml must contain exactly four scoped allowlists")
 
 policy_path = ROOT / "build" / "trusted-runner-policy.json"
 if policy_path.is_file():
