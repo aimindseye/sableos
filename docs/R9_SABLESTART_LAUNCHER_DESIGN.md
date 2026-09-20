@@ -376,22 +376,24 @@ The existing StartStateRepository rule remains: launcher presentation state may 
 
 Quickstep remains installed in R9.
 
-SableStart owns:
+Launcher3/Quickstep owns:
 
-- HOME;
+- the Android HOME activity and role;
+- Recents/Overview implementation;
+- mature gesture-navigation integration;
+- task animations/services that Sable has not separately replaced.
+
+SableStart owns the presentation rendered inside the Launcher3 host:
+
 - Start;
 - All Apps;
 - Search/Command;
 - Sable Peek;
 - launcher appearance and local live context.
 
-Quickstep/Android continues to own:
-
-- Recents/Overview implementation;
-- mature gesture-navigation integration;
-- task animations/services that Sable has not separately replaced.
-
-R9 must prove SableStart HOME ownership without disabling Quickstep's recents path.
+R9 must prove Launcher3 HOME ownership through
+`com.android.launcher3.sable.SableQuickstepLauncher` while preserving
+Quickstep's Recents path.
 
 ## Visual direction
 
@@ -453,8 +455,9 @@ A visual approval does not replace runtime qualification.
 R9 physical acceptance must additionally prove:
 
 ~~~
-HOME_RESOLVER=org.sableos.start/.SableStartActivity
-HOME_ROLE_HOLDER=org.sableos.start
+HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher
+HOME_ROLE_HOLDER=com.android.launcher3
+RETIRED_SABLESTART_PACKAGE_ABSENT=PASS
 COLD_HOME_LAUNCH_CRASHES=0
 HOME_KEY_RETURNS_TO_START=PASS
 QUICKSTEP_RECENTS_PRESERVED=PASS
