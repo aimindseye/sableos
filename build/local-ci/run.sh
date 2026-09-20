@@ -430,6 +430,20 @@ run_mail() {
       return 1
     fi
 
+    for expected in \
+      'feature:funding:noop' \
+      'feature:telemetry:noop' \
+      'feature:onboarding:migration:noop' \
+      'feature:migration:launcher:noop'
+    do
+      grep -Fq "$expected" "$EVIDENCE_DIR/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt" || {
+        echo "SABLE_MAIL_EXPECTED_RUNTIME_DEPENDENCY=FAIL missing=$expected"
+        return 1
+      }
+    done
+    echo "SABLE_MAIL_STALE_RUNTIME_DEPENDENCY=PASS_ABSENT"
+    echo "SABLE_MAIL_EXPECTED_RUNTIME_DEPENDENCY=PASS"
+
     ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :app-thunderbird:assembleFossRelease -Pci=true       --stacktrace --console=plain --no-daemon
   )
 
