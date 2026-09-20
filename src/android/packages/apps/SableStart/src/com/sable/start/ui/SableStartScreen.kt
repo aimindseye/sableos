@@ -1,6 +1,5 @@
 package org.sableos.start.ui
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -119,6 +118,9 @@ fun SableStartScreen(
     liveSurfaceRepository: LiveSurfaceRepository,
     appearance: SableAppearance = SableAppearance(),
     refreshGeneration: Int = 0,
+    homeGeneration: Int = 0,
+    backGeneration: Int = 0,
+    onCanNavigateBackChanged: (Boolean) -> Unit = {},
     initialPinnedKeys: Set<String> = emptySet(),
     onPinnedKeysChanged: (Set<String>) -> Unit = {},
     onAppearanceChanged: (SableAppearance) -> Unit = {},
@@ -187,8 +189,22 @@ fun SableStartScreen(
             }
     }
 
-    BackHandler(enabled = destination != SableStartDestination.Start) {
-        navigateBack()
+    LaunchedEffect(homeGeneration) {
+        if (homeGeneration > 0) {
+            destination = SableStartDestination.Start
+            returnDestination = SableStartDestination.Start
+            selectedApp = null
+        }
+    }
+
+    LaunchedEffect(backGeneration) {
+        if (backGeneration > 0 && destination != SableStartDestination.Start) {
+            navigateBack()
+        }
+    }
+
+    LaunchedEffect(destination) {
+        onCanNavigateBackChanged(destination != SableStartDestination.Start)
     }
 
     SableTheme(appearance = appearance) {
