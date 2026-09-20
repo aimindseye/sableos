@@ -146,6 +146,10 @@ def check() -> list[str]:
         for token in (
             'source "$ROOT/build/config/r8-release.env"',
             'source "$ROOT/build/config/panther-grapheneos-2026081300.env"',
+            'OUT_DIR="${OUT_DIR:-$SABLE_R8_OUT_DIR}"',
+            'ALLOW_COLD_OUT="${ALLOW_COLD_OUT:-NO}"',
+            "R9_LAUNCHER3_FOUNDATION_COLD_BUILD_REFUSED=YES",
+            "R9_LAUNCHER3_FOUNDATION_WARM_OUT=PASS",
             "FULL_IMAGE_BUILD_AUTHORIZED=NO",
             "DEVICE_CONTACT_AUTHORIZED=NO",
             'm -j"$JOBS" Launcher3QuickStep',
