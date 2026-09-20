@@ -58,6 +58,19 @@ MIGRATED_WARNING_RULES = (
     ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayControllerImpl.kt", "static field MAIN_EXECUTOR: LooperExecutor!' is deprecated"),
     ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayControllerImpl.kt", "val perDisplayInfo: SparseArray<DisplayInfoContainer>' is deprecated"),
     ("packages/apps/Launcher3/src/com/android/launcher3/deviceprofile/TaskbarDeviceProfileFactory.kt", "fun changeIconSize(iconSizePx: Int): WorkspaceProfile' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/widgetpicker/repository/WidgetAppIconsRepositoryImpl.kt", "class Executors : Any' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/widgetpicker/repository/WidgetAppIconsRepositoryImpl.kt", "static field MAIN_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/WallpaperColorHints.kt", "class Executors : Any' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/WallpaperColorHints.kt", "static field UI_HELPER_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/WallpaperColorHints.kt", "static field MAIN_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/FirstScreenBroadcastHelper.kt", "class Executors : Any' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/FirstScreenBroadcastHelper.kt", "static field MAIN_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/FirstScreenBroadcastHelper.kt", "unchecked cast of 'MutableMap<String?, MutableList<ItemInfo>>' to 'Map<String, List<ItemInfo>>'"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/ModelTaskController.kt", "class Executors : Any' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/ModelTaskController.kt", "static field MAIN_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/window/RefreshRateTracker.kt", "class Executors : Any' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/window/RefreshRateTracker.kt", "static field UI_HELPER_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/RemoveAnimationSettingsTracker.kt", "class Executors : Any' is deprecated"),
 )
 
 
