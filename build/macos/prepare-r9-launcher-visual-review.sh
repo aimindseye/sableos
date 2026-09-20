@@ -116,10 +116,36 @@ else
     GRADLE_NETWORK_ARGS=(--offline)
 fi
 
+GRADLE_LOG="$EVIDENCE_DIR/gradle-visual-review.log"
+set +e
 (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"         :sablestart-presentation-check:compileDebugKotlin         :sablestart-visual-review:assembleDebug         :sablestart-visual-review:lintDebug         --stacktrace         --console=plain         --no-daemon
-)
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
+        :sablestart-presentation-check:compileDebugKotlin \
+        :sablestart-visual-review:assembleDebug \
+        :sablestart-visual-review:lintDebug \
+        --stacktrace \
+        --console=plain \
+        --no-daemon
+) 2>&1 | tee "$GRADLE_LOG"
+gradle_rc=${PIPESTATUS[0]}
+set -e
+
+if [[ "$gradle_rc" -ne 0 ]]; then
+    if [[ "${NETWORK_FETCH_AUTHORIZED:-NO}" != "YES" ]] &&
+        grep -Fq "No cached version of" "$GRADLE_LOG" &&
+        grep -Fq "available for offline mode" "$GRADLE_LOG"; then
+        echo "R9_VISUAL_REVIEW_DEPENDENCY_CACHE=MISS"
+        echo "R9_VISUAL_REVIEW_NETWORK_BOOTSTRAP_REQUIRED=YES"
+        echo "RETRY=NETWORK_FETCH_AUTHORIZED=YES bash build/macos/prepare-r9-launcher-visual-review.sh"
+        exit 10
+    fi
+
+    echo "R9_VISUAL_REVIEW_GRADLE=FAIL rc=$gradle_rc log=$GRADLE_LOG"
+    exit "$gradle_rc"
+fi
+
+echo "R9_VISUAL_REVIEW_DEPENDENCY_CACHE=READY"
 
 APK="$ROOT/apps/r8/android/sablestart-visual-review/build/outputs/apk/debug/sablestart-visual-review-debug.apk"
 [[ -f "$APK" ]] || {
