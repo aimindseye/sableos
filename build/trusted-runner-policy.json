@@ -1,8 +1,12 @@
 {
-  "base_main": "7f85b522afa989e197b09d07c8f7d9f01c62e48d",
-  "dedicated_unprivileged_user_required": true,
-  "encryption_decision": "DEFER_TRUSTED_RUNNER_UNTIL_ENCRYPTED",
-  "ephemeral_required": true,
+  "base_main": "40b1acef87889424ac2685c2d705ab2b53ffa243",
+  "ci_execution_mode": "LOCAL_DIRECT",
+  "github_actions_execution_allowed": false,
+  "local_ci_execution_allowed": true,
+  "local_ci_remote_trigger_allowed": false,
+  "dedicated_unprivileged_user_required_for_future_actions_runner": true,
+  "encryption_decision": "DEFER_GITHUB_ACTIONS_RUNNER_UNTIL_ENCRYPTED",
+  "ephemeral_required_for_future_actions_runner": true,
   "forbidden_privileged_groups": [
     "sudo",
     "wheel",
@@ -20,14 +24,14 @@
   ],
   "future_runner_root": "/srv/data/sable-build/sableos/runner",
   "future_work_directory": "/srv/data/sable-build/sableos/runner/work",
-  "persistent_service_forbidden": true,
+  "persistent_actions_service_forbidden": true,
   "registration_secrets_must_not_be_persisted": true,
-  "require_at_rest_encryption": true,
-  "runner_activation_status": "BLOCKED_UNTIL_ENCRYPTED",
-  "schema": "sableos-trusted-runner-policy-v1",
-  "self_hosted_jobs_allowed": false,
+  "require_at_rest_encryption_for_future_actions_runner": true,
+  "runner_activation_status": "DISABLED_LOCAL_DIRECT_CI",
+  "schema": "sableos-ci-execution-policy-v2",
+  "self_hosted_actions_jobs_allowed": false,
   "source_encryption_status": "FAIL_UNENCRYPTED",
   "source_mount_source": "/dev/nvme1n1p1",
   "source_storage_root": "/srv/data/sable-build",
-  "untrusted_pull_request_execution_allowed": false
+  "untrusted_pull_request_remote_execution_allowed": false
 }

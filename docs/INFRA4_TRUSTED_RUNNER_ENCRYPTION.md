@@ -59,16 +59,36 @@ This INFRA4 change does not install/register a runner, enable a runner service,
 create registration credentials, change root privileges, or enable self-hosted
 workflow execution.
 
-## INFRA5 disposition — deferred on 2026-09-18
+## Local-direct CI cutover — 2026-09-20
 
-INFRA5 trusted-runner activation is intentionally deferred until release/security hardening. The current unencrypted `ai-g732` development host remains **ineligible** for trusted self-hosted execution; GitHub-hosted CI remains the qualification path.
+GitHub-hosted Actions was retired for cost containment. This does **not**
+activate a self-hosted GitHub Actions runner and does not relax the encryption
+decision above.
 
-This decision does not relax INFRA4. The current fail-closed state remains:
+The new execution model is:
 
 ```text
+GITHUB_HOSTED_ACTIONS=DISABLED
+GITHUB_SELF_HOSTED_ACTIONS=DISABLED
+LOCAL_DIRECT_CI=ENABLED
+REMOTE_TRIGGER_OF_BUILD_HOST=NO
 SOURCE_STORAGE_ENCRYPTED=NO
-TRUSTED_SELF_HOSTED_RUNNER=DISABLED
-INFRA5_STATUS=DEFERRED_NON_BLOCKING
 ```
 
-Revisit INFRA5 together with production signing/key custody and release-candidate infrastructure. See `INFRA5_DEFERRED_TRUSTED_RUNNER.md` for the activation triggers and current development handoff.
+Local CI is invoked interactively from the controlled build-machine clone with
+`build/local-ci/run.sh`. Because GitHub cannot remotely dispatch code onto the
+host, the prior unencrypted-storage restriction continues to apply specifically
+to any future GitHub Actions runner activation.
+
+A successful local `full` or `release` run creates a commit-bound
+attestation used by the main pre-push governance hook.
+
+## INFRA5 disposition — revised on 2026-09-20
+
+INFRA5 GitHub Actions runner activation remains deferred. There is no current
+need to activate a trusted runner merely to obtain CI: qualification now runs
+directly on the existing build machine.
+
+Revisit a GitHub Actions runner only if remote orchestration becomes valuable
+enough to justify encrypted storage, ephemeral registration and the full
+trusted-runner isolation contract.

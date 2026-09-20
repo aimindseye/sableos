@@ -1,6 +1,6 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
 
@@ -74,12 +74,14 @@ INFRA2_CI_SECURITY_QUALITY=INTEGRATED
 INFRA3_SUPPLY_CHAIN_BASELINE=INTEGRATED
 INFRA4_TRUSTED_RUNNER_GATE=INTEGRATED
 INFRA5_TRUSTED_RUNNER_ACTIVATION=DEFERRED_NON_BLOCKING
+GITHUB_HOSTED_CI=DISABLED_COST_CONTAINMENT
 TRUSTED_SELF_HOSTED_RUNNER=DISABLED
+LOCAL_DIRECT_CI=ACTIVE
 PRODUCTION_SIGNING=DEFERRED
 NEXT_ACTIVE_DELIVERABLE=UI4R4_PANTHER_PREVIEW_BUILD_FLASH
 ```
 
-INFRA5 is parked intentionally for the current hobby/development phase. The `ai-g732` host may continue to be used as a normal development/build machine, but its unencrypted Sable source/build storage does not qualify it as a trusted self-hosted release runner. GitHub-hosted CI remains authoritative for current qualification. INFRA5 should be reopened together with build-storage encryption, production signing/key custody and release-candidate hardening rather than weakening the existing INFRA4 fail-closed policy.
+INFRA5 GitHub Actions runner activation remains parked. The `ai-g732` host continues to be used directly as the development/build machine, but its unencrypted Sable source/build storage still does not qualify it for remote GitHub Actions execution. As of 2026-09-20, GitHub-hosted CI is retired for cost containment and qualification runs locally through `build/local-ci/run.sh`. This does not weaken the INFRA4 rule: GitHub self-hosted runner activation remains blocked until the encryption/isolation requirements are satisfied.
 
 The active R8 handoff is to finish application implementation and build preparation across the shared design/Kotlin surfaces, Calculator+Convert, Games, Reader/Text Reader composition and Media, then run the already-defined standalone qualification/artifact-freeze gates before product-image integration.
 

@@ -6,7 +6,7 @@ Date: 2026-09-18
 
 INFRA5 is intentionally deferred and is not an active development milestone.
 
-SableOS will continue to use GitHub-hosted CI for normal source/application qualification. The `ai-g732` build host remains a development/build machine and is **not** accepted as a trusted self-hosted release runner while its Sable source/build storage is unencrypted.
+As of 2026-09-20, SableOS no longer uses GitHub-hosted CI for normal qualification. CI runs directly on the `ai-g732` development/build machine through `build/local-ci/run.sh`. This is not a self-hosted GitHub Actions runner: GitHub has no remote execution path onto the host, and the host is still **not** accepted as a trusted self-hosted release runner while its Sable source/build storage is unencrypted.
 
 The existing INFRA4 fail-closed controls remain authoritative:
 
@@ -20,7 +20,7 @@ This is a scheduling decision, not a security exception. INFRA4 must not be weak
 
 ## Rationale
 
-The current project priority is application/product development and build qualification. For the present hobby/development stage, activating a hardened self-hosted runner would add storage migration, LUKS lifecycle, runner isolation, credential-handling and unattended-host operations without being required for current R8 source qualification.
+The current project priority is application/product development and build qualification. For the present hobby/development stage, activating a hardened self-hosted Actions runner would add storage migration, LUKS lifecycle, runner isolation, credential-handling and unattended-host operations without being required for current source qualification. Local-direct CI provides the required development feedback without a remotely dispatched runner.
 
 Those controls become materially more valuable when SableOS begins handling production signing keys, private release artifacts, unattended trusted CI credentials, or release-candidate generation.
 

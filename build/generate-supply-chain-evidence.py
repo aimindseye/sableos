@@ -254,9 +254,15 @@ def main() -> None:
         "android_declared_plugins": plugins,
         "android_declared_coordinates": coords,
         "artifacts": artifacts,
+        "ci_execution": {
+            "mode": "LOCAL_DIRECT",
+            "github_actions_enabled": False,
+            "entrypoint": "build/local-ci/run.sh",
+        },
         "android_resolution_status": (
             "committed Gradle lockfiles and SHA-256 verification metadata "
-            "are enforced by .github/workflows/supply-chain.yml"
+            "are enforced by build/local-ci/run.sh and "
+            "build/check-gradle-supply-chain.py"
         ),
     }
 

@@ -48,6 +48,22 @@ for update in "${UPDATES[@]}"; do
   test "$REMOTE_URL" = "$CANONICAL_URL" \
     || deny "GOVERNED_MAIN_REQUIRES_CANONICAL_EXPLICIT_URL"
 
+  ROOT="$(git rev-parse --show-toplevel)"
+  GIT_DIR="$(git rev-parse --git-dir)"
+  if [[ "$GIT_DIR" != /* ]]; then
+    GIT_DIR="$ROOT/$GIT_DIR"
+  fi
+
+  LOCAL_CI_ATTESTATION="$GIT_DIR/sable-local-ci/$LOCAL_SHA.pass"
+  test -f "$LOCAL_CI_ATTESTATION" \
+    || deny "MAIN_PUSH_REQUIRES_LOCAL_FULL_CI_ATTESTATION"
+  grep -Fxq 'SABLE_LOCAL_CI=PASS' "$LOCAL_CI_ATTESTATION" \
+    || deny "LOCAL_CI_ATTESTATION_NOT_PASS"
+  grep -Fxq "SOURCE_COMMIT=$LOCAL_SHA" "$LOCAL_CI_ATTESTATION" \
+    || deny "LOCAL_CI_ATTESTATION_SOURCE_MISMATCH"
+  grep -Eq '^PROFILE=(full|release)$' "$LOCAL_CI_ATTESTATION" \
+    || deny "LOCAL_CI_ATTESTATION_PROFILE_INSUFFICIENT"
+
   git cat-file -e "${REMOTE_SHA}^{commit}" 2>/dev/null \
     || deny "REMOTE_MAIN_COMMIT_NOT_PRESENT_LOCALLY"
   git cat-file -e "${LOCAL_SHA}^{commit}" 2>/dev/null \

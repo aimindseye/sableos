@@ -54,7 +54,8 @@ if ancestry.returncode != 0:
 
 required = (
     ROOT / ".githooks" / "pre-push",
-    ROOT / ".github" / "workflows" / "main-integrity.yml",
+    ROOT / "build" / "local-ci" / "run.sh",
+    ROOT / "build" / "trusted-runner-policy.json",
     ROOT / "build" / "check-ci-policy.py",
     ROOT / "build" / "check-main-integrity.py",
     ROOT / "docs" / "INFRA2C_FREE_GOVERNANCE.md",
@@ -71,4 +72,5 @@ print(f"SABLE_MAIN_INTEGRITY_BEFORE={before}")
 print(f"SABLE_MAIN_INTEGRITY_AFTER={after}")
 print("SABLE_MAIN_INTEGRITY_FAST_FORWARD=PASS")
 print("SABLE_MAIN_GOVERNANCE_FILES=PASS")
+print("SABLE_MAIN_CI_EXECUTION=LOCAL_DIRECT")
 print("SABLE_MAIN_INTEGRITY=PASS")

@@ -22,17 +22,17 @@ target_files_gate="$ROOT/build/gates/r8-final-target-files.sh"
 start_bp="$ROOT/src/android/packages/apps/SableStart/Android.bp"
 android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
 start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
-android_ci="$ROOT/.github/workflows/r8-android.yml"
-android_static="$ROOT/.github/workflows/r8-android-static.yml"
+local_ci="$ROOT/build/local-ci/run.sh"
+ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale"; do
+for f in "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
     bash -n "$f"
 done
 
@@ -149,12 +149,13 @@ grep -Fq 'include(":sablestart-production-check")' "$android_settings"
 grep -Fq '../../../../src/android/packages/apps/SableStart/src' "$start_check"
 grep -Fq '../../../../src/android/packages/apps/SableStart/AndroidManifest.xml' "$start_check"
 grep -Fq '../../../../src/android/packages/apps/SableStart/res' "$start_check"
-grep -Fq ':sablestart-production-check:compileDebugKotlin' "$android_ci"
-! grep -Fq ':start-preview:' "$android_ci"
-! grep -Fq ':system-preview:' "$android_ci"
-grep -Fq ':sablestart-production-check:lintDebug' "$android_static"
-! grep -Fq ':start-preview:' "$android_static"
-! grep -Fq ':system-preview:' "$android_static"
+grep -Fq ':sablestart-production-check:compileDebugKotlin' "$local_ci"
+grep -Fq ':sablestart-production-check:lintDebug' "$local_ci"
+! grep -Fq ':start-preview:' "$local_ci"
+! grep -Fq ':system-preview:' "$local_ci"
+grep -Fq 'GITHUB_ACTIONS_EXECUTION=DISABLED' "$local_ci"
+grep -Fq 'SELF_HOSTED_ACTIONS_RUNNER=DISABLED' "$local_ci"
+grep -Fq 'hosted GitHub CI remains executable' "$ci_policy"
 
 echo "R8_SABLESTART_PRODUCTION_GRADLE_COMPILE_CONTRACT=PASS"
 echo "R8_SABLESTART_PRODUCTION_LINT_CONTRACT=PASS"
