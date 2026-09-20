@@ -101,10 +101,9 @@ Reference review:
 
 - `palsoftware/pastiera` — physical-keyboard IME/modifier/navigation reference;
 - `katoaapps/openminilaunch` — keyboard-first launcher/type-to-search reference;
-- `sriharshaKanukuntla/TypeQ25` — Q25/Titan physical-keyboard mapping/nav reference;
-- `nozerorma/q25toolbox` — keylayout/scancode/device-behavior forensic reference.
+- additional historical keyboard/keylayout references are catalogued separately.
 
-Exact reviewed revisions and licensing constraints are recorded in `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
+Exact reviewed revisions and licensing constraints are recorded in `TITAN2_KEYBOARD_FIRST_REFERENCE.md`. Historical reference repositories do not define active SableOS device targets.
 
 The first Titan launcher acceptance must prove printable-key type-to-search from HOME with the initial character preserved, visible directional focus, hardware-only navigation through the main launcher flow, and no forced soft-keyboard popup when a physical keyboard is active.
 
