@@ -88,7 +88,14 @@ PRODUCT_MK="$ROOT/product/r8/panther/r8-product.mk"
 grep -Fq 'MediaDesignPreviewActivity' "$MEDIA_MANIFEST" \
     && fail R8_STALE_MEDIA_PREVIEW_COMPONENT
 
-if grep -Eq '^[[:space:]]*SableStart([[:space:]]*\\)?[[:space:]]*    ExactCalculator \
+if grep -Eq '^[[:space:]]*SableStart([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK"; then
+    fail R9_STANDALONE_SABLESTART_PRODUCT_MODULE
+fi
+
+for forbidden in \
+    start-preview \
+    system-preview \
+    ExactCalculator \
     SableConvert \
     SableConverter \
     SableGames \
