@@ -423,8 +423,10 @@ run_mail() {
 
     ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
       :feature:account:setup:compileReleaseKotlin \
+      :feature:onboarding:main:compileReleaseKotlin \
+      :feature:launcher:compileReleaseKotlin \
       --stacktrace --console=plain --no-daemon
-    echo "SABLE_MAIL_ACCOUNT_SETUP_COMPILE=PASS"
+    echo "SABLE_MAIL_COMPOSED_NAVIGATION_COMPILE=PASS"
 
     ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
       :app-thunderbird:lintFossRelease \
@@ -459,7 +461,8 @@ run_mail() {
     find "$work/app-thunderbird/build/outputs/apk/foss/release"       -maxdepth 1 -type f -name '*.apk' -print | sort
   )
   test "${#apks[@]}" -eq 1
-  python3 "$ROOT/apps/r8/mail/verify_sable_mail.py" "$work" "${apks[0]}"
+  APKANALYZER="$SABLE_APKANALYZER" \
+    python3 "$ROOT/apps/r8/mail/verify_sable_mail.py" "$work" "${apks[0]}"
   sha256sum "${apks[0]}" > "$EVIDENCE_DIR/SABLE_MAIL_APK_SHA256.txt"
 }
 
