@@ -126,6 +126,28 @@ def main() -> None:
         "SABLE_MAIL_AUTODISCOVERY_DEMO_DEPENDENCY",
     )
 
+    for path in (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "domain/AutoDiscoveryMapper.kt",
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "domain/usecase/GetAutoDiscovery.kt",
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "ui/autodiscovery/AccountAutoDiscoveryViewModel.kt",
+    ):
+        reject_text(
+            path,
+            "DemoServerSettings",
+            "SABLE_MAIL_AUTODISCOVERY_DEMO_SOURCE",
+        )
+        reject_text(
+            path,
+            "autodiscovery.demo",
+            "SABLE_MAIL_AUTODISCOVERY_DEMO_SOURCE",
+        )
+
     app_common_feature = (
         root
         / "app-common/src/main/kotlin/net/thunderbird/app/common/feature/"
@@ -220,6 +242,7 @@ def main() -> None:
 
     print("SABLE_MAIL_TRANSITIVE_THUNDERMAIL=PASS_ABSENT")
     print("SABLE_MAIL_AUTODISCOVERY_DEMO=PASS_ABSENT")
+    print("SABLE_MAIL_AUTODISCOVERY_DEMO_SOURCE=PASS_ABSENT")
     print("SABLE_MAIL_STANDARD_ACCOUNT_ENTRY=PASS")
 
     strings = app / "src/main/res/values/strings.xml"
