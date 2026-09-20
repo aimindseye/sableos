@@ -185,6 +185,7 @@ def check() -> list[str]:
     else:
         warning_text = warning_gate.read_text(encoding="utf-8")
         for token in (
+            "R9_LAUNCHER3_WARNING_GATE_SELF_TEST=PASS",
             "R9_LAUNCHER3_WARNING_COUNT",
             "R9_LAUNCHER3_DEPRECATION_COUNT",
             "R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT",
@@ -197,6 +198,21 @@ def check() -> list[str]:
             "MIGRATED_WARNING_RULES",
         ):
             require(warning_text, token, "Launcher3 warning gate", failures)
+
+        proc = subprocess.run(
+            [sys.executable, str(warning_gate), "--self-test"],
+            cwd=ROOT,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if proc.stdout:
+            print(proc.stdout, end="")
+        if proc.returncode != 0:
+            if proc.stderr:
+                print(proc.stderr, file=sys.stderr, end="")
+            failures.append("Launcher3 warning gate self-test failed")
 
     qualifier = ROOT / "build/panther/qualify-r9-launcher3-foundation.sh"
     if not qualifier.is_file():
