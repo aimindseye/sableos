@@ -79,6 +79,7 @@ echo "R8_HOST_GATE_OFFLINE_RUST_VERIFICATION=PASS"
 
 grep -Fq 'apps/r8/android/start-preview' "$retire"
 grep -Fq 'apps/r8/android/system-preview' "$retire"
+grep -Fq 'apps/r8/android/sablestart-production-check' "$retire"
 grep -Fq 'git -C "$ROOT" ls-files -- "$rel"' "$retire"
 grep -Fq 'R8_OBSOLETE_GRADLE_RESIDUE=FAIL_TRACKED_CONTENT' "$retire"
 grep -Fq 'rm -rf --one-file-system -- "$target"' "$retire"
@@ -92,14 +93,17 @@ host_line="$(grep -nF '===== CANONICAL HOST-TOOL GATE =====' "$runner" | head -n
 
 mkdir -p "$ROOT/apps/r8/android/start-preview/build/test"
 mkdir -p "$ROOT/apps/r8/android/system-preview/build/test"
+mkdir -p "$ROOT/apps/r8/android/sablestart-production-check/build/test"
 printf 'stale\n' > "$ROOT/apps/r8/android/start-preview/build/test/sentinel.txt"
 printf 'stale\n' > "$ROOT/apps/r8/android/system-preview/build/test/sentinel.txt"
+printf 'stale\n' > "$ROOT/apps/r8/android/sablestart-production-check/build/test/sentinel.txt"
 
 SOURCE_MUTATION_AUTHORIZED=YES bash "$retire" > "$ROOT/.r8-retire-self-test.log"
 
 grep -Fxq 'R8_OBSOLETE_GRADLE_RESIDUE=PASS' "$ROOT/.r8-retire-self-test.log"
 test ! -e "$ROOT/apps/r8/android/start-preview"
 test ! -e "$ROOT/apps/r8/android/system-preview"
+test ! -e "$ROOT/apps/r8/android/sablestart-production-check"
 rm -f "$ROOT/.r8-retire-self-test.log"
 
 echo "R8_OBSOLETE_GRADLE_RESIDUE_CONTRACT=PASS"
