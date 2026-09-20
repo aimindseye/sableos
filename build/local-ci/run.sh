@@ -420,7 +420,15 @@ run_mail() {
   (
     cd "$work"
     chmod +x gradlew
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :app-thunderbird:lintFossRelease       --stacktrace --console=plain --no-daemon
+
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
+      :feature:account:setup:compileReleaseKotlin \
+      --stacktrace --console=plain --no-daemon
+    echo "SABLE_MAIL_ACCOUNT_SETUP_COMPILE=PASS"
+
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
+      :app-thunderbird:lintFossRelease \
+      --stacktrace --console=plain --no-daemon
 
     ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :app-thunderbird:dependencies       --configuration fossReleaseRuntimeClasspath       --console=plain --no-daemon       | tee "$EVIDENCE_DIR/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt"
 
