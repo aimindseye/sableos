@@ -13,6 +13,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
 import org.sableos.design.SableAppearance
+import org.sableos.design.applySableSystemBars
+import org.sableos.design.resolveSableDarkAppearance
 import org.sableos.start.model.AppEntry
 import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
@@ -54,6 +56,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         refreshInventory()
         pinnedKeys = defaultPinnedKeys(appsState.value)
 
+        applyCurrentSystemBars()
+
         setContent {
             SableStartScreen(
                 apps = appsState.value,
@@ -66,9 +70,11 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 },
                 onAppearanceChanged = { appearance ->
                     appearanceState.value = appearance
+                    applyCurrentSystemBars()
                 },
                 onResetAppearance = {
                     appearanceState.value = SableAppearance()
+                    applyCurrentSystemBars()
                 },
                 onLaunchApp = ::launchApp,
                 onOpenSettings = ::openSettings,
@@ -82,7 +88,19 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         super.onResume()
         if (::launcherApps.isInitialized) {
             refreshInventory()
+            applyCurrentSystemBars()
         }
+    }
+
+    private fun applyCurrentSystemBars() {
+        applySableSystemBars(
+            window = window,
+            darkTheme =
+                resolveSableDarkAppearance(
+                    context = this,
+                    appearance = appearanceState.value,
+                ),
+        )
     }
 
     private fun refreshInventory() {
