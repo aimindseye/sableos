@@ -10,6 +10,7 @@ BUILD_AUTHORIZED="${BUILD_AUTHORIZED:-NO}"
 WS="${WS:-$SABLEOS_UPSTREAM}"
 OUT_DIR="${OUT_DIR:-out_sable_ui_final_qual}"
 JOBS="${JOBS:-8}"
+REQUIRE_FRESH_OUT="${REQUIRE_FRESH_OUT:-NO}"
 
 if [[ "$BUILD_AUTHORIZED" != YES ]]; then
     echo "R8_FINAL_BUILD=REFUSED_BUILD_NOT_AUTHORIZED"
@@ -27,6 +28,20 @@ else
     OUT_ABS="$WS/$OUT_DIR"
 fi
 
+if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
+    if [[ -e "$OUT_ABS" ]]; then
+        echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=FAIL_PRESENT path=$OUT_ABS"
+        echo "R9_FRESH_FULL_BUILD=FAIL"
+        exit 3
+    fi
+    echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=PASS_ABSENT path=$OUT_ABS"
+else
+    echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=NOT_REQUIRED"
+fi
+
+R9_FULL_BUILD_START_EPOCH="$(date +%s)"
+echo "R9_FULL_BUILD_START_EPOCH=$R9_FULL_BUILD_START_EPOCH"
+
 STAMP="$(date +%Y%m%d_%H%M%S)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-/srv/data/sable-build/evidence/panther/r8-final-ui/$STAMP}"
 mkdir -p "$EVIDENCE_DIR"
@@ -40,6 +55,7 @@ echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+echo "REQUIRE_FRESH_OUT=$REQUIRE_FRESH_OUT"
 
 echo
 echo "===== PRE-BUILD PRODUCT COMPOSITION ====="
@@ -187,9 +203,20 @@ TF="$(
 }
 
 TF_SHA="$(sha256sum "$TF" | awk '{print $1}')"
+TF_MTIME_EPOCH="$(stat -c %Y "$TF")"
 
 echo "R8_TARGET_FILES=$TF"
 echo "R8_TARGET_FILES_SHA256=$TF_SHA"
+echo "R9_TARGET_FILES_MTIME_EPOCH=$TF_MTIME_EPOCH"
+
+if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
+    [[ "$TF_MTIME_EPOCH" -ge "$R9_FULL_BUILD_START_EPOCH" ]] || {
+        echo "R9_TARGET_FILES_FRESHNESS=FAIL start=$R9_FULL_BUILD_START_EPOCH mtime=$TF_MTIME_EPOCH"
+        echo "R9_FRESH_FULL_BUILD=FAIL"
+        exit 8
+    }
+    echo "R9_TARGET_FILES_FRESHNESS=PASS"
+fi
 
 WS="$WS" OUT_DIR="$OUT_DIR" TF="$TF"     bash "$ROOT/build/gates/r8-final-target-files.sh"     | tee "$EVIDENCE_DIR/target-files-composition.log"
 
@@ -207,6 +234,12 @@ echo "R8_UI_MODULE_BUILD=PASS"
 echo "R8_FULL_BUILD=PASS"
 echo "R8_BUILD_SANDBOX=PASS"
 echo "R8_FINAL_TARGET_FILES=PASS"
+if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
+    echo "R9_FRESH_FULL_BUILD=PASS"
+    echo "R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES"
+else
+    echo "R9_FRESH_FULL_BUILD=NOT_PROVEN"
+fi
 echo "PANTHER_FINAL_UI_BUILD=PASS"
 echo "TARGET_FILES=$TF"
 echo "TARGET_FILES_SHA256=$TF_SHA"
