@@ -123,7 +123,16 @@ finalize_run() {
 
     if [[ "${REBOOTED_TO_BOOTLOADER:-NO}" == YES && "${FLASH_STARTED:-NO}" == NO ]]; then
       echo "PREWRITE_FAILURE_RECOVERY=ATTEMPT_FASTBOOT_REBOOT"
-      "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null >/dev/null 2>&1 || true
+      if "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null >/dev/null 2>&1; then
+        echo "PREWRITE_FAILURE_RECOVERY_FASTBOOT_REBOOT=PASS"
+        if sable_wait_adb_boot_completed "$ADB_BIN" "$SERIAL" 300; then
+          echo "PREWRITE_FAILURE_RECOVERY=PASS_ANDROID"
+        else
+          echo "PREWRITE_FAILURE_RECOVERY=BOUNDED_FAIL_ANDROID_NOT_CONFIRMED"
+        fi
+      else
+        echo "PREWRITE_FAILURE_RECOVERY=BOUNDED_FAIL_FASTBOOT_REBOOT"
+      fi
     elif [[ "${FLASH_STARTED:-NO}" == YES && "${POSTFLASH_REBOOT_SENT:-NO}" == NO ]]; then
       echo "AUTOMATIC_REBOOT_AFTER_FLASH_FAILURE=SUPPRESSED"
     fi
