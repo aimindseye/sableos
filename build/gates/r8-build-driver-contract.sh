@@ -223,6 +223,17 @@ grep -Fq 'BUILD_AUTHORIZED=YES' "$tmp"
 grep -Fq 'bash "$REPO/build/panther/run-r8-release-candidate.sh"' "$tmp"
 ! grep -Fq '        "$REPO/build/panther/run-r8-release-candidate.sh"' "$tmp"
 
+grep -Fq 'R9_FULL_OUT_DIR="${SABLE_R9_FULL_OUT_DIR:-out_sable_r9_full_${EXPECTED_SOURCE_COMMIT:0:12}}"' "$runner"
+grep -Fq 'R9_RELEASE_CANDIDATE_FRESH_OUT=FAIL_PRESENT' "$runner"
+grep -Fq 'REQUIRE_FRESH_OUT=YES' "$runner"
+grep -Fq 'OUT_DIR="$R9_FULL_OUT_DIR"' "$runner"
+! grep -Fq 'OUT_DIR="$SABLE_R8_OUT_DIR"' "$runner"
+grep -Fq 'R9_FRESH_FULL_BUILD_OUT_PRECONDITION=FAIL_PRESENT' "$finalbuild"
+grep -Fq 'R9_TARGET_FILES_FRESHNESS=PASS' "$finalbuild"
+grep -Fq 'R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES' "$finalbuild"
+
+echo "R9_FRESH_FULL_BUILD_CONTRACT=PASS"
+
 echo "R9_BUILD_DRIVER_SOURCE_BOUND_TMUX=PASS"
 echo "R8_BUILD_DRIVER_RUNNER_INVOCATION=PASS"
 echo "R8_BUILD_DRIVER_CONTRACT=PASS"
