@@ -225,6 +225,26 @@ def main() -> int:
         'text = "local only · no ambient network search"',
         "R9_LOCAL_CONTEXT_NETWORK_TRUTH",
     )
+    require(
+        production_ui,
+        "AppearanceChoiceRow(",
+        "R9_APPEARANCE_FLAT_THEME_ROWS",
+    )
+    require(
+        production_ui,
+        "AccentChoiceRow(",
+        "R9_APPEARANCE_FLAT_ACCENT_ROWS",
+    )
+    require(
+        production_ui,
+        'text = "reset · follow system + Sable Blue"',
+        "R9_APPEARANCE_RESET_ACTION",
+    )
+    forbid(
+        production_ui,
+        "ButtonDefaults.buttonColors",
+        "R9_APPEARANCE_OLD_MATERIAL_BUTTON_COLORS",
+    )
     forbid(
         production_ui,
         "LiveCard(",
@@ -325,6 +345,8 @@ def main() -> int:
     print("R9_PEEK_ACTION_HIERARCHY=PASS")
     print("R9_LOCAL_CONTEXT_FLAT_ROWS=PASS")
     print("R9_LOCAL_CONTEXT_TRUTHFUL_STATUS=PASS")
+    print("R9_APPEARANCE_FLAT_CHOICES=PASS")
+    print("R9_APPEARANCE_THEME_ACCENT_MODEL=PASS")
     print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
     require(
@@ -336,7 +358,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
     print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
-    print("R9_L13_VISUAL_REVIEW_CONTRACT=PASS")
+    print("R9_L14_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
 
