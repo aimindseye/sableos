@@ -82,7 +82,8 @@ run_static() {
       'build/panther/*.sh' \
       'build/gates/*.sh' \
       'tests/sablestart/host/*.sh' \
-      'tests/sablestart/device/*.sh'
+      'tests/sablestart/device/*.sh' \
+      'tests/launcher3/device/*.sh'
   )
   echo "SABLE_LOCAL_CI_ACTIVE_SHELL_SYNTAX_COUNT=$shell_count"
 
