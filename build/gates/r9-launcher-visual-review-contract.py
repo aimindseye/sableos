@@ -73,6 +73,25 @@ def main() -> int:
         "R9_PRODUCTION_REAL_ICON_DRAWABLE",
     )
 
+    mac_runner = (
+        ROOT / "build/macos/prepare-r9-launcher-visual-review.sh"
+    ).read_text()
+    require(
+        mac_runner,
+        'GRADLE_OFFLINE=NO',
+        "R9_VISUAL_REVIEW_MAC_NETWORK_MODE",
+    )
+    require(
+        mac_runner,
+        'GRADLE_OFFLINE=YES',
+        "R9_VISUAL_REVIEW_MAC_OFFLINE_MODE",
+    )
+    forbid(
+        mac_runner,
+        'GRADLE_NETWORK_ARGS=()',
+        "R9_VISUAL_REVIEW_MAC_BASH3_EMPTY_ARRAY",
+    )
+
     forbid(
         manifest,
         "android.intent.category.HOME",
@@ -114,6 +133,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
     print("R9_PRODUCTION_REAL_ICONS=PASS")
+    print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_L9_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
