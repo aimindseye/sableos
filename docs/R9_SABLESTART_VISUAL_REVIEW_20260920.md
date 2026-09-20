@@ -275,3 +275,45 @@ R9_VISUAL_REVIEW_INITIAL_CAPTURE=PASS
 ```
 
 ~~~
+
+## R9L10 initial-frame review
+
+The first Pixel 7 runtime frame at commit
+`2bcdc6699a705a965dc0a4a89c98314cdaaa1162` proved the review path, but the
+Start presentation is not accepted as final product identity.
+
+Observed issues from `00-start-initial.png`:
+
+- the 2x2 Start tile block is visually too tall for the amount of information;
+- Favorites repeats apps already promoted into Start tiles;
+- the standalone accent-name button reads as floating chrome rather than part
+  of the Metro hierarchy;
+- Search / Command reads like a generic Material card instead of a Sable
+  command surface;
+- the two navigation links consume too much vertical space;
+- the review host app appears in the fixture inventory and pollutes the product
+  review.
+
+R9L10 responds by:
+
+- shrinking Start tiles from 118dp to 96dp and app marks from 44dp to 34dp;
+- removing primary-tile apps from the Start Favorites subset;
+- replacing the floating accent-name button with a compact accent-swatch
+  appearance affordance;
+- changing Search / Command to a flat Metro-style accent rule and typographic
+  command row;
+- putting All Apps and Local Context into one compact navigation row;
+- limiting Start Favorites to four entries;
+- filtering the non-product visual-review host from the emulator inventory.
+
+The review must now be re-captured from the R9L10 source before visual
+acceptance.
+
+```text
+R9_L10_START_REFINEMENT=SOURCE_READY
+R9_SABLESTART_VISUAL_REVIEW_SET=RECAPTURE_REQUIRED
+R9_SABLESTART_PRODUCT_IDENTITY=PENDING_USER_REVIEW
+R9_L6_VISUAL_REVIEW_STATUS=PENDING
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
