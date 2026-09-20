@@ -42,11 +42,29 @@ def check() -> list[str]:
         failures,
     )
 
-    # Phase 1 is intentionally non-destructive. The existing standalone module
-    # remains buildable until Launcher3QuickStep proves the hosted presentation
-    # compiles. Phase 2 will retire these definitions before any full image.
-    require(start_bp, "android_app {", "phase-1 standalone app retained", failures)
-    require(start_bp, "rust_ffi_shared {", "phase-1 standalone JNI retained", failures)
+    # Phase 2: SableStart is presentation-only. Launcher3QuickStep is the sole
+    # HOME implementation; standalone app/JNI/runtime sources must be absent.
+    for token in (
+        "android_app {",
+        "rust_ffi_shared {",
+        'name: "SableStart"',
+        'name: "libsable_start_core_jni"',
+    ):
+        forbid(start_bp, token, "standalone SableStart Soong runtime", failures)
+
+    for rel in (
+        "AndroidManifest.xml",
+        "res/values/strings.xml",
+        "rust/src/lib.rs",
+        "src/com/sable/start/SableStartActivity.kt",
+        "src/com/sable/start/bridge/SableStartNative.kt",
+        "src/com/sable/start/platform/LauncherAppsRepository.kt",
+    ):
+        if (start_root / rel).exists():
+            failures.append(f"standalone SableStart runtime source remains: {rel}")
+
+    product_mk = (ROOT / "product/r8/panther/r8-product.mk").read_text(encoding="utf-8")
+    forbid(product_mk, "    SableStart \\", "standalone SableStart product module", failures)
 
     screen = (
         start_root / "src/com/sable/start/ui/SableStartScreen.kt"
@@ -169,7 +187,9 @@ def check() -> list[str]:
             "patch_remove_animation_settings_tracker",
             "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
-            "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
+            "HOME_OWNERSHIP_CUTOVER",
+            "R9_SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT",
+            "R9_LAUNCHER3_HOME_OWNERSHIP=PASS",
         ):
             require(text, token, "Launcher3 foundation applicator", failures)
 
@@ -247,7 +267,8 @@ def check() -> list[str]:
             "R9_LAUNCHER3_WARNING_QUALITY=OPEN_DEBT_REMAINS",
             "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS",
             "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
-            "RETAINED_PENDING_CUTOVER",
+            "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT",
+            "STANDALONE_SABLESTART_RETIREMENT_AUTHORIZED=YES",
         ):
             require(q, token, "focused Launcher3 qualifier", failures)
 
@@ -292,7 +313,7 @@ def main() -> int:
         print("R9_LAUNCHER3_FOUNDATION_CONTRACT=FAIL", file=sys.stderr)
         return 1
 
-    print("R9_LAUNCHER3_PHASE=HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT")
+    print("R9_LAUNCHER3_PHASE=HOME_OWNERSHIP_CUTOVER")
     print("R9_LAUNCHER3_FOUNDATION_CONTRACT=PASS")
     return 0
 
