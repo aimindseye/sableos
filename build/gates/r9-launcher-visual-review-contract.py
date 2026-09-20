@@ -27,6 +27,9 @@ def main() -> int:
     module_build = (
         ROOT / "apps/r8/android/sablestart-visual-review/build.gradle.kts"
     ).read_text()
+    presentation_build = (
+        ROOT / "apps/r8/android/sablestart-presentation-check/build.gradle.kts"
+    ).read_text()
     manifest = (
         ROOT
         / "apps/r8/android/sablestart-visual-review/src/main/AndroidManifest.xml"
@@ -51,6 +54,16 @@ def main() -> int:
         module_build,
         'implementation(project(":sablestart-presentation-check"))',
         "R9_VISUAL_REVIEW_PRODUCTION_SOURCE_DEPENDENCY",
+    )
+    forbid(
+        module_build,
+        "androidx.core:core-ktx:1.17.0",
+        "R9_VISUAL_REVIEW_UNVERIFIED_ANDROIDX_CORE",
+    )
+    forbid(
+        presentation_build,
+        "androidx.core:core-ktx:1.17.0",
+        "R9_PRESENTATION_UNVERIFIED_ANDROIDX_CORE",
     )
     require(
         activity,
@@ -129,6 +142,7 @@ def main() -> int:
 
     print("R9_VISUAL_REVIEW_MODULE_REGISTERED=PASS")
     print("R9_VISUAL_REVIEW_PRODUCTION_SOURCE_DEPENDENCY=PASS")
+    print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_GRAPH=PASS")
     print("R9_VISUAL_REVIEW_PRODUCTION_SCREEN=PASS")
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
