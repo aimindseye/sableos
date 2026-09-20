@@ -111,22 +111,33 @@ if [[ "${ALLOW_NON_PIXEL7_AVD:-NO}" != "YES" ]]; then
 fi
 
 if [[ "${NETWORK_FETCH_AUTHORIZED:-NO}" == "YES" ]]; then
-    GRADLE_NETWORK_ARGS=()
+    GRADLE_OFFLINE=NO
 else
-    GRADLE_NETWORK_ARGS=(--offline)
+    GRADLE_OFFLINE=YES
 fi
 
 GRADLE_LOG="$EVIDENCE_DIR/gradle-visual-review.log"
 set +e
 (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
-        :sablestart-presentation-check:compileDebugKotlin \
-        :sablestart-visual-review:assembleDebug \
-        :sablestart-visual-review:lintDebug \
-        --stacktrace \
-        --console=plain \
-        --no-daemon
+
+    if [[ "$GRADLE_OFFLINE" == "YES" ]]; then
+        ./gradlew --offline \
+            :sablestart-presentation-check:compileDebugKotlin \
+            :sablestart-visual-review:assembleDebug \
+            :sablestart-visual-review:lintDebug \
+            --stacktrace \
+            --console=plain \
+            --no-daemon
+    else
+        ./gradlew \
+            :sablestart-presentation-check:compileDebugKotlin \
+            :sablestart-visual-review:assembleDebug \
+            :sablestart-visual-review:lintDebug \
+            --stacktrace \
+            --console=plain \
+            --no-daemon
+    fi
 ) 2>&1 | tee "$GRADLE_LOG"
 gradle_rc=${PIPESTATUS[0]}
 set -e
