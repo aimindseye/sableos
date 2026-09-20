@@ -10,6 +10,7 @@ For the current project state and active product direction:
 - `R8_SABLESTART_HOME_RUNTIME_INCIDENT_20260920.md` — R8 physical HOME-role selection gap and SableStart early-window startup crash, lifecycle-safe system-bar fix, HOME priority contract, and cold-launch acceptance requirements.
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
+- `R9_SABLESTART_LAUNCHER_DESIGN.md` — design-first SableStart expansion using pinned Niagara/Kvaesitso/Lawnchair/Olauncher/OpenMiniLaunch references, one-hand app navigation, Sable Rail, Search/Command, Sable Peek, Quickstep boundary, privacy rules, and the no-full-build-before-visual-review gate.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
 - `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
@@ -77,11 +78,11 @@ validated Panther substrate
 ```text
 PANTHER_D4                          CLOSED / PASS
 SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE         R8_FINAL_UI_PRODUCT_CLOSURE
+SABLEOS_CORE_PRODUCT_STAGE         R8_RUNTIME_CLOSURE + R9_LAUNCHER_DESIGN
 SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDING
 SABLE_START_STATUS                 IMPLEMENTED_NOT_PRODUCT_PROVEN
 SABLE_HUB_STATUS                   NOT_INTEGRATED
-NEXT_PRODUCT_MILESTONE             R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
+NEXT_PRODUCT_MILESTONE             R8_SABLESTART_RUNTIME_FIX + R9_VISUAL_REVIEW
 
 NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
 TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
