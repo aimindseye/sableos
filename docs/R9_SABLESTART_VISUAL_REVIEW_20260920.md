@@ -409,3 +409,35 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L11 Search review
+
+The first Search captures prove the behavior model:
+
+- empty query shows quick actions plus local app results;
+- query `set` correctly separates the Sable/System command
+  `System Settings` from the actual launcher app result `Settings`;
+- no web/cloud search affordance is present;
+- real app icons remain consistent with Start and All Apps.
+
+Visual refinement is still required before Search acceptance. The captured
+outlined Material text field and rounded gray quick-action icon tiles do not
+match the flatter Sable/Metro language already approved on Start and All Apps.
+
+R9L11 source changes:
+
+- replaces the Material outlined field with a flat `BasicTextField`;
+- uses the Sable accent rule plus a single bottom hairline for search identity;
+- uses the placeholder `search apps + Sable actions`;
+- removes rounded gray command-icon surfaces;
+- renders command glyphs directly in the Sable accent while preserving
+  separate `commands` and `apps` sections.
+
+```text
+R9_L11_SEARCH_BEHAVIOR=PASS
+R9_L11_SEARCH_VISUAL_REVIEW=RECAPTURE_REQUIRED
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
