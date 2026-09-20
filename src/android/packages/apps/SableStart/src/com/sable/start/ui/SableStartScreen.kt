@@ -350,9 +350,13 @@ private fun StartScreen(
     val contextDatum = chooseContextDatum(snapshot)
     val primaryKeys = primaryApps.mapTo(mutableSetOf()) { it.stableKey() }
     val favoriteOnlyApps =
-        favoriteApps.filterNot { it.stableKey() in primaryKeys }
+        favoriteApps.filterNot { app ->
+            app.stableKey() in primaryKeys || isSettingsApp(app)
+        }
     val recentOnlyApps =
-        recentApps.filterNot { it.stableKey() in primaryKeys }
+        recentApps.filterNot { app ->
+            app.stableKey() in primaryKeys || isSettingsApp(app)
+        }
     val quickApps =
         if (favoriteOnlyApps.isNotEmpty()) {
             favoriteOnlyApps.take(MAX_FAVORITES_ON_START)
@@ -438,18 +442,11 @@ private fun StartScreen(
             TileGrid(tiles)
         }
 
-        item {
-            SectionLabel("favorites")
-            Spacer(Modifier.height(2.dp))
+        if (quickApps.isNotEmpty()) {
+            item {
+                SectionLabel("favorites")
+                Spacer(Modifier.height(2.dp))
 
-            if (quickApps.isEmpty()) {
-                Text(
-                    text = "Pin apps from All Apps to keep them in thumb reach.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 10.dp),
-                )
-            } else {
                 quickApps.forEach { app ->
                     CompactAppRow(
                         app = app,
@@ -524,22 +521,31 @@ private fun TileGrid(tiles: List<HomeTile>) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         tiles.chunked(2).forEach { rowTiles ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowTiles.forEach { tile ->
-                    MetroTile(
-                        title = tile.title,
-                        mark = tile.mark,
-                        app = tile.app,
-                        color = tile.color,
-                        modifier = Modifier.weight(1f),
-                        onClick = tile.onClick,
-                    )
-                }
-                if (rowTiles.size == 1) {
-                    Spacer(Modifier.weight(1f))
+            if (rowTiles.size == 1) {
+                val tile = rowTiles.single()
+                MetroTile(
+                    title = tile.title,
+                    mark = tile.mark,
+                    app = tile.app,
+                    color = tile.color,
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = tile.onClick,
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    rowTiles.forEach { tile ->
+                        MetroTile(
+                            title = tile.title,
+                            mark = tile.mark,
+                            app = tile.app,
+                            color = tile.color,
+                            modifier = Modifier.weight(1f),
+                            onClick = tile.onClick,
+                        )
+                    }
                 }
             }
         }
@@ -1668,11 +1674,7 @@ private fun choosePrimaryApps(
     apps: List<AppEntry>,
     pinnedApps: List<AppEntry>,
 ): List<AppEntry> {
-    val candidates =
-        apps.filterNot { app ->
-            app.label.equals("Settings", ignoreCase = true) ||
-                app.component.packageName == "com.android.settings"
-        }
+    val candidates = apps.filterNot(::isSettingsApp)
     val candidateKeys = candidates.mapTo(mutableSetOf()) { it.stableKey() }
     val selected = linkedMapOf<String, AppEntry>()
 
@@ -1704,6 +1706,10 @@ private fun chooseContextDatum(snapshot: LiveSurfaceSnapshot): LiveDatum? =
         snapshot.photos.availability == LiveAvailability.LIVE -> snapshot.photos
         else -> null
     }
+
+private fun isSettingsApp(app: AppEntry): Boolean =
+    app.label.equals("Settings", ignoreCase = true) ||
+        app.component.packageName == "com.android.settings"
 
 private fun appMark(app: AppEntry): String =
     app.label
