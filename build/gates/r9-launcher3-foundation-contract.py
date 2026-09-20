@@ -94,6 +94,8 @@ def check() -> list[str]:
         "homeGeneration = homeGeneration.value",
         "backGeneration = backGeneration.value",
         "updateSableVisibility(isInState(LauncherState.NORMAL))",
+        "val activityWindow = window ?: return",
+        "window = activityWindow",
     ):
         require(host, token, "Sable Quickstep host", failures)
 
