@@ -76,7 +76,7 @@ Titan 2 UI qualification is explicitly **keyboard-first**: physical QWERTY is th
 
 See `TITAN2_GSI_PLAN.md`.
 
-Read-only T0 stock/device inventory may begin independently for Titan 2 and Titan 2 Elite whenever each device is available. GSI mutation/flash remains gated on the R9 Panther source-bound fresh build and physical Pixel 7 acceptance.
+Read-only T0 stock/device inventory may begin independently for Titan 2 and Titan 2 Elite whenever each device is available. The R9 source-bound fresh-build prerequisite is now PASS. GSI mutation/flash remains gated on physical Pixel 7 acceptance.
 
 Titan 2 GSI feasibility is already demonstrated by community LineageOS/GSI work.
 Titan 2 Elite is treated as **GSI-capable candidate, not yet locally proven**:
