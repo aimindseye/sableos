@@ -56,6 +56,12 @@ grep -Fq -- '--skip-secondary' "$FLASH"
 grep -Fq -- '--skip-reboot' "$FLASH"
 grep -Fq 'SABLE_BLOCKER_ISSUE_REQUIRED=YES' "$FLASH"
 grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE' "$FLASH"
+grep -Fq '"has-slot:$part"' "$FLASH"
+if grep -Fq '"partition-size:$part"' "$FLASH"; then
+  echo "SABLE_PIPELINE_PARTITION_EXISTS_SEMANTICS=FAIL_PARTITION_SIZE"
+  exit 1
+fi
+echo "SABLE_PIPELINE_PARTITION_EXISTS_SEMANTICS=PASS"
 
 if grep -Eq '(^|[[:space:]])-w([[:space:]]|$)' "$FLASH"; then
   echo "SABLE_PIPELINE_NO_WIPE_FLAG=FAIL"
