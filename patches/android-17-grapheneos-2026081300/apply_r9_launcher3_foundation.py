@@ -105,6 +105,13 @@ ADD_ITEM_ACTIVITY_REL = pathlib.Path(
     "src/com/android/launcher3/dragndrop/AddItemActivity.kt"
 )
 
+DISPLAY_CONTROLLER_IMPL_REL = pathlib.Path(
+    "src/com/android/launcher3/display/DisplayControllerImpl.kt"
+)
+TASKBAR_DEVICE_PROFILE_FACTORY_REL = pathlib.Path(
+    "src/com/android/launcher3/deviceprofile/TaskbarDeviceProfileFactory.kt"
+)
+
 # Observed ai-g732 residue from the prior standalone-HOME debugging session.
 # The production blob is retained as an explicit Sable compatibility patch.
 # The test blob is known malformed against the pinned Dagger singleton API and
@@ -145,6 +152,8 @@ FOUNDATION_DIRTY_PATHS = {
     PRELOAD_ICON_DELEGATE_REL.as_posix(),
     DB_ENTRY_REL.as_posix(),
     ADD_ITEM_ACTIVITY_REL.as_posix(),
+    DISPLAY_CONTROLLER_IMPL_REL.as_posix(),
+    TASKBAR_DEVICE_PROFILE_FACTORY_REL.as_posix(),
 }
 
 FALLBACK_NULL_ANCHOR = "        if (interactor == null) {"
@@ -724,6 +733,158 @@ def patch_add_item_activity(text: str) -> str:
         "sendWidgetAddedToScreenAccessibilityEvent(widgetProviderInfo.label)",
         "sendWidgetAddedToScreenAccessibilityEvent(widgetProviderInfo.loadLabel(packageManager))",
         "AddItemActivity widget label API",
+    )
+
+
+def patch_display_controller_impl(text: str) -> str:
+    for obsolete_import in (
+        "import android.util.SparseArray\n",
+        "import androidx.core.util.forEach\n",
+        "import com.android.launcher3.Flags\n",
+        "import com.android.launcher3.util.Executors\n",
+    ):
+        if obsolete_import in text:
+            text = text.replace(obsolete_import, "", 1)
+
+    text = replace_once(
+        text,
+        "import com.android.launcher3.dagger.ApplicationContext\n",
+        "import com.android.launcher3.concurrent.annotations.Ui\n"
+        "import com.android.launcher3.dagger.ApplicationContext\n",
+        "DisplayControllerImpl Ui qualifier import",
+    )
+    text = replace_once(
+        text,
+        "import com.android.launcher3.util.DaggerSingletonTracker\n",
+        "import com.android.launcher3.util.DaggerSingletonTracker\n"
+        "import com.android.launcher3.util.LooperExecutor\n",
+        "DisplayControllerImpl LooperExecutor import",
+    )
+    text = replace_once(
+        text,
+        "    overlayChangeHandler: OverlayChangeHandler,\n"
+        "    lifecycle: DaggerSingletonTracker,\n",
+        "    overlayChangeHandler: OverlayChangeHandler,\n"
+        "    lifecycle: DaggerSingletonTracker,\n"
+        "    @Ui private val uiExecutor: LooperExecutor,\n",
+        "DisplayControllerImpl injected Ui executor",
+    )
+    deprecated_map = (
+        '    @Deprecated("Will replace it with threadSafePerDisplayInfo")\n'
+        "    private val perDisplayInfo = SparseArray<DisplayInfoContainer>()\n\n"
+    )
+    if deprecated_map in text:
+        text = text.replace(deprecated_map, "", 1)
+
+    text = replace_once(
+        text,
+        "        displayManager.registerDisplayListener(this, Executors.MAIN_EXECUTOR.handler)",
+        "        displayManager.registerDisplayListener(this, uiExecutor.handler)",
+        "DisplayControllerImpl display listener executor",
+    )
+    text = replace_once(
+        text,
+        """        lifecycle.addCloseable {
+            displayManager.unregisterDisplayListener(this)
+            if (Flags.enableTaskbarUiThread()) {
+                threadSafePerDisplayInfo.forEach { (_, container) -> container.cleanup() }
+            } else {
+                perDisplayInfo.forEach { _, container -> container.cleanup() }
+            }
+        }
+""",
+        """        lifecycle.addCloseable {
+            displayManager.unregisterDisplayListener(this)
+            threadSafePerDisplayInfo.forEach { (_, container) -> container.cleanup() }
+        }
+""",
+        "DisplayControllerImpl cleanup map",
+    )
+    text = replace_once(
+        text,
+        """    private fun getOrCreatePerDisplayInfo(display: Display): DisplayInfoContainer {
+        val displayId = display.displayId
+        return if (Flags.enableTaskbarUiThread()) {
+            threadSafePerDisplayInfo.getOrPut(displayId) {
+                createDisplayInfoContainer(display, displayId)
+            }
+        } else {
+            perDisplayInfo[displayId]
+                ?: createDisplayInfoContainer(display, displayId).apply {
+                    perDisplayInfo[displayId] = this
+                }
+        }
+    }
+""",
+        """    private fun getOrCreatePerDisplayInfo(display: Display): DisplayInfoContainer {
+        val displayId = display.displayId
+        return threadSafePerDisplayInfo.getOrPut(displayId) {
+            createDisplayInfoContainer(display, displayId)
+        }
+    }
+""",
+        "DisplayControllerImpl create map",
+    )
+    text = replace_once(
+        text,
+        """    @AnyThread
+    override fun getPerDisplayInfoById(displayId: Int): DisplayInfoContainer? =
+        if (Flags.enableTaskbarUiThread()) threadSafePerDisplayInfo[displayId]
+        else perDisplayInfo[displayId]
+""",
+        """    @AnyThread
+    override fun getPerDisplayInfoById(displayId: Int): DisplayInfoContainer? =
+        threadSafePerDisplayInfo[displayId]
+""",
+        "DisplayControllerImpl lookup map",
+    )
+    text = replace_once(
+        text,
+        """    override fun onDisplayRemoved(displayId: Int) {
+        if (Flags.enableTaskbarUiThread()) {
+            threadSafePerDisplayInfo.remove(displayId)?.cleanup()
+        } else {
+            perDisplayInfo[displayId]?.cleanup()
+            perDisplayInfo.remove(displayId)
+        }
+    }
+""",
+        """    override fun onDisplayRemoved(displayId: Int) {
+        threadSafePerDisplayInfo.remove(displayId)?.cleanup()
+    }
+""",
+        "DisplayControllerImpl remove map",
+    )
+    return replace_once(
+        text,
+        """    override fun dump(pw: PrintWriter) {
+        if (Flags.enableTaskbarUiThread()) {
+            threadSafePerDisplayInfo.forEach { (displayId, container) ->
+                dumpInternal(pw, displayId, container.info.value)
+            }
+        } else {
+            perDisplayInfo.forEach { displayId, container ->
+                dumpInternal(pw, displayId, container.info.value)
+            }
+        }
+    }
+""",
+        """    override fun dump(pw: PrintWriter) {
+        threadSafePerDisplayInfo.forEach { (displayId, container) ->
+            dumpInternal(pw, displayId, container.info.value)
+        }
+    }
+""",
+        "DisplayControllerImpl dump map",
+    )
+
+
+def patch_taskbar_device_profile_factory(text: str) -> str:
+    return replace_once(
+        text,
+        "deviceProfile.workspaceProfile.changeIconSize(deviceProfile.taskbarProfile.iconSize)",
+        "deviceProfile.workspaceProfile.copy(iconSizePx = deviceProfile.taskbarProfile.iconSize)",
+        "TaskbarDeviceProfileFactory immutable workspace profile",
     )
 
 
