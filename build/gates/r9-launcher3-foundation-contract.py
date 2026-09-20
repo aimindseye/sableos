@@ -139,6 +139,8 @@ def check() -> list[str]:
     else:
         q = qualifier.read_text(encoding="utf-8")
         for token in (
+            'source "$ROOT/build/config/r8-release.env"',
+            'source "$ROOT/build/config/panther-grapheneos-2026081300.env"',
             "FULL_IMAGE_BUILD_AUTHORIZED=NO",
             "DEVICE_CONTACT_AUTHORIZED=NO",
             'm -j"$JOBS" Launcher3QuickStep',
