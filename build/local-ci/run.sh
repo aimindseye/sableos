@@ -6,6 +6,8 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-host-tools.env"
 
 PROFILE="${1:-core}"
+SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"
+SABLEOS_RELEASE_VERSION="${SABLEOS_RELEASE_VERSION:-R9}"
 case "$PROFILE" in
   core|full|release) ;;
   *)
@@ -33,6 +35,8 @@ exec > >(tee "$EVIDENCE_DIR/local-ci.log") 2>&1
 
 echo "===== SABLE LOCAL CI ====="
 echo "PROFILE=$PROFILE"
+echo "SABLEOS_DEVICE=$SABLEOS_DEVICE"
+echo "SABLEOS_RELEASE_VERSION=$SABLEOS_RELEASE_VERSION"
 echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "CACHE_ROOT=$CACHE_ROOT"
@@ -514,8 +518,16 @@ fi
 
 if [[ "$PROFILE" == release ]]; then
   echo
-  echo "===== PANTHER RELEASE CANDIDATE ====="
-  EXPECTED_SOURCE_COMMIT="$SOURCE_COMMIT"   SOURCE_MUTATION_AUTHORIZED=YES   BUILD_AUTHORIZED=YES     bash "$ROOT/build/panther/run-r8-release-candidate.sh"
+  echo "===== DEVICE RELEASE CANDIDATE ====="
+  if [[ "$SABLEOS_DEVICE" != panther ]]; then
+    echo "SABLE_LOCAL_CI_STAGE_RELEASE=BLOCKED_UNQUALIFIED_DEVICE device=$SABLEOS_DEVICE"
+    exit 78
+  fi
+  SABLEOS_RELEASE_VERSION="$SABLEOS_RELEASE_VERSION" \
+  EXPECTED_SOURCE_COMMIT="$SOURCE_COMMIT" \
+  SOURCE_MUTATION_AUTHORIZED=YES \
+  BUILD_AUTHORIZED=YES \
+    bash "$ROOT/build/panther/run-r8-release-candidate.sh"
   echo "SABLE_LOCAL_CI_STAGE_RELEASE=PASS"
 fi
 
