@@ -1,6 +1,6 @@
 # R9 SableStart launcher design expansion
 
-Status: **design-first release scope / implementation not yet authorized for a full Panther build**
+Status: **R9 L1-L6 merged / L7 Launcher3-Quickstep foundation migration in qualification / full Panther build still blocked**
 
 Date: 2026-09-20
 
@@ -131,9 +131,11 @@ Useful lessons:
 
 Sable decision:
 
-- retain Quickstep for overview/gesture behavior during R9;
+- Launcher3/Quickstep is the engineering and runtime foundation for the Sable launcher;
+- retain the upstream `com.android.launcher3` package, privileged integration, Recents/Overview machinery, task animations and gesture plumbing;
+- compile the SableStart presentation into `Launcher3QuickStep` rather than shipping a second HOME APK;
 - do not expand R9 into a Recents rewrite;
-- SableStart owns HOME presentation while Android/Quickstep continues to own the mature overview path until separately replaced and qualified.
+- Sable owns the NORMAL-state Start presentation while Launcher3/Quickstep owns the launcher model, lifecycle, package/profile updates, app launching and Android system integration.
 
 ### Olauncher CF
 
@@ -372,26 +374,40 @@ PACKAGE_NAMES_IN_NORMAL_UI=NO
 
 The existing StartStateRepository rule remains: launcher presentation state may persist; recent activity does not become a persistent usage-history database.
 
-## Quickstep boundary
+## Launcher3 / Quickstep foundation
 
-Quickstep remains installed in R9.
+R9-L7 changes the engineering boundary from two launcher applications to one.
 
-SableStart owns:
+The product launcher is:
 
-- HOME;
-- Start;
-- All Apps;
-- Search/Command;
+~~~text
+package: com.android.launcher3
+module: Launcher3QuickStep
+HOME activity: com.android.launcher3.sable.SableQuickstepLauncher
+~~~
+
+The standalone `org.sableos.start/.SableStartActivity` APK is retired from the product. The canonical SableStart tree now contains presentation/model/provider sources that are compiled into the pinned Launcher3/Quickstep module.
+
+Launcher3/Quickstep owns:
+
+- HOME activity lifecycle and process integration;
+- app model/loading and package/profile change handling;
+- Android activity launch machinery and per-user launch semantics;
+- shortcuts and widget-host infrastructure;
+- state restoration and configuration handling;
+- Recents/Overview, task animations and gesture-navigation integration.
+
+Sable owns:
+
+- the NORMAL-state Start presentation;
+- Favorites and session-only recents presentation;
+- Sable Rail;
+- local Search/Command;
 - Sable Peek;
-- launcher appearance and local live context.
+- Sable appearance preferences/provider;
+- explicitly permissioned local context.
 
-Quickstep/Android continues to own:
-
-- Recents/Overview implementation;
-- mature gesture-navigation integration;
-- task animations/services that Sable has not separately replaced.
-
-R9 must prove SableStart HOME ownership without disabling Quickstep's recents path.
+The Sable surface must disappear when Quickstep transitions into non-NORMAL launcher states so Recents/Overview and other Launcher3 states remain authoritative. Back is delegated to the Sable navigation level first and then to Quickstep.
 
 ## Visual direction
 
@@ -453,8 +469,8 @@ A visual approval does not replace runtime qualification.
 R9 physical acceptance must additionally prove:
 
 ~~~
-HOME_RESOLVER=org.sableos.start/.SableStartActivity
-HOME_ROLE_HOLDER=org.sableos.start
+HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher
+HOME_ROLE_HOLDER=com.android.launcher3
 COLD_HOME_LAUNCH_CRASHES=0
 HOME_KEY_RETURNS_TO_START=PASS
 QUICKSTEP_RECENTS_PRESERVED=PASS
@@ -464,7 +480,7 @@ SABLE_PEEK=PASS
 THEME_PROPAGATION=PASS
 ~~~
 
-The R8 v4-signature incident and R8 HOME/startup incident remain prerequisite regression gates.
+The R8 standalone SableStart v4-signature and HOME/startup incidents remain historical evidence for why the two-HOME design was retired. R9 acceptance instead proves that no standalone SableStart APK is packaged and that the Quickstep-hosted Sable surface cold-starts correctly.
 
 ## Release slices
 
@@ -476,7 +492,8 @@ R9-L3  Sable Search / Command
 R9-L4  Sable Peek
 R9-L5  contextual media/calendar live block
 R9-L6  production-source screenshot review
-R9-L7  Panther image integration + physical HOME/Recents/runtime qualification
+R9-L7  Launcher3/Quickstep foundation migration + focused Soong qualification
+R9-L8  Panther image integration + physical HOME/Recents/runtime qualification
 ~~~
 
-The slices may be implemented in parallel where source boundaries allow, but R9-L6 is the gate before R9-L7 full Panther build.
+The slices may be implemented in parallel where source boundaries allow. R9-L7 focused Launcher3 qualification is required before the next full Panther image build; visual acceptance and the foundation gate must both pass before R9-L8 physical qualification.
