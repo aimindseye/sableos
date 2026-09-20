@@ -1,6 +1,7 @@
-// R9L7 phase 1: reusable Sable presentation sources for Launcher3QuickStep.
-// The standalone SableStart app remains temporarily until the focused Quickstep
-// compile passes; full-image cutover is not authorized in this intermediate state.
+// R9L7 phase 2: Sable Start is presentation-only.
+// Launcher3QuickStep owns HOME, app inventory, launch/details, widgets, shortcuts,
+// Recents/Overview, task animations, and the org.sableos.start.appearance provider.
+// No standalone SableStart APK or JNI runtime exists after the HOME cutover.
 filegroup {
     name: "sable_start_presentation_srcs",
     srcs: [
@@ -11,56 +12,4 @@ filegroup {
         "src/com/sable/start/platform/StartStateRepository.kt",
         "src/com/sable/start/ui/SableStartScreen.kt",
     ],
-}
-
-android_app {
-    name: "SableStart",
-    // SableStart is a read-only system app and must not emit an APK v4 .idsig.
-    // Panther PackageManager cannot fs-verity-measure this /system APK under the
-    // current SELinux policy, so a v4 sidecar makes certificate collection fail.
-    v4_signature: false,
-
-    manifest: "AndroidManifest.xml",
-
-    srcs: [
-        "src/**/*.kt",
-        ":sable_design_shared_srcs",
-    ],
-
-    resource_dirs: [
-        "res",
-    ],
-
-    sdk_version: "current",
-
-    static_libs: [
-        "androidx.activity_activity-compose",
-        "androidx.compose.runtime_runtime",
-        "androidx.compose.ui_ui",
-        "androidx.compose.foundation_foundation",
-        "androidx.compose.foundation_foundation-layout",
-        "androidx.compose.animation_animation",
-        "androidx.compose.ui_ui-text",
-        "androidx.compose.material3_material3",
-        "androidx.core_core-ktx",
-    ],
-
-    jni_libs: [
-        "libsable_start_core_jni",
-    ],
-
-    kotlincflags: [
-        "-Xjvm-default=all",
-    ],
-}
-
-rust_ffi_shared {
-    name: "libsable_start_core_jni",
-    crate_name: "sable_start_core_jni",
-
-    srcs: [
-        "rust/src/lib.rs",
-    ],
-
-    edition: "2021",
 }
