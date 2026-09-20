@@ -1,0 +1,44 @@
+title = "SableOS Gitleaks policy"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Historical R1-R2 SHA-256 contract seal; not a credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["d9b7b88013f0aa0d36c73be2944c12603dfbb0be"]
+paths = ['''^tools/validation/release-r1/SABLE_R1_R2_STATIC_PREFLIGHT\.py$''']
+regexTarget = "line"
+regexes = ['''^\s*EXPECTED_KEYGEN_CONTRACT_SHA256\s*=\s*"eda47fa72e0048ee1dbcc3da26c87a6cad7533741e59de2e50a6d7d459dad996"\s*$''']
+
+[[allowlists]]
+description = "Historical R1-R1 upstream Git object IDs; not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["ea9d710920c0c566f78efcb66c820783de9af88d"]
+paths = ['''^tools/validation/release-r1/SABLE_R1_R1_POLICY_PREFLIGHT\.py$''']
+regexTarget = "line"
+regexes = [
+  '''^\s*"script/generate-keys":\s*"5c38a53eeda4eb16c55bd3a3ad776a3cb1d6349e",\s*$''',
+  '''^\s*"script/encrypt-keys":\s*"90ab9b0cda1fbbd81e9fbbd48d352ab2e3edc3ad",\s*$''',
+  '''^\s*"script/decrypt-keys":\s*"b621d1e02c1091089bd8e0d09c227d8f8e5006b5",\s*$''',
+]
+
+[[allowlists]]
+description = "Historical R1-R2 encrypted factory archive key type label; not key material"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["b2d109edca7c254566e5f9bbdac4646cf50eed61"]
+paths = ['''^docs/SABLE_R1_R2_STATIC_PREP_AND_DISK_AUDIT\.md$''']
+regexTarget = "line"
+regexes = ['''^FACTORY_ARCHIVE_KEY=id_ed25519_ENCRYPTED\s*$''']
+
+[[allowlists]]
+description = "Historical R1-R0 policy PASS expression; not a credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["dc2fa126ef805a49dde4c98ffe0f18cfed09f37b"]
+paths = ['''^tools/validation/release-r1/SABLE_R1_R0_RELEASE_PREFLIGHT\.py$''']
+regexTarget = "line"
+regexes = ['''^\s*"PASS" if common_keys == SIGNING_KEYS_2026081300 else "ERROR",\s*$''']
