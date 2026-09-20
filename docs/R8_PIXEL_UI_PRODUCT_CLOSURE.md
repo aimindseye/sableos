@@ -86,9 +86,9 @@ Closure marker:
 R8_A_SHARED_DESIGN=PASS
 ```
 
-### UI-A / SableStart — production Metro HOME
+### UI-A / SableStart presentation on Launcher3/Quickstep — production Metro HOME
 
-Current status: **PANTHER PRODUCT INTEGRATION PASS / PHYSICAL ACCEPTANCE PENDING**
+Current status: **R9 FOUNDATION MIGRATION SOURCE IMPLEMENTED / FOCUSED LAUNCHER3QUICKSTEP QUALIFICATION PENDING**
 
 Merged implementation includes:
 
@@ -107,15 +107,19 @@ Merged implementation includes:
 Required before closure:
 
 - canonical Panther workspace must contain the current merged `SableStartScreen` production source;
-- HOME activity must render the production Metro surface;
-- obsolete list-only HOME must not remain the packaged production path;
-- launcher fallback/rollback remains available during development;
-- appearance contract from R8-A must be applied.
+- pinned Launcher3/Quickstep commit `e5fde8f4368539554b07ee136abd27bc7b4284c1` must be the applicator base;
+- `Launcher3QuickStep` must compile the Sable presentation and remain package `com.android.launcher3`;
+- HOME must resolve to `com.android.launcher3/.sable.SableQuickstepLauncher`;
+- standalone `SableStart.apk` / `org.sableos.start/.SableStartActivity` must be absent from the product;
+- Launcher3 `AllAppsStore` must provide the app inventory/package-change stream;
+- app launch and app-details paths must use Launcher3 machinery;
+- Quickstep Recents/Overview and gesture integration must remain intact;
+- appearance contract from R8-A must be applied through the retained `org.sableos.start.appearance` provider authority.
 
 Closure marker:
 
 ```text
-R8_START_PRODUCT_INTEGRATION=PASS
+R8_START_PRODUCT_INTEGRATION=PASS_LAUNCHER3_FOUNDATION
 ```
 
 ### R8-B — Calculator + Convert
@@ -458,7 +462,10 @@ No new full Panther build may start until a generated-artifact/product-graph aud
 At minimum:
 
 ```text
-SableStart             PRESENT / CURRENT MERGED SOURCE
+Launcher3QuickStep     PRESENT / SABLE FOUNDATION APPLIED
+com.android.launcher3  SOLE HOME PRODUCT IDENTITY
+SableStart.apk         ABSENT_AS_STANDALONE_PRODUCT
+SableStart presentation CURRENT MERGED SOURCE / COMPILED_INTO_QUICKSTEP
 Sable Calculator       PRESENT
 Sable Sudoku           PRESENT
 Sable Minesweeper      PRESENT
@@ -504,7 +511,9 @@ Only then is the final sandboxed Panther target-files build authorized.
 
 ```text
 R8-A appearance/accessibility closure
-    -> final SableStart Metro HOME reconciliation
+    -> R9 Launcher3/Quickstep foundation migration
+    -> focused Launcher3QuickStep Soong qualification
+    -> final SableStart Metro presentation reconciliation
     -> R8-D2 OCR composition/qualification
     -> freeze Calculator/Games/Reader/Media artifacts
     -> R8-F Sable Hub / Messages implementation and qualification
@@ -514,7 +523,7 @@ R8-A appearance/accessibility closure
     -> no-stale product source/package gate
     -> verify UI4/UI5/UI6 source identities
     -> generated product-composition gate
-    -> targeted/incremental compile gates
+    -> Launcher3QuickStep + targeted/incremental compile gates
     -> one fresh sandbox-qualified Panther target-files build
     -> exact artifact/image audit
     -> preserved-data Pixel flash
@@ -581,7 +590,7 @@ Current operational state:
 ```text
 R8_FINAL_UI_PRODUCT_COMPOSITION=PASS_PRE_PR53_EVIDENCE
 R8_FINAL_SOURCE_BOUND_SEVEN_APK_FREEZE=PENDING
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_REFREEZE_RESTAGE_AND_CORRECTED_MODULE_GATE
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_R9_LAUNCHER3_FOUNDATION_AND_VISUAL_ACCEPTANCE
 ```
 
-After the corrected combined module compile gate passes, the one final sandbox-qualified Panther target-files build is authorized.
+The next full Panther target-files build remains blocked until the focused Launcher3QuickStep foundation qualification and R9 production-source visual acceptance both pass.
