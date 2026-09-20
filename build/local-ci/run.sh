@@ -79,6 +79,7 @@ run_static() {
       'apps/r8/**/*.sh' \
       'build/*.sh' \
       'build/host/*.sh' \
+      'build/macos/*.sh' \
       'build/panther/*.sh' \
       'build/gates/*.sh' \
       'tests/sablestart/host/*.sh' \
