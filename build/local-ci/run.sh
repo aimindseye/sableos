@@ -81,6 +81,8 @@ run_static() {
       'build/host/*.sh' \
       'build/macos/*.sh' \
       'build/panther/*.sh' \
+      'build/deploy/*.sh' \
+      'build/devices/*.sh' \
       'build/gates/*.sh' \
       'tests/sablestart/host/*.sh' \
       'tests/sablestart/device/*.sh' \
@@ -98,6 +100,7 @@ run_static() {
       'apps/r8/*.py' \
       'apps/r8/**/*.py' \
       'build/*.py' \
+      'build/deploy/*.py' \
       'build/gates/*.py' \
       'patches/android-17-grapheneos-2026081300/*.py'
   )
@@ -115,6 +118,7 @@ run_static() {
   done
 
   bash "$ROOT/build/gates/r8-build-driver-contract.sh"
+  bash "$ROOT/build/gates/sable-pipeline-contract.sh"
   bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
