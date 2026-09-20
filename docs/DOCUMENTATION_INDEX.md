@@ -11,6 +11,7 @@ For the current project state and active product direction:
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
 - `R9_SABLESTART_LAUNCHER_DESIGN.md` — design-first SableStart expansion using pinned Niagara/Kvaesitso/Lawnchair/Olauncher/OpenMiniLaunch references, one-hand app navigation, Sable Rail, Search/Command, Sable Peek, Quickstep boundary, privacy rules, and the no-full-build-before-visual-review gate.
+- `R9_LAUNCHER3_FOUNDATION_MIGRATION.md` — R9-L7 migration of SableStart from a standalone HOME APK into the pinned Launcher3QuickStep process/model, with exact upstream identity, retired code, build/composition gates, and Panther/Titan acceptance contract.
 - `R9_SABLESTART_VISUAL_REVIEW_20260920.md` — source-derived combined L1-L6 review sheet for Start dark/light, Sable Rail, Search/Command, Sable Peek, truthful local context and accessibility states; visual acceptance remains pending.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
@@ -79,11 +80,11 @@ validated Panther substrate
 ```text
 PANTHER_D4                          CLOSED / PASS
 SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE         R8_RUNTIME_CLOSURE + R9_LAUNCHER_DESIGN
+SABLEOS_CORE_PRODUCT_STAGE         R9_LAUNCHER3_FOUNDATION_QUALIFICATION
 SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDING
-SABLE_START_STATUS                 IMPLEMENTED_NOT_PRODUCT_PROVEN
+SABLE_START_STATUS                 PRESENTATION_MIGRATED_TO_LAUNCHER3_FOUNDATION_PENDING_SOONG
 SABLE_HUB_STATUS                   NOT_INTEGRATED
-NEXT_PRODUCT_MILESTONE             R8_SABLESTART_RUNTIME_FIX + R9_VISUAL_REVIEW
+NEXT_PRODUCT_MILESTONE             R9_LAUNCHER3_FOCUSED_COMPILE + R9_VISUAL_REVIEW
 
 NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
 TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
