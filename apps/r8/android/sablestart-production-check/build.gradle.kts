@@ -33,14 +33,9 @@ android {
 
     sourceSets {
         getByName("main") {
-            manifest.srcFile(
-                "../../../../src/android/packages/apps/SableStart/AndroidManifest.xml"
-            )
+            manifest.srcFile("src/main/AndroidManifest.xml")
             java.srcDirs(
                 "../../../../src/android/packages/apps/SableStart/src"
-            )
-            res.srcDirs(
-                "../../../../src/android/packages/apps/SableStart/res"
             )
         }
     }
@@ -53,7 +48,6 @@ dependencies {
         platform("androidx.compose:compose-bom:2026.02.01")
     )
 
-    implementation("androidx.activity:activity-compose:1.12.4")
     implementation("androidx.compose.runtime:runtime")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
