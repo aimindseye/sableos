@@ -11,6 +11,7 @@ WARNING_RE = re.compile(r"^(?P<prefix>.*?)(?P<message>warning: .+)$")
 
 SABLE_PATH_MARKERS = (
     "packages/apps/SableDesign/",
+    "packages/apps/SableStart/",
     "packages/apps/Launcher3/quickstep/src/com/android/launcher3/sable/",
 )
 
