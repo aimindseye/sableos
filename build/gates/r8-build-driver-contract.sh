@@ -8,6 +8,9 @@ profile="$ROOT/build/config/r8-host-tools.env"
 release="$ROOT/build/config/r8-release.env"
 verify="$ROOT/build/host/verify-r8-host-tools.sh"
 migrate="$ROOT/build/host/migrate-r8-final-v1-host-tools.sh"
+host_audit="$ROOT/build/host/audit-r8-host-tools.sh"
+host_centralize="$ROOT/build/host/centralize-r8-security-tools.sh"
+host_cleanup="$ROOT/build/host/cleanup-r8-host-tool-duplicates.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
 runner="$ROOT/build/panther/run-r8-release-candidate.sh"
 retire="$ROOT/build/panther/retire-r8-obsolete-gradle-residue.sh"
@@ -25,14 +28,14 @@ start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 local_ci="$ROOT/build/local-ci/run.sh"
 ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
+for f in "$verify" "$migrate" "$host_audit" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
     bash -n "$f"
 done
 
@@ -54,6 +57,19 @@ grep -Fq 'lib/rustlib/$SABLE_RUST_TARGET/lib' "$verify"
 grep -Fq "libstd-*.rlib" "$verify"
 ! grep -Fq '"$SABLE_RUSTUP" target list' "$verify"
 ! grep -Eq '(^|[[:space:]])rustup([[:space:]]|$).*target[[:space:]]+list' "$verify"
+
+grep -Fq 'SABLE_SECURITY_BIN' "$profile"
+grep -Fq 'SABLE_CARGO_LLVM_COV' "$profile"
+grep -Fq 'SABLE_GITLEAKS' "$profile"
+grep -Fq 'SABLE_MOBSFSCAN' "$profile"
+grep -Fq -- '--verify-dir "$SABLE_SECURITY_BIN"' "$verify"
+grep -Fq 'R8_MOBSFSCAN_VERSION' "$verify"
+! grep -Fq 'component add' "$local_ci"
+! grep -Fq 'python3 -m venv' "$local_ci"
+! grep -Fq 'pip install' "$local_ci"
+! grep -Fq 'PINNED_TOOLS_DIR' "$local_ci"
+
+echo "R8_SHARED_HOST_SECURITY_TOOLCHAIN_CONTRACT=PASS"
 
 echo "R8_HOST_GATE_OFFLINE_RUST_VERIFICATION=PASS"
 
