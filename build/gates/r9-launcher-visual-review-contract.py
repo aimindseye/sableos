@@ -137,8 +137,18 @@ def main() -> int:
     )
     require(
         production_ui,
-        "favoriteApps.filterNot { it.stableKey() in primaryKeys }",
+        "app.stableKey() in primaryKeys || isSettingsApp(app)",
         "R9_START_NO_PRIMARY_FAVORITE_DUPLICATION",
+    )
+    require(
+        production_ui,
+        "if (quickApps.isNotEmpty())",
+        "R9_START_EMPTY_FAVORITES_HIDDEN",
+    )
+    require(
+        production_ui,
+        "modifier = Modifier.fillMaxWidth()",
+        "R9_START_ODD_TILE_SPANS_ROW",
     )
     require(
         production_ui,
@@ -236,6 +246,8 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
     print("R9_PRODUCTION_REAL_ICONS=PASS")
     print("R9_START_NO_PRIMARY_FAVORITE_DUPLICATION=PASS")
+    print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
+    print("R9_START_ODD_TILE_LAYOUT=PASS")
     print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
     print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
