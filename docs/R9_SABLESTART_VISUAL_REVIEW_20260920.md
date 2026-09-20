@@ -317,3 +317,32 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L10 second-frame review
+
+The second Pixel 7 Start frame confirms the R9L10 hierarchy improvements:
+real icons, compact Metro tiles, flatter Search / Command treatment, and the
+combined lower navigation row all render as intended.
+
+Two remaining Start-specific defects were visible:
+
+- Settings was still repeated in Favorites because it is a dedicated system
+  tile rather than part of the primary-app key set.
+- an odd three-tile inventory left an empty lower-right quadrant.
+
+The follow-up source now:
+
+- excludes Settings from the Start Favorites/recent subset;
+- omits the Favorites section entirely when no non-primary quick apps remain;
+- lets a final odd tile span the full row, matching the wide-tile Metro
+  vocabulary instead of leaving a visual hole.
+
+```text
+R9_L10_SECOND_FRAME_REVIEW=PASS_WITH_SOURCE_POLISH
+R9_L10_START_REFINEMENT=SOURCE_READY
+R9_SABLESTART_VISUAL_REVIEW_SET=START_RECAPTURE_REQUIRED
+R9_SABLESTART_PRODUCT_IDENTITY=PENDING_USER_REVIEW
+R9_L6_VISUAL_REVIEW_STATUS=PENDING
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
