@@ -985,6 +985,12 @@ def patch_wallpaper_color_hints(text: str) -> str:
 def patch_first_screen_broadcast_helper(text: str) -> str:
     text = replace_once(
         text,
+        "import android.os.Process\n",
+        "import android.os.Looper\nimport android.os.Process\n",
+        "FirstScreenBroadcastHelper Looper import",
+    )
+    text = replace_once(
+        text,
         "import androidx.annotation.WorkerThread\n",
         "import androidx.annotation.WorkerThread\n"
         "import com.android.launcher3.concurrent.annotations.Ui\n",
@@ -1004,8 +1010,23 @@ def patch_first_screen_broadcast_helper(text: str) -> str:
         "constructor(\n"
         "    private val packageManagerHelper: PackageManagerHelper,\n"
         "    @Ui private val uiExecutor: LooperExecutor,\n"
-        ") {",
+        ") {\n"
+        "    @VisibleForTesting\n"
+        "    constructor(packageManagerHelper: PackageManagerHelper) :\n"
+        "        this(\n"
+        "            packageManagerHelper,\n"
+        "            LooperExecutor(Looper.getMainLooper(), Process.THREAD_PRIORITY_DEFAULT),\n"
+        "        )",
         "FirstScreenBroadcastHelper injected Ui executor",
+    )
+    text = replace_once(
+        text,
+        """            .apply { remove(null) } as Map<String, List<ItemInfo>>""",
+        """            .let { grouped ->
+                grouped.remove(null)
+                grouped.mapKeys { (installer, _) -> requireNotNull(installer) }
+            }""",
+        "FirstScreenBroadcastHelper nullable installer map",
     )
     return replace_once(
         text,
