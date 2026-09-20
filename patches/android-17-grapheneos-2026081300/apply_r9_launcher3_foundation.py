@@ -241,6 +241,24 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
+def replace_exact_count(
+    text: str,
+    old: str,
+    new: str,
+    expected: int,
+    label: str,
+) -> str:
+    old_count = text.count(old)
+    new_count = text.count(new)
+    if old_count == 0 and new_count == expected:
+        return text
+    if old_count != expected:
+        raise FoundationError(
+            f"{label}: expected {expected} anchors, found {old_count}"
+        )
+    return text.replace(old, new)
+
+
 def launcher3_module_slice(text: str) -> tuple[int, int, str]:
     marker = 'android_library {\n    name: "Launcher3QuickStepLib",'
     start = text.find(marker)
@@ -603,15 +621,36 @@ def patch_seascape_handler(text: str) -> str:
 
 
 def patch_group_task(text: str) -> str:
-    text = text.replace("override fun equals(o: Any?): Boolean {", "override fun equals(other: Any?): Boolean {")
-    text = text.replace("if (this === o) return true", "if (this === other) return true")
-    text = text.replace("if (o !is GroupTask) return false", "if (other !is GroupTask) return false")
-    text = text.replace("if (o !is SingleTask) return false", "if (other !is SingleTask) return false")
-    text = text.replace("if (o !is SplitTask) return false", "if (other !is SplitTask) return false")
-    text = text.replace("o.taskViewType", "other.taskViewType")
-    text = text.replace("o.tasks", "other.tasks")
-    text = text.replace("o.splitBounds", "other.splitBounds")
-    text = text.replace("super.equals(o)", "super.equals(other)")
+    text = replace_exact_count(
+        text,
+        "override fun equals(o: Any?): Boolean {",
+        "override fun equals(other: Any?): Boolean {",
+        3,
+        "GroupTask equals override parameter",
+    )
+    text = replace_exact_count(
+        text,
+        "if (this === o) return true",
+        "if (this === other) return true",
+        3,
+        "GroupTask identity check",
+    )
+    for old, new, label in (
+        ("if (o !is GroupTask) return false", "if (other !is GroupTask) return false", "GroupTask type check"),
+        ("if (o !is SingleTask) return false", "if (other !is SingleTask) return false", "SingleTask type check"),
+        ("if (o !is SplitTask) return false", "if (other !is SplitTask) return false", "SplitTask type check"),
+        ("o.taskViewType", "other.taskViewType", "GroupTask taskViewType usage"),
+        ("o.tasks", "other.tasks", "GroupTask tasks usage"),
+        ("o.splitBounds", "other.splitBounds", "SplitTask bounds usage"),
+    ):
+        text = replace_exact_count(text, old, new, 1, label)
+    text = replace_exact_count(
+        text,
+        "super.equals(o)",
+        "super.equals(other)",
+        2,
+        "GroupTask superclass equality",
+    )
     return text
 
 
