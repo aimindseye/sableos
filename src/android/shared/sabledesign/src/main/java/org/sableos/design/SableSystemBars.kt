@@ -53,7 +53,7 @@ fun applySableSystemBars(
     if (decorView.isAttachedToWindow) {
         applyAppearance()
     } else {
-        decorView.post(applyAppearance)
+        decorView.post { applyAppearance() }
     }
 }
 
