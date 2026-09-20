@@ -3,16 +3,16 @@ name: R8 Sable Mail compile and policy
 on:
   pull_request:
     paths:
-      - 'apps/r8/mail/**'
-      - 'src/android/shared/sabledesign/**'
-      - 'src/android/packages/apps/SableStart/**'
+      - 'apps/r8/mail/apply_sable_flavor.py'
+      - 'apps/r8/mail/verify_sable_mail.py'
+      - 'apps/r8/mail/upstream.env'
       - '.github/workflows/r8-mail.yml'
   push:
     branches: [main]
     paths:
-      - 'apps/r8/mail/**'
-      - 'src/android/shared/sabledesign/**'
-      - 'src/android/packages/apps/SableStart/**'
+      - 'apps/r8/mail/apply_sable_flavor.py'
+      - 'apps/r8/mail/verify_sable_mail.py'
+      - 'apps/r8/mail/upstream.env'
       - '.github/workflows/r8-mail.yml'
   workflow_dispatch:
 
@@ -83,11 +83,15 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c
 
-      - name: Sable Mail FOSS release lint
+      - name: Lint and build Sable Mail FOSS release
         working-directory: /tmp/sable-mail
         run: |
           chmod +x gradlew
-          ./gradlew :app-thunderbird:lintFossRelease \
+          ./gradlew \
+            :app-thunderbird:lintFossRelease \
+            :app-thunderbird:assembleFossRelease \
+            -Pci=true \
+            --parallel \
             --stacktrace --console=plain --no-daemon
 
       - name: Prove excluded product dependencies
@@ -114,12 +118,6 @@ jobs:
           grep -Fq 'feature:migration:launcher:noop' /tmp/sable-mail/SABLE_MAIL_RUNTIME_DEPENDENCIES.txt
 
           echo "SABLE_MAIL_STALE_RUNTIME_DEPENDENCY=PASS_ABSENT"
-
-      - name: Build Sable Mail APK
-        working-directory: /tmp/sable-mail
-        run: |
-          ./gradlew :app-thunderbird:assembleFossRelease -Pci=true \
-            --stacktrace --console=plain --no-daemon
 
       - name: Verify and seal Sable Mail APK
         shell: bash
