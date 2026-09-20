@@ -20,7 +20,7 @@ R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
 R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT
 
 R9_INCREMENTAL_PRODUCT_BUILD=PASS
-R9_FRESH_FULL_BUILD=IN_PROGRESS
+R9_FRESH_FULL_BUILD=PASS
 R9_PIXEL7_PHYSICAL_ACCEPTANCE=PENDING
 TITAN2_KEYBOARD_FIRST_PORTABILITY=QUEUED_AFTER_PANTHER
 PRODUCTION_SIGNING=DEFERRED
@@ -49,8 +49,30 @@ Light, Dark/system bars and alternate accent.
 
 The prior fast target-files/product run is retained as valid incremental
 composition evidence. It is **not** fresh-build proof because it used a warmed
-OUT. The current R9 release candidate must start from an absent source-bound
-OUT and close:
+OUT.
+
+Fresh source-bound build closure:
+
+```text
+SOURCE=20f6ed40b78e205b39bf2d657eaad29432a0016a
+TARGET_FILES_SHA256=7a9b81c6f9f37c783bcf6d7bb8760a7bcf918dc56a1fc89bb6babc1d6e402e71
+EVIDENCE_DIR=/srv/data/sable-build/evidence/panther/r8-final-ui/20260920_154844
+
+R8_FULL_BUILD_RC=0
+R8_FULL_BUILD=PASS
+R8_BUILD_SANDBOX=PASS
+R9_LAUNCHER3_HOME_PREFLIGHT=PASS
+R8_UI_MODULE_BUILD=PASS
+R8_FINAL_TARGET_FILES=PASS
+R9_TARGET_FILES_FRESHNESS=PASS
+R9_FRESH_FULL_BUILD=PASS
+R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
+PANTHER_FINAL_UI_BUILD=PASS
+R8_RELEASE_CANDIDATE=PASS
+SABLE_RELEASE_BUILD_RC=0
+```
+
+The release runner closed:
 
 ```text
 R9_RELEASE_CANDIDATE_FRESH_OUT=PASS_ABSENT
@@ -60,7 +82,7 @@ R9_FRESH_FULL_BUILD=PASS
 R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
 ```
 
-Physical Pixel 7 flashing remains blocked until that fresh-build proof passes.
+The fresh-build prerequisite is now PASS. Physical Pixel 7 flashing/runtime qualification may proceed under the separate device-mutation authorization and acceptance procedure; no physical PASS is inferred from build success.
 
 Titan 2 is explicitly keyboard-first
 (`navigation.primary=keyboard`, `navigation.secondary=touch`). T0 read-only
