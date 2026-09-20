@@ -287,7 +287,6 @@ Device roles:
 - `panther` / Pixel 7 — active touch-first full-stack reference;
 - Titan 2 — next keyboard-first N0 GSI/userspace portability lab;
 - `bramble` / Pixel 4a 5G — frozen architecture/regression reference;
-- Zinwa Q25 — optional low-level MediaTek/QWERTY engineering reference;
 - Zinwa Q27 — future preferred modern full-QWERTY direction subject to platform/hardware acceptance.
 
 The Sable Start/Hub data and capability model must remain common across these form factors.
