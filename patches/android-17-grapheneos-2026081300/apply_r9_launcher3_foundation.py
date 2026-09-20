@@ -480,7 +480,8 @@ def patch_cacheable_shortcut(text: str) -> str:
 
 
 def mark_deprecated_override(text: str, signature: str, message: str, label: str) -> str:
-    replacement = f'    @Deprecated("{message}")\n{signature}'
+    indent = signature[: len(signature) - len(signature.lstrip())]
+    replacement = f'{indent}@Deprecated("{message}")\n{signature}'
     return replace_once(text, signature, replacement, label)
 
 
