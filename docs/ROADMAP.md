@@ -563,3 +563,7 @@ Before SableOS becomes a release candidate:
 ```
 
 The project intentionally prioritizes building the actual operating-system experience before optimizing the distribution machinery for a product that is not yet feature-complete.
+
+## Keyboard-device camera workstream
+
+Titan 2, Titan 2 Elite and Zinwa Q27 share a new camera-quality workstream. The preferred implementation baseline is GrapheneOS Camera/CameraX with Camera2 capability probing and device-specific tuning. Community GCam ports are behavioral references only; proprietary Google Camera code/APKs are not Sable product dependencies. See `CAMERA_ENHANCEMENT_ROADMAP.md`.
