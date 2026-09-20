@@ -104,6 +104,7 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         updateSableVisibility(state == LauncherState.NORMAL)
         if (state == LauncherState.NORMAL) {
             refreshAppsFromLauncherModel()
+            applyCurrentSystemBars()
         }
     }
 
