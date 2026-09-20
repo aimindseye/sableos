@@ -1,5 +1,15 @@
 # Local CI
 
+The canonical operator entry point is now device/release/function based:
+
+```bash
+bash build/sable.sh panther R9 ci core
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 ci release
+```
+
+Direct `build/local-ci/run.sh` invocation remains the implementation-level interface.
+
 SableOS CI executes directly on the controlled build machine. GitHub Actions is
 not part of the qualification path.
 
