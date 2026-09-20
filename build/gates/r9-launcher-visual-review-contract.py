@@ -171,6 +171,26 @@ def main() -> int:
         "R9_START_COMPACT_NAVIGATION",
     )
     require(
+        production_ui,
+        "BasicTextField(",
+        "R9_SEARCH_FLAT_INPUT",
+    )
+    forbid(
+        production_ui,
+        "OutlinedTextField(",
+        "R9_SEARCH_NO_MATERIAL_OUTLINED_FIELD",
+    )
+    require(
+        production_ui,
+        'text = "search apps + Sable actions"',
+        "R9_SEARCH_SABLE_PLACEHOLDER",
+    )
+    require(
+        production_ui,
+        "color = MaterialTheme.colorScheme.primary",
+        "R9_SEARCH_COMMAND_ACCENT",
+    )
+    require(
         activity,
         "info.componentName.packageName == packageName",
         "R9_VISUAL_REVIEW_HOST_FILTERED",
@@ -249,6 +269,8 @@ def main() -> int:
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
     print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
+    print("R9_SEARCH_FLAT_METRO_INPUT=PASS")
+    print("R9_SEARCH_COMMAND_APP_HIERARCHY=PASS")
     print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
     require(
@@ -260,7 +282,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_MAC_BASH3_COMPAT=PASS")
     print("R9_VISUAL_REVIEW_MAC_BUILD_DECOUPLED_FROM_LINT=PASS")
     print("R9_VISUAL_REVIEW_LOCAL_CI_LINT_GATE=PASS")
-    print("R9_L10_VISUAL_REVIEW_CONTRACT=PASS")
+    print("R9_L11_VISUAL_REVIEW_CONTRACT=PASS")
     return 0
 
 
