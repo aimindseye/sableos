@@ -376,3 +376,36 @@ NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 Remaining required surfaces are All Apps / Sable Rail, Search / Command,
 Sable Peek, Local Context, Appearance, and light/dark theme behavior.
 
+
+## R9L10 All Apps / Sable Rail acceptance
+
+Pixel 7 captures `03-all-apps-top.png` and `04-all-apps-rail.png` are
+accepted for the current R9 visual gate.
+
+Accepted characteristics:
+
+- All Apps preserves the same typography and accent vocabulary as Start;
+- Search + Command remains immediately reachable at the top;
+- real launcher icons remain legible without crowding labels;
+- alphabetical section headers are visually distinct from app rows;
+- the right-side Sable Rail is visible without dominating the list;
+- rail interaction provides active-letter feedback: the captured state changes
+  from P to T.
+
+Fixture limitation:
+
+The Pixel 7 review AVD currently exposes only three launcher-visible apps
+(Play Store, Settings, and TMobile) after filtering the review host. All three
+fit on one screen, so these captures cannot prove long-list scroll anchoring or
+long-label collision behavior. That remains a later full-inventory/runtime
+check; this does not block the current visual-design gate.
+
+```text
+R9_L10_ALL_APPS_VISUAL_REVIEW=PASS
+R9_L10_SABLE_RAIL_ACTIVE_STATE=PASS
+R9_L10_SABLE_RAIL_LONG_LIST_PROOF=PENDING_FULL_INVENTORY
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
