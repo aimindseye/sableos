@@ -40,14 +40,32 @@ if [[ "$OUT_DIR" == /* ]]; then
     OUT_ABS="$OUT_DIR"
 fi
 
+collect_ninja_graphs() {
+    local out="$1"
+    local -a found=()
+
+    [[ -f "$out/build.ninja" ]] && found+=("$out/build.ninja")
+    [[ -f "$out/soong/build.ninja" ]] && found+=("$out/soong/build.ninja")
+
+    shopt -s nullglob
+    local path
+    for path in         "$out"/build-*panther*.ninja         "$out"/combined-*panther*.ninja
+    do
+        [[ -f "$path" ]] && found+=("$path")
+    done
+    shopt -u nullglob
+
+    printf '%s\n' "${found[@]}"
+}
+
+mapfile -t WARM_NINJA_GRAPHS < <(collect_ninja_graphs "$OUT_ABS")
+
 if [[ "$ALLOW_COLD_OUT" != YES ]]; then
-    if {
-        [[ ! -f "$OUT_ABS/build.ninja" && ! -f "$OUT_ABS/soong/build.ninja" ]] ||
-        [[ ! -d "$OUT_ABS/target/product/panther" ]]
-    }; then
+    if [[ "${#WARM_NINJA_GRAPHS[@]}" -eq 0 ]] ||
+        [[ ! -d "$OUT_ABS/target/product/panther" ]]; then
         echo "R9_LAUNCHER3_FOUNDATION_WARM_OUT=FAIL path=$OUT_ABS"
         echo "R9_LAUNCHER3_FOUNDATION_COLD_BUILD_REFUSED=YES"
-        echo "HINT=Set OUT_DIR to an existing Panther output with a Ninja graph and target/product/panther."
+        echo "HINT=Set OUT_DIR to an existing Panther output containing build-*panther*.ninja, combined-*panther*.ninja, or soong/build.ninja plus target/product/panther."
         exit 5
     fi
 fi
@@ -70,11 +88,10 @@ echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
 echo "OUT_ABS=$OUT_ABS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
-if {
-    [[ -f "$OUT_ABS/build.ninja" || -f "$OUT_ABS/soong/build.ninja" ]] &&
-    [[ -d "$OUT_ABS/target/product/panther" ]]
-}; then
+if [[ "${#WARM_NINJA_GRAPHS[@]}" -gt 0 ]] &&
+    [[ -d "$OUT_ABS/target/product/panther" ]]; then
     echo "R9_LAUNCHER3_FOUNDATION_WARM_OUT=PASS"
+    printf 'R9_LAUNCHER3_FOUNDATION_NINJA_GRAPH=%s\n' "${WARM_NINJA_GRAPHS[@]}"
 fi
 
 echo
