@@ -59,6 +59,21 @@ HOST_TOOL_CENTRALIZATION_AUTHORIZED=YES \
   bash build/host/centralize-r8-security-tools.sh
 ```
 
+If the audit shows genuinely missing canonical prerequisites, bootstrap them
+once into `/srv/data/sable-host-tools`. This is host maintenance, not CI:
+
+```bash
+HOST_TOOL_BOOTSTRAP_AUTHORIZED=YES \
+HOST_PACKAGE_INSTALL_AUTHORIZED=YES \
+NETWORK_FETCH_AUTHORIZED=YES \
+  bash build/host/bootstrap-r8-host-tools.sh
+```
+
+The bootstrap installs only missing Rust coverage components into the pinned
+Rust toolchain and creates one canonical MobSFScan runtime under the pinned
+MobSFScan source root. It records an installation manifest and immediately
+runs the canonical host verification gate.
+
 Then verify the single shared toolchain:
 
 ```bash
