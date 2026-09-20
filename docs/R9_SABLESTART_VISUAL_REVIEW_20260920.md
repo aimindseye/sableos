@@ -527,3 +527,40 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L13 Local Context review
+
+The first Pixel 7 Local Context capture proves the permission/state model, but
+the visual treatment is not accepted.
+
+Behavior confirmed:
+
+- Calendar, Music, and Photos clearly report `permission required`;
+- the permission CTA is explicit and local-data scoped;
+- Weather and Tasks remain unavailable without configured providers;
+- no ambient network search or fabricated remote context is implied.
+
+Visual issues in the first capture:
+
+- rounded gray cards repeat a generic Material card vocabulary;
+- the large blue permission button is heavier than the accepted Sable action
+  treatment;
+- the two explanatory paragraphs are too verbose for a launcher surface.
+
+R9L13 source changes:
+
+- replaces rounded live-data cards with flat typographic rows and hairlines;
+- uses direct Sable-accent marks for Calendar, Music, and Photos;
+- replaces the Material Button with a flat `enable local data` action strip;
+- condenses provider/network truth into:
+  `weather + tasks · provider not configured` and
+  `local only · no ambient network search`.
+
+```text
+R9_L13_LOCAL_CONTEXT_BEHAVIOR=PASS
+R9_L13_LOCAL_CONTEXT_VISUAL_REVIEW=RECAPTURE_REQUIRED
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_SEARCH_PEEK_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
