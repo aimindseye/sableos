@@ -1,6 +1,6 @@
 # R9L9 — Mac mini / Pixel 7 launcher visual validation
 
-Status: **Pixel 7 runtime PASS / Start visual PASS / remaining surfaces pending**
+Status: **Pixel 7 visual set PASS / full Panther build authorized**
 
 Date: 2026-09-20
 
@@ -307,3 +307,35 @@ R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
 R9_L6_VISUAL_REVIEW_STATUS=PASS
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
 ```
+
+## R9L15 visual closure
+
+The final Pixel 7 dark-mode recapture is accepted. Status-bar content is now
+light/readable on the dark Sable background, closing the last visual blocker.
+
+The accepted visual source is machine-sealed by
+`build/gates/r9-launcher-visual-acceptance.py`. The gate validates the exact
+Git blob identities of the production Start presentation, Sable theme/system-bar
+implementation, Launcher3/Quickstep host, and the review host used to produce
+the evidence. Any later change to those files fails closed and returns
+`NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO` until visual review is repeated.
+
+```text
+R9_SABLESTART_PRODUCTION_COMPILE=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PASS
+R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
+R9_SABLESTART_ONE_HAND_REACH=PASS
+R9_SABLESTART_ALL_APPS_RAIL=PASS_WITH_FULL_INVENTORY_RUNTIME_FOLLOWUP
+R9_SABLESTART_SEARCH_COMMAND=PASS
+R9_SABLESTART_PEEK=PASS
+R9_SABLESTART_LOCAL_CONTEXT=PASS
+R9_SABLESTART_APPEARANCE=PASS
+R9_SABLESTART_LIGHT_DARK=PASS
+R9_SABLESTART_DARK_SYSTEM_BARS=PASS
+R9_L6_VISUAL_REVIEW_STATUS=PASS
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
+```
+
+The remaining rail long-list proof belongs to the full-inventory Panther/device
+runtime stage and does not block the full image build.
+
