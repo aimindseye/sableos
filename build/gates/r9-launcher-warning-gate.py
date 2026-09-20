@@ -14,6 +14,8 @@ SABLE_PATH_MARKERS = (
     "packages/apps/Launcher3/quickstep/src/com/android/launcher3/sable/",
 )
 
+R8_API37_WARNING = "An API level of 37 is not supported by this compiler"
+
 MIGRATED_WARNING_MARKERS = (
     "this annotation is currently applied to the value parameter only",
     "getParcelableExtra(p0: String",
@@ -71,11 +73,21 @@ def main() -> int:
     print(f"R9_LAUNCHER3_TYPE_MISMATCH_COUNT={categories['type_mismatch']}")
 
     deprecation_debt = categories["deprecation"] + categories["removal"]
+    r8_api37_debt = any(R8_API37_WARNING in line for line in lines)
+
     if deprecation_debt:
         print(f"R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT=REMAINS count={deprecation_debt}")
-        print("R9_LAUNCHER3_WARNING_DEBT_STATUS=OPEN")
     else:
         print("R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT=ZERO")
+
+    if r8_api37_debt:
+        print("R9_LAUNCHER3_R8_API37_DEBT=OPEN")
+    else:
+        print("R9_LAUNCHER3_R8_API37_DEBT=CLOSED")
+
+    if deprecation_debt or r8_api37_debt:
+        print("R9_LAUNCHER3_WARNING_DEBT_STATUS=OPEN")
+    else:
         print("R9_LAUNCHER3_WARNING_DEBT_STATUS=CLOSED")
 
     if fatal:
