@@ -302,7 +302,7 @@ def patch_wallpaper_theme_manager(text: str) -> str:
     return replace_once(
         text,
         "    override fun onLowMemory() {}",
-        "    @Deprecated(\\\"Deprecated framework callback\\\")\\n    override fun onLowMemory() {}",
+        "    @Deprecated(\"Deprecated framework callback\")\n    override fun onLowMemory() {}",
         "WallpaperThemeManager deprecated override",
     )
 
@@ -311,7 +311,7 @@ def patch_double_shadow_icon_drawable(text: str) -> str:
     return replace_once(
         text,
         "    override fun getOpacity() = PixelFormat.TRANSPARENT",
-        "    @Deprecated(\\\"Deprecated Drawable API\\\")\\n    override fun getOpacity() = PixelFormat.TRANSPARENT",
+        "    @Deprecated(\"Deprecated Drawable API\")\n    override fun getOpacity() = PixelFormat.TRANSPARENT",
         "DoubleShadowIconDrawable deprecated override",
     )
 
