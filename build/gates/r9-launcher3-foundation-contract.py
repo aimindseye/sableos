@@ -138,6 +138,7 @@ def check() -> list[str]:
             "patch_retrying_executor",
             "patch_widget_size_handler",
             "patch_preview_context",
+            "patch_preview_lifecycle",
             "patch_wallpaper_theme_manager",
             "patch_double_shadow_icon_drawable",
             "patch_item_info_translators",
