@@ -1,5 +1,10 @@
 package org.sableos.start.ui
 
+import android.content.Context
+import android.content.pm.LauncherApps
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -42,7 +47,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +82,7 @@ private enum class SableStartDestination {
 private data class HomeTile(
     val title: String,
     val mark: String,
+    val app: AppEntry?,
     val color: Color,
     val onClick: () -> Unit,
 )
@@ -406,6 +415,7 @@ private fun StartScreen(
                     HomeTile(
                         title = app.label,
                         mark = appMark(app),
+                        app = app,
                         color = tilePalette[index % tilePalette.size],
                         onClick = { onLaunchApp(app) },
                     )
@@ -415,6 +425,7 @@ private fun StartScreen(
                     HomeTile(
                         title = "Settings",
                         mark = "⚙",
+                        app = null,
                         color = SableSlate,
                         onClick = onOpenSettings,
                     ))
@@ -512,6 +523,7 @@ private fun TileGrid(tiles: List<HomeTile>) {
                     MetroTile(
                         title = tile.title,
                         mark = tile.mark,
+                        app = tile.app,
                         color = tile.color,
                         modifier = Modifier.weight(1f),
                         onClick = tile.onClick,
@@ -529,6 +541,7 @@ private fun TileGrid(tiles: List<HomeTile>) {
 private fun MetroTile(
     title: String,
     mark: String,
+    app: AppEntry?,
     color: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
@@ -555,12 +568,21 @@ private fun MetroTile(
                 .padding(13.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(
-            text = mark,
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Medium,
-            color = tileContentColor,
-        )
+        if (app != null) {
+            AppMark(
+                app = app,
+                size = 44,
+                fallbackContentColor = tileContentColor,
+                showFallbackSurface = false,
+            )
+        } else {
+            Text(
+                text = mark,
+                fontSize = 25.sp,
+                fontWeight = FontWeight.Medium,
+                color = tileContentColor,
+            )
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
@@ -1025,21 +1047,93 @@ private fun CompactAppRow(
 private fun AppMark(
     app: AppEntry,
     size: Int,
+    fallbackContentColor: Color = MaterialTheme.colorScheme.onSurface,
+    showFallbackSurface: Boolean = true,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .size(size.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(appColor(app)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = appMark(app),
-            fontWeight = FontWeight.Bold,
+    val context = LocalContext.current
+    val densityDpi = context.resources.displayMetrics.densityDpi
+    val icon =
+        remember(app.stableKey(), size, densityDpi) {
+            loadLauncherIcon(
+                context = context,
+                app = app,
+                sizeDp = size,
+            )
+        }
+
+    if (icon != null) {
+        Image(
+            bitmap = icon.asImageBitmap(),
+            contentDescription = null,
+            modifier =
+                Modifier
+                    .size(size.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Fit,
         )
+    } else {
+        Box(
+            modifier =
+                Modifier
+                    .size(size.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .then(
+                        if (showFallbackSurface) {
+                            Modifier.background(appColor(app))
+                        } else {
+                            Modifier
+                        },
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = appMark(app),
+                fontWeight = FontWeight.Bold,
+                color = fallbackContentColor,
+            )
+        }
     }
 }
+
+private fun loadLauncherIcon(
+    context: Context,
+    app: AppEntry,
+    sizeDp: Int,
+): Bitmap? =
+    runCatching {
+        val launcherApps = context.getSystemService(LauncherApps::class.java)
+        val activityInfo =
+            launcherApps
+                .getActivityList(app.component.packageName, app.user)
+                .firstOrNull { candidate ->
+                    candidate.componentName == app.component
+                } ?: return@runCatching null
+
+        val densityDpi = context.resources.displayMetrics.densityDpi
+        val density = context.resources.displayMetrics.density
+        val iconSizePx =
+            (sizeDp * density)
+                .toInt()
+                .coerceAtLeast(1)
+        val insetPx = (iconSizePx * 0.06f).toInt()
+        val drawable = activityInfo.getIcon(densityDpi)
+        val bitmap =
+            Bitmap.createBitmap(
+                iconSizePx,
+                iconSizePx,
+                Bitmap.Config.ARGB_8888,
+            )
+        val canvas = Canvas(bitmap)
+
+        drawable.setBounds(
+            insetPx,
+            insetPx,
+            iconSizePx - insetPx,
+            iconSizePx - insetPx,
+        )
+        drawable.draw(canvas)
+        bitmap
+    }.getOrNull()
 
 @Composable
 private fun SablePeekScreen(
