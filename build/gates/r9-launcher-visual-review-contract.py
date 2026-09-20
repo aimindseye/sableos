@@ -65,6 +65,16 @@ def main() -> int:
         "androidx.core:core-ktx:1.17.0",
         "R9_PRESENTATION_UNVERIFIED_ANDROIDX_CORE",
     )
+    lifecycle_modules = (
+        "lifecycle-common",
+        "lifecycle-common-java8",
+        "lifecycle-common-jvm",
+        "lifecycle-process",
+        "lifecycle-runtime",
+        "lifecycle-runtime-android",
+        "lifecycle-runtime-ktx",
+        "lifecycle-runtime-ktx-android",
+    )
     for build_text, label in (
         (module_build, "R9_VISUAL_REVIEW"),
         (presentation_build, "R9_PRESENTATION"),
@@ -74,11 +84,12 @@ def main() -> int:
             'implementation("androidx.core:core-ktx:1.16.0")',
             f"{label}_VERIFIED_CORE_CONSTRAINT",
         )
-        require(
-            build_text,
-            'implementation("androidx.lifecycle:lifecycle-process:2.9.4")',
-            f"{label}_VERIFIED_LIFECYCLE_CONSTRAINT",
-        )
+        for lifecycle_module in lifecycle_modules:
+            require(
+                build_text,
+                f'implementation("androidx.lifecycle:{lifecycle_module}:2.9.4")',
+                f"{label}_VERIFIED_LIFECYCLE_CONSTRAINT",
+            )
     require(
         activity,
         "SableStartScreen(",
