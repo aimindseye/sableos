@@ -535,6 +535,34 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
             "Fallback Quickstep unguarded taskbar bridge remains"
         )
 
+    if '"-Xannotation-default-target=param-property",' not in module:
+        raise FoundationError(
+            "Launcher3QuickStepLib annotation-target compiler flag missing"
+        )
+
+    cleanup_expectations = {
+        USER_CACHE_REL: (
+            "getParcelableExtra(Intent.EXTRA_USER, UserHandle::class.java)",
+        ),
+        RETRYING_EXECUTOR_REL: (
+            "import android.os.Looper",
+            "Handler(Looper.myLooper() ?: error(",
+        ),
+        WIDGET_SIZE_HANDLER_REL: (
+            "getParcelableArrayList(OPTION_APPWIDGET_SIZES, SizeF::class.java)",
+        ),
+        PREVIEW_CONTEXT_REL: (
+            "mDbDir.listFiles()?.forEach",
+        ),
+    }
+    for rel, tokens in cleanup_expectations.items():
+        source_text = (launcher / rel).read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in source_text:
+                raise FoundationError(
+                    f"Launcher warning-cleanup token missing {rel}: {token}"
+                )
+
 
 def apply_tree(source: pathlib.Path) -> None:
     launcher = source / "packages/apps/Launcher3"
@@ -553,6 +581,10 @@ def apply_tree(source: pathlib.Path) -> None:
     strings_path = launcher / "quickstep/res/values/strings.xml"
     host_path = launcher / HOST_REL
     fallback_path = launcher / FALLBACK_ACTIVITY_REL
+    user_cache_path = launcher / USER_CACHE_REL
+    retrying_executor_path = launcher / RETRYING_EXECUTOR_REL
+    widget_size_handler_path = launcher / WIDGET_SIZE_HANDLER_REL
+    preview_context_path = launcher / PREVIEW_CONTEXT_REL
 
     bp_path.write_text(
         patch_android_bp(bp_path.read_text(encoding="utf-8")),
@@ -568,6 +600,22 @@ def apply_tree(source: pathlib.Path) -> None:
     )
     fallback_path.write_text(
         patch_fallback_activity(fallback_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    user_cache_path.write_text(
+        patch_user_cache(user_cache_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    retrying_executor_path.write_text(
+        patch_retrying_executor(retrying_executor_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    widget_size_handler_path.write_text(
+        patch_widget_size_handler(widget_size_handler_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    preview_context_path.write_text(
+        patch_preview_context(preview_context_path.read_text(encoding="utf-8")),
         encoding="utf-8",
     )
 
@@ -602,6 +650,7 @@ suffix
     assert patch_android_bp(patched_bp) == patched_bp
     assert '":sable_start_presentation_srcs",' in patched_bp
     assert '"androidx.compose.foundation_foundation",' in patched_bp
+    assert '"-Xannotation-default-target=param-property",' in patched_bp
 
     manifest = MANIFEST_HEADER + '''
     <application>
@@ -632,6 +681,33 @@ after
     assert patch_fallback_activity(patched_fallback) == patched_fallback
     assert FALLBACK_NULL_REPLACEMENT in patched_fallback
     assert FALLBACK_NULL_ANCHOR not in patched_fallback
+
+    user_cache = (
+        "val user = intent.getParcelableExtra<UserHandle>(Intent.EXTRA_USER) ?: return"
+    )
+    assert "UserHandle::class.java" in patch_user_cache(user_cache)
+
+    retrying = (
+        "import android.os.Handler\n"
+        "class RetryingExecutor(private val handler: Handler = Handler()) {"
+    )
+    patched_retrying = patch_retrying_executor(retrying)
+    assert "import android.os.Looper" in patched_retrying
+    assert "Looper.myLooper()" in patched_retrying
+
+    widget_sizes = (
+        "fun Bundle.getWidgetSizeList() = "
+        "getParcelableArrayList<SizeF>(OPTION_APPWIDGET_SIZES)"
+    )
+    assert "SizeF::class.java" in patch_widget_size_handler(widget_sizes)
+
+    preview = (
+        "import java.util.Arrays\n"
+        "            Arrays.stream(mDbDir.listFiles()).forEach { obj: File -> obj.delete() }"
+    )
+    patched_preview = patch_preview_context(preview)
+    assert "listFiles()?.forEach" in patched_preview
+    assert "java.util.Arrays" not in patched_preview
 
     try:
         replace_once("x", "missing", "new", "negative")
@@ -668,6 +744,7 @@ def main() -> int:
             verify_tree(source)
             print("R9_LAUNCHER3_DIRTY_PATHS=PASS")
             print("R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS")
+            print("R9_LAUNCHER3_WARNING_CLEANUP_SAFE_MIGRATIONS=PASS")
             print("R9_LAUNCHER3_FOUNDATION_VERIFY=PASS")
     except FoundationError as exc:
         print(f"R9_LAUNCHER3_FOUNDATION=FAIL {exc}", file=sys.stderr)
