@@ -954,6 +954,65 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
             "toSpec(info: WorkspaceData)",
             "val filteredItems = info.filter",
         ),
+        UTILITIES_KT_REL: (
+            "override fun setAttribute(viewGroup: ViewGroup, attr: Boolean)",
+            "viewGroup.clipChildren = attr",
+            "viewGroup.clipToPadding = attr",
+        ),
+        CACHEABLE_SHORTCUT_REL: (
+            "getFreshnessIdentifier(item: CacheableShortcutInfo, iconProvider: IconProvider)",
+            "iconProvider\n            .getStateForApp",
+        ),
+        DISPLAY_INFO_CONTAINER_REL: (
+            '@Deprecated("Deprecated ComponentCallbacks callback")',
+        ),
+        MODEL_WRITER_REL: (
+            '@Deprecated("Temporary interface for ui notification")',
+        ),
+        FAKE_MODEL_WRITER_REL: (
+            '@Deprecated("Temporary interface for ui notification")',
+        ),
+        DESKTOP_VISIBILITY_REL: (
+            '@Deprecated("Deprecated desktop task listener callback")',
+        ),
+        OVERFLOWN_APPS_REL: (
+            "reserveDropSlotForDragLocation(onScreenLocationX: Int)",
+        ),
+        BUBBLE_BAR_BACKGROUND_REL: (
+            '@Deprecated("Deprecated Drawable API")',
+        ),
+        PHONE_LANDSCAPE_NAV_REL: (
+            "barAxisMarginStart: Int",
+            "barAxisMarginEnd: Int",
+        ),
+        STATS_LOG_COMPAT_REL: (
+            "withEndTimestamp(timestampInMillis: Long)",
+        ),
+        SEASCAPE_HANDLER_REL: (
+            "iconView: IconAppChipView",
+            "iconView.setSplitTranslationX",
+            "iconView.setSplitTranslationY",
+        ),
+        GROUP_TASK_REL: (
+            "override fun equals(other: Any?): Boolean",
+        ),
+        DESKTOP_TASK_VIEW_REL: (
+            "override fun onConfigurationChanged(p0: Configuration?)",
+        ),
+        FLOATING_APP_PAIR_BACKGROUND_REL: (
+            '@Deprecated("Deprecated Drawable API")',
+        ),
+        PRELOAD_ICON_DELEGATE_REL: (
+            "context.getColor(R.color.materialColorInverseSurface)",
+            "context.getColor(R.color.materialColorPrimary)",
+            "context.getColor(R.color.materialColorSecondary)",
+        ),
+        DB_ENTRY_REL: (
+            "Intent.parseUri(intentStr, 0).apply { sourceBounds = null }.toUri(0)",
+        ),
+        ADD_ITEM_ACTIVITY_REL: (
+            "widgetProviderInfo.loadLabel(packageManager)",
+        ),
     }
     for rel, tokens in cleanup_expectations.items():
         source_text = (launcher / rel).read_text(encoding="utf-8")
@@ -991,6 +1050,23 @@ def apply_tree(source: pathlib.Path) -> None:
     item_info_translators_path = launcher / ITEM_INFO_TRANSLATORS_REL
     unplaced_app_translator_path = launcher / UNPLACED_APP_TRANSLATOR_REL
     workspace_translator_path = launcher / WORKSPACE_TRANSLATOR_REL
+    utilities_kt_path = launcher / UTILITIES_KT_REL
+    cacheable_shortcut_path = launcher / CACHEABLE_SHORTCUT_REL
+    display_info_container_path = launcher / DISPLAY_INFO_CONTAINER_REL
+    model_writer_path = launcher / MODEL_WRITER_REL
+    fake_model_writer_path = launcher / FAKE_MODEL_WRITER_REL
+    desktop_visibility_path = launcher / DESKTOP_VISIBILITY_REL
+    overflown_apps_path = launcher / OVERFLOWN_APPS_REL
+    bubble_bar_background_path = launcher / BUBBLE_BAR_BACKGROUND_REL
+    phone_landscape_nav_path = launcher / PHONE_LANDSCAPE_NAV_REL
+    stats_log_compat_path = launcher / STATS_LOG_COMPAT_REL
+    seascape_handler_path = launcher / SEASCAPE_HANDLER_REL
+    group_task_path = launcher / GROUP_TASK_REL
+    desktop_task_view_path = launcher / DESKTOP_TASK_VIEW_REL
+    floating_app_pair_background_path = launcher / FLOATING_APP_PAIR_BACKGROUND_REL
+    preload_icon_delegate_path = launcher / PRELOAD_ICON_DELEGATE_REL
+    db_entry_path = launcher / DB_ENTRY_REL
+    add_item_activity_path = launcher / ADD_ITEM_ACTIVITY_REL
 
     bp_path.write_text(
         patch_android_bp(bp_path.read_text(encoding="utf-8")),
@@ -1056,6 +1132,82 @@ def apply_tree(source: pathlib.Path) -> None:
         patch_workspace_translator(
             workspace_translator_path.read_text(encoding="utf-8")
         ),
+        encoding="utf-8",
+    )
+    utilities_kt_path.write_text(
+        patch_utilities_kt(utilities_kt_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    cacheable_shortcut_path.write_text(
+        patch_cacheable_shortcut(cacheable_shortcut_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    display_info_container_path.write_text(
+        patch_display_info_container(
+            display_info_container_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    model_writer_path.write_text(
+        patch_model_writer(model_writer_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    fake_model_writer_path.write_text(
+        patch_fake_model_writer(fake_model_writer_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    desktop_visibility_path.write_text(
+        patch_desktop_visibility(desktop_visibility_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    overflown_apps_path.write_text(
+        patch_overflown_apps(overflown_apps_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    bubble_bar_background_path.write_text(
+        patch_bubble_bar_background(
+            bubble_bar_background_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    phone_landscape_nav_path.write_text(
+        patch_phone_landscape_nav(phone_landscape_nav_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    stats_log_compat_path.write_text(
+        patch_stats_log_compat(stats_log_compat_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    seascape_handler_path.write_text(
+        patch_seascape_handler(seascape_handler_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    group_task_path.write_text(
+        patch_group_task(group_task_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    desktop_task_view_path.write_text(
+        patch_desktop_task_view(desktop_task_view_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    floating_app_pair_background_path.write_text(
+        patch_floating_app_pair_background(
+            floating_app_pair_background_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    preload_icon_delegate_path.write_text(
+        patch_preload_icon_delegate(
+            preload_icon_delegate_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    db_entry_path.write_text(
+        patch_db_entry(db_entry_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    add_item_activity_path.write_text(
+        patch_add_item_activity(add_item_activity_path.read_text(encoding="utf-8")),
         encoding="utf-8",
     )
 
