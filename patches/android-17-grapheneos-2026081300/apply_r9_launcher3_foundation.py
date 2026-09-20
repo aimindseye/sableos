@@ -808,6 +808,9 @@ android_library {
         // Compose dep
         "androidx.compose.runtime_runtime",
     ],
+    kotlincflags: [
+        "-Xjvm-default=all",
+    ],
 }
 
 // Build rule for Quickstep app.
