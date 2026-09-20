@@ -54,6 +54,10 @@ MIGRATED_WARNING_RULES = (
     ("packages/apps/Launcher3/src/com/android/launcher3/graphics/PreloadIconDelegate.kt", "fun getColor(p0: Int): Int' is deprecated"),
     ("packages/apps/Launcher3/src/com/android/launcher3/model/DbEntry.kt", "fun toURI(): String!' is deprecated"),
     ("packages/apps/Launcher3/src/com/android/launcher3/dragndrop/AddItemActivity.kt", "field label: String!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayControllerImpl.kt", "class Executors : Any' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayControllerImpl.kt", "static field MAIN_EXECUTOR: LooperExecutor!' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayControllerImpl.kt", "val perDisplayInfo: SparseArray<DisplayInfoContainer>' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/deviceprofile/TaskbarDeviceProfileFactory.kt", "fun changeIconSize(iconSizePx: Int): WorkspaceProfile' is deprecated"),
 )
 
 
