@@ -125,7 +125,6 @@ set +e
         ./gradlew --offline \
             :sablestart-presentation-check:compileDebugKotlin \
             :sablestart-visual-review:assembleDebug \
-            :sablestart-visual-review:lintDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -133,7 +132,6 @@ set +e
         ./gradlew \
             :sablestart-presentation-check:compileDebugKotlin \
             :sablestart-visual-review:assembleDebug \
-            :sablestart-visual-review:lintDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -162,6 +160,8 @@ if [[ "$gradle_rc" -ne 0 ]]; then
 fi
 
 echo "R9_VISUAL_REVIEW_DEPENDENCY_CACHE=READY"
+echo "R9_VISUAL_REVIEW_MAC_BUILD_SCOPE=COMPILE_ASSEMBLE_INSTALL"
+echo "R9_VISUAL_REVIEW_LINT_SCOPE=LOCAL_CI_SEPARATE_GATE"
 
 APK="$ROOT/apps/r8/android/sablestart-visual-review/build/outputs/apk/debug/sablestart-visual-review-debug.apk"
 [[ -f "$APK" ]] || {
