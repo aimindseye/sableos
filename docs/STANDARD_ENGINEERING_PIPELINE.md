@@ -61,6 +61,8 @@ Successful build artifacts are registered outside Git in:
 
 A record binds device, release, build-source commit, target-files path and SHA-256, android-info path and SHA-256, OUT_DIR when available, build evidence directory and registration time. Mutation commands require an exact build-source identity; they do not choose a loosely defined latest artifact.
 
+Qualified Panther release builds started through `build/sable.sh ... build` automatically register their exact successful artifact. The manual `register-artifact` function exists for builds created before this contract (including the current R9 artifact) and for bounded recovery/import cases.
+
 ## Historical deployment lessons promoted to permanent gates
 
 ### One image source
