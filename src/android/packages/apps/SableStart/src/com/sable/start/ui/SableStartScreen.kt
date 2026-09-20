@@ -3,6 +3,7 @@ package org.sableos.start.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -657,7 +659,32 @@ private fun AppsScreen(
                 modifier =
                     Modifier
                         .align(Alignment.CenterEnd)
-                        .width(38.dp),
+                        .width(38.dp)
+                        .pointerInput(letters, rows) {
+                            fun jumpTo(y: Float) {
+                                if (letters.isEmpty() || size.height <= 0) return
+                                val slot =
+                                    ((y / size.height) * letters.size)
+                                        .toInt()
+                                        .coerceIn(0, letters.lastIndex)
+                                val letter = letters[slot]
+                                val index = rows.indexOfFirst { it.section == letter }
+                                if (index >= 0) {
+                                    activeLetter = letter
+                                    scope.launch {
+                                        listState.scrollToItem(index)
+                                    }
+                                }
+                            }
+
+                            detectDragGestures(
+                                onDragStart = { offset -> jumpTo(offset.y) },
+                                onDrag = { change, _ ->
+                                    jumpTo(change.position.y)
+                                    change.consume()
+                                },
+                            )
+                        },
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 letters.forEach { letter ->
