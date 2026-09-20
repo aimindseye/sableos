@@ -91,11 +91,38 @@ else
     rc=1
 fi
 
-if [[ -x "$SABLE_MOBSFSCAN_PYTHON" ]]; then
-    echo "SABLE_MOBSFSCAN_RUNTIME=CANONICAL"
+verify_mobsfscan_candidate() {
+    local candidate="$1"
+    [[ -x "$candidate" ]] || return 1
+    "$candidate" --version 2>&1 | grep -Fq "$SABLE_MOBSFSCAN_VERSION"
+}
+
+if verify_mobsfscan_candidate "$SABLE_MOBSFSCAN"; then
+    echo "SABLE_MOBSFSCAN=ALREADY_CANONICAL path=$SABLE_MOBSFSCAN"
 else
-    echo "SABLE_MOBSFSCAN_RUNTIME=PENDING_EXISTING_TOOL_AUDIT"
-    rc=1
+    mobsfscan_path="$(command -v mobsfscan 2>/dev/null || true)"
+    mobsfscan_candidates=(
+        "$HOME/.local/bin/mobsfscan"
+        "/usr/local/bin/mobsfscan"
+        "/usr/bin/mobsfscan"
+    )
+    [[ -n "$mobsfscan_path" ]] && mobsfscan_candidates+=("$mobsfscan_path")
+
+    mobsfscan_adopted=NO
+    for candidate in "${mobsfscan_candidates[@]}"; do
+        [[ "$candidate" == "$SABLE_MOBSFSCAN" ]] && continue
+        if verify_mobsfscan_candidate "$candidate"; then
+            ln -sfn "$candidate" "$SABLE_MOBSFSCAN"
+            echo "SABLE_MOBSFSCAN=CENTRALIZED source=$candidate destination=$SABLE_MOBSFSCAN"
+            mobsfscan_adopted=YES
+            break
+        fi
+    done
+
+    if [[ "$mobsfscan_adopted" != YES ]]; then
+        echo "SABLE_MOBSFSCAN=FAIL_NO_EXACT_EXISTING_STABLE_CANDIDATE"
+        rc=1
+    fi
 fi
 
 if [[ "$rc" -ne 0 ]]; then
