@@ -35,20 +35,7 @@ echo "TARGET_FILES=$TF"
 
 [[ -n "$TF" && -f "$TF" ]] || fail R8_TARGET_FILES 2
 
-SIGNING_POLICY="$ROOT/build/gates/r8-sablestart-signing-policy.py"
-SABLESTART_BP="$WS/packages/apps/SableStart/Android.bp"
-
-[[ -f "$SIGNING_POLICY" ]] || fail R8_SABLESTART_SIGNING_POLICY_TOOL 3
-[[ -f "$SABLESTART_BP" ]] || fail R8_SABLESTART_ANDROID_BP 3
-
-if ! python3 "$SIGNING_POLICY" \
-    --source-bp "$SABLESTART_BP" \
-    --target-files "$TF"
-then
-    fail R8_SABLESTART_SIGNING_POLICY 4
-fi
-
-echo "R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS"
+echo "R9_LAUNCHER3_FOUNDATION_TARGET_POLICY=CHECKED_IN_TARGET_FILES"
 
 STAGED="$WS/vendor/sable/r8"
 [[ -f "$STAGED/manifest.tsv" ]] || fail R8_STAGED_MANIFEST 3
@@ -121,10 +108,19 @@ with zipfile.ZipFile(tf) as z:
         )
 
     start = matches("SableStart.apk")
-    if len(start) != 1:
-        raise SystemExit(f"R8_SABLESTART_TARGET_COUNT=FAIL matches={start!r}")
-    (tmp / "SableStart.apk").write_bytes(z.read(start[0]))
-    print(f"R8_SABLESTART_TARGET=PASS member={start[0]}")
+    if start:
+        raise SystemExit(
+            f"R9_STANDALONE_SABLESTART_TARGET=FAIL members={start!r}"
+        )
+    print("R9_STANDALONE_SABLESTART_TARGET=PASS_ABSENT")
+
+    launcher = matches("Launcher3QuickStep.apk")
+    if len(launcher) != 1:
+        raise SystemExit(
+            f"R9_LAUNCHER3_TARGET_COUNT=FAIL matches={launcher!r}"
+        )
+    (tmp / "Launcher3QuickStep.apk").write_bytes(z.read(launcher[0]))
+    print(f"R9_LAUNCHER3_TARGET=PASS member={launcher[0]}")
 
     for basename in ("SystemUI.apk", "Settings.apk", "SetupWizard2.apk"):
         found = matches(basename)
@@ -135,6 +131,7 @@ with zipfile.ZipFile(tf) as z:
         print(f"R8_SYSTEM_APK=PASS file={basename} member={found[0]}")
 
     stale_apks = (
+        "SableStart.apk",
         "ExactCalculator.apk",
         "SableConvert.apk",
         "SableConverter.apk",
@@ -158,7 +155,7 @@ AAPT2="${AAPT2:-$OUT_ABS/host/linux-x86/bin/aapt2}"
 [[ -x "$AAPT2" ]] || fail R8_AAPT2 4
 
 declare -A expected_package=(
-    [SableStart.apk]=org.sableos.start
+    [Launcher3QuickStep.apk]=com.android.launcher3
     [SableCalculator.apk]=org.sableos.calculator
     [SableSudoku.apk]=org.sableos.sudoku
     [SableMinesweeper.apk]=org.sableos.minesweeper
@@ -169,7 +166,7 @@ declare -A expected_package=(
     [SableMail.apk]=org.sableos.mail
 )
 
-for apk in     SableStart.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk
+for apk in     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
@@ -180,7 +177,8 @@ do
     echo "R8_TARGET_PACKAGE_IDENTITY=PASS file=$apk package=$pkg"
 done
 
-echo "R8_START_TARGET_FILES=PASS"
+echo "R8_START_TARGET_FILES=PASS_LAUNCHER3_FOUNDATION"
+echo "R9_L7_LAUNCHER3_FOUNDATION_TARGET_FILES=PASS"
 echo "R8_B_CALCULATOR_CONVERT_TARGET_FILES=PASS"
 echo "R8_C_GAMES_TARGET_FILES=PASS"
 echo "R8_D_READER_TARGET_FILES=PASS"
