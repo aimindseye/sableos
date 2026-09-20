@@ -224,6 +224,20 @@ def main() -> None:
         "SABLE_MAIL_ONBOARDING_THUNDERMAIL_ROUTE",
     )
 
+    for route_path in (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "navigation/AccountSetupRoute.kt",
+        root
+        / "feature/onboarding/main/src/main/kotlin/app/k9mail/feature/onboarding/main/"
+        "navigation/OnboardingRoute.kt",
+    ):
+        reject_text(
+            route_path,
+            "Thundermail",
+            "SABLE_MAIL_THUNDERMAIL_ROUTE_DECLARATION",
+        )
+
     launcher_nav = (
         root
         / "feature/launcher/src/main/kotlin/app/k9mail/feature/launcher/navigation/"
@@ -244,6 +258,7 @@ def main() -> None:
     print("SABLE_MAIL_AUTODISCOVERY_DEMO=PASS_ABSENT")
     print("SABLE_MAIL_AUTODISCOVERY_DEMO_SOURCE=PASS_ABSENT")
     print("SABLE_MAIL_STANDARD_ACCOUNT_ENTRY=PASS")
+    print("SABLE_MAIL_THUNDERMAIL_ROUTES=PASS_ABSENT")
 
     strings = app / "src/main/res/values/strings.xml"
     require_text(strings, ">Sable Mail</string>", "SABLE_MAIL_BRANDING")
