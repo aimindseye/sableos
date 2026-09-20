@@ -39,6 +39,8 @@ MIGRATED_WARNING_RULES = (
     ("packages/apps/Launcher3/src/com/android/launcher3/icons/CacheableShortcutInfo.kt", "corresponding parameter in the supertype"),
     ("packages/apps/Launcher3/src/com/android/launcher3/display/DisplayInfoContainer.kt", "overrides a deprecated member but is not marked as deprecated itself"),
     ("packages/apps/Launcher3/src/com/android/launcher3/model/ModelWriter.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/ModelWriter.kt", "static field IS_DEBUG_DEVICE: Boolean' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/model/ModelWriter.kt", "static field IS_STUDIO_BUILD: Boolean' is deprecated"),
     ("packages/apps/Launcher3/src/com/android/launcher3/model/testing/FakeModelWriter.kt", "overrides a deprecated member but is not marked as deprecated itself"),
     ("packages/apps/Launcher3/quickstep/src/com/android/launcher3/statehandlers/DesktopVisibilityController.kt", "overrides a deprecated member but is not marked as deprecated itself"),
     ("packages/apps/Launcher3/quickstep/src/com/android/launcher3/taskbar/OverflownAppsContainerView.kt", "corresponding parameter in the supertype"),
