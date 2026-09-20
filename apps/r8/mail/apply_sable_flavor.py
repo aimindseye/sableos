@@ -180,16 +180,6 @@ def main() -> None:
     )
     remove_exact_count(auto_content, "    onThundermailClick: () -> Unit,\n", 3)
     remove_exact_count(auto_content, "    onScanQrCodeClick: () -> Unit,\n", 3)
-    remove_exact_count(
-        auto_content,
-        "                    onThundermailClick = onThundermailClick,\n",
-        2,
-    )
-    remove_exact_count(
-        auto_content,
-        "                    onScanQrCodeClick = onScanQrCodeClick,\n",
-        2,
-    )
     remove_once(
         auto_content,
         '''        AnimatedVisibility(state.emailAddress.value.isBlank()) {
@@ -203,6 +193,22 @@ def main() -> None:
         }
 
 ''',
+    )
+    remove_once(
+        auto_content,
+        "                    onThundermailClick = onThundermailClick,\n",
+    )
+    remove_once(
+        auto_content,
+        "                    onScanQrCodeClick = onScanQrCodeClick,\n",
+    )
+    remove_once(
+        auto_content,
+        "                onThundermailClick = onThundermailClick,\n",
+    )
+    remove_once(
+        auto_content,
+        "                onScanQrCodeClick = onScanQrCodeClick,\n",
     )
 
     auto_screen = (
