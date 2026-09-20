@@ -51,6 +51,29 @@ grep -Fxq 'R8_FINAL_UI_PRODUCT_COMPOSITION=PASS'     "$EVIDENCE_DIR/prebuild-com
     }
 
 echo
+echo "===== SABLESTART SIGNING SOURCE POLICY ====="
+
+SIGNING_POLICY="$ROOT/build/gates/r8-sablestart-signing-policy.py"
+SABLESTART_BP="$WS/packages/apps/SableStart/Android.bp"
+
+set +e
+python3 "$SIGNING_POLICY" \
+    --source-bp "$SABLESTART_BP" \
+    2>&1 | tee "$EVIDENCE_DIR/sablestart-signing-source.log"
+SABLESTART_SIGNING_SOURCE_RC=${PIPESTATUS[0]}
+set -e
+
+echo "R8_SABLESTART_SIGNING_SOURCE_RC=$SABLESTART_SIGNING_SOURCE_RC"
+
+if [[ "$SABLESTART_SIGNING_SOURCE_RC" -ne 0 ]]; then
+    echo "R8_SABLESTART_SIGNING_SOURCE_POLICY=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_SABLESTART_SIGNING_SOURCE"
+    exit 4
+fi
+
+echo "R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS"
+
+echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="
 
 cd "$WS"
@@ -182,6 +205,27 @@ TF_SHA="$(sha256sum "$TF" | awk '{print $1}')"
 
 echo "R8_TARGET_FILES=$TF"
 echo "R8_TARGET_FILES_SHA256=$TF_SHA"
+
+echo
+echo "===== SABLESTART SIGNING TARGET-FILES POLICY ====="
+
+set +e
+python3 "$SIGNING_POLICY" \
+    --source-bp "$SABLESTART_BP" \
+    --target-files "$TF" \
+    2>&1 | tee "$EVIDENCE_DIR/sablestart-signing-target-files.log"
+SABLESTART_SIGNING_TARGET_RC=${PIPESTATUS[0]}
+set -e
+
+echo "R8_SABLESTART_SIGNING_TARGET_RC=$SABLESTART_SIGNING_TARGET_RC"
+
+if [[ "$SABLESTART_SIGNING_TARGET_RC" -ne 0 ]]; then
+    echo "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_SABLESTART_SIGNING_TARGET"
+    exit 9
+fi
+
+echo "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS"
 
 WS="$WS" OUT_DIR="$OUT_DIR" TF="$TF"     bash "$ROOT/build/gates/r8-final-target-files.sh"     | tee "$EVIDENCE_DIR/target-files-composition.log"
 
