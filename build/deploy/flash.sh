@@ -77,6 +77,11 @@ EXPECTED_ANDROID_INFO_SHA="$(field android_info_sha256)"
 OUT_DIR="$(field out_dir 2>/dev/null || true)"
 BUILD_EVIDENCE_DIR="$(field build_evidence_dir 2>/dev/null || true)"
 
+if declare -F sable_device_artifact_gate >/dev/null 2>&1; then
+  sable_device_artifact_gate "$RELEASE" "$BUILD_SOURCE" "$EXPECTED_TF_SHA" "$BUILD_EVIDENCE_DIR" \
+    || sable_die "SABLE_DEVICE_ARTIFACT_GATE" "qualified build evidence missing or inconsistent" 30
+fi
+
 [[ -f "$TF" ]] || sable_die "SABLE_TARGET_FILES_PRESENT" "target-files missing: $TF" 31
 [[ -f "$ANDROID_INFO" ]] || sable_die "SABLE_ANDROID_INFO_PRESENT" "android-info missing: $ANDROID_INFO" 31
 
