@@ -12,6 +12,7 @@ host_audit="$ROOT/build/host/audit-r8-host-tools.sh"
 host_bootstrap="$ROOT/build/host/bootstrap-r8-host-tools.sh"
 host_centralize="$ROOT/build/host/centralize-r8-security-tools.sh"
 host_cleanup="$ROOT/build/host/cleanup-r8-host-tool-duplicates.sh"
+release_entry="$ROOT/build/panther/run-release.sh"
 render="$ROOT/build/panther/render-r8-build-driver.sh"
 runner="$ROOT/build/panther/run-r8-release-candidate.sh"
 retire="$ROOT/build/panther/retire-r8-obsolete-gradle-residue.sh"
@@ -29,14 +30,14 @@ start_check="$ROOT/apps/r8/android/sablestart-presentation-check/build.gradle.kt
 local_ci="$ROOT/build/local-ci/run.sh"
 ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$target_files_gate" "$visual_acceptance" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$release_entry" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$target_files_gate" "$visual_acceptance" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
     }
 done
 
-for f in "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
+for f in "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$release_entry" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$local_ci"; do
     bash -n "$f"
 done
 
@@ -233,6 +234,17 @@ grep -Fq 'R9_TARGET_FILES_FRESHNESS=PASS' "$finalbuild"
 grep -Fq 'R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES' "$finalbuild"
 
 echo "R9_FRESH_FULL_BUILD_CONTRACT=PASS"
+
+grep -Fq 'usage: bash build/panther/run-release.sh <release-version> [--tmux|--direct]' "$release_entry"
+grep -Fq 'SABLEOS_RELEASE_VERSION="$RELEASE_VERSION"' "$release_entry"
+grep -Fq 'CUSTOM_TMP_DRIVER=NO' "$release_entry"
+grep -Fq 'RELEASE_SPECIFIC_BUILD_SCRIPT=NO' "$release_entry"
+grep -Fq 'bash "$ROOT/build/panther/run-r8-release-candidate.sh"' "$release_entry"
+grep -Fq 'build/panther/run-release.sh <release-version>' "$ROOT/build/README.md"
+grep -Fq 'Do not create a new build' "$ROOT/build/README.md"
+
+echo "SABLE_RELEASE_NEUTRAL_ENTRYPOINT_CONTRACT=PASS"
+
 
 echo "R9_BUILD_DRIVER_SOURCE_BOUND_TMUX=PASS"
 echo "R8_BUILD_DRIVER_RUNNER_INVOCATION=PASS"
