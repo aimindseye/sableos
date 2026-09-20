@@ -1,6 +1,6 @@
 # R9L9 — Mac mini / Pixel 7 launcher visual validation
 
-Status: **Pixel 7 emulator build/install/capture PASS / visual review pending**
+Status: **Pixel 7 runtime PASS / Start visual PASS / remaining surfaces pending**
 
 Date: 2026-09-20
 
@@ -177,6 +177,21 @@ The preparation step:
 6. records AVD/device/display identity;
 7. captures the initial Start frame;
 8. leaves the full Panther build unauthorized.
+
+## Current visual acceptance
+
+The third Start recapture is accepted as the R9 Start baseline.
+
+```text
+R9_L10_START_VISUAL_REVIEW=PASS
+R9_L10_START_PRODUCT_IDENTITY=APPROVED
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+Do not reopen Start unless a later surface reveals a shared typography,
+contrast, icon, focus, or navigation defect.
 
 ## Required visual set
 
