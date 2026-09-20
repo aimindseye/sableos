@@ -60,7 +60,7 @@ jobs:
 
       - name: Python syntax
         run: |
-          python3 -m py_compile             build/gates/verify-r8-vendor-sable-inventory.py             build/gates/r8-sablestart-signing-policy.py             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+          python3 -m py_compile             build/gates/verify-r8-vendor-sable-inventory.py             build/gates/r8-sablestart-signing-policy.py             build/gates/r9-sablestart-design-contract.py             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
           echo "PYTHON_SYNTAX=PASS"
 
       - name: Platform applicator self-tests
@@ -243,6 +243,17 @@ jobs:
           echo "R8_SABLESTART_COMPOSE_DELEGATE_IMPORTS=PASS"
           echo "R8_A_APPEARANCE_CONTRACT=PASS"
           echo "R8_GLOBAL_APPEARANCE_CONTRACT=PASS"
+
+      - name: R9 combined SableStart contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 build/gates/r9-sablestart-design-contract.py --self-test
+          python3 build/gates/r9-sablestart-design-contract.py
+          grep -Fq 'R9_L6_VISUAL_REVIEW_STATUS=PENDING' build/gates/r8-final-product-composition.sh
+          grep -Fq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO' build/gates/r8-final-product-composition.sh
+          grep -Fq 'R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW' build/panther/build-r8-final-ui.sh
+          echo "R9_SABLESTART_COMBINED_CI=PASS"
 
       - name: No stale product preview surfaces
         shell: bash
