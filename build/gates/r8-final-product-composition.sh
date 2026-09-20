@@ -44,10 +44,21 @@ do
     grep -Fq "$needle" "$THEME" || fail R8_A_SHARED_DESIGN
 done
 
-for needle in     'SableTheme('     'SableStartDestination.Appearance'     'AppearanceMode.entries'     'AccentPreset.entries'     'Reset to Follow system · Sable Blue'
+for needle in \
+    'SableTheme(' \
+    'SableStartDestination.Appearance' \
+    'AppearanceMode.entries' \
+    'AccentPreset.entries' \
+    'AppearanceChoiceRow(' \
+    'AccentChoiceRow(' \
+    'reset · follow system + Sable Blue'
 do
     grep -Fq "$needle" "$START" || fail R8_A_SHARED_DESIGN
 done
+
+if grep -Fq 'Reset to Follow system · Sable Blue' "$START"; then
+    fail R8_A_SHARED_DESIGN_STALE_APPEARANCE_COPY
+fi
 
 for needle in     'fun loadAppearance()'     'fun saveAppearance('     'fun resetAppearance()'     '.remove(SableDesignContract.KEY_APPEARANCE_MODE)'     '.remove(SableDesignContract.KEY_ACCENT)'
 do
