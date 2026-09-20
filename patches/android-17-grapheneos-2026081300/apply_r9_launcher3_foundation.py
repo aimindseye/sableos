@@ -441,6 +441,218 @@ def patch_workspace_translator(text: str) -> str:
     )
 
 
+def patch_utilities_kt(text: str) -> str:
+    text = replace_once(
+        text,
+        "            override fun setAttribute(viewGroup: ViewGroup, clipChildren: Boolean) {\n"
+        "                viewGroup.clipChildren = clipChildren\n"
+        "            }",
+        "            override fun setAttribute(viewGroup: ViewGroup, attr: Boolean) {\n"
+        "                viewGroup.clipChildren = attr\n"
+        "            }",
+        "UtilitiesKt clipChildren override parameter",
+    )
+    return replace_once(
+        text,
+        "            override fun setAttribute(viewGroup: ViewGroup, clipToPadding: Boolean) {\n"
+        "                viewGroup.clipToPadding = clipToPadding\n"
+        "            }",
+        "            override fun setAttribute(viewGroup: ViewGroup, attr: Boolean) {\n"
+        "                viewGroup.clipToPadding = attr\n"
+        "            }",
+        "UtilitiesKt clipToPadding override parameter",
+    )
+
+
+def patch_cacheable_shortcut(text: str) -> str:
+    text = replace_once(
+        text,
+        "    override fun getFreshnessIdentifier(item: CacheableShortcutInfo, provider: IconProvider) =",
+        "    override fun getFreshnessIdentifier(item: CacheableShortcutInfo, iconProvider: IconProvider) =",
+        "CacheableShortcutInfo override parameter",
+    )
+    return replace_once(
+        text,
+        "        provider\n            .getStateForApp",
+        "        iconProvider\n            .getStateForApp",
+        "CacheableShortcutInfo provider usage",
+    )
+
+
+def mark_deprecated_override(text: str, signature: str, message: str, label: str) -> str:
+    replacement = f'    @Deprecated("{message}")\n{signature}'
+    return replace_once(text, signature, replacement, label)
+
+
+def patch_display_info_container(text: str) -> str:
+    return mark_deprecated_override(
+        text,
+        "    override fun onLowMemory() {}",
+        "Deprecated ComponentCallbacks callback",
+        "DisplayInfoContainer deprecated override",
+    )
+
+
+def patch_model_writer(text: str) -> str:
+    return mark_deprecated_override(
+        text,
+        "    override fun getNotifier(): LauncherUiStateNotifier = launcherStateNotifier",
+        "Temporary interface for ui notification",
+        "ModelWriter deprecated override",
+    )
+
+
+def patch_fake_model_writer(text: str) -> str:
+    return mark_deprecated_override(
+        text,
+        "    override fun getNotifier(): LauncherUiStateNotifier = notifier",
+        "Temporary interface for ui notification",
+        "FakeModelWriter deprecated override",
+    )
+
+
+def patch_desktop_visibility(text: str) -> str:
+    return mark_deprecated_override(
+        text,
+        "        override fun onStashedChanged(displayId: Int, stashed: Boolean) {}",
+        "Deprecated desktop task listener callback",
+        "DesktopVisibilityController deprecated override",
+    )
+
+
+def patch_overflown_apps(text: str) -> str:
+    return replace_once(
+        text,
+        "    override fun reserveDropSlotForDragLocation(x: Int) {\n"
+        "        dragDelegate.reserveDropSlotForDragLocation(x)\n"
+        "    }",
+        "    override fun reserveDropSlotForDragLocation(onScreenLocationX: Int) {\n"
+        "        dragDelegate.reserveDropSlotForDragLocation(onScreenLocationX)\n"
+        "    }",
+        "OverflownAppsContainerView override parameter",
+    )
+
+
+def patch_bubble_bar_background(text: str) -> str:
+    return mark_deprecated_override(
+        text,
+        "    override fun getOpacity(): Int {",
+        "Deprecated Drawable API",
+        "BubbleBarBackground deprecated override",
+    )
+
+
+def patch_phone_landscape_nav(text: str) -> str:
+    text = replace_once(
+        text,
+        "        barAxisMarginTop: Int,\n        barAxisMarginBottom: Int,",
+        "        barAxisMarginStart: Int,\n        barAxisMarginEnd: Int,",
+        "PhoneLandscapeNavLayoutter override parameters",
+    )
+    text = replace_once(
+        text,
+        "            topMargin = barAxisMarginTop\n            bottomMargin = barAxisMarginBottom",
+        "            topMargin = barAxisMarginStart\n            bottomMargin = barAxisMarginEnd",
+        "PhoneLandscapeNavLayoutter parameter usage",
+    )
+    return text
+
+
+def patch_stats_log_compat(text: str) -> str:
+    return replace_once(
+        text,
+        "        override fun withEndTimestamp(endTimeInMillis: Long) = apply {\n"
+        "            this.mEndTimeInMillis = endTimeInMillis\n"
+        "        }",
+        "        override fun withEndTimestamp(timestampInMillis: Long) = apply {\n"
+        "            this.mEndTimeInMillis = timestampInMillis\n"
+        "        }",
+        "StatsLogCompatManager override parameter",
+    )
+
+
+def patch_seascape_handler(text: str) -> str:
+    text = replace_once(
+        text,
+        "        appChipView: IconAppChipView,",
+        "        iconView: IconAppChipView,",
+        "SeascapePagedViewHandler override parameter",
+    )
+    for old, new in (
+        ("appChipView.layoutParams", "iconView.layoutParams"),
+        ("appChipView.setSplitTranslationX", "iconView.setSplitTranslationX"),
+        ("appChipView.setSplitTranslationY", "iconView.setSplitTranslationY"),
+    ):
+        text = replace_once(text, old, new, "SeascapePagedViewHandler parameter usage")
+    return text
+
+
+def patch_group_task(text: str) -> str:
+    text = text.replace("override fun equals(o: Any?): Boolean {", "override fun equals(other: Any?): Boolean {")
+    text = text.replace("if (this === o) return true", "if (this === other) return true")
+    text = text.replace("if (o !is GroupTask) return false", "if (other !is GroupTask) return false")
+    text = text.replace("if (o !is SingleTask) return false", "if (other !is SingleTask) return false")
+    text = text.replace("if (o !is SplitTask) return false", "if (other !is SplitTask) return false")
+    text = text.replace("o.taskViewType", "other.taskViewType")
+    text = text.replace("o.tasks", "other.tasks")
+    text = text.replace("o.splitBounds", "other.splitBounds")
+    text = text.replace("super.equals(o)", "super.equals(other)")
+    return text
+
+
+def patch_desktop_task_view(text: str) -> str:
+    return replace_once(
+        text,
+        "    override fun onConfigurationChanged(newConfig: Configuration?) {\n"
+        "        super.onConfigurationChanged(newConfig)",
+        "    override fun onConfigurationChanged(p0: Configuration?) {\n"
+        "        super.onConfigurationChanged(p0)",
+        "DesktopTaskView override parameter",
+    )
+
+
+def patch_floating_app_pair_background(text: str) -> str:
+    return mark_deprecated_override(
+        text,
+        "    override fun getOpacity(): Int {",
+        "Deprecated Drawable API",
+        "FloatingAppPairBackground deprecated override",
+    )
+
+
+def patch_preload_icon_delegate(text: str) -> str:
+    for resource in (
+        "materialColorInverseSurface",
+        "materialColorPrimary",
+        "materialColorSecondary",
+    ):
+        text = replace_once(
+            text,
+            f"context.resources.getColor(R.color.{resource})",
+            f"context.getColor(R.color.{resource})",
+            f"PreloadIconDelegate {resource} color API",
+        )
+    return text
+
+
+def patch_db_entry(text: str) -> str:
+    return replace_once(
+        text,
+        "Intent.parseUri(intentStr, 0).apply { sourceBounds = null }.toURI()",
+        "Intent.parseUri(intentStr, 0).apply { sourceBounds = null }.toUri(0)",
+        "DbEntry Intent URI API",
+    )
+
+
+def patch_add_item_activity(text: str) -> str:
+    return replace_once(
+        text,
+        "sendWidgetAddedToScreenAccessibilityEvent(widgetProviderInfo.label)",
+        "sendWidgetAddedToScreenAccessibilityEvent(widgetProviderInfo.loadLabel(packageManager))",
+        "AddItemActivity widget label API",
+    )
+
+
 def git_head(path: pathlib.Path) -> str:
     proc = subprocess.run(
         ["git", "-C", str(path), "rev-parse", "HEAD"],
