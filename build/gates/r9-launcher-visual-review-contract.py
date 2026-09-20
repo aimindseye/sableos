@@ -60,6 +60,11 @@ def main() -> int:
         "androidx.core:core-ktx:1.17.0",
         "R9_VISUAL_REVIEW_UNVERIFIED_ANDROIDX_CORE",
     )
+    require(
+        module_build,
+        "ignoreTestSources = true",
+        "R9_VISUAL_REVIEW_LINT_IGNORES_TEST_SOURCES",
+    )
     forbid(
         presentation_build,
         "androidx.core:core-ktx:1.17.0",
@@ -84,6 +89,16 @@ def main() -> int:
             'implementation("androidx.core:core-ktx:1.16.0")',
             f"{label}_VERIFIED_CORE_CONSTRAINT",
         )
+        for collection_module in (
+            "collection",
+            "collection-jvm",
+            "collection-ktx",
+        ):
+            require(
+                build_text,
+                f'implementation("androidx.collection:{collection_module}:1.5.0")',
+                f"{label}_VERIFIED_COLLECTION_CONSTRAINT",
+            )
         for lifecycle_module in lifecycle_modules:
             require(
                 build_text,
@@ -99,6 +114,16 @@ def main() -> int:
         activity,
         "launcherApps.getActivityList",
         "R9_VISUAL_REVIEW_ANDROID_INVENTORY",
+    )
+    require(
+        activity,
+        "ActivityResultContracts.RequestMultiplePermissions()",
+        "R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS",
+    )
+    forbid(
+        activity,
+        "onRequestPermissionsResult(",
+        "R9_VISUAL_REVIEW_DEPRECATED_PERMISSION_CALLBACK",
     )
     require(
         production_ui,
@@ -169,6 +194,8 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_PRODUCTION_SOURCE_DEPENDENCY=PASS")
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_GRAPH=PASS")
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_CONSTRAINTS=PASS")
+    print("R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS=PASS")
+    print("R9_VISUAL_REVIEW_LINT_TEST_SURFACE=PASS")
     print("R9_VISUAL_REVIEW_PRODUCTION_SCREEN=PASS")
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
