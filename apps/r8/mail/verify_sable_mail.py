@@ -108,6 +108,120 @@ def main() -> None:
     print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=PASS_ABSENT")
     print("SABLE_MAIL_BUILD_CONFIGURATION=PASS")
 
+    for path in (
+        root / "app-common/build.gradle.kts",
+        root / "feature/account/setup/build.gradle.kts",
+        root / "feature/launcher/build.gradle.kts",
+        root / "feature/onboarding/main/build.gradle.kts",
+    ):
+        reject_text(
+            path,
+            "projects.feature.thundermail",
+            "SABLE_MAIL_TRANSITIVE_THUNDERMAIL_DEPENDENCY",
+        )
+
+    reject_text(
+        root / "feature/account/setup/build.gradle.kts",
+        "projects.feature.autodiscovery.demo",
+        "SABLE_MAIL_AUTODISCOVERY_DEMO_DEPENDENCY",
+    )
+
+    app_common_feature = (
+        root
+        / "app-common/src/main/kotlin/net/thunderbird/app/common/feature/"
+        "AppCommonFeatureModule.kt"
+    )
+    reject_text(
+        app_common_feature,
+        "featureThundermailCommonModule",
+        "SABLE_MAIL_TRANSITIVE_THUNDERMAIL_DI",
+    )
+
+    auto_content = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "ui/autodiscovery/AccountAutoDiscoveryContent.kt"
+    )
+    for needle in (
+        "ThundermailButtonPanel",
+        "onThundermailClick",
+        "onScanQrCodeClick",
+        "thundermail_panel",
+    ):
+        reject_text(
+            auto_content,
+            needle,
+            "SABLE_MAIL_ACCOUNT_SETUP_THUNDERMAIL_UI",
+        )
+
+    auto_screen = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "ui/autodiscovery/AccountAutoDiscoveryScreen.kt"
+    )
+    reject_text(
+        auto_screen,
+        "onThundermailClick",
+        "SABLE_MAIL_ACCOUNT_SETUP_THUNDERMAIL_CALLBACK",
+    )
+    reject_text(
+        auto_screen,
+        "onScanQrCodeClick",
+        "SABLE_MAIL_ACCOUNT_SETUP_THUNDERMAIL_CALLBACK",
+    )
+
+    account_setup_nav = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "navigation/AccountSetupNavHost.kt"
+    )
+    reject_text(
+        account_setup_nav,
+        "onThundermailClick",
+        "SABLE_MAIL_ACCOUNT_SETUP_THUNDERMAIL_NAV",
+    )
+    reject_text(
+        account_setup_nav,
+        "onScanQrCodeClick",
+        "SABLE_MAIL_ACCOUNT_SETUP_THUNDERMAIL_NAV",
+    )
+
+    onboarding_nav = (
+        root
+        / "feature/onboarding/main/src/main/kotlin/app/k9mail/feature/onboarding/main/"
+        "navigation/OnboardingNavHost.kt"
+    )
+    require_text(
+        onboarding_nav,
+        "onStartClick = { navController.navigateToAccountSetup() }",
+        "SABLE_MAIL_STANDARD_ACCOUNT_ENTRY",
+    )
+    reject_text(
+        onboarding_nav,
+        "onFinish(OnboardingRoute.Thundermail",
+        "SABLE_MAIL_ONBOARDING_THUNDERMAIL_ROUTE",
+    )
+
+    launcher_nav = (
+        root
+        / "feature/launcher/src/main/kotlin/app/k9mail/feature/launcher/navigation/"
+        "FeatureLauncherNavHost.kt"
+    )
+    for needle in (
+        "ThundermailNavigation",
+        "ThundermailRoute",
+        "registerThundermailNavigation",
+    ):
+        reject_text(
+            launcher_nav,
+            needle,
+            "SABLE_MAIL_LAUNCHER_THUNDERMAIL_NAV",
+        )
+
+    print("SABLE_MAIL_TRANSITIVE_THUNDERMAIL=PASS_ABSENT")
+    print("SABLE_MAIL_AUTODISCOVERY_DEMO=PASS_ABSENT")
+    print("SABLE_MAIL_STANDARD_ACCOUNT_ENTRY=PASS")
+
     strings = app / "src/main/res/values/strings.xml"
     require_text(strings, ">Sable Mail</string>", "SABLE_MAIL_BRANDING")
     reject_text(strings, ">Thunderbird</string>", "SABLE_MAIL_BRANDING")
