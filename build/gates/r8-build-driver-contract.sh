@@ -208,10 +208,12 @@ trap 'rm -f "$tmp"' EXIT
 bash "$render" 0123456789abcdef0123456789abcdef01234567 "$tmp" >/dev/null
 bash -n "$tmp"
 grep -Fq 'EXPECTED_SOURCE_COMMIT="0123456789abcdef0123456789abcdef01234567"' "$tmp"
+grep -Fq 'SESSION="${SABLE_TMUX_SESSION:-sable-r9-panther-${EXPECTED_SOURCE_COMMIT:0:12}}"' "$tmp"
 grep -Fq 'SOURCE_MUTATION_AUTHORIZED=YES' "$tmp"
 grep -Fq 'BUILD_AUTHORIZED=YES' "$tmp"
 grep -Fq 'bash "$REPO/build/panther/run-r8-release-candidate.sh"' "$tmp"
 ! grep -Fq '        "$REPO/build/panther/run-r8-release-candidate.sh"' "$tmp"
 
+echo "R9_BUILD_DRIVER_SOURCE_BOUND_TMUX=PASS"
 echo "R8_BUILD_DRIVER_RUNNER_INVOCATION=PASS"
 echo "R8_BUILD_DRIVER_CONTRACT=PASS"
