@@ -61,6 +61,50 @@ WORKSPACE_TRANSLATOR_REL = pathlib.Path(
     "src/com/android/launcher3/workspacefunctions/translators/LauncherWorkspaceTypeTranslator.kt"
 )
 
+UTILITIES_KT_REL = pathlib.Path("src/com/android/launcher3/UtilitiesKt.kt")
+CACHEABLE_SHORTCUT_REL = pathlib.Path(
+    "src/com/android/launcher3/icons/CacheableShortcutInfo.kt"
+)
+DISPLAY_INFO_CONTAINER_REL = pathlib.Path(
+    "src/com/android/launcher3/display/DisplayInfoContainer.kt"
+)
+MODEL_WRITER_REL = pathlib.Path("src/com/android/launcher3/model/ModelWriter.kt")
+FAKE_MODEL_WRITER_REL = pathlib.Path(
+    "src/com/android/launcher3/model/testing/FakeModelWriter.kt"
+)
+DESKTOP_VISIBILITY_REL = pathlib.Path(
+    "quickstep/src/com/android/launcher3/statehandlers/DesktopVisibilityController.kt"
+)
+OVERFLOWN_APPS_REL = pathlib.Path(
+    "quickstep/src/com/android/launcher3/taskbar/OverflownAppsContainerView.kt"
+)
+BUBBLE_BAR_BACKGROUND_REL = pathlib.Path(
+    "quickstep/src/com/android/launcher3/taskbar/bubbles/BubbleBarBackground.kt"
+)
+PHONE_LANDSCAPE_NAV_REL = pathlib.Path(
+    "quickstep/src/com/android/launcher3/taskbar/navbutton/PhoneLandscapeNavLayoutter.kt"
+)
+STATS_LOG_COMPAT_REL = pathlib.Path(
+    "quickstep/src/com/android/quickstep/logging/StatsLogCompatManager.kt"
+)
+SEASCAPE_HANDLER_REL = pathlib.Path(
+    "quickstep/src/com/android/quickstep/orientation/SeascapePagedViewHandler.kt"
+)
+GROUP_TASK_REL = pathlib.Path("quickstep/src/com/android/quickstep/util/GroupTask.kt")
+DESKTOP_TASK_VIEW_REL = pathlib.Path(
+    "quickstep/src/com/android/quickstep/views/DesktopTaskView.kt"
+)
+FLOATING_APP_PAIR_BACKGROUND_REL = pathlib.Path(
+    "quickstep/src/com/android/quickstep/views/FloatingAppPairBackground.kt"
+)
+PRELOAD_ICON_DELEGATE_REL = pathlib.Path(
+    "src/com/android/launcher3/graphics/PreloadIconDelegate.kt"
+)
+DB_ENTRY_REL = pathlib.Path("src/com/android/launcher3/model/DbEntry.kt")
+ADD_ITEM_ACTIVITY_REL = pathlib.Path(
+    "src/com/android/launcher3/dragndrop/AddItemActivity.kt"
+)
+
 # Observed ai-g732 residue from the prior standalone-HOME debugging session.
 # The production blob is retained as an explicit Sable compatibility patch.
 # The test blob is known malformed against the pinned Dagger singleton API and
@@ -84,6 +128,23 @@ FOUNDATION_DIRTY_PATHS = {
     ITEM_INFO_TRANSLATORS_REL.as_posix(),
     UNPLACED_APP_TRANSLATOR_REL.as_posix(),
     WORKSPACE_TRANSLATOR_REL.as_posix(),
+    UTILITIES_KT_REL.as_posix(),
+    CACHEABLE_SHORTCUT_REL.as_posix(),
+    DISPLAY_INFO_CONTAINER_REL.as_posix(),
+    MODEL_WRITER_REL.as_posix(),
+    FAKE_MODEL_WRITER_REL.as_posix(),
+    DESKTOP_VISIBILITY_REL.as_posix(),
+    OVERFLOWN_APPS_REL.as_posix(),
+    BUBBLE_BAR_BACKGROUND_REL.as_posix(),
+    PHONE_LANDSCAPE_NAV_REL.as_posix(),
+    STATS_LOG_COMPAT_REL.as_posix(),
+    SEASCAPE_HANDLER_REL.as_posix(),
+    GROUP_TASK_REL.as_posix(),
+    DESKTOP_TASK_VIEW_REL.as_posix(),
+    FLOATING_APP_PAIR_BACKGROUND_REL.as_posix(),
+    PRELOAD_ICON_DELEGATE_REL.as_posix(),
+    DB_ENTRY_REL.as_posix(),
+    ADD_ITEM_ACTIVITY_REL.as_posix(),
 }
 
 FALLBACK_NULL_ANCHOR = "        if (interactor == null) {"
