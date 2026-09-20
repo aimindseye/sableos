@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 
 WS="${WS:-$SABLEOS_UPSTREAM}"
@@ -58,7 +59,7 @@ echo "R8_A_SHARED_DESIGN_SOURCE=PASS"
 GLOBAL_APPEARANCE="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
 SYSTEM_BARS="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableSystemBars.kt"
 START_PROVIDER="$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt"
-START_MANIFEST="$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
+LAUNCHER3_APPLIER="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
 
 for needle in     'org.sableos.start.appearance'     'rememberGlobalSableAppearance'     'SableGlobalTheme'
 do
@@ -92,13 +93,12 @@ if grep -Fq 'window.insetsController' "$SYSTEM_BARS"; then
     fail R8_SABLESTART_SYSTEM_BARS_DIRECT_PHONEWINDOW_ACCESS
 fi
 
-grep -Fq '<intent-filter android:priority="1">' "$START_MANIFEST" \
-    || fail R8_SABLESTART_HOME_PRIORITY
-grep -Fq 'android.intent.category.HOME' "$START_MANIFEST" \
-    || fail R8_SABLESTART_HOME_PRIORITY
+python3 "$LAUNCHER3_APPLIER" --source "$WS" verify \
+    || fail R9_LAUNCHER3_HOME_OWNERSHIP
 
 echo "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS"
-echo "R8_SABLESTART_HOME_PRIORITY=PASS"
+echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
+echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 
 echo
 echo "===== SHARED DESIGN WORKSPACE FIDELITY ====="
@@ -108,7 +108,7 @@ diff -qr     "$ROOT/src/android/shared/sabledesign"     "$WS/packages/apps/Sable
 echo "R8_SABLE_DESIGN_WORKSPACE_FIDELITY=PASS"
 
 echo
-echo "===== SABLE START WORKSPACE FIDELITY ====="
+echo "===== SABLE START PRESENTATION WORKSPACE FIDELITY ====="
 
 if ! python3 -     "$ROOT/src/android/packages/apps/SableStart"     "$WS/packages/apps/SableStart" <<'PY'
 import hashlib
@@ -165,7 +165,7 @@ if grep -Fq 'SableStartRoot.kt' "$ROOT/build/panther/sync-sablestart.sh"; then
 fi
 
 echo "R8_SABLESTART_SYNC_CONTRACT=PASS"
-echo "R8_START_PRODUCT_INTEGRATION=PASS"
+echo "R9_LAUNCHER3_HOME_PRODUCT_INTEGRATION=PASS"
 
 echo
 echo "===== CUMULATIVE SYSTEM SURFACE SOURCE GATE ====="
@@ -317,7 +317,7 @@ then
     fail R8_PRESIGNED_APK_PREPROCESSED
 fi
 
-for module in     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail
+for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
 done
@@ -411,6 +411,6 @@ echo "R8_UI4_SYSTEMUI=PASS_SOURCE"
 echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
-echo "R9_SABLESTART_SOURCE_COMPOSITION=PASS"
+echo "R9_LAUNCHER3_HOME_CUTOVER_SOURCE_COMPOSITION=PASS"
 echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING"
 echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO"
