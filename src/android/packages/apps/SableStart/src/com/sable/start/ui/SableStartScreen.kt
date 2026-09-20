@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -608,13 +609,13 @@ private fun AppsScreen(
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(start = 20.dp, top = 18.dp, bottom = 18.dp),
+                .padding(top = 18.dp, bottom = 18.dp),
     ) {
         Column(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(end = 38.dp),
+                    .padding(start = 20.dp, end = 38.dp),
         ) {
             MetroHeader(
                 title = "all apps",
@@ -655,6 +656,39 @@ private fun AppsScreen(
         }
 
         if (letters.isNotEmpty()) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .fillMaxHeight()
+                        .width(22.dp)
+                        .pointerInput(letters, rows) {
+                            fun jumpTo(y: Float) {
+                                if (letters.isEmpty() || size.height <= 0) return
+                                val slot =
+                                    ((y / size.height) * letters.size)
+                                        .toInt()
+                                        .coerceIn(0, letters.lastIndex)
+                                val letter = letters[slot]
+                                val index = rows.indexOfFirst { it.section == letter }
+                                if (index >= 0) {
+                                    activeLetter = letter
+                                    scope.launch {
+                                        listState.scrollToItem(index)
+                                    }
+                                }
+                            }
+
+                            detectDragGestures(
+                                onDragStart = { offset -> jumpTo(offset.y) },
+                                onDrag = { change, _ ->
+                                    jumpTo(change.position.y)
+                                    change.consume()
+                                },
+                            )
+                        },
+            )
+
             Column(
                 modifier =
                     Modifier
