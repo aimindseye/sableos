@@ -40,6 +40,9 @@ WIDGET_SIZE_HANDLER_REL = pathlib.Path(
 PREVIEW_CONTEXT_REL = pathlib.Path(
     "src/com/android/launcher3/preview/PreviewContext.kt"
 )
+PREVIEW_LIFECYCLE_REL = pathlib.Path(
+    "src/com/android/launcher3/preview/PreviewLifecycleObserver.kt"
+)
 
 WALLPAPER_THEME_MANAGER_REL = pathlib.Path(
     "src/com/android/launcher3/util/WallpaperThemeManager.kt"
@@ -74,6 +77,7 @@ FOUNDATION_DIRTY_PATHS = {
     RETRYING_EXECUTOR_REL.as_posix(),
     WIDGET_SIZE_HANDLER_REL.as_posix(),
     PREVIEW_CONTEXT_REL.as_posix(),
+    PREVIEW_LIFECYCLE_REL.as_posix(),
     WALLPAPER_THEME_MANAGER_REL.as_posix(),
     DOUBLE_SHADOW_ICON_DRAWABLE_REL.as_posix(),
     ITEM_INFO_TRANSLATORS_REL.as_posix(),
@@ -297,6 +301,22 @@ def patch_preview_context(text: str) -> str:
         "            mDbDir.listFiles()?.forEach { file -> file.delete() }",
         "PreviewContext nullable listFiles",
     )
+
+def patch_preview_lifecycle(text: str) -> str:
+    replacements = (
+        ("MESSAGE_ID_UPDATE_SHAPE", "LEGACY_MESSAGE_ID_UPDATE_SHAPE"),
+        ("MESSAGE_ID_UPDATE_GRID", "LEGACY_MESSAGE_ID_UPDATE_GRID"),
+        ("MESSAGE_ID_UPDATE_ICON_THEMED", "LEGACY_MESSAGE_ID_UPDATE_ICON_THEMED"),
+    )
+    for old, new in replacements:
+        text = text.replace(old, new)
+
+    for annotation in (
+        '        @Deprecated("Use [MESSAGE_ID_UPDATE_COMMAND] instead")\n',
+    ):
+        text = text.replace(annotation, "")
+    return text
+
 
 def patch_wallpaper_theme_manager(text: str) -> str:
     return replace_once(
@@ -636,6 +656,11 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         PREVIEW_CONTEXT_REL: (
             "mDbDir.listFiles()?.forEach",
         ),
+        PREVIEW_LIFECYCLE_REL: (
+            "LEGACY_MESSAGE_ID_UPDATE_SHAPE",
+            "LEGACY_MESSAGE_ID_UPDATE_GRID",
+            "LEGACY_MESSAGE_ID_UPDATE_ICON_THEMED",
+        ),
         WALLPAPER_THEME_MANAGER_REL: (
             '@Deprecated("Deprecated framework callback")',
         ),
@@ -686,6 +711,7 @@ def apply_tree(source: pathlib.Path) -> None:
     retrying_executor_path = launcher / RETRYING_EXECUTOR_REL
     widget_size_handler_path = launcher / WIDGET_SIZE_HANDLER_REL
     preview_context_path = launcher / PREVIEW_CONTEXT_REL
+    preview_lifecycle_path = launcher / PREVIEW_LIFECYCLE_REL
     wallpaper_theme_manager_path = launcher / WALLPAPER_THEME_MANAGER_REL
     double_shadow_icon_drawable_path = launcher / DOUBLE_SHADOW_ICON_DRAWABLE_REL
     item_info_translators_path = launcher / ITEM_INFO_TRANSLATORS_REL
@@ -722,6 +748,10 @@ def apply_tree(source: pathlib.Path) -> None:
     )
     preview_context_path.write_text(
         patch_preview_context(preview_context_path.read_text(encoding="utf-8")),
+        encoding="utf-8",
+    )
+    preview_lifecycle_path.write_text(
+        patch_preview_lifecycle(preview_lifecycle_path.read_text(encoding="utf-8")),
         encoding="utf-8",
     )
     wallpaper_theme_manager_path.write_text(
