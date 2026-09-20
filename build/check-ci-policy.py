@@ -67,6 +67,11 @@ generator = ROOT / "build" / "generate-supply-chain-evidence.py"
 supply_workflow = WORKFLOWS / "supply-chain.yml"
 
 gradle_checker = ROOT / "build" / "check-gradle-supply-chain.py"
+sablestart_signing_gate = ROOT / "build" / "gates" / "r8-sablestart-signing-policy.py"
+r8_final_build = ROOT / "build" / "panther" / "build-r8-final-ui.sh"
+r8_target_files_gate = ROOT / "build" / "gates" / "r8-final-target-files.sh"
+r8_closure_workflow = WORKFLOWS / "r8-final-ui-closure.yml"
+sablestart_bp = ROOT / "src" / "android" / "packages" / "apps" / "SableStart" / "Android.bp"
 runner_checker = ROOT / "build" / "check-runner-policy.py"
 runner_policy = ROOT / "build" / "trusted-runner-policy.json"
 runner_host_audit = ROOT / "build" / "audit-trusted-runner-host.py"
@@ -76,6 +81,11 @@ for path in (
     installer,
     generator,
     gradle_checker,
+    sablestart_signing_gate,
+    r8_final_build,
+    r8_target_files_gate,
+    r8_closure_workflow,
+    sablestart_bp,
     runner_checker,
     runner_policy,
     runner_host_audit,
@@ -83,6 +93,63 @@ for path in (
 ):
     if not path.is_file():
         failures.append(f"INFRA3 supply-chain file missing: {path.relative_to(ROOT)}")
+
+if sablestart_signing_gate.is_file():
+    signing_proc = subprocess.run(
+        [sys.executable, str(sablestart_signing_gate), "--self-test"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if signing_proc.stdout:
+        print(signing_proc.stdout, end="")
+    if signing_proc.returncode != 0:
+        if signing_proc.stderr:
+            print(signing_proc.stderr, file=sys.stderr, end="")
+        failures.append("R8 SableStart signing-policy self-test failed")
+
+if sablestart_bp.is_file():
+    bp_text = sablestart_bp.read_text(encoding="utf-8")
+    if "v4_signature: false," not in bp_text:
+        failures.append("SableStart must explicitly disable v4_signature")
+    if "v4_signature: true," in bp_text:
+        failures.append("SableStart v4_signature true is forbidden")
+
+for path, tokens in (
+    (
+        r8_final_build,
+        (
+            "r8-sablestart-signing-policy.py",
+            "R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS",
+            "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS",
+        ),
+    ),
+    (
+        r8_target_files_gate,
+        (
+            "r8-sablestart-signing-policy.py",
+            "R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS",
+        ),
+    ),
+    (
+        r8_closure_workflow,
+        (
+            "SableStart signing policy contract",
+            "R8_SABLESTART_SIGNING_POLICY_CI=PASS",
+            "build/gates/r8-sablestart-signing-policy.py --self-test",
+        ),
+    ),
+):
+    if path.is_file():
+        text = path.read_text(encoding="utf-8")
+        for token in tokens:
+            if token not in text:
+                failures.append(
+                    f"R8 SableStart signing-policy token missing: "
+                    f"{path.relative_to(ROOT)}: {token}"
+                )
 
 if tool_lock.is_file():
     try:
