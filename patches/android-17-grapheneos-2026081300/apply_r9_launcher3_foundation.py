@@ -112,6 +112,25 @@ TASKBAR_DEVICE_PROFILE_FACTORY_REL = pathlib.Path(
     "src/com/android/launcher3/deviceprofile/TaskbarDeviceProfileFactory.kt"
 )
 
+WIDGET_APP_ICONS_REPOSITORY_REL = pathlib.Path(
+    "src/com/android/launcher3/widgetpicker/repository/WidgetAppIconsRepositoryImpl.kt"
+)
+WALLPAPER_COLOR_HINTS_REL = pathlib.Path(
+    "src/com/android/launcher3/util/WallpaperColorHints.kt"
+)
+FIRST_SCREEN_BROADCAST_HELPER_REL = pathlib.Path(
+    "src/com/android/launcher3/model/FirstScreenBroadcastHelper.kt"
+)
+MODEL_TASK_CONTROLLER_REL = pathlib.Path(
+    "src/com/android/launcher3/model/ModelTaskController.kt"
+)
+REFRESH_RATE_TRACKER_REL = pathlib.Path(
+    "src/com/android/launcher3/util/window/RefreshRateTracker.kt"
+)
+REMOVE_ANIMATION_SETTINGS_TRACKER_REL = pathlib.Path(
+    "src/com/android/launcher3/RemoveAnimationSettingsTracker.kt"
+)
+
 # Observed ai-g732 residue from the prior standalone-HOME debugging session.
 # The production blob is retained as an explicit Sable compatibility patch.
 # The test blob is known malformed against the pinned Dagger singleton API and
@@ -154,6 +173,12 @@ FOUNDATION_DIRTY_PATHS = {
     ADD_ITEM_ACTIVITY_REL.as_posix(),
     DISPLAY_CONTROLLER_IMPL_REL.as_posix(),
     TASKBAR_DEVICE_PROFILE_FACTORY_REL.as_posix(),
+    WIDGET_APP_ICONS_REPOSITORY_REL.as_posix(),
+    WALLPAPER_COLOR_HINTS_REL.as_posix(),
+    FIRST_SCREEN_BROADCAST_HELPER_REL.as_posix(),
+    MODEL_TASK_CONTROLLER_REL.as_posix(),
+    REFRESH_RATE_TRACKER_REL.as_posix(),
+    REMOVE_ANIMATION_SETTINGS_TRACKER_REL.as_posix(),
 }
 
 FALLBACK_NULL_ANCHOR = "        if (interactor == null) {"
@@ -886,6 +911,181 @@ def patch_taskbar_device_profile_factory(text: str) -> str:
         "deviceProfile.workspaceProfile.copy(iconSizePx = deviceProfile.taskbarProfile.iconSize)",
         "TaskbarDeviceProfileFactory immutable workspace profile",
     )
+
+
+def patch_widget_app_icons_repository(text: str) -> str:
+    text = replace_once(
+        text,
+        "import com.android.launcher3.icons.BitmapInfo\n",
+        "import com.android.launcher3.concurrent.annotations.Ui\n"
+        "import com.android.launcher3.icons.BitmapInfo\n",
+        "WidgetAppIconsRepository Ui qualifier import",
+    )
+    text = text.replace(
+        "import com.android.launcher3.util.Executors.MAIN_EXECUTOR\n",
+        "",
+    )
+    text = replace_once(
+        text,
+        "import javax.inject.Inject\n",
+        "import java.util.concurrent.Executor\nimport javax.inject.Inject\n",
+        "WidgetAppIconsRepository Executor import",
+    )
+    text = replace_once(
+        text,
+        "class WidgetAppIconsRepositoryImpl @Inject constructor(private val iconCache: IconCache) :",
+        "class WidgetAppIconsRepositoryImpl\n"
+        "@Inject\n"
+        "constructor(\n"
+        "    private val iconCache: IconCache,\n"
+        "    @Ui private val uiExecutor: Executor,\n"
+        ") :",
+        "WidgetAppIconsRepository injected Ui executor",
+    )
+    return replace_once(
+        text,
+        "            MAIN_EXECUTOR,",
+        "            uiExecutor,",
+        "WidgetAppIconsRepository Ui executor usage",
+    )
+
+
+def patch_wallpaper_color_hints(text: str) -> str:
+    text = replace_once(
+        text,
+        "import androidx.annotation.VisibleForTesting\n",
+        "import androidx.annotation.VisibleForTesting\n"
+        "import com.android.launcher3.concurrent.annotations.LightweightBackground\n"
+        "import com.android.launcher3.concurrent.annotations.LightweightBackgroundPriority.UI\n"
+        "import com.android.launcher3.concurrent.annotations.Ui\n",
+        "WallpaperColorHints executor qualifier imports",
+    )
+    text = text.replace("import com.android.launcher3.util.Executors.MAIN_EXECUTOR\n", "")
+    text = text.replace("import com.android.launcher3.util.Executors.UI_HELPER_EXECUTOR\n", "")
+    text = replace_once(
+        text,
+        "constructor(@ApplicationContext private val context: Context, tracker: DaggerSingletonTracker) {",
+        "constructor(\n"
+        "    @ApplicationContext private val context: Context,\n"
+        "    tracker: DaggerSingletonTracker,\n"
+        "    @Ui private val uiExecutor: LooperExecutor,\n"
+        "    @LightweightBackground(priority = UI) private val uiHelperExecutor: LooperExecutor,\n"
+        ") {",
+        "WallpaperColorHints injected executors",
+    )
+    text = text.replace("UI_HELPER_EXECUTOR.execute", "uiHelperExecutor.execute")
+    return replace_once(
+        text,
+        "                MAIN_EXECUTOR.handler,",
+        "                uiExecutor.handler,",
+        "WallpaperColorHints Ui handler",
+    )
+
+
+def patch_first_screen_broadcast_helper(text: str) -> str:
+    text = replace_once(
+        text,
+        "import androidx.annotation.WorkerThread\n",
+        "import androidx.annotation.WorkerThread\n"
+        "import com.android.launcher3.concurrent.annotations.Ui\n",
+        "FirstScreenBroadcastHelper Ui qualifier import",
+    )
+    text = text.replace("import com.android.launcher3.util.Executors\n", "")
+    text = replace_once(
+        text,
+        "import com.android.launcher3.util.PackageUserKey\n",
+        "import com.android.launcher3.util.LooperExecutor\n"
+        "import com.android.launcher3.util.PackageUserKey\n",
+        "FirstScreenBroadcastHelper LooperExecutor import",
+    )
+    text = replace_once(
+        text,
+        "constructor(private val packageManagerHelper: PackageManagerHelper) {",
+        "constructor(\n"
+        "    private val packageManagerHelper: PackageManagerHelper,\n"
+        "    @Ui private val uiExecutor: LooperExecutor,\n"
+        ") {",
+        "FirstScreenBroadcastHelper injected Ui executor",
+    )
+    return replace_once(
+        text,
+        "            return Executors.MAIN_EXECUTOR.submit<ArrayList<WorkspaceItemInfo>> { ArrayList(list) }",
+        "            return uiExecutor.submit<ArrayList<WorkspaceItemInfo>> { ArrayList(list) }",
+        "FirstScreenBroadcastHelper Ui executor usage",
+    )
+
+
+def patch_model_task_controller(text: str) -> str:
+    text = replace_once(
+        text,
+        "import com.android.launcher3.celllayout.CellPosMapper\n",
+        "import com.android.launcher3.celllayout.CellPosMapper\n"
+        "import com.android.launcher3.concurrent.annotations.Ui\n",
+        "ModelTaskController Ui qualifier import",
+    )
+    text = text.replace("import com.android.launcher3.util.Executors.MAIN_EXECUTOR\n", "")
+    text = replace_once(
+        text,
+        "import com.android.launcher3.widget.model.WidgetsListBaseEntriesBuilder\n",
+        "import com.android.launcher3.widget.model.WidgetsListBaseEntriesBuilder\n"
+        "import java.util.concurrent.Executor\n",
+        "ModelTaskController Executor import",
+    )
+    text = replace_once(
+        text,
+        "    val modelWriterFactory: ModelWriterFactory,\n) {\n\n    private val uiExecutor = MAIN_EXECUTOR\n",
+        "    val modelWriterFactory: ModelWriterFactory,\n"
+        "    @Ui private val uiExecutor: Executor,\n"
+        ") {\n",
+        "ModelTaskController injected Ui executor",
+    )
+    return text
+
+
+def patch_refresh_rate_tracker(text: str) -> str:
+    text = replace_once(
+        text,
+        "import android.view.Display.DEFAULT_DISPLAY\n",
+        "import android.view.Display.DEFAULT_DISPLAY\n"
+        "import com.android.launcher3.concurrent.annotations.LightweightBackground\n"
+        "import com.android.launcher3.concurrent.annotations.LightweightBackgroundPriority.UI\n",
+        "RefreshRateTracker lightweight executor imports",
+    )
+    text = text.replace("import com.android.launcher3.util.Executors\n", "")
+    text = replace_once(
+        text,
+        "import com.android.launcher3.util.DaggerSingletonTracker\n",
+        "import com.android.launcher3.util.DaggerSingletonTracker\n"
+        "import com.android.launcher3.util.LooperExecutor\n",
+        "RefreshRateTracker LooperExecutor import",
+    )
+    text = replace_once(
+        text,
+        "    constructor(@ApplicationContext ctx: Context, tracker: DaggerSingletonTracker) :",
+        "    constructor(\n"
+        "        @ApplicationContext ctx: Context,\n"
+        "        tracker: DaggerSingletonTracker,\n"
+        "        @LightweightBackground(priority = UI) private val uiHelperExecutor: LooperExecutor,\n"
+        "    ) :",
+        "RefreshRateTracker injected executor",
+    )
+    return replace_once(
+        text,
+        "                it.registerDisplayListener(this, Executors.UI_HELPER_EXECUTOR.handler)",
+        "                it.registerDisplayListener(this, uiHelperExecutor.handler)",
+        "RefreshRateTracker executor usage",
+    )
+
+
+def patch_remove_animation_settings_tracker(text: str) -> str:
+    obsolete_import = "import com.android.launcher3.util.Executors\n"
+    if obsolete_import in text:
+        if text.count(obsolete_import) != 1:
+            raise FoundationError(
+                "RemoveAnimationSettingsTracker Executors import: expected one anchor"
+            )
+        text = text.replace(obsolete_import, "", 1)
+    return text
 
 
 def git_head(path: pathlib.Path) -> str:
