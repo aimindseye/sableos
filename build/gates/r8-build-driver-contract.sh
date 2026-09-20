@@ -21,15 +21,14 @@ stage="$ROOT/build/panther/stage-r8-product-apps.sh"
 finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
 inventory="$ROOT/build/gates/verify-r8-vendor-sable-inventory.py"
-signing_policy="$ROOT/build/gates/r8-sablestart-signing-policy.py"
 target_files_gate="$ROOT/build/gates/r8-final-target-files.sh"
 start_bp="$ROOT/src/android/packages/apps/SableStart/Android.bp"
 android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
-start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
+start_check="$ROOT/apps/r8/android/sablestart-presentation-check/build.gradle.kts"
 local_ci="$ROOT/build/local-ci/run.sh"
 ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale"$inventory" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
@@ -152,45 +151,45 @@ python3 "$inventory" --self-test
 
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
 
-python3 "$signing_policy" --self-test
-python3 "$signing_policy" --source-bp "$start_bp"
-grep -Fq 'v4_signature: false,' "$start_bp"
-! grep -Fq 'v4_signature: true,' "$start_bp"
-grep -Fq 'r8-sablestart-signing-policy.py' "$finalbuild"
-grep -Fq 'R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS' "$finalbuild"
-grep -Fq 'R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS' "$finalbuild"
-grep -Fq 'r8-sablestart-signing-policy.py' "$target_files_gate"
-grep -Fq 'R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS' "$target_files_gate"
+grep -Fq 'name: "sable_start_presentation_srcs"' "$start_bp"
+! grep -Fq 'android_app {' "$start_bp"
+! grep -Fq 'rust_ffi_shared {' "$start_bp"
+grep -Fq 'Launcher3QuickStep.apk' "$target_files_gate"
+grep -Fq 'R9_SABLESTART_TARGET=PASS_ABSENT' "$target_files_gate"
 
-echo "R8_SABLESTART_SIGNING_POLICY_CONTRACT=PASS"
+echo "R9_LAUNCHER3_HOME_TARGET_POLICY_CONTRACT=PASS"
 
-grep -Fq 'include(":sablestart-production-check")' "$android_settings"
+
+grep -Fq 'include(":sablestart-presentation-check")' "$android_settings"
+! grep -Fq 'include(":sablestart-production-check")' "$android_settings"
 ! grep -Fq 'include(":start-preview")' "$android_settings"
 ! grep -Fq 'include(":system-preview")' "$android_settings"
 grep -Fq '../../../../src/android/packages/apps/SableStart/src' "$start_check"
-grep -Fq '../../../../src/android/packages/apps/SableStart/AndroidManifest.xml' "$start_check"
-grep -Fq '../../../../src/android/packages/apps/SableStart/res' "$start_check"
-grep -Fq ':sablestart-production-check:compileDebugKotlin' "$local_ci"
-grep -Fq ':sablestart-production-check:lintDebug' "$local_ci"
+! grep -Fq 'AndroidManifest.xml' "$start_check"
+! grep -Fq 'src/android/packages/apps/SableStart/res' "$start_check"
+grep -Fq ':sablestart-presentation-check:compileDebugKotlin' "$local_ci"
+grep -Fq ':sablestart-presentation-check:lintDebug' "$local_ci"
+! grep -Fq ':sablestart-production-check:' "$local_ci"
 ! grep -Fq ':start-preview:' "$local_ci"
 ! grep -Fq ':system-preview:' "$local_ci"
 grep -Fq 'GITHUB_ACTIONS_EXECUTION=DISABLED' "$local_ci"
 grep -Fq 'SELF_HOSTED_ACTIONS_RUNNER=DISABLED' "$local_ci"
 grep -Fq 'hosted GitHub CI remains executable' "$ci_policy"
 
-echo "R8_SABLESTART_PRODUCTION_GRADLE_COMPILE_CONTRACT=PASS"
-echo "R8_SABLESTART_PRODUCTION_LINT_CONTRACT=PASS"
+echo "R9_SABLESTART_PRESENTATION_GRADLE_COMPILE_CONTRACT=PASS"
+echo "R9_SABLESTART_PRESENTATION_LINT_CONTRACT=PASS"
 
-grep -Fq '===== SABLESTART SOONG PREFLIGHT =====' "$finalbuild"
-grep -Fq 'sablestart-soong-preflight.log' "$finalbuild"
-grep -Fq 'R8_SABLESTART_SOONG_PREFLIGHT=PASS' "$finalbuild"
-grep -Fq 'R8_FINAL_BUILD=FAIL_SABLESTART_PREFLIGHT' "$finalbuild"
+grep -Fq '===== LAUNCHER3QUICKSTEP HOME PREFLIGHT =====' "$finalbuild"
+grep -Fq 'launcher3-home-preflight.log' "$finalbuild"
+grep -Fq 'R9_LAUNCHER3_HOME_PREFLIGHT=PASS' "$finalbuild"
+grep -Fq 'R8_FINAL_BUILD=FAIL_LAUNCHER3_HOME_PREFLIGHT' "$finalbuild"
+! grep -Fq 'm -j"$JOBS" SableStart' "$finalbuild"
 
-preflight_line="$(grep -nF '===== SABLESTART SOONG PREFLIGHT =====' "$finalbuild" | head -n1 | cut -d: -f1)"
+preflight_line="$(grep -nF '===== LAUNCHER3QUICKSTEP HOME PREFLIGHT =====' "$finalbuild" | head -n1 | cut -d: -f1)"
 combined_line="$(grep -nF '===== COMBINED UI MODULE COMPILE GATE =====' "$finalbuild" | head -n1 | cut -d: -f1)"
 [[ -n "$preflight_line" && -n "$combined_line" && "$preflight_line" -lt "$combined_line" ]]
 
-echo "R8_SABLESTART_SOONG_PREFLIGHT_CONTRACT=PASS"
+echo "R9_LAUNCHER3_HOME_PREFLIGHT_CONTRACT=PASS"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
