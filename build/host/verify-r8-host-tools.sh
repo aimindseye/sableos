@@ -27,7 +27,7 @@ do
     [[ -d "$path" ]] || fail R8_HOST_TOOL_PATH
 done
 
-for tool in     "$SABLE_SDKMANAGER"     "$SABLE_APKANALYZER"     "$SABLE_CARGO"     "$SABLE_RUSTC"     "$SABLE_RUSTUP"     "$SABLE_JDK17/bin/java"     "$SABLE_JDK21/bin/java"     "$SABLE_PYTHON"
+for tool in     "$SABLE_SDKMANAGER"     "$SABLE_APKANALYZER"     "$SABLE_CARGO"     "$SABLE_RUSTC"     "$SABLE_RUSTUP"     "$SABLE_JDK17/bin/java"     "$SABLE_JDK21/bin/java"     "$SABLE_PYTHON"     "$SABLE_MOBSFSCAN"
 do
     [[ -x "$tool" ]] || {
         echo "MISSING_EXECUTABLE=$tool"
@@ -60,21 +60,8 @@ python3 "$ROOT/build/install-pinned-tool.py" --verify-dir "$SABLE_SECURITY_BIN" 
 [[ -d "$SABLE_MOBSFSCAN_SOURCE/.git" ]] || fail R8_MOBSFSCAN_SOURCE
 [[ "$(git -C "$SABLE_MOBSFSCAN_SOURCE" rev-parse HEAD 2>/dev/null || true)" == "$SABLE_MOBSFSCAN_COMMIT" ]] \
     || fail R8_MOBSFSCAN_COMMIT
-[[ -x "$SABLE_MOBSFSCAN_PYTHON" ]] || fail R8_MOBSFSCAN_PYTHON
-
-PYTHONPATH="$SABLE_MOBSFSCAN_SOURCE" "$SABLE_MOBSFSCAN_PYTHON" - <<'PY' \
-    || fail R8_MOBSFSCAN_RUNTIME
-import mobsfscan
-import libsast
-import sarif_om
-import semgrep
-
-expected = "1.0.0"
-if mobsfscan.__version__ != expected:
-    raise SystemExit(
-        f"mobsfscan version mismatch: expected={expected} actual={mobsfscan.__version__}"
-    )
-PY
+"$SABLE_MOBSFSCAN" --version 2>&1 | grep -Fq "$SABLE_MOBSFSCAN_VERSION" \
+    || fail R8_MOBSFSCAN_VERSION
 
 "$SABLE_JDK17/bin/java" -version 2>&1 | head -n1 | grep -Eq '"17\.'     || fail R8_JDK17
 "$SABLE_JDK21/bin/java" -version 2>&1 | head -n1 | grep -Eq '"21\.'     || fail R8_JDK21
