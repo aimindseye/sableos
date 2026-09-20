@@ -156,6 +156,76 @@ def main() -> None:
         2,
     )
 
+    auto_mapper = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "domain/AutoDiscoveryMapper.kt"
+    )
+    remove_once(
+        auto_mapper,
+        "import app.k9mail.autodiscovery.demo.DemoServerSettings\n",
+    )
+    remove_exact_count(
+        auto_mapper,
+        "        is DemoServerSettings -> this.serverSettings\n",
+        2,
+    )
+
+    get_auto_discovery = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "domain/usecase/GetAutoDiscovery.kt"
+    )
+    remove_once(
+        get_auto_discovery,
+        "import app.k9mail.autodiscovery.demo.DemoServerSettings\n",
+    )
+    replace_once(
+        get_auto_discovery,
+        '''        return if (result is AutoDiscoveryResult.Settings) {
+            if (result.incomingServerSettings is DemoServerSettings) {
+                return result
+            } else {
+                validateOAuthSupport(result)
+            }
+        } else {
+            result
+        }
+''',
+        '''        return if (result is AutoDiscoveryResult.Settings) {
+            validateOAuthSupport(result)
+        } else {
+            result
+        }
+''',
+    )
+
+    auto_view_model = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "ui/autodiscovery/AccountAutoDiscoveryViewModel.kt"
+    )
+    remove_once(
+        auto_view_model,
+        "import app.k9mail.autodiscovery.demo.DemoServerSettings\n",
+    )
+    remove_once(
+        auto_view_model,
+        '''        if (settings.incomingServerSettings is DemoServerSettings) {
+            updateState {
+                it.copy(
+                    isLoading = false,
+                    autoDiscoverySettings = settings,
+                    configStep = ConfigStep.PASSWORD,
+                    isNextButtonVisible = true,
+                )
+            }
+            return
+        }
+
+''',
+    )
+
     launcher_build = root / "feature/launcher/build.gradle.kts"
     remove_once(
         launcher_build,
@@ -964,6 +1034,7 @@ internal object SableMailAppearanceSync {
     print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_RUNTIME_GRAPH")
     print("SABLE_MAIL_AUTODISCOVERY_DEMO=REMOVED_FROM_PRODUCT_RUNTIME_GRAPH")
+    print("SABLE_MAIL_AUTODISCOVERY_DEMO_SOURCE_SPECIAL_CASES=REMOVED")
     print("SABLE_MAIL_ACCOUNT_ENTRY=STANDARD_IMAP_SMTP_SETUP")
     print("SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION")
     print("SABLE_MAIL_GENERIC_IMAP_SMTP=UPSTREAM")
