@@ -35,3 +35,42 @@ sable_device_accept() {
       ;;
   esac
 }
+
+
+sable_device_artifact_gate() {
+  local release="$1"
+  local build_source="$2"
+  local target_files_sha="$3"
+  local evidence_dir="$4"
+
+  [[ -n "$evidence_dir" && -d "$evidence_dir" ]] || {
+    echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_EVIDENCE_DIR"
+    return 1
+  }
+
+  case "$release" in
+    R9|r9)
+      local markers=(
+        "SOURCE=$build_source"
+        "TARGET_FILES_SHA256=$target_files_sha"
+        "R9_TARGET_FILES_FRESHNESS=PASS"
+        "R9_FRESH_FULL_BUILD=PASS"
+        "R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES"
+        "R8_RELEASE_CANDIDATE=PASS"
+      )
+      local marker
+      for marker in "${markers[@]}"; do
+        if ! grep -R -Fq -- "$marker" "$evidence_dir" 2>/dev/null; then
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_MISSING_MARKER marker=$marker"
+          return 1
+        fi
+      done
+      ;;
+    *)
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_UNQUALIFIED_RELEASE release=$release"
+      return 1
+      ;;
+  esac
+
+  echo "SABLE_DEVICE_ARTIFACT_GATE=PASS"
+}
