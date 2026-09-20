@@ -3,7 +3,7 @@
 ![Local CI](https://img.shields.io/badge/CI-local%20direct-active-2ea44f)
 ![R9 Launcher](https://img.shields.io/badge/R9%20launcher%20visual-PASS-2ea44f)
 ![Product composition](https://img.shields.io/badge/product%20composition-PASS-2ea44f)
-![Fresh Panther](https://img.shields.io/badge/fresh%20Panther%20build-IN%20PROGRESS-f0ad4e)
+![Fresh Panther](https://img.shields.io/badge/fresh%20Panther%20build-PASS-2ea44f)
 ![Pixel 7](https://img.shields.io/badge/Pixel%207%20physical-PENDING-lightgrey)
 ![Titan 2](https://img.shields.io/badge/Titan%202-keyboard--first%20QUEUED-6f42c1)
 
@@ -117,7 +117,7 @@ Panther D4 physical acceptance remains historical baseline evidence. The active 
 ```text
 R8 application/design/product-composition foundation        PASS
 R9 Launcher3/Quickstep + Sable Start visual gate            PASS
-R9 source-bound fresh Panther full build                    IN PROGRESS
+R9 source-bound fresh Panther full build                    PASS
 R9 physical Pixel 7 HOME/Overview/Recents/runtime gate      PENDING
 Titan 2 keyboard-first portability/GSI campaign             QUEUED_AFTER_PANTHER
 production signing / OTA                                    DEFERRED
@@ -126,9 +126,9 @@ production signing / OTA                                    DEFERRED
 Near-term sequence:
 
 ```text
-fresh Panther build causality
-    -> exact target-files/image proof
-    -> physical Pixel 7 Launcher3/Quickstep runtime acceptance
+fresh Panther build causality                               PASS
+    -> exact target-files SHA-256 bound                       PASS
+    -> physical Pixel 7 Launcher3/Quickstep runtime acceptance NEXT
     -> Titan 2 T0 inventory + keyboard-first N0 portability
     -> broader common Sable product work
     -> production signing/OTA closure before an actual release candidate
