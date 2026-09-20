@@ -564,3 +564,25 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L13 Local Context acceptance
+
+The recaptured Pixel 7 Local Context permission-required frame is accepted.
+
+Accepted characteristics:
+
+- Calendar, Music, and Photos use flat rows with direct Sable accent marks;
+- permission-required state is prominent without resembling a permission/settings screen;
+- the `enable local data` strip is clearly the primary action;
+- provider absence is stated explicitly;
+- `local only · no ambient network search` keeps the privacy boundary concise;
+- no remote/fabricated context is implied.
+
+```text
+R9_L13_LOCAL_CONTEXT_BEHAVIOR=PASS
+R9_L13_LOCAL_CONTEXT_VISUAL_REVIEW=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_SEARCH_PEEK_CONTEXT_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_APPEARANCE_THEME
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
