@@ -161,6 +161,13 @@ def check() -> list[str]:
             "patch_add_item_activity",
             "patch_display_controller_impl",
             "patch_taskbar_device_profile_factory",
+            "patch_widget_app_icons_repository",
+            "patch_wallpaper_color_hints",
+            "patch_first_screen_broadcast_helper",
+            "patch_model_task_controller",
+            "patch_refresh_rate_tracker",
+            "patch_remove_animation_settings_tracker",
+            "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
             "HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT",
         ):
@@ -238,6 +245,7 @@ def check() -> list[str]:
             "r9-launcher-warning-gate.py",
             "R9_LAUNCHER3_WARNING_MIGRATIONS=PASS",
             "R9_LAUNCHER3_WARNING_QUALITY=OPEN_DEBT_REMAINS",
+            "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS",
             "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
             "RETAINED_PENDING_CUTOVER",
         ):
