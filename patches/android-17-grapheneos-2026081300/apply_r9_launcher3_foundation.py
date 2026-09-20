@@ -328,7 +328,7 @@ android_library {
         "androidx.compose.runtime_runtime",
     ],
 }
- 
+
 // Build rule for Quickstep app.
 suffix
 '''
