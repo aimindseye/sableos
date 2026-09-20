@@ -1460,6 +1460,30 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         TASKBAR_DEVICE_PROFILE_FACTORY_REL: (
             "workspaceProfile.copy(iconSizePx = deviceProfile.taskbarProfile.iconSize)",
         ),
+        WIDGET_APP_ICONS_REPOSITORY_REL: (
+            "@Ui private val uiExecutor: Executor",
+            "            uiExecutor,",
+        ),
+        WALLPAPER_COLOR_HINTS_REL: (
+            "@Ui private val uiExecutor: LooperExecutor",
+            "@LightweightBackground(priority = UI) private val uiHelperExecutor: LooperExecutor",
+            "uiHelperExecutor.execute",
+            "uiExecutor.handler",
+        ),
+        FIRST_SCREEN_BROADCAST_HELPER_REL: (
+            "@Ui private val uiExecutor: LooperExecutor",
+            "uiExecutor.submit<ArrayList<WorkspaceItemInfo>>",
+        ),
+        MODEL_TASK_CONTROLLER_REL: (
+            "@Ui private val uiExecutor: Executor",
+        ),
+        REFRESH_RATE_TRACKER_REL: (
+            "@LightweightBackground(priority = UI) private val uiHelperExecutor: LooperExecutor",
+            "registerDisplayListener(this, uiHelperExecutor.handler)",
+        ),
+        REMOVE_ANIMATION_SETTINGS_TRACKER_REL: (
+            "@LightweightBackground(priority = UI) private val uiHelperExecutor: Executor",
+        ),
     }
     for rel, tokens in cleanup_expectations.items():
         source_text = (launcher / rel).read_text(encoding="utf-8")
@@ -1516,6 +1540,12 @@ def apply_tree(source: pathlib.Path) -> None:
     add_item_activity_path = launcher / ADD_ITEM_ACTIVITY_REL
     display_controller_impl_path = launcher / DISPLAY_CONTROLLER_IMPL_REL
     taskbar_device_profile_factory_path = launcher / TASKBAR_DEVICE_PROFILE_FACTORY_REL
+    widget_app_icons_repository_path = launcher / WIDGET_APP_ICONS_REPOSITORY_REL
+    wallpaper_color_hints_path = launcher / WALLPAPER_COLOR_HINTS_REL
+    first_screen_broadcast_helper_path = launcher / FIRST_SCREEN_BROADCAST_HELPER_REL
+    model_task_controller_path = launcher / MODEL_TASK_CONTROLLER_REL
+    refresh_rate_tracker_path = launcher / REFRESH_RATE_TRACKER_REL
+    remove_animation_settings_tracker_path = launcher / REMOVE_ANIMATION_SETTINGS_TRACKER_REL
 
     bp_path.write_text(
         patch_android_bp(bp_path.read_text(encoding="utf-8")),
@@ -1668,6 +1698,42 @@ def apply_tree(source: pathlib.Path) -> None:
     taskbar_device_profile_factory_path.write_text(
         patch_taskbar_device_profile_factory(
             taskbar_device_profile_factory_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    widget_app_icons_repository_path.write_text(
+        patch_widget_app_icons_repository(
+            widget_app_icons_repository_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    wallpaper_color_hints_path.write_text(
+        patch_wallpaper_color_hints(
+            wallpaper_color_hints_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    first_screen_broadcast_helper_path.write_text(
+        patch_first_screen_broadcast_helper(
+            first_screen_broadcast_helper_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    model_task_controller_path.write_text(
+        patch_model_task_controller(
+            model_task_controller_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    refresh_rate_tracker_path.write_text(
+        patch_refresh_rate_tracker(
+            refresh_rate_tracker_path.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
+    remove_animation_settings_tracker_path.write_text(
+        patch_remove_animation_settings_tracker(
+            remove_animation_settings_tracker_path.read_text(encoding="utf-8")
         ),
         encoding="utf-8",
     )
@@ -2033,6 +2099,78 @@ import com.android.launcher3.util.Executors
     assert "workspaceProfile.copy(iconSizePx =" in patched_taskbar_profile
     assert patch_taskbar_device_profile_factory(patched_taskbar_profile) == patched_taskbar_profile
 
+    widget_icons = """import com.android.launcher3.icons.BitmapInfo
+import com.android.launcher3.util.Executors.MAIN_EXECUTOR
+import javax.inject.Inject
+class WidgetAppIconsRepositoryImpl @Inject constructor(private val iconCache: IconCache) :
+            MAIN_EXECUTOR,
+"""
+    patched_widget_icons = patch_widget_app_icons_repository(widget_icons)
+    assert "@Ui private val uiExecutor: Executor" in patched_widget_icons
+    assert "MAIN_EXECUTOR" not in patched_widget_icons
+    assert patch_widget_app_icons_repository(patched_widget_icons) == patched_widget_icons
+
+    wallpaper_hints = """import androidx.annotation.VisibleForTesting
+import com.android.launcher3.util.Executors.MAIN_EXECUTOR
+import com.android.launcher3.util.Executors.UI_HELPER_EXECUTOR
+constructor(@ApplicationContext private val context: Context, tracker: DaggerSingletonTracker) {
+        UI_HELPER_EXECUTOR.execute {
+                MAIN_EXECUTOR.handler,
+            UI_HELPER_EXECUTOR.execute {
+"""
+    patched_wallpaper_hints = patch_wallpaper_color_hints(wallpaper_hints)
+    assert "@Ui private val uiExecutor: LooperExecutor" in patched_wallpaper_hints
+    assert "uiHelperExecutor.execute" in patched_wallpaper_hints
+    assert "MAIN_EXECUTOR" not in patched_wallpaper_hints
+    assert "UI_HELPER_EXECUTOR" not in patched_wallpaper_hints
+    assert patch_wallpaper_color_hints(patched_wallpaper_hints) == patched_wallpaper_hints
+
+    first_screen = """import androidx.annotation.WorkerThread
+import com.android.launcher3.util.Executors
+import com.android.launcher3.util.PackageUserKey
+constructor(private val packageManagerHelper: PackageManagerHelper) {
+            return Executors.MAIN_EXECUTOR.submit<ArrayList<WorkspaceItemInfo>> { ArrayList(list) }
+"""
+    patched_first_screen = patch_first_screen_broadcast_helper(first_screen)
+    assert "@Ui private val uiExecutor: LooperExecutor" in patched_first_screen
+    assert "Executors.MAIN_EXECUTOR" not in patched_first_screen
+    assert patch_first_screen_broadcast_helper(patched_first_screen) == patched_first_screen
+
+    model_task = """import com.android.launcher3.celllayout.CellPosMapper
+import com.android.launcher3.util.Executors.MAIN_EXECUTOR
+import com.android.launcher3.widget.model.WidgetsListBaseEntriesBuilder
+    val modelWriterFactory: ModelWriterFactory,
+) {
+
+    private val uiExecutor = MAIN_EXECUTOR
+"""
+    patched_model_task = patch_model_task_controller(model_task)
+    assert "@Ui private val uiExecutor: Executor" in patched_model_task
+    assert "MAIN_EXECUTOR" not in patched_model_task
+    assert patch_model_task_controller(patched_model_task) == patched_model_task
+
+    refresh_rate = """import android.view.Display.DEFAULT_DISPLAY
+import com.android.launcher3.util.DaggerSingletonTracker
+import com.android.launcher3.util.Executors
+    constructor(@ApplicationContext ctx: Context, tracker: DaggerSingletonTracker) :
+                it.registerDisplayListener(this, Executors.UI_HELPER_EXECUTOR.handler)
+"""
+    patched_refresh_rate = patch_refresh_rate_tracker(refresh_rate)
+    assert "@LightweightBackground(priority = UI)" in patched_refresh_rate
+    assert "Executors.UI_HELPER_EXECUTOR" not in patched_refresh_rate
+    assert patch_refresh_rate_tracker(patched_refresh_rate) == patched_refresh_rate
+
+    remove_animation = """import com.android.launcher3.util.DaggerSingletonTracker
+import com.android.launcher3.util.Executors
+import java.util.concurrent.ConcurrentHashMap
+"""
+    patched_remove_animation = patch_remove_animation_settings_tracker(remove_animation)
+    assert "import com.android.launcher3.util.Executors" not in patched_remove_animation
+    assert (
+        patch_remove_animation_settings_tracker(patched_remove_animation)
+        == patched_remove_animation
+    )
+
     try:
         replace_once("x", "missing", "new", "negative")
     except FoundationError:
@@ -2069,6 +2207,7 @@ def main() -> int:
             print("R9_LAUNCHER3_DIRTY_PATHS=PASS")
             print("R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS")
             print("R9_LAUNCHER3_WARNING_CLEANUP_SAFE_MIGRATIONS=PASS")
+            print("R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS")
             print("R9_LAUNCHER3_FOUNDATION_VERIFY=PASS")
     except FoundationError as exc:
         print(f"R9_LAUNCHER3_FOUNDATION=FAIL {exc}", file=sys.stderr)
