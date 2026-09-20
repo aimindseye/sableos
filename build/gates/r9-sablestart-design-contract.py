@@ -114,13 +114,19 @@ def check() -> None:
 
 
 def self_test() -> None:
-    good = "favorites Search / Command Sable Peek detectDragGestures"
-    bad = "favorites Search apps…"
-    assert "Search / Command" in good
-    assert "Sable Peek" in good
+    good = (
+        "favorites search + command search apps + Sable actions "
+        "peek pin to favorites local only · no ambient network search "
+        "detectDragGestures"
+    )
+    bad = "favorites Search apps… Reset to Follow system · Sable Blue"
+    assert "search + command" in good
+    assert "search apps + Sable actions" in good
+    assert "pin to favorites" in good
+    assert "local only · no ambient network search" in good
     assert "detectDragGestures" in good
-    assert "Search / Command" not in bad
     assert "Search apps…" in bad
+    assert "Reset to Follow system · Sable Blue" in bad
     print("R9_SABLESTART_DESIGN_CONTRACT_SELF_TEST=PASS")
 
 
