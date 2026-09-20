@@ -1,8 +1,33 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-19
+Last updated: 2026-09-20
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
+
+## 2026-09-20 R9 Launcher3 / Quickstep foundation handoff
+
+The next launcher deliverable changes SableStart from a separate HOME APK into the presentation layer of the pinned GrapheneOS/AOSP Launcher3QuickStep product. The intent is to establish one mature Android launcher foundation before another Panther image and before Titan 2 functional bring-up.
+
+```text
+R9_L1_L6_SABLESTART_PRESENTATION=MERGED
+R9_L7_LAUNCHER3_FOUNDATION_SOURCE=IMPLEMENTED_IN_BRANCH
+LAUNCHER3_BASE=e5fde8f4368539554b07ee136abd27bc7b4284c1
+PRODUCT_LAUNCHER_MODULE=Launcher3QuickStep
+PRODUCT_LAUNCHER_PACKAGE=com.android.launcher3
+SABLE_HOME_ACTIVITY=com.android.launcher3.sable.SableQuickstepLauncher
+STANDALONE_SABLESTART_APK=RETIRED
+CUSTOM_LAUNCHERAPPS_REPOSITORY=RETIRED
+SABLESTART_JNI_RUST_STUB=RETIRED
+FOCUSED_LAUNCHER3QUICKSTEP_SOONG=NEXT
+FULL_PANTHER_IMAGE=BLOCKED
+DEVICE_CONTACT=NO
+```
+
+Launcher3/Quickstep now provides the engineering contract for app model/loading, package/profile changes, HOME lifecycle, app launch semantics, shortcuts/widgets infrastructure and Recents/Overview. Sable owns the NORMAL-state Metro/Start presentation, Search/Command, Sable Rail, Peek, local context and appearance state.
+
+The focused pre-image qualification is `build/panther/qualify-r9-launcher3-foundation.sh`. A complete Panther target-files build remains blocked until both the Launcher3QuickStep focused qualification and R9 visual acceptance pass.
+
+Execution authority: `docs/R9_LAUNCHER3_FOUNDATION_MIGRATION.md`.
 
 ## 2026-09-19 R8 final Pixel UI closure handoff
 
@@ -93,8 +118,8 @@ The accepted near-term product direction is **Sable Flow**: a Metro-inspired, in
 
 ```text
 SABLEOS_PRODUCT_DEVELOPMENT=ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE=R8_FINAL_UI_PRODUCT_CLOSURE
-NEXT_PRODUCT_MILESTONE=R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
+SABLEOS_CORE_PRODUCT_STAGE=R9_LAUNCHER3_FOUNDATION_QUALIFICATION
+NEXT_PRODUCT_MILESTONE=R9_L7_LAUNCHER3QUICKSTEP_FOCUSED_COMPILE
 TARGET=panther
 ```
 
