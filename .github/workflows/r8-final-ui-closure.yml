@@ -28,6 +28,7 @@ on:
       - 'src/android/packages/apps/SableStart/**'
       - 'src/android/shared/sabledesign/**'
       - 'apps/r8/reader/**'
+      - 'apps/r8/mail/**'
       - 'build/verify-reader-manifest.py'
       - '.github/workflows/r8-final-ui-closure.yml'
   workflow_dispatch:
@@ -59,7 +60,7 @@ jobs:
 
       - name: Python syntax
         run: |
-          python3 -m py_compile             build/gates/verify-r8-vendor-sable-inventory.py             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
+          python3 -m py_compile             build/gates/verify-r8-vendor-sable-inventory.py             build/gates/r8-sablestart-signing-policy.py             apps/r8/reader/apply_sable_flavor.py             apps/r8/mail/apply_sable_flavor.py             apps/r8/mail/verify_sable_mail.py             build/verify-reader-manifest.py             patches/android-17-grapheneos-2026081300/apply_sable_branding.py             patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py             patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py             patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py             patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py
           echo "PYTHON_SYNTAX=PASS"
 
       - name: Platform applicator self-tests
@@ -71,7 +72,9 @@ jobs:
           python3 patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py --self-test
           python3 patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py --self-test
           python3 build/gates/verify-r8-vendor-sable-inventory.py --self-test
+          python3 build/gates/r8-sablestart-signing-policy.py --self-test
           echo "R8_VENDOR_SABLE_INVENTORY_SELF_TEST=PASS"
+          echo "R8_SABLESTART_SIGNING_POLICY_SELF_TEST=PASS"
           echo "R8_PLATFORM_APPLICATOR_SELF_TESTS=PASS"
 
       - name: Product composition contract
@@ -164,6 +167,26 @@ jobs:
           echo "R8_BUNDLE_SOURCE_IDENTITY_CONTRACT=PASS"
           echo "R8_PANTHER_PRODUCT_PATH_CONTRACT=PASS"
           echo "R8_PRODUCT_COMPOSITION_CONTRACT=PASS"
+
+      - name: SableStart signing policy contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          source_bp=src/android/packages/apps/SableStart/Android.bp
+          signing_gate=build/gates/r8-sablestart-signing-policy.py
+          final_build=build/panther/build-r8-final-ui.sh
+          target_gate=build/gates/r8-final-target-files.sh
+
+          python3 "$signing_gate" --source-bp "$source_bp"
+          grep -Fq 'v4_signature: false,' "$source_bp"
+          ! grep -Fq 'v4_signature: true,' "$source_bp"
+          grep -Fq 'r8-sablestart-signing-policy.py' "$final_build"
+          grep -Fq 'R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS' "$final_build"
+          grep -Fq 'R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS' "$final_build"
+          grep -Fq 'r8-sablestart-signing-policy.py' "$target_gate"
+          grep -Fq 'R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS' "$target_gate"
+
+          echo "R8_SABLESTART_SIGNING_POLICY_CI=PASS"
 
       - name: R8-A appearance contract
         shell: bash

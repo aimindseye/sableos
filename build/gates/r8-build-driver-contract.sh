@@ -17,12 +17,15 @@ stage="$ROOT/build/panther/stage-r8-product-apps.sh"
 finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
 inventory="$ROOT/build/gates/verify-r8-vendor-sable-inventory.py"
+signing_policy="$ROOT/build/gates/r8-sablestart-signing-policy.py"
+target_files_gate="$ROOT/build/gates/r8-final-target-files.sh"
+start_bp="$ROOT/src/android/packages/apps/SableStart/Android.bp"
 android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
 start_check="$ROOT/apps/r8/android/sablestart-production-check/build.gradle.kts"
 android_ci="$ROOT/.github/workflows/r8-android.yml"
 android_static="$ROOT/.github/workflows/r8-android-static.yml"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$signing_policy" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$android_ci" "$android_static"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
@@ -127,6 +130,18 @@ grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8' "$inventory"
 python3 "$inventory" --self-test
 
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
+
+python3 "$signing_policy" --self-test
+python3 "$signing_policy" --source-bp "$start_bp"
+grep -Fq 'v4_signature: false,' "$start_bp"
+! grep -Fq 'v4_signature: true,' "$start_bp"
+grep -Fq 'r8-sablestart-signing-policy.py' "$finalbuild"
+grep -Fq 'R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS' "$finalbuild"
+grep -Fq 'R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS' "$finalbuild"
+grep -Fq 'r8-sablestart-signing-policy.py' "$target_files_gate"
+grep -Fq 'R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS' "$target_files_gate"
+
+echo "R8_SABLESTART_SIGNING_POLICY_CONTRACT=PASS"
 
 grep -Fq 'include(":sablestart-production-check")' "$android_settings"
 ! grep -Fq 'include(":start-preview")' "$android_settings"

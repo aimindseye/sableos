@@ -35,6 +35,21 @@ echo "TARGET_FILES=$TF"
 
 [[ -n "$TF" && -f "$TF" ]] || fail R8_TARGET_FILES 2
 
+SIGNING_POLICY="$ROOT/build/gates/r8-sablestart-signing-policy.py"
+SABLESTART_BP="$WS/packages/apps/SableStart/Android.bp"
+
+[[ -f "$SIGNING_POLICY" ]] || fail R8_SABLESTART_SIGNING_POLICY_TOOL 3
+[[ -f "$SABLESTART_BP" ]] || fail R8_SABLESTART_ANDROID_BP 3
+
+if ! python3 "$SIGNING_POLICY" \
+    --source-bp "$SABLESTART_BP" \
+    --target-files "$TF"
+then
+    fail R8_SABLESTART_SIGNING_POLICY 4
+fi
+
+echo "R8_SABLESTART_SIGNING_POLICY_TARGET_FILES=PASS"
+
 STAGED="$WS/vendor/sable/r8"
 [[ -f "$STAGED/manifest.tsv" ]] || fail R8_STAGED_MANIFEST 3
 [[ -f "$STAGED/SHA256SUMS.txt" ]] || fail R8_STAGED_SHA256SUMS 3
