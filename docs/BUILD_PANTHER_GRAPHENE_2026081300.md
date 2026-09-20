@@ -343,6 +343,39 @@ lunch panther-cur-userdebug
 
 A preview-named `OUT_DIR` is not itself a failure, but it must never be treated as evidence that all accepted UI work is integrated.
 
+## R8 SableStart signing qualification
+
+R8 physical validation on 2026-09-19 exposed a PackageManager scan failure
+specific to SableStart's explicit APK v4 sidecar signing. The APK itself was
+present and byte-identical to the sealed target-files copy, but the packaged
+`.idsig` forced v4 certificate collection. PackageManager then failed the
+fs-verity measurement path under the current Panther SELinux policy and rejected
+`org.sableos.start`.
+
+The canonical SableStart Soong source therefore requires:
+
+```bp
+v4_signature: false,
+```
+
+The R8 build is not qualified unless
+`build/gates/r8-sablestart-signing-policy.py` passes both the source and final
+target-files checks. In particular, this target-files member is forbidden:
+
+```text
+SYSTEM/app/SableStart/SableStart.apk.idsig
+```
+
+The policy is intentionally checked in the local build wrapper, the final
+target-files composition gate, the R8 closure workflow and repository CI policy.
+
+Do not use an `unzip | grep -q` pipeline under `pipefail` for the archive
+membership test; an early `grep -q` match can SIGPIPE `unzip` and invert the
+result. The repository gate uses Python ZIP membership directly.
+
+See `R8_SABLESTART_V4_SIGNING_INCIDENT_20260919.md` for the physical evidence,
+root cause and requalification sequence.
+
 ## 9. Deployment is a separate authorized operation
 
 Do not treat the build procedure as authorization to flash a device. The validated D3 physical test needed `system_b`, `product_b`, and matching `vbmeta_b` together because D3 `vbmeta` binds the regenerated PRODUCT hashtree.
