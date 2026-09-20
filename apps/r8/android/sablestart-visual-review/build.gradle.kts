@@ -35,6 +35,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":design"))
     implementation(project(":sablestart-presentation-check"))
 
     implementation(
