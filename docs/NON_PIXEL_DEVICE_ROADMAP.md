@@ -16,9 +16,6 @@ This document refines the device-ordering portion of `ROADMAP.md` with the Septe
 
 3. Zinwa Q27
    preferred future integrated/full physical-QWERTY candidate after shipped hardware qualifies
-
-4. Zinwa Q25
-   optional low-level MediaTek/kernel research target when its source availability is specifically needed
 ```
 
 The ordering is about current SableOS engineering value, not a permanent product ranking.
@@ -57,8 +54,7 @@ Titan 2 Elite
   GSI candidate pending local bootloader/recovery/Treble proof
 ```
 
-Titan 2-family work is preferred over Q25 when the goal is UI, physical-keyboard
-and GSI/userspace portability rather than low-level kernel research.
+Titan 2-family work is the active non-Pixel investment path for UI, physical-keyboard and GSI/userspace portability.
 
 Primary role:
 
@@ -107,21 +103,6 @@ Q27 should not be treated as supported until real shipped hardware is available 
 - current firmware and security lifecycle.
 
 Brax3 shows that OEM cooperation with current BSP/firmware binaries can enable a serious integrated Android port even without public kernel source, but N2 production support still requires SableOS security/release gates.
-
-## Q25: optional engineering-capital target
-
-Q25 remains valuable because public/community kernel and device work enables lower-layer experiments which may be impossible on Titan 2.
-
-Use Q25 when the explicit goal is:
-
-- MediaTek kernel/KMI/module experimentation;
-- device-tree and vendor integration work with available source;
-- low-level power/input/driver research;
-- comparison against a second physical-QWERTY implementation.
-
-Q25 is no longer a required precursor to Q27 and no longer the preferred interim purchase when Titan 2 better serves the UI/5G/form-factor roadmap.
-
-See `Q25_PORT_PLAN.md`.
 
 ## Shared keyboard-device tools
 
