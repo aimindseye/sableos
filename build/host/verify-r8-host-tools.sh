@@ -54,6 +54,13 @@ installed_components="$("$SABLE_RUSTUP" component list --installed --toolchain "
 grep -Eq '^llvm-tools(-|$)' <<<"$installed_components" || fail R8_RUST_LLVM_TOOLS
 grep -Eq '^rust-src($|-)' <<<"$installed_components" || fail R8_RUST_SRC
 
+llvm_bin="$SABLE_RUST_TOOLCHAIN_ROOT/lib/rustlib/$SABLE_RUST_HOST/bin"
+[[ -x "$llvm_bin/llvm-cov" ]] || fail R8_RUST_LLVM_COV_BINARY
+[[ -x "$llvm_bin/llvm-profdata" ]] || fail R8_RUST_LLVM_PROFDATA_BINARY
+
+rust_src_root="$SABLE_RUST_TOOLCHAIN_ROOT/lib/rustlib/src/rust/library"
+[[ -d "$rust_src_root" ]] || fail R8_RUST_SRC_TREE
+
 python3 "$ROOT/build/install-pinned-tool.py" --verify-dir "$SABLE_SECURITY_BIN" \
     || fail R8_SECURITY_PINNED_TOOLS
 
@@ -71,8 +78,8 @@ echo "R8_ANDROID_BUILD_TOOLS=PASS value=$SABLE_ANDROID_BUILD_TOOLS_VERSION"
 echo "R8_ANDROID_NDK=PASS value=$SABLE_ANDROID_NDK_VERSION"
 echo "R8_RUST=PASS value=$SABLE_RUST_VERSION"
 echo "R8_RUST_TARGET=PASS value=$SABLE_RUST_TARGET"
-echo "R8_RUST_LLVM_TOOLS=PASS"
-echo "R8_RUST_SRC=PASS"
+echo "R8_RUST_LLVM_TOOLS=PASS path=$llvm_bin"
+echo "R8_RUST_SRC=PASS path=$rust_src_root"
 echo "R8_SECURITY_PINNED_TOOLS=PASS"
 echo "R8_MOBSFSCAN=PASS commit=$SABLE_MOBSFSCAN_COMMIT version=$SABLE_MOBSFSCAN_VERSION"
 echo "R8_GRADLE_HOME=PASS"
