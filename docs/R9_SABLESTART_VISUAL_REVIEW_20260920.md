@@ -1,6 +1,6 @@
 # R9 SableStart combined L1-L6 visual review
 
-Status: **source implemented / visual acceptance pending**
+Status: **R9L9 source + Pixel 7 review harness implemented / visual acceptance pending**
 
 Date: 2026-09-20
 
@@ -28,11 +28,11 @@ DATE
 
 start
 ┌──────────────────┐ ┌──────────────────┐
-│ M                │ │ P                │
+│ [real icon]      │ │ [real icon]      │
 │ Sable Mail       │ │ Phone            │
 └──────────────────┘ └──────────────────┘
 ┌──────────────────┐ ┌──────────────────┐
-│ C                │ │ ⚙                │
+│ [real icon]      │ │ ⚙                │
 │ Calendar         │ │ Settings         │
 └──────────────────┘ └──────────────────┘
 
@@ -233,6 +233,35 @@ NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
 Current state remains:
 
 ~~~text
+R9_L6_VISUAL_REVIEW_STATUS=PENDING
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+~~~
+
+
+## R9L9 emulator execution gate
+
+The production visual set is now executed through the established Mac mini +
+Pixel 7 AVD workflow documented in:
+
+~~~text
+docs/R9_LAUNCHER_VISUAL_VALIDATION_MAC_MINI.md
+~~~
+
+The non-product `sablestart-visual-review` APK depends on the production
+presentation compilation unit. It has no HOME intent and is absent from Panther
+product composition.
+
+Production app rows and Start tiles now attempt to render each launcher's real
+Android activity icon through `LauncherApps`, with the existing Sable initial
+mark as a failure-safe fallback. Launcher3 remains authoritative for the
+product app inventory, update stream, launch path, details path and Quickstep
+lifecycle.
+
+Current gate:
+
+~~~text
+R9_L9_VISUAL_REVIEW_HARNESS=SOURCE_READY
+R9_SABLESTART_VISUAL_REVIEW_SET=PENDING_MAC_MINI_CAPTURE
 R9_L6_VISUAL_REVIEW_STATUS=PENDING
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ~~~
