@@ -348,11 +348,16 @@ private fun StartScreen(
     onAppearance: () -> Unit,
 ) {
     val contextDatum = chooseContextDatum(snapshot)
+    val primaryKeys = primaryApps.mapTo(mutableSetOf()) { it.stableKey() }
+    val favoriteOnlyApps =
+        favoriteApps.filterNot { it.stableKey() in primaryKeys }
+    val recentOnlyApps =
+        recentApps.filterNot { it.stableKey() in primaryKeys }
     val quickApps =
-        if (favoriteApps.isNotEmpty()) {
-            favoriteApps.take(MAX_FAVORITES_ON_START)
+        if (favoriteOnlyApps.isNotEmpty()) {
+            favoriteOnlyApps.take(MAX_FAVORITES_ON_START)
         } else {
-            recentApps.take(MAX_FAVORITES_ON_START)
+            recentOnlyApps.take(MAX_FAVORITES_ON_START)
         }
 
     LazyColumn(
@@ -361,10 +366,10 @@ private fun StartScreen(
             PaddingValues(
                 start = 20.dp,
                 end = 20.dp,
-                top = 18.dp,
-                bottom = 36.dp,
+                top = 10.dp,
+                bottom = 28.dp,
             ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
             Row(
@@ -375,8 +380,9 @@ private fun StartScreen(
                 Column {
                     Text(
                         text = snapshot.timeText,
-                        style = MaterialTheme.typography.displayLarge,
+                        fontSize = 56.sp,
                         fontWeight = FontWeight.Light,
+                        lineHeight = 58.sp,
                     )
                     Text(
                         text = snapshot.dateText,
@@ -384,12 +390,10 @@ private fun StartScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = onAppearance) {
-                    Text(
-                        text = appearance.accent.displayName,
-                        color = appearance.accent.color,
-                    )
-                }
+                AppearanceShortcut(
+                    accent = appearance.accent.color,
+                    onClick = onAppearance,
+                )
             }
         }
 
@@ -405,7 +409,7 @@ private fun StartScreen(
 
         item {
             SectionLabel("start")
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
 
             val tilePalette =
                 listOf(appearance.accent.color) +
@@ -436,7 +440,7 @@ private fun StartScreen(
 
         item {
             SectionLabel("favorites")
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
 
             if (quickApps.isEmpty()) {
                 Text(
@@ -457,10 +461,15 @@ private fun StartScreen(
         }
 
         item {
-            SearchLaunchButton(onClick = onSearch)
-            Spacer(Modifier.height(6.dp))
-            MetroLink("all apps  →", onAllApps)
-            MetroLink("local context  →", onLive)
+            SearchLaunchButton(
+                accent = appearance.accent.color,
+                onClick = onSearch,
+            )
+            Spacer(Modifier.height(4.dp))
+            StartNavigationRow(
+                onAllApps = onAllApps,
+                onLive = onLive,
+            )
         }
     }
 }
@@ -561,31 +570,32 @@ private fun MetroTile(
     Column(
         modifier =
             modifier
-                .height(118.dp)
+                .height(96.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(color)
                 .clickable(onClick = onClick)
-                .padding(13.dp),
+                .padding(11.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
         if (app != null) {
             AppMark(
                 app = app,
-                size = 44,
+                size = 34,
                 fallbackContentColor = tileContentColor,
                 showFallbackSurface = false,
             )
         } else {
             Text(
                 text = mark,
-                fontSize = 25.sp,
+                fontSize = 23.sp,
                 fontWeight = FontWeight.Medium,
                 color = tileContentColor,
             )
         }
         Text(
             text = title,
-            style = MaterialTheme.typography.bodyLarge,
+            fontSize = 18.sp,
+            lineHeight = 20.sp,
             fontWeight = FontWeight.Medium,
             color = tileContentColor,
             maxLines = 2,
@@ -595,6 +605,7 @@ private fun MetroTile(
 
 @Composable
 private fun SearchLaunchButton(
+    accent: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit,
 ) {
     Row(
@@ -602,21 +613,24 @@ private fun SearchLaunchButton(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 54.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "⌕",
-            fontSize = 24.sp,
+        Box(
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .height(42.dp)
+                    .background(accent),
         )
         Spacer(Modifier.width(12.dp))
         Column {
             Text(
-                text = "Search / Command",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "search + command",
+                fontSize = 20.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = "apps · settings · Sable actions",
@@ -625,6 +639,75 @@ private fun SearchLaunchButton(
             )
         }
     }
+}
+
+@Composable
+private fun AppearanceShortcut(
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .heightIn(min = 48.dp)
+                .clickable(onClick = onClick)
+                .padding(start = 12.dp, top = 10.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(12.dp)
+                    .background(accent),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = "appearance",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun StartNavigationRow(
+    onAllApps: () -> Unit,
+    onLive: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+        CompactMetroLink(
+            text = "all apps  →",
+            onClick = onAllApps,
+            modifier = Modifier.weight(1f),
+        )
+        CompactMetroLink(
+            text = "local context  →",
+            onClick = onLive,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun CompactMetroLink(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        modifier =
+            modifier
+                .heightIn(min = 48.dp)
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp),
+        fontSize = 18.sp,
+        lineHeight = 20.sp,
+        fontWeight = FontWeight.Medium,
+    )
 }
 
 @Composable
@@ -1652,5 +1735,5 @@ private val PRIMARY_APP_LABELS =
 
 private const val MAX_PRIMARY_APPS = 3
 private const val MAX_START_TILES = 4
-private const val MAX_FAVORITES_ON_START = 6
+private const val MAX_FAVORITES_ON_START = 4
 private const val MAX_SESSION_RECENTS = 8
