@@ -41,10 +41,13 @@ if [[ "$OUT_DIR" == /* ]]; then
 fi
 
 if [[ "$ALLOW_COLD_OUT" != YES ]]; then
-    if [[ ! -f "$OUT_ABS/build.ninja" && ! -f "$OUT_ABS/soong/build.ninja" ]]; then
+    if {
+        [[ ! -f "$OUT_ABS/build.ninja" && ! -f "$OUT_ABS/soong/build.ninja" ]] ||
+        [[ ! -d "$OUT_ABS/target/product/panther" ]]
+    }; then
         echo "R9_LAUNCHER3_FOUNDATION_WARM_OUT=FAIL path=$OUT_ABS"
         echo "R9_LAUNCHER3_FOUNDATION_COLD_BUILD_REFUSED=YES"
-        echo "HINT=Set OUT_DIR to an existing Panther output with build.ninja/soong/build.ninja."
+        echo "HINT=Set OUT_DIR to an existing Panther output with a Ninja graph and target/product/panther."
         exit 5
     fi
 fi
@@ -67,7 +70,10 @@ echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
 echo "OUT_ABS=$OUT_ABS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
-if [[ -f "$OUT_ABS/build.ninja" || -f "$OUT_ABS/soong/build.ninja" ]]; then
+if {
+    [[ -f "$OUT_ABS/build.ninja" || -f "$OUT_ABS/soong/build.ninja" ]] &&
+    [[ -d "$OUT_ABS/target/product/panther" ]]
+}; then
     echo "R9_LAUNCHER3_FOUNDATION_WARM_OUT=PASS"
 fi
 
