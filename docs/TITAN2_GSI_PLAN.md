@@ -1,6 +1,6 @@
 # Unihertz Titan 2 SableOS GSI development plan
 
-Status: **preferred interim non-Pixel development candidate; expected 2026-09-19, not yet validated or supported**.
+Status: **preferred interim non-Pixel development candidate; keyboard-first N0 portability work queued after Panther R9 physical acceptance; not yet validated or supported**.
 
 The Titan 2 is the preferred interim physical-QWERTY development target after the Pixel 7 / Panther baseline is closed. Its initial role is a **development GSI/userspace lab**, not a production-security SableOS target.
 
@@ -8,9 +8,9 @@ The goal is to accelerate SableStart, square-display, keyboard/pointer and Andro
 
 This plan is governed by `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `AOSP_CAPABILITY_POLICY.md`, `SECURITY_MODEL.md`, `RELEASE_VALIDATION.md` and the project authorization/evidence methodology.
 
-## 2026-09-19 arrival / concurrency rule
+## Current concurrency rule
 
-Titan 2 is expected to become physically available on 2026-09-19.
+Titan 2 availability does not change the Panther-first release gate. Read-only stock/device inventory may begin whenever hardware is available.
 
 Two work classes are deliberately separated:
 
@@ -27,9 +27,9 @@ T0 is observational and may run in parallel with the remaining Pixel UI source/i
 Before any Titan GSI mutation/flash, require:
 
 ```text
-R8_FINAL_UI_PRODUCT_COMPOSITION=PASS
-PANTHER_FINAL_UI_BUILD=PASS
-PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PASS
+R9_FRESH_FULL_BUILD=PASS
+R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
+R9_PIXEL7_PHYSICAL_ACCEPTANCE=PASS
 ```
 
 This ensures Titan evaluates the same closed Sable UI/application architecture rather than becoming a parallel fork.
