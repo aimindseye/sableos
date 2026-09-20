@@ -16,19 +16,24 @@ SABLE_PATH_MARKERS = (
 
 R8_API37_WARNING = "An API level of 37 is not supported by this compiler"
 
-MIGRATED_WARNING_MARKERS = (
+GLOBAL_MIGRATED_WARNING_MARKERS = (
+    # The Launcher3QuickStepLib compiler flag is intended to eliminate this
+    # warning class for the entire hosted launcher module.
     "this annotation is currently applied to the value parameter only",
-    "getParcelableExtra(p0: String",
-    "'constructor(): Handler' is deprecated",
-    "getParcelableArrayList(p0: String?)",
-    "PreviewContext.kt:",
-    "corresponding parameter in the supertype",
-    "overrides a deprecated member but is not marked as deprecated itself",
-    "statusBarColor: Int' is deprecated",
-    "navigationBarColor: Int' is deprecated",
-    "MESSAGE_ID_UPDATE_SHAPE: Int' is deprecated",
-    "MESSAGE_ID_UPDATE_GRID: Int' is deprecated",
-    "MESSAGE_ID_UPDATE_ICON_THEMED: Int' is deprecated",
+)
+
+MIGRATED_WARNING_RULES = (
+    ("packages/apps/Launcher3/src/com/android/launcher3/pm/UserCache.kt", "getParcelableExtra(p0: String"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/RetryingExecutor.kt", "'constructor(): Handler' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/widget/util/WidgetSizeHandler.kt", "getParcelableArrayList(p0: String?)"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/preview/PreviewContext.kt", "Only safe (?.) or non-null asserted (!!.) calls"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/util/WallpaperThemeManager.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/views/DoubleShadowIconDrawable.kt", "overrides a deprecated member but is not marked as deprecated itself"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/preview/PreviewLifecycleObserver.kt", "MESSAGE_ID_UPDATE_SHAPE: Int' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/preview/PreviewLifecycleObserver.kt", "MESSAGE_ID_UPDATE_GRID: Int' is deprecated"),
+    ("packages/apps/Launcher3/src/com/android/launcher3/preview/PreviewLifecycleObserver.kt", "MESSAGE_ID_UPDATE_ICON_THEMED: Int' is deprecated"),
+    ("packages/apps/SableDesign/", "statusBarColor: Int' is deprecated"),
+    ("packages/apps/SableDesign/", "navigationBarColor: Int' is deprecated"),
 )
 
 
@@ -63,7 +68,10 @@ def main() -> int:
         if any(marker in line for marker in SABLE_PATH_MARKERS):
             fatal.append(f"SABLE_WARNING {line}")
             continue
-        if any(marker in line for marker in MIGRATED_WARNING_MARKERS):
+        if any(marker in line for marker in GLOBAL_MIGRATED_WARNING_MARKERS):
+            fatal.append(f"MIGRATED_WARNING_REGRESSION {line}")
+            continue
+        if any(path in line && marker in line for path, marker in MIGRATED_WARNING_RULES):
             fatal.append(f"MIGRATED_WARNING_REGRESSION {line}")
 
     print(f"R9_LAUNCHER3_WARNING_COUNT={len(warnings)}")
