@@ -504,3 +504,26 @@ R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
+
+## R9L12 Sable Peek acceptance
+
+The recaptured Pixel 7 Peek frame is accepted.
+
+Accepted characteristics:
+
+- the contextual layer is flat and visually consistent with Start/Search;
+- the Sable accent rule establishes identity without a rounded sheet container;
+- app icon and app name dominate the identity hierarchy;
+- `open` is clearly the primary action;
+- pin/unpin and permissions remain secondary but directly reachable;
+- the privacy/capability note is subordinate and no longer competes with actions;
+- the single contextual level is preserved with no nested menu.
+
+```text
+R9_L12_PEEK_BEHAVIOR=PASS
+R9_L12_PEEK_VISUAL_REVIEW=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_ALL_APPS_SEARCH_PEEK_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
