@@ -84,7 +84,7 @@ def check() -> list[str]:
         "class SableQuickstepLauncher : QuickstepLauncher()",
         "activityComponent.appsStore",
         "store.addUpdateListener(appsUpdateListener)",
-        "store.removeUpdateListener(appsUpdateListener)",
+        "removeUpdateListener(appsUpdateListener)",
         "startActivitySafely(",
         "PackageManagerHelper.startDetailsActivityForInfo(",
         "override fun onStateSetStart(state: LauncherState)",
