@@ -11,6 +11,7 @@ For the current project state and active product direction:
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
 - `R9_SABLESTART_LAUNCHER_DESIGN.md` — design-first SableStart expansion using pinned Niagara/Kvaesitso/Lawnchair/Olauncher/OpenMiniLaunch references, one-hand app navigation, Sable Rail, Search/Command, Sable Peek, Quickstep boundary, privacy rules, and the no-full-build-before-visual-review gate.
+- `R9_LAUNCHER3_FOUNDATION_MIGRATION.md` — phased migration from standalone SableStart HOME to the pinned Launcher3/Quickstep foundation, with compile-before-retirement sequencing and focused Panther qualification.
 - `R9_SABLESTART_VISUAL_REVIEW_20260920.md` — source-derived combined L1-L6 review sheet for Start dark/light, Sable Rail, Search/Command, Sable Peek, truthful local context and accessibility states; visual acceptance remains pending.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
