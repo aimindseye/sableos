@@ -242,14 +242,14 @@ def patch_user_cache(text: str) -> str:
 def patch_retrying_executor(text: str) -> str:
     text = replace_once(
         text,
-        "import android.os.Handler\\n",
-        "import android.os.Handler\\nimport android.os.Looper\\n",
+        "import android.os.Handler\n",
+        "import android.os.Handler\nimport android.os.Looper\n",
         "RetryingExecutor explicit Looper import",
     )
     return replace_once(
         text,
         "class RetryingExecutor(private val handler: Handler = Handler()) {",
-        "class RetryingExecutor(private val handler: Handler = Handler(Looper.myLooper() ?: error(\\\"RetryingExecutor requires a Looper thread\\\"))) {",
+        "class RetryingExecutor(private val handler: Handler = Handler(Looper.myLooper() ?: error(\"RetryingExecutor requires a Looper thread\"))) {",
         "RetryingExecutor explicit Looper",
     )
 
@@ -266,7 +266,7 @@ def patch_widget_size_handler(text: str) -> str:
 def patch_preview_context(text: str) -> str:
     text = replace_once(
         text,
-        "import java.util.Arrays\\n",
+        "import java.util.Arrays\n",
         "",
         "PreviewContext obsolete Arrays import",
     )
@@ -276,7 +276,6 @@ def patch_preview_context(text: str) -> str:
         "            mDbDir.listFiles()?.forEach { file -> file.delete() }",
         "PreviewContext nullable listFiles",
     )
-
 
 def git_head(path: pathlib.Path) -> str:
     proc = subprocess.run(
