@@ -70,13 +70,13 @@ def main() -> int:
     print(f"R9_LAUNCHER3_UNCHECKED_CAST_COUNT={categories['unchecked_cast']}")
     print(f"R9_LAUNCHER3_TYPE_MISMATCH_COUNT={categories['type_mismatch']}")
 
-    if categories["deprecation"] or categories["removal"]:
-        print(
-            "R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT=REMAINS "
-            f"count={categories['deprecation'] + categories['removal']}"
-        )
+    deprecation_debt = categories["deprecation"] + categories["removal"]
+    if deprecation_debt:
+        print(f"R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT=REMAINS count={deprecation_debt}")
+        print("R9_LAUNCHER3_WARNING_DEBT_STATUS=OPEN")
     else:
         print("R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT=ZERO")
+        print("R9_LAUNCHER3_WARNING_DEBT_STATUS=CLOSED")
 
     if fatal:
         for item in fatal:
@@ -86,6 +86,7 @@ def main() -> int:
 
     print("R9_LAUNCHER3_SABLE_WARNING_COUNT=0")
     print("R9_LAUNCHER3_MIGRATED_WARNING_REGRESSIONS=0")
+    print("R9_LAUNCHER3_WARNING_MIGRATION_GATE=PASS")
     print("R9_LAUNCHER3_WARNING_GATE=PASS")
     return 0
 
