@@ -94,6 +94,19 @@ PY
 
 echo
 echo "===== MOBSFSCAN CANDIDATES ====="
+for candidate in \
+    "$HOME/.local/bin/mobsfscan" \
+    "$HOME/.local/share/pipx/venvs/mobsfscan/bin/mobsfscan" \
+    "$HOME/.local/pipx/venvs/mobsfscan/bin/mobsfscan" \
+    "/opt/pipx/venvs/mobsfscan/bin/mobsfscan" \
+    "/usr/local/bin/mobsfscan" \
+    "/usr/bin/mobsfscan"
+do
+    if [[ -x "$candidate" ]]; then
+        echo "MOBSFSCAN_EXEC_CANDIDATE=$candidate"
+        "$candidate" --version 2>&1 | sed 's/^/MOBSFSCAN_EXEC_CANDIDATE_VERSION=/'
+    fi
+done
 if [[ -d "$SABLE_MOBSFSCAN_SOURCE/.git" ]]; then
     echo "CANONICAL_MOBSFSCAN_SOURCE=$SABLE_MOBSFSCAN_SOURCE"
     echo "CANONICAL_MOBSFSCAN_COMMIT=$(git -C "$SABLE_MOBSFSCAN_SOURCE" rev-parse HEAD 2>/dev/null || true)"
