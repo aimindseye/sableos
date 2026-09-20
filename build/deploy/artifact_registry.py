@@ -45,9 +45,6 @@ def register(args: argparse.Namespace) -> int:
     root = pathlib.Path(args.registry_root).resolve()
     path = registry_path(root, args.device, args.release, args.build_source)
     path.parent.mkdir(parents=True, exist_ok=True)
-    if path.exists() and not args.replace:
-        print(f"SABLE_ARTIFACT_REGISTER=FAIL_ALREADY_EXISTS path={path}")
-        return 4
 
     doc = {
         "schema": 1,
@@ -62,6 +59,32 @@ def register(args: argparse.Namespace) -> int:
         "build_evidence_dir": str(pathlib.Path(args.build_evidence_dir).resolve()) if args.build_evidence_dir else None,
         "registered_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+
+    if path.exists() and not args.replace:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+        comparable = {
+            key: doc[key]
+            for key in (
+                "schema",
+                "device",
+                "release",
+                "build_source",
+                "target_files",
+                "target_files_sha256",
+                "android_info",
+                "android_info_sha256",
+                "out_dir",
+                "build_evidence_dir",
+            )
+        }
+        existing_comparable = {key: existing.get(key) for key in comparable}
+        if existing_comparable == comparable:
+            print(f"ARTIFACT_MANIFEST={path}")
+            print("SABLE_ARTIFACT_REGISTER=PASS_ALREADY_REGISTERED")
+            return 0
+        print(f"SABLE_ARTIFACT_REGISTER=FAIL_ALREADY_EXISTS_DIFFERENT path={path}")
+        return 4
+
     tmp = path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     tmp.replace(path)
