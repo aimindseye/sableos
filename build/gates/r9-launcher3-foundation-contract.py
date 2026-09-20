@@ -172,6 +172,8 @@ def check() -> list[str]:
             "R9_LAUNCHER3_DEPRECATION_COUNT",
             "R9_LAUNCHER3_UPSTREAM_DEPRECATION_DEBT",
             "R9_LAUNCHER3_SABLE_WARNING_COUNT=0",
+            "R9_LAUNCHER3_WARNING_MIGRATION_GATE=PASS",
+            "R9_LAUNCHER3_WARNING_DEBT_STATUS",
             "R9_LAUNCHER3_WARNING_GATE=PASS",
             "MIGRATED_WARNING_MARKERS",
         ):
@@ -197,7 +199,7 @@ def check() -> list[str]:
             "DEVICE_CONTACT_AUTHORIZED=NO",
             'm -j"$JOBS" Launcher3QuickStep',
             "r9-launcher-warning-gate.py",
-            "R9_LAUNCHER3_WARNING_QUALITY=PASS",
+            "R9_LAUNCHER3_WARNING_MIGRATIONS=PASS",
             "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
             "RETAINED_PENDING_CUTOVER",
         ):
