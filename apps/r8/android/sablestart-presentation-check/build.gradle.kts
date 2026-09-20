@@ -39,6 +39,11 @@ android {
 }
 
 dependencies {
+    constraints {
+        implementation("androidx.core:core-ktx:1.16.0")
+        implementation("androidx.lifecycle:lifecycle-process:2.9.4")
+    }
+
     implementation(project(":design"))
 
     implementation(
