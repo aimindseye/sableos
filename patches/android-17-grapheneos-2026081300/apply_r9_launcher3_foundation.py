@@ -385,7 +385,8 @@ def main() -> int:
     try:
         if args.action == "apply":
             apply_tree(source)
-            print("R9_LAUNCHER3_FOUNDATION_APPLY=PASS")\n            print("R9_LAUNCHER3_PHASE=HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT")
+            print("R9_LAUNCHER3_FOUNDATION_APPLY=PASS")
+            print("R9_LAUNCHER3_PHASE=HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT")
         else:
             verify_tree(source)
             print("R9_LAUNCHER3_FOUNDATION_VERIFY=PASS")
