@@ -37,6 +37,8 @@ def check() -> None:
             "Sable Peek",
             "rememberLazyListState()",
             "detectDragGestures(",
+            ".align(Alignment.CenterStart)",
+            ".fillMaxHeight()",
             "listState.scrollToItem(index)",
             "Pin to Favorites",
             "apps · settings · Sable actions",
