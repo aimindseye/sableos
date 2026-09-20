@@ -48,7 +48,7 @@ jobs:
           test ! -e build/panther/validate-ui-preview.sh
 
           build=build/panther/build-r8-final-ui.sh
-          grep -Fq '===== SABLESTART SOONG PREFLIGHT =====' "$build"
+          grep -Fq '===== LAUNCHER3 QUICKSTEP SOONG PREFLIGHT =====' "$build"
           grep -Fq 'Settings' "$build"
           grep -Fq 'SystemUI' "$build"
           grep -Fq 'R8_UI_MODULE_BUILD=PASS' "$build"
