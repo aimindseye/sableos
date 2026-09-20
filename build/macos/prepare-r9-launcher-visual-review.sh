@@ -80,12 +80,14 @@ if [[ -z "$SERIAL" ]]; then
     nohup "$EMULATOR"         -avd "$AVD_NAME"         -no-boot-anim         -no-snapshot-save         > "$EVIDENCE_DIR/emulator.log" 2>&1 &
 
     "$ADB" wait-for-device
-    for _ in $(seq 1 180); do
+    attempt=0
+    while (( attempt < 180 )); do
         SERIAL="$(select_serial)"
         if [[ -n "$SERIAL" ]] &&
             [[ "$("$ADB" -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
             break
         fi
+        attempt=$((attempt + 1))
         sleep 1
     done
 fi
