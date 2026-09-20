@@ -115,6 +115,13 @@ finalize_run() {
   if [[ "$FINAL_RESULT" != PASS ]]; then
     echo "SABLE_BLOCKER_ISSUE_REQUIRED=YES"
     echo "SABLE_STANDARD_FLASH=FAIL rc=$rc"
+
+    if [[ "${REBOOTED_TO_BOOTLOADER:-NO}" == YES && "${FLASH_STARTED:-NO}" == NO ]]; then
+      echo "PREWRITE_FAILURE_RECOVERY=ATTEMPT_FASTBOOT_REBOOT"
+      "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null >/dev/null 2>&1 || true
+    elif [[ "${FLASH_STARTED:-NO}" == YES && "${POSTFLASH_REBOOT_SENT:-NO}" == NO ]]; then
+      echo "AUTOMATIC_REBOOT_AFTER_FLASH_FAILURE=SUPPRESSED"
+    fi
   fi
 
   exec 1>&3 2>&4
@@ -220,19 +227,7 @@ REQUIRED_BOARD="$(sed -n 's/^require board=//p' "$ANDROID_INFO" | tail -n1)"
 
 REBOOTED_TO_BOOTLOADER=NO
 FLASH_STARTED=NO
-
-recover_preflash() {
-  local rc=$?
-  if [[ "$REBOOTED_TO_BOOTLOADER" == YES && "$FLASH_STARTED" == NO ]]; then
-    echo "PREWRITE_FAILURE_RECOVERY=ATTEMPT_FASTBOOT_REBOOT"
-    "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null >/dev/null 2>&1 || true
-  elif [[ "$FLASH_STARTED" == YES ]]; then
-    echo "AUTOMATIC_REBOOT_AFTER_FLASH_FAILURE=SUPPRESSED"
-    echo "SABLE_BLOCKER_ISSUE_REQUIRED=YES"
-  fi
-  return "$rc"
-}
-trap recover_preflash ERR
+POSTFLASH_REBOOT_SENT=NO
 
 echo
 echo "===== ENTER BOOTLOADER ====="
@@ -325,8 +320,8 @@ fi
 echo "SABLE_FLASH_EXECUTION=PASS"
 echo "SABLE_POSTFLASH_SLOT_PRESERVED=PASS"
 
-trap - ERR
 "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null
+POSTFLASH_REBOOT_SENT=YES
 echo "FINAL_FASTBOOT_REBOOT=PASS"
 
 echo
