@@ -1372,6 +1372,120 @@ app.getApplicationInfo()
     )
     assert "LEGACY_LEGACY_" not in patched_preview_lifecycle
 
+    utilities = """            override fun setAttribute(viewGroup: ViewGroup, clipChildren: Boolean) {
+                viewGroup.clipChildren = clipChildren
+            }
+            override fun setAttribute(viewGroup: ViewGroup, clipToPadding: Boolean) {
+                viewGroup.clipToPadding = clipToPadding
+            }
+"""
+    patched_utilities = patch_utilities_kt(utilities)
+    assert "clipChildren = attr" in patched_utilities
+    assert "clipToPadding = attr" in patched_utilities
+    assert patch_utilities_kt(patched_utilities) == patched_utilities
+
+    cacheable = """    override fun getFreshnessIdentifier(item: CacheableShortcutInfo, provider: IconProvider) =
+        provider
+            .getStateForApp(item.appInfo)
+"""
+    patched_cacheable = patch_cacheable_shortcut(cacheable)
+    assert "iconProvider: IconProvider" in patched_cacheable
+    assert "iconProvider\n            .getStateForApp" in patched_cacheable
+    assert patch_cacheable_shortcut(patched_cacheable) == patched_cacheable
+
+    nested_override = "        override fun onStashedChanged(displayId: Int, stashed: Boolean) {}"
+    patched_nested_override = patch_desktop_visibility(nested_override)
+    assert (
+        '        @Deprecated("Deprecated desktop task listener callback")\n'
+        in patched_nested_override
+    )
+    assert patch_desktop_visibility(patched_nested_override) == patched_nested_override
+
+    overflow = """    override fun reserveDropSlotForDragLocation(x: Int) {
+        dragDelegate.reserveDropSlotForDragLocation(x)
+    }
+"""
+    patched_overflow = patch_overflown_apps(overflow)
+    assert "onScreenLocationX: Int" in patched_overflow
+    assert patch_overflown_apps(patched_overflow) == patched_overflow
+
+    phone_nav = """        barAxisMarginTop: Int,
+        barAxisMarginBottom: Int,
+            topMargin = barAxisMarginTop
+            bottomMargin = barAxisMarginBottom
+"""
+    patched_phone_nav = patch_phone_landscape_nav(phone_nav)
+    assert "barAxisMarginStart: Int" in patched_phone_nav
+    assert "barAxisMarginEnd: Int" in patched_phone_nav
+    assert patch_phone_landscape_nav(patched_phone_nav) == patched_phone_nav
+
+    stats = """        override fun withEndTimestamp(endTimeInMillis: Long) = apply {
+            this.mEndTimeInMillis = endTimeInMillis
+        }
+"""
+    patched_stats = patch_stats_log_compat(stats)
+    assert "withEndTimestamp(timestampInMillis: Long)" in patched_stats
+    assert patch_stats_log_compat(patched_stats) == patched_stats
+
+    seascape = """        appChipView: IconAppChipView,
+        val layoutParams = appChipView.layoutParams as FrameLayout.LayoutParams
+        appChipView.layoutParams = layoutParams
+        appChipView.setSplitTranslationX(0f)
+        appChipView.setSplitTranslationY(translationY.toFloat())
+"""
+    patched_seascape = patch_seascape_handler(seascape)
+    assert "iconView: IconAppChipView" in patched_seascape
+    assert "appChipView" not in patched_seascape
+    assert patch_seascape_handler(patched_seascape) == patched_seascape
+
+    group_task = """    override fun equals(o: Any?): Boolean {
+        if (this === o) return true
+        if (o !is GroupTask) return false
+        return taskViewType == o.taskViewType && tasks == o.tasks
+    }
+    override fun equals(o: Any?): Boolean {
+        if (this === o) return true
+        if (o !is SingleTask) return false
+        return super.equals(o)
+    }
+    override fun equals(o: Any?): Boolean {
+        if (this === o) return true
+        if (o !is SplitTask) return false
+        if (splitBounds != o.splitBounds) return false
+        return super.equals(o)
+    }
+"""
+    patched_group_task = patch_group_task(group_task)
+    assert "equals(other: Any?)" in patched_group_task
+    assert "equals(o: Any?)" not in patched_group_task
+    assert patch_group_task(patched_group_task) == patched_group_task
+
+    desktop_task = """    override fun onConfigurationChanged(newConfig: Configuration?) {
+        super.onConfigurationChanged(newConfig)
+"""
+    patched_desktop_task = patch_desktop_task_view(desktop_task)
+    assert "onConfigurationChanged(p0: Configuration?)" in patched_desktop_task
+    assert patch_desktop_task_view(patched_desktop_task) == patched_desktop_task
+
+    preload = (
+        "context.resources.getColor(R.color.materialColorInverseSurface)\n"
+        "context.resources.getColor(R.color.materialColorPrimary)\n"
+        "context.resources.getColor(R.color.materialColorSecondary)"
+    )
+    patched_preload = patch_preload_icon_delegate(preload)
+    assert "context.resources.getColor" not in patched_preload
+    assert patch_preload_icon_delegate(patched_preload) == patched_preload
+
+    db_entry = "Intent.parseUri(intentStr, 0).apply { sourceBounds = null }.toURI()"
+    patched_db_entry = patch_db_entry(db_entry)
+    assert ".toUri(0)" in patched_db_entry
+    assert patch_db_entry(patched_db_entry) == patched_db_entry
+
+    add_item = "sendWidgetAddedToScreenAccessibilityEvent(widgetProviderInfo.label)"
+    patched_add_item = patch_add_item_activity(add_item)
+    assert "widgetProviderInfo.loadLabel(packageManager)" in patched_add_item
+    assert patch_add_item_activity(patched_add_item) == patched_add_item
+
     try:
         replace_once("x", "missing", "new", "negative")
     except FoundationError:
