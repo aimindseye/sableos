@@ -24,6 +24,9 @@ MIGRATED_WARNING_MARKERS = (
     "overrides a deprecated member but is not marked as deprecated itself",
     "statusBarColor: Int' is deprecated",
     "navigationBarColor: Int' is deprecated",
+    "MESSAGE_ID_UPDATE_SHAPE: Int' is deprecated",
+    "MESSAGE_ID_UPDATE_GRID: Int' is deprecated",
+    "MESSAGE_ID_UPDATE_ICON_THEMED: Int' is deprecated",
 )
 
 
