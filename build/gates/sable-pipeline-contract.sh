@@ -55,6 +55,7 @@ grep -Fq 'FASTBOOT_WIPE_FLAG=ABSENT' "$FLASH"
 grep -Fq -- '--skip-secondary' "$FLASH"
 grep -Fq -- '--skip-reboot' "$FLASH"
 grep -Fq 'SABLE_BLOCKER_ISSUE_REQUIRED=YES' "$FLASH"
+grep -Fq 'PREWRITE_FAILURE_RECOVERY=PASS_ANDROID' "$FLASH"
 grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE' "$FLASH"
 grep -Fq '"has-slot:$part"' "$FLASH"
 if grep -Fq '"partition-size:$part"' "$FLASH"; then
