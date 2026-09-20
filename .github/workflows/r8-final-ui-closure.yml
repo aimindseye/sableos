@@ -28,6 +28,7 @@ on:
       - 'src/android/packages/apps/SableStart/**'
       - 'src/android/shared/sabledesign/**'
       - 'apps/r8/reader/**'
+      - 'apps/r8/mail/**'
       - 'build/verify-reader-manifest.py'
       - '.github/workflows/r8-final-ui-closure.yml'
   workflow_dispatch:
