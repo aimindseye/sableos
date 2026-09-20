@@ -26,6 +26,17 @@ def remove_once(path: Path, old: str) -> None:
     replace_once(path, old, "")
 
 
+def remove_exact_count(path: Path, old: str, expected: int) -> None:
+    text = path.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count != expected:
+        fail(
+            "SABLE_MAIL_PATCH_ANCHOR=FAIL "
+            f"path={path} count={count} expected={expected} anchor={old!r}"
+        )
+    path.write_text(text.replace(old, ""), encoding="utf-8")
+
+
 def write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -113,6 +124,219 @@ def main() -> None:
         "    testImplementation(projects.feature.thundermail.internal.common)\n",
     ):
         remove_once(build, line)
+
+    app_common_build = root / "app-common/build.gradle.kts"
+    remove_once(
+        app_common_build,
+        "    implementation(projects.feature.thundermail.internal.common)\n",
+    )
+
+    app_common_feature = (
+        root
+        / "app-common/src/main/kotlin/net/thunderbird/app/common/feature/"
+        "AppCommonFeatureModule.kt"
+    )
+    remove_once(
+        app_common_feature,
+        "import net.thunderbird.feature.thundermail.internal.common.inject.featureThundermailCommonModule\n",
+    )
+    remove_once(
+        app_common_feature,
+        "    includes(featureThundermailCommonModule)\n",
+    )
+
+    account_setup_build = root / "feature/account/setup/build.gradle.kts"
+    remove_once(
+        account_setup_build,
+        "    implementation(projects.feature.autodiscovery.demo)\n",
+    )
+    remove_exact_count(
+        account_setup_build,
+        "    implementation(projects.feature.thundermail.api)\n",
+        2,
+    )
+
+    launcher_build = root / "feature/launcher/build.gradle.kts"
+    remove_once(
+        launcher_build,
+        "    implementation(projects.feature.thundermail.api)\n",
+    )
+
+    onboarding_build = root / "feature/onboarding/main/build.gradle.kts"
+    remove_once(
+        onboarding_build,
+        "    implementation(projects.feature.thundermail.api)\n",
+    )
+
+    auto_content = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "ui/autodiscovery/AccountAutoDiscoveryContent.kt"
+    )
+    remove_once(auto_content, "import androidx.compose.animation.AnimatedVisibility\n")
+    remove_once(
+        auto_content,
+        "import net.thunderbird.feature.thundermail.ui.component.ThundermailButtonPanel\n",
+    )
+    remove_exact_count(auto_content, "    onThundermailClick: () -> Unit,\n", 3)
+    remove_exact_count(auto_content, "    onScanQrCodeClick: () -> Unit,\n", 3)
+    remove_exact_count(
+        auto_content,
+        "                    onThundermailClick = onThundermailClick,\n",
+        2,
+    )
+    remove_exact_count(
+        auto_content,
+        "                    onScanQrCodeClick = onScanQrCodeClick,\n",
+        2,
+    )
+    remove_once(
+        auto_content,
+        '''        AnimatedVisibility(state.emailAddress.value.isBlank()) {
+            ThundermailButtonPanel(
+                onThundermailClick = onThundermailClick,
+                onScanQrCodeClick = onScanQrCodeClick,
+                modifier = Modifier
+                    .testTag("thundermail_panel")
+                    .padding(bottom = BoltTheme.spacings.quadruple),
+            )
+        }
+
+''',
+    )
+
+    auto_screen = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "ui/autodiscovery/AccountAutoDiscoveryScreen.kt"
+    )
+    remove_once(auto_screen, "    onThundermailClick: () -> Unit,\n")
+    remove_once(auto_screen, "    onScanQrCodeClick: () -> Unit,\n")
+    remove_once(
+        auto_screen,
+        "            onThundermailClick = onThundermailClick,\n",
+    )
+    remove_once(
+        auto_screen,
+        "            onScanQrCodeClick = onScanQrCodeClick,\n",
+    )
+
+    account_setup_nav = (
+        root
+        / "feature/account/setup/src/main/kotlin/app/k9mail/feature/account/setup/"
+        "navigation/AccountSetupNavHost.kt"
+    )
+    remove_once(
+        account_setup_nav,
+        "                onThundermailClick = { onFinish(AccountSetupRoute.ThundermailSignIn) },\n",
+    )
+    remove_once(
+        account_setup_nav,
+        "                onScanQrCodeClick = { onFinish(AccountSetupRoute.ThundermailScanQrCode) },\n",
+    )
+
+    onboarding_nav = (
+        root
+        / "feature/onboarding/main/src/main/kotlin/app/k9mail/feature/onboarding/main/"
+        "navigation/OnboardingNavHost.kt"
+    )
+    replace_once(
+        onboarding_nav,
+        "                onStartClick = { onFinish(OnboardingRoute.ThundermailAddAccount) },",
+        "                onStartClick = { navController.navigateToAccountSetup() },",
+    )
+    replace_once(
+        onboarding_nav,
+        "                onThundermailClick = { onFinish(OnboardingRoute.ThundermailSignIn) },",
+        "                onThundermailClick = { navController.navigateToAccountSetup() },",
+    )
+
+    launcher_nav = (
+        root
+        / "feature/launcher/src/main/kotlin/app/k9mail/feature/launcher/navigation/"
+        "FeatureLauncherNavHost.kt"
+    )
+    remove_once(launcher_nav, "import androidx.navigation.NavGraphBuilder\n")
+    remove_once(
+        launcher_nav,
+        "import net.thunderbird.feature.thundermail.navigation.ThundermailNavigation\n",
+    )
+    remove_once(
+        launcher_nav,
+        "import net.thunderbird.feature.thundermail.navigation.ThundermailRoute\n",
+    )
+    remove_once(
+        launcher_nav,
+        "    thundermailNavigation: ThundermailNavigation = koinInject(),\n",
+    )
+    replace_once(
+        launcher_nav,
+        '''                when (it) {
+                    is OnboardingRoute.Onboarding -> {
+                        messageListLauncher.launch(it.accountId)
+                        activity.finish()
+                    }
+
+                    is OnboardingRoute.ThundermailScanQrCode ->
+                        navController.navigate(ThundermailRoute.ScanQrCode)
+
+                    is OnboardingRoute.ThundermailSignIn ->
+                        navController.navigate(ThundermailRoute.SignInWithThundermail)
+
+                    is OnboardingRoute.ThundermailAddAccount ->
+                        navController.navigate(ThundermailRoute.AddAccount)
+                }
+''',
+        '''                when (it) {
+                    is OnboardingRoute.Onboarding -> {
+                        messageListLauncher.launch(it.accountId)
+                        activity.finish()
+                    }
+
+                    else -> Unit
+                }
+''',
+    )
+    remove_once(
+        launcher_nav,
+        '''        registerThundermailNavigation(
+            thundermailNavigation = thundermailNavigation,
+            navController = navController,
+            messageListLauncher = messageListLauncher,
+            activity = activity,
+        )
+
+''',
+    )
+    replace_once(
+        launcher_nav,
+        '''                when (it) {
+                    is AccountSetupRoute.AccountSetup -> {
+                        messageListLauncher.launch(it.accountId)
+                    }
+
+                    is AccountSetupRoute.ThundermailScanQrCode ->
+                        navController.navigate(ThundermailRoute.ScanQrCode)
+
+                    is AccountSetupRoute.ThundermailSignIn ->
+                        navController.navigate(ThundermailRoute.SignInWithThundermail)
+                }
+''',
+        '''                when (it) {
+                    is AccountSetupRoute.AccountSetup -> {
+                        messageListLauncher.launch(it.accountId)
+                    }
+
+                    else -> Unit
+                }
+''',
+    )
+    launcher_text = launcher_nav.read_text(encoding="utf-8")
+    private_marker = "\nprivate fun NavGraphBuilder.registerThundermailNavigation("
+    private_index = launcher_text.find(private_marker)
+    if private_index < 0:
+        fail("SABLE_MAIL_PATCH_ANCHOR=FAIL launcher thundermail navigation function")
+    launcher_nav.write_text(launcher_text[:private_index] + "\n", encoding="utf-8")
 
     for variant in ("debug", "beta", "daily", "release"):
         feature_flags = (
@@ -732,7 +956,9 @@ internal object SableMailAppearanceSync {
     print("SABLE_MAIL_FUNDING=NOOP")
     print("SABLE_MAIL_MIGRATION_UI=NOOP")
     print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=REMOVED_FROM_PRODUCT_APP")
-    print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_APP")
+    print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_RUNTIME_GRAPH")
+    print("SABLE_MAIL_AUTODISCOVERY_DEMO=REMOVED_FROM_PRODUCT_RUNTIME_GRAPH")
+    print("SABLE_MAIL_ACCOUNT_ENTRY=STANDARD_IMAP_SMTP_SETUP")
     print("SABLE_MAIL_OAUTH=DISABLED_UNTIL_SABLE_CLIENT_REGISTRATION")
     print("SABLE_MAIL_GENERIC_IMAP_SMTP=UPSTREAM")
     print("SABLE_MAIL_GLOBAL_APPEARANCE=FOLLOW_SYSTEM_LIGHT_DARK_PLUS_5_ACCENTS")
