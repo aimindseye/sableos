@@ -396,14 +396,11 @@ N2_PRODUCTION_QUALIFIED
 
 3. Zinwa Q27
    preferred future full physical-QWERTY candidate if shipped hardware qualifies
-
-4. Zinwa Q25
-   optional source-available MediaTek/kernel/device research platform
 ```
 
 A booting GSI does not imply production support. A prebuilt kernel/BSP can be useful for N0/N1 functionality work but does not provide Sable-owned kernel security maintenance. Platform, kernel, vendor, modem, TEE, bootloader and connectivity firmware provenance must remain separate release inputs. Radio/data/5G/IMS/VoLTE/VoWiFi are separate acceptance gates rather than one generic telephony result.
 
-See `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `docs/NON_PIXEL_DEVICE_ROADMAP.md`, `docs/TITAN2_GSI_PLAN.md`, `docs/Q25_PORT_PLAN.md`, `docs/NON_PIXEL_RELEASE_VALIDATION.md`, and `docs/BRAX3_IODEOS_REFERENCE.md`.
+See `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `docs/NON_PIXEL_DEVICE_ROADMAP.md`, `docs/TITAN2_GSI_PLAN.md`, `docs/NON_PIXEL_RELEASE_VALIDATION.md`, and `docs/BRAX3_IODEOS_REFERENCE.md`.
 
 ## Sable Flow M1 — NEXT
 
@@ -428,7 +425,7 @@ DELIVERABLES:
 
 Sable Hub will use a provider capability model rather than pretending every service exposes a universal native API. Initial social targets are WhatsApp, Instagram, Facebook and LinkedIn, with isolated web capsules used where supported native/API consumer integration is unavailable.
 
-The same semantic shell/Hub model is intended to become the base for Titan 2, Q25 and Q27 compact/QWERTY work without device-specific application forks.
+The same semantic shell/Hub model is intended to become the base for Titan 2, Titan 2 Elite and Q27 compact/QWERTY work without device-specific application forks.
 
 ## Start here
 
