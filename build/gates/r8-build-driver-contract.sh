@@ -22,13 +22,14 @@ finalbuild="$ROOT/build/panther/build-r8-final-ui.sh"
 nostale="$ROOT/build/gates/r8-no-stale-product-code.sh"
 inventory="$ROOT/build/gates/verify-r8-vendor-sable-inventory.py"
 target_files_gate="$ROOT/build/gates/r8-final-target-files.sh"
+visual_acceptance="$ROOT/build/gates/r9-launcher-visual-acceptance.py"
 start_bp="$ROOT/src/android/packages/apps/SableStart/Android.bp"
 android_settings="$ROOT/apps/r8/android/settings.gradle.kts"
 start_check="$ROOT/apps/r8/android/sablestart-presentation-check/build.gradle.kts"
 local_ci="$ROOT/build/local-ci/run.sh"
 ci_policy="$ROOT/build/check-ci-policy.py"
 
-for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$target_files_gate" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
+for f in "$profile" "$release" "$verify" "$migrate" "$host_audit" "$host_bootstrap" "$host_centralize" "$host_cleanup" "$render" "$runner" "$retire" "$retire_device_product" "$retire_vendor_config" "$stage" "$finalbuild" "$nostale" "$inventory" "$target_files_gate" "$visual_acceptance" "$start_bp" "$android_settings" "$start_check" "$local_ci" "$ci_policy"; do
     [[ -f "$f" ]] || {
         echo "R8_BUILD_DRIVER_CONTRACT=FAIL_MISSING path=$f"
         exit 2
@@ -194,6 +195,13 @@ combined_line="$(grep -nF '===== COMBINED UI MODULE COMPILE GATE =====' "$finalb
 [[ -n "$preflight_line" && -n "$combined_line" && "$preflight_line" -lt "$combined_line" ]]
 
 echo "R9_LAUNCHER3_HOME_PREFLIGHT_CONTRACT=PASS"
+
+grep -Fq 'r9-launcher-visual-acceptance.py' "$ROOT/build/gates/r8-final-product-composition.sh"
+grep -Fq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' "$visual_acceptance"
+grep -Fq 'R9_L6_VISUAL_REVIEW_STATUS=PASS' "$visual_acceptance"
+python3 "$visual_acceptance"
+
+echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_BUILD_GATE=PASS"
 
 tmp="$(mktemp)"
 trap 'rm -f "$tmp"' EXIT
