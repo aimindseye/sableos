@@ -1,51 +1,14 @@
-android_app {
-    name: "SableStart",
-    // SableStart is a read-only system app and must not emit an APK v4 .idsig.
-    // Panther PackageManager cannot fs-verity-measure this /system APK under the
-    // current SELinux policy, so a v4 sidecar makes certificate collection fail.
-    v4_signature: false,
-
-    manifest: "AndroidManifest.xml",
-
+// SableStart is no longer a standalone HOME APK.
+// These sources are compiled directly into Launcher3QuickStep by the
+// R9 Launcher3 foundation applicator.
+filegroup {
+    name: "sable_start_presentation_srcs",
     srcs: [
-        "src/**/*.kt",
-        ":sable_design_shared_srcs",
+        "src/com/sable/start/live/LiveSurfaceModels.kt",
+        "src/com/sable/start/model/AppEntry.kt",
+        "src/com/sable/start/platform/LiveSurfaceRepository.kt",
+        "src/com/sable/start/platform/SableAppearanceProvider.kt",
+        "src/com/sable/start/platform/StartStateRepository.kt",
+        "src/com/sable/start/ui/SableStartScreen.kt",
     ],
-
-    resource_dirs: [
-        "res",
-    ],
-
-    sdk_version: "current",
-
-    static_libs: [
-        "androidx.activity_activity-compose",
-        "androidx.compose.runtime_runtime",
-        "androidx.compose.ui_ui",
-        "androidx.compose.foundation_foundation",
-        "androidx.compose.foundation_foundation-layout",
-        "androidx.compose.animation_animation",
-        "androidx.compose.ui_ui-text",
-        "androidx.compose.material3_material3",
-        "androidx.core_core-ktx",
-    ],
-
-    jni_libs: [
-        "libsable_start_core_jni",
-    ],
-
-    kotlincflags: [
-        "-Xjvm-default=all",
-    ],
-}
-
-rust_ffi_shared {
-    name: "libsable_start_core_jni",
-    crate_name: "sable_start_core_jni",
-
-    srcs: [
-        "rust/src/lib.rs",
-    ],
-
-    edition: "2021",
 }
