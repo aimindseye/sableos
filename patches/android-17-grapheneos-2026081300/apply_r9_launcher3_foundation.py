@@ -22,6 +22,13 @@ HOST_SOURCE = (
     / "SableQuickstepLauncher.kt"
 )
 
+FOUNDATION_DIRTY_PATHS = {
+    "Android.bp",
+    "quickstep/AndroidManifest-launcher.xml",
+    "quickstep/res/values/strings.xml",
+    HOST_REL.as_posix(),
+}
+
 BP_SRC_ANCHOR = '''        ":launcher-quickstep-dagger",
         ":launcher-build-config",
 '''
@@ -177,6 +184,58 @@ def git_head(path: pathlib.Path) -> str:
     return proc.stdout.strip()
 
 
+def launcher_dirty_paths(launcher: pathlib.Path) -> set[str]:
+    proc = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(launcher),
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        ],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise FoundationError(
+            f"cannot inspect Launcher3 worktree: {proc.stderr.strip()}"
+        )
+
+    paths: set[str] = set()
+    for raw in proc.stdout.splitlines():
+        if len(raw) < 4:
+            continue
+        path = raw[3:]
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1]
+        paths.add(path)
+    return paths
+
+
+def require_recognized_launcher_dirt(
+    launcher: pathlib.Path,
+    *,
+    require_complete: bool,
+) -> None:
+    dirty = launcher_dirty_paths(launcher)
+    unknown = dirty - FOUNDATION_DIRTY_PATHS
+    if unknown:
+        raise FoundationError(
+            "unrecognized Launcher3 dirty paths: "
+            + ", ".join(sorted(unknown))
+        )
+    if require_complete and dirty != FOUNDATION_DIRTY_PATHS:
+        missing = FOUNDATION_DIRTY_PATHS - dirty
+        extra = dirty - FOUNDATION_DIRTY_PATHS
+        raise FoundationError(
+            "Launcher3 foundation dirty-set mismatch "
+            f"missing={sorted(missing)!r} extra={sorted(extra)!r}"
+        )
+
+
 def require_workspace_sources(source: pathlib.Path) -> None:
     start_bp = source / "packages/apps/SableStart/Android.bp"
     design_bp = source / "packages/apps/SableDesign/Android.bp"
@@ -211,6 +270,7 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
                 f"Launcher3 HEAD mismatch expected={LAUNCHER3_HEAD} actual={head}"
             )
 
+    require_recognized_launcher_dirt(launcher, require_complete=True)
     require_workspace_sources(source)
 
     bp = (launcher / "Android.bp").read_text(encoding="utf-8")
@@ -285,6 +345,7 @@ def apply_tree(source: pathlib.Path) -> None:
             "refusing Launcher3 mutation because the pinned base HEAD differs"
         )
 
+    require_recognized_launcher_dirt(launcher, require_complete=False)
     require_workspace_sources(source)
 
     bp_path = launcher / "Android.bp"
@@ -389,6 +450,7 @@ def main() -> int:
             print("R9_LAUNCHER3_PHASE=HOST_COMPILE_BEFORE_STANDALONE_RETIREMENT")
         else:
             verify_tree(source)
+            print("R9_LAUNCHER3_DIRTY_PATHS=PASS")
             print("R9_LAUNCHER3_FOUNDATION_VERIFY=PASS")
     except FoundationError as exc:
         print(f"R9_LAUNCHER3_FOUNDATION=FAIL {exc}", file=sys.stderr)
