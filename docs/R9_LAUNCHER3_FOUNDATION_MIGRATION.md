@@ -294,3 +294,35 @@ Titan 2 inherits the same launcher foundation. Its later acceptance can focus on
 - Enter/Back/navigation keys;
 - square geometry;
 - pointer/trackpad behavior when exposed.
+
+## Full Panther build freshness policy
+
+A successful `m target-files-package otatools-package` against a warmed output
+directory proves that the requested product targets are currently satisfiable,
+but it does not by itself prove a fresh full Panther rebuild.
+
+The 2026-09-20 release-candidate attempt that completed the Android build phase
+in 53 seconds used the stable warmed `out_sable_r8_final` directory. Its
+target-files composition was valid, but the run is classified as an
+**incremental product-build/composition pass**, not the fresh full-build proof
+required before physical-device qualification.
+
+R9 release-candidate qualification therefore uses a source-bound output:
+
+```text
+out_sable_r9_full_<source-sha12>
+```
+
+Required causality rules:
+
+- the source-bound OUT path must not exist before the release candidate starts;
+- no clean or clobber of the warmed development OUT is required;
+- the inner Panther build independently refuses a pre-existing OUT when
+  `REQUIRE_FRESH_OUT=YES`;
+- target-files must have an mtime at or after the recorded fresh-build start;
+- final acceptance requires
+  `R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES`.
+
+This reuses source/upstream/Gradle caches where safe, but not prior Soong/Ninja
+product outputs.
+
