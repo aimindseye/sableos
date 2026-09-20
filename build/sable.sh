@@ -78,7 +78,9 @@ case "$FUNCTION" in
       exit 78
     fi
     echo "CI_PROFILE=$PROFILE"
-    bash "$ROOT/build/local-ci/run.sh" "$PROFILE"
+    SABLEOS_DEVICE="$DEVICE" \
+    SABLEOS_RELEASE_VERSION="$RELEASE" \
+      bash "$ROOT/build/local-ci/run.sh" "$PROFILE"
     ;;
 
   build)
@@ -112,6 +114,13 @@ case "$FUNCTION" in
       esac
     done
     [[ "$BUILD_SOURCE" =~ ^[0-9a-f]{40}$ ]] || { echo "SABLE_ARTIFACT_REGISTER=FAIL_BUILD_SOURCE"; exit 64; }
+    git -C "$ROOT" cat-file -e "$BUILD_SOURCE^{commit}" 2>/dev/null || {
+      echo "SABLE_ARTIFACT_REGISTER=FAIL_BUILD_SOURCE_NOT_IN_REPOSITORY"
+      exit 65
+    }
+    if declare -F sable_device_artifact_gate >/dev/null 2>&1; then
+      sable_device_artifact_gate "$RELEASE" "$BUILD_SOURCE" "$SHA256" "$BUILD_EVIDENCE_DIR" || exit 66
+    fi
     ARGS=(
       --registry-root "$REGISTRY_ROOT" register
       --device "$DEVICE"
