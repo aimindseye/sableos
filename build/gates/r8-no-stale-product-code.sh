@@ -30,6 +30,7 @@ stale_paths=(
     "apps/r8/android/sablestart-production-check"
     "build/panther/build-sablestart.sh"
     "build/panther/capture-sablestart.sh"
+    "build/panther/verify-sablestart-snapshot.sh"
     "build/gates/r8-sablestart-signing-policy.py"
     "build/gates/sablestart-r3-prebuild.sh"
     "build/gates/sablestart-r3b-soong.sh"
