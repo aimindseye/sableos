@@ -253,3 +253,29 @@ echo "BUNDLE=$BUNDLE"
 echo "EVIDENCE=$EVIDENCE"
 echo "OUT_DIR=$R9_FULL_OUT_ABS"
 echo "R9_FRESH_FULL_BUILD=PASS"
+
+if [[ "${SABLE_AUTO_REGISTER_ARTIFACT:-NO}" == YES ]]; then
+    echo
+    echo "===== STANDARD RELEASE ARTIFACT REGISTRATION ====="
+    TARGET_FILES="$R9_FULL_OUT_ABS/target/product/panther/obj/PACKAGING/target_files_intermediates/panther-target_files.zip"
+    ANDROID_INFO="$R9_FULL_OUT_ABS/target/product/panther/android-info.txt"
+    [[ -f "$TARGET_FILES" ]] || {
+        echo "SABLE_RELEASE_ARTIFACT_REGISTER=FAIL_TARGET_FILES_MISSING"
+        exit 80
+    }
+    [[ -f "$ANDROID_INFO" ]] || {
+        echo "SABLE_RELEASE_ARTIFACT_REGISTER=FAIL_ANDROID_INFO_MISSING"
+        exit 80
+    }
+    TARGET_FILES_SHA256="$(sha256sum "$TARGET_FILES" | awk '{print $1}')"
+
+    bash "$ROOT/build/sable.sh" panther "$SABLEOS_RELEASE_VERSION" register-artifact \
+        --build-source "$EXPECTED_SOURCE_COMMIT" \
+        --target-files "$TARGET_FILES" \
+        --sha256 "$TARGET_FILES_SHA256" \
+        --android-info "$ANDROID_INFO" \
+        --out-dir "$R9_FULL_OUT_ABS" \
+        --build-evidence-dir "$EVIDENCE"
+
+    echo "SABLE_RELEASE_ARTIFACT_REGISTER=PASS"
+fi
