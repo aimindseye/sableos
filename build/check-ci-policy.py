@@ -23,6 +23,7 @@ if workflow_files:
 required = (
     ROOT / "build" / "local-ci" / "run.sh",
     ROOT / "build" / "local-ci" / "README.md",
+    ROOT / ".gitleaks.toml",
     ROOT / "build" / "trusted-runner-policy.json",
     ROOT / "build" / "check-runner-policy.py",
     ROOT / "build" / "audit-trusted-runner-host.py",
