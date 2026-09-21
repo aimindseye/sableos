@@ -26,6 +26,11 @@
             android:grantUriPermissions="false" />
 
         <activity
+            android:name=".R9DailyDriverDesignReviewActivity"
+            android:exported="true"
+            android:label="Sable R9 Daily Driver Design Review" />
+
+        <activity
             android:name=".R9LauncherVisualReviewActivity"
             android:exported="true"
             android:label="Sable Launcher Visual Review">
