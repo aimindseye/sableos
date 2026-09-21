@@ -89,7 +89,7 @@ printf '%s\n' "$BROWSER_RESOLVED" |
 echo "R9_FINAL_UI_DEFAULT_BROWSER=PASS_VANADIUM resolved=$BROWSER_RESOLVED"
 
 SMS_ROLE="$(
-    adb_cmd shell cmd role get-role-holders         android.app.role.SMS         --user 0 2>/dev/null |
+    adb_cmd shell cmd role get-role-holders         --user 0         android.app.role.SMS 2>/dev/null |
         tr -d '\r'
 )"
 
