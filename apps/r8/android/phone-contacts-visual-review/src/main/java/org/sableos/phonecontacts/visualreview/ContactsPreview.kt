@@ -67,7 +67,7 @@ private fun ContactsListScreen() {
 
     SablePreviewPage(
         title = "contacts",
-        subtitle = "people on this device + configured accounts",
+        subtitle = "people · groups · accounts",
     ) {
         AccentAction(
             title = "search + add",
@@ -161,7 +161,7 @@ private fun ContactsRail(modifier: Modifier = Modifier) {
 private fun ContactsDetailScreen() {
     SablePreviewPage(
         title = "contact",
-        subtitle = "local identity + account-backed data",
+        subtitle = "contact details",
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -179,7 +179,7 @@ private fun ContactsDetailScreen() {
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(
-                    text = "personal · device contacts",
+                    text = "personal · local contact",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -191,9 +191,9 @@ private fun ContactsDetailScreen() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            ContactAction("call")
-            ContactAction("message")
-            ContactAction("email")
+            ContactAction(glyph = "☎", label = "call")
+            ContactAction(glyph = "…", label = "message")
+            ContactAction(glyph = "@", label = "email")
         }
 
         Spacer(Modifier.height(SableSpacing.Xl))
@@ -212,29 +212,35 @@ private fun ContactsDetailScreen() {
 
         Spacer(Modifier.weight(1f))
         Hairline()
-        Text(
-            text = "edit · share · more",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = SableSpacing.Lg),
-        )
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = SableSpacing.Lg),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            listOf("edit", "share", "more").forEach { action ->
+                Text(
+                    text = action,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 
 @Composable
-private fun ContactAction(label: String) {
+private fun ContactAction(
+    glyph: String,
+    label: String,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(44.dp)
-                    .border(
-                        width = 1.dp,
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape,
-                    ),
+        CircleGlyph(
+            glyph = glyph,
+            accent = true,
         )
         Spacer(Modifier.height(SableSpacing.Sm))
         Text(
