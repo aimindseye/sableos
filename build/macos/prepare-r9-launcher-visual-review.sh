@@ -33,12 +33,15 @@ mkdir -p "$EVIDENCE_DIR"
 
 CACHE_DIR="$HOME/Library/Caches/sableos"
 LAST_DIR_FILE="$CACHE_DIR/r9-launcher-visual-review-last-dir"
+READY_FILE="$EVIDENCE_DIR/prepare-ready.txt"
+SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
 mkdir -p "$CACHE_DIR"
+printf '%s\n' "$EVIDENCE_DIR" > "$LAST_DIR_FILE"
 
 exec > >(tee "$EVIDENCE_DIR/prepare.log") 2>&1
 
 echo "===== R9L9 MAC MINI / PIXEL 7 VISUAL REVIEW PREP ====="
-echo "SOURCE_COMMIT=$(git -C "$ROOT" rev-parse HEAD)"
+echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "NETWORK_FETCH_AUTHORIZED=${NETWORK_FETCH_AUTHORIZED:-NO}"
 echo "FULL_PANTHER_BUILD_AUTHORIZED=NO"
@@ -310,8 +313,13 @@ sleep 1
 
 "$ADB" -s "$SERIAL" exec-out screencap -p > "$EVIDENCE_DIR/00-start-initial.png"
 
-printf '%s\n' "$EVIDENCE_DIR" > "$LAST_DIR_FILE"
+{
+    echo "source_commit=$SOURCE_COMMIT"
+    echo "serial=$SERIAL"
+    echo "status=READY"
+} > "$READY_FILE"
 
+echo "R9_VISUAL_REVIEW_PREPARE_READY=PASS"
 echo "R9_VISUAL_REVIEW_APK_BUILD=PASS"
 echo "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES"
 echo "R9_VISUAL_REVIEW_PIXEL7_AVD=PASS"
