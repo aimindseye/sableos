@@ -24,6 +24,7 @@ EXPECTED_FILES = {
     "r8/prebuilt/SableReader.apk",
     "r8/prebuilt/SableHub.apk",
     "r8/prebuilt/SableMail.apk",
+    "r8/prebuilt/SableWeather.apk",
 }
 
 
@@ -145,7 +146,7 @@ def main() -> int:
 
     print("R8_VENDOR_SABLE_EXACT_INVENTORY=PASS")
     print(f"R8_VENDOR_SABLE_CANONICAL_FILE_COUNT={len(EXPECTED_FILES)}")
-    print("R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8")
+    print("R8_VENDOR_SABLE_CANONICAL_APK_COUNT=9")
     return 0
 
 
