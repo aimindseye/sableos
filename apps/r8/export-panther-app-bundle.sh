@@ -39,6 +39,7 @@ declare -A expected=(
     [org.sableos.hub]=SableHub.apk
     [org.sableos.mail]=SableMail.apk
     [org.sableos.weather]=SableWeather.apk
+    [org.sableos.calendar]=SableCalendar.apk
 )
 
 declare -a candidates=()
@@ -52,7 +53,8 @@ for apk in \
     "$ROOT/apps/r8/android/games/build/outputs/apk/game2048/debug/games-game2048-debug.apk" \
     "$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk" \
     "$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk" \
-    "$ROOT/apps/r8/android/weather/build/outputs/apk/debug/weather-debug.apk"
+    "$ROOT/apps/r8/android/weather/build/outputs/apk/debug/weather-debug.apk" \
+    "$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk"
 do
     if [[ -f "$apk" ]]; then
         candidates+=("$apk")
@@ -99,7 +101,7 @@ done
 
 printf 'package\tfilename\tsha256\tsize_bytes\tsource\n' > "$OUT/manifest.tsv"
 
-for pkg in     org.sableos.calculator     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.media     org.sableos.reader     org.sableos.hub     org.sableos.mail     org.sableos.weather
+for pkg in     org.sableos.calculator     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.media     org.sableos.reader     org.sableos.hub     org.sableos.mail     org.sableos.weather     org.sableos.calendar
 do
     apk="${resolved[$pkg]:-}"
     if [[ -z "$apk" ]]; then
