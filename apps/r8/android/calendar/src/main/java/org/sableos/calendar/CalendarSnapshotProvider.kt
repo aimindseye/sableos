@@ -5,6 +5,8 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Binder
+import android.os.Process
 
 class CalendarSnapshotProvider : ContentProvider() {
     override fun onCreate(): Boolean = true
@@ -17,6 +19,7 @@ class CalendarSnapshotProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor {
         val appContext = checkNotNull(context)
+        enforceLauncherCaller(appContext)
         val snapshot = CalendarRepository(appContext).snapshot()
         return MatrixCursor(COLUMNS).apply {
             addRow(
@@ -49,6 +52,18 @@ class CalendarSnapshotProvider : ContentProvider() {
         selection: String?,
         selectionArgs: Array<out String>?,
     ): Int = throw UnsupportedOperationException("Read-only provider")
+
+    private fun enforceLauncherCaller(context: android.content.Context) {
+        val callingUid = Binder.getCallingUid()
+        if (callingUid == Process.myUid()) return
+        val packages =
+            context.packageManager.getPackagesForUid(callingUid)
+                ?.toSet()
+                .orEmpty()
+        check("com.android.launcher3" in packages) {
+            "Sable live snapshot is restricted to Launcher3."
+        }
+    }
 
     companion object {
         val SNAPSHOT_URI: Uri =
