@@ -94,7 +94,7 @@ if layout_gate.is_file():
         if token not in layout_text:
             failures.append(f"repo layout contract token missing: {token}")
     required_match = re.search(
-        r"(?ms)^required=\\(\\n(?P<body>.*?)^\\)\\n",
+        r"(?ms)^required=\(\n(?P<body>.*?)^\)\n",
         layout_text,
     )
     if required_match is None:
@@ -104,7 +104,7 @@ if layout_gate.is_file():
         required_body = required_match.group("body")
 
     retired_match = re.search(
-        r"(?ms)^retired_sablestart=\\(\\n(?P<body>.*?)^\\)\\n",
+        r"(?ms)^retired_sablestart=\(\n(?P<body>.*?)^\)\n",
         layout_text,
     )
     if retired_match is None:
