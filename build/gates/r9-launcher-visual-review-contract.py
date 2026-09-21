@@ -600,6 +600,9 @@ def main() -> int:
     fidelity_audit = (
         ROOT / "build/macos/audit-r9-launcher-review-fidelity.sh"
     ).read_text()
+    theme_capture = (
+        ROOT / "build/macos/capture-r9-theme-fidelity-review.sh"
+    ).read_text()
     require(
         mac_runner,
         'GRADLE_OFFLINE=NO',
@@ -621,6 +624,11 @@ def main() -> int:
         "R9_VISUAL_REVIEW_MAC_BUILD_BLOCKED_BY_LINT",
     )
     for needle in (
+        ":hub:assembleDebug",
+        "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
+        "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
+        "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
+        "content://org.sableos.start.appearance/appearance",
         "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SOURCE=HOST_AVD_NOT_PRODUCT",
         "R9_VISUAL_REVIEW_HOST_AVD_CHROME=DETECTED_FILTERED_FROM_REVIEW",
         "R9_VISUAL_REVIEW_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
@@ -644,6 +652,22 @@ def main() -> int:
             fidelity_audit,
             needle,
             "R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT",
+        )
+    for needle in (
+        "audit-r9-launcher-review-fidelity.sh",
+        "org.sableos.hub/.MainActivity",
+        "04-theme-$MODE-start.png",
+        "05-theme-$MODE-sable-messages.png",
+        "R9_THEME_FIDELITY_PROVIDER_MODE=PASS",
+        "R9_THEME_FIDELITY_CROSS_APP_VISUAL_REVIEW=PENDING_USER_REVIEW",
+        "R9_THEME_FIDELITY_PLATFORM_NIGHT_MODE=DEFERRED_PHYSICAL_PANTHER",
+        "R9_THEME_FIDELITY_VANADIUM=DEFERRED_PHYSICAL_PANTHER",
+        "R9_THEME_FIDELITY_CAPTURE=PASS",
+    ):
+        require(
+            theme_capture,
+            needle,
+            "R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT",
         )
 
     forbid(
@@ -696,6 +720,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_BROWSER_IDENTITY_SCOPE=PASS_DEFERRED_PANTHER")
     print("R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER")
     print("R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS")
+    print("R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT=PASS_SABLE_MESSAGES")
     print("R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY=PASS")
     print("R9_QUICKSTEP_SYSTEM_BAR_RESTORE=PASS")
     print("R9_VISUAL_REVIEW_LINT_TEST_SURFACE=PASS")
