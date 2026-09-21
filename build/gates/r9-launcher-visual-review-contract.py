@@ -49,6 +49,11 @@ def main() -> int:
         / "patches/android-17-grapheneos-2026081300/r9_launcher3"
         / "SableQuickstepLauncher.kt"
     ).read_text()
+    state_repo = (
+        ROOT
+        / "src/android/packages/apps/SableStart/src/com/sable/start/platform"
+        / "StartStateRepository.kt"
+    ).read_text()
 
     require(
         settings,
@@ -185,6 +190,26 @@ def main() -> int:
         "resolveSableDarkAppearance(",
         "R9_VISUAL_REVIEW_DARK_BAR_RESOLUTION",
     )
+    require(
+        activity,
+        "initialFavoriteKeys = favoriteKeys",
+        "R9_VISUAL_REVIEW_FAVORITE_STATE",
+    )
+    require(
+        activity,
+        "initialStartTileKeys = startTileKeys",
+        "R9_VISUAL_REVIEW_START_TILE_STATE",
+    )
+    require(
+        activity,
+        'const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"',
+        "R9_VISUAL_REVIEW_WEATHER_FIXTURE_PACKAGE",
+    )
+    require(
+        activity,
+        '"Sable Weather"',
+        "R9_VISUAL_REVIEW_WEATHER_TILE_LABEL",
+    )
     forbid(
         activity,
         "onRequestPermissionsResult(",
@@ -211,9 +236,74 @@ def main() -> int:
         "R9_QUICKSTEP_SYSTEM_BAR_RESTORE",
     )
     require(
+        quickstep,
+        "loadFavoriteKeys()",
+        "R9_QUICKSTEP_FAVORITE_STATE_BINDING",
+    )
+    require(
+        quickstep,
+        "loadStartTileKeys()",
+        "R9_QUICKSTEP_START_TILE_STATE_BINDING",
+    )
+    require(
+        state_repo,
+        'const val KEY_FAVORITE_APPS = "favorite_apps"',
+        "R9_START_FAVORITE_STORAGE",
+    )
+    require(
+        state_repo,
+        'const val KEY_START_TILES = "start_tiles"',
+        "R9_START_TILE_STORAGE",
+    )
+    require(
+        state_repo,
+        'const val KEY_PINNED_APPS_LEGACY = "pinned_apps"',
+        "R9_START_LEGACY_PIN_MIGRATION",
+    )
+    require(
+        state_repo,
+        ".remove(KEY_PINNED_APPS_LEGACY)",
+        "R9_START_LEGACY_PIN_MIGRATION_CLEANUP",
+    )
+    require(
+        state_repo,
+        "if (!preferences.contains(KEY_START_TILES))",
+        "R9_START_DEFAULT_VS_EXPLICIT_EMPTY",
+    )
+    require(
         production_ui,
-        "app.stableKey() in primaryKeys || isSettingsApp(app)",
-        "R9_START_NO_PRIMARY_FAVORITE_DUPLICATION",
+        "app.stableKey() in startKeys",
+        "R9_START_TILE_FAVORITE_SEPARATION",
+    )
+    require(
+        production_ui,
+        "DEFAULT_START_TILE_TARGET = 10",
+        "R9_START_DEFAULT_TILE_TARGET",
+    )
+    require(
+        production_ui,
+        'listOf("Sable Weather", "Weather")',
+        "R9_START_WEATHER_PREFERRED_TILE",
+    )
+    require(
+        production_ui,
+        "explicitKeys != null",
+        "R9_START_EXPLICIT_TILE_STATE",
+    )
+    forbid(
+        production_ui,
+        "MAX_START_TILES",
+        "R9_START_NO_FOUR_TILE_CAP",
+    )
+    require(
+        production_ui,
+        ".combinedClickable(",
+        "R9_START_TILE_LONG_PRESS",
+    )
+    require(
+        production_ui,
+        "onLongClick = { onOpenPeek(app) }",
+        "R9_START_TILE_PEEK_ROUTE",
     )
     require(
         production_ui,
@@ -270,11 +360,17 @@ def main() -> int:
         'text = "open"',
         "R9_PEEK_FLAT_OPEN_ACTION",
     )
-    require(
-        production_ui,
-        'label = if (isPinned) "unpin from favorites" else "pin to favorites"',
-        "R9_PEEK_FAVORITE_ACTION",
-    )
+    for token, label in (
+        ('"remove from start"', "R9_PEEK_REMOVE_FROM_START"),
+        ('"pin to start"', "R9_PEEK_PIN_TO_START"),
+        ('"unpin from favorites"', "R9_PEEK_UNPIN_FAVORITE"),
+        ('"pin to favorites"', "R9_PEEK_PIN_FAVORITE"),
+    ):
+        require(
+            production_ui,
+            token,
+            label,
+        )
     require(
         production_ui,
         'label = "permissions + app info"',
@@ -420,7 +516,12 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
     print("R9_PRODUCTION_REAL_ICONS=PASS")
-    print("R9_START_NO_PRIMARY_FAVORITE_DUPLICATION=PASS")
+    print("R9_START_TILE_FAVORITE_SEPARATION=PASS")
+    print("R9_START_DEFAULT_TILES=PASS_10")
+    print("R9_START_WEATHER_PREFERRED_TILE=PASS")
+    print("R9_START_TILE_CAP=PASS_UNCAPPED_EXPLICIT")
+    print("R9_START_TILE_LONG_PRESS_PEEK=PASS")
+    print("R9_START_STATE_PERSISTENCE_SEPARATED=PASS")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
     print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
