@@ -43,6 +43,7 @@ SYSTEMUI_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_syst
 LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
 MESSAGING_VISIBILITY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py"
 PHONE_CONTACTS="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
+DAILY_DRIVER_CORE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py"
 
 run_self_test() {
     local name="$1"
@@ -187,9 +188,22 @@ if python3 "$PHONE_CONTACTS" --source "$WS" verify; then
 else
     python3 "$PHONE_CONTACTS" --source "$WS" apply
     python3 "$PHONE_CONTACTS" --source "$WS" verify
+python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
     echo "R9_PHONE_CONTACTS_PRESENTATION=APPLIED"
 fi
 echo "R9_PHONE_CONTACTS_PRESENTATION=PASS"
+
+echo
+echo "===== R9 DAILY-DRIVER CORE PRESENTATION ====="
+
+if python3 "$DAILY_DRIVER_CORE" --source "$WS" verify; then
+    echo "R9_DAILY_DRIVER_CORE_PRESENTATION=ALREADY_APPLIED"
+else
+    python3 "$DAILY_DRIVER_CORE" --source "$WS" apply
+    python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
+    echo "R9_DAILY_DRIVER_CORE_PRESENTATION=APPLIED"
+fi
+echo "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS"
 
 echo
 echo "===== R8 FIRST-PARTY PRODUCT APPLICATIONS ====="
@@ -207,6 +221,7 @@ echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
 echo "R9_SYSTEMUI_COHERENCE=PASS"
 echo "R9_MESSAGING_VISIBILITY=PASS"
 echo "R9_PHONE_CONTACTS_PRESENTATION=PASS"
+echo "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS"
 echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 echo "R8_FINAL_UI_PREPARE=PASS"
