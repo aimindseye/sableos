@@ -513,6 +513,34 @@ require(
     "build/gates/r9-launcher-visual-review-contract.py",
     "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT",
     "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT=PASS_MINSDK30",
+    "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_PARITY=PASS",
+    "R9_VISUAL_REVIEW_APPEARANCE_PERSISTENCE_PARITY=PASS",
+    "R9_VISUAL_REVIEW_HOST_CHROME_FILTER=PASS",
+    "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SCOPE=PASS_DEFERRED_PANTHER",
+    "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER",
+    "R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS",
+)
+require(
+    "apps/r8/android/sablestart-visual-review/src/main/AndroidManifest.xml",
+    'android:name="org.sableos.start.platform.SableAppearanceProvider"',
+    'android:authorities="org.sableos.start.appearance"',
+    'android:exported="true"',
+)
+require(
+    "apps/r8/android/sablestart-visual-review/src/main/java/org/sableos/start/visualreview/R9LauncherVisualReviewActivity.kt",
+    "startStateRepository.loadAppearance()",
+    "startStateRepository.saveAppearance(appearance)",
+    "startStateRepository.resetAppearance()",
+    'const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"',
+    "component.packageName == HOST_AVD_CHROME_PACKAGE",
+)
+require(
+    "build/macos/audit-r9-launcher-review-fidelity.sh",
+    "R9_VISUAL_FIDELITY_APPEARANCE_PROVIDER=PASS",
+    "R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS",
+    "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED",
+    "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
+    "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
 )
 require(
     "apps/r8/android/sablestart-visual-review/src/main/java/org/sableos/start/visualreview/R9LauncherVisualReviewActivity.kt",
@@ -657,6 +685,8 @@ print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
 print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
 print("R9_VISUAL_REVIEW_MINSDK30_PACKAGEINFO_COMPAT=PASS")
+print("R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_FIDELITY=PASS")
+print("R9_VISUAL_REVIEW_HOST_BROWSER_SCOPE=PASS_FILTERED_DEFERRED_PANTHER")
 print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
