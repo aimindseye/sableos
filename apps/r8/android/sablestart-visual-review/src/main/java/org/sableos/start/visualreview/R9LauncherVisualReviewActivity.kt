@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.UserHandle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -129,7 +128,6 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                                 privacySummary =
                                     buildPrivacyPermissionSummary(
                                         packageName = component.packageName,
-                                        user = info.user,
                                     ),
                             )
                         }
@@ -149,18 +147,10 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private fun buildPrivacyPermissionSummary(
         packageName: String,
-        user: UserHandle,
     ): String {
-        val profileContext =
-            runCatching {
-                createContextAsUser(user, 0)
-            }.getOrElse {
-                this
-            }
-
         val packageInfo =
             runCatching {
-                profileContext.packageManager.getPackageInfo(
+                packageManager.getPackageInfo(
                     packageName,
                     PackageManager.PackageInfoFlags.of(
                         PackageManager.GET_PERMISSIONS.toLong(),
