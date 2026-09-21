@@ -13,16 +13,18 @@ data class LiveDatum(
     val title: String,
     val detail: String,
     val availability: LiveAvailability,
+    val observedAtEpochMs: Long = 0L,
 )
 
 data class LiveSurfaceSnapshot(
     val dateText: String,
     val timeText: String,
-    val photos: LiveDatum,
-    val music: LiveDatum,
-    val calendar: LiveDatum,
     val weather: LiveDatum,
-    val tasks: LiveDatum,
+    val calendar: LiveDatum,
+    val messages: LiveDatum,
+    val mail: LiveDatum,
+    val music: LiveDatum,
+    val photos: LiveDatum,
     val observedAtEpochMs: Long,
 ) {
     init {
