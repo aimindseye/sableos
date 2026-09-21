@@ -49,6 +49,7 @@ SERIAL="${ANDROID_SERIAL:-$("$ADB" devices | awk 'NR > 1 && $2 == "device" { pri
 PNG="$EVIDENCE_DIR/$SAFE_FRAME.png"
 STATE="$EVIDENCE_DIR/$SAFE_FRAME.state.txt"
 
+sleep "${R9_VISUAL_CAPTURE_SETTLE_SECONDS:-1}"
 "$ADB" -s "$SERIAL" exec-out screencap -p > "$PNG"
 
 {
