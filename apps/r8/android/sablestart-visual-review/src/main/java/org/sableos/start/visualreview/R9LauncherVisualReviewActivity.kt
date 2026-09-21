@@ -167,12 +167,20 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     ): String {
         val packageInfo =
             runCatching {
-                packageManager.getPackageInfo(
-                    packageName,
-                    PackageManager.PackageInfoFlags.of(
-                        PackageManager.GET_PERMISSIONS.toLong(),
-                    ),
-                )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    packageManager.getPackageInfo(
+                        packageName,
+                        PackageManager.PackageInfoFlags.of(
+                            PackageManager.GET_PERMISSIONS.toLong(),
+                        ),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageManager.getPackageInfo(
+                        packageName,
+                        PackageManager.GET_PERMISSIONS,
+                    )
+                }
             }.getOrNull() ?: return "permissions · unavailable"
 
         val requested = packageInfo.requestedPermissions.orEmpty()
