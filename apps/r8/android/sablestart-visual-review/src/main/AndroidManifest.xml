@@ -27,11 +27,57 @@
             android:authorities="org.sableos.start.appearance"
             android:exported="true"
             android:grantUriPermissions="false" />
+        <provider
+            android:name=".ReviewWeatherSnapshotProvider"
+            android:authorities="org.sableos.weather.snapshot"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+        <provider
+            android:name=".ReviewMailSnapshotProvider"
+            android:authorities="org.sableos.mail.snapshot"
+            android:exported="true"
+            android:grantUriPermissions="false" />
 
         <activity
             android:name=".R9DailyDriverDesignReviewActivity"
             android:exported="true"
             android:label="Sable R9 Daily Driver Design Review" />
+
+        <activity
+            android:name=".WeatherFixtureActivity"
+            android:exported="true"
+            android:icon="@drawable/ic_review_weather"
+            android:roundIcon="@drawable/ic_review_weather"
+            android:label="Sable Weather">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MailFixtureActivity"
+            android:exported="true"
+            android:icon="@drawable/ic_review_mail"
+            android:roundIcon="@drawable/ic_review_mail"
+            android:label="Sable Mail">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".CalculatorFixtureActivity"
+            android:exported="true"
+            android:icon="@drawable/ic_review_calculator"
+            android:roundIcon="@drawable/ic_review_calculator"
+            android:label="Sable Calculator">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".R9LauncherVisualReviewActivity"
