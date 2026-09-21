@@ -72,6 +72,15 @@ require(
     "text = app.privacySummary",
     "onOpenAppInfo",
 )
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    'packageNames = setOf("org.sableos.hub")',
+    'packageNames = setOf("org.sableos.mail")',
+    'packageNames = setOf("org.sableos.weather")',
+    'packageNames = setOf("org.sableos.media")',
+    'packageNames = setOf("org.sableos.calculator")',
+    "app.component.packageName in group.packageNames",
+)
 # Package names may be used internally for deterministic ordering and
 # component identity, but they must never be rendered as All Apps / Peek
 # user-facing copy. The product contract is "app name + privacy summary",
@@ -165,6 +174,134 @@ require(
 )
 
 # ---------------------------------------------------------------------------
+# Phone + Contacts: pinned GrapheneOS 2026081300 presentation-only refresh.
+# ---------------------------------------------------------------------------
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
+    'DIALER_HEAD = "6a629762cf425002d34ecf28596813babda7d751"',
+    'CONTACTS_HEAD = "e911d48c3f433633f5a8fb1a7fd865a071a09350"',
+    "DIALER_TRANSFORMS",
+    "CONTACTS_TRANSFORMS",
+    "R9_PHONE_CONTACTS_BEHAVIORAL_SOURCE_MUTATION=NONE",
+    "R9_PHONE_CONTACTS_PINNED_BASELINES=PASS",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
+    ".java\")",
+    ".kt\")",
+)
+require(
+    "build/panther/prepare-r8-final-ui.sh",
+    "apply_r9_phone_contacts_presentation.py",
+    'python3 "$PHONE_CONTACTS" --source "$WS" verify',
+    "R9_PHONE_CONTACTS_PRESENTATION=PASS",
+)
+require(
+    "build/panther/build-r8-final-ui.sh",
+    "Launcher3QuickStep     Dialer     Contacts",
+    "SableMail     SableWeather",
+    "R9_PHONE_MODULE_BUILD=PASS",
+    "R9_CONTACTS_MODULE_BUILD=PASS",
+    "R9_SABLE_WEATHER_MODULE_BUILD=PASS",
+)
+
+# ---------------------------------------------------------------------------
+# Sable Weather: Rust domain + Android HTTPS shell + read-only Launcher snapshot.
+# ---------------------------------------------------------------------------
+for rel in (
+    "apps/r8/rust/crates/weather-core/src/lib.rs",
+    "apps/r8/rust/crates/weather-jni/src/lib.rs",
+    "apps/r8/android/weather/src/main/AndroidManifest.xml",
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherRepository.kt",
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
+):
+    require_file(rel)
+
+require(
+    "apps/r8/rust/crates/weather-core/src/lib.rs",
+    "ProviderState",
+    "build_open_meteo_url",
+    "https://api.open-meteo.com/v1/forecast",
+    "parse_open_meteo",
+    "WeatherCondition",
+)
+forbid(
+    "apps/r8/rust/crates/weather-core/src/lib.rs",
+    "http://api.open-meteo.com",
+)
+require(
+    "apps/r8/android/weather/src/main/AndroidManifest.xml",
+    'android.permission.INTERNET',
+    'android.permission.ACCESS_COARSE_LOCATION',
+    'android:usesCleartextTraffic="false"',
+    'android:authorities="org.sableos.weather.snapshot"',
+    'android:icon="@drawable/ic_sable_weather"',
+    'android:roundIcon="@drawable/ic_sable_weather"',
+)
+forbid(
+    "apps/r8/android/weather/src/main/AndroidManifest.xml",
+    "android.permission.ACCESS_FINE_LOCATION",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "SableGlobalTheme(window = window)",
+    "Open-Meteo · HTTPS",
+    "precise location is not required",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherRepository.kt",
+    "HttpsURLConnection",
+    'require(url.startsWith("https://"))',
+    "WeatherNative.parseForecast(json)",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
+    "Binder.getCallingUid()",
+    'packageName == "com.android.launcher3"',
+    "override fun insert",
+    "override fun update",
+    "override fun delete",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
+    "content://org.sableos.weather.snapshot/current",
+    "weatherSnapshot()",
+)
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
+    "api.open-meteo.com",
+    "HttpURLConnection",
+    "HttpsURLConnection",
+    "java.net.",
+)
+require(
+    "apps/r8/export-panther-app-bundle.sh",
+    "[org.sableos.weather]=SableWeather.apk",
+    "weather/build/outputs/apk/debug/weather-debug.apk",
+)
+require(
+    "product/r8/panther/Android.bp",
+    'name: "SableWeather"',
+    'apk: "prebuilt/SableWeather.apk"',
+)
+require(
+    "product/r8/panther/r8-product.mk",
+    "SableWeather",
+)
+require(
+    "build/gates/verify-r8-vendor-sable-inventory.py",
+    "SableWeather.apk",
+    "R8_VENDOR_SABLE_CANONICAL_APK_COUNT=9",
+)
+require(
+    "build/panther/run-r8-release-candidate.sh",
+    "R9_FIRST_PARTY_RUST_TESTS=PASS",
+    ":weather:assembleDebug",
+    "R9_SOURCE_BOUND_NINE_APK_FREEZE=PASS",
+)
+
+# ---------------------------------------------------------------------------
 # Production first-party icon contract.
 # ---------------------------------------------------------------------------
 icon_files = (
@@ -174,6 +311,7 @@ icon_files = (
     "apps/r8/android/games/src/sudoku/res/drawable/ic_sable_game.xml",
     "apps/r8/android/games/src/minesweeper/res/drawable/ic_sable_game.xml",
     "apps/r8/android/games/src/game2048/res/drawable/ic_sable_game.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_sable_weather.xml",
 )
 for rel in icon_files:
     require_file(rel)
@@ -198,6 +336,11 @@ require(
     "apps/r8/android/games/src/main/AndroidManifest.xml",
     'android:icon="@drawable/ic_sable_game"',
     'android:roundIcon="@drawable/ic_sable_game"',
+)
+require(
+    "apps/r8/android/weather/src/main/AndroidManifest.xml",
+    'android:icon="@drawable/ic_sable_weather"',
+    'android:roundIcon="@drawable/ic_sable_weather"',
 )
 require(
     "apps/r8/reader/apply_sable_flavor.py",
@@ -367,6 +510,12 @@ self_tests = (
         / "patches/android-17-grapheneos-2026081300"
         / "apply_r9_launcher3_foundation.py",
     ),
+    (
+        "R9_PHONE_CONTACTS_PRESENTATION_SELF_TEST",
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_phone_contacts_presentation.py",
+    ),
 )
 
 for marker, script in self_tests:
@@ -389,6 +538,10 @@ print("R9_GLOBAL_LIGHT_DARK_SYSTEM_MODE_CONTRACT=PASS")
 print("R9_SYSTEMUI_SABLE_ACCENT_CONTRACT=PASS")
 print("R9_SINGLE_VISIBLE_MESSAGES_CONTRACT=PASS")
 print("R9_FIRST_PARTY_PRODUCT_ICON_CONTRACT=PASS")
+print("R9_PHONE_CONTACTS_PRESENTATION_CONTRACT=PASS")
+print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
+print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
+print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
 print("R9_RUNTIME_SYSTEM_IDENTITY_AUDIT_CONTRACT=PASS")
