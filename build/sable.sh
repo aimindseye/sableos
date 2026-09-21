@@ -18,6 +18,7 @@ usage:
 
 functions:
   ci [core|full|release]
+  qualify [suite]
   build [--tmux|--direct]
   register-artifact --build-source SHA --target-files PATH --sha256 SHA256 --android-info PATH [--out-dir PATH] [--build-evidence-dir PATH]
   show-artifact --build-source SHA
@@ -27,6 +28,7 @@ functions:
 
 examples:
   bash build/sable.sh panther R9 ci full
+  bash build/sable.sh panther R9 qualify physical-ux
   bash build/sable.sh panther R9 build --tmux
   bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --preserve-data --authorize
   bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
@@ -81,6 +83,19 @@ case "$FUNCTION" in
     SABLEOS_DEVICE="$DEVICE" \
     SABLEOS_RELEASE_VERSION="$RELEASE" \
       bash "$ROOT/build/local-ci/run.sh" "$PROFILE"
+    ;;
+
+  qualify)
+    SUITE="${1:-${SABLE_DEVICE_DEFAULT_QUALIFICATION_SUITE:-default}}"
+    [[ "${SABLE_DEVICE_QUALIFY_SUPPORTED:-NO}" == YES ]] || {
+      echo "SABLE_QUALIFY=BLOCKED_UNQUALIFIED device=$DEVICE"
+      exit 78
+    }
+    declare -F sable_device_qualify >/dev/null 2>&1 || {
+      echo "SABLE_QUALIFY=FAIL_ADAPTER_FUNCTION_MISSING device=$DEVICE"
+      exit 78
+    }
+    sable_device_qualify "$RELEASE" "$SUITE"
     ;;
 
   build)
