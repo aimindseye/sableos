@@ -757,7 +757,9 @@ require(
 require(
     "build/macos/prepare-r9-launcher-visual-review.sh",
     ":hub:assembleDebug",
+    ":calendar:assembleDebug",
     "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
+    "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS",
     "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
     "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
 )
