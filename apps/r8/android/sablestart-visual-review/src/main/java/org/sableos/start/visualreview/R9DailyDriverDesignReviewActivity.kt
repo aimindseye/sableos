@@ -1,7 +1,7 @@
 package org.sableos.start.visualreview
 
 import android.graphics.Paint as AndroidPaint
-import android.util.PathParser
+import androidx.core.graphics.PathParser
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -770,7 +770,7 @@ private fun PhosphorGlyph(
     color: Color,
     modifier: Modifier = Modifier,
 ) {
-    val androidPath =
+    val androidPath: android.graphics.Path =
         remember(glyph.pathData) {
             PathParser.createPathFromPathData(glyph.pathData)
         }
