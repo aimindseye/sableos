@@ -7,13 +7,15 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.weight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
@@ -103,6 +105,7 @@ private fun WeatherApp() {
     Column(
         modifier =
             Modifier
+                .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(
@@ -411,15 +414,15 @@ private fun WeatherNotice(
                 .fillMaxWidth()
                 .padding(vertical = SableSpacing.Md),
     ) {
-        Spacer(
+        Box(
             modifier =
                 Modifier
+                    .width(4.dp)
                     .height(48.dp)
-                    .padding(end = SableSpacing.Md)
-                    .weight(0.02f)
                     .background(MaterialTheme.colorScheme.primary),
         )
-        Column(modifier = Modifier.weight(0.98f)) {
+        Spacer(Modifier.width(SableSpacing.Md))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleLarge,
