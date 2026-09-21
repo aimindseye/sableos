@@ -906,6 +906,26 @@ class SableTextReaderUtilTest {
         '<resources>\n    <string name="app_name">Sable Reader</string>\n</resources>\n',
     )
 
+    write(
+        mobile_root
+        / "leisure"
+        / "src"
+        / "sable"
+        / "res"
+        / "drawable"
+        / "ic_sable_reader.xml",
+        '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#4D9CFF" android:pathData="M4,5h40v38H4z" />
+    <path android:fillColor="#06111F" android:pathData="M9,11h13c4,0 7,2 8,4v23c-2,-2 -5,-3 -8,-3H9zM39,11H26c-2,0 -4,1 -6,2 2,1 4,3 5,5v17c3,-1 5,-1 7,0 3,0 5,1 7,3z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M12,15h8v2h-8zM12,20h8v2h-8zM28,15h8v2h-8zM28,20h8v2h-8z" />
+</vector>
+''',
+    )
+
     manifest_dir = mobile_root / "leisure" / "src" / "sable"
     write(
         manifest_dir / "AndroidManifest.xml",
@@ -924,7 +944,10 @@ class SableTextReaderUtilTest {
         <provider android:authorities="org.sableos.start.appearance" />
     </queries>
 
-    <application>
+    <application
+        android:icon="@drawable/ic_sable_reader"
+        android:roundIcon="@drawable/ic_sable_reader"
+        android:label="@string/app_name">
         <activity
             android:name="org.vaachak.reader.leisure.SableTextActivity"
             android:exported="true"
