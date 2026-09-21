@@ -556,7 +556,7 @@ private fun CameraReview() {
         modifier =
             Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .height(520.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(
                     Brush.linearGradient(
@@ -1133,7 +1133,7 @@ private fun PhotoThumbnail() {
 @Composable
 private fun DimensionalPanel(
     accent: Color,
-    content: @Composable Column.() -> Unit,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
 ) {
     val shape = RoundedCornerShape(8.dp)
     Column(
