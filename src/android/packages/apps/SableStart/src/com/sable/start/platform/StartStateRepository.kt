@@ -69,6 +69,33 @@ class StartStateRepository(
         notifyAppearanceChanged()
     }
 
+    fun loadSystemNightModeBeforeOverride(): Int? =
+        if (preferences.contains(KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE)) {
+            preferences.getInt(
+                KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE,
+                0,
+            )
+        } else {
+            null
+        }
+
+    fun rememberSystemNightModeBeforeOverride(mode: Int) {
+        if (preferences.contains(KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE)) {
+            return
+        }
+        preferences
+            .edit()
+            .putInt(KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE, mode)
+            .apply()
+    }
+
+    fun clearSystemNightModeBeforeOverride() {
+        preferences
+            .edit()
+            .remove(KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE)
+            .apply()
+    }
+
     fun resetAppearance(): SableAppearance {
         val appearance = SableAppearance()
         preferences
@@ -91,5 +118,7 @@ class StartStateRepository(
     private companion object {
         const val PREFERENCES_NAME = "sable_start_state"
         const val KEY_PINNED_APPS = "pinned_apps"
+        const val KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE =
+            "system_night_mode_before_sable_override"
     }
 }
