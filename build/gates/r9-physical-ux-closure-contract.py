@@ -338,15 +338,35 @@ forbid(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
     "private fun conditionMark(",
 )
+for rel in (
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_clear.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_partly_cloudy.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_cloudy.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_fog.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_rain.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_snow.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_storm.xml",
+    "apps/r8/android/weather/src/main/res/drawable/ic_weather_unknown.xml",
+):
+    require_file(rel)
+    require(rel, 'android:viewportWidth="256"', 'android:fillColor="#FFFFFFFF"')
+
 require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherGlyph.kt",
-    "Production Sable Weather condition glyphs",
-    "WeatherCondition.PartlyCloudy",
-    "WeatherCondition.Cloudy",
-    "WeatherCondition.Fog",
-    "WeatherCondition.Rain",
-    "WeatherCondition.Snow",
-    "WeatherCondition.Storm",
+    "Glyph geometry is sourced from the pinned Phosphor Icons regular set.",
+    "painterResource(icon)",
+    "R.drawable.ic_weather_clear",
+    "R.drawable.ic_weather_partly_cloudy",
+    "R.drawable.ic_weather_cloudy",
+    "R.drawable.ic_weather_fog",
+    "R.drawable.ic_weather_rain",
+    "R.drawable.ic_weather_snow",
+    "R.drawable.ic_weather_storm",
+    "R.drawable.ic_weather_unknown",
+)
+forbid(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherGlyph.kt",
+    "Canvas(",
     "drawCloud(",
     "drawSun(",
 )
@@ -925,7 +945,7 @@ print("R9_SMS_MMS_SPAM_CLASSIFICATION_BOUNDARY=PASS")
 print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
 print("R9_WEATHER_JSON_KEY_PARSER_CONTRACT=PASS")
 print("R9_WEATHER_CURSOR_ROW_TYPE_CONTRACT=PASS")
-print("R9_WEATHER_CONDITION_GLYPH_CONTRACT=PASS_REVIEWED_COMPOSE_PRIMITIVES")
+print("R9_WEATHER_CONDITION_GLYPH_CONTRACT=PASS_PHOSPHOR_PINNED_OPEN_SOURCE")
 print("R9_SOURCE_BOUND_TEN_APK_CONTRACT=PASS")
 print("R9_BUILD_DRIVER_TEN_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
