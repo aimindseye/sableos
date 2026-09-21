@@ -528,6 +528,11 @@ require(
     "product/r8/panther/Android.bp",
     'name: "SableCalendar"',
     'apk: "prebuilt/SableCalendar.apk"',
+    'overrides: ["Calendar"]',
+)
+require(
+    "build/gates/r8-final-target-files.sh",
+    '"Calendar.apk"',
 )
 require(
     "product/r8/panther/r8-product.mk",
@@ -819,6 +824,9 @@ require(
     "R9_THEME_FIDELITY_SABLE_MESSAGES_CAPTURE=PASS",
     "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
     "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
+    "R9_FINAL_UI_SABLE_CALENDAR_PACKAGE=PASS",
+    "R9_FINAL_UI_PLATFORM_CALENDAR_PRELOAD=PASS_ABSENT",
+    "R9_FINAL_UI_LIVE_PROVIDER_CALLER_BOUNDARY=PASS",
 )
 require(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/HubModels.kt",
