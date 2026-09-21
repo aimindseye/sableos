@@ -63,6 +63,7 @@ echo "CLEAN_AUTHORIZED=NO"
 echo "CLOBBER_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
+echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REPO=$REPO"
 echo "WORKSPACE=$WS"
 echo "EXPECTED_SOURCE_COMMIT=$EXPECTED_SOURCE_COMMIT"
@@ -155,7 +156,7 @@ export PATH="$JAVA_HOME/bin:$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin
 "$CARGO" --version
 
 cd "$REPO/apps/r8/android"
-./gradlew     :design:testDebugUnitTest     :calculator:assembleDebug     :games:assembleSudokuDebug     :games:assembleMinesweeperDebug     :games:assembleGame2048Debug     :media:assembleDebug     :hub:testDebugUnitTest     :hub:assembleDebug     --stacktrace     --console=plain     --no-daemon     2>&1 | tee "$EVIDENCE/first-party-build.log"
+./gradlew     --offline     :design:testDebugUnitTest     :calculator:assembleDebug     :games:assembleSudokuDebug     :games:assembleMinesweeperDebug     :games:assembleGame2048Debug     :media:assembleDebug     :hub:testDebugUnitTest     :hub:assembleDebug     --stacktrace     --console=plain     --no-daemon     2>&1 | tee "$EVIDENCE/first-party-build.log"
 
 echo "R8_FIRST_PARTY_ANDROID_BUILD=PASS"
 
@@ -174,7 +175,7 @@ python3 "$REPO/apps/r8/reader/apply_sable_flavor.py"     "$WORK/reader"     "$WO
 
 (
     cd "$WORK/reader"
-    ./gradlew         :leisure:assembleSableDebug         --stacktrace         --console=plain         --no-daemon         --no-configuration-cache
+    ./gradlew         --offline         :leisure:assembleSableDebug         --stacktrace         --console=plain         --no-daemon         --no-configuration-cache
 ) 2>&1 | tee "$EVIDENCE/reader-build.log"
 
 mapfile -t reader_apks < <(
@@ -199,7 +200,7 @@ python3 "$REPO/apps/r8/mail/verify_sable_mail.py" "$WORK/mail"
 
 (
     cd "$WORK/mail"
-    ./gradlew         :app-thunderbird:assembleFossRelease         -Pci=true         --stacktrace         --console=plain         --no-daemon
+    ./gradlew         --offline         :app-thunderbird:assembleFossRelease         -Pci=true         --stacktrace         --console=plain         --no-daemon
 ) 2>&1 | tee "$EVIDENCE/mail-build.log"
 
 mapfile -t mail_apks < <(
