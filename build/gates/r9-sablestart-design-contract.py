@@ -41,8 +41,13 @@ def check() -> None:
             ".align(Alignment.CenterStart)",
             ".fillMaxHeight()",
             "listState.scrollToItem(index)",
+            "pin to start",
+            "remove from start",
             "pin to favorites",
             "permissions + app info",
+            "DEFAULT_START_TILE_TARGET = 10",
+            'listOf("Sable Weather", "Weather")',
+            ".combinedClickable(",
             "apps · settings · Sable actions",
             "local only · no ambient network search",
             "AppearanceChoiceRow(",
@@ -55,6 +60,7 @@ def check() -> None:
         start,
         (
             "pinned & recent",
+            "MAX_START_TILES",
             "A calmer device",
             "Search apps…",
         ),
@@ -105,6 +111,8 @@ def check() -> None:
     )
 
     print("R9_L1_START_FAVORITES=PASS_SOURCE")
+    print("R9_L1_START_TILES=PASS_SCROLLING_SEPARATE_STATE")
+    print("R9_L1_START_WEATHER=PASS_PREFERRED")
     print("R9_L2_SABLE_RAIL=PASS_SOURCE")
     print("R9_L3_SEARCH_COMMAND=PASS_SOURCE")
     print("R9_L4_SABLE_PEEK=PASS_SOURCE")
@@ -116,12 +124,14 @@ def check() -> None:
 def self_test() -> None:
     good = (
         "favorites search + command search apps + Sable actions "
-        "peek pin to favorites local only · no ambient network search "
-        "detectDragGestures"
+        "peek pin to start remove from start pin to favorites "
+        "local only · no ambient network search detectDragGestures"
     )
     bad = "favorites Search apps… Reset to Follow system · Sable Blue"
     assert "search + command" in good
     assert "search apps + Sable actions" in good
+    assert "pin to start" in good
+    assert "remove from start" in good
     assert "pin to favorites" in good
     assert "local only · no ambient network search" in good
     assert "detectDragGestures" in good
