@@ -113,7 +113,7 @@ private data class SearchCommand(
 private val SableBlue = Color(0xFF4D9CFF)
 private val SableGreen = Color(0xFF35C66B)
 private val SablePurple = Color(0xFF7A42E8)
-private val SableSlate = Color(0xFF45515F)
+private val SableSlate = Color(0xFF64748B)
 private val SableOrange = Color(0xFFF28C45)
 private val SableTilePalette =
     listOf(
