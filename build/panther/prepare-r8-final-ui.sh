@@ -40,6 +40,7 @@ UI5A="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
 UI5B="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
 UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
 LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
+MESSAGING_VISIBILITY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py"
 
 run_self_test() {
     local name="$1"
@@ -57,6 +58,7 @@ run_self_test UI5A_SETTINGS "$UI5A"
 run_self_test UI5B_APP_SECURITY "$UI5B"
 run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
 run_self_test R9_LAUNCHER3_FOUNDATION "$LAUNCHER3_FOUNDATION"
+run_self_test R9_MESSAGING_VISIBILITY "$MESSAGING_VISIBILITY"
 
 echo
 echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
@@ -151,6 +153,18 @@ echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 
 echo
+echo "===== SINGLE USER-VISIBLE MESSAGES SURFACE ====="
+
+if python3 "$MESSAGING_VISIBILITY" --source "$WS" verify; then
+    echo "R9_MESSAGING_VISIBILITY=ALREADY_APPLIED"
+else
+    python3 "$MESSAGING_VISIBILITY" --source "$WS" apply
+    python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
+    echo "R9_MESSAGING_VISIBILITY=APPLIED"
+fi
+echo "R9_MESSAGING_VISIBILITY=PASS"
+
+echo
 echo "===== R8 FIRST-PARTY PRODUCT APPLICATIONS ====="
 
 SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" R8_APP_BUNDLE="$R8_APP_BUNDLE"     bash "$ROOT/build/panther/stage-r8-product-apps.sh"
@@ -159,8 +173,10 @@ echo
 echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 
 python3 "$UI5C_UI6" --source "$WS" verify
+python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
 
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
+echo "R9_MESSAGING_VISIBILITY=PASS"
 echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 echo "R8_FINAL_UI_PREPARE=PASS"
