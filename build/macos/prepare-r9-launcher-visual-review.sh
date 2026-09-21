@@ -162,6 +162,7 @@ set +e
             :sablestart-presentation-check:compileDebugKotlin \
             :sablestart-visual-review:assembleDebug \
             :hub:assembleDebug \
+            :calendar:assembleDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -203,12 +204,17 @@ echo "R9_VISUAL_REVIEW_LINT_SCOPE=LOCAL_CI_SEPARATE_GATE"
 
 APK="$ROOT/apps/r8/android/sablestart-visual-review/build/outputs/apk/debug/sablestart-visual-review-debug.apk"
 HUB_APK="$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
+CALENDAR_APK="$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk"
 [[ -f "$APK" ]] || {
     echo "R9_VISUAL_REVIEW=FAIL_APK_MISSING path=$APK"
     exit 9
 }
 [[ -f "$HUB_APK" ]] || {
     echo "R9_VISUAL_REVIEW=FAIL_HUB_APK_MISSING path=$HUB_APK"
+    exit 9
+}
+[[ -f "$CALENDAR_APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_CALENDAR_APK_MISSING path=$CALENDAR_APK"
     exit 9
 }
 
@@ -220,7 +226,9 @@ fi
 
 "$ADB" -s "$SERIAL" install -r "$APK"
 "$ADB" -s "$SERIAL" install -r "$HUB_APK"
+"$ADB" -s "$SERIAL" install -r "$CALENDAR_APK"
 echo "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS"
 
 APPEARANCE_PROVIDER="$(
     "$ADB" -s "$SERIAL" shell content query         --uri content://org.sableos.start.appearance/appearance 2>/dev/null |
