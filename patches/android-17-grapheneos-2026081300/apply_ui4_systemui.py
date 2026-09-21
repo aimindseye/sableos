@@ -40,118 +40,6 @@ FOOTER_ACTIONS = Path(
 )
 DIMENS = Path("packages/SystemUI/res/values/dimens.xml")
 MEDIA = Path("packages/SystemUI/src/com/android/systemui/media/remedia/ui/compose/Media.kt")
-SABLE_APPEARANCE = Path(
-    "packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt"
-)
-
-SABLE_APPEARANCE_SOURCE = """package com.android.systemui.sable
-
-import android.content.Context
-import android.database.ContentObserver
-import android.net.Uri
-import android.os.Handler
-import android.os.Looper
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-
-data class SableSystemAccent(
-    val color: Color,
-    val onColor: Color,
-)
-
-private val appearanceUri =
-    Uri.parse("content://org.sableos.start.appearance/appearance")
-
-private fun readSableAccent(context: Context): SableSystemAccent =
-    runCatching {
-        context.contentResolver
-            .query(
-                appearanceUri,
-                arrayOf("accent"),
-                null,
-                null,
-                null,
-            )
-            ?.use { cursor ->
-                if (!cursor.moveToFirst()) {
-                    return@use defaultAccent()
-                }
-                when (cursor.getString(0)) {
-                    "green" ->
-                        SableSystemAccent(
-                            Color(0xFF35C66B),
-                            Color(0xFF04140A),
-                        )
-                    "purple" ->
-                        SableSystemAccent(
-                            Color(0xFF7A42E8),
-                            Color.White,
-                        )
-                    "orange" ->
-                        SableSystemAccent(
-                            Color(0xFFF28C45),
-                            Color(0xFF1D0C02),
-                        )
-                    "slate" ->
-                        SableSystemAccent(
-                            Color(0xFF64748B),
-                            Color.White,
-                        )
-                    else -> defaultAccent()
-                }
-            }
-            ?: defaultAccent()
-    }.getOrDefault(defaultAccent())
-
-private fun defaultAccent() =
-    SableSystemAccent(
-        Color(0xFF4D9CFF),
-        Color(0xFF06111F),
-    )
-
-@Composable
-fun rememberSableSystemAccent(
-    context: Context = LocalContext.current,
-): SableSystemAccent {
-    var accent by remember(context) {
-        mutableStateOf(readSableAccent(context))
-    }
-
-    DisposableEffect(context) {
-        val resolver = context.contentResolver
-        val observer =
-            object : ContentObserver(
-                Handler(Looper.getMainLooper()),
-            ) {
-                override fun onChange(selfChange: Boolean) {
-                    accent = readSableAccent(context)
-                }
-            }
-
-        runCatching {
-            resolver.registerContentObserver(
-                appearanceUri,
-                false,
-                observer,
-            )
-        }
-
-        onDispose {
-            runCatching {
-                resolver.unregisterContentObserver(observer)
-            }
-        }
-    }
-
-    return accent
-}
-"""
 
 BASELINE_BLOBS = {
     COMMON_TILE: "6db03f5f11cb3414d928be973bfc3c0fb39ed522",
@@ -164,7 +52,6 @@ BASELINE_BLOBS = {
 }
 
 UI4_DIRT = {f" M {path.as_posix()}" for path in BASELINE_BLOBS}
-UI4_DIRT.add(f"?? {SABLE_APPEARANCE.as_posix()}")
 
 BRANDING_PATH = Path("core/res/assets/images/android-logo-mask.png")
 BRANDING_BLOB = "bec81216db3ed6976f305fd496ed757f0788f702"
@@ -240,11 +127,6 @@ PATCHES: dict[Path, tuple[tuple[str, str], ...]] = {
     ),
     TILE: (
         (
-            "import com.android.systemui.res.R\n",
-            "import com.android.systemui.res.R\n"
-            "import com.android.systemui.sable.rememberSableSystemAccent\n",
-        ),
-        (
             """    /** An active tile uses the active color as background */
     @Composable
     @ReadOnlyComposable
@@ -257,18 +139,17 @@ PATCHES: dict[Path, tuple[tuple[str, str], ...]] = {
             icon = MaterialTheme.colorScheme.onPrimary,
         )
 """,
-            """    /** An active tile follows the Sable global accent contract. */
+            """    /** An active tile uses a restrained accent surface with explicit active contrast. */
     @Composable
-    fun activeTileColors(): TileColors {
-        val accent = rememberSableSystemAccent()
-        return TileColors(
-            background = accent.color,
-            iconBackground = accent.color,
-            label = accent.onColor,
-            secondaryLabel = accent.onColor,
-            icon = accent.onColor,
+    @ReadOnlyComposable
+    fun activeTileColors(): TileColors =
+        TileColors(
+            background = MaterialTheme.colorScheme.primaryContainer,
+            iconBackground = MaterialTheme.colorScheme.primaryContainer,
+            label = MaterialTheme.colorScheme.onPrimaryContainer,
+            secondaryLabel = MaterialTheme.colorScheme.onPrimaryContainer,
+            icon = MaterialTheme.colorScheme.onPrimaryContainer,
         )
-    }
 """,
         ),
         (
@@ -284,18 +165,17 @@ PATCHES: dict[Path, tuple[tuple[str, str], ...]] = {
             icon = MaterialTheme.colorScheme.onPrimary,
         )
 """,
-            """    /** A dual-target active tile follows the same Sable accent surface. */
+            """    /** A dual-target active tile keeps the same active surface and a stronger toggle target. */
     @Composable
-    fun activeDualTargetTileColors(): TileColors {
-        val accent = rememberSableSystemAccent()
-        return TileColors(
-            background = accent.color,
-            iconBackground = accent.color,
-            label = accent.onColor,
-            secondaryLabel = accent.onColor,
-            icon = accent.onColor,
+    @ReadOnlyComposable
+    fun activeDualTargetTileColors(): TileColors =
+        TileColors(
+            background = MaterialTheme.colorScheme.primaryContainer,
+            iconBackground = MaterialTheme.colorScheme.primary,
+            label = MaterialTheme.colorScheme.onPrimaryContainer,
+            secondaryLabel = MaterialTheme.colorScheme.onPrimaryContainer,
+            icon = MaterialTheme.colorScheme.onPrimary,
         )
-    }
 """,
         ),
     ),
@@ -456,19 +336,6 @@ def apply_patches(root: Path) -> None:
         for old, new in replacements:
             replace_once(path, old, new)
 
-    appearance = root / SABLE_APPEARANCE
-    if appearance.exists():
-        if appearance.read_text(encoding="utf-8") != SABLE_APPEARANCE_SOURCE:
-            raise SystemExit(
-                f"UI4_SABLE_APPEARANCE_PREEXISTING_MISMATCH={SABLE_APPEARANCE}"
-            )
-    else:
-        appearance.parent.mkdir(parents=True, exist_ok=True)
-        appearance.write_text(
-            SABLE_APPEARANCE_SOURCE,
-            encoding="utf-8",
-        )
-
 
 def verify_visual_delta(source: Path) -> None:
     root = framework(source)
@@ -479,12 +346,6 @@ def verify_visual_delta(source: Path) -> None:
                 raise SystemExit(f"UI4_OLD_VISUAL_TOKEN_PRESENT={rel} token={old!r}")
             if new and new not in text:
                 raise SystemExit(f"UI4_NEW_VISUAL_TOKEN_MISSING={rel} token={new!r}")
-
-    appearance_path = root / SABLE_APPEARANCE
-    if not appearance_path.is_file():
-        raise SystemExit("UI4_SABLE_APPEARANCE_BRIDGE_MISSING")
-    if appearance_path.read_text(encoding="utf-8") != SABLE_APPEARANCE_SOURCE:
-        raise SystemExit("UI4_SABLE_APPEARANCE_BRIDGE_MISMATCH")
 
     tile_text = (root / TILE).read_text(encoding="utf-8")
     common_text = (root / COMMON_TILE).read_text(encoding="utf-8")
@@ -528,7 +389,6 @@ def verify_visual_delta(source: Path) -> None:
     assert_known_preexisting_blobs(source, dirt)
 
     print("UI4_R1_QS_THEME_GEOMETRY=PASS")
-    print("UI4_R1_SABLE_ACCENT_PROVIDER=PASS")
     print("UI4_R1_COMPACT_QS_SPACING=PASS")
     print("UI4_R1_BRIGHTNESS_PANEL_ALIGNMENT=PASS")
     print("UI4_R1_FOOTER_GEOMETRY=PASS")
@@ -566,9 +426,6 @@ def self_test() -> None:
 
         apply_patches(root)
 
-        if (root / SABLE_APPEARANCE).read_text(encoding="utf-8") != SABLE_APPEARANCE_SOURCE:
-            raise SystemExit("SELF_TEST_SABLE_APPEARANCE_BRIDGE_FAIL")
-
         for rel, replacements in PATCHES.items():
             text = (root / rel).read_text(encoding="utf-8")
             for old, new in replacements:
@@ -585,7 +442,6 @@ def self_test() -> None:
         raise SystemExit("SELF_TEST_BRANDING_BLOB_PIN_MISMATCH")
 
     print("UI4_R1_R2_R3_PINNED_MUTATION_SET=PASS")
-    print("UI4_R1_SABLE_ACCENT_PROVIDER_SELF_TEST=PASS")
     print("UI4_KNOWN_PREEXISTING_BLOB_PINS=PASS")
     print("UI4_R1_R2_R3_REPLACEMENT_CARDINALITY=PASS")
     print("UI4_R1_R2_R3_SELF_TEST=PASS")
