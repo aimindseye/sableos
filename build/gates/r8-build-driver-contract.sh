@@ -202,8 +202,10 @@ combined_line="$(grep -nF '===== COMBINED UI MODULE COMPILE GATE =====' "$finalb
 echo "R9_LAUNCHER3_HOME_PREFLIGHT_CONTRACT=PASS"
 
 grep -Fq 'r9-launcher-visual-acceptance.py' "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'R9_L6_VISUAL_REVIEW_STATUS=PASS' "$visual_acceptance"
-grep -Fq 'R9_L6_VISUAL_REVIEW_SCOPE=MAC_DESIGN_COMPLETE' "$visual_acceptance"
+grep -Fq 'R9_L6_VISUAL_REVIEW_STATUS=WAIVED_MAC_DEFERRED_PHYSICAL_PANTHER' "$visual_acceptance"
+grep -Fq 'R9_L6_VISUAL_REVIEW_SCOPE=PHYSICAL_PANTHER_REQUIRED' "$visual_acceptance"
+grep -Fq 'R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9' "$visual_acceptance"
+grep -Fq 'R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED' "$visual_acceptance"
 grep -Fq 'r9-launcher-visual-acceptance.py' "$local_ci"
 grep -Fq 'SABLE_LOCAL_CI_STAGE_VISUAL_ACCEPTANCE=PASS' "$local_ci"
 
