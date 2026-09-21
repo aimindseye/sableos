@@ -23,7 +23,7 @@ class CalendarSnapshotProvider : ContentProvider() {
         val snapshot = CalendarRepository(appContext).snapshot()
         return MatrixCursor(COLUMNS).apply {
             addRow(
-                arrayOf(
+                arrayOf<Any?>(
                     snapshot.title,
                     snapshot.detail,
                     snapshot.availability,
