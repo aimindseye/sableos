@@ -167,7 +167,7 @@ echo "===== FIRST-PARTY RUST WORKSPACE TESTS ====="
 echo "R9_FIRST_PARTY_RUST_TESTS=PASS"
 
 cd "$REPO/apps/r8/android"
-./gradlew     --offline     :design:testDebugUnitTest     :calculator:assembleDebug     :games:assembleSudokuDebug     :games:assembleMinesweeperDebug     :games:assembleGame2048Debug     :media:assembleDebug     :hub:testDebugUnitTest     :hub:assembleDebug     :weather:assembleDebug     --stacktrace     --console=plain     --no-daemon     2>&1 | tee "$EVIDENCE/first-party-build.log"
+./gradlew     --offline     :design:testDebugUnitTest     :calculator:assembleDebug     :games:assembleSudokuDebug     :games:assembleMinesweeperDebug     :games:assembleGame2048Debug     :media:assembleDebug     :hub:testDebugUnitTest     :hub:assembleDebug     :weather:assembleDebug     :calendar:assembleDebug     --stacktrace     --console=plain     --no-daemon     2>&1 | tee "$EVIDENCE/first-party-build.log"
 
 echo "R8_FIRST_PARTY_ANDROID_BUILD=PASS"
 echo "R9_SABLE_WEATHER_ANDROID_BUILD=PASS"
@@ -229,7 +229,7 @@ sha256sum "$SABLE_MAIL_APK"
 echo "R8_SABLE_MAIL_BUILD=PASS"
 
 echo
-echo "===== SOURCE-BOUND NINE-APK BUNDLE ====="
+echo "===== SOURCE-BOUND TEN-APK BUNDLE ====="
 
 cd "$REPO"
 SABLE_READER_APK="$SABLE_READER_APK" SABLE_MAIL_APK="$SABLE_MAIL_APK" APKANALYZER="$SABLE_APKANALYZER"     bash "$REPO/apps/r8/export-panther-app-bundle.sh" "$BUNDLE"
@@ -238,7 +238,7 @@ SABLE_READER_APK="$SABLE_READER_APK" SABLE_MAIL_APK="$SABLE_MAIL_APK" APKANALYZE
     echo "R8_APP_BUNDLE_SOURCE=FAIL"
     exit 13
 }
-echo "R9_SOURCE_BOUND_NINE_APK_FREEZE=PASS"
+echo "R9_SOURCE_BOUND_TEN_APK_FREEZE=PASS"
 
 echo
 echo "===== R8 WORKSPACE / PRODUCT PREPARATION ====="
