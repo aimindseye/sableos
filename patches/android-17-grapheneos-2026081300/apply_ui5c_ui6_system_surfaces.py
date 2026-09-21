@@ -564,18 +564,7 @@ def repair_known_setup_strings_alias(source: Path) -> None:
         raise SystemExit("UI5C_REPAIR_SETTINGS_SCOPE_MISMATCH")
 
     actual_framework = status_set(framework)
-    allowed_later_dirt = {
-        f"?? {path.as_posix()}"
-        for path in allowed_later_framework_untracked
-    }
-    missing_allowed_later = allowed_later_dirt - actual_framework
-    if missing_allowed_later:
-        raise SystemExit(
-            "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
-            f"{sorted(missing_allowed_later)!r}"
-        )
-    framework_for_ui6 = actual_framework - allowed_later_dirt
-    framework_pre = framework_for_ui6 - UI6_NEW_DIRT
+    framework_pre = actual_framework - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
     )
@@ -656,7 +645,18 @@ def verify(
         )
 
     actual_framework = status_set(framework)
-    framework_pre = actual_framework - UI6_NEW_DIRT
+    allowed_later_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_framework_untracked
+    }
+    missing_allowed_later = allowed_later_dirt - actual_framework
+    if missing_allowed_later:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
+            f"{sorted(missing_allowed_later)!r}"
+        )
+    framework_for_ui6 = actual_framework - allowed_later_dirt
+    framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
     )
