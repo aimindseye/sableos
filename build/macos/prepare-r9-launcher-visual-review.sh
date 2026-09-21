@@ -171,6 +171,7 @@ set +e
             :sablestart-presentation-check:compileDebugKotlin \
             :sablestart-visual-review:assembleDebug \
             :hub:assembleDebug \
+            :calendar:assembleDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
