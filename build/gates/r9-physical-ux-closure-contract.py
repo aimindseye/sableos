@@ -78,6 +78,16 @@ require(
     '"org.sableos.weather" -> SableGlyphs.Weather',
     '"org.sableos.calendar" -> SableGlyphs.Calendar',
     '"org.sableos.hub" -> SableGlyphs.Messages',
+    "Path().apply",
+    "addSvg(spec.pathData)",
+    "drawPath(",
+)
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableGlyphIcon.kt",
+    "androidx.core.graphics.PathParser",
+    "android.util.PathParser",
+    "drawIntoCanvas",
+    "nativeCanvas",
 )
 require(
     "src/android/packages/apps/SableStart/Android.bp",
