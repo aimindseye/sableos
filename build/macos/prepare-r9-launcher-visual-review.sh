@@ -107,6 +107,11 @@ HOST_CHROME_PATH="$(
         tr -d '\r' |
         head -n 1 || true
 )"
+HOST_GOOGLE_MESSAGES_PATH="$(
+    "$ADB" -s "$SERIAL" shell pm path com.google.android.apps.messaging 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
 HOST_VANADIUM_PATH="$(
     "$ADB" -s "$SERIAL" shell pm path app.vanadium.browser 2>/dev/null |
         tr -d '\r' |
@@ -118,6 +123,11 @@ if [[ -n "$HOST_CHROME_PATH" ]]; then
     echo "R9_VISUAL_REVIEW_HOST_AVD_CHROME=DETECTED_FILTERED_FROM_REVIEW"
 else
     echo "R9_VISUAL_REVIEW_HOST_AVD_CHROME=ABSENT"
+fi
+if [[ -n "$HOST_GOOGLE_MESSAGES_PATH" ]]; then
+    echo "R9_VISUAL_REVIEW_HOST_AVD_GOOGLE_MESSAGES=DETECTED_FILTERED_FROM_REVIEW"
+else
+    echo "R9_VISUAL_REVIEW_HOST_AVD_GOOGLE_MESSAGES=ABSENT"
 fi
 if [[ -n "$HOST_VANADIUM_PATH" ]]; then
     echo "R9_VISUAL_REVIEW_HOST_AVD_VANADIUM=DETECTED_NONAUTHORITATIVE"
