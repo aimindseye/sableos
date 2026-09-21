@@ -74,6 +74,7 @@ require(
 )
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    'packageNames = setOf("org.sableos.calendar")',
     'packageNames = setOf("org.sableos.hub")',
     'packageNames = setOf("org.sableos.mail")',
     'packageNames = setOf("org.sableos.weather")',
@@ -248,11 +249,15 @@ require(
 )
 require(
     "build/panther/build-r8-final-ui.sh",
-    "Launcher3QuickStep     Dialer     Contacts",
-    "SableMail     SableWeather",
+    "Launcher3QuickStep     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2",
+    "SableMail     SableWeather     SableCalendar",
     "R9_PHONE_MODULE_BUILD=PASS",
     "R9_CONTACTS_MODULE_BUILD=PASS",
+    "R9_CLOCK_MODULE_BUILD=PASS",
+    "R9_FILES_MODULE_BUILD=PASS",
+    "R9_PHOTOS_MODULE_BUILD=PASS",
     "R9_SABLE_WEATHER_MODULE_BUILD=PASS",
+    "R9_SABLE_CALENDAR_MODULE_BUILD=PASS",
 )
 
 # ---------------------------------------------------------------------------
@@ -341,7 +346,7 @@ forbid(
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
     "content://org.sableos.weather.snapshot/current",
-    "weatherSnapshot()",
+    "providerSnapshot(",
 )
 forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
@@ -367,13 +372,15 @@ require(
 require(
     "build/gates/verify-r8-vendor-sable-inventory.py",
     "SableWeather.apk",
-    "R8_VENDOR_SABLE_CANONICAL_APK_COUNT=9",
+    "SableCalendar.apk",
+    "R8_VENDOR_SABLE_CANONICAL_APK_COUNT=10",
 )
 require(
     "build/panther/run-r8-release-candidate.sh",
     "R9_FIRST_PARTY_RUST_TESTS=PASS",
     ":weather:assembleDebug",
-    "R9_SOURCE_BOUND_NINE_APK_FREEZE=PASS",
+    ":calendar:assembleDebug",
+    "R9_SOURCE_BOUND_TEN_APK_FREEZE=PASS",
 )
 
 # ---------------------------------------------------------------------------
@@ -414,10 +421,17 @@ icon_files = (
     "apps/r8/android/games/src/minesweeper/res/drawable/ic_sable_game.xml",
     "apps/r8/android/games/src/game2048/res/drawable/ic_sable_game.xml",
     "apps/r8/android/weather/src/main/res/drawable/ic_sable_weather.xml",
+    "apps/r8/android/calendar/src/main/res/drawable/ic_sable_calendar.xml",
 )
 for rel in icon_files:
     require_file(rel)
-    require(rel, "<vector", 'android:viewportWidth="48"')
+    require(
+        rel,
+        "<vector",
+        'android:viewportWidth="256"',
+        'android:fillColor="#161C24"',
+        'android:fillColor="#F7F9FC"',
+    )
 
 require(
     "apps/r8/android/calculator/src/main/AndroidManifest.xml",
@@ -443,6 +457,12 @@ require(
     "apps/r8/android/weather/src/main/AndroidManifest.xml",
     'android:icon="@drawable/ic_sable_weather"',
     'android:roundIcon="@drawable/ic_sable_weather"',
+)
+require(
+    "apps/r8/android/calendar/src/main/AndroidManifest.xml",
+    'android:icon="@drawable/ic_sable_calendar"',
+    'android:roundIcon="@drawable/ic_sable_calendar"',
+    'android:authorities="org.sableos.calendar.snapshot"',
 )
 require(
     "apps/r8/reader/apply_sable_flavor.py",
@@ -493,7 +513,7 @@ require(
 )
 require(
     "build/gates/r8-build-driver-contract.sh",
-    "R9_BUILD_DRIVER_NINE_APK_INVENTORY=PASS",
+    "R9_BUILD_DRIVER_TEN_APK_INVENTORY=PASS",
     "R9_LAUNCHER_VISUAL_ACCEPTANCE_WIRING=PASS",
     "R9_LAUNCHER_VISUAL_ACCEPTANCE_EXECUTION=DEFERRED_RELEASE_PROFILE",
     "R9_BUILD_DRIVER_VISUAL_ACCEPTANCE_SCOPE=FAIL_FULL_CI_EXECUTION",
@@ -507,8 +527,14 @@ require(
     ":weather:lintDebug",
     ":weather:detekt",
     ":weather:ktlintCheck",
+    ":calendar:assembleDebug",
+    ":calendar:lintDebug",
+    ":calendar:detekt",
+    ":calendar:ktlintCheck",
     "weather-debug.apk",
+    "calendar-debug.apk",
     "org.sableos.weather",
+    "org.sableos.calendar",
 )
 require(
     "build/panther/run-r8-release-candidate.sh",
@@ -733,8 +759,8 @@ print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
 print("R9_WEATHER_JSON_KEY_PARSER_CONTRACT=PASS")
 print("R9_WEATHER_CURSOR_ROW_TYPE_CONTRACT=PASS")
 print("R9_WEATHER_CONDITION_GLYPH_CONTRACT=PASS_REVIEWED_COMPOSE_PRIMITIVES")
-print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
-print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
+print("R9_SOURCE_BOUND_TEN_APK_CONTRACT=PASS")
+print("R9_BUILD_DRIVER_TEN_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
 print("R9_VISUAL_REVIEW_MINSDK30_PACKAGEINFO_COMPAT=PASS")
 print("R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_FIDELITY=PASS")
