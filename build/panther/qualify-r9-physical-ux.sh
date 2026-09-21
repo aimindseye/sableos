@@ -32,6 +32,8 @@ echo "FLASH_AUTHORIZED=NO"
 echo "EXPECTED_SOURCE_COMMIT=$EXPECTED_SOURCE_COMMIT"
 
 python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
+python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
+python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
 python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
 bash "$ROOT/build/gates/sable-pipeline-contract.sh"
 
