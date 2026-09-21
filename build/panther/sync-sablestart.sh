@@ -23,6 +23,7 @@ required=(
   src/com/sable/start/platform/SableAppearanceProvider.kt
   src/com/sable/start/platform/StartStateRepository.kt
   src/com/sable/start/ui/SableStartScreen.kt
+  src/com/sable/start/ui/SableGlyphIcon.kt
 )
 
 retired=(
