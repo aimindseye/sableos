@@ -248,6 +248,19 @@ require(
     "FULL_TARGET_FILES_BUILD_PERFORMED=NO",
 )
 require(
+    "patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py",
+    "--allow-framework-untracked",
+    "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING=",
+    "framework_for_ui6 = actual_framework - allowed_later_dirt",
+)
+require(
+    "build/gates/r8-final-product-composition.sh",
+    "--allow-framework-untracked",
+    "packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt",
+    "apply_r9_systemui_coherence.py",
+    "R9_SYSTEMUI_COHERENCE_SOURCE=PASS",
+)
+require(
     "tests/systemui/device/r9_identity_audit.sh",
     "DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY",
     "android:string/android_system_label",
