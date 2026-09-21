@@ -252,13 +252,18 @@ require(
 require(
     "patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py",
     "--allow-framework-untracked",
+    "--allow-framework-modified",
     "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING=",
+    "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN=",
     "framework_for_ui6 = actual_framework - allowed_later_dirt",
+    "allowed_later_framework_modified",
 )
 require(
     "build/gates/r8-final-product-composition.sh",
     "--allow-framework-untracked",
     "packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt",
+    "--allow-framework-modified",
+    "packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt",
     "apply_r9_systemui_coherence.py",
     "R9_SYSTEMUI_COHERENCE_SOURCE=PASS",
     "R9_LAUNCHER_VISUAL_ACCEPTANCE_SEAL=DEFERRED_MODULE_QUALIFICATION",
