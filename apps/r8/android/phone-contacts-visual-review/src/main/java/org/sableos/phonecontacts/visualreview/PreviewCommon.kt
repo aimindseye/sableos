@@ -137,6 +137,40 @@ internal fun InitialAvatar(
 }
 
 @Composable
+internal fun CircleGlyph(
+    glyph: String,
+    accent: Boolean = false,
+) {
+    Box(
+        modifier =
+            Modifier
+                .size(48.dp)
+                .border(
+                    width = 1.dp,
+                    color =
+                        if (accent) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outline
+                        },
+                    shape = CircleShape,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = glyph,
+            style = MaterialTheme.typography.labelLarge,
+            color =
+                if (accent) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+        )
+    }
+}
+
+@Composable
 internal fun FlatPrimaryAction(text: String) {
     Box(
         modifier =
