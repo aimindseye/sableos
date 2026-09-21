@@ -196,6 +196,8 @@ python3 \
     --source "$WS" \
     --allow-framework-untracked \
     packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt \
+    --allow-framework-modified \
+    packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt \
     verify \
     || fail R8_UI4_UI5_UI6_CUMULATIVE_SOURCE
 
