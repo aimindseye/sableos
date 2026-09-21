@@ -20,6 +20,7 @@ import org.sableos.design.resolveSableDarkAppearance
 import org.sableos.start.model.AppEntry
 import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
+import org.sableos.start.platform.StartStateRepository
 import org.sableos.start.ui.SableStartScreen
 import java.util.Locale
 
@@ -45,6 +46,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private lateinit var launcherApps: LauncherApps
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
+    private lateinit var startStateRepository: StartStateRepository
 
     private var favoriteKeys: Set<String> = emptySet()
     private var startTileKeys: Set<String>? = null
@@ -55,6 +57,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         enableEdgeToEdge()
         launcherApps = getSystemService(LauncherApps::class.java)
         liveSurfaceRepository = LiveSurfaceRepository(this)
+        startStateRepository = StartStateRepository(this)
+        appearanceState.value = startStateRepository.loadAppearance()
 
         refreshInventory()
         favoriteKeys = defaultFavoriteKeys(appsState.value)
@@ -83,10 +87,11 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 },
                 onAppearanceChanged = { appearance ->
                     appearanceState.value = appearance
+                    startStateRepository.saveAppearance(appearance)
                     applyCurrentSystemBars()
                 },
                 onResetAppearance = {
-                    appearanceState.value = SableAppearance()
+                    appearanceState.value = startStateRepository.resetAppearance()
                     applyCurrentSystemBars()
                 },
                 onLaunchApp = ::launchApp,
@@ -101,6 +106,9 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         super.onResume()
         if (::launcherApps.isInitialized) {
             refreshInventory()
+            if (::startStateRepository.isInitialized) {
+                appearanceState.value = startStateRepository.loadAppearance()
+            }
             applyCurrentSystemBars()
         }
     }
@@ -134,7 +142,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                         if (
                             label.isEmpty() ||
                             component.packageName == packageName ||
-                            component.packageName == GRAPHENE_MESSAGING_PACKAGE
+                            component.packageName == GRAPHENE_MESSAGING_PACKAGE ||
+                            component.packageName == HOST_AVD_CHROME_PACKAGE
                         ) {
                             null
                         } else {
@@ -311,6 +320,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private companion object {
         const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+        const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"
         const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
         const val EXTRA_EXTENDED_START_TILES = "extendedStartTiles"
         const val REVIEW_PIN_COUNT = 3
@@ -341,7 +351,6 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 "Sable Calculator",
                 "Calculator",
                 "Files",
-                "Chrome",
                 "Settings",
             )
 
