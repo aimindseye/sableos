@@ -73,6 +73,21 @@ require(
     "onOpenAppInfo",
 )
 require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableGlyphIcon.kt",
+    "SableGlyphIcon(",
+    '"org.sableos.weather" -> SableGlyphs.Weather',
+    '"org.sableos.calendar" -> SableGlyphs.Calendar',
+    '"org.sableos.hub" -> SableGlyphs.Messages',
+)
+require(
+    "src/android/packages/apps/SableStart/Android.bp",
+    '"src/com/sable/start/ui/SableGlyphIcon.kt"',
+)
+require(
+    "build/panther/sync-sablestart.sh",
+    "src/com/sable/start/ui/SableGlyphIcon.kt",
+)
+require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     'packageNames = setOf("org.sableos.calendar")',
     'packageNames = setOf("org.sableos.hub")',
