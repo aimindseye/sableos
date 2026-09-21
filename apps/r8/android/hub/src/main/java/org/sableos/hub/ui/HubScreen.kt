@@ -279,7 +279,7 @@ private fun AllPivot(
                     if (snapshot.capabilities.canReadSms) {
                         "No SMS conversations are available yet."
                     } else {
-                        "SMS history is not available to Sable Hub yet."
+                        "SMS history is not available in Sable Messages yet."
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -364,7 +364,7 @@ private fun MessagesPivot(
                     if (snapshot.capabilities.canReadSms) {
                         "No matching conversations."
                     } else {
-                        "Grant SMS access if this Sable build allows it, or use the Android transport fallback."
+                        "Grant SMS access when available, or open the system messaging service."
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
