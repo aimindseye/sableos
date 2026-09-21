@@ -301,7 +301,7 @@ No generic root shell, arbitrary privileged executor or unrestricted other-app p
 
 Language requirements remain governed by `LANGUAGE_AND_VOICE_POLICY.md`.
 
-## Q25 / Q27 portability track
+## Titan 2 family / Q27 portability track
 
 Sable Flow and Hub are explicitly the common foundation for future QWERTY/compact devices.
 
@@ -320,7 +320,7 @@ navigation
 search/command
 ```
 
-Panther validates the touch-first presentation. Q25 may later validate compact/square and physical-keyboard assumptions as an engineering reference. Q27 remains a future preferred modern QWERTY direction.
+Panther validates the touch-first presentation. Titan 2 and Titan 2 Elite validate square/near-square and physical-keyboard assumptions across two materially different form factors. Q27 remains the future integrated/full-QWERTY direction. Q25 is retired from active investment.
 
 Device-specific UI forks are rejected. Form-factor differences belong in interaction/layout profiles consuming shared semantics.
 

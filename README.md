@@ -123,7 +123,8 @@ Sable Flow shared primitives
     -> Sable Hub provider framework
     -> social web capsules
     -> broader native apps and polish
-    -> Q25/Q27 portability when justified
+    -> Titan 2 / Titan 2 Elite keyboard-first portability
+    -> Q27 qualification when shipped hardware qualifies
     -> production signing/OTA closure before release candidate
 ```
 
@@ -266,7 +267,7 @@ Panther establishes the Sable Flow touch profile:
 
 ### Keyboard-first / compact
 
-Future Q25/Q27 work should reuse the same semantic model with:
+Titan 2, Titan 2 Elite and future Q27 work should reuse the same semantic model with:
 
 - physical keyboard as first-class input;
 - deterministic focus;
@@ -277,10 +278,11 @@ Future Q25/Q27 work should reuse the same semantic model with:
 
 Device roles:
 
-- `panther` / Pixel 7 — active touch-first reference;
-- `bramble` / Pixel 4a 5G — frozen architecture/regression reference;
-- Zinwa Q25 — optional MediaTek/QWERTY engineering reference;
-- Zinwa Q27 — future preferred modern QWERTY direction subject to platform/hardware acceptance.
+- `panther` / Pixel 7 — active touch-first full-stack reference;
+- Titan 2 — large square/dual-screen keyboard-first N0 GSI lab;
+- Titan 2 Elite — compact near-square keyboard-first N0 GSI candidate;
+- Zinwa Q27 — future preferred modern full-QWERTY direction subject to platform/hardware acceptance;
+- `bramble` / Pixel 4a 5G — frozen architecture/regression reference.
 
 The Sable Start/Hub data and capability model must remain common across these form factors.
 

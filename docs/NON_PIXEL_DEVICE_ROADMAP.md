@@ -10,14 +10,12 @@ This document refines the device-ordering portion of `ROADMAP.md` with the Septe
 1. Pixel 7 / panther
    canonical full-stack SableOS development target
 
-2. Unihertz Titan 2
-   preferred interim non-Pixel N0 GSI/userspace lab
+2. Unihertz Titan 2 family
+   2A. Titan 2 — large square/dual-screen keyboard-first N0 GSI lab
+   2B. Titan 2 Elite — compact near-square keyboard-first N0 GSI candidate
 
 3. Zinwa Q27
-   preferred future full physical-QWERTY candidate after hardware ships and qualifies
-
-4. Zinwa Q25
-   optional low-level MediaTek/kernel research target when its source availability is specifically needed
+   preferred future integrated/full physical-QWERTY candidate after shipped hardware qualifies
 ```
 
 The ordering is about current SableOS engineering value, not a permanent product ranking.
@@ -35,9 +33,28 @@ Pixel 7 remains the authoritative target for:
 
 Non-Pixel work must not destabilize or redefine the Panther baseline.
 
-## Titan 2 second: interim development lab
+## Titan 2 family second: two complementary N0 labs
 
-Titan 2 is preferred over Q25 as the immediate non-Pixel purchase when the goal is UI and portability development rather than low-level kernel research.
+SableOS now plans for both the Unihertz Titan 2 and Titan 2 Elite. They share the
+keyboard-first portability role but exercise materially different geometry,
+camera and vendor behavior.
+
+```text
+Titan 2
+  Dimensity 7300
+  1440x1440 main LCD + rear display
+  50MP main + 8MP telephoto
+  community GSI boot evidence exists
+
+Titan 2 Elite
+  Dimensity 7400
+  1080x1200 AMOLED
+  50MP main + 50MP telephoto
+  Android 16
+  GSI candidate pending local bootloader/recovery/Treble proof
+```
+
+Titan 2-family work is the active non-Pixel investment path for UI, physical-keyboard and GSI/userspace portability.
 
 Primary role:
 
@@ -59,7 +76,24 @@ Titan 2 UI qualification is explicitly **keyboard-first**: physical QWERTY is th
 
 See `TITAN2_GSI_PLAN.md`.
 
-Titan 2 hardware is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival and may run in parallel with final Panther UI source/integration work. GSI mutation/flash remains gated on Panther final UI product-composition, build and physical-acceptance closure.
+Read-only T0 stock/device inventory may begin independently for Titan 2 and Titan 2 Elite whenever each device is available. The R9 source-bound fresh-build prerequisite is now PASS. GSI mutation/flash remains gated on physical Pixel 7 acceptance.
+
+Titan 2 stock firmware/OTA corpus acquisition is now complete and byte-integrity
+sealed: 18 files, 61,417,875,932 bytes, remote-size verification 18/18 PASS,
+SHA-256 verification 18/18 PASS, checksum-manifest seal
+`21764a9839313e261b2a8d128ba6306085faf0525a159711c59469ed2edae6e1`.
+See `TITAN2_STOCK_FIRMWARE_CORPUS.md`. This is T0 acquisition evidence only;
+authenticity, extraction, restore, AVB and physical flash qualification remain
+separate gates.
+
+Titan 2 GSI feasibility is already demonstrated by community LineageOS/GSI work.
+Titan 2 Elite is treated as **GSI-capable candidate, not yet locally proven**:
+Android 16/Treble makes the architecture appropriate, but SableOS still requires
+physical proof of bootloader unlock, fastboot/fastbootd, dynamic partitions,
+vbmeta/AVB behavior, stock recovery artifacts and a successful generic GSI boot
+before declaring `TITAN2_ELITE_GSI=PASS`.
+
+Both remain N0 development targets, not production-security targets.
 
 ## Q27: preferred future full QWERTY candidate
 
@@ -78,24 +112,9 @@ Q27 should not be treated as supported until real shipped hardware is available 
 
 Brax3 shows that OEM cooperation with current BSP/firmware binaries can enable a serious integrated Android port even without public kernel source, but N2 production support still requires SableOS security/release gates.
 
-## Q25: optional engineering-capital target
-
-Q25 remains valuable because public/community kernel and device work enables lower-layer experiments which may be impossible on Titan 2.
-
-Use Q25 when the explicit goal is:
-
-- MediaTek kernel/KMI/module experimentation;
-- device-tree and vendor integration work with available source;
-- low-level power/input/driver research;
-- comparison against a second physical-QWERTY implementation.
-
-Q25 is no longer a required precursor to Q27 and no longer the preferred interim purchase when Titan 2 better serves the UI/5G/form-factor roadmap.
-
-See `Q25_PORT_PLAN.md`.
-
 ## Shared keyboard-device tools
 
-Titan 2 and Q27 should share a common Sable Tools application/semantic layer for device diagnostics and keyboard-first utilities.
+Titan 2, Titan 2 Elite and Q27 should share a common Sable Tools application/semantic layer for device diagnostics and keyboard-first utilities.
 
 Reference direction:
 
@@ -121,9 +140,9 @@ Promotion is evidence-driven. It is not implied by boot success, community ROM a
 
 See `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`.
 
-## Reusable work expected from Titan 2
+## Reusable work expected from the Titan 2 family
 
-Titan 2 development should produce reusable, device-independent assets for Q27 and later devices:
+Titan 2 and Titan 2 Elite development should produce reusable, device-independent assets for Q27 and later devices:
 
 - capability-driven SableStart layout/navigation;
 - physical-keyboard focus/shortcut semantics;
@@ -136,6 +155,35 @@ Titan 2 development should produce reusable, device-independent assets for Q27 a
 - explicit ABI-shim records where compatibility work is necessary.
 
 Device-specific kernel, firmware, HAL and input details do not automatically flow from Titan 2 to Q27.
+
+## Shared camera enhancement direction
+
+Titan 2, Titan 2 Elite and Q27 are now part of one Sable camera-quality workstream.
+The implementation baseline should be the open-source GrapheneOS Camera/CameraX
+architecture already compatible with SableOS licensing and security goals.
+Community GCam ports are behavioral/reference inputs only; SableOS must not
+redistribute proprietary Google Camera code or opaque modified APKs.
+
+Priority lessons from the Titan 2 Elite community port review:
+
+- design the viewfinder/control layout for square and near-square displays;
+- validate tap-to-focus coordinate transforms rather than assuming a slab-phone viewport;
+- request a high-resolution preview where the HAL supports it;
+- expose 1:1 capture cleanly on square-display devices;
+- treat stabilization as a per-device/capability decision rather than forcing a mode that warps video;
+- tune color/skin-tone behavior against controlled scenes;
+- enumerate logical, physical and SYSTEM_CAMERA devices explicitly;
+- keep QR/barcode scanning local and user-initiated.
+
+The Titan 2 Elite community report says its physical 2x camera is advertised as
+`SYSTEM_CAMERA`, making it unavailable to ordinary third-party camera apps.
+Android supports such cameras for system/privileged apps holding
+`android.permission.SYSTEM_CAMERA`. Because SableOS controls the system image,
+a narrowly privileged Sable Camera may be able to use that telephoto camera
+without rooting, but this is **not accepted until physical Camera2/HAL evidence
+proves it**.
+
+See `CAMERA_ENHANCEMENT_ROADMAP.md`.
 
 ## Release implication
 
