@@ -40,6 +40,19 @@ printf '%s\n' "$EVIDENCE_DIR" > "$LAST_DIR_FILE"
 
 exec > >(tee "$EVIDENCE_DIR/prepare.log") 2>&1
 
+on_error() {
+    local rc=$?
+    echo
+    echo "R9_VISUAL_REVIEW_PREPARE=FAIL rc=$rc"
+    echo "R9_VISUAL_REVIEW_PREPARE_LOG=$EVIDENCE_DIR/prepare.log"
+    if [[ -f "$EVIDENCE_DIR/gradle-visual-review.log" ]]; then
+        echo "R9_VISUAL_REVIEW_GRADLE_LOG=$EVIDENCE_DIR/gradle-visual-review.log"
+        echo "===== LAST 40 GRADLE LINES ====="
+        tail -n 40 "$EVIDENCE_DIR/gradle-visual-review.log" || true
+    fi
+}
+trap on_error ERR
+
 echo "===== R9L9 MAC MINI / PIXEL 7 VISUAL REVIEW PREP ====="
 echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
