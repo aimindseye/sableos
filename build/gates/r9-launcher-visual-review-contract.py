@@ -357,8 +357,18 @@ def main() -> int:
     )
     require(
         production_ui,
-        'listOf("Sable Weather", "Weather")',
-        "R9_START_WEATHER_PREFERRED_TILE",
+        'packageNames = setOf("org.sableos.weather")',
+        "R9_START_WEATHER_PACKAGE_PREFERENCE",
+    )
+    require(
+        production_ui,
+        'labels = listOf("Sable Weather", "Weather")',
+        "R9_START_WEATHER_LABEL_FALLBACK",
+    )
+    require(
+        production_ui,
+        "app.component.packageName in group.packageNames",
+        "R9_START_PACKAGE_FIRST_PREFERENCE",
     )
     require(
         production_ui,
@@ -593,7 +603,8 @@ def main() -> int:
     print("R9_PRODUCTION_REAL_ICONS=PASS")
     print("R9_START_TILE_FAVORITE_SEPARATION=PASS")
     print("R9_START_DEFAULT_TILES=PASS_10")
-    print("R9_START_WEATHER_PREFERRED_TILE=PASS")
+    print("R9_START_WEATHER_PACKAGE_PREFERENCE=PASS")
+    print("R9_START_PACKAGE_FIRST_PREFERENCE=PASS")
     print("R9_START_TILE_CAP=PASS_UNCAPPED_EXPLICIT")
     print("R9_START_TILE_LONG_PRESS_PEEK=PASS")
     print("R9_START_STATE_PERSISTENCE_SEPARATED=PASS")
