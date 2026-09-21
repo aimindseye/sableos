@@ -32,6 +32,23 @@ EVIDENCE_DIR="$(cat "$LAST_DIR_FILE")"
     exit 6
 }
 
+CURRENT_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
+READY_FILE="$EVIDENCE_DIR/prepare-ready.txt"
+[[ -f "$READY_FILE" ]] || {
+    echo "R9_PRODUCTION_VISUAL=FAIL_PREPARE_NOT_READY evidence=$EVIDENCE_DIR"
+    exit 8
+}
+grep -Fxq "source_commit=$CURRENT_SOURCE_COMMIT" "$READY_FILE" || {
+    echo "R9_PRODUCTION_VISUAL=FAIL_STALE_PREPARE expected=$CURRENT_SOURCE_COMMIT"
+    cat "$READY_FILE"
+    exit 9
+}
+grep -Fxq "status=READY" "$READY_FILE" || {
+    echo "R9_PRODUCTION_VISUAL=FAIL_PREPARE_STATUS"
+    cat "$READY_FILE"
+    exit 10
+}
+
 SERIAL="${ANDROID_SERIAL:-$("$ADB" devices | awk 'NR > 1 && $2 == "device" { print $1; exit }')}"
 [[ -n "$SERIAL" ]] || {
     echo "R9_PRODUCTION_VISUAL=FAIL_NO_DEVICE"
@@ -49,7 +66,7 @@ launch_review() {
 }
 
 echo "===== R9 PRODUCTION VISUAL APPROVAL ====="
-echo "SOURCE_COMMIT=$(git -C "$ROOT" rev-parse HEAD)"
+echo "SOURCE_COMMIT=$CURRENT_SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "MAC_SCOPE=PRODUCTION_SABLE_OWNED_UI_ONLY"
 echo "PANTHER_PLATFORM_PROOF=DEFERRED"
