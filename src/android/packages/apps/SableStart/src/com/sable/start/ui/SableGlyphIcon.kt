@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.PathParser
+import android.util.PathParser
 
 internal data class SableGlyphSpec(
     val pathData: String,
@@ -115,6 +115,7 @@ internal fun SableGlyphIcon(
         remember(spec.pathData) {
             PathParser.createPathFromPathData(spec.pathData)
         }
+    val contentColor = MaterialTheme.colorScheme.onSurface
 
     Box(
         modifier =
@@ -150,7 +151,7 @@ internal fun SableGlyphIcon(
                 val paint =
                     AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
                         style = AndroidPaint.Style.FILL
-                        color = MaterialTheme.colorScheme.onSurface.toArgb()
+                        color = contentColor.toArgb()
                     }
                 native.drawPath(androidPath, paint)
                 native.restoreToCount(save)
