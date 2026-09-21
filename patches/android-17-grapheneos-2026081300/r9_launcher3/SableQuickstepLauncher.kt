@@ -89,6 +89,18 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         updateSableVisibility(isInState(LauncherState.NORMAL))
     }
 
+    override fun onResume() {
+        super.onResume()
+
+        // Permission state can change while Android App info is in front of
+        // HOME without changing Launcher3's app inventory. Re-read the
+        // lightweight privacy summary whenever HOME resumes so All Apps never
+        // relies on a stale permission snapshot.
+        if (allAppsStore != null) {
+            refreshAppsFromLauncherModel()
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
