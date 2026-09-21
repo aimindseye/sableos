@@ -134,6 +134,33 @@ def main() -> int:
         "<queries>",
         "R9_VISUAL_REVIEW_PACKAGE_VISIBILITY_QUERY",
     )
+    require(
+        manifest,
+        'android.permission.READ_MEDIA_IMAGES',
+        "R9_VISUAL_REVIEW_PHOTO_PERMISSION_PARITY",
+    )
+    forbid(
+        manifest,
+        'android.permission.READ_CALENDAR',
+        "R9_VISUAL_REVIEW_NO_DIRECT_CALENDAR_PERMISSION",
+    )
+    forbid(
+        manifest,
+        'android.permission.READ_MEDIA_AUDIO',
+        "R9_VISUAL_REVIEW_NO_DIRECT_AUDIO_PERMISSION",
+    )
+    for authority in (
+        "org.sableos.weather.snapshot",
+        "org.sableos.calendar.snapshot",
+        "org.sableos.hub.snapshot",
+        "org.sableos.mail.snapshot",
+        "org.sableos.media.snapshot",
+    ):
+        require(
+            manifest,
+            f'android:authorities="{authority}"',
+            "R9_VISUAL_REVIEW_LIVE_PROVIDER_VISIBILITY",
+        )
     for needle in (
         'android:name="org.sableos.start.platform.SableAppearanceProvider"',
         'android:authorities="org.sableos.start.appearance"',
@@ -635,7 +662,9 @@ def main() -> int:
     )
     for needle in (
         ":hub:assembleDebug",
+        ":calendar:assembleDebug",
         "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
+        "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS",
         "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
         "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
         "content://org.sableos.start.appearance/appearance",
