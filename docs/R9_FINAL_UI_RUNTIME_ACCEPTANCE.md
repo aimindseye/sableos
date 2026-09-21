@@ -80,13 +80,18 @@ Sable-owned applications that must follow the selected Sable appearance:
 - Sable Reader;
 - Sable Calculator;
 - all three Sable Games;
-- Sable Weather.
+- Sable Weather;
+- Sable Calendar.
 
 Platform surfaces that must follow Android system night mode after the bridge:
 
 - Settings / SystemUI;
 - Phone / Dialer;
 - Contacts;
+- Clock;
+- Files;
+- Photos / Gallery;
+- Camera where its upstream UI honors system appearance;
 - Vanadium;
 - other platform applications that honor Android DayNight/system dark mode.
 
@@ -130,6 +135,36 @@ authorized.
 Future installed-app or Android-notification integration may complement these
 capsules, but must preserve the same explicit authorization boundary.
 
+## Calendar and launcher Live privacy boundary
+
+Sable Calendar package `org.sableos.calendar` is the Sable-visible calendar
+application. It uses Android `CalendarProvider` for event storage and replaces
+the upstream `Calendar` product module rather than introducing a second
+calendar database.
+
+Launcher3 does not read Calendar, SMS, Mail or Media databases directly. Those
+applications expose bounded read-only snapshot providers for Start/Live:
+
+- Weather -> `org.sableos.weather.snapshot`
+- Calendar -> `org.sableos.calendar.snapshot`
+- Messages -> `org.sableos.hub.snapshot`
+- Mail -> `org.sableos.mail.snapshot`
+- Media -> `org.sableos.media.snapshot`
+
+The sensitive app-owned providers accept the product Launcher3 caller and reject
+unrelated callers. Sable Start requests local photo access only for the Photos
+summary. Live refresh is provider/lifecycle driven rather than a permanent
+one-minute polling loop. Home must not expose message bodies or mail subjects.
+
+## Daily-driver core application presentation
+
+Clock, Files and Photos are presentation-only source changes pinned to the
+GrapheneOS 2026081300 revisions. Their application behavior remains upstream.
+GrapheneOS Camera is delivered as a preprocessed APK in this baseline and
+Vanadium has its own security-sensitive build pipeline, so R9 does not binary
+patch either of them. They retain upstream behavior and identity while Sable
+controls the surrounding launcher/system appearance.
+
 ## Browser identity
 
 The GrapheneOS standard browser is Vanadium.
@@ -158,6 +193,9 @@ R9_FINAL_UI_GOOGLE_MESSAGES_PRELOAD=PASS_ABSENT
 R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING
 R9_FINAL_UI_SABLE_MESSAGES_PACKAGE=PASS
 R9_FINAL_UI_PROVIDER_CAPSULES=PASS_4
+R9_FINAL_UI_SABLE_CALENDAR_PACKAGE=PASS
+R9_FINAL_UI_PLATFORM_CALENDAR_PRELOAD=PASS_ABSENT
+R9_FINAL_UI_LIVE_PROVIDER_CALLER_BOUNDARY=PASS
 ```
 
 Appearance remains a screenshot/device-interaction acceptance in addition to
