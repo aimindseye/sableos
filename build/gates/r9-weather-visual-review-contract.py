@@ -37,6 +37,11 @@ def main() -> int:
     settings = SETTINGS.read_text(encoding="utf-8")
     build = BUILD.read_text(encoding="utf-8")
     manifest = MANIFEST.read_text(encoding="utf-8")
+    icon = (
+        ROOT
+        / "apps/r8/android/weather-visual-review/src/main/res/drawable"
+        / "ic_sable_weather.xml"
+    ).read_text(encoding="utf-8")
     source = "\n".join(
         path.read_text(encoding="utf-8")
         for path in sorted(SRC.glob("*.kt"))
@@ -58,6 +63,22 @@ def main() -> int:
         build,
         'implementation(project(":design"))',
         "R9_WEATHER_REVIEW_SABLE_DESIGN",
+    )
+
+    require(
+        manifest,
+        'android:icon="@drawable/ic_sable_weather"',
+        "R9_WEATHER_REVIEW_ICON",
+    )
+    require(
+        manifest,
+        'android:roundIcon="@drawable/ic_sable_weather"',
+        "R9_WEATHER_REVIEW_ROUND_ICON",
+    )
+    require(
+        icon,
+        'android:fillColor="#4D9CFF"',
+        "R9_WEATHER_REVIEW_ICON_SABLE_PALETTE",
     )
 
     for token in (
@@ -162,6 +183,7 @@ def main() -> int:
 
     print("R9_WEATHER_REVIEW_MODULE_REGISTERED=PASS")
     print("R9_WEATHER_REVIEW_SABLE_DESIGN=PASS")
+    print("R9_WEATHER_REVIEW_ICON=PASS_SABLE_OWNED")
     print("R9_WEATHER_REVIEW_NO_RUNTIME_PERMISSIONS=PASS")
     print("R9_WEATHER_REVIEW_NO_NETWORK_OR_LOCATION=PASS")
     print("R9_WEATHER_RUST_LINEAGE_CONTRACT=PASS")
