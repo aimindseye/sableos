@@ -106,6 +106,7 @@ android_app_import {
     presigned: true,
     preprocessed: true,
     product_specific: true,
+    overrides: ["Calendar"],
     dex_preopt: {
         enabled: false,
     },
