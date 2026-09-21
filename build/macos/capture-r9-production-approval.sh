@@ -58,6 +58,15 @@ export ANDROID_SERIAL="$SERIAL"
 
 CAPTURE="$ROOT/build/macos/capture-r9-launcher-visual-review.sh"
 
+on_error() {
+    local rc=$?
+    echo
+    echo "R9_PRODUCTION_VISUAL=FAIL rc=$rc"
+    echo "R9_PRODUCTION_VISUAL_EVIDENCE=$EVIDENCE_DIR"
+    echo "The calling Terminal/SSH shell remains active; fix the reported error and rerun."
+}
+trap on_error ERR
+
 launch_review() {
     local screen="$1"
     local appearance="$2"
