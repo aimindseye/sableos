@@ -124,7 +124,13 @@ def main() -> int:
     ):
         if not any(
             color in icon_text
-            for color in ("#4D9CFF", "#35C66B", "#7A42E8", "#F28C45")
+            for color in (
+                "#4D9CFF",
+                "#35C66B",
+                "#7A42E8",
+                "#F28C45",
+                "#45515F",
+            )
         ):
             fail(label, "missing_sable_palette_color")
 
