@@ -359,6 +359,30 @@ def main() -> None:
         'android:authorities="org.sableos.start.appearance"',
         "SABLE_MAIL_APPEARANCE_PROVIDER_VISIBILITY",
     )
+    require_text(
+        manifest,
+        'android:authorities="org.sableos.mail.snapshot"',
+        "SABLE_MAIL_SNAPSHOT_PROVIDER",
+    )
+    snapshot_provider = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/SableMailSnapshotProvider.kt"
+    )
+    for needle in (
+        "NotificationManager::class.java",
+        "Notification.CATEGORY_EMAIL",
+        "Notification.CATEGORY_MESSAGE",
+        '"no mail alerts"',
+        '" mail alerts"',
+        "content://org.sableos.mail.snapshot/current",
+        "UnsupportedOperationException",
+    ):
+        require_text(
+            snapshot_provider,
+            needle,
+            "SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT",
+        )
+    print("SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT=PASS_NOTIFICATION_COUNT_ONLY")
     app_source = (
         app
         / "src/main/kotlin/net/thunderbird/android/ThunderbirdApp.kt"
