@@ -50,6 +50,7 @@ require(
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
     "buildPrivacyPermissionSummary(",
+    "packageInfo.requestedPermissionsFlags ?: IntArray(0)",
     '"permissions · none sensitive"',
     '"permissions · " + labels.joinToString(" · ")',
     'label = "location"',
@@ -75,6 +76,10 @@ require(
 # component identity, but they must never be rendered as All Apps / Peek
 # user-facing copy. The product contract is "app name + privacy summary",
 # not package-name disclosure.
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
+    "requestedPermissionsFlags.orEmpty()",
+)
 forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "text = app.component.packageName",
