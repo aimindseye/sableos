@@ -597,8 +597,7 @@ private fun CollectionScreen(
                             detail = "${tracks.size} track${if (tracks.size == 1) "" else "s"}",
                             accent = accentFor(artist.hashCode()),
                             onClick = {
-                                val firstIndex = indexByUri[tracks.first().uri] ?: return@LibraryGroupRow
-                                onPlay(firstIndex)
+                                indexByUri[tracks.first().uri]?.let(onPlay)
                             },
                         )
                     }
