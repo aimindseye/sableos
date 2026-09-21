@@ -39,6 +39,7 @@ UI4="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py"
 UI5A="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
 UI5B="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
 UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+SYSTEMUI_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py"
 LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
 MESSAGING_VISIBILITY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py"
 
@@ -57,13 +58,17 @@ run_self_test UI4_SYSTEMUI "$UI4"
 run_self_test UI5A_SETTINGS "$UI5A"
 run_self_test UI5B_APP_SECURITY "$UI5B"
 run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
+run_self_test R9_SYSTEMUI_COHERENCE "$SYSTEMUI_COHERENCE"
 run_self_test R9_LAUNCHER3_FOUNDATION "$LAUNCHER3_FOUNDATION"
 run_self_test R9_MESSAGING_VISIBILITY "$MESSAGING_VISIBILITY"
 
 echo
 echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
 
-if python3 "$UI5C_UI6" --source "$WS" verify; then
+if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify; then
+    echo "R9_SYSTEMUI_COHERENCE=ALREADY_APPLIED"
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
+elif python3 "$UI5C_UI6" --source "$WS" verify; then
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=ALREADY_APPLIED"
 else
     # A previously observed UI5C resource-alias failure has a dedicated
@@ -114,6 +119,18 @@ else
 fi
 
 echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
+
+echo
+echo "===== R9 SYSTEMUI COHERENCE OVERLAY ====="
+
+if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify; then
+    echo "R9_SYSTEMUI_COHERENCE=ALREADY_APPLIED"
+else
+    python3 "$SYSTEMUI_COHERENCE" --source "$WS" apply
+    python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
+    echo "R9_SYSTEMUI_COHERENCE=APPLIED"
+fi
+echo "R9_SYSTEMUI_COHERENCE=PASS"
 
 echo
 echo "===== SHARED SABLE DESIGN ====="
@@ -172,10 +189,11 @@ SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" R8_APP_BUNDLE="$R8_APP_BUN
 echo
 echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 
-python3 "$UI5C_UI6" --source "$WS" verify
+python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
 python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
 
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
+echo "R9_SYSTEMUI_COHERENCE=PASS"
 echo "R9_MESSAGING_VISIBILITY=PASS"
 echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
