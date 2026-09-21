@@ -744,6 +744,9 @@ def main() -> int:
     theme_capture = (
         ROOT / "build/macos/capture-r9-theme-fidelity-review.sh"
     ).read_text()
+    production_capture = (
+        ROOT / "build/macos/capture-r9-production-approval.sh"
+    ).read_text()
     require(
         mac_runner,
         'GRADLE_OFFLINE=NO',
@@ -818,6 +821,24 @@ def main() -> int:
             "R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT",
         )
 
+    for needle in (
+        "--es initialScreen \"$screen\"",
+        "--es appearanceMode \"$appearance\"",
+        "20-production-start-dark",
+        "21-production-start-light",
+        "22-production-live-dark",
+        "23-production-calendar-dark",
+        "24-production-messages-dark",
+        "MAC_SCOPE=PRODUCTION_SABLE_OWNED_UI_ONLY",
+        "R9_PRODUCTION_VISUAL_CORE_PLATFORM_APPS=DEFERRED_PANTHER",
+        "R9_PRODUCTION_VISUAL=PASS_CAPTURE_COMPLETE",
+    ):
+        require(
+            production_capture,
+            needle,
+            "R9_PRODUCTION_MAC_APPROVAL_CAPTURE_CONTRACT",
+        )
+
     forbid(
         manifest,
         "android.intent.category.HOME",
@@ -872,6 +893,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER")
     print("R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS")
     print("R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT=PASS_SABLE_MESSAGES")
+    print("R9_PRODUCTION_MAC_APPROVAL_CAPTURE_CONTRACT=PASS_SABLE_OWNED_ONLY")
     print("R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY=PASS")
     print("R9_QUICKSTEP_SYSTEM_BAR_RESTORE=PASS")
     print("R9_VISUAL_REVIEW_LINT_TEST_SURFACE=PASS")
