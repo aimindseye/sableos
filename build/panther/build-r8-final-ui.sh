@@ -70,7 +70,16 @@ echo "SABLE_BUILD_STAGE=$SABLE_BUILD_STAGE"
 echo
 echo "===== PRE-BUILD PRODUCT COMPOSITION ====="
 
-WS="$WS" SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/gates/r8-final-product-composition.sh"     | tee "$EVIDENCE_DIR/prebuild-composition.log"
+if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
+    COMPOSITION_QUALIFICATION_ONLY=YES
+else
+    COMPOSITION_QUALIFICATION_ONLY=NO
+fi
+
+SABLE_QUALIFICATION_ONLY="$COMPOSITION_QUALIFICATION_ONLY" \
+WS="$WS" SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/gates/r8-final-product-composition.sh" \
+    | tee "$EVIDENCE_DIR/prebuild-composition.log"
 
 grep -Fxq 'R8_FINAL_UI_PRODUCT_COMPOSITION=PASS'     "$EVIDENCE_DIR/prebuild-composition.log"     || {
         echo "R8_FINAL_BUILD=FAIL_PREBUILD_COMPOSITION"
