@@ -947,6 +947,16 @@ private fun AppMark(
     fallbackContentColor: Color = MaterialTheme.colorScheme.onSurface,
     showFallbackSurface: Boolean = true,
 ) {
+    if (sableGlyphForPackage(app.component.packageName) != null) {
+        SableGlyphIcon(
+            packageName = app.component.packageName,
+            accent = appColor(app),
+            modifier = Modifier.size(size.dp),
+            compact = size <= 46,
+        )
+        return
+    }
+
     val context = LocalContext.current
     val densityDpi = context.resources.displayMetrics.densityDpi
     val icon =
