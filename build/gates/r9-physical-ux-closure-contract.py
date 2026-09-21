@@ -185,6 +185,7 @@ require(
     'android:roundIcon="@drawable/ic_sable_reader"',
     'sable_debug_manifest_dir = mobile_root / "leisure" / "src" / "sableDebug"',
     'tools:replace="android:icon,android:roundIcon,android:label"',
+    'SABLE_READER_VARIANT_MANIFEST_IDENTITY_OVERRIDE=PASS',
     "appearance = rememberGlobalSableAppearance()",
 )
 require(
