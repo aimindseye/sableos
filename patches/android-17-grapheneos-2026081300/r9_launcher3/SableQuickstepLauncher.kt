@@ -181,8 +181,10 @@ class SableQuickstepLauncher : QuickstepLauncher() {
                         onCanNavigateBackChanged = { canNavigate ->
                             canSableNavigateBack = canNavigate
                         },
-                        initialPinnedKeys = startStateRepository.loadPinnedKeys(),
-                        onPinnedKeysChanged = startStateRepository::savePinnedKeys,
+                        initialFavoriteKeys = startStateRepository.loadFavoriteKeys(),
+                        onFavoriteKeysChanged = startStateRepository::saveFavoriteKeys,
+                        initialStartTileKeys = startStateRepository.loadStartTileKeys(),
+                        onStartTileKeysChanged = startStateRepository::saveStartTileKeys,
                         onAppearanceChanged = { appearance ->
                             appearanceState.value = appearance
                             startStateRepository.saveAppearance(appearance)
