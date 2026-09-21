@@ -235,6 +235,7 @@ fi
 for stale_package in \
     org.sableos.weather.visualreview \
     org.sableos.weather \
+    org.sableos.mail \
     org.sableos.calculator \
     org.sableos.sudoku \
     org.sableos.minesweeper \
@@ -245,6 +246,8 @@ done
 echo "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS"
 
 "$ADB" -s "$SERIAL" install -r "$APK"
+"$ADB" -s "$SERIAL" shell pm clear org.sableos.start.visualreview >/dev/null
+echo "R9_VISUAL_REVIEW_STATE_RESET=PASS"
 "$ADB" -s "$SERIAL" install -r "$HUB_APK"
 "$ADB" -s "$SERIAL" install -r "$CALENDAR_APK"
 "$ADB" -s "$SERIAL" install -r "$MEDIA_APK"
