@@ -163,6 +163,7 @@ set +e
             :sablestart-visual-review:assembleDebug \
             :hub:assembleDebug \
             :calendar:assembleDebug \
+            :media:assembleDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -172,6 +173,7 @@ set +e
             :sablestart-visual-review:assembleDebug \
             :hub:assembleDebug \
             :calendar:assembleDebug \
+            :media:assembleDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -206,6 +208,7 @@ echo "R9_VISUAL_REVIEW_LINT_SCOPE=LOCAL_CI_SEPARATE_GATE"
 APK="$ROOT/apps/r8/android/sablestart-visual-review/build/outputs/apk/debug/sablestart-visual-review-debug.apk"
 HUB_APK="$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
 CALENDAR_APK="$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk"
+MEDIA_APK="$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk"
 [[ -f "$APK" ]] || {
     echo "R9_VISUAL_REVIEW=FAIL_APK_MISSING path=$APK"
     exit 9
@@ -218,6 +221,10 @@ CALENDAR_APK="$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-de
     echo "R9_VISUAL_REVIEW=FAIL_CALENDAR_APK_MISSING path=$CALENDAR_APK"
     exit 9
 }
+[[ -f "$MEDIA_APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_MEDIA_APK_MISSING path=$MEDIA_APK"
+    exit 9
+}
 
 if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$APK" | tee "$EVIDENCE_DIR/review-apk.sha256"
@@ -225,11 +232,32 @@ else
     shasum -a 256 "$APK" | tee "$EVIDENCE_DIR/review-apk.sha256"
 fi
 
+for stale_package in \
+    org.sableos.weather.visualreview \
+    org.sableos.weather \
+    org.sableos.calculator \
+    org.sableos.sudoku \
+    org.sableos.minesweeper \
+    org.sableos.game2048
+do
+    "$ADB" -s "$SERIAL" shell pm uninstall "$stale_package" >/dev/null 2>&1 || true
+done
+echo "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS"
+
 "$ADB" -s "$SERIAL" install -r "$APK"
 "$ADB" -s "$SERIAL" install -r "$HUB_APK"
 "$ADB" -s "$SERIAL" install -r "$CALENDAR_APK"
+"$ADB" -s "$SERIAL" install -r "$MEDIA_APK"
+
+"$ADB" -s "$SERIAL" shell pm grant \
+    org.sableos.calendar android.permission.READ_CALENDAR >/dev/null 2>&1 || true
+"$ADB" -s "$SERIAL" shell pm grant \
+    org.sableos.calendar android.permission.WRITE_CALENDAR >/dev/null 2>&1 || true
+
 echo "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS"
 echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS"
 
 APPEARANCE_PROVIDER="$(
     "$ADB" -s "$SERIAL" shell content query         --uri content://org.sableos.start.appearance/appearance 2>/dev/null |
