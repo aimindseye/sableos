@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,6 +84,7 @@ private data class HomeTile(
     val app: AppEntry?,
     val color: Color,
     val onClick: () -> Unit,
+    val onLongClick: () -> Unit,
 )
 
 private data class AppRailRow(
@@ -128,8 +130,10 @@ fun SableStartScreen(
     homeGeneration: Int = 0,
     backGeneration: Int = 0,
     onCanNavigateBackChanged: (Boolean) -> Unit = {},
-    initialPinnedKeys: Set<String> = emptySet(),
-    onPinnedKeysChanged: (Set<String>) -> Unit = {},
+    initialFavoriteKeys: Set<String> = emptySet(),
+    onFavoriteKeysChanged: (Set<String>) -> Unit = {},
+    initialStartTileKeys: Set<String>? = null,
+    onStartTileKeysChanged: (Set<String>) -> Unit = {},
     onAppearanceChanged: (SableAppearance) -> Unit = {},
     onResetAppearance: () -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
@@ -140,8 +144,11 @@ fun SableStartScreen(
     var destination by remember { mutableStateOf(SableStartDestination.Start) }
     var returnDestination by remember { mutableStateOf(SableStartDestination.Start) }
     var selectedApp by remember { mutableStateOf<AppEntry?>(null) }
-    var pinnedKeys by remember(initialPinnedKeys) {
-        mutableStateOf(initialPinnedKeys.toList())
+    var favoriteKeys by remember(initialFavoriteKeys) {
+        mutableStateOf(initialFavoriteKeys.toList())
+    }
+    var startTileKeys by remember(initialStartTileKeys) {
+        mutableStateOf(initialStartTileKeys?.toList())
     }
     var recentKeys by remember { mutableStateOf<List<String>>(emptyList()) }
     var liveSnapshot by remember {
@@ -156,7 +163,12 @@ fun SableStartScreen(
     }
 
     val appByKey = apps.associateBy { it.stableKey() }
-    val pinnedApps = pinnedKeys.mapNotNull(appByKey::get)
+    val favoriteApps = favoriteKeys.mapNotNull(appByKey::get)
+    val startApps =
+        resolveStartApps(
+            apps = apps,
+            explicitKeys = startTileKeys?.toSet(),
+        )
     val recentApps = recentKeys.mapNotNull(appByKey::get)
 
     fun launchApp(entry: AppEntry) {
@@ -229,15 +241,14 @@ fun SableStartScreen(
                     SableStartDestination.Start ->
                         StartScreen(
                             snapshot = liveSnapshot,
-                            primaryApps = choosePrimaryApps(apps, pinnedApps),
-                            favoriteApps = pinnedApps,
+                            startApps = startApps,
+                            favoriteApps = favoriteApps,
                             recentApps = recentApps,
                             appearance = appearance,
                             onLaunchApp = ::launchApp,
                             onOpenPeek = { app ->
                                 openPeek(app, SableStartDestination.Start)
                             },
-                            onOpenSettings = onOpenSettings,
                             onAllApps = {
                                 destination = SableStartDestination.Apps
                             },
@@ -308,18 +319,33 @@ fun SableStartScreen(
                             val key = app.stableKey()
                             SablePeekScreen(
                                 app = app,
-                                isPinned = key in pinnedKeys,
+                                isFavorite = key in favoriteKeys,
+                                isStartTile = startApps.any { it.stableKey() == key },
                                 onClose = ::navigateBack,
                                 onOpen = { launchApp(app) },
                                 onOpenAppInfo = { onOpenAppInfo(app) },
-                                onTogglePinned = {
-                                    pinnedKeys =
-                                        if (key in pinnedKeys) {
-                                            pinnedKeys.filterNot { it == key }
+                                onToggleFavorite = {
+                                    favoriteKeys =
+                                        if (key in favoriteKeys) {
+                                            favoriteKeys.filterNot { it == key }
                                         } else {
-                                            (pinnedKeys + key).distinct()
+                                            (favoriteKeys + key).distinct()
                                         }
-                                    onPinnedKeysChanged(pinnedKeys.toSet())
+                                    onFavoriteKeysChanged(favoriteKeys.toSet())
+                                },
+                                onToggleStartTile = {
+                                    val current =
+                                        startTileKeys
+                                            ?: startApps.map { it.stableKey() }
+                                    startTileKeys =
+                                        if (key in current) {
+                                            current.filterNot { it == key }
+                                        } else {
+                                            (current + key).distinct()
+                                        }
+                                    onStartTileKeysChanged(
+                                        startTileKeys.orEmpty().toSet(),
+                                    )
                                 },
                             )
                         }
@@ -333,27 +359,26 @@ fun SableStartScreen(
 @Composable
 private fun StartScreen(
     snapshot: LiveSurfaceSnapshot,
-    primaryApps: List<AppEntry>,
+    startApps: List<AppEntry>,
     favoriteApps: List<AppEntry>,
     recentApps: List<AppEntry>,
     appearance: SableAppearance,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenPeek: (AppEntry) -> Unit,
-    onOpenSettings: () -> Unit,
     onAllApps: () -> Unit,
     onSearch: () -> Unit,
     onLive: () -> Unit,
     onAppearance: () -> Unit,
 ) {
     val contextDatum = chooseContextDatum(snapshot)
-    val primaryKeys = primaryApps.mapTo(mutableSetOf()) { it.stableKey() }
+    val startKeys = startApps.mapTo(mutableSetOf()) { it.stableKey() }
     val favoriteOnlyApps =
         favoriteApps.filterNot { app ->
-            app.stableKey() in primaryKeys || isSettingsApp(app)
+            app.stableKey() in startKeys
         }
     val recentOnlyApps =
         recentApps.filterNot { app ->
-            app.stableKey() in primaryKeys || isSettingsApp(app)
+            app.stableKey() in startKeys
         }
     val quickApps =
         if (favoriteOnlyApps.isNotEmpty()) {
@@ -416,26 +441,17 @@ private fun StartScreen(
             val tilePalette =
                 listOf(appearance.accent.color) +
                     SableTilePalette.filterNot { it == appearance.accent.color }
-            val appTiles =
-                primaryApps.mapIndexed { index, app ->
+            val tiles =
+                startApps.mapIndexed { index, app ->
                     HomeTile(
                         title = app.label,
                         mark = appMark(app),
                         app = app,
                         color = tilePalette[index % tilePalette.size],
                         onClick = { onLaunchApp(app) },
+                        onLongClick = { onOpenPeek(app) },
                     )
                 }
-            val tiles =
-                (appTiles +
-                    HomeTile(
-                        title = "Settings",
-                        mark = "⚙",
-                        app = null,
-                        color = SableSlate,
-                        onClick = onOpenSettings,
-                    ))
-                    .take(MAX_START_TILES)
 
             TileGrid(tiles)
         }
@@ -528,6 +544,7 @@ private fun TileGrid(tiles: List<HomeTile>) {
                     color = tile.color,
                     modifier = Modifier.fillMaxWidth(),
                     onClick = tile.onClick,
+                    onLongClick = tile.onLongClick,
                 )
             } else {
                 Row(
@@ -542,6 +559,7 @@ private fun TileGrid(tiles: List<HomeTile>) {
                             color = tile.color,
                             modifier = Modifier.weight(1f),
                             onClick = tile.onClick,
+                            onLongClick = tile.onLongClick,
                         )
                     }
                 }
@@ -558,6 +576,7 @@ private fun MetroTile(
     color: Color,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
 ) {
     val tileContentColor =
         if (
@@ -577,7 +596,10 @@ private fun MetroTile(
                 .height(96.dp)
                 .clip(RoundedCornerShape(5.dp))
                 .background(color)
-                .clickable(onClick = onClick)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
                 .padding(11.dp),
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -1284,11 +1306,13 @@ private fun loadLauncherIcon(
 @Composable
 private fun SablePeekScreen(
     app: AppEntry,
-    isPinned: Boolean,
+    isFavorite: Boolean,
+    isStartTile: Boolean,
     onClose: () -> Unit,
     onOpen: () -> Unit,
     onOpenAppInfo: () -> Unit,
-    onTogglePinned: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onToggleStartTile: () -> Unit,
 ) {
     Box(
         modifier =
@@ -1382,9 +1406,19 @@ private fun SablePeekScreen(
             Spacer(Modifier.height(6.dp))
 
             ContextAction(
-                mark = if (isPinned) "−" else "+",
-                label = if (isPinned) "unpin from favorites" else "pin to favorites",
-                onClick = onTogglePinned,
+                mark = if (isStartTile) "−" else "+",
+                label = if (isStartTile) "remove from start" else "pin to start",
+                onClick = onToggleStartTile,
+            )
+            ContextAction(
+                mark = if (isFavorite) "−" else "+",
+                label =
+                    if (isFavorite) {
+                        "unpin from favorites"
+                    } else {
+                        "pin to favorites"
+                    },
+                onClick = onToggleFavorite,
             )
             ContextAction(
                 mark = "ⓘ",
@@ -1864,33 +1898,57 @@ private fun alphabetSection(
     return if (first.firstOrNull()?.isLetter() == true) first else "#"
 }
 
-private fun choosePrimaryApps(
+private fun resolveStartApps(
     apps: List<AppEntry>,
-    pinnedApps: List<AppEntry>,
+    explicitKeys: Set<String>?,
 ): List<AppEntry> {
-    val candidates = apps.filterNot(::isSettingsApp)
-    val candidateKeys = candidates.mapTo(mutableSetOf()) { it.stableKey() }
+    if (explicitKeys != null) {
+        return apps
+            .filter { it.stableKey() in explicitKeys }
+            .sortedWith(startTileComparator())
+    }
+
     val selected = linkedMapOf<String, AppEntry>()
 
-    pinnedApps
-        .filter { it.stableKey() in candidateKeys }
-        .forEach { app ->
-            selected.putIfAbsent(app.stableKey(), app)
-        }
-
-    PRIMARY_APP_LABELS.forEach { preferred ->
-        candidates.firstOrNull { app ->
-            app.label.equals(preferred, ignoreCase = true)
+    PREFERRED_START_APP_GROUPS.forEach { aliases ->
+        apps.firstOrNull { app ->
+            aliases.any { preferred ->
+                app.label.equals(preferred, ignoreCase = true)
+            }
         }?.let { app ->
             selected.putIfAbsent(app.stableKey(), app)
         }
     }
 
-    candidates.forEach { app ->
-        selected.putIfAbsent(app.stableKey(), app)
+    apps
+        .filterNot(::isSettingsApp)
+        .sortedWith(startTileComparator())
+        .forEach { app ->
+            if (selected.size < DEFAULT_START_TILE_TARGET) {
+                selected.putIfAbsent(app.stableKey(), app)
+            }
+        }
+
+    return selected.values.take(DEFAULT_START_TILE_TARGET)
+}
+
+private fun startTileComparator(): Comparator<AppEntry> =
+    compareBy<AppEntry> { app ->
+        preferredStartRank(app)
+    }.thenBy { app ->
+        app.label.lowercase(Locale.getDefault())
+    }.thenBy { app ->
+        app.component.flattenToString()
     }
 
-    return selected.values.take(MAX_PRIMARY_APPS)
+private fun preferredStartRank(app: AppEntry): Int {
+    val index =
+        PREFERRED_START_APP_GROUPS.indexOfFirst { aliases ->
+            aliases.any { preferred ->
+                app.label.equals(preferred, ignoreCase = true)
+            }
+        }
+    return if (index >= 0) index else Int.MAX_VALUE
 }
 
 private fun chooseContextDatum(snapshot: LiveSurfaceSnapshot): LiveDatum? =
@@ -1917,23 +1975,20 @@ private fun appColor(app: AppEntry): Color {
     return SableTilePalette[index]
 }
 
-private val PRIMARY_APP_LABELS =
+private val PREFERRED_START_APP_GROUPS =
     listOf(
-        "Sable Mail",
-        "Sable Messages",
-        "Messages",
-        "Phone",
-        "Calendar",
-        "Photos",
-        "Sable Media",
-        "Camera",
-        "Sable Calculator",
-        "Calculator",
-        "Files",
-        "Vanadium",
+        listOf("Phone"),
+        listOf("Sable Messages", "Messages"),
+        listOf("Sable Mail", "Mail"),
+        listOf("Calendar"),
+        listOf("Sable Weather", "Weather"),
+        listOf("Photos"),
+        listOf("Sable Media", "Media"),
+        listOf("Camera"),
+        listOf("Sable Calculator", "Calculator"),
+        listOf("Files"),
     )
 
-private const val MAX_PRIMARY_APPS = 3
-private const val MAX_START_TILES = 4
+private const val DEFAULT_START_TILE_TARGET = 10
 private const val MAX_FAVORITES_ON_START = 4
 private const val MAX_SESSION_RECENTS = 8
