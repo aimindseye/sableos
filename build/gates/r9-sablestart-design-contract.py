@@ -75,7 +75,7 @@ def check() -> None:
             "A calmer device",
             "Search apps…",
             "AppearanceShortcut(",
-            "StartNavigationRow(",
+            "private fun StartNavigationRow(",
             'text = "appearance"',
         ),
         "R9_SABLESTART_OLD_SURFACE_RETIREMENT",
