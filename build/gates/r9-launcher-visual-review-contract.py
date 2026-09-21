@@ -290,8 +290,33 @@ def main() -> int:
     )
     require(
         activity,
-        'const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"',
-        "R9_VISUAL_REVIEW_WEATHER_FIXTURE_PACKAGE",
+        'const val HOST_AVD_GOOGLE_CALENDAR_PACKAGE = "com.google.android.calendar"',
+        "R9_VISUAL_REVIEW_HOST_GOOGLE_CALENDAR_CONSTANT",
+    )
+    require(
+        activity,
+        'const val HOST_AVD_AOSP_CALENDAR_PACKAGE = "com.android.calendar"',
+        "R9_VISUAL_REVIEW_HOST_AOSP_CALENDAR_CONSTANT",
+    )
+    require(
+        activity,
+        'const val RETIRED_WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"',
+        "R9_VISUAL_REVIEW_RETIRED_WEATHER_FIXTURE_CONSTANT",
+    )
+    require(
+        activity,
+        "component.packageName == HOST_AVD_GOOGLE_CALENDAR_PACKAGE",
+        "R9_VISUAL_REVIEW_HOST_GOOGLE_CALENDAR_FILTER",
+    )
+    require(
+        activity,
+        "component.packageName == HOST_AVD_AOSP_CALENDAR_PACKAGE",
+        "R9_VISUAL_REVIEW_HOST_AOSP_CALENDAR_FILTER",
+    )
+    require(
+        activity,
+        "component.packageName == RETIRED_WEATHER_REVIEW_PACKAGE",
+        "R9_VISUAL_REVIEW_RETIRED_WEATHER_FIXTURE_FILTER",
     )
     require(
         activity,
@@ -668,8 +693,12 @@ def main() -> int:
     for needle in (
         ":hub:assembleDebug",
         ":calendar:assembleDebug",
+        ":media:assembleDebug",
+        "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS",
         "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
         "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS",
+        "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS",
+        "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS",
         "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
         "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
         "content://org.sableos.start.appearance/appearance",
@@ -763,6 +792,8 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_APPEARANCE_PERSISTENCE_PARITY=PASS")
     print("R9_VISUAL_REVIEW_HOST_CHROME_FILTER=PASS")
     print("R9_VISUAL_REVIEW_HOST_GOOGLE_MESSAGES_FILTER=PASS")
+    print("R9_VISUAL_REVIEW_HOST_CALENDAR_FILTER=PASS")
+    print("R9_VISUAL_REVIEW_RETIRED_WEATHER_FIXTURE_FILTER=PASS")
     print("R9_VISUAL_REVIEW_BROWSER_IDENTITY_SCOPE=PASS_DEFERRED_PANTHER")
     print("R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER")
     print("R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS")
@@ -785,7 +816,7 @@ def main() -> int:
     print("R9_START_FINAL_EXACT_FRAME_HASH_SET=PASS")
     print("R9_START_FINAL_SCROLL_PROOF=PASS_SEMANTIC_DELTA")
     print("R9_START_FINAL_HASH_RESOLUTION_PARSER=PASS_BASENAME")
-    print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS")
+    print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS_RETIRED")
     print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
