@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,8 +39,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.YearMonth
@@ -137,40 +141,39 @@ private fun CalendarApp(
                         vertical = SableSpacing.ScreenVertical,
                     ),
         ) {
-        Text(
-            text = "calendar",
-            style = MaterialTheme.typography.displayLarge,
-        )
-        Text(
-            text = selectedDate.toString(),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(SableSpacing.Lg))
+            Text(
+                text = "calendar",
+                style = MaterialTheme.typography.displayLarge,
+            )
+            Text(
+                text = "Local CalendarProvider UI · account sync remains separate.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(SableSpacing.Lg))
 
-        CalendarPivot(
-            selected = mode,
-            onSelect = { mode = it },
-        )
-        Spacer(Modifier.height(SableSpacing.Lg))
+            if (!repository.canRead()) {
+                PermissionPanel(onRequestPermissions)
+                return@Column
+            }
 
-        if (!repository.canRead()) {
-            PermissionPanel(onRequestPermissions)
-        } else {
             when (mode) {
                 CalendarMode.Agenda ->
-                    AgendaView(
-                        date = selectedDate,
+                    ApprovedCalendarLanding(
+                        selectedDate = selectedDate,
                         events = events,
-                        onPreviousDay = {
-                            selectedDate = selectedDate.minusDays(1)
-                        },
-                        onNextDay = {
-                            selectedDate = selectedDate.plusDays(1)
-                        },
+                        onSelectDate = { selectedDate = it },
+                        onOpenMonth = { mode = CalendarMode.Month },
+                        onNewEvent = { mode = CalendarMode.NewEvent },
                     )
 
-                CalendarMode.Month ->
+                CalendarMode.Month -> {
+                    SableActionButton(
+                        text = "‹  agenda",
+                        primary = false,
+                        onClick = { mode = CalendarMode.Agenda },
+                    )
+                    Spacer(Modifier.height(SableSpacing.Md))
                     MonthView(
                         month = YearMonth.from(selectedDate),
                         selectedDate = selectedDate,
@@ -179,8 +182,15 @@ private fun CalendarApp(
                             mode = CalendarMode.Agenda
                         },
                     )
+                }
 
-                CalendarMode.NewEvent ->
+                CalendarMode.NewEvent -> {
+                    SableActionButton(
+                        text = "‹  agenda",
+                        primary = false,
+                        onClick = { mode = CalendarMode.Agenda },
+                    )
+                    Spacer(Modifier.height(SableSpacing.Md))
                     NewEventView(
                         repository = repository,
                         selectedDate = selectedDate,
@@ -190,8 +200,168 @@ private fun CalendarApp(
                         },
                         onRequestPermissions = onRequestPermissions,
                     )
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun ApprovedCalendarLanding(
+    selectedDate: LocalDate,
+    events: List<CalendarEvent>,
+    onSelectDate: (LocalDate) -> Unit,
+    onOpenMonth: () -> Unit,
+    onNewEvent: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenMonth),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        CalendarIdentityMark()
+        Spacer(Modifier.width(14.dp))
+        Column {
+            Text(
+                text =
+                    selectedDate.month.name
+                        .lowercase()
+                        .replaceFirstChar { it.uppercase() }
+                        .lowercase(),
+                style = MaterialTheme.typography.headlineLarge,
+            )
+            Text(
+                text = selectedDate.year.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(18.dp))
+    CalendarWeekStrip(
+        selectedDate = selectedDate,
+        onSelectDate = onSelectDate,
+    )
+    Spacer(Modifier.height(18.dp))
+    Text(
+        text = "TODAY · " + selectedDate.dayOfMonth,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Spacer(Modifier.height(4.dp))
+
+    if (events.isEmpty()) {
+        Text(
+            text = "nothing scheduled",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(18.dp))
+    } else {
+        events.forEach { event ->
+            AgendaEventRow(event)
+        }
+        Spacer(Modifier.height(14.dp))
+    }
+
+    SableActionButton(
+        text = "+  new event",
+        primary = false,
+        onClick = onNewEvent,
+    )
+}
+
+@Composable
+private fun CalendarIdentityMark() {
+    val shape = RoundedCornerShape(14.dp)
+    Box(
+        modifier =
+            Modifier
+                .size(58.dp)
+                .shadow(4.dp, shape)
+                .clip(shape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
+                        ),
+                    ),
+                )
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
+                    shape,
+                ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Image(
+            painter = painterResource(R.drawable.ic_sable_calendar),
+            contentDescription = null,
+            modifier = Modifier.size(42.dp),
+        )
+        Box(
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(MaterialTheme.colorScheme.primary),
+        )
+    }
+}
+
+@Composable
+private fun CalendarWeekStrip(
+    selectedDate: LocalDate,
+    onSelectDate: (LocalDate) -> Unit,
+) {
+    val monday =
+        selectedDate.minusDays((selectedDate.dayOfWeek.value - 1).toLong())
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        repeat(7) { offset ->
+            val date = monday.plusDays(offset.toLong())
+            val selected = date == selectedDate
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(
+                            if (selected) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        )
+                        .border(
+                            1.dp,
+                            if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outlineVariant
+                            },
+                            RoundedCornerShape(6.dp),
+                        )
+                        .clickable { onSelectDate(date) }
+                        .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = date.dayOfWeek.name.take(1),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Text(
+                    text = date.dayOfMonth.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
         }
     }
 }
