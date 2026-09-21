@@ -302,6 +302,33 @@ require(
 )
 
 # ---------------------------------------------------------------------------
+# SMS/MMS blocking: Android platform blocker remains authoritative. Automatic
+# content spam classification is deliberately deferred until it can live in
+# the default SMS delivery path.
+# ---------------------------------------------------------------------------
+require_file("build/gates/r9-sms-mms-blocking-contract.py")
+require(
+    "build/gates/r9-sms-mms-blocking-contract.py",
+    "R9_BLOCKED_NUMBER_PLATFORM_CONTRACT=PASS",
+    "R9_GRAPHENE_MESSAGING_BLOCKING_BOUNDARY=PASS",
+    "R9_SABLE_HUB_SMS_DELIVERY_OWNERSHIP=PASS_ABSENT",
+    "R9_SMS_MMS_SPAM_CLASSIFICATION=DEFERRED_DEFAULT_SMS_INTEGRATION_REQUIRED",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
+    "verify_blocking_substrate",
+    "R9_BLOCKED_NUMBER_PLATFORM_SUBSTRATE=PASS",
+    "R9_BLOCKED_NUMBER_SETTINGS_UI=PASS",
+    "R9_SMS_MMS_BLOCKING_OWNER=ANDROID_BLOCKED_NUMBER_PROVIDER",
+)
+require(
+    "docs/R9_SMS_MMS_BLOCKING_SPAM.md",
+    "Sable Hub / Sable Messages does not become a second SMS transport stack",
+    "Automatic SMS/MMS spam classification",
+    "medium-to-high",
+)
+
+# ---------------------------------------------------------------------------
 # Production first-party icon contract.
 # ---------------------------------------------------------------------------
 icon_files = (
@@ -388,6 +415,17 @@ require(
     "FULL_TARGET_FILES_BUILD_AUTHORIZED=NO",
     "SABLE_QUALIFICATION_ONLY=YES",
     "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW",
+)
+require(
+    "build/local-ci/run.sh",
+    "r9-sms-mms-blocking-contract.py",
+    "r9-first-party-app-icon-contract.py",
+    ":weather:assembleDebug",
+    ":weather:lintDebug",
+    ":weather:detekt",
+    ":weather:ktlintCheck",
+    "weather-debug.apk",
+    "org.sableos.weather",
 )
 require(
     "build/panther/run-r8-release-candidate.sh",
@@ -539,6 +577,8 @@ print("R9_SYSTEMUI_SABLE_ACCENT_CONTRACT=PASS")
 print("R9_SINGLE_VISIBLE_MESSAGES_CONTRACT=PASS")
 print("R9_FIRST_PARTY_PRODUCT_ICON_CONTRACT=PASS")
 print("R9_PHONE_CONTACTS_PRESENTATION_CONTRACT=PASS")
+print("R9_SMS_MMS_BLOCKING_PLATFORM_CONTRACT=PASS")
+print("R9_SMS_MMS_SPAM_CLASSIFICATION_BOUNDARY=PASS")
 print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
 print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
 print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
