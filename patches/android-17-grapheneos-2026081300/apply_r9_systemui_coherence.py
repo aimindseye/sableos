@@ -88,6 +88,15 @@ SABLE_DUAL = """    /** A dual-target active tile follows the same Sable accent 
     }
 """
 
+LEGACY_COLOR_SELECTOR = """    @Composable
+    @ReadOnlyComposable
+    fun getColorForState(uiState: TileUiState, iconOnly: Boolean): TileColors {
+"""
+
+SABLE_COLOR_SELECTOR = """    @Composable
+    fun getColorForState(uiState: TileUiState, iconOnly: Boolean): TileColors {
+"""
+
 BRIDGE_SOURCE = """package com.android.systemui.sable
 
 import android.content.Context
@@ -238,6 +247,11 @@ def patch_text(text: str) -> str:
         (TILE_IMPORT_OLD, TILE_IMPORT_NEW, "SystemUI Sable accent import"),
         (LEGACY_ACTIVE, SABLE_ACTIVE, "active tile accent"),
         (LEGACY_DUAL, SABLE_DUAL, "dual-target active tile accent"),
+        (
+            LEGACY_COLOR_SELECTOR,
+            SABLE_COLOR_SELECTOR,
+            "stateful tile color selector annotation",
+        ),
     )
 
     for old, new, label in replacements:
@@ -290,6 +304,7 @@ def verify(source: Path, root: Path) -> None:
         TILE_IMPORT_NEW,
         SABLE_ACTIVE,
         SABLE_DUAL,
+        SABLE_COLOR_SELECTOR,
         "accessibilityUiState.toggleableState",
         "stateDescription = accessibilityUiState.stateDescription",
         "combinedClickable(",
@@ -301,7 +316,7 @@ def verify(source: Path, root: Path) -> None:
                 f"R9_SYSTEMUI_COHERENCE_TOKEN_MISSING={token!r}"
             )
 
-    for token in (LEGACY_ACTIVE, LEGACY_DUAL):
+    for token in (LEGACY_ACTIVE, LEGACY_DUAL, LEGACY_COLOR_SELECTOR):
         if token in tile:
             raise CoherenceError(
                 f"R9_SYSTEMUI_LEGACY_ACTIVE_TOKEN_PRESENT={token[:50]!r}"
@@ -333,22 +348,27 @@ def verify(source: Path, root: Path) -> None:
 
 def apply(source: Path, root: Path) -> None:
     assert_head(source)
-    assert_legacy_cumulative_state(source, root)
 
     framework = source / FRAMEWORK_REPO
     bridge = framework / BRIDGE
+
     if bridge.exists():
-        raise CoherenceError(
-            f"R9_SYSTEMUI_BRIDGE_PREEXISTS={bridge}"
-        )
+        if bridge.read_text(encoding="utf-8") != BRIDGE_SOURCE:
+            raise CoherenceError(
+                f"R9_SYSTEMUI_BRIDGE_PREEXISTS_MISMATCH={bridge}"
+            )
+        print("R9_SYSTEMUI_EXISTING_OVERLAY_UPGRADE=YES")
+    else:
+        assert_legacy_cumulative_state(source, root)
 
     tile = framework / TILE
     tile.write_text(
         patch_text(tile.read_text(encoding="utf-8")),
         encoding="utf-8",
     )
-    bridge.parent.mkdir(parents=True, exist_ok=True)
-    bridge.write_text(BRIDGE_SOURCE, encoding="utf-8")
+    if not bridge.exists():
+        bridge.parent.mkdir(parents=True, exist_ok=True)
+        bridge.write_text(BRIDGE_SOURCE, encoding="utf-8")
 
     verify(source, root)
     print("R9_SYSTEMUI_COHERENCE_APPLY=PASS")
@@ -359,18 +379,24 @@ def self_test(root: Path) -> None:
         TILE_IMPORT_OLD
         + LEGACY_ACTIVE
         + LEGACY_DUAL
+        + LEGACY_COLOR_SELECTOR
         + "accessibilityUiState.toggleableState\n"
         + "stateDescription = accessibilityUiState.stateDescription\n"
         + "combinedClickable(\n"
         + "onLongClick = onLongClick\n"
     )
     patched = patch_text(sample)
-    for token in (TILE_IMPORT_NEW, SABLE_ACTIVE, SABLE_DUAL):
+    for token in (
+        TILE_IMPORT_NEW,
+        SABLE_ACTIVE,
+        SABLE_DUAL,
+        SABLE_COLOR_SELECTOR,
+    ):
         if token not in patched:
             raise CoherenceError(
                 f"R9_SYSTEMUI_SELF_TEST_TOKEN_MISSING={token[:60]!r}"
             )
-    for token in (LEGACY_ACTIVE, LEGACY_DUAL):
+    for token in (LEGACY_ACTIVE, LEGACY_DUAL, LEGACY_COLOR_SELECTOR):
         if token in patched:
             raise CoherenceError(
                 f"R9_SYSTEMUI_SELF_TEST_LEGACY_TOKEN_PRESENT={token[:60]!r}"
