@@ -117,10 +117,25 @@ else
         tee "$EVIDENCE_DIR/start-tiles-final.sha256"
 fi
 
-TOP_HASH="$(awk '$2 ~ /00-start-tiles-top\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
-MID_HASH="$(awk '$2 ~ /01-start-tiles-mid-scroll\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
-LOWER_HASH="$(awk '$2 ~ /02-start-tiles-lower-scroll\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
-PEEK_HASH="$(awk '$2 ~ /03-start-tile-peek\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
+resolve_hash() {
+    local frame="$1"
+    local digest path
+
+    while read -r digest path; do
+        path="${path#\*}"
+        if [[ "$(basename "$path")" == "$frame" ]]; then
+            printf '%s\n' "$digest"
+            return 0
+        fi
+    done < "$EVIDENCE_DIR/start-tiles-final.sha256"
+
+    return 1
+}
+
+TOP_HASH="$(resolve_hash "00-start-tiles-top.png" || true)"
+MID_HASH="$(resolve_hash "01-start-tiles-mid-scroll.png" || true)"
+LOWER_HASH="$(resolve_hash "02-start-tiles-lower-scroll.png" || true)"
+PEEK_HASH="$(resolve_hash "03-start-tile-peek.png" || true)"
 
 UNIQUE_HASHES="$(
     awk '{print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256" |
@@ -135,6 +150,8 @@ if [[ -z "$TOP_HASH" || -z "$MID_HASH" || -z "$LOWER_HASH" || -z "$PEEK_HASH" ]]
     echo "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=FAIL_HASH_RESOLUTION"
     exit 8
 fi
+
+echo "R9_START_TILES_FINAL_HASH_RESOLUTION=PASS"
 
 if [[ "$TOP_HASH" == "$MID_HASH" ]]; then
     echo "R9_START_SCROLL_VISUAL_PROOF=FAIL_NO_SCROLL_DELTA"
