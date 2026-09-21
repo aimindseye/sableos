@@ -542,7 +542,7 @@ private fun AccessPanel(
 
     SablePanel {
         Text(
-            text = "Android capability",
+            text = "Messaging status",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -554,9 +554,9 @@ private fun AccessPanel(
         Text(
             text =
                 if (snapshot.capabilities.isDefaultSmsRoleHolder) {
-                    "Sable Hub currently holds the SMS role."
+                    "Sable Messages is handling SMS directly on this device."
                 } else {
-                    "Sable Hub does not take the default SMS role in R8-F. The proven Android messaging transport remains available for MMS/RCS and rollback."
+                    "Sable Messages can read and send SMS when access is granted. MMS/RCS can open the system messaging service when needed."
                 },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -571,7 +571,7 @@ private fun AccessPanel(
                 onClick = onRequestAccess,
             )
             SableActionButton(
-                text = "Android transport",
+                text = "Open MMS / RCS",
                 modifier = Modifier.weight(1f),
                 primary = false,
                 onClick = {
@@ -653,7 +653,7 @@ private fun ComposeView(
 
     SablePageHeader(
         title = "New message",
-        subtitle = "SMS uses Android telephony capability. MMS/RCS remain with the proven Android transport in R8-F.",
+        subtitle = "Write an SMS here. MMS/RCS can be handed off when needed.",
     )
 
     OutlinedTextField(
@@ -693,7 +693,7 @@ private fun ComposeView(
         SablePanel {
             Text(
                 text =
-                    "Direct SMS sending is not currently authorized. Review access or hand this draft to the Android messaging transport.",
+                    "SMS sending needs access. Review permissions here, or continue this draft in the system messaging service.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             Row(
@@ -706,7 +706,7 @@ private fun ComposeView(
                     onClick = onRequestAccess,
                 )
                 SableActionButton(
-                    text = "Use transport",
+                    text = "Open messaging",
                     modifier = Modifier.weight(1f),
                     primary = false,
                     onClick = {
