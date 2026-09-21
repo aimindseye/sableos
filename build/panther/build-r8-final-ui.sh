@@ -172,7 +172,7 @@ echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
-m -j"$JOBS"     Launcher3QuickStep     Dialer     Contacts     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
+m -j"$JOBS"     Launcher3QuickStep     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
 MODULE_RC=${PIPESTATUS[0]}
 set -e
 
@@ -187,6 +187,9 @@ fi
 echo "R8_UI_MODULE_BUILD=PASS"
 echo "R9_PHONE_MODULE_BUILD=PASS"
 echo "R9_CONTACTS_MODULE_BUILD=PASS"
+echo "R9_CLOCK_MODULE_BUILD=PASS"
+echo "R9_FILES_MODULE_BUILD=PASS"
+echo "R9_PHOTOS_MODULE_BUILD=PASS"
 echo "R9_SABLE_WEATHER_MODULE_BUILD=PASS"
 echo "R9_SABLE_CALENDAR_MODULE_BUILD=PASS"
 
