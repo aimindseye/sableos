@@ -9,6 +9,15 @@ source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 WS="${WS:-$SABLEOS_UPSTREAM}"
 DEST="$WS/vendor/sable/r8"
 PRODUCT_MK="$WS/vendor/google_devices/panther/panther.mk"
+SABLE_QUALIFICATION_ONLY="${SABLE_QUALIFICATION_ONLY:-NO}"
+
+case "$SABLE_QUALIFICATION_ONLY" in
+    YES|NO) ;;
+    *)
+        echo "R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL_QUALIFICATION_MODE value=$SABLE_QUALIFICATION_ONLY"
+        exit 2
+        ;;
+esac
 
 echo "===== R8 FINAL UI PRODUCT COMPOSITION GATE ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
@@ -17,6 +26,7 @@ echo "CLEAN_AUTHORIZED=NO"
 echo "CLOBBER_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "WORKSPACE=$WS"
+echo "SABLE_QUALIFICATION_ONLY=$SABLE_QUALIFICATION_ONLY"
 
 fail() {
     echo "$1=FAIL"
@@ -435,4 +445,12 @@ echo "R9_LAUNCHER3_HOME_CUTOVER_SOURCE_COMPOSITION=PASS"
 
 echo
 echo "===== R9 LAUNCHER VISUAL ACCEPTANCE SEAL ====="
-python3 "$ROOT/build/gates/r9-launcher-visual-acceptance.py"
+
+if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
+    echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_SEAL=DEFERRED_MODULE_QUALIFICATION"
+    echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING_SOURCE_REVIEW"
+    echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW"
+else
+    python3 "$ROOT/build/gates/r9-launcher-visual-acceptance.py" \
+        || fail R9_LAUNCHER_VISUAL_ACCEPTANCE
+fi
