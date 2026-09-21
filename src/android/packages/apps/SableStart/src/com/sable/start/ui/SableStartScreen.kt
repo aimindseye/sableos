@@ -1819,6 +1819,7 @@ private fun AccentChoiceRow(
 @Composable
 private fun LiveSurfaceScreen(
     snapshot: LiveSurfaceSnapshot,
+    apps: List<AppEntry>,
     onBack: () -> Unit,
     onRequestPermissions: () -> Unit,
 ) {
@@ -1830,11 +1831,16 @@ private fun LiveSurfaceScreen(
         contentPadding = PaddingValues(bottom = 28.dp),
     ) {
         item {
-            MetroHeader(
-                title = "live",
-                onBack = onBack,
+            Text(
+                text = "live",
+                style = MaterialTheme.typography.displayLarge,
             )
-            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Useful state only. No fake feeds and no ambient polling.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(18.dp))
             Text(
                 text = snapshot.timeText,
                 style = MaterialTheme.typography.displayLarge,
@@ -1845,122 +1851,285 @@ private fun LiveSurfaceScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(18.dp))
+
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.weather"),
+                title = "Sable Weather",
+                datum = snapshot.weather,
+                kind = "weather",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.calendar"),
+                title = "Calendar",
+                datum = snapshot.calendar,
+                kind = "calendar",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.hub"),
+                title = "Sable Messages",
+                datum = snapshot.messages,
+                kind = "messages",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.mail"),
+                title = "Sable Mail",
+                datum = snapshot.mail,
+                kind = "mail",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.media"),
+                title = "Sable Media",
+                datum = snapshot.music,
+                kind = "media",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "com.android.gallery3d"),
+                title = "Photos",
+                datum = snapshot.photos,
+                kind = "photos",
+            )
         }
 
-        item {
-            LocalDatumRow("☁", snapshot.weather)
-            LocalDatumRow("17", snapshot.calendar)
-            LocalDatumRow("●", snapshot.messages)
-            LocalDatumRow("✉", snapshot.mail)
-            LocalDatumRow("♪", snapshot.music)
-            LocalDatumRow("▣", snapshot.photos)
-            Spacer(Modifier.height(10.dp))
-        }
-
-        if (
-            snapshot.photos.availability ==
-                LiveAvailability.PERMISSION_REQUIRED
-        ) {
+        if (snapshot.photos.availability == LiveAvailability.PERMISSION_REQUIRED) {
             item {
+                Spacer(Modifier.height(12.dp))
                 Row(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .heightIn(min = 54.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(MaterialTheme.colorScheme.primary)
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                RoundedCornerShape(6.dp),
+                            )
                             .clickable(onClick = onRequestPermissions)
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "enable local photos",
-                        fontSize = 20.sp,
-                        lineHeight = 22.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    Text(
-                        text = "→",
-                        fontSize = 22.sp,
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        text = "+  enable local photos",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
-                Spacer(Modifier.height(14.dp))
             }
-        }
-
-        item {
-            Text(
-                text =
-                    "privacy-safe summaries · no message bodies or mail subjects on Home",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text =
-                    "provider and lifecycle refresh · no ambient launcher network client",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
 
-@Composable
-private fun LocalDatumRow(
-    mark: String,
-    datum: LiveDatum,
-) {
-    val status =
-        when (datum.availability) {
-            LiveAvailability.LOADING -> "loading"
-            LiveAvailability.LIVE -> "live"
-            LiveAvailability.EMPTY -> "empty"
-            LiveAvailability.PERMISSION_REQUIRED -> "permission required"
-            LiveAvailability.UNAVAILABLE -> "unavailable"
-            LiveAvailability.ERROR -> "error"
+private fun findLiveApp(
+    apps: List<AppEntry>,
+    packageName: String,
+): AppEntry? =
+    apps.firstOrNull { it.component.packageName == packageName }
+        ?: when (packageName) {
+            "org.sableos.weather" ->
+                apps.firstOrNull { it.label.equals("Sable Weather", ignoreCase = true) }
+            "org.sableos.mail" ->
+                apps.firstOrNull { it.label.equals("Sable Mail", ignoreCase = true) }
+            else -> null
         }
 
+private data class ApprovedLiveContent(
+    val primary: String,
+    val secondary: String,
+    val state: String,
+    val accent: Color,
+)
+
+private fun approvedLiveContent(
+    kind: String,
+    datum: LiveDatum,
+): ApprovedLiveContent {
+    val unavailable =
+        datum.availability !in setOf(
+            LiveAvailability.LIVE,
+            LiveAvailability.EMPTY,
+        )
+
+    if (unavailable) {
+        val state =
+            when (datum.availability) {
+                LiveAvailability.LOADING -> "LOADING"
+                LiveAvailability.PERMISSION_REQUIRED -> "ACCESS"
+                LiveAvailability.ERROR -> "ERROR"
+                else -> "OFFLINE"
+            }
+        return ApprovedLiveContent(
+            primary = datum.detail.ifBlank { "unavailable" },
+            secondary = "no fabricated content",
+            state = state,
+            accent = SableSlate,
+        )
+    }
+
+    return when (kind) {
+        "weather" -> {
+            val parts = datum.detail.split(" · ")
+            val location = parts.firstOrNull().orEmpty()
+            val primary = parts.drop(1).joinToString(" · ").ifBlank { datum.detail }
+            ApprovedLiveContent(
+                primary = primary,
+                secondary =
+                    buildString {
+                        if (location.isNotBlank()) {
+                            append(location)
+                            append(" · ")
+                        }
+                        append(observedAge(datum.observedAtEpochMs))
+                    },
+                state = "LIVE",
+                accent = SableBlue,
+            )
+        }
+
+        "calendar" ->
+            ApprovedLiveContent(
+                primary = datum.detail,
+                secondary = "next event",
+                state = "NEXT",
+                accent = SableOrange,
+            )
+
+        "messages" ->
+            ApprovedLiveContent(
+                primary = datum.detail,
+                secondary = "message content stays private on Home",
+                state = "PRIVATE",
+                accent = SableGreen,
+            )
+
+        "mail" ->
+            ApprovedLiveContent(
+                primary =
+                    datum.detail
+                        .replace("mail alert", "unread")
+                        .replace("unreads", "unread"),
+                secondary = "subject previews off",
+                state = "PRIVATE",
+                accent = SableSlate,
+            )
+
+        "media" -> {
+            val parts = datum.detail.split(" · ")
+            ApprovedLiveContent(
+                primary = parts.firstOrNull().orEmpty().ifBlank { "nothing playing" },
+                secondary = parts.drop(1).joinToString(" · ").ifBlank { "local playback" },
+                state =
+                    if (datum.detail.contains("playing", ignoreCase = true)) {
+                        "PLAYING"
+                    } else {
+                        "PAUSED"
+                    },
+                accent = SablePurple,
+            )
+        }
+
+        "photos" ->
+            ApprovedLiveContent(
+                primary =
+                    datum.detail
+                        .replace(" photos", " local photos")
+                        .replace(" photo", " local photo"),
+                secondary = "device media only",
+                state = "LOCAL",
+                accent = SablePurple,
+            )
+
+        else ->
+            ApprovedLiveContent(
+                primary = datum.detail,
+                secondary = datum.title,
+                state = "LIVE",
+                accent = SableBlue,
+            )
+    }
+}
+
+private fun observedAge(observedAtEpochMs: Long): String {
+    if (observedAtEpochMs <= 0L) return "updated recently"
+    val ageMinutes =
+        ((System.currentTimeMillis() - observedAtEpochMs).coerceAtLeast(0L) / 60_000L)
+    return when {
+        ageMinutes <= 1L -> "updated now"
+        ageMinutes < 60L -> "updated " + ageMinutes + " min ago"
+        else -> "updated today"
+    }
+}
+
+@Composable
+private fun ApprovedLiveRow(
+    app: AppEntry?,
+    title: String,
+    datum: LiveDatum,
+    kind: String,
+) {
+    val content = approvedLiveContent(kind, datum)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 76.dp)
+                .heightIn(min = 78.dp)
                 .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = mark,
-            modifier = Modifier.width(44.dp),
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Light,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.width(8.dp))
-        Column(
-            modifier = Modifier.weight(1f),
-        ) {
-            Text(
-                text = datum.title.lowercase(Locale.getDefault()),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Medium,
+        if (app != null) {
+            AppMark(
+                app = app,
+                size = 48,
+                fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                showFallbackSurface = true,
             )
-            Text(
-                text = datum.detail.lowercase(Locale.getDefault()),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            if (!datum.detail.equals(status, ignoreCase = true)) {
+        } else {
+            Box(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(content.accent.copy(alpha = 0.16f))
+                        .border(
+                            1.dp,
+                            content.accent.copy(alpha = 0.55f),
+                            RoundedCornerShape(11.dp),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    text = status,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = title.take(1),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = content.accent,
                 )
             }
         }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = content.primary,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = content.secondary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = content.state,
+            style = MaterialTheme.typography.labelLarge,
+            color = content.accent,
+        )
     }
     Box(
         modifier =
