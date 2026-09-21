@@ -19,6 +19,12 @@
         android:label="Sable Launcher Visual Review"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
+        <provider
+            android:name="org.sableos.start.platform.SableAppearanceProvider"
+            android:authorities="org.sableos.start.appearance"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
         <activity
             android:name=".R9LauncherVisualReviewActivity"
             android:exported="true"
