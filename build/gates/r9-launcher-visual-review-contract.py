@@ -242,6 +242,21 @@ def main() -> int:
         )
     require(
         start_capture,
+        "R9_START_SCROLL_VISUAL_PROOF=PASS_TOP_TO_SCROLLED",
+        "R9_START_FINAL_SCROLL_DELTA_GATE",
+    )
+    require(
+        start_capture,
+        "R9_START_SCROLL_LOWER_BOUND=PASS_STABLE_AFTER_SECOND_SWIPE",
+        "R9_START_FINAL_STABLE_LOWER_BOUND_GATE",
+    )
+    require(
+        start_capture,
+        "R9_START_SCROLL_LOWER_BOUND=PASS_ADDITIONAL_SCROLL",
+        "R9_START_FINAL_ADDITIONAL_SCROLL_GATE",
+    )
+    require(
+        start_capture,
         "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=PASS",
         "R9_START_FINAL_CAPTURE_INTEGRITY_GATE",
     )
@@ -584,6 +599,7 @@ def main() -> int:
     print("R9_START_STATE_PERSISTENCE_SEPARATED=PASS")
     print("R9_START_FINAL_CAPTURE_SET=PASS")
     print("R9_START_FINAL_EXACT_FRAME_HASH_SET=PASS")
+    print("R9_START_FINAL_SCROLL_PROOF=PASS_SEMANTIC_DELTA")
     print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS")
     print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
