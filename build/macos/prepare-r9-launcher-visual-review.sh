@@ -151,6 +151,7 @@ set +e
         ./gradlew --offline \
             :sablestart-presentation-check:compileDebugKotlin \
             :sablestart-visual-review:assembleDebug \
+            :hub:assembleDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -158,6 +159,7 @@ set +e
         ./gradlew \
             :sablestart-presentation-check:compileDebugKotlin \
             :sablestart-visual-review:assembleDebug \
+            :hub:assembleDebug \
             --stacktrace \
             --console=plain \
             --no-daemon
@@ -190,8 +192,13 @@ echo "R9_VISUAL_REVIEW_MAC_BUILD_SCOPE=COMPILE_ASSEMBLE_INSTALL"
 echo "R9_VISUAL_REVIEW_LINT_SCOPE=LOCAL_CI_SEPARATE_GATE"
 
 APK="$ROOT/apps/r8/android/sablestart-visual-review/build/outputs/apk/debug/sablestart-visual-review-debug.apk"
+HUB_APK="$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
 [[ -f "$APK" ]] || {
     echo "R9_VISUAL_REVIEW=FAIL_APK_MISSING path=$APK"
+    exit 9
+}
+[[ -f "$HUB_APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_HUB_APK_MISSING path=$HUB_APK"
     exit 9
 }
 
@@ -202,6 +209,8 @@ else
 fi
 
 "$ADB" -s "$SERIAL" install -r "$APK"
+"$ADB" -s "$SERIAL" install -r "$HUB_APK"
+echo "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS"
 
 APPEARANCE_PROVIDER="$(
     "$ADB" -s "$SERIAL" shell content query         --uri content://org.sableos.start.appearance/appearance 2>/dev/null |
@@ -236,6 +245,7 @@ sleep 1
 printf '%s\n' "$EVIDENCE_DIR" > "$LAST_DIR_FILE"
 
 echo "R9_VISUAL_REVIEW_APK_BUILD=PASS"
+echo "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES"
 echo "R9_VISUAL_REVIEW_PIXEL7_AVD=PASS"
 echo "R9_VISUAL_REVIEW_INSTALL=PASS"
 echo "R9_VISUAL_REVIEW_INITIAL_CAPTURE=PASS"
