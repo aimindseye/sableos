@@ -52,11 +52,11 @@ private fun PhoneRecentsScreen() {
 
     SablePreviewPage(
         title = "phone",
-        subtitle = "private calls · Android Telecom",
+        subtitle = "calls · contacts · voicemail",
     ) {
         AccentAction(
             title = "search contacts + calls",
-            detail = "local results · no ambient network search",
+            detail = "contacts + call history",
         )
         Spacer(Modifier.height(SableSpacing.Lg))
         SectionLabel("recent")
@@ -139,7 +139,7 @@ private fun PhoneBottomNavigation(selected: String) {
 private fun PhoneDialpadScreen() {
     SablePreviewPage(
         title = "dial",
-        subtitle = "number entry",
+        subtitle = "phone number",
     ) {
         Text(
             text = "+1 201 555 0148",
@@ -192,7 +192,7 @@ private fun PhoneDialpadScreen() {
 private fun PhoneInCallScreen() {
     SablePreviewPage(
         title = "call",
-        subtitle = "Android Telecom session",
+        subtitle = "connected",
     ) {
         Spacer(Modifier.height(SableSpacing.Xxl))
         InitialAvatar(
@@ -227,10 +227,21 @@ private fun PhoneInCallScreen() {
 
 @Composable
 private fun CallControlGrid() {
-    listOf(
-        listOf("mute", "keypad", "speaker"),
-        listOf("add call", "hold", "contacts"),
-    ).forEach { labels ->
+    val controls =
+        listOf(
+            listOf(
+                "×" to "mute",
+                "123" to "keypad",
+                "≋" to "speaker",
+            ),
+            listOf(
+                "+" to "add call",
+                "Ⅱ" to "hold",
+                "◎" to "contacts",
+            ),
+        )
+
+    controls.forEach { row ->
         Row(
             modifier =
                 Modifier
@@ -238,21 +249,12 @@ private fun CallControlGrid() {
                     .padding(vertical = SableSpacing.Md),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            labels.forEach { label ->
+            row.forEach { (glyph, label) ->
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Box(
-                        modifier =
-                            Modifier
-                                .size(44.dp)
-                                .border(
-                                    width = 1.dp,
-                                    color = MaterialTheme.colorScheme.outline,
-                                    shape = CircleShape,
-                                ),
-                    )
+                    CircleGlyph(glyph = glyph)
                     Spacer(Modifier.height(SableSpacing.Sm))
                     Text(
                         text = label,
