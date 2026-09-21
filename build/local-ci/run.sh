@@ -133,7 +133,6 @@ run_static() {
   python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
   python3 "$ROOT/build/gates/r9-launcher-visual-review-contract.py"
-  python3 "$ROOT/build/gates/r9-launcher-visual-acceptance.py"
 }
 
 run_rust() {
@@ -526,6 +525,11 @@ if [[ "$PROFILE" == full || "$PROFILE" == release ]]; then
 fi
 
 if [[ "$PROFILE" == release ]]; then
+  echo
+  echo "===== SOURCE-BOUND VISUAL ACCEPTANCE ====="
+  python3 "$ROOT/build/gates/r9-launcher-visual-acceptance.py"
+  echo "SABLE_LOCAL_CI_STAGE_VISUAL_ACCEPTANCE=PASS"
+
   echo
   echo "===== DEVICE RELEASE CANDIDATE ====="
   if [[ "$SABLEOS_DEVICE" != panther ]]; then
