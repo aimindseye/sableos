@@ -32,7 +32,7 @@ def check() -> None:
         start,
         (
             "SettingsShortcut(",
-            "PhosphorSettingsGlyph(",
+            "SableGlyphIcon(",
             'in 12..16 -> "good afternoon"',
             "ApprovedStartNavigationRow(",
             'text = "all apps"',
@@ -153,14 +153,14 @@ def check() -> None:
 
 def self_test() -> None:
     good = (
-        "SettingsShortcut PhosphorSettingsGlyph in 12..16 -> \"good afternoon\" "
+        "SettingsShortcut SableGlyphIcon in 12..16 -> \"good afternoon\" "
         "ApprovedStartNavigationRow all apps search live "
         "peek pin to start remove from start pin to favorites "
         "Useful state only. No fake feeds and no ambient polling. detectDragGestures"
     )
     bad = "favorites Search apps… Reset to Follow system · Sable Blue"
     assert "SettingsShortcut" in good
-    assert "PhosphorSettingsGlyph" in good
+    assert "SableGlyphIcon" in good
     assert 'in 12..16 -> "good afternoon"' in good
     assert "ApprovedStartNavigationRow" in good
     assert "pin to start" in good
