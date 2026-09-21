@@ -376,8 +376,13 @@ def main() -> int:
     )
     require(
         start_capture,
+        "R9_START_WEATHER_VISUAL_FIXTURE=RETIRED_PRODUCTION_PROVIDER_MODEL",
+        "R9_START_FINAL_WEATHER_FIXTURE_RETIRED",
+    )
+    forbid(
+        start_capture,
         "org.sableos.weather.visualreview",
-        "R9_START_FINAL_WEATHER_FIXTURE_CHECK",
+        "R9_START_FINAL_NO_RETIRED_WEATHER_PACKAGE_DEPENDENCY",
     )
     require(
         start_capture,
