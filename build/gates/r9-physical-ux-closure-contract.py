@@ -288,6 +288,48 @@ require(
     "android:string/adb_active_notification_title",
     "R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY",
 )
+require(
+    "tests/systemui/device/r9_final_ui_runtime_audit.sh",
+    "R9_FINAL_UI_VANADIUM_PACKAGE=PASS",
+    "R9_FINAL_UI_DEFAULT_BROWSER=PASS_VANADIUM",
+    "R9_FINAL_UI_GOOGLE_CHROME_PRELOAD=PASS_ABSENT",
+    "R9_FINAL_UI_GRAPHENE_MESSAGING_PACKAGE=PASS",
+    "R9_FINAL_UI_GOOGLE_MESSAGES_PRELOAD=PASS_ABSENT",
+    "R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING",
+    "R9_FINAL_UI_SABLE_MESSAGES_PACKAGE=PASS",
+    "R9_FINAL_UI_APPEARANCE_SABLE_APPS=PENDING_VISUAL_DEVICE_REVIEW",
+    "R9_FINAL_UI_APPEARANCE_PLATFORM_APPS=PENDING_VISUAL_DEVICE_REVIEW",
+)
+require(
+    "docs/R9_FINAL_UI_RUNTIME_ACCEPTANCE.md",
+    "app.vanadium.browser",
+    "com.android.messaging",
+    "com.google.android.apps.messaging",
+    "com.android.chrome",
+    "WhatsApp",
+    "LinkedIn",
+    "Instagram",
+    "Facebook / Messenger",
+    "Sable appearance has two layers",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubModels.kt",
+    'id = "whatsapp"',
+    'startUrl = "https://web.whatsapp.com/"',
+    'id = "instagram"',
+    'startUrl = "https://www.instagram.com/direct/inbox/"',
+    'id = "messenger"',
+    'startUrl = "https://www.messenger.com/"',
+    'id = "linkedin"',
+    'startUrl = "https://www.linkedin.com/messaging/"',
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/web/ProviderCapsuleActivity.kt",
+    "WebView.setDataDirectorySuffix(provider.id)",
+    "WebSettings.MIXED_CONTENT_NEVER_ALLOW",
+    "setAcceptThirdPartyCookies",
+    'scheme == "https"',
+)
 
 # Active target set only.
 for rel in (
@@ -350,5 +392,7 @@ print("R9_FIRST_PARTY_PRODUCT_ICON_CONTRACT=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
 print("R9_RUNTIME_SYSTEM_IDENTITY_AUDIT_CONTRACT=PASS")
+print("R9_FINAL_UI_RUNTIME_ACCEPTANCE_CONTRACT=PASS")
+print("R9_SABLE_MESSAGES_PROVIDER_CAPSULES=PASS_4")
 print("R9_ACTIVE_DEVICE_SET_CONTRACT=PASS")
 print("R9_PHYSICAL_UX_CLOSURE_CONTRACT=PASS")
