@@ -154,14 +154,17 @@ def main() -> int:
         "packageManager.getPackageInfo(",
         "R9_VISUAL_REVIEW_PUBLIC_PACKAGE_MANAGER_PERMISSION_QUERY",
     )
-    require(
-        activity,
+    for needle in (
         "Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU",
         "PackageManager.PackageInfoFlags.of(",
-        "@Suppress(\"DEPRECATION\")",
+        '@Suppress("DEPRECATION")',
         "PackageManager.GET_PERMISSIONS,",
-        "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT",
-    )
+    ):
+        require(
+            activity,
+            needle,
+            "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT",
+        )
     require(
         activity,
         "privacySummary =",
