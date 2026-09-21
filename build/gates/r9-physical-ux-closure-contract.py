@@ -178,6 +178,19 @@ require(
     "contentPadding = PaddingValues(horizontal = SableSpacing.Xs)",
     "maxLines = 1",
     "softWrap = false",
+    'text = "Messaging status"',
+    '"Sable Messages can read and send SMS when access is granted. MMS/RCS can open the system messaging service when needed."',
+    'text = "Open MMS / RCS"',
+    'subtitle = "Write an SMS here. MMS/RCS can be handed off when needed."',
+    'text = "Open messaging"',
+)
+forbid(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    'text = "Android capability"',
+    'text = "Android transport"',
+    '"Sable Hub does not take the default SMS role in R8-F.',
+    'subtitle = "SMS uses Android telephony capability.',
+    'text = "Use transport"',
 )
 
 # ---------------------------------------------------------------------------
