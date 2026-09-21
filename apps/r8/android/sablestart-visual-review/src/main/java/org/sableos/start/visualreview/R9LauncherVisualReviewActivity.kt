@@ -134,18 +134,16 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                     launcherApps.getActivityList(null, user).mapNotNull { info ->
                         val component = info.componentName
                         val rawLabel = info.label?.toString()?.trim().orEmpty()
-                        val label =
-                            if (component.packageName == WEATHER_REVIEW_PACKAGE) {
-                                "Sable Weather"
-                            } else {
-                                rawLabel
-                            }
+                        val label = rawLabel
                         if (
                             label.isEmpty() ||
                             component.packageName == packageName ||
                             component.packageName == GRAPHENE_MESSAGING_PACKAGE ||
                             component.packageName == HOST_AVD_GOOGLE_MESSAGES_PACKAGE ||
-                            component.packageName == HOST_AVD_CHROME_PACKAGE
+                            component.packageName == HOST_AVD_CHROME_PACKAGE ||
+                            component.packageName == HOST_AVD_GOOGLE_CALENDAR_PACKAGE ||
+                            component.packageName == HOST_AVD_AOSP_CALENDAR_PACKAGE ||
+                            component.packageName == RETIRED_WEATHER_REVIEW_PACKAGE
                         ) {
                             null
                         } else {
@@ -322,7 +320,9 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
         const val HOST_AVD_GOOGLE_MESSAGES_PACKAGE = "com.google.android.apps.messaging"
         const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"
-        const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
+        const val HOST_AVD_GOOGLE_CALENDAR_PACKAGE = "com.google.android.calendar"
+        const val HOST_AVD_AOSP_CALENDAR_PACKAGE = "com.android.calendar"
+        const val RETIRED_WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
         const val EXTRA_EXTENDED_START_TILES = "extendedStartTiles"
         const val REVIEW_PIN_COUNT = 3
         const val REVIEW_START_TILE_COUNT = 14
