@@ -1125,14 +1125,16 @@ class SableMailSnapshotProvider : ContentProvider() {
         '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-    <path
-        android:fillColor="#4D9CFF"
-        android:pathData="M6,10h36v28H6z" />
-    <path
-        android:fillColor="#05070A"
-        android:pathData="M8,12l16,13 16,-13v5L24,30 8,17z" />
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path android:fillColor="#161C24"
+        android:pathData="M32,16h192c8.8,0 16,7.2 16,16v192c0,8.8 -7.2,16 -16,16H32c-8.8,0 -16,-7.2 -16,-16V32c0,-8.8 7.2,-16 16,-16z" />
+    <group android:scaleX="0.70" android:scaleY="0.70"
+        android:translateX="38.4" android:translateY="34">
+        <path android:fillColor="#F7F9FC"
+            android:pathData="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM203.43,64,128,133.15,52.57,64ZM216,192H40V74.19l82.59,75.71a8,8,0,0,0,10.82,0L216,74.19V192Z" />
+    </group>
+    <path android:fillColor="#64748B" android:pathData="M28,226h200v6H28z" />
 </vector>
 ''',
     )
