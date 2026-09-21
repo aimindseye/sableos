@@ -93,14 +93,39 @@ if layout_gate.is_file():
     ):
         if token not in layout_text:
             failures.append(f"repo layout contract token missing: {token}")
-    for obsolete_required in (
-        "  build/panther/build-sablestart.sh\n",
-        "  src/android/packages/apps/SableStart/AndroidManifest.xml\n",
+    required_match = re.search(
+        r"(?ms)^required=\\(\\n(?P<body>.*?)^\\)\\n",
+        layout_text,
+    )
+    if required_match is None:
+        failures.append("repo layout required array could not be parsed")
+        required_body = ""
+    else:
+        required_body = required_match.group("body")
+
+    retired_match = re.search(
+        r"(?ms)^retired_sablestart=\\(\\n(?P<body>.*?)^\\)\\n",
+        layout_text,
+    )
+    if retired_match is None:
+        failures.append("repo layout retired_sablestart array could not be parsed")
+        retired_body = ""
+    else:
+        retired_body = retired_match.group("body")
+
+    for obsolete_rel in (
+        "build/panther/build-sablestart.sh",
+        "src/android/packages/apps/SableStart/AndroidManifest.xml",
     ):
-        if obsolete_required in layout_text:
+        if obsolete_rel in required_body:
             failures.append(
                 "obsolete standalone SableStart artifact remains in required layout: "
-                + obsolete_required.strip()
+                + obsolete_rel
+            )
+        if obsolete_rel not in retired_body:
+            failures.append(
+                "retired SableStart artifact missing from retired layout: "
+                + obsolete_rel
             )
 
 local_ci = ROOT / "build" / "local-ci" / "run.sh"
