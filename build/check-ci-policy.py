@@ -77,6 +77,25 @@ if policy_path.is_file():
                 f"actual={policy.get(key)!r} expected={expected!r}"
             )
 
+layout_gate = ROOT / "build" / "check-repo-layout.sh"
+if layout_gate.is_file():
+    layout_text = layout_gate.read_text(encoding="utf-8")
+    for token in (
+        "build/panther/prepare-r8-final-ui.sh",
+        "build/panther/build-r8-final-ui.sh",
+        "build/panther/qualify-r9-physical-ux.sh",
+        "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
+        "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
+        "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
+        "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS",
+    ):
+        if token not in layout_text:
+            failures.append(f"repo layout contract token missing: {token}")
+    if "  build/panther/build-sablestart.sh\n" in layout_text:
+        failures.append(
+            "obsolete standalone SableStart build script remains in required layout"
+        )
+
 local_ci = ROOT / "build" / "local-ci" / "run.sh"
 if local_ci.is_file():
     text = local_ci.read_text(encoding="utf-8")
