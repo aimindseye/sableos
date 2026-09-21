@@ -154,7 +154,11 @@ run_android() {
   export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
   export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"
   export JAVA_HOME="$SABLE_JDK17"
-  export PATH="$JAVA_HOME/bin:$PATH"
+  export CARGO_HOME="$SABLE_CARGO_HOME"
+  export RUSTUP_HOME="$SABLE_RUSTUP_HOME"
+  export CARGO="$SABLE_CARGO"
+  export RUSTC="$SABLE_RUSTC"
+  export PATH="$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_CARGO_HOME/bin:$JAVA_HOME/bin:$PATH"
 
   (
     cd "$ROOT/apps/r8/android"

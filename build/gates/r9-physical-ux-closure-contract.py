@@ -42,7 +42,7 @@ def require_file(rel: str) -> None:
 # ---------------------------------------------------------------------------
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/model/AppEntry.kt",
-    "val privacySummary: String = """,
+    'val privacySummary: String = ""',
 )
 require(
     "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
@@ -50,8 +50,8 @@ require(
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
     "buildPrivacyPermissionSummary(",
-    ""permissions · none sensitive"",
-    ""permissions · " + labels.joinToString(" · ")",
+    '"permissions · none sensitive"',
+    '"permissions · " + labels.joinToString(" · ")',
     'label = "location"',
     'label = "camera"',
     'label = "microphone"',
@@ -149,7 +149,7 @@ icon_files = (
 )
 for rel in icon_files:
     require_file(rel)
-    require(rel, "<vector", "android:viewportWidth="48"")
+    require(rel, "<vector", 'android:viewportWidth="48"')
 
 require(
     "apps/r8/android/calculator/src/main/AndroidManifest.xml",

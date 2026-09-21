@@ -51,12 +51,21 @@ val rustNdkVersion = "30.0.16248370"
 val rustAndroidApi = 30
 val rustTargetDir = layout.buildDirectory.dir("rust-jni-target")
 
-val cargoExecutable = providers.environmentVariable("CARGO")
+val cargoExecutable = providers.environmentVariable("SABLE_CARGO")
+    .orElse(providers.environmentVariable("CARGO"))
     .orElse(
-        providers.environmentVariable("CARGO_HOME")
+        providers.environmentVariable("SABLE_CARGO_HOME")
+            .orElse(providers.environmentVariable("CARGO_HOME"))
             .map { "$it/bin/cargo" }
     )
     .orElse("cargo")
+
+val rustcExecutable = providers.environmentVariable("SABLE_RUSTC")
+    .orElse(providers.environmentVariable("RUSTC"))
+val cargoHome = providers.environmentVariable("SABLE_CARGO_HOME")
+    .orElse(providers.environmentVariable("CARGO_HOME"))
+val rustupHome = providers.environmentVariable("SABLE_RUSTUP_HOME")
+    .orElse(providers.environmentVariable("RUSTUP_HOME"))
 
 val androidSdkRoot = providers.environmentVariable("ANDROID_SDK_ROOT")
     .orElse(providers.environmentVariable("ANDROID_HOME"))
@@ -132,6 +141,10 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
             "CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER",
             linker.absolutePath,
         )
+
+        cargoHome.orNull?.let { environment("CARGO_HOME", it) }
+        rustupHome.orNull?.let { environment("RUSTUP_HOME", it) }
+        rustcExecutable.orNull?.let { environment("RUSTC", it) }
 
         executable = cargoExecutable.get()
 
