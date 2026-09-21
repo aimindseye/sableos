@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -69,6 +70,7 @@ import org.sableos.start.live.LiveSurfaceSnapshot
 import org.sableos.start.model.AppEntry
 import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
+import java.time.LocalTime
 import java.util.Locale
 
 private enum class SableStartDestination {
@@ -258,9 +260,7 @@ fun SableStartScreen(
                             onLive = {
                                 destination = SableStartDestination.Live
                             },
-                            onAppearance = {
-                                destination = SableStartDestination.Appearance
-                            },
+                            onOpenSettings = onOpenSettings,
                         )
 
                     SableStartDestination.Apps ->
@@ -299,6 +299,7 @@ fun SableStartScreen(
                     SableStartDestination.Live ->
                         LiveSurfaceScreen(
                             snapshot = liveSnapshot,
+                            apps = apps,
                             onBack = ::navigateBack,
                             onRequestPermissions = onRequestLivePermissions,
                         )
@@ -368,25 +369,8 @@ private fun StartScreen(
     onAllApps: () -> Unit,
     onSearch: () -> Unit,
     onLive: () -> Unit,
-    onAppearance: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
-    val contextDatum = chooseContextDatum(snapshot)
-    val startKeys = startApps.mapTo(mutableSetOf()) { it.stableKey() }
-    val favoriteOnlyApps =
-        favoriteApps.filterNot { app ->
-            app.stableKey() in startKeys
-        }
-    val recentOnlyApps =
-        recentApps.filterNot { app ->
-            app.stableKey() in startKeys
-        }
-    val quickApps =
-        if (favoriteOnlyApps.isNotEmpty()) {
-            favoriteOnlyApps.take(MAX_FAVORITES_ON_START)
-        } else {
-            recentOnlyApps.take(MAX_FAVORITES_ON_START)
-        }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
@@ -396,13 +380,12 @@ private fun StartScreen(
                 top = 10.dp,
                 bottom = 28.dp,
             ),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
@@ -417,26 +400,18 @@ private fun StartScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                AppearanceShortcut(
-                    accent = appearance.accent.color,
-                    onClick = onAppearance,
+                Spacer(Modifier.weight(1f))
+                SettingsShortcut(
+                    onClick = onOpenSettings,
                 )
             }
-        }
 
-        if (contextDatum != null) {
-            item {
-                ContextCard(
-                    datum = contextDatum,
-                    accent = appearance.accent.color,
-                    onClick = onLive,
-                )
-            }
-        }
-
-        item {
-            SectionLabel("start")
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = startGreeting(),
+                style = MaterialTheme.typography.headlineLarge,
+            )
+            Spacer(Modifier.height(14.dp))
 
             val tiles =
                 startApps.map { app ->
@@ -452,77 +427,100 @@ private fun StartScreen(
                 }
 
             TileGrid(tiles)
-        }
-
-        if (quickApps.isNotEmpty()) {
-            item {
-                SectionLabel("favorites")
-                Spacer(Modifier.height(2.dp))
-
-                quickApps.forEach { app ->
-                    CompactAppRow(
-                        app = app,
-                        onClick = { onLaunchApp(app) },
-                        onContext = { onOpenPeek(app) },
-                    )
-                }
-            }
-        }
-
-        item {
-            SearchLaunchButton(
-                accent = appearance.accent.color,
-                onClick = onSearch,
-            )
-            Spacer(Modifier.height(4.dp))
-            StartNavigationRow(
+            Spacer(Modifier.height(18.dp))
+            ApprovedStartNavigationRow(
                 onAllApps = onAllApps,
+                onSearch = onSearch,
                 onLive = onLive,
             )
         }
     }
 }
 
+private fun startGreeting(): String =
+    when (LocalTime.now().hour) {
+        in 5..11 -> "good morning"
+        in 12..16 -> "good afternoon"
+        in 17..21 -> "good evening"
+        else -> "good night"
+    }
+
 @Composable
-private fun ContextCard(
-    datum: LiveDatum,
-    accent: Color,
+private fun SettingsShortcut(
     onClick: () -> Unit,
 ) {
-    Row(
+    val shape = RoundedCornerShape(11.dp)
+    Box(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .heightIn(min = 76.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+                .size(46.dp)
+                .shadow(2.dp, shape)
+                .clip(shape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            SableSlate.copy(alpha = 0.30f),
+                        ),
+                    ),
+                )
+                .border(1.dp, SableSlate.copy(alpha = 0.55f), shape)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
+        Text(
+            text = "⚙",
+            fontSize = 25.sp,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
         Box(
             modifier =
                 Modifier
-                    .size(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(accent),
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(SableSlate),
         )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = datum.title.lowercase(Locale.getDefault()),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = datum.detail,
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
+    }
+}
+
+@Composable
+private fun ApprovedStartNavigationRow(
+    onAllApps: () -> Unit,
+    onSearch: () -> Unit,
+    onLive: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = "›",
-            fontSize = 28.sp,
+            text = "all apps",
+            modifier = Modifier.clickable(onClick = onAllApps),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "   ·   ",
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "search",
+            modifier = Modifier.clickable(onClick = onSearch),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "   ·   ",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "live",
+            modifier = Modifier.clickable(onClick = onLive),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -579,6 +577,9 @@ private fun MetroTile(
             datum.availability == LiveAvailability.LIVE ||
                 datum.availability == LiveAvailability.EMPTY
         }
+    val liveTile =
+        tile.app.component.packageName in
+            setOf("org.sableos.hub", "org.sableos.weather", "org.sableos.mail")
 
     Box(
         modifier =
@@ -613,83 +614,213 @@ private fun MetroTile(
                     .background(tile.accent),
         )
 
-        if (tile.wide) {
-            Row(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                AppMark(
-                    app = tile.app,
-                    size = 52,
-                    fallbackContentColor = MaterialTheme.colorScheme.onSurface,
-                    showFallbackSurface = true,
-                )
-                Spacer(Modifier.width(14.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text =
-                            when (tile.app.component.packageName) {
-                                "org.sableos.calendar" -> "NEXT"
-                                "org.sableos.media" -> "NOW PLAYING"
-                                else -> tile.title.uppercase(Locale.getDefault())
-                            },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = tile.accent,
-                    )
-                    Text(
-                        text = live?.detail ?: tile.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 2,
-                    )
-                }
-            }
-        } else {
-            Column(
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .padding(14.dp),
-                verticalArrangement = Arrangement.SpaceBetween,
-            ) {
+        when {
+            tile.wide -> {
+                val wide = approvedWideContent(tile, live)
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = tile.title.uppercase(Locale.getDefault()),
-                        modifier = Modifier.weight(1f),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = tile.accent,
-                        maxLines = 1,
-                    )
                     AppMark(
                         app = tile.app,
-                        size = 30,
+                        size = 54,
                         fallbackContentColor = MaterialTheme.colorScheme.onSurface,
-                        showFallbackSurface = false,
+                        showFallbackSurface = true,
                     )
-                }
-
-                Column {
-                    live?.let { datum ->
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = datum.detail,
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 2,
+                            text = wide.first,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = tile.accent,
                         )
-                    } ?: Text(
-                        text = tile.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 2,
+                        Text(
+                            text = wide.second,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = wide.third,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+
+            liveTile -> {
+                val metric = approvedMetric(tile.app, live)
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = tile.title.uppercase(Locale.getDefault()),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = tile.accent,
+                            maxLines = 1,
+                        )
+                        AppMark(
+                            app = tile.app,
+                            size = 28,
+                            fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                            showFallbackSurface = false,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = metric.first,
+                            fontSize = 34.sp,
+                            lineHeight = 36.sp,
+                            fontWeight = FontWeight.Light,
+                        )
+                        if (metric.second.isNotBlank()) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = metric.second,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 3.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+
+            else -> {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    AppMark(
+                        app = tile.app,
+                        size = 42,
+                        fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                        showFallbackSurface = true,
                     )
+                    Column {
+                        Text(
+                            text = tile.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        live?.detail?.let { detail ->
+                            Text(
+                                text = approvedCompactDetail(tile.app, detail),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+private data class ApprovedWideContent(
+    val first: String,
+    val second: String,
+    val third: String,
+)
+
+private fun approvedWideContent(
+    tile: HomeTile,
+    live: LiveDatum?,
+): ApprovedWideContent =
+    when (tile.app.component.packageName) {
+        "org.sableos.calendar" ->
+            ApprovedWideContent(
+                first = "NEXT",
+                second = live?.detail ?: "nothing scheduled",
+                third = "Calendar",
+            )
+
+        "org.sableos.media" -> {
+            val parts = live?.detail.orEmpty().split(" · ")
+            ApprovedWideContent(
+                first = "NOW PLAYING",
+                second = parts.firstOrNull()?.takeIf { it.isNotBlank() } ?: "Nothing playing",
+                third =
+                    parts.drop(1).joinToString(" · ")
+                        .replace("playing", "▶")
+                        .ifBlank { "Sable Media" },
+            )
+        }
+
+        else ->
+            ApprovedWideContent(
+                first = tile.title.uppercase(Locale.getDefault()),
+                second = live?.detail ?: tile.title,
+                third = tile.title,
+            )
+    }
+
+private fun approvedMetric(
+    app: AppEntry,
+    live: LiveDatum?,
+): Pair<String, String> {
+    val detail = live?.detail.orEmpty()
+    return when (app.component.packageName) {
+        "org.sableos.weather" -> {
+            val parts = detail.split(" · ")
+            val temperature =
+                parts.firstOrNull { it.trim().endsWith("°") }
+                    ?.trim()
+                    ?: "--°"
+            val condition =
+                parts.dropWhile { !it.trim().endsWith("°") }
+                    .drop(1)
+                    .joinToString(" · ")
+                    .ifBlank { "weather" }
+            temperature to condition
+        }
+
+        "org.sableos.hub" -> {
+            val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
+            count to if (count == "1") "unread" else "unread"
+        }
+
+        "org.sableos.mail" -> {
+            val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
+            count to "unread"
+        }
+
+        else -> detail to ""
+    }
+}
+
+private fun approvedCompactDetail(
+    app: AppEntry,
+    detail: String,
+): String =
+    when (app.component.packageName) {
+        "com.android.gallery3d" ->
+            detail.replace(" photos", " local")
+        else -> detail
+    }
 
 @Composable
 private fun SearchLaunchButton(
