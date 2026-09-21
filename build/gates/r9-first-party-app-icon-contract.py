@@ -44,6 +44,17 @@ MANIFESTS = {
     ),
 }
 
+WEATHER_CONDITION_ICONS = (
+    "ic_weather_clear.xml",
+    "ic_weather_partly_cloudy.xml",
+    "ic_weather_cloudy.xml",
+    "ic_weather_fog.xml",
+    "ic_weather_rain.xml",
+    "ic_weather_snow.xml",
+    "ic_weather_storm.xml",
+    "ic_weather_unknown.xml",
+)
+
 PRODUCT_MODULES = (
     "SableCalculator",
     "SableSudoku",
@@ -102,6 +113,23 @@ def main() -> int:
                 text,
                 token,
                 f"R9_ICON_{name.upper()}_APPROVED_LANGUAGE",
+            )
+
+    weather_drawable_dir =
+        ROOT / "apps/r8/android/weather/src/main/res/drawable"
+    for filename in WEATHER_CONDITION_ICONS:
+        text = read(
+            weather_drawable_dir / filename,
+            "R9_ICON_WEATHER_CONDITION_ASSET",
+        )
+        for token in (
+            'android:viewportWidth="256"',
+            'android:fillColor="#FFFFFFFF"',
+        ):
+            require(
+                text,
+                token,
+                "R9_ICON_WEATHER_CONDITION_PHOSPHOR_LANGUAGE",
             )
 
     for name, (path, ref) in MANIFESTS.items():
@@ -175,7 +203,7 @@ def main() -> int:
     print("R9_FIRST_PARTY_ICON_GAMES=PASS_3")
     print("R9_FIRST_PARTY_ICON_MAIL=PASS")
     print("R9_FIRST_PARTY_ICON_READER=PASS")
-    print("R9_FIRST_PARTY_ICON_WEATHER=PASS")
+    print("R9_FIRST_PARTY_ICON_WEATHER=PASS")\n    print("R9_WEATHER_CONDITION_ICONS=PASS_PHOSPHOR_8")
     print("R9_FIRST_PARTY_ICON_CALENDAR=PASS")
     print("R9_FIRST_PARTY_ICON_PRODUCT_COVERAGE=PASS_10")
     print("R9_FIRST_PARTY_APP_ICON_CONTRACT=PASS")
