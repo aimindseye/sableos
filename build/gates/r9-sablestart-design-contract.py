@@ -104,6 +104,8 @@ def check() -> None:
             "R9-L5  contextual media/calendar live block",
             "R9-L6  production-source screenshot review",
             "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES",
+            "R9_SABLESTART_VISUAL_REVIEW_SET=PENDING_SOURCE_REVIEW",
+            "Visual authorization is source-bound.",
             "HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher",
             "HOME_ROLE_HOLDER=com.android.launcher3",
         ),
@@ -117,7 +119,9 @@ def check() -> None:
     print("R9_L3_SEARCH_COMMAND=PASS_SOURCE")
     print("R9_L4_SABLE_PEEK=PASS_SOURCE")
     print("R9_L5_CONTEXTUAL_LOCAL_DATA=PASS_SOURCE")
-    print("R9_L6_VISUAL_REVIEW_GATE=PASS_FULL_BUILD_AUTHORIZED")
+    print("R9_L6_BASELINE_VISUAL_SEAL=PASS_HISTORICAL")
+    print("R9_L6_VISUAL_REVIEW_GATE=PENDING_FRESH_START_TILE_REVIEW")
+    print("NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW")
     print("R9_SABLESTART_COMBINED_DESIGN_CONTRACT=PASS")
 
 
