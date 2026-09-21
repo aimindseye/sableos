@@ -188,7 +188,6 @@ if python3 "$PHONE_CONTACTS" --source "$WS" verify; then
 else
     python3 "$PHONE_CONTACTS" --source "$WS" apply
     python3 "$PHONE_CONTACTS" --source "$WS" verify
-python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
     echo "R9_PHONE_CONTACTS_PRESENTATION=APPLIED"
 fi
 echo "R9_PHONE_CONTACTS_PRESENTATION=PASS"
@@ -216,6 +215,7 @@ echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
 python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
 python3 "$PHONE_CONTACTS" --source "$WS" verify
+python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
 
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
 echo "R9_SYSTEMUI_COHERENCE=PASS"
