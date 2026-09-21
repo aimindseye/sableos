@@ -63,6 +63,8 @@ require(
     'label = "audio"',
     'label = "nearby"',
     'label = "notifications"',
+    'const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
+    "component.packageName == GRAPHENE_MESSAGING_PACKAGE",
 )
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
@@ -119,30 +121,32 @@ require(
     "build/panther/prepare-r8-final-ui.sh",
     "R9_SYSTEMUI_COHERENCE",
     "apply_r9_systemui_coherence.py",
-    "R9_MESSAGING_SOURCE=PASS_RESTORED_LOCAL_ONLY",
-    "NETWORK_FETCH_AUTHORIZED=NO",
-    "sync -l external/Messaging",
+    "R9_GRAPHENE_MESSAGING_SUBSTRATE=PASS_PREBUILT_UNMODIFIED",
+    "R9_MESSAGING_LAUNCHER_SUPPRESSION=OWNED_BY_SABLE_LAUNCHER3",
 )
 
 # ---------------------------------------------------------------------------
-# Duplicate messaging visibility: preserve mature transport and Android
-# APP_MESSAGING fallback, remove only launcher exposure.
+# Duplicate messaging visibility: GrapheneOS 2026081300 ships Messaging as a
+# pinned prebuilt. Preserve that package untouched and suppress only its Sable
+# launcher presentation entry. Android/default-app behavior remains owned by
+# the prebuilt platform package.
 # ---------------------------------------------------------------------------
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py",
     'MESSAGING_HEAD = "d125442740e85c8c630c6b3c1091046166b99187"',
-    "MESSAGING_SOURCE_MISSING=",
-    "MESSAGING_MANIFEST_MISSING=",
-    "android.intent.category.APP_MESSAGING",
-    "android.provider.Telephony.SMS_DELIVER",
-    "android.provider.Telephony.WAP_PUSH_DELIVER",
-    "android.intent.action.RESPOND_VIA_MESSAGE",
-    "R9_GRAPHENE_MESSAGING_LAUNCHER_EXPOSURE=PASS_HIDDEN",
+    'ANDROID_BP = MESSAGING_REPO / "Android.bp"',
+    'PREBUILT_APK = MESSAGING_REPO / "prebuilt/Messaging.apk"',
+    '"android_app_import {"',
+    '"R9_GRAPHENE_MESSAGING_PREBUILT_IMPORT=PASS"',
+    '"R9_GRAPHENE_MESSAGING_PACKAGE_RETAINED=PASS_PREBUILT"',
+    '"R9_GRAPHENE_MESSAGING_SOURCE_MUTATION=NONE"',
+    '"SABLE_LAUNCHER_PRESENTATION"',
 )
 require(
     "build/panther/prepare-r8-final-ui.sh",
-    "R9_MESSAGING_VISIBILITY",
-    "apply_r9_messaging_visibility.py",
+    'python3 "$MESSAGING_VISIBILITY" --source "$WS" verify',
+    "R9_GRAPHENE_MESSAGING_SUBSTRATE=PASS_PREBUILT_UNMODIFIED",
+    "R9_MESSAGING_LAUNCHER_SUPPRESSION=OWNED_BY_SABLE_LAUNCHER3",
 )
 require(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/HubRepository.kt",
