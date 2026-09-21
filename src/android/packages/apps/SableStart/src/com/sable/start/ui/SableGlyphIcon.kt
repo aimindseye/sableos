@@ -1,6 +1,5 @@
 package org.sableos.start.ui
 
-import android.graphics.Paint as AndroidPaint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,11 +18,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.addSvg
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.PathParser
 
 internal data class SableGlyphSpec(
     val pathData: String,
@@ -111,10 +111,10 @@ internal fun SableGlyphIcon(
 ) {
     val spec = sableGlyphForPackage(packageName) ?: return
     val shape = RoundedCornerShape(if (compact) 11.dp else 15.dp)
-    val androidPath =
+    val glyphPath =
         remember(spec.pathData) {
-            requireNotNull(PathParser.createPathFromPathData(spec.pathData)) {
-                "Invalid pinned Sable glyph path"
+            Path().apply {
+                addSvg(spec.pathData)
             }
         }
     val contentColor = MaterialTheme.colorScheme.onSurface
@@ -145,18 +145,17 @@ internal fun SableGlyphIcon(
             val scale = iconSize / 256f
             val dx = (size.width - iconSize) / 2f
             val dy = (size.height - iconSize) / 2f
-            drawIntoCanvas { canvas ->
-                val native = canvas.nativeCanvas
-                val save = native.save()
-                native.translate(dx, dy)
-                native.scale(scale, scale)
-                val paint =
-                    AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-                        style = AndroidPaint.Style.FILL
-                        color = contentColor.toArgb()
-                    }
-                native.drawPath(androidPath, paint)
-                native.restoreToCount(save)
+            translate(left = dx, top = dy) {
+                scale(
+                    scaleX = scale,
+                    scaleY = scale,
+                    pivot = Offset.Zero,
+                ) {
+                    drawPath(
+                        path = glyphPath,
+                        color = contentColor,
+                    )
+                }
             }
         }
         Box(
