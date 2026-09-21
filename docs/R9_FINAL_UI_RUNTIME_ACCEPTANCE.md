@@ -208,6 +208,36 @@ R9_FINAL_UI_APPEARANCE_PLATFORM_APPS=PASS
 
 Do not infer either Panther appearance marker solely from the Mac AVD.
 
+Mac review acceptance may prove the following production Sable-owned
+surfaces from the shared production renderer and installed review APKs:
+
+- Start in dark and light mode, including the approved Settings gear, greeting,
+  dimensional tile hierarchy, approved Sable/Phosphor app identity and the
+  `all apps · search · live` navigation;
+- Live layout and provider/lifecycle presentation, using source-bound Mac
+  fixtures only where the corresponding production package cannot be built on
+  macOS;
+- Sable Calendar landing layout from the real `org.sableos.calendar` APK;
+- Sable Messages landing layout from the real `org.sableos.hub` APK;
+- Sable-owned appearance-provider propagation between the review Start host and
+  Sable Messages.
+
+The minimal production capture set is:
+
+```
+20-production-start-dark.png
+21-production-start-light.png
+22-production-live-dark.png
+23-production-calendar-dark.png
+24-production-messages-dark.png
+```
+
+Mac review does **not** prove the real Launcher3 HOME/Quickstep integration,
+SystemUI or privileged `UiModeManager` propagation, GrapheneOS Messaging role
+ownership, Vanadium/default-browser identity, GrapheneOS Camera behavior, the
+source-patched AOSP Clock/Files/Photos runtime, signing/verified boot, or any
+physical-device behavior. Those are Panther-only checks.
+
 Mac review acceptance may prove:
 
 ```
