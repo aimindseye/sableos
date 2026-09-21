@@ -133,6 +133,7 @@ with zipfile.ZipFile(tf) as z:
 
     stale_apks = (
         "ExactCalculator.apk",
+        "Calendar.apk",
         "SableConvert.apk",
         "SableConverter.apk",
         "SableGames.apk",
