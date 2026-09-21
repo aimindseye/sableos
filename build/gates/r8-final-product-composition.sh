@@ -291,6 +291,7 @@ include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 [[ "$include_count" -eq 1 ]] || fail R8_PRODUCT_INCLUDE
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT
+grep -Fq 'overrides: ["Calendar"]' "$DEST/Android.bp"     || fail R9_SABLE_CALENDAR_REPLACEMENT
 
 if ! python3 - "$DEST/Android.bp" <<'PY'
 import pathlib
@@ -362,6 +363,7 @@ echo "R8_PRODUCT_INCLUDE=PASS"
 echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_PRODUCT_PREBUILT_HASHES=PASS"
 echo "R8_EXACT_CALCULATOR_REPLACEMENT=PASS"
+echo "R9_SABLE_CALENDAR_REPLACEMENT=PASS"
 
 echo
 echo "===== READER D2 SOURCE CLOSURE ====="
