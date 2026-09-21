@@ -526,8 +526,23 @@ def main() -> int:
     )
     require(
         production_ui,
-        "if (quickApps.isNotEmpty())",
-        "R9_START_EMPTY_FAVORITES_HIDDEN",
+        "SettingsShortcut(",
+        "R9_START_APPROVED_SETTINGS_SHORTCUT",
+    )
+    require(
+        production_ui,
+        "PhosphorSettingsGlyph(",
+        "R9_START_APPROVED_SETTINGS_GLYPH",
+    )
+    require(
+        production_ui,
+        'in 12..16 -> "good afternoon"',
+        "R9_START_APPROVED_GREETING",
+    )
+    require(
+        production_ui,
+        "ApprovedStartNavigationRow(",
+        "R9_START_APPROVED_NAVIGATION",
     )
     require(
         production_ui,
@@ -541,18 +556,23 @@ def main() -> int:
     )
     require(
         production_ui,
-        'text = "search + command"',
-        "R9_START_METRO_SEARCH_TREATMENT",
+        "approvedWideContent(",
+        "R9_START_APPROVED_WIDE_TILE_CONTENT",
     )
     require(
         production_ui,
-        'text = "appearance"',
-        "R9_START_APPEARANCE_SHORTCUT",
+        "approvedMetric(",
+        "R9_START_APPROVED_LIVE_TILE_CONTENT",
     )
-    require(
+    forbid(
+        production_ui,
+        "AppearanceShortcut(",
+        "R9_START_NO_RETIRED_APPEARANCE_SHORTCUT",
+    )
+    forbid(
         production_ui,
         "StartNavigationRow(",
-        "R9_START_COMPACT_NAVIGATION",
+        "R9_START_NO_RETIRED_COMPACT_NAVIGATION",
     )
     require(
         production_ui,
@@ -818,7 +838,7 @@ def main() -> int:
     print("R9_START_FINAL_HASH_RESOLUTION_PARSER=PASS_BASENAME")
     print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS_RETIRED")
     print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
-    print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
+    print("R9_START_APPROVED_SETTINGS_GEAR=PASS_PHOSPHOR")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
     print("R9_START_DIMENSIONAL_METRO_HIERARCHY=PASS")
     print("R9_SEARCH_FLAT_METRO_INPUT=PASS")
