@@ -116,7 +116,7 @@ def check() -> None:
             "R9-L2  All Apps + Sable Rail",
             "R9-L3  Sable Search / Command",
             "R9-L4  Sable Peek",
-            "R9-L5  contextual media/calendar live block",
+            "R9-L5  provider-owned weather/calendar/messages/mail/media live block",
             "R9-L6  production-source screenshot review",
             "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES",
             "R9_SABLESTART_VISUAL_REVIEW_SET=PENDING_SOURCE_REVIEW",
