@@ -459,7 +459,8 @@ for provider in (
         provider,
         "Binder.getCallingUid()",
         "getPackagesForUid(callingUid)",
-        'check("com.android.launcher3" in packages)',
+        'if ("com.android.launcher3" !in packages)',
+        "SecurityException(",
         "UnsupportedOperationException",
     )
 
@@ -469,7 +470,8 @@ require(
     "NotificationManager::class.java",
     "Notification.CATEGORY_EMAIL",
     "Notification.CATEGORY_MESSAGE",
-    'check("com.android.launcher3" in packages)',
+    'if ("com.android.launcher3" !in packages)',
+    "SecurityException(",
     "content://org.sableos.mail.snapshot/current",
 )
 require(
