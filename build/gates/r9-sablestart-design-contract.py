@@ -153,7 +153,7 @@ def check() -> None:
 
 def self_test() -> None:
     good = (
-        "SettingsShortcut PhosphorSettingsGlyph good afternoon "
+        "SettingsShortcut PhosphorSettingsGlyph in 12..16 -> \"good afternoon\" "
         "ApprovedStartNavigationRow all apps search live "
         "peek pin to start remove from start pin to favorites "
         "Useful state only. No fake feeds and no ambient polling. detectDragGestures"
