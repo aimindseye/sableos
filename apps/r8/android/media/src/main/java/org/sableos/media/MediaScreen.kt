@@ -25,6 +25,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -125,173 +126,176 @@ internal fun MediaScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        LazyColumn(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .safeDrawingPadding()
-                    .imePadding(),
-            contentPadding =
-                PaddingValues(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.ScreenVertical,
-                ),
-            verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
-        ) {
-            item {
-                SableHeroHeader(
-                    eyebrow = "Sable Media",
-                    title = "music",
-                    subtitle = "Local playback and user-managed live radio.",
-                )
-            }
-
-            item {
-                PrimaryPivot(
-                    destination = destination,
-                    onSelect = onDestinationChange,
-                )
-            }
-
-            if (
-                destination == MediaDestination.Collection ||
-                destination == MediaDestination.NowPlaying ||
-                destination == MediaDestination.Radio
+        if (destination == MediaDestination.Collection) {
+            CollectionScreen(
+                pivot = libraryPivot,
+                localItems = localItems,
+                playback = playback,
+                favoriteAudioUris = favoriteAudioUris,
+                playlists = playlists,
+                showMiniPlayer = settings.showMiniPlayer,
+                onDestinationChange = onDestinationChange,
+                onPivotChange = onLibraryPivotChange,
+                onAddLocalAudio = onAddLocalAudio,
+                onAddLocalFolder = onAddLocalFolder,
+                onPlay = onPlayLocal,
+                onRemove = onRemoveLocal,
+                onToggleFavorite = onToggleFavoriteAudio,
+                onCreatePlaylist = onCreatePlaylist,
+                onEditPlaylist = onEditPlaylist,
+                onDeletePlaylist = onDeletePlaylist,
+                onPlayPlaylist = onPlayPlaylist,
+                onOpenNowPlaying = {
+                    onDestinationChange(MediaDestination.NowPlaying)
+                },
+            )
+        } else {
+            LazyColumn(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .safeDrawingPadding()
+                        .imePadding(),
+                contentPadding =
+                    PaddingValues(
+                        horizontal = SableSpacing.ScreenHorizontal,
+                        vertical = SableSpacing.ScreenVertical,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
             ) {
                 item {
-                    MediaUtilityBar(
-                        queueCount = playback.queue.size,
-                        upNextCount =
-                            playback.queue.count { item ->
-                                item.index > playback.currentIndex
-                            },
-                        onQueue = {
-                            onDestinationChange(MediaDestination.Queue)
-                        },
-                        onSettings = {
-                            onDestinationChange(MediaDestination.Settings)
-                        },
+                    SableHeroHeader(
+                        eyebrow = "Sable Media",
+                        title = "music",
+                        subtitle = "Local playback and user-managed live radio.",
                     )
                 }
-            }
 
-            item {
-                when (destination) {
-            MediaDestination.Collection ->
-                CollectionScreen(
-                    pivot = libraryPivot,
-                    items = localItems,
-                    playback = playback,
-                    favoriteAudioUris = favoriteAudioUris,
-                    playlists = playlists,
-                    showMiniPlayer = settings.showMiniPlayer,
-                    onPivotChange = onLibraryPivotChange,
-                    onAddLocalAudio = onAddLocalAudio,
-                    onAddLocalFolder = onAddLocalFolder,
-                    onPlay = onPlayLocal,
-                    onRemove = onRemoveLocal,
-                    onToggleFavorite = onToggleFavoriteAudio,
-                    onCreatePlaylist = onCreatePlaylist,
-                    onEditPlaylist = onEditPlaylist,
-                    onDeletePlaylist = onDeletePlaylist,
-                    onPlayPlaylist = onPlayPlaylist,
-                    onOpenNowPlaying = {
-                        onDestinationChange(MediaDestination.NowPlaying)
-                    },
-                )
+                item {
+                    PrimaryPivot(
+                        destination = destination,
+                        onSelect = onDestinationChange,
+                    )
+                }
 
-            MediaDestination.NowPlaying ->
-                NowPlayingScreen(
-                    playback = playback,
-                    onPlayPause = onPlayPause,
-                    onPrevious = onPrevious,
-                    onNext = onNext,
-                    onStop = onStop,
-                    onSeek = onSeek,
-                )
+                if (
+                    destination == MediaDestination.NowPlaying ||
+                    destination == MediaDestination.Radio
+                ) {
+                    item {
+                        MediaUtilityBar(
+                            queueCount = playback.queue.size,
+                            upNextCount =
+                                playback.queue.count { item ->
+                                    item.index > playback.currentIndex
+                                },
+                            onQueue = {
+                                onDestinationChange(MediaDestination.Queue)
+                            },
+                            onSettings = {
+                                onDestinationChange(MediaDestination.Settings)
+                            },
+                        )
+                    }
+                }
 
-            MediaDestination.Radio ->
-                RadioScreen(
-                    stations = stations,
-                    playback = playback,
-                    favoriteStationIds = favoriteStationIds,
-                    showFavoritesOnly = showFavoriteStationsOnly,
-                    showMiniPlayer = settings.showMiniPlayer,
-                    message = message,
-                    onPlay = onPlayStation,
-                    onToggleFavorite = onToggleFavoriteStation,
-                    onFavoritesOnlyChange = onRadioFavoritesOnlyChange,
-                    onManage = onManageStations,
-                    onAdd = onAddStation,
-                    onOpenNowPlaying = {
-                        onDestinationChange(MediaDestination.NowPlaying)
-                    },
-                )
+                item {
+                    when (destination) {
+                        MediaDestination.Collection -> Unit
 
-            MediaDestination.ManageStations ->
-                ManageStationsScreen(
-                    stations = stations,
-                    editingStation = editingStation,
-                    stationName = stationName,
-                    stationUrl = stationUrl,
-                    message = message,
-                    onEdit = onEditStation,
-                    onDelete = onDeleteStation,
-                    onStationNameChange = onStationNameChange,
-                    onStationUrlChange = onStationUrlChange,
-                    onSave = onSaveEditedStation,
-                    onCancelEdit = onCancelStationFlow,
-                    onBack = {
-                        onDestinationChange(MediaDestination.Radio)
-                    },
-                )
+                        MediaDestination.NowPlaying ->
+                            NowPlayingScreen(
+                                playback = playback,
+                                onPlayPause = onPlayPause,
+                                onPrevious = onPrevious,
+                                onNext = onNext,
+                                onStop = onStop,
+                                onSeek = onSeek,
+                            )
 
-            MediaDestination.AddStation ->
-                AddStationScreen(
-                    stationName = stationName,
-                    stationUrl = stationUrl,
-                    message = message,
-                    onStationNameChange = onStationNameChange,
-                    onStationUrlChange = onStationUrlChange,
-                    onSave = onSaveNewStation,
-                    onCancel = onCancelStationFlow,
-                )
+                        MediaDestination.Radio ->
+                            RadioScreen(
+                                stations = stations,
+                                playback = playback,
+                                favoriteStationIds = favoriteStationIds,
+                                showFavoritesOnly = showFavoriteStationsOnly,
+                                showMiniPlayer = settings.showMiniPlayer,
+                                message = message,
+                                onPlay = onPlayStation,
+                                onToggleFavorite = onToggleFavoriteStation,
+                                onFavoritesOnlyChange = onRadioFavoritesOnlyChange,
+                                onManage = onManageStations,
+                                onAdd = onAddStation,
+                                onOpenNowPlaying = {
+                                    onDestinationChange(MediaDestination.NowPlaying)
+                                },
+                            )
 
-            MediaDestination.Queue ->
-                QueueScreen(
-                    playback = playback,
-                    onPlayIndex = onPlayQueueIndex,
-                    onMove = onMoveQueueItem,
-                    onRemove = onRemoveQueueItem,
-                    onPlayPause = onPlayPause,
-                    onPrevious = onPrevious,
-                    onNext = onNext,
-                    onStop = onStop,
-                    onBack = {
-                        onDestinationChange(MediaDestination.NowPlaying)
-                    },
-                )
+                        MediaDestination.ManageStations ->
+                            ManageStationsScreen(
+                                stations = stations,
+                                editingStation = editingStation,
+                                stationName = stationName,
+                                stationUrl = stationUrl,
+                                message = message,
+                                onEdit = onEditStation,
+                                onDelete = onDeleteStation,
+                                onStationNameChange = onStationNameChange,
+                                onStationUrlChange = onStationUrlChange,
+                                onSave = onSaveEditedStation,
+                                onCancelEdit = onCancelStationFlow,
+                                onBack = {
+                                    onDestinationChange(MediaDestination.Radio)
+                                },
+                            )
 
-            MediaDestination.PlaylistEditor ->
-                PlaylistEditorScreen(
-                    editingPlaylist = editingPlaylist,
-                    playlistName = playlistName,
-                    selectedUris = selectedPlaylistUris,
-                    localItems = localItems,
-                    onNameChange = onPlaylistNameChange,
-                    onToggleItem = onTogglePlaylistItem,
-                    onSave = onSavePlaylist,
-                    onCancel = onCancelPlaylistEditor,
-                )
+                        MediaDestination.AddStation ->
+                            AddStationScreen(
+                                stationName = stationName,
+                                stationUrl = stationUrl,
+                                message = message,
+                                onStationNameChange = onStationNameChange,
+                                onStationUrlChange = onStationUrlChange,
+                                onSave = onSaveNewStation,
+                                onCancel = onCancelStationFlow,
+                            )
 
-            MediaDestination.Settings ->
-                SettingsScreen(
-                    settings = settings,
-                    onSettingsChange = onSettingsChange,
-                    onBack = {
-                        onDestinationChange(MediaDestination.Collection)
-                    },
-                )
+                        MediaDestination.Queue ->
+                            QueueScreen(
+                                playback = playback,
+                                onPlayIndex = onPlayQueueIndex,
+                                onMove = onMoveQueueItem,
+                                onRemove = onRemoveQueueItem,
+                                onPlayPause = onPlayPause,
+                                onPrevious = onPrevious,
+                                onNext = onNext,
+                                onStop = onStop,
+                                onBack = {
+                                    onDestinationChange(MediaDestination.NowPlaying)
+                                },
+                            )
+
+                        MediaDestination.PlaylistEditor ->
+                            PlaylistEditorScreen(
+                                editingPlaylist = editingPlaylist,
+                                playlistName = playlistName,
+                                selectedUris = selectedPlaylistUris,
+                                localItems = localItems,
+                                onNameChange = onPlaylistNameChange,
+                                onToggleItem = onTogglePlaylistItem,
+                                onSave = onSavePlaylist,
+                                onCancel = onCancelPlaylistEditor,
+                            )
+
+                        MediaDestination.Settings ->
+                            SettingsScreen(
+                                settings = settings,
+                                onSettingsChange = onSettingsChange,
+                                onBack = {
+                                    onDestinationChange(MediaDestination.Collection)
+                                },
+                            )
+                    }
                 }
             }
         }
@@ -410,11 +414,12 @@ private fun MediaUtilityBar(
 @Composable
 private fun CollectionScreen(
     pivot: LibraryPivot,
-    items: List<LocalAudioItem>,
+    localItems: List<LocalAudioItem>,
     playback: PlaybackUiState,
     favoriteAudioUris: Set<String>,
     playlists: List<MediaPlaylist>,
     showMiniPlayer: Boolean,
+    onDestinationChange: (MediaDestination) -> Unit,
     onPivotChange: (LibraryPivot) -> Unit,
     onAddLocalAudio: () -> Unit,
     onAddLocalFolder: () -> Unit,
@@ -427,68 +432,150 @@ private fun CollectionScreen(
     onPlayPlaylist: (MediaPlaylist) -> Unit,
     onOpenNowPlaying: () -> Unit,
 ) {
-    Column(
+    val artistGroups =
+        remember(localItems) {
+            localItems
+                .groupBy { it.artist }
+                .toSortedMap(String.CASE_INSENSITIVE_ORDER)
+                .entries
+                .map { it.key to it.value }
+        }
+    val albumGroups =
+        remember(localItems) {
+            localItems
+                .groupBy { it.album }
+                .toSortedMap(String.CASE_INSENSITIVE_ORDER)
+                .entries
+                .map { it.key to it.value }
+        }
+    val favorites =
+        remember(localItems, favoriteAudioUris) {
+            localItems.filter { item ->
+                item.uri in favoriteAudioUris
+            }
+        }
+    val indexByUri =
+        remember(localItems) {
+            localItems
+                .mapIndexed { index, item -> item.uri to index }
+                .toMap()
+        }
+
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .imePadding(),
+        contentPadding =
+            PaddingValues(
+                horizontal = SableSpacing.ScreenHorizontal,
+                vertical = SableSpacing.ScreenVertical,
+            ),
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        Text(
-            text = "collection",
-            style = MaterialTheme.typography.headlineLarge,
-        )
+        item {
+            SableHeroHeader(
+                eyebrow = "Sable Media",
+                title = "music",
+                subtitle = "Local playback and user-managed live radio.",
+            )
+        }
 
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
-        ) {
-            LibraryPivot.entries.forEach { item ->
-                Surface(
-                    onClick = { onPivotChange(item) },
-                    color = Color.Transparent,
-                    contentColor =
-                        if (item == pivot) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                ) {
-                    Text(
-                        text = item.label,
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
+        item {
+            PrimaryPivot(
+                destination = MediaDestination.Collection,
+                onSelect = onDestinationChange,
+            )
+        }
+
+        item {
+            MediaUtilityBar(
+                queueCount = playback.queue.size,
+                upNextCount =
+                    playback.queue.count { item ->
+                        item.index > playback.currentIndex
+                    },
+                onQueue = {
+                    onDestinationChange(MediaDestination.Queue)
+                },
+                onSettings = {
+                    onDestinationChange(MediaDestination.Settings)
+                },
+            )
+        }
+
+        item {
+            Text(
+                text = "collection",
+                style = MaterialTheme.typography.headlineLarge,
+            )
+        }
+
+        item {
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+            ) {
+                LibraryPivot.entries.forEach { item ->
+                    Surface(
+                        onClick = { onPivotChange(item) },
+                        color = Color.Transparent,
+                        contentColor =
+                            if (item == pivot) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    ) {
+                        Text(
+                            text = item.label,
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
                 }
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-        ) {
-            SableActionButton(
-                text = "Add audio files",
-                modifier = Modifier.weight(1f),
-                onClick = onAddLocalAudio,
-            )
-            SableActionButton(
-                text = "Import folder",
-                primary = false,
-                modifier = Modifier.weight(1f),
-                onClick = onAddLocalFolder,
-            )
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Add audio files",
+                    modifier = Modifier.weight(1f),
+                    onClick = onAddLocalAudio,
+                )
+                SableActionButton(
+                    text = "Import folder",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onAddLocalFolder,
+                )
+            }
         }
 
-        if (items.isEmpty()) {
-            EmptyPanel(
-                title = "No local audio yet",
-                detail =
-                    "Choose audio with Android's document picker. Sable keeps access only to files you explicitly select.",
-            )
+        if (localItems.isEmpty()) {
+            item {
+                EmptyPanel(
+                    title = "No local audio yet",
+                    detail =
+                        "Choose audio with Android's document picker. Sable keeps access only to files you explicitly select.",
+                )
+            }
         } else {
             when (pivot) {
                 LibraryPivot.Songs ->
-                    items.forEachIndexed { index, item ->
+                    items(
+                        count = localItems.size,
+                        key = { index -> localItems[index].uri },
+                    ) { index ->
+                        val item = localItems[index]
                         LocalTrackRow(
                             item = item,
                             accent = accentFor(index),
@@ -500,80 +587,90 @@ private fun CollectionScreen(
                     }
 
                 LibraryPivot.Artists ->
-                    items
-                        .groupBy { it.artist }
-                        .toSortedMap(String.CASE_INSENSITIVE_ORDER)
-                        .entries
-                        .forEach { (artist, tracks) ->
-                            LibraryGroupRow(
-                                title = artist,
-                                detail = "${tracks.size} track${if (tracks.size == 1) "" else "s"}",
-                                accent = accentFor(artist.hashCode()),
-                                onClick = {
-                                    onPlay(items.indexOf(tracks.first()))
-                                },
-                            )
-                        }
+                    items(
+                        count = artistGroups.size,
+                        key = { index -> artistGroups[index].first },
+                    ) { index ->
+                        val (artist, tracks) = artistGroups[index]
+                        LibraryGroupRow(
+                            title = artist,
+                            detail = "${tracks.size} track${if (tracks.size == 1) "" else "s"}",
+                            accent = accentFor(artist.hashCode()),
+                            onClick = {
+                                val firstIndex = indexByUri[tracks.first().uri] ?: return@LibraryGroupRow
+                                onPlay(firstIndex)
+                            },
+                        )
+                    }
 
                 LibraryPivot.Albums ->
-                    items
-                        .groupBy { it.album }
-                        .toSortedMap(String.CASE_INSENSITIVE_ORDER)
-                        .entries
-                        .forEach { (album, tracks) ->
-                            LibraryGroupRow(
-                                title = album,
-                                detail = tracks.first().artist,
-                                accent = accentFor(album.hashCode()),
-                                onClick = {
-                                    onPlay(items.indexOf(tracks.first()))
-                                },
+                    items(
+                        count = albumGroups.size,
+                        key = { index -> albumGroups[index].first },
+                    ) { index ->
+                        val (album, tracks) = albumGroups[index]
+                        LibraryGroupRow(
+                            title = album,
+                            detail = tracks.first().artist,
+                            accent = accentFor(album.hashCode()),
+                            onClick = {
+                                val firstIndex = indexByUri[tracks.first().uri] ?: return@LibraryGroupRow
+                                onPlay(firstIndex)
+                            },
+                        )
+                    }
+
+                LibraryPivot.Favorites ->
+                    if (favorites.isEmpty()) {
+                        item {
+                            C2InfoPanel(
+                                title = "No favorite tracks",
+                                detail = "Mark local tracks with ★ to keep a quick local favorites view.",
                             )
                         }
-
-                LibraryPivot.Favorites -> {
-                    val favorites =
-                        items.filter { item ->
-                            item.uri in favoriteAudioUris
-                        }
-
-                    if (favorites.isEmpty()) {
-                        C2InfoPanel(
-                            title = "No favorite tracks",
-                            detail = "Mark local tracks with ★ to keep a quick local favorites view.",
-                        )
                     } else {
-                        favorites.forEach { item ->
-                            val index = items.indexOf(item)
+                        items(
+                            count = favorites.size,
+                            key = { index -> favorites[index].uri },
+                        ) { favoriteIndex ->
+                            val item = favorites[favoriteIndex]
+                            val sourceIndex = indexByUri[item.uri] ?: 0
                             LocalTrackRow(
                                 item = item,
-                                accent = accentFor(index),
+                                accent = accentFor(sourceIndex),
                                 favorite = true,
                                 onToggleFavorite = { onToggleFavorite(item) },
-                                onPlay = { onPlay(index) },
+                                onPlay = { onPlay(sourceIndex) },
                                 onRemove = { onRemove(item) },
                             )
                         }
                     }
-                }
 
                 LibraryPivot.Playlists -> {
-                    SableActionButton(
-                        text = "Create playlist",
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = onCreatePlaylist,
-                    )
+                    item {
+                        SableActionButton(
+                            text = "Create playlist",
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = onCreatePlaylist,
+                        )
+                    }
 
                     if (playlists.isEmpty()) {
-                        C2InfoPanel(
-                            title = "No playlists yet",
-                            detail = "Create a local playlist from audio already added to Sable Media.",
-                        )
+                        item {
+                            C2InfoPanel(
+                                title = "No playlists yet",
+                                detail = "Create a local playlist from audio already added to Sable Media.",
+                            )
+                        }
                     } else {
-                        playlists.forEach { playlist ->
+                        items(
+                            count = playlists.size,
+                            key = { index -> playlists[index].id },
+                        ) { index ->
+                            val playlist = playlists[index]
                             PlaylistCard(
                                 playlist = playlist,
-                                availableItems = items,
+                                availableItems = localItems,
                                 onPlay = { onPlayPlaylist(playlist) },
                                 onEdit = { onEditPlaylist(playlist) },
                                 onDelete = { onDeletePlaylist(playlist) },
@@ -585,10 +682,12 @@ private fun CollectionScreen(
         }
 
         if (showMiniPlayer && playback.title != "Nothing queued") {
-            MiniPlayer(
-                playback = playback,
-                onClick = onOpenNowPlaying,
-            )
+            item {
+                MiniPlayer(
+                    playback = playback,
+                    onClick = onOpenNowPlaying,
+                )
+            }
         }
     }
 }
