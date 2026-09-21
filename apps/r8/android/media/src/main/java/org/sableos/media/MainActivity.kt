@@ -12,7 +12,11 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.sableos.design.SableGlobalTheme
 
 class MainActivity : ComponentActivity() {
@@ -34,6 +38,8 @@ class MainActivity : ComponentActivity() {
             }
 
         setContent {
+            val uiScope = rememberCoroutineScope()
+
             var settings by remember {
                 mutableStateOf(initialSettings)
             }
@@ -150,19 +156,38 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    localItems =
-                        localAudioRepository.addUris(
-                            current = localItems,
-                            uris = uris,
-                        )
-                    playlists =
-                        libraryStateRepository.pruneMissingAudio(
-                            current = playlists,
-                            validUris = localItems.map { it.uri }.toSet(),
-                        )
-                    libraryPivot = LibraryPivot.Songs
-                    message =
-                        "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
+                    val currentItems = localItems
+                    val currentPlaylists = playlists
+                    message = "Importing ${uris.size} audio file${if (uris.size == 1) "" else "s"}…"
+
+                    uiScope.launch {
+                        val result =
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    val updatedItems =
+                                        localAudioRepository.addUris(
+                                            current = currentItems,
+                                            uris = uris,
+                                        )
+                                    val updatedPlaylists =
+                                        libraryStateRepository.pruneMissingAudio(
+                                            current = currentPlaylists,
+                                            validUris = updatedItems.map { it.uri }.toSet(),
+                                        )
+                                    updatedItems to updatedPlaylists
+                                }
+                            }
+
+                        result.onSuccess { (updatedItems, updatedPlaylists) ->
+                            localItems = updatedItems
+                            playlists = updatedPlaylists
+                            libraryPivot = LibraryPivot.Songs
+                            message =
+                                "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
+                        }.onFailure {
+                            message = "Audio import failed. Existing collection was not changed."
+                        }
+                    }
                 }
 
             val localAudioFolderPicker =
@@ -180,24 +205,54 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    val uris = audioFolderScanner.scan(treeUri)
+                    val currentItems = localItems
+                    val currentPlaylists = playlists
+                    message = "Scanning audio folder…"
 
-                    if (uris.isEmpty()) {
-                        message = "No audio files found in that folder."
-                    } else {
-                        localItems =
-                            localAudioRepository.addUris(
-                                current = localItems,
-                                uris = uris,
-                            )
-                        playlists =
-                            libraryStateRepository.pruneMissingAudio(
-                                current = playlists,
-                                validUris = localItems.map { it.uri }.toSet(),
-                            )
-                        libraryPivot = LibraryPivot.Songs
-                        message =
-                            "${uris.size} audio file${if (uris.size == 1) "" else "s"} imported from folder."
+                    uiScope.launch {
+                        val result =
+                            runCatching {
+                                withContext(Dispatchers.IO) {
+                                    val uris = audioFolderScanner.scan(treeUri)
+                                    if (uris.isEmpty()) {
+                                        return@withContext Triple(
+                                            emptyList<LocalAudioItem>(),
+                                            currentPlaylists,
+                                            0,
+                                        )
+                                    }
+
+                                    val updatedItems =
+                                        localAudioRepository.addUris(
+                                            current = currentItems,
+                                            uris = uris,
+                                        )
+                                    val updatedPlaylists =
+                                        libraryStateRepository.pruneMissingAudio(
+                                            current = currentPlaylists,
+                                            validUris = updatedItems.map { it.uri }.toSet(),
+                                        )
+                                    Triple(
+                                        updatedItems,
+                                        updatedPlaylists,
+                                        uris.size,
+                                    )
+                                }
+                            }
+
+                        result.onSuccess { (updatedItems, updatedPlaylists, importedCount) ->
+                            if (importedCount == 0) {
+                                message = "No audio files found in that folder."
+                            } else {
+                                localItems = updatedItems
+                                playlists = updatedPlaylists
+                                libraryPivot = LibraryPivot.Songs
+                                message =
+                                    "$importedCount audio file${if (importedCount == 1) "" else "s"} imported from folder."
+                            }
+                        }.onFailure {
+                            message = "Folder import failed. Existing collection was not changed."
+                        }
                     }
                 }
 
