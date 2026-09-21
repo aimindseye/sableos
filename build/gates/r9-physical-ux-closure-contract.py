@@ -95,14 +95,20 @@ require(
     "clearSystemNightModeBeforeOverride",
 )
 require(
-    "patches/android-17-grapheneos-2026081300/apply_ui4_systemui.py",
+    "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
     "SableSystemAppearance.kt",
     "content://org.sableos.start.appearance/appearance",
     "registerContentObserver",
     "rememberSableSystemAccent",
     "background = accent.color",
     "label = accent.onColor",
-    "UI4_R1_SABLE_ACCENT_PROVIDER=PASS",
+    "R9_SYSTEMUI_SABLE_ACCENT_PROVIDER=PASS",
+    "R9_SYSTEMUI_INTERACTION_SEMANTICS_PRESERVED=PASS",
+)
+require(
+    "build/panther/prepare-r8-final-ui.sh",
+    "R9_SYSTEMUI_COHERENCE",
+    "apply_r9_systemui_coherence.py",
 )
 
 # ---------------------------------------------------------------------------
