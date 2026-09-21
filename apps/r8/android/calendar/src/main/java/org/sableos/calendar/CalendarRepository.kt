@@ -197,7 +197,7 @@ class CalendarRepository(
                 projection,
                 selection,
                 args,
-                CalendarContract.Calendars.IS_PRIMARY + " DESC",
+                CalendarContract.Calendars._ID + " ASC",
             )?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     cursor.getLong(
