@@ -66,6 +66,7 @@ expected_packages = {
     "SableHub.apk": "org.sableos.hub",
     "SableMail.apk": "org.sableos.mail",
     "SableWeather.apk": "org.sableos.weather",
+    "SableCalendar.apk": "org.sableos.calendar",
 }
 
 with (staged / "manifest.tsv").open(newline="", encoding="utf-8") as f:
@@ -164,9 +165,10 @@ declare -A expected_package=(
     [SableHub.apk]=org.sableos.hub
     [SableMail.apk]=org.sableos.mail
     [SableWeather.apk]=org.sableos.weather
+    [SableCalendar.apk]=org.sableos.calendar
 )
 
-for apk in     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk
+for apk in     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
