@@ -58,7 +58,7 @@ class HubSnapshotProvider : ContentProvider() {
 
         return MatrixCursor(COLUMNS).apply {
             addRow(
-                arrayOf(
+                arrayOf<Any?>(
                     "Messages",
                     detail,
                     availability,
