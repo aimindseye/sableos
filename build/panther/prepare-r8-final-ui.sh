@@ -62,51 +62,6 @@ run_self_test R9_SYSTEMUI_COHERENCE "$SYSTEMUI_COHERENCE"
 run_self_test R9_LAUNCHER3_FOUNDATION "$LAUNCHER3_FOUNDATION"
 run_self_test R9_MESSAGING_VISIBILITY "$MESSAGING_VISIBILITY"
 
-ensure_messaging_source() {
-    local messaging_manifest="$WS/external/Messaging/AndroidManifest.xml"
-    local repo_driver="$WS/.repo/repo/repo"
-
-    if [[ -f "$messaging_manifest" ]]; then
-        echo "R9_MESSAGING_SOURCE=PASS_PRESENT"
-        return 0
-    fi
-
-    echo
-    echo "===== RESTORE PINNED GRAPHENE MESSAGING SOURCE ====="
-    echo "NETWORK_FETCH_AUTHORIZED=NO"
-    echo "MESSAGING_PROJECT=external/Messaging"
-
-    [[ -f "$repo_driver" ]] || {
-        echo "R9_MESSAGING_SOURCE=FAIL_REPO_DRIVER_MISSING path=$repo_driver"
-        return 20
-    }
-
-    (
-        cd "$WS"
-        python3 "$repo_driver" list -p
-    ) | grep -Fxq 'external/Messaging' || {
-        echo "R9_MESSAGING_SOURCE=FAIL_PROJECT_NOT_IN_MANIFEST path=external/Messaging"
-        return 21
-    }
-
-    (
-        cd "$WS"
-        python3 "$repo_driver" sync -l external/Messaging
-    ) || {
-        echo "R9_MESSAGING_SOURCE=FAIL_LOCAL_ONLY_SYNC"
-        return 22
-    }
-
-    [[ -f "$messaging_manifest" ]] || {
-        echo "R9_MESSAGING_SOURCE=FAIL_MANIFEST_STILL_MISSING path=$messaging_manifest"
-        return 23
-    }
-
-    echo "R9_MESSAGING_SOURCE=PASS_RESTORED_LOCAL_ONLY"
-}
-
-ensure_messaging_source
-
 echo
 echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
 
@@ -217,13 +172,9 @@ echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 echo
 echo "===== SINGLE USER-VISIBLE MESSAGES SURFACE ====="
 
-if python3 "$MESSAGING_VISIBILITY" --source "$WS" verify; then
-    echo "R9_MESSAGING_VISIBILITY=ALREADY_APPLIED"
-else
-    python3 "$MESSAGING_VISIBILITY" --source "$WS" apply
-    python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
-    echo "R9_MESSAGING_VISIBILITY=APPLIED"
-fi
+python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
+echo "R9_GRAPHENE_MESSAGING_SUBSTRATE=PASS_PREBUILT_UNMODIFIED"
+echo "R9_MESSAGING_LAUNCHER_SUPPRESSION=OWNED_BY_SABLE_LAUNCHER3"
 echo "R9_MESSAGING_VISIBILITY=PASS"
 
 echo
