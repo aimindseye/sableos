@@ -535,8 +535,13 @@ def main() -> int:
     )
     require(
         production_ui,
-        "app.stableKey() in startKeys",
-        "R9_START_TILE_FAVORITE_SEPARATION",
+        "var favoriteKeys by remember(initialFavoriteKeys)",
+        "R9_START_FAVORITE_STATE_SEPARATION",
+    )
+    require(
+        production_ui,
+        "var startTileKeys by remember(initialStartTileKeys)",
+        "R9_START_TILE_STATE_SEPARATION",
     )
     require(
         production_ui,
@@ -585,8 +590,13 @@ def main() -> int:
     )
     require(
         production_ui,
-        "PhosphorSettingsGlyph(",
+        "SableGlyphIcon(",
         "R9_START_APPROVED_SETTINGS_GLYPH",
+    )
+    require(
+        production_ui,
+        'packageName = "com.android.settings"',
+        "R9_START_APPROVED_SETTINGS_IDENTITY",
     )
     require(
         production_ui,
@@ -901,7 +911,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_NOT_HOME=PASS")
     print("R9_VISUAL_REVIEW_ABSENT_FROM_PRODUCT_GRAPH=PASS")
     print("R9_PRODUCTION_REAL_ICONS=PASS")
-    print("R9_START_TILE_FAVORITE_SEPARATION=PASS")
+    print("R9_START_FAVORITE_TILE_STATE_SEPARATION=PASS")
     print("R9_START_DEFAULT_TILES=PASS_10")
     print("R9_START_WEATHER_PACKAGE_PREFERENCE=PASS")
     print("R9_START_PACKAGE_FIRST_PREFERENCE=PASS")
