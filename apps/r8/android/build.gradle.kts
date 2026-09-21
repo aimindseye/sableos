@@ -89,6 +89,7 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
         "libsable_calculator_jni.so",
         "libsable_convert_jni.so",
         "libsable_games_jni.so",
+        "libsable_weather_jni.so",
     ).forEach { library ->
         outputs.file(
             rustTargetDir.map {
@@ -160,6 +161,8 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
             "sable-convert-jni",
             "-p",
             "sable-games-jni",
+            "-p",
+            "sable-weather-jni",
         )
     }
 }
@@ -203,4 +206,10 @@ registerRustJniStage(
     "stageGamesRustJni",
     ":games",
     "libsable_games_jni.so",
+)
+
+registerRustJniStage(
+    "stageWeatherRustJni",
+    ":weather",
+    "libsable_weather_jni.so",
 )
