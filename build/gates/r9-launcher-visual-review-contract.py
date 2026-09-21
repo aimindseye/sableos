@@ -273,6 +273,26 @@ def main() -> int:
     )
     require(
         start_capture,
+        "resolve_hash() {",
+        "R9_START_FINAL_HASH_RESOLVER",
+    )
+    require(
+        start_capture,
+        'basename "$path"',
+        "R9_START_FINAL_HASH_RESOLVER_BASENAME",
+    )
+    require(
+        start_capture,
+        "R9_START_TILES_FINAL_HASH_RESOLUTION=PASS",
+        "R9_START_FINAL_HASH_RESOLUTION_MARKER",
+    )
+    forbid(
+        start_capture,
+        'TOP_HASH="$(awk',
+        "R9_START_FINAL_FRAGILE_AWK_HASH_RESOLVER",
+    )
+    require(
+        start_capture,
         'FINAL_FRAMES=(',
         "R9_START_FINAL_EXACT_FRAME_HASH_SET",
     )
@@ -623,6 +643,7 @@ def main() -> int:
     print("R9_START_FINAL_CAPTURE_SET=PASS")
     print("R9_START_FINAL_EXACT_FRAME_HASH_SET=PASS")
     print("R9_START_FINAL_SCROLL_PROOF=PASS_SEMANTIC_DELTA")
+    print("R9_START_FINAL_HASH_RESOLUTION_PARSER=PASS_BASENAME")
     print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS")
     print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
