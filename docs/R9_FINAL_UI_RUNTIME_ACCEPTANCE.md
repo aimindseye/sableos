@@ -38,6 +38,14 @@ mistaken for SableOS product composition. The harness does not rename Chrome or
 inject a fake Vanadium entry. Vanadium package/default-browser identity remains
 Panther physical acceptance only.
 
+The stock Pixel AVD may also contain Google Messages
+`com.google.android.apps.messaging`. It is filtered from the visual-review
+launcher inventory alongside the retained GrapheneOS transport package
+`com.android.messaging`, so the Mac Start surface presents only Sable Messages.
+This is review-host filtering only; the clean Panther product must still prove
+Google Messages absent and GrapheneOS Messaging retained as the hidden transport
+substrate.
+
 The scripted Mac fidelity audit is:
 
 ```
