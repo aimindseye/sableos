@@ -57,7 +57,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         liveSurfaceRepository = LiveSurfaceRepository(this)
 
         refreshInventory()
-        favoriteKeys = defaultPinnedKeys(appsState.value)
+        favoriteKeys = defaultFavoriteKeys(appsState.value)
         startTileKeys = null
 
         applyCurrentSystemBars()
@@ -247,7 +247,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         )
     }
 
-    private fun defaultPinnedKeys(apps: List<AppEntry>): Set<String> {
+    private fun defaultFavoriteKeys(apps: List<AppEntry>): Set<String> {
         val selected = linkedMapOf<String, AppEntry>()
 
         REVIEW_PIN_LABELS.forEach { preferred ->
