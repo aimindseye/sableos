@@ -33,13 +33,14 @@ def check() -> None:
         (
             "SettingsShortcut(",
             "PhosphorSettingsGlyph(",
-            'text = "good afternoon"',
+            'in 12..16 -> "good afternoon"',
             "ApprovedStartNavigationRow(",
             'text = "all apps"',
             'text = "search"',
             'text = "live"',
             "approvedWideContent(",
             "approvedMetric(",
+            "approvedGlyphPackage(app)",
             ".height(if (tile.wide) 106.dp else 118.dp)",
             "SableStartDestination.Peek",
             'text = "peek"',
@@ -160,7 +161,7 @@ def self_test() -> None:
     bad = "favorites Search apps… Reset to Follow system · Sable Blue"
     assert "SettingsShortcut" in good
     assert "PhosphorSettingsGlyph" in good
-    assert "good afternoon" in good
+    assert 'in 12..16 -> "good afternoon"' in good
     assert "ApprovedStartNavigationRow" in good
     assert "pin to start" in good
     assert "remove from start" in good
