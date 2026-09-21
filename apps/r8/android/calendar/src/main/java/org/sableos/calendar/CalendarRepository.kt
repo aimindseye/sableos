@@ -124,17 +124,19 @@ class CalendarRepository(
             ) ?: return null
 
         val eventId = ContentUris.parseId(eventUri)
-        resolver.insert(
-            CalendarContract.Reminders.CONTENT_URI,
-            ContentValues().apply {
-                put(CalendarContract.Reminders.EVENT_ID, eventId)
-                put(CalendarContract.Reminders.MINUTES, 15)
-                put(
-                    CalendarContract.Reminders.METHOD,
-                    CalendarContract.Reminders.METHOD_ALERT,
-                )
-            },
-        )
+        runCatching {
+            resolver.insert(
+                CalendarContract.Reminders.CONTENT_URI,
+                ContentValues().apply {
+                    put(CalendarContract.Reminders.EVENT_ID, eventId)
+                    put(CalendarContract.Reminders.MINUTES, 15)
+                    put(
+                        CalendarContract.Reminders.METHOD,
+                        CalendarContract.Reminders.METHOD_ALERT,
+                    )
+                },
+            )
+        }
         resolver.notifyChange(CalendarContract.Events.CONTENT_URI, null)
         return eventId
     }
