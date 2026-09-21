@@ -80,6 +80,15 @@ def main() -> int:
         "R9_ICON_READER_APPLICATOR",
     )
 
+    weather_manifest = require_file(
+        ROOT / "apps/r8/android/weather/src/main/AndroidManifest.xml",
+        "R9_ICON_WEATHER_MANIFEST",
+    )
+    weather_icon = require_file(
+        ROOT / "apps/r8/android/weather/src/main/res/drawable/ic_sable_weather.xml",
+        "R9_ICON_WEATHER_ASSET",
+    )
+
     for manifest, icon_ref, label in (
         (
             calculator_manifest,
@@ -101,6 +110,11 @@ def main() -> int:
             "@drawable/ic_sable_game",
             "R9_ICON_GAMES_MANIFEST_WIRING",
         ),
+        (
+            weather_manifest,
+            "@drawable/ic_sable_weather",
+            "R9_ICON_WEATHER_MANIFEST_WIRING",
+        ),
     ):
         require(
             manifest,
@@ -117,6 +131,7 @@ def main() -> int:
         (calculator_icon, "R9_ICON_CALCULATOR_SABLE_PALETTE"),
         (media_icon, "R9_ICON_MEDIA_SABLE_PALETTE"),
         (hub_icon, "R9_ICON_HUB_SABLE_PALETTE"),
+        (weather_icon, "R9_ICON_WEATHER_SABLE_PALETTE"),
         *[
             (text, f"R9_ICON_GAME_{index}_SABLE_PALETTE")
             for index, text in enumerate(game_icons, start=1)
@@ -179,6 +194,7 @@ def main() -> int:
         "SableReader",
         "SableHub",
         "SableMail",
+        "SableWeather",
     ):
         require(
             product_mk,
@@ -192,8 +208,8 @@ def main() -> int:
     print("R9_FIRST_PARTY_ICON_GAMES=PASS_3")
     print("R9_FIRST_PARTY_ICON_MAIL=PASS")
     print("R9_FIRST_PARTY_ICON_READER=PASS")
-    print("R9_FIRST_PARTY_ICON_PRODUCT_COVERAGE=PASS_8")
-    print("R9_FIRST_PARTY_ICON_WEATHER=SEPARATE_VISUAL_BRANCH_PENDING_PRODUCT")
+    print("R9_FIRST_PARTY_ICON_WEATHER=PASS")
+    print("R9_FIRST_PARTY_ICON_PRODUCT_COVERAGE=PASS_9")
     print("R9_FIRST_PARTY_APP_ICON_CONTRACT=PASS")
     return 0
 
