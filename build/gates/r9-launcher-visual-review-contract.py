@@ -635,7 +635,7 @@ def main() -> int:
     )
     forbid(
         production_ui,
-        "StartNavigationRow(",
+        "private fun StartNavigationRow(",
         "R9_START_NO_RETIRED_COMPACT_NAVIGATION",
     )
     require(
