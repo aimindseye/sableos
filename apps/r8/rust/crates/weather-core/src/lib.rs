@@ -379,11 +379,7 @@ fn string_array_for_key(json: &str, key: &str) -> Option<Vec<String>> {
     let mut result = Vec::new();
     let mut cursor = inner;
 
-    loop {
-        let start = match cursor.find('"') {
-            Some(value) => value,
-            None => break,
-        };
+    while let Some(start) = cursor.find('"') {
         cursor = &cursor[start + 1..];
         let end = cursor.find('"')?;
         result.push(cursor[..end].to_owned());
