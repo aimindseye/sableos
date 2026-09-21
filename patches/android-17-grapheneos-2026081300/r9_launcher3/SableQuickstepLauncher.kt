@@ -40,6 +40,10 @@ import org.sableos.start.ui.SableStartScreen
  * Sable owns the NORMAL-state presentation layered over that machinery.
  */
 class SableQuickstepLauncher : QuickstepLauncher() {
+    private companion object {
+        const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+    }
+
     private val appsState = mutableStateOf<List<AppEntry>>(emptyList())
     private val appearanceState = mutableStateOf(SableAppearance())
     private val liveRefreshGeneration = mutableStateOf(0)
@@ -239,6 +243,9 @@ class SableQuickstepLauncher : QuickstepLauncher() {
             store.apps
                 .mapNotNull { info ->
                     val component = info.componentName ?: return@mapNotNull null
+                    if (component.packageName == GRAPHENE_MESSAGING_PACKAGE) {
+                        return@mapNotNull null
+                    }
                     val label =
                         info.title
                             ?.toString()
