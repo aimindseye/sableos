@@ -64,7 +64,6 @@ run_self_test R9_MESSAGING_VISIBILITY "$MESSAGING_VISIBILITY"
 
 ensure_messaging_source() {
     local messaging_manifest="$WS/external/Messaging/AndroidManifest.xml"
-    local project_list="$WS/.repo/project.list"
     local repo_driver="$WS/.repo/repo/repo"
 
     if [[ -f "$messaging_manifest" ]]; then
@@ -77,17 +76,17 @@ ensure_messaging_source() {
     echo "NETWORK_FETCH_AUTHORIZED=NO"
     echo "MESSAGING_PROJECT=external/Messaging"
 
-    [[ -f "$project_list" ]] || {
-        echo "R9_MESSAGING_SOURCE=FAIL_PROJECT_LIST_MISSING path=$project_list"
-        return 20
-    }
-    grep -Fxq 'external/Messaging' "$project_list" || {
-        echo "R9_MESSAGING_SOURCE=FAIL_PROJECT_NOT_IN_MANIFEST path=external/Messaging"
-        return 21
-    }
     [[ -f "$repo_driver" ]] || {
         echo "R9_MESSAGING_SOURCE=FAIL_REPO_DRIVER_MISSING path=$repo_driver"
-        return 22
+        return 20
+    }
+
+    (
+        cd "$WS"
+        python3 "$repo_driver" list -p
+    ) | grep -Fxq 'external/Messaging' || {
+        echo "R9_MESSAGING_SOURCE=FAIL_PROJECT_NOT_IN_MANIFEST path=external/Messaging"
+        return 21
     }
 
     (
@@ -95,12 +94,12 @@ ensure_messaging_source() {
         python3 "$repo_driver" sync -l external/Messaging
     ) || {
         echo "R9_MESSAGING_SOURCE=FAIL_LOCAL_ONLY_SYNC"
-        return 23
+        return 22
     }
 
     [[ -f "$messaging_manifest" ]] || {
         echo "R9_MESSAGING_SOURCE=FAIL_MANIFEST_STILL_MISSING path=$messaging_manifest"
-        return 24
+        return 23
     }
 
     echo "R9_MESSAGING_SOURCE=PASS_RESTORED_LOCAL_ONLY"
