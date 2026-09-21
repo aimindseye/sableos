@@ -121,6 +121,51 @@ def main() -> int:
         "R9_VISUAL_REVIEW_ANDROID_INVENTORY",
     )
     require(
+        manifest,
+        "<queries>",
+        "R9_VISUAL_REVIEW_PACKAGE_VISIBILITY_QUERY",
+    )
+    require(
+        activity,
+        "PackageManager.GET_PERMISSIONS",
+        "R9_VISUAL_REVIEW_GRANTED_PERMISSION_QUERY",
+    )
+    require(
+        activity,
+        "PackageInfo.REQUESTED_PERMISSION_GRANTED",
+        "R9_VISUAL_REVIEW_GRANTED_PERMISSION_FLAGS",
+    )
+    require(
+        activity,
+        "createContextAsUser(user, 0)",
+        "R9_VISUAL_REVIEW_PROFILE_PERMISSION_CONTEXT",
+    )
+    require(
+        activity,
+        "privacySummary =",
+        "R9_VISUAL_REVIEW_PRIVACY_SUMMARY_POPULATED",
+    )
+    require(
+        activity,
+        '"permissions · none sensitive"',
+        "R9_VISUAL_REVIEW_PRIVACY_SUMMARY_NONE",
+    )
+    require(
+        activity,
+        '"permissions · " + labels.joinToString(" · ")',
+        "R9_VISUAL_REVIEW_PRIVACY_SUMMARY_LABELS",
+    )
+    require(
+        activity,
+        'const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
+        "R9_VISUAL_REVIEW_MESSAGING_FILTER_CONSTANT",
+    )
+    require(
+        activity,
+        "component.packageName == GRAPHENE_MESSAGING_PACKAGE",
+        "R9_VISUAL_REVIEW_MESSAGING_FILTER",
+    )
+    require(
         activity,
         "ActivityResultContracts.RequestMultiplePermissions()",
         "R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS",
@@ -355,6 +400,8 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_GRAPH=PASS")
     print("R9_VISUAL_REVIEW_VERIFIED_ANDROIDX_CONSTRAINTS=PASS")
     print("R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS=PASS")
+    print("R9_VISUAL_REVIEW_PERMISSION_SUMMARY_PARITY=PASS")
+    print("R9_VISUAL_REVIEW_MESSAGING_SUPPRESSION_PARITY=PASS")
     print("R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY=PASS")
     print("R9_QUICKSTEP_SYSTEM_BAR_RESTORE=PASS")
     print("R9_VISUAL_REVIEW_LINT_TEST_SURFACE=PASS")
