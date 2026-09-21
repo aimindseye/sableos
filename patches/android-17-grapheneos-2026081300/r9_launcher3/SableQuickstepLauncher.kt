@@ -290,7 +290,7 @@ class SableQuickstepLauncher : QuickstepLauncher() {
             }.getOrNull() ?: return "permissions · unavailable"
 
         val requested = packageInfo.requestedPermissions.orEmpty()
-        val flags = packageInfo.requestedPermissionsFlags.orEmpty()
+        val flags = packageInfo.requestedPermissionsFlags ?: IntArray(0)
 
         val granted =
             buildSet {
