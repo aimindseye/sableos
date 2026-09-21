@@ -87,6 +87,29 @@ def main() -> int:
         )
 
     for token in (
+        "Android Telecom session",
+        "private calls · Android Telecom",
+        "account-backed data",
+    ):
+        forbid(
+            source,
+            token,
+            "R9_PHONE_CONTACTS_REVIEW_NO_IMPLEMENTATION_JARGON",
+        )
+
+    for token in (
+        'CircleGlyph(glyph = glyph)',
+        'ContactAction(glyph = "☎", label = "call")',
+        'ContactAction(glyph = "…", label = "message")',
+        'ContactAction(glyph = "@", label = "email")',
+    ):
+        require(
+            source,
+            token,
+            "R9_PHONE_CONTACTS_REVIEW_VISIBLE_ACTION_GLYPHS",
+        )
+
+    for token in (
         "HttpURLConnection",
         "URLConnection",
         "OkHttp",
@@ -140,6 +163,8 @@ def main() -> int:
     print("R9_PHONE_CONTACTS_REVIEW_SABLE_DESIGN=PASS")
     print("R9_PHONE_CONTACTS_REVIEW_NOT_HOME=PASS")
     print("R9_PHONE_CONTACTS_REVIEW_NO_RUNTIME_DATA_OR_NETWORK=PASS")
+    print("R9_PHONE_CONTACTS_REVIEW_NO_IMPLEMENTATION_JARGON=PASS")
+    print("R9_PHONE_CONTACTS_REVIEW_VISIBLE_ACTION_GLYPHS=PASS")
     print("R9_PHONE_CONTACTS_REVIEW_CAPTURE_SET=PASS")
     print("R9_PHONE_CONTACTS_REVIEW_ABSENT_FROM_PRODUCT=PASS")
     print("R9_PHONE_CONTACTS_PLATFORM_SOURCE_MUTATION=NONE_VISUAL_PHASE")
