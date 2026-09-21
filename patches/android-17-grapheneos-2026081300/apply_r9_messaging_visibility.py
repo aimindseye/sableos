@@ -1,58 +1,37 @@
 #!/usr/bin/env python3
-"""Hide GrapheneOS Messaging from the launcher while preserving SMS/MMS capability.
+"""Verify the pinned GrapheneOS Messaging prebuilt substrate for R9.
 
-Target substrate:
-  GrapheneOS 2026081300
-  external/Messaging HEAD d125442740e85c8c630c6b3c1091046166b99187
+GrapheneOS 2026081300 ships Messaging as an android_app_import containing a
+prebuilt APK. There is no source AndroidManifest.xml in this project to patch.
 
-Sable Messages / Hub is the intentional launcher-facing communication surface.
-The mature GrapheneOS Messaging package remains installed for SMS/MMS role,
-receivers, providers, notification routing and CATEGORY_APP_MESSAGING fallback.
-
-Only the LAUNCHER category is removed from ConversationListActivity's alias.
+Sable therefore preserves the GrapheneOS Messaging package exactly as pinned
+for mature SMS/MMS/default-app behavior and owns duplicate-launcher suppression
+in the Sable Launcher3 presentation layer.
 """
 
 from __future__ import annotations
 
 import argparse
 import subprocess
-import tempfile
 from pathlib import Path
 
 MESSAGING_REPO = Path("external/Messaging")
 MESSAGING_HEAD = "d125442740e85c8c630c6b3c1091046166b99187"
-MANIFEST = MESSAGING_REPO / "AndroidManifest.xml"
+ANDROID_BP = MESSAGING_REPO / "Android.bp"
+PREBUILT_APK = MESSAGING_REPO / "prebuilt/Messaging.apk"
+WHITELIST = MESSAGING_REPO / "whitelist_com.android.messaging.xml"
 
-OLD_ALIAS = """        <activity-alias
-            android:name=".ui.conversationlist.ConversationListActivity"
-            android:exported="true"
-            android:targetActivity=".ui.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
+BP_REQUIRED = (
+    "android_app_import {",
+    'name: "Messaging"',
+    'apk: "prebuilt/Messaging.apk"',
+    "preprocessed: true",
+    '"whitelist_com.android.messaging.xml"',
+)
 
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.APP_MESSAGING" />
-            </intent-filter>
-        </activity-alias>
-"""
-
-NEW_ALIAS = """        <activity-alias
-            android:name=".ui.conversationlist.ConversationListActivity"
-            android:exported="true"
-            android:targetActivity=".ui.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <!-- Sable Messages owns launcher exposure. Keep the system
-                     messaging selector so Android/Sable can still route into
-                     the mature SMS/MMS client when capability fallback is
-                     required. -->
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.APP_MESSAGING" />
-            </intent-filter>
-        </activity-alias>
-"""
+WHITELIST_REQUIRED = (
+    '<allow-in-power-save package="com.android.messaging" />',
+)
 
 
 class VisibilityError(RuntimeError):
@@ -67,153 +46,109 @@ def run_git(repo: Path, *args: str) -> str:
     ).strip()
 
 
-def assert_head(source: Path) -> None:
+def verify_text(bp_text: str, whitelist_text: str) -> None:
+    for token in BP_REQUIRED:
+        if token not in bp_text:
+            raise VisibilityError(
+                f"MESSAGING_PREBUILT_BP_TOKEN_MISSING={token}"
+            )
+    for token in WHITELIST_REQUIRED:
+        if token not in whitelist_text:
+            raise VisibilityError(
+                f"MESSAGING_WHITELIST_TOKEN_MISSING={token}"
+            )
+
+
+def verify(source: Path) -> None:
     repo = source / MESSAGING_REPO
-    manifest = source / MANIFEST
     if not repo.is_dir():
         raise VisibilityError(f"MESSAGING_SOURCE_MISSING={repo}")
-    if not manifest.is_file():
-        raise VisibilityError(f"MESSAGING_MANIFEST_MISSING={manifest}")
+
     actual = run_git(repo, "rev-parse", "HEAD")
     if actual != MESSAGING_HEAD:
         raise VisibilityError(
             f"MESSAGING_HEAD_MISMATCH expected={MESSAGING_HEAD} actual={actual}"
         )
 
-
-def status(source: Path) -> set[str]:
-    out = run_git(
-        source / MESSAGING_REPO,
-        "status",
-        "--porcelain",
-        "--untracked-files=all",
-    )
-    return {line for line in out.splitlines() if line}
-
-
-def transform(text: str) -> str:
-    if NEW_ALIAS in text:
-        return text
-    count = text.count(OLD_ALIAS)
-    if count != 1:
-        raise VisibilityError(
-            f"MESSAGING_ALIAS_PRECONDITION_FAIL count={count}"
-        )
-    return text.replace(OLD_ALIAS, NEW_ALIAS, 1)
-
-
-def verify_text(text: str) -> None:
-    if NEW_ALIAS not in text:
-        raise VisibilityError("MESSAGING_VISIBILITY_PATCH_MISSING")
-    alias = text.split(
-        'android:name=".ui.conversationlist.ConversationListActivity"',
-        1,
-    )[1].split("</activity-alias>", 1)[0]
-    if "android.intent.category.LAUNCHER" in alias:
-        raise VisibilityError("MESSAGING_LAUNCHER_CATEGORY_STILL_PRESENT")
-    if "android.intent.category.APP_MESSAGING" not in alias:
-        raise VisibilityError("MESSAGING_APP_MESSAGING_FALLBACK_MISSING")
-    if "android.intent.category.DEFAULT" not in alias:
-        raise VisibilityError("MESSAGING_DEFAULT_CATEGORY_MISSING")
-
-    # Preserve transport/default-app capability surfaces.
-    required = (
-        "android.provider.Telephony.SMS_DELIVER",
-        "android.provider.Telephony.WAP_PUSH_DELIVER",
-        "android.intent.action.RESPOND_VIA_MESSAGE",
-        'android:scheme="sms"',
-        'android:scheme="mms"',
-    )
-    for needle in required:
-        if needle not in text:
-            raise VisibilityError(
-                f"MESSAGING_TRANSPORT_CAPABILITY_MISSING={needle}"
-            )
-
-
-def apply(source: Path) -> None:
-    assert_head(source)
-    repo = source / MESSAGING_REPO
-    dirt = status(source)
+    dirt = run_git(repo, "status", "--porcelain", "--untracked-files=all")
     if dirt:
         raise VisibilityError(
-            "MESSAGING_SOURCE_NOT_CLEAN=" + "|".join(sorted(dirt))
+            "MESSAGING_SOURCE_NOT_CLEAN=" + "|".join(dirt.splitlines())
         )
 
-    path = source / MANIFEST
-    path.write_text(
-        transform(path.read_text(encoding="utf-8")),
-        encoding="utf-8",
+    bp = source / ANDROID_BP
+    apk = source / PREBUILT_APK
+    whitelist = source / WHITELIST
+
+    for path in (bp, apk, whitelist):
+        if not path.is_file():
+            raise VisibilityError(f"MESSAGING_PREBUILT_FILE_MISSING={path}")
+
+    verify_text(
+        bp.read_text(encoding="utf-8"),
+        whitelist.read_text(encoding="utf-8"),
     )
-    verify(source)
 
-
-def verify(source: Path) -> None:
-    assert_head(source)
-    path = source / MANIFEST
-    verify_text(path.read_text(encoding="utf-8"))
-    expected = {" M AndroidManifest.xml"}
-    actual = status(source)
-    if actual != expected:
-        raise VisibilityError(
-            f"MESSAGING_DIRTY_SCOPE_MISMATCH expected={sorted(expected)!r} "
-            f"actual={sorted(actual)!r}"
-        )
-    print("R9_GRAPHENE_MESSAGING_PACKAGE_RETAINED=PASS")
-    print("R9_GRAPHENE_MESSAGING_LAUNCHER_EXPOSURE=PASS_HIDDEN")
-    print("R9_GRAPHENE_MESSAGING_APP_MESSAGING_FALLBACK=PASS")
-    print("R9_GRAPHENE_MESSAGING_TRANSPORT_SURFACES=PASS")
+    print("R9_GRAPHENE_MESSAGING_HEAD=PASS")
+    print("R9_GRAPHENE_MESSAGING_PREBUILT_IMPORT=PASS")
+    print("R9_GRAPHENE_MESSAGING_PACKAGE_RETAINED=PASS_PREBUILT")
+    print("R9_GRAPHENE_MESSAGING_SOURCE_MUTATION=NONE")
+    print(
+        "R9_GRAPHENE_MESSAGING_LAUNCHER_EXPOSURE_OWNER="
+        "SABLE_LAUNCHER_PRESENTATION"
+    )
 
 
 def self_test() -> None:
-    out = transform(OLD_ALIAS)
-    verify_text(
-        out
-        + """
-        <receiver><intent-filter>
-          <action android:name="android.provider.Telephony.SMS_DELIVER" />
-          <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
-        </intent-filter></receiver>
-        <service><intent-filter>
-          <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
-          <data android:scheme="sms" />
-          <data android:scheme="mms" />
-        </intent-filter></service>
-        """
-    )
-    if "android.intent.category.LAUNCHER" in out:
-        raise VisibilityError("SELF_TEST_LAUNCHER_CATEGORY_PRESENT")
-    if "android.intent.category.APP_MESSAGING" not in out:
-        raise VisibilityError("SELF_TEST_FALLBACK_REMOVED")
-    print("R9_MESSAGING_VISIBILITY_SELF_TEST=PASS")
+    bp = """android_app_import {
+    name: "Messaging",
+    apk: "prebuilt/Messaging.apk",
+    preprocessed: true,
+    required: ["whitelist_com.android.messaging.xml"],
+}
+"""
+    whitelist = """<config>
+    <allow-in-power-save package="com.android.messaging" />
+</config>
+"""
+    verify_text(bp, whitelist)
+    print("R9_MESSAGING_PREBUILT_SELF_TEST=PASS")
+    print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
+    print("SELF_TEST_BUILD=NONE")
+    print("SELF_TEST_DEVICE_CONTACT=NONE")
 
 
 def main() -> int:
-    p = argparse.ArgumentParser()
-    p.add_argument("mode", nargs="?", choices=("apply", "verify"))
-    p.add_argument("--source", type=Path)
-    p.add_argument("--self-test", action="store_true")
-    args = p.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
+    parser.add_argument("--source", type=Path)
+    parser.add_argument("--self-test", action="store_true")
+    args = parser.parse_args()
 
     if args.self_test:
+        if args.mode is not None or args.source is not None:
+            parser.error("--self-test cannot be combined with mode or --source")
         self_test()
         return 0
 
     if args.mode is None or args.source is None:
-        p.error("mode and --source are required unless --self-test is used")
+        parser.error("mode and --source are required unless --self-test is used")
 
     source = args.source.resolve()
     if not (source / ".repo").exists():
-        raise VisibilityError(f"NOT_ANDROID_REPO_ROOT={source}")
+        print(f"R9_MESSAGING_VISIBILITY=FAIL NOT_ANDROID_REPO_ROOT={source}")
+        return 1
 
     try:
-        if args.mode == "apply":
-            apply(source)
-        else:
-            verify(source)
-    except VisibilityError as exc:
+        # "apply" is intentionally verification-only. The GrapheneOS prebuilt
+        # remains untouched; launcher visibility is owned by Sable Launcher3.
+        verify(source)
+    except (VisibilityError, subprocess.CalledProcessError) as exc:
         print(f"R9_MESSAGING_VISIBILITY=FAIL {exc}")
         return 1
+
+    if args.mode == "apply":
+        print("R9_MESSAGING_VISIBILITY_APPLY=NO_SOURCE_MUTATION_REQUIRED")
     return 0
 
 
