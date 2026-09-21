@@ -4,6 +4,8 @@
 SABLE_DEVICE_CANONICAL=panther
 SABLE_DEVICE_EXPECTED_PRODUCT=panther
 SABLE_DEVICE_BUILD_SUPPORTED=YES
+SABLE_DEVICE_QUALIFY_SUPPORTED=YES
+SABLE_DEVICE_DEFAULT_QUALIFICATION_SUITE=physical-ux
 SABLE_DEVICE_FLASH_SUPPORTED=YES
 SABLE_DEVICE_PRESERVED_DATA_FLASH_SUPPORTED=YES
 SABLE_DEVICE_DEFAULT_ACCEPTANCE_SUITE=launcher
@@ -14,6 +16,22 @@ sable_device_build() {
   SABLE_AUTO_REGISTER_ARTIFACT=YES \
   SABLEOS_DEVICE=panther \
     bash "$ROOT/build/panther/run-release.sh" "$release" "$mode"
+}
+
+sable_device_qualify() {
+  local release="$1"
+  local suite="$2"
+
+  case "$release:$suite" in
+    R9:physical-ux|r9:physical-ux)
+      EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
+        bash "$ROOT/build/panther/qualify-r9-physical-ux.sh"
+      ;;
+    *)
+      echo "SABLE_DEVICE_QUALIFY=UNSUPPORTED device=panther release=$release suite=$suite" >&2
+      return 64
+      ;;
+  esac
 }
 
 sable_device_accept() {
