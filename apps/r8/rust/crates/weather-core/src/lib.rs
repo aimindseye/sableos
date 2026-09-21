@@ -74,9 +74,7 @@ pub const fn condition_for_code(code: i32) -> WeatherCondition {
         1 | 2 => WeatherCondition::PartlyCloudy,
         3 => WeatherCondition::Cloudy,
         45 | 48 => WeatherCondition::Fog,
-        51 | 53 | 55 | 56 | 57 | 61 | 63 | 65 | 66 | 67 | 80 | 81 | 82 => {
-            WeatherCondition::Rain
-        }
+        51 | 53 | 55 | 56 | 57 | 61 | 63 | 65 | 66 | 67 | 80 | 81 | 82 => WeatherCondition::Rain,
         71 | 73 | 75 | 77 | 85 | 86 => WeatherCondition::Snow,
         95 | 96 | 99 => WeatherCondition::Storm,
         _ => WeatherCondition::Unknown,
@@ -251,8 +249,7 @@ pub fn parse_open_meteo(json: &str) -> Result<WeatherSnapshot, &'static str> {
         number_array_for_key(daily, "weather_code").ok_or("daily weather code missing")?;
     let daily_high =
         number_array_for_key(daily, "temperature_2m_max").ok_or("daily high missing")?;
-    let daily_low =
-        number_array_for_key(daily, "temperature_2m_min").ok_or("daily low missing")?;
+    let daily_low = number_array_for_key(daily, "temperature_2m_min").ok_or("daily low missing")?;
     let daily_precip = number_array_for_key(daily, "precipitation_probability_max")
         .ok_or("daily precipitation missing")?;
 
@@ -295,7 +292,7 @@ fn percent_encode(value: &str) -> String {
 }
 
 fn key_start<'a>(json: &'a str, key: &str) -> Option<&'a str> {
-    let needle = format!(""{key}"");
+    let needle = format!("\\\"{key}\\\"");
     let start = json.find(&needle)? + needle.len();
     let rest = &json[start..];
     let colon = rest.find(':')? + 1;
@@ -440,7 +437,10 @@ mod tests {
         assert_eq!(provider_state(false, 0, 10, false), ProviderState::Local);
         assert_eq!(provider_state(false, 0, 10, true), ProviderState::Failed);
         assert_eq!(provider_state(true, 1000, 1500, false), ProviderState::Live);
-        assert_eq!(provider_state(true, 1000, 5000, false), ProviderState::Stale);
+        assert_eq!(
+            provider_state(true, 1000, 5000, false),
+            ProviderState::Stale
+        );
         assert_eq!(provider_state(true, 1000, 1200, true), ProviderState::Stale);
     }
 
