@@ -49,6 +49,10 @@ def main() -> int:
         / "patches/android-17-grapheneos-2026081300/r9_launcher3"
         / "SableQuickstepLauncher.kt"
     ).read_text()
+    start_capture = (
+        ROOT
+        / "build/macos/capture-r9-start-tiles-final-review.sh"
+    ).read_text()
     state_repo = (
         ROOT
         / "src/android/packages/apps/SableStart/src/com/sable/start/platform"
@@ -209,6 +213,27 @@ def main() -> int:
         activity,
         '"Sable Weather"',
         "R9_VISUAL_REVIEW_WEATHER_TILE_LABEL",
+    )
+    for frame in (
+        "00-start-tiles-top",
+        "01-start-tiles-mid-scroll",
+        "02-start-tiles-lower-scroll",
+        "03-start-tile-peek",
+    ):
+        require(
+            start_capture,
+            frame,
+            "R9_START_FINAL_CAPTURE_SET",
+        )
+    require(
+        start_capture,
+        "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=PASS",
+        "R9_START_FINAL_CAPTURE_INTEGRITY_GATE",
+    )
+    require(
+        start_capture,
+        "org.sableos.weather.visualreview",
+        "R9_START_FINAL_WEATHER_FIXTURE_CHECK",
     )
     forbid(
         activity,
@@ -522,6 +547,8 @@ def main() -> int:
     print("R9_START_TILE_CAP=PASS_UNCAPPED_EXPLICIT")
     print("R9_START_TILE_LONG_PRESS_PEEK=PASS")
     print("R9_START_STATE_PERSISTENCE_SEPARATED=PASS")
+    print("R9_START_FINAL_CAPTURE_SET=PASS")
+    print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
     print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
