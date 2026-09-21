@@ -54,14 +54,12 @@ class WeatherSnapshotProvider : ContentProvider() {
                 }
             } ?: state.message
 
-        cursor.addRow(
-            arrayOf(
-                "Weather",
-                detail,
-                state.availability.name.uppercase(),
-                snapshot?.observedAtEpochSeconds?.times(1000L) ?: 0L,
-            ),
-        )
+        cursor
+            .newRow()
+            .add("Weather")
+            .add(detail)
+            .add(state.availability.name.uppercase())
+            .add(snapshot?.observedAtEpochSeconds?.times(1000L) ?: 0L)
 
         return cursor
     }
