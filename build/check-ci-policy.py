@@ -87,14 +87,21 @@ if layout_gate.is_file():
         "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
         "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
         "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
+        "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT",
+        "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS",
         "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS",
     ):
         if token not in layout_text:
             failures.append(f"repo layout contract token missing: {token}")
-    if "  build/panther/build-sablestart.sh\n" in layout_text:
-        failures.append(
-            "obsolete standalone SableStart build script remains in required layout"
-        )
+    for obsolete_required in (
+        "  build/panther/build-sablestart.sh\n",
+        "  src/android/packages/apps/SableStart/AndroidManifest.xml\n",
+    ):
+        if obsolete_required in layout_text:
+            failures.append(
+                "obsolete standalone SableStart artifact remains in required layout: "
+                + obsolete_required.strip()
+            )
 
 local_ci = ROOT / "build" / "local-ci" / "run.sh"
 if local_ci.is_file():
