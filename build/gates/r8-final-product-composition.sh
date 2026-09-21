@@ -450,6 +450,10 @@ python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_
     --source "$WS" verify
 echo "R9_PHONE_CONTACTS_PRESENTATION=PASS_SOURCE"
 
+python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py" \
+    --source "$WS" verify
+echo "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS_SOURCE"
+
 echo "R8_UI4_SYSTEMUI=PASS_SOURCE"
 echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
