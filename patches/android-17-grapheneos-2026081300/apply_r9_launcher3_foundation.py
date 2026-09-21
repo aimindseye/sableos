@@ -226,13 +226,19 @@ MANIFEST_HEADER = '''<manifest
     package="com.android.launcher3">
 '''
 MANIFEST_HEADER_REPLACEMENT = MANIFEST_HEADER + '''
-    <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+
+    <queries>
+        <provider android:authorities="org.sableos.weather.snapshot" />
+        <provider android:authorities="org.sableos.calendar.snapshot" />
+        <provider android:authorities="org.sableos.hub.snapshot" />
+        <provider android:authorities="org.sableos.mail.snapshot" />
+        <provider android:authorities="org.sableos.media.snapshot" />
+    </queries>
 '''
 
 ACTIVITY_OLD = (
@@ -1342,12 +1348,15 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
 
     for token in (
         ACTIVITY_NEW,
-        "android.permission.READ_CALENDAR",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_MEDIA_AUDIO",
         "android.permission.MODIFY_DAY_NIGHT_MODE",
         'android:authorities="org.sableos.start.appearance"',
         'android:name="org.sableos.start.platform.SableAppearanceProvider"',
+        'android:authorities="org.sableos.weather.snapshot"',
+        'android:authorities="org.sableos.calendar.snapshot"',
+        'android:authorities="org.sableos.hub.snapshot"',
+        'android:authorities="org.sableos.mail.snapshot"',
+        'android:authorities="org.sableos.media.snapshot"',
     ):
         if token not in manifest:
             raise FoundationError(f"Quickstep manifest token missing: {token}")
@@ -1862,6 +1871,13 @@ suffix
     assert ACTIVITY_NEW in patched_manifest
     assert ACTIVITY_OLD not in patched_manifest
     assert "org.sableos.start.appearance" in patched_manifest
+    assert "org.sableos.weather.snapshot" in patched_manifest
+    assert "org.sableos.calendar.snapshot" in patched_manifest
+    assert "org.sableos.hub.snapshot" in patched_manifest
+    assert "org.sableos.mail.snapshot" in patched_manifest
+    assert "org.sableos.media.snapshot" in patched_manifest
+    assert "android.permission.READ_CALENDAR" not in patched_manifest
+    assert "android.permission.READ_MEDIA_AUDIO" not in patched_manifest
 
     strings = "<resources>\n    " + LABEL_OLD + "\n</resources>\n"
     patched_strings = patch_strings(strings)
