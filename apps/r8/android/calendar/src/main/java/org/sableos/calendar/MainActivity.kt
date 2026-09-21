@@ -278,7 +278,7 @@ private fun AgendaView(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
-        events.forEach(::AgendaEventRow)
+        events.forEach { event ->\n            AgendaEventRow(event)\n        }
     }
 }
 
