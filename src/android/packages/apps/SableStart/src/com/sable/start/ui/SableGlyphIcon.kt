@@ -113,7 +113,9 @@ internal fun SableGlyphIcon(
     val shape = RoundedCornerShape(if (compact) 11.dp else 15.dp)
     val androidPath =
         remember(spec.pathData) {
-            PathParser.createPathFromPathData(spec.pathData)
+            requireNotNull(PathParser.createPathFromPathData(spec.pathData)) {
+                "Invalid pinned Sable glyph path"
+            }
         }
     val contentColor = MaterialTheme.colorScheme.onSurface
 
