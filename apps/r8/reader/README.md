@@ -38,7 +38,7 @@ CI verifies both upstream SHAs before composition.
 1. adds the `sable` product flavor with application ID `org.sableos.reader`;
 2. composes the canonical Sable design source into the ephemeral Reader build;
 3. leaves Vaachak's own flavor visually unchanged;
-4. routes Sable light/dark Reader surfaces through the Sable design system while preserving the upstream E-ink theme;
+4. routes all Sable Reader application chrome through the global Sable appearance contract; the upstream Vaachak flavor retains its own E-ink theme, while any future Sable E-ink reading-surface mode must be scoped to content rather than bypassing global app chrome;
 5. composes the pinned MIT-licensed `TextReaderUtil` and `CameraScannerView` capabilities from Vaachak Text Reader;
 6. adds the Sable plain-text activity for TXT/view/share/process-text/TTS;
 7. adds an internal non-launcher OCR activity for camera/gallery recognition;
