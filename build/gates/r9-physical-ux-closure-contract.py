@@ -613,8 +613,8 @@ require(
     "capture-r9-theme-fidelity-review.sh",
     "Sable Messages as a second-process",
     "R9_THEME_FIDELITY_SABLE_MESSAGES_CAPTURE=PASS",
-    "R9_THEME_FIDELITY_PLATFORM_NIGHT_MODE=DEFERRED_PHYSICAL_PANTHER",
-    "R9_THEME_FIDELITY_VANADIUM=DEFERRED_PHYSICAL_PANTHER",
+    "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
+    "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
 )
 require(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/HubModels.kt",
