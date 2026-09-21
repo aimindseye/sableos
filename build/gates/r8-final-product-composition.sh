@@ -248,6 +248,7 @@ expected = {
     "org.sableos.hub": "SableHub.apk",
     "org.sableos.mail": "SableMail.apk",
     "org.sableos.weather": "SableWeather.apk",
+    "org.sableos.calendar": "SableCalendar.apk",
 }
 
 with pathlib.Path(sys.argv[1]).open(newline="", encoding="utf-8") as f:
@@ -309,6 +310,7 @@ expected = {
     "SableHub",
     "SableMail",
     "SableWeather",
+    "SableCalendar",
 }
 
 blocks = re.findall(r"android_app_import\s*\{(.*?)\n\}", text, flags=re.S)
@@ -345,13 +347,13 @@ if seen != expected:
     )
 
 print("R8_PRESIGNED_APK_IMPORT_SET=PASS")
-print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=9")
+print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=10")
 PY
 then
     fail R8_PRESIGNED_APK_PREPROCESSED
 fi
 
-for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather
+for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
 done
@@ -442,6 +444,7 @@ echo "R8_F_SABLE_HUB_MESSAGES=PASS_PRODUCT_STAGED"
 echo "R8_G_GLOBAL_APPEARANCE=PASS_SOURCE_AND_PRODUCT_STAGED"
 echo "R8_G_SABLE_MAIL=PASS_PRODUCT_STAGED"
 echo "R9_SABLE_WEATHER=PASS_PRODUCT_STAGED"
+echo "R9_SABLE_CALENDAR=PASS_PRODUCT_STAGED"
 
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" \
     --source "$WS" verify
