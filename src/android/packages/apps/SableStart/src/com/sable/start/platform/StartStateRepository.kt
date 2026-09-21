@@ -22,16 +22,62 @@ class StartStateRepository(
             Context.MODE_PRIVATE,
         )
 
-    fun loadPinnedKeys(): Set<String> =
-        preferences
-            .getStringSet(KEY_PINNED_APPS, emptySet())
+    fun loadFavoriteKeys(): Set<String> {
+        val explicit =
+            preferences.getStringSet(
+                KEY_FAVORITE_APPS,
+                null,
+            )
+        if (explicit != null) {
+            return explicit.toSet()
+        }
+
+        return preferences
+            .getStringSet(
+                KEY_PINNED_APPS_LEGACY,
+                emptySet(),
+            )
             .orEmpty()
             .toSet()
+    }
 
-    fun savePinnedKeys(keys: Set<String>) {
+    fun saveFavoriteKeys(keys: Set<String>) {
         preferences
             .edit()
-            .putStringSet(KEY_PINNED_APPS, keys.toSet())
+            .putStringSet(
+                KEY_FAVORITE_APPS,
+                keys.toSet(),
+            )
+            .remove(KEY_PINNED_APPS_LEGACY)
+            .apply()
+    }
+
+    /**
+     * Null means the user has never customized Start tiles and the production
+     * UI should resolve the current preferred/default set from installed apps.
+     * An empty set is an explicit user choice to keep Start tile-free.
+     */
+    fun loadStartTileKeys(): Set<String>? {
+        if (!preferences.contains(KEY_START_TILES)) {
+            return null
+        }
+
+        return preferences
+            .getStringSet(
+                KEY_START_TILES,
+                emptySet(),
+            )
+            .orEmpty()
+            .toSet()
+    }
+
+    fun saveStartTileKeys(keys: Set<String>) {
+        preferences
+            .edit()
+            .putStringSet(
+                KEY_START_TILES,
+                keys.toSet(),
+            )
             .apply()
     }
 
@@ -117,7 +163,9 @@ class StartStateRepository(
 
     private companion object {
         const val PREFERENCES_NAME = "sable_start_state"
-        const val KEY_PINNED_APPS = "pinned_apps"
+        const val KEY_FAVORITE_APPS = "favorite_apps"
+        const val KEY_START_TILES = "start_tiles"
+        const val KEY_PINNED_APPS_LEGACY = "pinned_apps"
         const val KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE =
             "system_night_mode_before_sable_override"
     }
