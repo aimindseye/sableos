@@ -260,9 +260,6 @@ fun SableStartScreen(
                         StartScreen(
                             snapshot = liveSnapshot,
                             startApps = startApps,
-                            favoriteApps = favoriteApps,
-                            recentApps = recentApps,
-                            appearance = appearance,
                             onLaunchApp = ::launchApp,
                             onOpenPeek = { app ->
                                 openPeek(app, SableStartDestination.Start)
@@ -377,9 +374,6 @@ fun SableStartScreen(
 private fun StartScreen(
     snapshot: LiveSurfaceSnapshot,
     startApps: List<AppEntry>,
-    favoriteApps: List<AppEntry>,
-    recentApps: List<AppEntry>,
-    appearance: SableAppearance,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenPeek: (AppEntry) -> Unit,
     onAllApps: () -> Unit,
