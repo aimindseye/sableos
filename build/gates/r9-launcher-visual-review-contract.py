@@ -247,6 +247,16 @@ def main() -> int:
     )
     require(
         start_capture,
+        'FINAL_FRAMES=(',
+        "R9_START_FINAL_EXACT_FRAME_HASH_SET",
+    )
+    forbid(
+        start_capture,
+        '0[0-3]-start-*.png',
+        "R9_START_FINAL_NO_HASH_GLOB",
+    )
+    require(
+        start_capture,
         "org.sableos.weather.visualreview",
         "R9_START_FINAL_WEATHER_FIXTURE_CHECK",
     )
@@ -573,6 +583,7 @@ def main() -> int:
     print("R9_START_TILE_LONG_PRESS_PEEK=PASS")
     print("R9_START_STATE_PERSISTENCE_SEPARATED=PASS")
     print("R9_START_FINAL_CAPTURE_SET=PASS")
+    print("R9_START_FINAL_EXACT_FRAME_HASH_SET=PASS")
     print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS")
     print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
