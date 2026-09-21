@@ -31,9 +31,16 @@ def check() -> None:
     require(
         start,
         (
-            "SectionLabel(\"favorites\")",
-            "search + command",
-            "search apps + Sable actions",
+            "SettingsShortcut(",
+            "PhosphorSettingsGlyph(",
+            'text = "good afternoon"',
+            "ApprovedStartNavigationRow(",
+            'text = "all apps"',
+            'text = "search"',
+            'text = "live"',
+            "approvedWideContent(",
+            "approvedMetric(",
+            ".height(if (tile.wide) 106.dp else 118.dp)",
             "SableStartDestination.Peek",
             'text = "peek"',
             "rememberLazyListState()",
@@ -50,9 +57,9 @@ def check() -> None:
             'labels = listOf("Sable Weather", "Weather")',
             "app.component.packageName in group.packageNames",
             ".combinedClickable(",
-            "apps · settings · Sable actions",
-            "privacy-safe summaries · no message bodies or mail subjects on Home",
-            "provider and lifecycle refresh · no ambient launcher network client",
+            'text = "Useful state only. No fake feeds and no ambient polling."',
+            '"message content stays private on Home"',
+            '"subject previews off"',
             "AppearanceChoiceRow(",
             "AccentChoiceRow(",
             "reset · follow system + Sable Blue",
@@ -66,6 +73,9 @@ def check() -> None:
             "MAX_START_TILES",
             "A calmer device",
             "Search apps…",
+            "AppearanceShortcut(",
+            "StartNavigationRow(",
+            'text = "appearance"',
         ),
         "R9_SABLESTART_OLD_SURFACE_RETIREMENT",
     )
@@ -127,7 +137,7 @@ def check() -> None:
         "R9_SABLESTART_DESIGN_CONTRACT",
     )
 
-    print("R9_L1_START_FAVORITES=PASS_SOURCE")
+    print("R9_L1_START_APPROVED_DAILY_DRIVER_COMPOSITION=PASS_SOURCE")
     print("R9_L1_START_TILES=PASS_SCROLLING_SEPARATE_STATE")
     print("R9_L1_START_WEATHER=PASS_PACKAGE_FIRST_PREFERRED")
     print("R9_L2_SABLE_RAIL=PASS_SOURCE")
@@ -142,19 +152,20 @@ def check() -> None:
 
 def self_test() -> None:
     good = (
-        "favorites search + command search apps + Sable actions "
+        "SettingsShortcut PhosphorSettingsGlyph good afternoon "
+        "ApprovedStartNavigationRow all apps search live "
         "peek pin to start remove from start pin to favorites "
-        "privacy-safe summaries · no message bodies or mail subjects on Home "
-        "provider and lifecycle refresh · no ambient launcher network client detectDragGestures"
+        "Useful state only. No fake feeds and no ambient polling. detectDragGestures"
     )
     bad = "favorites Search apps… Reset to Follow system · Sable Blue"
-    assert "search + command" in good
-    assert "search apps + Sable actions" in good
+    assert "SettingsShortcut" in good
+    assert "PhosphorSettingsGlyph" in good
+    assert "good afternoon" in good
+    assert "ApprovedStartNavigationRow" in good
     assert "pin to start" in good
     assert "remove from start" in good
     assert "pin to favorites" in good
-    assert "privacy-safe summaries" in good
-    assert "no ambient launcher network client" in good
+    assert "Useful state only. No fake feeds and no ambient polling." in good
     assert "detectDragGestures" in good
     assert "Search apps…" in bad
     assert "Reset to Follow system · Sable Blue" in bad
