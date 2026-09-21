@@ -375,6 +375,8 @@ def main() -> None:
         '"no mail alerts"',
         '" mail alerts"',
         "content://org.sableos.mail.snapshot/current",
+        'check("com.android.launcher3" in packages)',
+        "Binder.getCallingUid()",
         "UnsupportedOperationException",
     ):
         require_text(
