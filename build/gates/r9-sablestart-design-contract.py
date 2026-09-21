@@ -46,7 +46,9 @@ def check() -> None:
             "pin to favorites",
             "permissions + app info",
             "DEFAULT_START_TILE_TARGET = 10",
-            'listOf("Sable Weather", "Weather")',
+            'packageNames = setOf("org.sableos.weather")',
+            'labels = listOf("Sable Weather", "Weather")',
+            "app.component.packageName in group.packageNames",
             ".combinedClickable(",
             "apps · settings · Sable actions",
             "local only · no ambient network search",
@@ -114,7 +116,7 @@ def check() -> None:
 
     print("R9_L1_START_FAVORITES=PASS_SOURCE")
     print("R9_L1_START_TILES=PASS_SCROLLING_SEPARATE_STATE")
-    print("R9_L1_START_WEATHER=PASS_PREFERRED")
+    print("R9_L1_START_WEATHER=PASS_PACKAGE_FIRST_PREFERRED")
     print("R9_L2_SABLE_RAIL=PASS_SOURCE")
     print("R9_L3_SEARCH_COMMAND=PASS_SOURCE")
     print("R9_L4_SABLE_PEEK=PASS_SOURCE")
