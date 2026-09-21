@@ -236,7 +236,10 @@ SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_ROOT="$SABLE_BUILD_ROOT" SABLEOS_REPO="$R
 echo
 echo "===== FINAL PRODUCT COMPOSITION ====="
 
-WS="$WS" SABLEOS_UPSTREAM="$WS"     bash "$REPO/build/gates/r8-final-product-composition.sh"     | tee "$EVIDENCE/product-composition.log"
+SABLE_QUALIFICATION_ONLY="$SABLE_QUALIFICATION_ONLY" \
+WS="$WS" SABLEOS_UPSTREAM="$WS" \
+    bash "$REPO/build/gates/r8-final-product-composition.sh" \
+    | tee "$EVIDENCE/product-composition.log"
 
 grep -Fxq 'R8_FINAL_UI_PRODUCT_COMPOSITION=PASS'     "$EVIDENCE/product-composition.log"
 if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
