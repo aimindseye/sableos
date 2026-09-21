@@ -185,10 +185,11 @@ require(
     "R9_PHONE_CONTACTS_BEHAVIORAL_SOURCE_MUTATION=NONE",
     "R9_PHONE_CONTACTS_PINNED_BASELINES=PASS",
 )
-forbid(
+require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
-    ".java\")",
-    ".kt\")",
+    "behavioral = [",
+    'path.suffix in {".java", ".kt"}',
+    "BEHAVIORAL_SOURCE_MUTATION=FAIL",
 )
 require(
     "build/panther/prepare-r8-final-ui.sh",
