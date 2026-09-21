@@ -53,6 +53,8 @@ echo "PANTHER_PRODUCT_PLUMBING_AUTHORIZED=NO"
 echo "FULL_PANTHER_BUILD_AUTHORIZED=NO"
 echo "STATIC_FIXTURE_DATA=YES"
 
+python3 "$ROOT/build/gates/r9-daily-driver-design-review-contract.py"
+
 if [[ "${NETWORK_FETCH_AUTHORIZED:-NO}" == "YES" ]]; then
     GRADLE_OFFLINE=NO
 else
