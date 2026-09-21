@@ -1383,6 +1383,11 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         if token not in host:
             raise FoundationError(f"Sable Quickstep host token missing: {token}")
 
+    if host.count("private companion object {") != 1:
+        raise FoundationError(
+            "Sable Quickstep host companion object cardinality mismatch"
+        )
+
     fallback = (launcher / FALLBACK_ACTIVITY_REL).read_text(encoding="utf-8")
     if FALLBACK_NULL_REPLACEMENT not in fallback:
         raise FoundationError(
