@@ -47,6 +47,22 @@ bash build/macos/audit-r9-launcher-review-fidelity.sh [follow-system|light|dark]
 A successful audit proves the cross-process appearance provider state and
 explicitly reports browser/system-night claims as deferred to Panther.
 
+The Mac prepare flow also builds and installs Sable Messages as a second-process
+theme probe. After selecting Light or Dark in the Start review UI, capture the
+cross-app proof with:
+
+```
+bash build/macos/capture-r9-theme-fidelity-review.sh dark
+# or:
+bash build/macos/capture-r9-theme-fidelity-review.sh light
+```
+
+The capture command refuses to proceed if the appearance provider does not
+report the expected mode, then captures both Sable Start and Sable Messages.
+Human review of those two frames is the Mac proof that Sable-owned applications
+observe the same selected appearance across app processes. It does not promote
+platform night mode or browser identity to Mac-proven status.
+
 Sable-owned applications that must follow the selected Sable appearance:
 
 - Sable Start / Launcher presentation;
@@ -56,7 +72,7 @@ Sable-owned applications that must follow the selected Sable appearance:
 - Sable Reader;
 - Sable Calculator;
 - all three Sable Games;
-- Sable Weather once production integration lands.
+- Sable Weather.
 
 Platform surfaces that must follow Android system night mode after the bridge:
 
@@ -152,6 +168,10 @@ Mac review acceptance may prove:
 R9_VISUAL_FIDELITY_APPEARANCE_PROVIDER=PASS
 R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS
 R9_VISUAL_FIDELITY_AUDIT=PASS
+R9_THEME_FIDELITY_PROVIDER_MODE=PASS
+R9_THEME_FIDELITY_START_CAPTURE=PASS
+R9_THEME_FIDELITY_SABLE_MESSAGES_CAPTURE=PASS
+R9_THEME_FIDELITY_CROSS_APP_VISUAL_REVIEW=PENDING_USER_REVIEW
 ```
 
 It must continue to report:
