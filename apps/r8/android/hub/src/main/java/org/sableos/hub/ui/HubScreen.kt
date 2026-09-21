@@ -277,9 +277,9 @@ private fun AllPivot(
             Text(
                 text =
                     if (snapshot.capabilities.canReadSms) {
-                        "No SMS conversations are available yet."
+                        "No conversations yet."
                     } else {
-                        "SMS history is not available in Sable Messages yet."
+                        "Grant Messages access to show your SMS conversations."
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -472,7 +472,7 @@ private fun ServicesPivot(
     SablePanel {
         Text(
             text =
-                "Provider capsules are isolated WEB sessions when no suitable consumer messaging API exists. Sable does not call them native integrations.",
+                "Services open in private, isolated web sessions when a native integration is not available.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -491,18 +491,23 @@ private fun ProviderTile(
     provider: HubProvider,
     onOpen: () -> Unit,
 ) {
-    val capability =
+    val subtitle =
         when (provider.capabilityClass) {
-            ProviderCapabilityClass.NativeData -> "NATIVE DATA"
-            ProviderCapabilityClass.AndroidNotification -> "ANDROID NOTIFICATION"
-            ProviderCapabilityClass.SupportedApi -> "SUPPORTED API"
-            ProviderCapabilityClass.Web -> "WEB"
-            ProviderCapabilityClass.Unavailable -> "UNAVAILABLE"
+            ProviderCapabilityClass.NativeData -> "Integrated"
+            ProviderCapabilityClass.AndroidNotification -> "Notification access"
+            ProviderCapabilityClass.SupportedApi -> "Connected service"
+            ProviderCapabilityClass.Web ->
+                if (provider.id == "whatsapp") {
+                    "Private web session · availability depends on provider support"
+                } else {
+                    "Private web session"
+                }
+            ProviderCapabilityClass.Unavailable -> "Unavailable"
         }
 
     SableTile(
         title = provider.displayName,
-        subtitle = capability + " · " + provider.note,
+        subtitle = subtitle,
         onClick = onOpen,
     )
 }
@@ -513,51 +518,36 @@ private fun AccessPanel(
     onRequestAccess: () -> Unit,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
 ) {
-    val capabilityText =
-        buildString {
-            append(
-                if (snapshot.capabilities.canReadSms) {
-                    "SMS history: available"
-                } else {
-                    "SMS history: unavailable"
-                },
-            )
-            append(" · ")
-            append(
-                if (snapshot.capabilities.canSendSms) {
-                    "send: available"
-                } else {
-                    "send: unavailable"
-                },
-            )
-            append(" · ")
-            append(
-                if (snapshot.capabilities.canReadContacts) {
-                    "people: available"
-                } else {
-                    "people: unavailable"
-                },
-            )
+    val accessText =
+        when {
+            snapshot.capabilities.canReadSms && snapshot.capabilities.canSendSms ->
+                "SMS access is ready."
+            snapshot.capabilities.canReadSms ->
+                "Conversations are available. Grant send access to send SMS."
+            else ->
+                "Grant Messages access to show conversations and send SMS."
+        }
+
+    val peopleText =
+        if (snapshot.capabilities.canReadContacts) {
+            "People matching is available."
+        } else {
+            "Contacts access is optional and only improves people matching."
         }
 
     SablePanel {
         Text(
-            text = "Messaging status",
+            text = "Messages",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface,
         )
         Text(
-            text = capabilityText,
+            text = accessText,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
-            text =
-                if (snapshot.capabilities.isDefaultSmsRoleHolder) {
-                    "Sable Messages is handling SMS directly on this device."
-                } else {
-                    "Sable Messages can read and send SMS when access is granted. MMS/RCS can open the system messaging service when needed."
-                },
+            text = peopleText,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -571,7 +561,7 @@ private fun AccessPanel(
                 onClick = onRequestAccess,
             )
             SableActionButton(
-                text = "Open MMS / RCS",
+                text = "MMS / RCS",
                 modifier = Modifier.weight(1f),
                 primary = false,
                 onClick = {
@@ -653,7 +643,7 @@ private fun ComposeView(
 
     SablePageHeader(
         title = "New message",
-        subtitle = "Write an SMS here. MMS/RCS can be handed off when needed.",
+        subtitle = "Write a message.",
     )
 
     OutlinedTextField(
