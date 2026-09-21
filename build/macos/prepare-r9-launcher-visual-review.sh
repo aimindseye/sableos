@@ -257,6 +257,24 @@ echo "R9_VISUAL_REVIEW_STATE_RESET=PASS"
 "$ADB" -s "$SERIAL" shell pm grant \
     org.sableos.calendar android.permission.WRITE_CALENDAR >/dev/null
 
+if [[ "$("$ADB" -s "$SERIAL" shell getprop ro.build.version.sdk | tr -d '\r')" -ge 33 ]]; then
+    "$ADB" -s "$SERIAL" shell pm grant \
+        org.sableos.start.visualreview android.permission.READ_MEDIA_IMAGES >/dev/null 2>&1 || true
+else
+    "$ADB" -s "$SERIAL" shell pm grant \
+        org.sableos.start.visualreview android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1 || true
+fi
+
+for permission in \
+    android.permission.READ_SMS \
+    android.permission.SEND_SMS \
+    android.permission.READ_CONTACTS
+do
+    "$ADB" -s "$SERIAL" shell pm grant \
+        org.sableos.hub "$permission" >/dev/null 2>&1 || true
+done
+
+echo "R9_VISUAL_REVIEW_LOCAL_DATA_FIXTURE_GRANTS=PASS_BEST_EFFORT"
 echo "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS"
 echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS"
 echo "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS"
