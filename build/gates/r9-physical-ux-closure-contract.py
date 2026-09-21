@@ -223,6 +223,12 @@ require(
     "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW",
 )
 require(
+    "build/panther/run-r8-release-candidate.sh",
+    "NETWORK_FETCH_AUTHORIZED=NO",
+    "./gradlew     --offline",
+    "./gradlew         --offline",
+)
+require(
     "build/panther/build-r8-final-ui.sh",
     "SABLE_BUILD_STAGE",
     "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS",
