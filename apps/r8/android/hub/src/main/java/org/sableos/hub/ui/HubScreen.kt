@@ -3,6 +3,7 @@ package org.sableos.hub.ui
 import android.text.format.DateUtils
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
@@ -226,10 +227,16 @@ private fun HubPivotRow(
         HubPivot.entries.forEach { pivot ->
             TextButton(
                 onClick = { onSelect(pivot) },
-                modifier = Modifier.weight(1f),
+                modifier =
+                    Modifier.weight(
+                        if (pivot == HubPivot.Messages) 1.12f else 1f,
+                    ),
+                contentPadding = PaddingValues(horizontal = SableSpacing.Xs),
             ) {
                 Text(
                     text = pivot.name.uppercase(),
+                    maxLines = 1,
+                    softWrap = false,
                     style = MaterialTheme.typography.labelLarge,
                     color =
                         if (pivot == selected) {
