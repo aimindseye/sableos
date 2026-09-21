@@ -199,20 +199,39 @@ The top context line is conditional. Empty data does not create a blank card.
 
 The root is not an infinite widget canvas.
 
-### 2. Primary tiles
+### 2. Start tiles
 
-Use Sable tiles for a small set of intentional first-party/system capabilities.
+Start is a vertically scrolling Sable tile surface rather than a four-tile
+shortcut strip or an unrestricted widget canvas.
 
-Initial target:
+Default capability order:
 
 ~~~
-People      Phone
-Messages    Mail
-Calendar    Photos
+Phone       Messages
+Mail        Calendar
+Weather     Photos
 Media       Camera
+Calculator  Files
 ~~~
 
-The visible set is user-editable and may be smaller than eight.
+The default resolver chooses the first installed app matching each capability
+alias. Weather recognizes `Sable Weather` / `Weather` and becomes a normal
+preferred Start tile once the production Weather app exists.
+
+The default target is ten tiles. It is not a hard user limit.
+
+Once the user customizes Start, the explicit Start-tile set is persisted
+separately from Favorites. An explicit empty set means the user intentionally
+wants no Start tiles. User-added Start tiles are not capped by the old
+four-tile limit; the existing Start `LazyColumn` provides vertical scrolling.
+
+Tile interaction:
+
+- tap -> launch immediately;
+- long press -> Sable Peek;
+- Peek -> Pin to Start / Remove from Start;
+- Start membership is independent of Favorites membership;
+- later drag/reorder may refine ordering but is not required for R9.
 
 Tile rules:
 
@@ -221,7 +240,8 @@ Tile rules:
 - redaction follows lock/privacy policy;
 - no fake weather/feed data;
 - no provider state without an explicit provider;
-- color supplements state but does not replace text/state cues.
+- color supplements state but does not replace text/state cues;
+- no arbitrary Android widget canvas is introduced.
 
 ### 3. Favorites
 
@@ -229,6 +249,8 @@ Favorites are the fastest user-curated launch surface.
 
 R9 target:
 
+- Favorites are persisted independently from Start tiles;
+- Pin to Favorites never implicitly pins to Start and vice versa;
 - 4-8 user-selected favorites;
 - label-first presentation;
 - enough icon/mark identity for scanning without turning Start into a generic icon grid;
