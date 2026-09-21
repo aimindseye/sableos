@@ -251,6 +251,7 @@ require(
     "https://api.open-meteo.com/v1/forecast",
     "parse_open_meteo",
     "WeatherCondition",
+    'let needle = format!("\\\"{key}\\\"");',
 )
 forbid(
     "apps/r8/rust/crates/weather-core/src/lib.rs",
@@ -614,6 +615,7 @@ print("R9_PHONE_CONTACTS_PRESENTATION_CONTRACT=PASS")
 print("R9_SMS_MMS_BLOCKING_PLATFORM_CONTRACT=PASS")
 print("R9_SMS_MMS_SPAM_CLASSIFICATION_BOUNDARY=PASS")
 print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
+print("R9_WEATHER_JSON_KEY_PARSER_CONTRACT=PASS")
 print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
 print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
