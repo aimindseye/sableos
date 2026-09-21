@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableStateOf
+import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
 import org.sableos.design.applySableSystemBars
 import org.sableos.design.resolveSableDarkAppearance
@@ -58,7 +59,14 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         launcherApps = getSystemService(LauncherApps::class.java)
         liveSurfaceRepository = LiveSurfaceRepository(this)
         startStateRepository = StartStateRepository(this)
-        appearanceState.value = startStateRepository.loadAppearance()
+        appearanceState.value =
+            when (intent.getStringExtra(EXTRA_APPEARANCE_MODE)?.lowercase(Locale.ROOT)) {
+                "light" -> startStateRepository.loadAppearance().copy(mode = AppearanceMode.Light)
+                "dark" -> startStateRepository.loadAppearance().copy(mode = AppearanceMode.Dark)
+                "system" -> startStateRepository.loadAppearance().copy(mode = AppearanceMode.FollowSystem)
+                else -> startStateRepository.loadAppearance()
+            }
+        startStateRepository.saveAppearance(appearanceState.value)
 
         refreshInventory()
         favoriteKeys = defaultFavoriteKeys(appsState.value)
@@ -77,6 +85,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 liveSurfaceRepository = liveSurfaceRepository,
                 appearance = appearanceState.value,
                 refreshGeneration = refreshGeneration.value,
+                initialScreen = intent.getStringExtra(EXTRA_INITIAL_SCREEN) ?: "start",
                 initialFavoriteKeys = favoriteKeys,
                 onFavoriteKeysChanged = { keys ->
                     favoriteKeys = keys
@@ -330,6 +339,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         const val HOST_AVD_AOSP_CALENDAR_PACKAGE = "com.android.calendar"
         const val RETIRED_WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
         const val EXTRA_EXTENDED_START_TILES = "extendedStartTiles"
+        const val EXTRA_APPEARANCE_MODE = "appearanceMode"
+        const val EXTRA_INITIAL_SCREEN = "initialScreen"
         const val REVIEW_PIN_COUNT = 3
         const val REVIEW_START_TILE_COUNT = 14
 
