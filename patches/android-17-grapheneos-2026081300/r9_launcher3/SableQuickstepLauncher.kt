@@ -2,11 +2,14 @@ package com.android.launcher3.sable
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.os.UserHandle
 import android.window.BackEvent
 import android.window.OnBackAnimationCallback
 import androidx.compose.runtime.mutableStateOf
@@ -233,12 +236,68 @@ class SableQuickstepLauncher : QuickstepLauncher() {
                             label = label,
                             component = component,
                             user = info.user,
+                            privacySummary =
+                                buildPrivacyPermissionSummary(
+                                    packageName = component.packageName,
+                                    user = info.user,
+                                ),
                         )
                     }
                 }
                 .distinctBy { entry ->
                     ComponentKey(entry.component, entry.user)
                 }
+    }
+
+    private fun buildPrivacyPermissionSummary(
+        packageName: String,
+        user: UserHandle,
+    ): String {
+        val profileContext =
+            runCatching {
+                createContextAsUser(user, 0)
+            }.getOrElse {
+                this
+            }
+
+        val packageInfo =
+            runCatching {
+                profileContext.packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.PackageInfoFlags.of(
+                        PackageManager.GET_PERMISSIONS.toLong(),
+                    ),
+                )
+            }.getOrNull() ?: return "permissions · unavailable"
+
+        val requested = packageInfo.requestedPermissions.orEmpty()
+        val flags = packageInfo.requestedPermissionsFlags.orEmpty()
+
+        val granted =
+            buildSet {
+                requested.forEachIndexed { index, permission ->
+                    val permissionFlags = flags.getOrNull(index) ?: 0
+                    if (
+                        permissionFlags and
+                            PackageInfo.REQUESTED_PERMISSION_GRANTED != 0
+                    ) {
+                        add(permission)
+                    }
+                }
+            }
+
+        val labels =
+            PRIVACY_PERMISSION_GROUPS.mapNotNull { group ->
+                group.label.takeIf { _ ->
+                    group.permissions.any(granted::contains)
+                }
+            }
+
+        return if (labels.isEmpty()) {
+            "permissions · none sensitive"
+        } else {
+            "permissions · " + labels.joinToString(" · ")
+        }
     }
 
     private fun findApp(entry: AppEntry): AppInfo? =
@@ -312,7 +371,96 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         )
     }
 
+    private data class PrivacyPermissionGroup(
+        val label: String,
+        val permissions: Set<String>,
+    )
+
     private companion object {
         const val LIVE_PERMISSION_REQUEST_CODE = 0x534D
+
+        val PRIVACY_PERMISSION_GROUPS =
+            listOf(
+                PrivacyPermissionGroup(
+                    label = "location",
+                    permissions =
+                        setOf(
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "camera",
+                    permissions = setOf(Manifest.permission.CAMERA),
+                ),
+                PrivacyPermissionGroup(
+                    label = "microphone",
+                    permissions = setOf(Manifest.permission.RECORD_AUDIO),
+                ),
+                PrivacyPermissionGroup(
+                    label = "contacts",
+                    permissions =
+                        setOf(
+                            Manifest.permission.READ_CONTACTS,
+                            Manifest.permission.WRITE_CONTACTS,
+                            Manifest.permission.GET_ACCOUNTS,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "phone",
+                    permissions =
+                        setOf(
+                            Manifest.permission.READ_PHONE_STATE,
+                            Manifest.permission.READ_PHONE_NUMBERS,
+                            Manifest.permission.CALL_PHONE,
+                            Manifest.permission.ANSWER_PHONE_CALLS,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "messages",
+                    permissions =
+                        setOf(
+                            Manifest.permission.READ_SMS,
+                            Manifest.permission.RECEIVE_SMS,
+                            Manifest.permission.SEND_SMS,
+                            Manifest.permission.RECEIVE_MMS,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "calendar",
+                    permissions =
+                        setOf(
+                            Manifest.permission.READ_CALENDAR,
+                            Manifest.permission.WRITE_CALENDAR,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "photos",
+                    permissions =
+                        setOf(
+                            Manifest.permission.READ_MEDIA_IMAGES,
+                            Manifest.permission.READ_MEDIA_VIDEO,
+                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "audio",
+                    permissions = setOf(Manifest.permission.READ_MEDIA_AUDIO),
+                ),
+                PrivacyPermissionGroup(
+                    label = "nearby",
+                    permissions =
+                        setOf(
+                            Manifest.permission.BLUETOOTH_SCAN,
+                            Manifest.permission.BLUETOOTH_CONNECT,
+                            Manifest.permission.NEARBY_WIFI_DEVICES,
+                        ),
+                ),
+                PrivacyPermissionGroup(
+                    label = "notifications",
+                    permissions = setOf(Manifest.permission.POST_NOTIFICATIONS),
+                ),
+            )
     }
 }
