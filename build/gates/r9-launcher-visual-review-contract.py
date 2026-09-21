@@ -134,6 +134,27 @@ def main() -> int:
         "<queries>",
         "R9_VISUAL_REVIEW_PACKAGE_VISIBILITY_QUERY",
     )
+    for needle in (
+        'android:name="org.sableos.start.platform.SableAppearanceProvider"',
+        'android:authorities="org.sableos.start.appearance"',
+        'android:exported="true"',
+    ):
+        require(
+            manifest,
+            needle,
+            "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_PARITY",
+        )
+    for needle in (
+        "StartStateRepository",
+        "startStateRepository.loadAppearance()",
+        "startStateRepository.saveAppearance(appearance)",
+        "startStateRepository.resetAppearance()",
+    ):
+        require(
+            activity,
+            needle,
+            "R9_VISUAL_REVIEW_APPEARANCE_PERSISTENCE_PARITY",
+        )
     require(
         activity,
         "PackageManager.GET_PERMISSIONS",
@@ -189,6 +210,21 @@ def main() -> int:
         activity,
         "component.packageName == GRAPHENE_MESSAGING_PACKAGE",
         "R9_VISUAL_REVIEW_MESSAGING_FILTER",
+    )
+    require(
+        activity,
+        'const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"',
+        "R9_VISUAL_REVIEW_HOST_CHROME_CONSTANT",
+    )
+    require(
+        activity,
+        "component.packageName == HOST_AVD_CHROME_PACKAGE",
+        "R9_VISUAL_REVIEW_HOST_CHROME_FILTER",
+    )
+    forbid(
+        activity,
+        '                "Chrome",',
+        "R9_VISUAL_REVIEW_NO_CHROME_PREFERRED_FIXTURE",
     )
     require(
         activity,
@@ -561,6 +597,9 @@ def main() -> int:
     mac_runner = (
         ROOT / "build/macos/prepare-r9-launcher-visual-review.sh"
     ).read_text()
+    fidelity_audit = (
+        ROOT / "build/macos/audit-r9-launcher-review-fidelity.sh"
+    ).read_text()
     require(
         mac_runner,
         'GRADLE_OFFLINE=NO',
@@ -581,6 +620,31 @@ def main() -> int:
         ":sablestart-visual-review:lintDebug",
         "R9_VISUAL_REVIEW_MAC_BUILD_BLOCKED_BY_LINT",
     )
+    for needle in (
+        "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SOURCE=HOST_AVD_NOT_PRODUCT",
+        "R9_VISUAL_REVIEW_HOST_AVD_CHROME=DETECTED_FILTERED_FROM_REVIEW",
+        "R9_VISUAL_REVIEW_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
+        "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
+        "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
+    ):
+        require(
+            mac_runner,
+            needle,
+            "R9_VISUAL_REVIEW_MAC_FIDELITY_SCOPE",
+        )
+    for needle in (
+        "content://org.sableos.start.appearance/appearance",
+        "R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS",
+        "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED",
+        "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
+        "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
+        "R9_VISUAL_FIDELITY_AUDIT=PASS",
+    ):
+        require(
+            fidelity_audit,
+            needle,
+            "R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT",
+        )
 
     forbid(
         manifest,
@@ -626,6 +690,12 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_PUBLIC_PACKAGE_MANAGER_PERMISSION_QUERY=PASS")
     print("R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT=PASS_MINSDK30")
     print("R9_VISUAL_REVIEW_MESSAGING_SUPPRESSION_PARITY=PASS")
+    print("R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_PARITY=PASS")
+    print("R9_VISUAL_REVIEW_APPEARANCE_PERSISTENCE_PARITY=PASS")
+    print("R9_VISUAL_REVIEW_HOST_CHROME_FILTER=PASS")
+    print("R9_VISUAL_REVIEW_BROWSER_IDENTITY_SCOPE=PASS_DEFERRED_PANTHER")
+    print("R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER")
+    print("R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS")
     print("R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY=PASS")
     print("R9_QUICKSTEP_SYSTEM_BAR_RESTORE=PASS")
     print("R9_VISUAL_REVIEW_LINT_TEST_SURFACE=PASS")
