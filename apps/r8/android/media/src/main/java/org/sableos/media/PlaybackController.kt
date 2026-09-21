@@ -34,6 +34,7 @@ internal class PlaybackController(
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var controller: MediaController? = null
+    private var cachedQueue: List<QueueItemUiState> = emptyList()
     private var closed = false
 
     private val listener =
@@ -42,7 +43,11 @@ internal class PlaybackController(
                 player: Player,
                 events: Player.Events,
             ) {
-                publishState()
+                publishState(
+                    refreshQueue =
+                        events.contains(Player.EVENT_TIMELINE_CHANGED) ||
+                            cachedQueue.size != player.mediaItemCount,
+                )
             }
         }
 
@@ -50,7 +55,7 @@ internal class PlaybackController(
         object : Runnable {
             override fun run() {
                 if (closed) return
-                publishState()
+                publishState(refreshQueue = false)
                 handler.postDelayed(this, 500L)
             }
         }
@@ -81,7 +86,7 @@ internal class PlaybackController(
                             } else {
                                 controller = resolved
                                 resolved.addListener(listener)
-                                publishState()
+                                publishState(refreshQueue = true)
                                 handler.post(ticker)
                             }
                         }
@@ -152,12 +157,39 @@ internal class PlaybackController(
         controller = null
     }
 
-    private fun publishState() {
+    private fun publishState(
+        refreshQueue: Boolean,
+    ) {
         val player = controller
 
         if (player == null) {
+            cachedQueue = emptyList()
             onStateChanged(PlaybackUiState())
             return
+        }
+
+        if (refreshQueue) {
+            cachedQueue =
+                buildList {
+                    for (index in 0 until player.mediaItemCount) {
+                        val item = player.getMediaItemAt(index)
+                        add(
+                            QueueItemUiState(
+                                index = index,
+                                title =
+                                    item.mediaMetadata.title
+                                        ?.toString()
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?: "Untitled audio",
+                                source =
+                                    item.mediaMetadata.artist
+                                        ?.toString()
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?: "Local audio",
+                            ),
+                        )
+                    }
+                }
         }
 
         val duration =
@@ -177,28 +209,6 @@ internal class PlaybackController(
                 ?.takeIf { it.isNotBlank() }
                 ?: "Local music or radio"
 
-        val queue =
-            buildList {
-                for (index in 0 until player.mediaItemCount) {
-                    val item = player.getMediaItemAt(index)
-                    add(
-                        QueueItemUiState(
-                            index = index,
-                            title =
-                                item.mediaMetadata.title
-                                    ?.toString()
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: "Untitled audio",
-                            source =
-                                item.mediaMetadata.artist
-                                    ?.toString()
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: "Local audio",
-                        ),
-                    )
-                }
-            }
-
         onStateChanged(
             PlaybackUiState(
                 connected = true,
@@ -213,7 +223,7 @@ internal class PlaybackController(
                     player.currentMediaItemIndex
                         .takeIf { it != C.INDEX_UNSET }
                         ?: -1,
-                queue = queue,
+                queue = cachedQueue,
             ),
         )
     }
