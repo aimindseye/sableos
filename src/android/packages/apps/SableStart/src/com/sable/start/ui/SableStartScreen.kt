@@ -139,6 +139,7 @@ fun SableStartScreen(
     refreshGeneration: Int = 0,
     homeGeneration: Int = 0,
     backGeneration: Int = 0,
+    initialScreen: String = "start",
     onCanNavigateBackChanged: (Boolean) -> Unit = {},
     initialFavoriteKeys: Set<String> = emptySet(),
     onFavoriteKeysChanged: (Set<String>) -> Unit = {},
@@ -151,7 +152,17 @@ fun SableStartScreen(
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
 ) {
-    var destination by remember { mutableStateOf(SableStartDestination.Start) }
+    var destination by remember(initialScreen) {
+        mutableStateOf(
+            when (initialScreen.lowercase(Locale.ROOT)) {
+                "live" -> SableStartDestination.Live
+                "apps" -> SableStartDestination.Apps
+                "search" -> SableStartDestination.Search
+                "appearance" -> SableStartDestination.Appearance
+                else -> SableStartDestination.Start
+            },
+        )
+    }
     var returnDestination by remember { mutableStateOf(SableStartDestination.Start) }
     var selectedApp by remember { mutableStateOf<AppEntry?>(null) }
     var favoriteKeys by remember(initialFavoriteKeys) {
