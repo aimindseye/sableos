@@ -83,21 +83,20 @@ caches are never canonical source.
 
 ```text
 GitHub PR
-  -> R8 canonical local build driver CI
-  -> merge after CI
-  -> main workflow renders source-bound driver artifact
-  -> ai-g732 verifies/migrates /srv/data/sable-host-tools once
-  -> local repository checks out exact artifact commit
-  -> run CI-produced sableos-panther-r8-build.sh --tmux
-  -> host-tool gate
+  -> ai-g732 checks out exact source commit
+  -> bash build/sable.sh panther R9 ci full
+  -> host-tool / policy / Rust / Android / security gates
   -> first-party APK build
-  -> Reader/Mail composition
-  -> source-bound eight-APK freeze
+  -> Reader/Text Reader/Mail composition
+  -> source-bound nine-APK freeze
+  -> bash build/sable.sh panther R9 qualify physical-ux
   -> Panther source/product preparation
   -> exact vendor/sable inventory gate
-  -> production SableStart Soong preflight
-  -> combined application/Settings/SystemUI module gate
-  -> final Panther target-files build
+  -> Launcher3-hosted SableStart Soong preflight
+  -> Dialer/Contacts presentation verification
+  -> combined Launcher3/application/Settings/SystemUI module gate
+  -> fresh source-bound visual acceptance
+  -> only then final Panther target-files build
   -> artifact audit
   -> separately authorized device deployment
 ```
@@ -107,18 +106,23 @@ A successful build is evidence, not source.
 
 ## Production SableStart qualification
 
-GitHub does not use a partial Start preview as a production compile proxy.
-`apps/r8/android/sablestart-production-check` points at the complete production
-SableStart `src/`, production manifest and production resources. The Android CI
-lane runs `:sablestart-production-check:compileDebugKotlin`.
+SableStart no longer owns a standalone HOME runtime. Its presentation source is
+hosted by upstream Launcher3/Quickstep, with Android's Launcher3 mechanisms
+remaining authoritative.
 
-The historical `start-preview` and `system-preview` modules and Panther
-UI-preview build/flash/validation scripts are not part of the canonical source
-tree.
+Repository CI compiles the production presentation source through
+`sablestart-presentation-check` and builds the visual-review harness, but those
+Gradle modules are not product HOME implementations.
 
-On `ai-g732`, the authoritative compiler check is still Soong. The final build
-runs `m SableStart` as a focused preflight before the expensive combined
-Settings/SystemUI module gate.
+On `ai-g732`, the authoritative compiler check is Soong. The qualification
+path applies and verifies the Sable presentation inside Launcher3 and runs
+`m Launcher3QuickStep` as the focused HOME preflight before the combined
+Dialer/Contacts/application/Settings/SystemUI module gate.
+
+`build/panther/build-sablestart.sh` is obsolete and must remain absent. The
+canonical preparation and qualification entry points are
+`prepare-r8-final-ui.sh`, `build-r8-final-ui.sh`, and
+`qualify-r9-physical-ux.sh`.
 
 ## Canonical vendor/sable workspace inventory
 
@@ -132,5 +136,5 @@ vendor/sable/r8/prebuilt/
 
 The only permitted files are `Android.bp`, `r8-product.mk`,
 `manifest.tsv`, `SHA256SUMS.txt`, `SABLEOS_SOURCE_COMMIT.txt`, and the
-eight canonical Sable APKs. Extra files, directories, symlinks or blueprints are
+nine canonical Sable APKs. Extra files, directories, symlinks or blueprints are
 qualification failures.
