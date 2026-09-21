@@ -159,7 +159,8 @@ for manifest in \
     "$ROOT/apps/r8/android/games/src/main/AndroidManifest.xml" \
     "$ROOT/apps/r8/android/media/src/main/AndroidManifest.xml" \
     "$ROOT/apps/r8/android/hub/src/main/AndroidManifest.xml" \
-    "$ROOT/apps/r8/android/weather/src/main/AndroidManifest.xml"
+    "$ROOT/apps/r8/android/weather/src/main/AndroidManifest.xml" \
+    "$ROOT/apps/r8/android/calendar/src/main/AndroidManifest.xml"
 do
     grep -Fq 'android:authorities="org.sableos.start.appearance"' "$manifest" \
         || fail R8_GLOBAL_APPEARANCE_VISIBILITY
@@ -170,7 +171,8 @@ for source in \
     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt" \
     "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt" \
     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt" \
-    "$ROOT/apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt"
+    "$ROOT/apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt" \
+    "$ROOT/apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt"
 do
     grep -Fq 'SableGlobalTheme(window = window)' "$source" \
         || fail R8_GLOBAL_APPEARANCE_CONSUMER
@@ -205,7 +207,8 @@ for expected_apk in \
     'games/build/outputs/apk/game2048/debug/games-game2048-debug.apk' \
     'media/build/outputs/apk/debug/media-debug.apk' \
     'hub/build/outputs/apk/debug/hub-debug.apk' \
-    'weather/build/outputs/apk/debug/weather-debug.apk'
+    'weather/build/outputs/apk/debug/weather-debug.apk' \
+    'calendar/build/outputs/apk/debug/calendar-debug.apk'
 do
     grep -Fq "$expected_apk" "$EXPORTER" \
         || fail R8_BUNDLE_EXPLICIT_APK_INPUTS
@@ -254,6 +257,7 @@ expected = {
     "SableHub.apk",
     "SableMail.apk",
     "SableWeather.apk",
+    "SableCalendar.apk",
 }
 actual = {path.name for path in prebuilt.glob("*.apk")}
 if actual != expected:
