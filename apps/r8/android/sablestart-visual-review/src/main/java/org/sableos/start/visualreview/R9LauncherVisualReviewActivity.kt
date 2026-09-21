@@ -58,7 +58,12 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
         refreshInventory()
         favoriteKeys = defaultFavoriteKeys(appsState.value)
-        startTileKeys = null
+        startTileKeys =
+            if (intent.getBooleanExtra(EXTRA_EXTENDED_START_TILES, false)) {
+                extendedStartTileKeys(appsState.value)
+            } else {
+                null
+            }
 
         applyCurrentSystemBars()
 
@@ -247,6 +252,28 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         )
     }
 
+    private fun extendedStartTileKeys(apps: List<AppEntry>): Set<String> {
+        val selected = linkedMapOf<String, AppEntry>()
+
+        REVIEW_START_LABELS.forEach { preferred ->
+            apps.firstOrNull { entry ->
+                entry.label.equals(preferred, ignoreCase = true)
+            }?.let { entry ->
+                selected.putIfAbsent(entry.stableKey(), entry)
+            }
+        }
+
+        apps.forEach { entry ->
+            if (selected.size < REVIEW_START_TILE_COUNT) {
+                selected.putIfAbsent(entry.stableKey(), entry)
+            }
+        }
+
+        return selected.values
+            .take(REVIEW_START_TILE_COUNT)
+            .mapTo(linkedSetOf()) { entry -> entry.stableKey() }
+    }
+
     private fun defaultFavoriteKeys(apps: List<AppEntry>): Set<String> {
         val selected = linkedMapOf<String, AppEntry>()
 
@@ -277,7 +304,9 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     private companion object {
         const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
         const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
+        const val EXTRA_EXTENDED_START_TILES = "extendedStartTiles"
         const val REVIEW_PIN_COUNT = 3
+        const val REVIEW_START_TILE_COUNT = 14
 
         val REVIEW_PIN_LABELS =
             listOf(
@@ -286,6 +315,26 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 "Calculator",
                 "Files",
                 "Camera",
+            )
+
+        val REVIEW_START_LABELS =
+            listOf(
+                "Phone",
+                "Messages",
+                "Sable Mail",
+                "Mail",
+                "Calendar",
+                "Sable Weather",
+                "Weather",
+                "Photos",
+                "Sable Media",
+                "Media",
+                "Camera",
+                "Sable Calculator",
+                "Calculator",
+                "Files",
+                "Chrome",
+                "Settings",
             )
 
         val PRIVACY_PERMISSION_GROUPS =
