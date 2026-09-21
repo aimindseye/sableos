@@ -18,7 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableGlobalTheme
 
-private abstract class ReviewFixtureActivity(
+abstract class ReviewFixtureActivity(
     private val title: String,
 ) : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
