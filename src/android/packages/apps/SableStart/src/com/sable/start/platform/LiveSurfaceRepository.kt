@@ -34,12 +34,7 @@ class LiveSurfaceRepository(
             photos = loading.copy(title = "Photos"),
             music = loading.copy(title = "Music"),
             calendar = loading.copy(title = "Calendar"),
-            weather =
-                LiveDatum(
-                    title = "Weather",
-                    detail = "provider not configured",
-                    availability = LiveAvailability.UNAVAILABLE,
-                ),
+            weather = weatherSnapshot(),
             tasks =
                 LiveDatum(
                     title = "Tasks",
@@ -80,12 +75,7 @@ class LiveSurfaceRepository(
                     noun = "track",
                 ),
                 calendar = calendarToday(nowEpochMs),
-                weather =
-                    LiveDatum(
-                        title = "Weather",
-                        detail = "provider not configured",
-                        availability = LiveAvailability.UNAVAILABLE,
-                    ),
+                weather = weatherSnapshot(),
                 tasks =
                     LiveDatum(
                         title = "Tasks",
@@ -95,6 +85,82 @@ class LiveSurfaceRepository(
                 observedAtEpochMs = nowEpochMs,
             )
         }
+
+    private fun weatherSnapshot(): LiveDatum {
+        val uri =
+            android.net.Uri.parse(
+                "content://org.sableos.weather.snapshot/current",
+            )
+
+        return runCatching {
+            resolver
+                .query(
+                    uri,
+                    arrayOf(
+                        "title",
+                        "detail",
+                        "availability",
+                        "observed_at",
+                    ),
+                    null,
+                    null,
+                    null,
+                )
+                ?.use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        return@use null
+                    }
+
+                    val title =
+                        cursor
+                            .getString(
+                                cursor.getColumnIndexOrThrow("title"),
+                            )
+                            .orEmpty()
+                            .ifBlank { "Weather" }
+                    val detail =
+                        cursor
+                            .getString(
+                                cursor.getColumnIndexOrThrow("detail"),
+                            )
+                            .orEmpty()
+                            .ifBlank { "weather unavailable" }
+                    val availability =
+                        when (
+                            cursor
+                                .getString(
+                                    cursor.getColumnIndexOrThrow(
+                                        "availability",
+                                    ),
+                                )
+                                ?.uppercase()
+                        ) {
+                            "LIVE" -> LiveAvailability.LIVE
+                            "STALE" -> LiveAvailability.LIVE
+                            "FAILED" -> LiveAvailability.ERROR
+                            "FETCHING", "LOCAL" -> LiveAvailability.LOADING
+                            else -> LiveAvailability.UNAVAILABLE
+                        }
+
+                    LiveDatum(
+                        title = title,
+                        detail = detail,
+                        availability = availability,
+                    )
+                }
+                ?: LiveDatum(
+                    title = "Weather",
+                    detail = "Sable Weather not available",
+                    availability = LiveAvailability.UNAVAILABLE,
+                )
+        }.getOrElse {
+            LiveDatum(
+                title = "Weather",
+                detail = "Sable Weather not available",
+                availability = LiveAvailability.UNAVAILABLE,
+            )
+        }
+    }
 
     private fun mediaCount(
         permission: String,
