@@ -240,10 +240,12 @@ require(
     "NETWORK_FETCH_AUTHORIZED=NO",
     "./gradlew     --offline",
     "./gradlew         --offline",
+    'SABLE_QUALIFICATION_ONLY="$SABLE_QUALIFICATION_ONLY"',
 )
 require(
     "build/panther/build-r8-final-ui.sh",
     "SABLE_BUILD_STAGE",
+    "COMPOSITION_QUALIFICATION_ONLY=YES",
     "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS",
     "FULL_TARGET_FILES_BUILD_PERFORMED=NO",
 )
@@ -259,6 +261,9 @@ require(
     "packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt",
     "apply_r9_systemui_coherence.py",
     "R9_SYSTEMUI_COHERENCE_SOURCE=PASS",
+    "R9_LAUNCHER_VISUAL_ACCEPTANCE_SEAL=DEFERRED_MODULE_QUALIFICATION",
+    "R9_L6_VISUAL_REVIEW_STATUS=PENDING_SOURCE_REVIEW",
+    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW",
 )
 require(
     "tests/systemui/device/r9_identity_audit.sh",
