@@ -64,6 +64,23 @@ Hub is the central attention/communication surface. It uses standard Android not
 
 Reply and other generic actions use application-supplied Android actions such as `RemoteInput`/`PendingIntent` semantics. Person linking is local-first and evidence-based.
 
+### Notification delivery and presentation boundary
+
+Sable does not introduce or search for a GrapheneOS-specific notification-manager stack. Android/AOSP `NotificationManager`, notification channels, conversation metadata, `RemoteInput`, `PendingIntent` actions and the existing SystemUI notification presentation path remain authoritative.
+
+Notification **delivery to an application before it posts an Android notification** is a separate application/provider concern:
+
+- an app may use Firebase Cloud Messaging when it depends on FCM and the user has chosen to install sandboxed Google Play;
+- a portable app may maintain its own push connection, for example WebSocket-style messaging or IMAP IDLE for mail;
+- an app may use UnifiedPush when it explicitly supports that ecosystem;
+- infrequent pull-based work should use Android scheduling such as `JobScheduler`, rather than Sable inventing a privileged polling daemon.
+
+Sable Hub consumes the Android notification/conversation surface after the application has posted it. Hub must not become a universal push proxy, obtain provider credentials merely to relay notifications, or bypass Android application sandboxing.
+
+For Sable Mail, the retained mail client's own supported background synchronization / IMAP IDLE behavior is preferred. Sable must not add an FCM middleman that requires uploading mail credentials to a Sable server solely to generate notifications.
+
+Reference: GrapheneOS FAQ, “Do notifications work properly on GrapheneOS?” — https://grapheneos.org/faq#notifications
+
 ### AOD
 
 AOD is Sable presentation layered over supported Android/device doze/display capability. Lock-screen privacy remains authoritative. AOD does not gain unrestricted microphone, Hub or Agent privilege.
