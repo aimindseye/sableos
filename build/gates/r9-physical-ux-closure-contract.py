@@ -492,6 +492,17 @@ require(
     "allowed_later_framework_modified",
 )
 require(
+    "build/gates/r9-launcher-visual-review-contract.py",
+    "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT",
+    "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT=PASS_MINSDK30",
+)
+require(
+    "apps/r8/android/sablestart-visual-review/src/main/java/org/sableos/start/visualreview/R9LauncherVisualReviewActivity.kt",
+    "Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU",
+    "PackageManager.PackageInfoFlags.of(",
+    '@Suppress("DEPRECATION")',
+)
+require(
     "build/gates/r8-final-product-composition.sh",
     "--allow-framework-untracked",
     "packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt",
@@ -626,6 +637,7 @@ print("R9_WEATHER_CURSOR_ROW_TYPE_CONTRACT=PASS")
 print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
 print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
+print("R9_VISUAL_REVIEW_MINSDK30_PACKAGEINFO_COMPAT=PASS")
 print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
