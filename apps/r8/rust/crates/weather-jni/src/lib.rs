@@ -1,9 +1,7 @@
 use jni::objects::{JObject, JString};
 use jni::sys::{jboolean, jdouble, jlong, jstring};
 use jni::JNIEnv;
-use sable_weather_core::{
-    build_open_meteo_url, parse_open_meteo, provider_state, TemperatureUnit,
-};
+use sable_weather_core::{build_open_meteo_url, parse_open_meteo, provider_state, TemperatureUnit};
 
 fn jni_string(env: &JNIEnv<'_>, value: String) -> jstring {
     match env.new_string(value) {
@@ -133,9 +131,6 @@ mod tests {
 
     #[test]
     fn jni_protocol_self_test_is_stable() {
-        assert_eq!(
-            qualification(),
-            "PASS:weather-core:open-meteo:hourly:daily"
-        );
+        assert_eq!(qualification(), "PASS:weather-core:open-meteo:hourly:daily");
     }
 }
