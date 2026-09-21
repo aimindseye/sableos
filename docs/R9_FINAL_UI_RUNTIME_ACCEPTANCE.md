@@ -16,6 +16,37 @@ Sable appearance has two layers:
 
 The Panther acceptance must verify both layers.
 
+### Mac visual-review fidelity boundary
+
+The Mac mini Pixel 7 AVD is a design/interaction host, not a SableOS product
+image. The visual-review APK therefore emulates only the cross-application
+Sable appearance provider contract that an unprivileged review APK can
+faithfully exercise:
+
+- it registers the same `org.sableos.start.appearance` provider authority;
+- it persists appearance through the production `StartStateRepository`;
+- installed Sable-owned review apps can observe Light/Dark/accent updates through
+  the same `SableGlobalTheme` content-observer path used by production.
+
+The Mac review APK does **not** claim to prove the privileged Android
+`UiModeManager.setNightMode()` bridge. Platform-app night-mode propagation is
+Panther physical acceptance only.
+
+The stock Pixel AVD may contain Google Chrome `com.android.chrome`. Chrome is
+filtered from the Sable launcher visual-review inventory so it cannot be
+mistaken for SableOS product composition. The harness does not rename Chrome or
+inject a fake Vanadium entry. Vanadium package/default-browser identity remains
+Panther physical acceptance only.
+
+The scripted Mac fidelity audit is:
+
+```
+bash build/macos/audit-r9-launcher-review-fidelity.sh [follow-system|light|dark]
+```
+
+A successful audit proves the cross-process appearance provider state and
+explicitly reports browser/system-night claims as deferred to Panther.
+
 Sable-owned applications that must follow the selected Sable appearance:
 
 - Sable Start / Launcher presentation;
@@ -113,4 +144,20 @@ R9_FINAL_UI_APPEARANCE_SABLE_APPS=PASS
 R9_FINAL_UI_APPEARANCE_PLATFORM_APPS=PASS
 ```
 
-Do not infer either appearance marker solely from the Mac AVD.
+Do not infer either Panther appearance marker solely from the Mac AVD.
+
+Mac review acceptance may prove:
+
+```
+R9_VISUAL_FIDELITY_APPEARANCE_PROVIDER=PASS
+R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS
+R9_VISUAL_FIDELITY_AUDIT=PASS
+```
+
+It must continue to report:
+
+```
+R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER
+R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER
+```
+
