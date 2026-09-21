@@ -305,6 +305,7 @@ run_apk_seal() {
     "$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk"
     "$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
     "$ROOT/apps/r8/android/weather/build/outputs/apk/debug/weather-debug.apk"
+    "$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk"
   )
 
   : > "$EVIDENCE_DIR/R8_APK_SEALS.txt"
