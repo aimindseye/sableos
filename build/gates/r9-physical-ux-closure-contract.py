@@ -174,6 +174,26 @@ require(
 )
 
 # ---------------------------------------------------------------------------
+# Repo layout: standalone SableStart build entry point is retired. Production
+# Sable presentation is qualified through Launcher3/Quickstep.
+# ---------------------------------------------------------------------------
+require(
+    "build/check-repo-layout.sh",
+    "build/panther/prepare-r8-final-ui.sh",
+    "build/panther/build-r8-final-ui.sh",
+    "build/panther/qualify-r9-physical-ux.sh",
+    "apply_r9_launcher3_foundation.py",
+    "r9_launcher3/SableQuickstepLauncher.kt",
+    "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
+    "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS",
+)
+require(
+    "build/check-ci-policy.py",
+    "obsolete standalone SableStart build script remains in required layout",
+    "repo layout contract token missing",
+)
+
+# ---------------------------------------------------------------------------
 # Phone + Contacts: pinned GrapheneOS 2026081300 presentation-only refresh.
 # ---------------------------------------------------------------------------
 require(
