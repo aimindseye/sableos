@@ -292,7 +292,7 @@ fn percent_encode(value: &str) -> String {
 }
 
 fn key_start<'a>(json: &'a str, key: &str) -> Option<&'a str> {
-    let needle = format!("\\\"{key}\\\"");
+    let needle = format!("\"{key}\"");
     let start = json.find(&needle)? + needle.len();
     let rest = &json[start..];
     let colon = rest.find(':')? + 1;
