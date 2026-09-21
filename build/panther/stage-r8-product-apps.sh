@@ -76,6 +76,7 @@ expected = {
     "org.sableos.hub": "SableHub.apk",
     "org.sableos.mail": "SableMail.apk",
     "org.sableos.weather": "SableWeather.apk",
+    "org.sableos.calendar": "SableCalendar.apk",
 }
 
 with manifest.open(newline="", encoding="utf-8") as f:
@@ -240,7 +241,7 @@ install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
 install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
 install -m 0644     "$BUNDLE_SOURCE_IDENTITY"     "$DEST/SABLEOS_SOURCE_COMMIT.txt"
 
-for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk
+for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
 do
     install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
 done
