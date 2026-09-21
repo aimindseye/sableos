@@ -106,6 +106,7 @@ require(
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
     "SableSystemAppearance.kt",
+    'print(f"R9_SYSTEMUI_COHERENCE=FAIL {exc}")',
     "content://org.sableos.start.appearance/appearance",
     "registerContentObserver",
     "rememberSableSystemAccent",
@@ -118,6 +119,9 @@ require(
     "build/panther/prepare-r8-final-ui.sh",
     "R9_SYSTEMUI_COHERENCE",
     "apply_r9_systemui_coherence.py",
+    "R9_MESSAGING_SOURCE=PASS_RESTORED_LOCAL_ONLY",
+    "NETWORK_FETCH_AUTHORIZED=NO",
+    "sync -l external/Messaging",
 )
 
 # ---------------------------------------------------------------------------
@@ -127,6 +131,8 @@ require(
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py",
     'MESSAGING_HEAD = "d125442740e85c8c630c6b3c1091046166b99187"',
+    "MESSAGING_SOURCE_MISSING=",
+    "MESSAGING_MANIFEST_MISSING=",
     "android.intent.category.APP_MESSAGING",
     "android.provider.Telephony.SMS_DELIVER",
     "android.provider.Telephony.WAP_PUSH_DELIVER",
