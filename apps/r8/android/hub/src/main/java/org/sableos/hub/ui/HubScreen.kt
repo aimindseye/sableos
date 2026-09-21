@@ -1,11 +1,20 @@
 package org.sableos.hub.ui
 
 import android.text.format.DateUtils
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -15,6 +24,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableListRow
@@ -30,6 +42,8 @@ import org.sableos.hub.HubProvider
 import org.sableos.hub.HubSendResult
 import org.sableos.hub.HubSnapshot
 import org.sableos.hub.ProviderCapabilityClass
+import java.text.DateFormat
+import java.util.Date
 
 private enum class HubPivot {
     All,
@@ -63,7 +77,7 @@ fun HubScreen(
     onOpenProvider: (String) -> Boolean,
 ) {
     var route by remember {
-        mutableStateOf<HubRoute>(HubRoute.Root(HubPivot.All))
+        mutableStateOf<HubRoute>(HubRoute.Root(HubPivot.Messages))
     }
     var search by remember {
         mutableStateOf("")
@@ -76,8 +90,8 @@ fun HubScreen(
         when (val current = route) {
             is HubRoute.Root -> {
                 SablePageHeader(
-                    title = "Messages",
-                    subtitle = "Conversations, people and services in one Sable surface.",
+                    title = "messages",
+                    subtitle = "One visible Sable communication surface; transport detail stays secondary.",
                 )
 
                 HubPivotRow(
@@ -314,67 +328,75 @@ private fun MessagesPivot(
     onRequestAccess: () -> Unit,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
 ) {
-    AccessPanel(
-        snapshot = snapshot,
-        onRequestAccess = onRequestAccess,
-        onOpenAndroidMessaging = onOpenAndroidMessaging,
+    SableActionButton(
+        text = "+  new message",
+        primary = false,
+        onClick = onCompose,
     )
 
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-    ) {
-        SableActionButton(
-            text = "New message",
-            modifier = Modifier.weight(1f),
-            onClick = onCompose,
-        )
-        SableActionButton(
-            text = "Refresh",
-            modifier = Modifier.weight(1f),
-            primary = false,
-            onClick = onRefresh,
-        )
-    }
+    Spacer(Modifier.height(SableSpacing.Sm))
 
-    OutlinedTextField(
-        value = search,
-        onValueChange = onSearchChange,
-        modifier = Modifier.fillMaxWidth(),
-        singleLine = true,
-        label = { Text("Search conversations") },
-    )
-
-    val query = search.trim()
-    val filtered =
-        if (query.isBlank()) {
-            snapshot.conversations
-        } else {
-            snapshot.conversations.filter { conversation ->
-                conversation.displayName.contains(query, ignoreCase = true) ||
-                    conversation.address.contains(query, ignoreCase = true) ||
-                    conversation.lastBody.contains(query, ignoreCase = true)
-            }
-        }
-
-    if (filtered.isEmpty()) {
+    if (snapshot.conversations.isEmpty()) {
         SablePanel {
             Text(
                 text =
                     if (snapshot.capabilities.canReadSms) {
-                        "No matching conversations."
+                        "No conversations yet."
                     } else {
-                        "Grant SMS access when available, or open the system messaging service."
+                        "Grant Messages access to show your conversations."
                     },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     } else {
-        filtered.forEach { conversation ->
+        snapshot.conversations.take(80).forEach { conversation ->
             ConversationRow(
                 conversation = conversation,
                 onClick = { onConversation(conversation) },
+            )
+        }
+    }
+
+    Spacer(Modifier.height(SableSpacing.Md))
+    ApprovedMessagingStatusPanel(
+        snapshot = snapshot,
+        onRequestAccess = onRequestAccess,
+        onOpenAndroidMessaging = onOpenAndroidMessaging,
+    )
+}
+
+@Composable
+private fun ApprovedMessagingStatusPanel(
+    snapshot: HubSnapshot,
+    onRequestAccess: () -> Unit,
+    onOpenAndroidMessaging: (String?, String?) -> Boolean,
+) {
+    val ready =
+        snapshot.capabilities.canReadSms &&
+            snapshot.capabilities.canSendSms
+
+    SablePanel {
+        Text(
+            text = "Messaging status",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text =
+                if (ready) {
+                    "SMS ready · MMS/RCS can open the system messaging service when needed."
+                } else {
+                    "Grant Messages access for SMS. MMS/RCS can use the system messaging service when needed."
+                },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (!ready) {
+            Spacer(Modifier.height(SableSpacing.Sm))
+            SableActionButton(
+                text = "Review access",
+                primary = false,
+                onClick = onRequestAccess,
             )
         }
     }
@@ -385,24 +407,81 @@ private fun ConversationRow(
     conversation: HubConversation,
     onClick: () -> Unit,
 ) {
-    val unread =
-        if (conversation.unreadCount > 0) {
-            " · " + conversation.unreadCount + " unread"
+    val unread = conversation.unreadCount > 0
+    val accent =
+        if (unread) {
+            Color(0xFF35C66B)
         } else {
-            ""
+            MaterialTheme.colorScheme.onSurfaceVariant
         }
+    val initial =
+        conversation.displayName
+            .trim()
+            .firstOrNull()
+            ?.uppercaseChar()
+            ?.toString()
+            ?: "?"
 
-    SableListRow(
-        title = conversation.displayName,
-        subtitle =
-            conversation.lastBody.take(80) +
-                unread +
-                " · " +
-                relativeTime(conversation.lastDateMillis),
-        selected = conversation.unreadCount > 0,
-        onClick = onClick,
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(48.dp)
+                    .background(
+                        if (unread) {
+                            Color(0xFF0B3524)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                        CircleShape,
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = conversation.displayName,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = conversation.lastBody.take(80),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = clockTime(conversation.lastDateMillis),
+            style = MaterialTheme.typography.titleMedium,
+            color = accent,
+        )
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
     )
 }
+
+private fun clockTime(epochMillis: Long): String =
+    DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epochMillis))
 
 @Composable
 private fun PeoplePivot(
