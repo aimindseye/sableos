@@ -193,6 +193,42 @@ require(
     "R9_READER_GLOBAL_THEME_CONTRACT=PASS",
 )
 
+# ---------------------------------------------------------------------------
+# Canonical pre-full qualification + runtime identity audit.
+# ---------------------------------------------------------------------------
+require(
+    "build/sable.sh",
+    "qualify [suite]",
+    "SABLE_DEVICE_QUALIFY_SUPPORTED",
+    'sable_device_qualify "$RELEASE" "$SUITE"',
+)
+require(
+    "build/devices/panther.sh",
+    "SABLE_DEVICE_QUALIFY_SUPPORTED=YES",
+    "SABLE_DEVICE_DEFAULT_QUALIFICATION_SUITE=physical-ux",
+    "qualify-r9-physical-ux.sh",
+    "R9:identity|r9:identity",
+)
+require(
+    "build/panther/qualify-r9-physical-ux.sh",
+    "FULL_TARGET_FILES_BUILD_AUTHORIZED=NO",
+    "SABLE_QUALIFICATION_ONLY=YES",
+    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW",
+)
+require(
+    "build/panther/build-r8-final-ui.sh",
+    "SABLE_BUILD_STAGE",
+    "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS",
+    "FULL_TARGET_FILES_BUILD_PERFORMED=NO",
+)
+require(
+    "tests/systemui/device/r9_identity_audit.sh",
+    "DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY",
+    "android:string/android_system_label",
+    "android:string/adb_active_notification_title",
+    "R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY",
+)
+
 # Active target set only.
 for rel in (
     "build/devices/panther.sh",
@@ -252,5 +288,7 @@ print("R9_SYSTEMUI_SABLE_ACCENT_CONTRACT=PASS")
 print("R9_SINGLE_VISIBLE_MESSAGES_CONTRACT=PASS")
 print("R9_FIRST_PARTY_PRODUCT_ICON_CONTRACT=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
+print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
+print("R9_RUNTIME_SYSTEM_IDENTITY_AUDIT_CONTRACT=PASS")
 print("R9_ACTIVE_DEVICE_SET_CONTRACT=PASS")
 print("R9_PHYSICAL_UX_CLOSURE_CONTRACT=PASS")
