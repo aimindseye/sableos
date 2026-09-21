@@ -1007,7 +1007,7 @@ class SableMailSnapshotProvider : ContentProvider() {
 
         return MatrixCursor(COLUMNS).apply {
             addRow(
-                arrayOf(
+                arrayOf<Any?>(
                     "Mail",
                     detail,
                     if (count == 0) "EMPTY" else "LIVE",
