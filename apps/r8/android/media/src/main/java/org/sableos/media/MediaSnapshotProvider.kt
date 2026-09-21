@@ -38,7 +38,7 @@ class MediaSnapshotProvider : ContentProvider() {
 
         return MatrixCursor(COLUMNS).apply {
             addRow(
-                arrayOf(
+                arrayOf<Any?>(
                     "Media",
                     detail,
                     if (hasMedia) "LIVE" else "EMPTY",
