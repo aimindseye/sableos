@@ -185,11 +185,13 @@ require(
     "apply_r9_launcher3_foundation.py",
     "r9_launcher3/SableQuickstepLauncher.kt",
     "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
+    "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT",
+    "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS",
     "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS",
 )
 require(
     "build/check-ci-policy.py",
-    "obsolete standalone SableStart build script remains in required layout",
+    "obsolete standalone SableStart artifact remains in required layout",
     "repo layout contract token missing",
 )
 
