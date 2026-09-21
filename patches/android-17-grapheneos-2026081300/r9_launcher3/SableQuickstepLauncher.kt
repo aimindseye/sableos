@@ -3,10 +3,13 @@ package com.android.launcher3.sable
 import android.Manifest
 import android.app.UiModeManager
 import android.content.Intent
+import android.database.ContentObserver
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
@@ -53,6 +56,13 @@ class SableQuickstepLauncher : QuickstepLauncher() {
     private var sableView: ComposeView? = null
     private var canSableNavigateBack = false
 
+    private val liveContentObserver =
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                liveRefreshGeneration.value += 1
+            }
+        }
+
     private val appsUpdateListener =
         AllAppsStore.OnUpdateListener {
             refreshAppsFromLauncherModel()
@@ -78,6 +88,16 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         startStateRepository = StartStateRepository(this)
         appearanceState.value = startStateRepository.loadAppearance()
 
+        LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
+            runCatching {
+                contentResolver.registerContentObserver(
+                    uri,
+                    true,
+                    liveContentObserver,
+                )
+            }
+        }
+
         allAppsStore =
             activityComponent.appsStore.also { store ->
                 store.addUpdateListener(appsUpdateListener)
@@ -99,6 +119,7 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         if (allAppsStore != null) {
             refreshAppsFromLauncherModel()
         }
+        liveRefreshGeneration.value += 1
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -148,6 +169,10 @@ class SableQuickstepLauncher : QuickstepLauncher() {
     }
 
     override fun onDestroy() {
+        runCatching {
+            contentResolver.unregisterContentObserver(liveContentObserver)
+        }
+
         allAppsStore?.removeUpdateListener(appsUpdateListener)
         allAppsStore = null
 
@@ -416,10 +441,8 @@ class SableQuickstepLauncher : QuickstepLauncher() {
     private fun requestLivePermissions() {
         val permissions =
             buildList {
-                add(Manifest.permission.READ_CALENDAR)
                 if (Build.VERSION.SDK_INT >= 33) {
                     add(Manifest.permission.READ_MEDIA_IMAGES)
-                    add(Manifest.permission.READ_MEDIA_AUDIO)
                 } else {
                     add(Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
