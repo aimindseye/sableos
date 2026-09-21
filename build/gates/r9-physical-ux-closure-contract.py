@@ -239,6 +239,7 @@ for rel in (
     "apps/r8/rust/crates/weather-jni/src/lib.rs",
     "apps/r8/android/weather/src/main/AndroidManifest.xml",
     "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherGlyph.kt",
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherRepository.kt",
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
 ):
@@ -275,6 +276,23 @@ require(
     "SableGlobalTheme(window = window)",
     "Open-Meteo · HTTPS",
     "precise location is not required",
+    "WeatherGlyph(",
+)
+forbid(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "private fun conditionMark(",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherGlyph.kt",
+    "Production Sable Weather condition glyphs",
+    "WeatherCondition.PartlyCloudy",
+    "WeatherCondition.Cloudy",
+    "WeatherCondition.Fog",
+    "WeatherCondition.Rain",
+    "WeatherCondition.Snow",
+    "WeatherCondition.Storm",
+    "drawCloud(",
+    "drawSun(",
 )
 require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherRepository.kt",
@@ -634,6 +652,7 @@ print("R9_SMS_MMS_SPAM_CLASSIFICATION_BOUNDARY=PASS")
 print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
 print("R9_WEATHER_JSON_KEY_PARSER_CONTRACT=PASS")
 print("R9_WEATHER_CURSOR_ROW_TYPE_CONTRACT=PASS")
+print("R9_WEATHER_CONDITION_GLYPH_CONTRACT=PASS_REVIEWED_COMPOSE_PRIMITIVES")
 print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
 print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
