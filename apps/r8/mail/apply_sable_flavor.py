@@ -1044,8 +1044,10 @@ class SableMailSnapshotProvider : ContentProvider() {
             context.packageManager.getPackagesForUid(callingUid)
                 ?.toSet()
                 .orEmpty()
-        check("com.android.launcher3" in packages) {
-            "Sable live snapshot is restricted to Launcher3."
+        if ("com.android.launcher3" !in packages) {
+            throw SecurityException(
+                "Sable live snapshot is restricted to Launcher3.",
+            )
         }
     }
 
