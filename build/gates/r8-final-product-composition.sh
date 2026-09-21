@@ -183,10 +183,19 @@ echo "===== CUMULATIVE SYSTEM SURFACE SOURCE GATE ====="
 
 python3 \
     "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" \
-    --source "$WS" verify \
+    --source "$WS" \
+    --allow-framework-untracked \
+    packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt \
+    verify \
     || fail R8_UI4_UI5_UI6_CUMULATIVE_SOURCE
 
+python3 \
+    "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py" \
+    --source "$WS" verify \
+    || fail R9_SYSTEMUI_COHERENCE_SOURCE
+
 echo "R8_UI4_UI5_UI6_CUMULATIVE_SOURCE=PASS"
+echo "R9_SYSTEMUI_COHERENCE_SOURCE=PASS"
 
 echo
 echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
