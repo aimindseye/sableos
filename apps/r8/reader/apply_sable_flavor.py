@@ -926,6 +926,25 @@ class SableTextReaderUtilTest {
 ''',
     )
 
+    # The upstream debug source set is higher priority than the product flavor
+    # during manifest merging. Give the exact SableDebug variant an explicit
+    # identity overlay so Sable product icons win without mutating upstream
+    # debug behavior for the Vaachak flavor.
+    sable_debug_manifest_dir = mobile_root / "leisure" / "src" / "sableDebug"
+    write(
+        sable_debug_manifest_dir / "AndroidManifest.xml",
+        '''<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <application
+        android:icon="@drawable/ic_sable_reader"
+        android:roundIcon="@drawable/ic_sable_reader"
+        android:label="@string/app_name"
+        tools:replace="android:icon,android:roundIcon,android:label" />
+</manifest>
+''',
+    )
+
     manifest_dir = mobile_root / "leisure" / "src" / "sable"
     write(
         manifest_dir / "AndroidManifest.xml",
