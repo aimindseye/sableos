@@ -137,7 +137,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                         val label = rawLabel
                         if (
                             label.isEmpty() ||
-                            component.packageName == packageName ||
+                            component.className in REVIEW_INTERNAL_COMPONENTS ||
                             component.packageName == GRAPHENE_MESSAGING_PACKAGE ||
                             component.packageName == HOST_AVD_GOOGLE_MESSAGES_PACKAGE ||
                             component.packageName == HOST_AVD_CHROME_PACKAGE ||
@@ -318,6 +318,12 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private companion object {
         const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+        val REVIEW_INTERNAL_COMPONENTS =
+            setOf(
+                "org.sableos.start.visualreview.R9LauncherVisualReviewActivity",
+                "org.sableos.start.visualreview.R9DailyDriverDesignReviewActivity",
+            )
+
         const val HOST_AVD_GOOGLE_MESSAGES_PACKAGE = "com.google.android.apps.messaging"
         const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"
         const val HOST_AVD_GOOGLE_CALENDAR_PACKAGE = "com.google.android.calendar"
