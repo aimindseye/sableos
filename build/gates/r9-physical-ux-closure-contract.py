@@ -183,6 +183,8 @@ require(
     'text = "Open MMS / RCS"',
     'subtitle = "Write an SMS here. MMS/RCS can be handed off when needed."',
     'text = "Open messaging"',
+    '"SMS history is not available in Sable Messages yet."',
+    '"Grant SMS access when available, or open the system messaging service."',
 )
 forbid(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
@@ -191,6 +193,8 @@ forbid(
     '"Sable Hub does not take the default SMS role in R8-F.',
     'subtitle = "SMS uses Android telephony capability.',
     'text = "Use transport"',
+    '"SMS history is not available to Sable Hub yet."',
+    '"Grant SMS access if this Sable build allows it, or use the Android transport fallback."',
 )
 
 # ---------------------------------------------------------------------------
