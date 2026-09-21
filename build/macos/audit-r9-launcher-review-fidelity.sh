@@ -62,6 +62,11 @@ chrome_path="$(
         tr -d '\r' |
         head -n 1 || true
 )"
+google_messages_path="$(
+    "$ADB" -s "$SERIAL" shell pm path com.google.android.apps.messaging 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
 vanadium_path="$(
     "$ADB" -s "$SERIAL" shell pm path app.vanadium.browser 2>/dev/null |
         tr -d '\r' |
@@ -73,6 +78,11 @@ if [[ -n "$chrome_path" ]]; then
     echo "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED"
 else
     echo "R9_VISUAL_FIDELITY_HOST_CHROME=ABSENT"
+fi
+if [[ -n "$google_messages_path" ]]; then
+    echo "R9_VISUAL_FIDELITY_HOST_GOOGLE_MESSAGES=DETECTED_FILTERED"
+else
+    echo "R9_VISUAL_FIDELITY_HOST_GOOGLE_MESSAGES=ABSENT"
 fi
 if [[ -n "$vanadium_path" ]]; then
     echo "R9_VISUAL_FIDELITY_HOST_VANADIUM=DETECTED_NONAUTHORITATIVE"
