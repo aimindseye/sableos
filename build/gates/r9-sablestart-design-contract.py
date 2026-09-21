@@ -51,7 +51,8 @@ def check() -> None:
             "app.component.packageName in group.packageNames",
             ".combinedClickable(",
             "apps · settings · Sable actions",
-            "local only · no ambient network search",
+            "privacy-safe summaries · no message bodies or mail subjects on Home",
+            "provider and lifecycle refresh · no ambient launcher network client",
             "AppearanceChoiceRow(",
             "AccentChoiceRow(",
             "reset · follow system + Sable Blue",
@@ -72,13 +73,25 @@ def check() -> None:
     require(
         live,
         (
-            "CalendarContract.Events.TITLE",
-            "CalendarContract.Events.DTSTART",
-            "CalendarContract.Events.ALL_DAY",
-            "nothing else today",
-            'detail = "$whenText · $title"',
+            "content://org.sableos.weather.snapshot/current",
+            "content://org.sableos.calendar.snapshot/current",
+            "content://org.sableos.hub.snapshot/current",
+            "content://org.sableos.mail.snapshot/current",
+            "content://org.sableos.media.snapshot/current",
+            "OBSERVED_URIS",
+            "providerSnapshot(",
         ),
-        "R9_SABLESTART_CONTEXTUAL_CALENDAR",
+        "R9_SABLESTART_CONTEXTUAL_PROVIDER_SNAPSHOTS",
+    )
+    forbid(
+        live,
+        (
+            "CalendarContract.",
+            "Telephony.",
+            "NotificationManager",
+            "MediaSessionManager",
+        ),
+        "R9_SABLESTART_NO_SENSITIVE_PROVIDER_OWNERSHIP",
     )
 
     forbid(
@@ -131,7 +144,8 @@ def self_test() -> None:
     good = (
         "favorites search + command search apps + Sable actions "
         "peek pin to start remove from start pin to favorites "
-        "local only · no ambient network search detectDragGestures"
+        "privacy-safe summaries · no message bodies or mail subjects on Home "
+        "provider and lifecycle refresh · no ambient launcher network client detectDragGestures"
     )
     bad = "favorites Search apps… Reset to Follow system · Sable Blue"
     assert "search + command" in good
@@ -139,7 +153,8 @@ def self_test() -> None:
     assert "pin to start" in good
     assert "remove from start" in good
     assert "pin to favorites" in good
-    assert "local only · no ambient network search" in good
+    assert "privacy-safe summaries" in good
+    assert "no ambient launcher network client" in good
     assert "detectDragGestures" in good
     assert "Search apps…" in bad
     assert "Reset to Follow system · Sable Blue" in bad
