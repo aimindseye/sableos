@@ -207,10 +207,21 @@ grep -Fq 'R9_L6_VISUAL_REVIEW_SCOPE=MAC_DESIGN_COMPLETE' "$visual_acceptance"
 grep -Fq 'r9-launcher-visual-acceptance.py' "$local_ci"
 grep -Fq 'SABLE_LOCAL_CI_STAGE_VISUAL_ACCEPTANCE=PASS' "$local_ci"
 
-if grep -Fq 'python3 "$visual_acceptance"' "$0"; then
-    echo "R9_BUILD_DRIVER_VISUAL_ACCEPTANCE_SCOPE=FAIL_STATIC_CONTRACT_EXECUTION"
+static_body="$(
+    sed -n '/^run_static() {/,/^}/p' "$local_ci"
+)"
+if grep -Fq 'r9-launcher-visual-acceptance.py' <<<"$static_body"; then
+    echo "R9_BUILD_DRIVER_VISUAL_ACCEPTANCE_SCOPE=FAIL_FULL_CI_EXECUTION"
     exit 1
 fi
+
+release_body="$(
+    sed -n '/^if \[\[ "$PROFILE" == release \]\]; then/,/^fi$/p' "$local_ci"
+)"
+grep -Fq 'r9-launcher-visual-acceptance.py' <<<"$release_body" || {
+    echo "R9_BUILD_DRIVER_VISUAL_ACCEPTANCE_SCOPE=FAIL_RELEASE_EXECUTION_MISSING"
+    exit 1
+}
 
 echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_WIRING=PASS"
 echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_EXECUTION=DEFERRED_RELEASE_PROFILE"
