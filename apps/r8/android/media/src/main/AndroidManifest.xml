@@ -19,6 +19,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name=".MediaSnapshotProvider"
+            android:authorities="org.sableos.media.snapshot"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
         <service
             android:name=".PlaybackService"
             android:exported="false"
