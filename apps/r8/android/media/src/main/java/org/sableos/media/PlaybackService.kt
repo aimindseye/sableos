@@ -3,6 +3,7 @@ package org.sableos.media
 import android.content.Intent
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -13,7 +14,23 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        val exoPlayer = ExoPlayer.Builder(this).build()
+        val exoPlayer =
+            ExoPlayer.Builder(this).build().also { player ->
+                player.addListener(
+                    object : Player.Listener {
+                        override fun onMediaItemTransition(
+                            mediaItem: MediaItem?,
+                            reason: Int,
+                        ) {
+                            MediaSnapshotStore.update(this@PlaybackService, player)
+                        }
+
+                        override fun onIsPlayingChanged(isPlaying: Boolean) {
+                            MediaSnapshotStore.update(this@PlaybackService, player)
+                        }
+                    },
+                )
+            }
         player = exoPlayer
         session = MediaSession.Builder(this, exoPlayer).build()
     }
@@ -41,7 +58,10 @@ class PlaybackService : MediaSessionService() {
 
             ACTION_PAUSE -> player?.pause()
             ACTION_RESUME -> player?.play()
-            ACTION_STOP -> player?.stop()
+            ACTION_STOP -> {
+                player?.stop()
+                MediaSnapshotStore.clear(this)
+            }
             ACTION_PREVIOUS -> player?.seekToPreviousMediaItem()
             ACTION_NEXT -> player?.seekToNextMediaItem()
         }
