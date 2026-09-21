@@ -440,7 +440,7 @@ require(
     "CalendarContract.Events.CONTENT_URI",
     "CalendarContract.Reminders.CONTENT_URI",
     "CalendarContract.Reminders.MINUTES, 15",
-    "SableGlobalTheme" if False else "CalendarSnapshot",
+    "CalendarSnapshot",
 )
 require(
     "apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt",
