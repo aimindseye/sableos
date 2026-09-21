@@ -94,7 +94,7 @@ def main() -> int:
         'title = "locations"',
         'title = "weather setup"',
         '"offline forecast"',
-        '"cached · last live 47 min ago"',
+        '"Jersey City · cached · last live 47 min ago"',
         '"approximate device location"',
         '"precise location is never required for weather"',
         '"Open-Meteo · cached locally · manual location"',
