@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+media_screen = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt").read_text()
+main_activity = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt").read_text()
+playback = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackController.kt").read_text()
+reader_patch = (ROOT / "apps/r8/reader/apply_sable_flavor.py").read_text()
+
+failures = []
+
+def require(marker: str, text: str, name: str) -> None:
+    if marker not in text:
+        failures.append(f"missing {name}: {marker!r}")
+
+def forbid(marker: str, text: str, name: str) -> None:
+    if marker in text:
+        failures.append(f"forbidden {name}: {marker!r}")
+
+require(
+    "if (destination == MediaDestination.Collection)",
+    media_screen,
+    "collection full-screen lazy branch",
+)
+require(
+    "private fun CollectionScreen(",
+    media_screen,
+    "collection screen",
+)
+collection = media_screen.split("private fun CollectionScreen(", 1)[1].split(
+    "private fun LocalTrackRow(", 1
+)[0]
+require("LazyColumn(", collection, "collection LazyColumn")
+require("count = localItems.size", collection, "lazy song item count")
+forbid("localItems.forEachIndexed", collection, "eager song composition")
+forbid("items.forEachIndexed", collection, "legacy eager song composition")
+
+require(
+    "publishState(refreshQueue = false)",
+    playback,
+    "cheap playback ticker",
+)
+require(
+    "Player.EVENT_TIMELINE_CHANGED",
+    playback,
+    "queue refresh event",
+)
+require(
+    "cachedQueue",
+    playback,
+    "cached playback queue",
+)
+
+require(
+    "withContext(Dispatchers.IO)",
+    main_activity,
+    "background media import",
+)
+require(
+    "audioFolderScanner.scan(treeUri)",
+    main_activity,
+    "folder scan",
+)
+require(
+    "localAudioRepository.addUris(",
+    main_activity,
+    "metadata import",
+)
+
+require(
+    "if (!BuildConfig.SABLE_PRODUCT)",
+    reader_patch,
+    "Sable Reader global theme branch",
+)
+forbid(
+    "!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK",
+    reader_patch,
+    "Reader E-ink bypass of Sable theme",
+)
+require(
+    "appearance = rememberGlobalSableAppearance()",
+    reader_patch,
+    "Reader global appearance consumer",
+)
+
+if failures:
+    print("R9_PHYSICAL_REMEDIATION_CONTRACT=FAIL")
+    for failure in failures:
+        print(f"FAILURE={failure}")
+    raise SystemExit(1)
+
+print("R9_MEDIA_LARGE_LIBRARY_LAZY_RENDERING=PASS")
+print("R9_MEDIA_QUEUE_TICKER_BOUNDED=PASS")
+print("R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS")
+print("R9_READER_GLOBAL_THEME_CONTRACT=PASS")
+print("R9_PHYSICAL_REMEDIATION_CONTRACT=PASS")
