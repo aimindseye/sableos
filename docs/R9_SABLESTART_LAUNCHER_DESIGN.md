@@ -470,6 +470,20 @@ Until those markers are satisfied:
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ~~~
 
+Visual authorization is source-bound. Any later mutation to production
+SableStart/Launcher3 presentation, Start-tile behavior, appearance, or other
+reviewed launcher UI invalidates the prior visual authorization and returns the
+gate to:
+
+~~~
+R9_SABLESTART_VISUAL_REVIEW_SET=PENDING_SOURCE_REVIEW
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+~~~
+
+The final scrolling Start-tile slice is such a source mutation, so its fresh
+Mac visual set and subsequent physical Panther acceptance are required before
+a full Panther build may be authorized again.
+
 ## Runtime acceptance
 
 A visual approval does not replace runtime qualification.
