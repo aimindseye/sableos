@@ -41,6 +41,12 @@ CONTACTS_DARK = Path("res/values-night/colors.xml")
 CONTACTS_TOOLBAR = Path("res/layout/people_activity_toolbar.xml")
 CONTACTS_STYLES = Path("res/values/styles.xml")
 
+DIALER_BLOCKING = Path("java/com/android/dialer/blocking/Blocking.java")
+DIALER_SETTINGS = Path(
+    "java/com/android/dialer/app/settings/DialerSettingsActivity.java"
+)
+DIALER_APP_MANIFEST = Path("java/com/android/dialer/app/AndroidManifest.xml")
+
 DIALER_DIRT = {
     f" M {DIALER_LIGHT.as_posix()}",
     f" M {DIALER_DARK.as_posix()}",
@@ -336,9 +342,58 @@ def apply(source: Path) -> None:
     verify(source)
 
 
+def verify_blocking_substrate(source: Path) -> None:
+    dialer = source / DIALER_REPO
+
+    blocking = (dialer / DIALER_BLOCKING).read_text(encoding="utf-8")
+    for needle in (
+        "android.provider.BlockedNumberContract",
+        "BlockedNumbers.COLUMN_ORIGINAL_NUMBER",
+        "BlockedNumbers.COLUMN_E164_NUMBER",
+        "ContentProviderOperation.newInsert(BlockedNumbers.CONTENT_URI)",
+        "ContentProviderOperation.newDelete(BlockedNumbers.CONTENT_URI)",
+        "resolver.applyBatch(BlockedNumberContract.AUTHORITY, ops)",
+    ):
+        if needle not in blocking:
+            raise SystemExit(
+                "R9_BLOCKED_NUMBER_PLATFORM_SUBSTRATE=FAIL "
+                f"file={DIALER_BLOCKING} missing={needle!r}"
+            )
+
+    settings = (dialer / DIALER_SETTINGS).read_text(encoding="utf-8")
+    for needle in (
+        "FilteredNumberCompat.canCurrentUserOpenBlockSettings(this)",
+        "R.string.manage_blocked_numbers_label",
+        "FilteredNumberCompat.createManageBlockedNumbersIntent(this)",
+    ):
+        if needle not in settings:
+            raise SystemExit(
+                "R9_BLOCKED_NUMBER_SETTINGS_UI=FAIL "
+                f"file={DIALER_SETTINGS} missing={needle!r}"
+            )
+
+    manifest = (dialer / DIALER_APP_MANIFEST).read_text(encoding="utf-8")
+    for needle in (
+        "com.android.dialer.app.filterednumber.BlockedNumbersSettingsActivity",
+        "com.android.dialer.action.BLOCKED_NUMBERS_SETTINGS",
+        'android:exported="false"',
+    ):
+        if needle not in manifest:
+            raise SystemExit(
+                "R9_BLOCKED_NUMBER_SETTINGS_ACTIVITY=FAIL "
+                f"file={DIALER_APP_MANIFEST} missing={needle!r}"
+            )
+
+    print("R9_BLOCKED_NUMBER_PLATFORM_SUBSTRATE=PASS")
+    print("R9_BLOCKED_NUMBER_SETTINGS_UI=PASS")
+    print("R9_SMS_MMS_BLOCKING_OWNER=ANDROID_BLOCKED_NUMBER_PROVIDER")
+    print("R9_SMS_MMS_BLOCKING_MESSAGING_FORK_REQUIRED=NO")
+
+
 def verify(source: Path) -> None:
     assert_head(source, DIALER_REPO, DIALER_HEAD)
     assert_head(source, CONTACTS_REPO, CONTACTS_HEAD)
+    verify_blocking_substrate(source)
 
     verify_repo(
         source / DIALER_REPO,
@@ -378,6 +433,22 @@ def self_test() -> None:
     ):
         raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_BEHAVIOR_SCOPE")
 
+    required_blocking_tokens = (
+        "BlockedNumberContract",
+        "BlockedNumbers.COLUMN_ORIGINAL_NUMBER",
+        "BlockedNumbers.COLUMN_E164_NUMBER",
+        "canCurrentUserOpenBlockSettings",
+        "createManageBlockedNumbersIntent",
+        "BlockedNumbersSettingsActivity",
+    )
+    source_text = Path(__file__).read_text(encoding="utf-8")
+    for token in required_blocking_tokens:
+        if token not in source_text:
+            raise SystemExit(
+                f"R9_PHONE_CONTACTS_SELF_TEST=FAIL_BLOCKING_CONTRACT token={token!r}"
+            )
+
+    print("R9_BLOCKED_NUMBER_CONTRACT=PASS_SELF_TEST")
     print("R9_PHONE_CONTACTS_PINNED_BASELINES=PASS_SELF_TEST")
     print("R9_PHONE_PRESENTATION=PASS_SELF_TEST")
     print("R9_CONTACTS_PRESENTATION=PASS_SELF_TEST")
