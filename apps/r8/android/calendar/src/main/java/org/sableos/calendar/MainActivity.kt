@@ -122,17 +122,21 @@ private fun CalendarApp(
             }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.ScreenVertical,
-                ),
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = SableSpacing.ScreenHorizontal,
+                        vertical = SableSpacing.ScreenVertical,
+                    ),
+        ) {
         Text(
             text = "calendar",
             style = MaterialTheme.typography.displayLarge,
@@ -187,6 +191,7 @@ private fun CalendarApp(
                         onRequestPermissions = onRequestPermissions,
                     )
             }
+        }
         }
     }
 }
