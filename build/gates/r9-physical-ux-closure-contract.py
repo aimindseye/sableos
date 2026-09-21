@@ -708,7 +708,9 @@ require(
     "build/panther/qualify-r9-physical-ux.sh",
     "FULL_TARGET_FILES_BUILD_AUTHORIZED=NO",
     "SABLE_QUALIFICATION_ONLY=YES",
-    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW",
+    "R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9",
+    "R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED",
+    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_MODULE_QUALIFICATION",
 )
 require(
     "build/gates/r8-build-driver-contract.sh",
@@ -759,89 +761,21 @@ require(
     "allowed_later_framework_modified",
 )
 require(
-    "build/gates/r9-launcher-visual-review-contract.py",
-    "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT",
-    "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT=PASS_MINSDK30",
-    "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_PARITY=PASS",
-    "R9_VISUAL_REVIEW_APPEARANCE_PERSISTENCE_PARITY=PASS",
-    "R9_VISUAL_REVIEW_HOST_CHROME_FILTER=PASS",
-    "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SCOPE=PASS_DEFERRED_PANTHER",
-    "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER",
-    "R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS",
-    "R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT=PASS_SABLE_MESSAGES",
-    "R9_PRODUCTION_MAC_APPROVAL_CAPTURE_CONTRACT=PASS_SABLE_OWNED_ONLY",
-    "R9_PRODUCTION_MAC_CAPTURE_FRESHNESS=PASS_FAIL_CLOSED",
+    "build/gates/r9-launcher-visual-acceptance.py",
+    "R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9",
+    "R9_L6_VISUAL_REVIEW_STATUS=WAIVED_MAC_DEFERRED_PHYSICAL_PANTHER",
+    "R9_L6_VISUAL_REVIEW_SCOPE=PHYSICAL_PANTHER_REQUIRED",
+    "R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED",
+    "R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER",
+    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES",
 )
 require(
-    "apps/r8/android/sablestart-visual-review/src/main/AndroidManifest.xml",
-    'android:name="org.sableos.start.platform.SableAppearanceProvider"',
-    'android:authorities="org.sableos.start.appearance"',
-    'android:exported="true"',
+    "docs/R9_FINAL_UI_RUNTIME_ACCEPTANCE.md",
+    "R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9",
+    "R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED",
+    "R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER",
 )
-require(
-    "apps/r8/android/sablestart-visual-review/src/main/java/org/sableos/start/visualreview/R9LauncherVisualReviewActivity.kt",
-    "startStateRepository.loadAppearance()",
-    "startStateRepository.saveAppearance(appearance)",
-    "startStateRepository.resetAppearance()",
-    'const val HOST_AVD_GOOGLE_MESSAGES_PACKAGE = "com.google.android.apps.messaging"',
-    "component.packageName == HOST_AVD_GOOGLE_MESSAGES_PACKAGE",
-    'const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"',
-    "component.packageName == HOST_AVD_CHROME_PACKAGE",
-)
-require(
-    "build/macos/audit-r9-launcher-review-fidelity.sh",
-    "R9_VISUAL_FIDELITY_APPEARANCE_PROVIDER=PASS",
-    "R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS",
-    "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED",
-    "R9_VISUAL_FIDELITY_HOST_GOOGLE_MESSAGES=DETECTED_FILTERED",
-    "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
-    "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
-)
-require(
-    "build/macos/prepare-r9-launcher-visual-review.sh",
-    ":hub:assembleDebug",
-    ":calendar:assembleDebug",
-    ":media:assembleDebug",
-    "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS",
-    "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
-    "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS",
-    "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS",
-    "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS",
-    "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
-    "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
-)
-require(
-    "build/macos/capture-r9-production-approval.sh",
-    "20-production-start-dark",
-    "21-production-start-light",
-    "22-production-live-dark",
-    "23-production-calendar-dark",
-    "24-production-messages-dark",
-    "MAC_SCOPE=PRODUCTION_SABLE_OWNED_UI_ONLY",
-    "prepare-ready.txt",
-    "R9_PRODUCTION_VISUAL=FAIL_PREPARE_NOT_READY",
-    "R9_PRODUCTION_VISUAL=FAIL_STALE_PREPARE",
-    "R9_PRODUCTION_VISUAL_CORE_PLATFORM_APPS=DEFERRED_PANTHER",
-    "R9_PRODUCTION_VISUAL=PASS_CAPTURE_COMPLETE",
-)
-require(
-    "build/macos/capture-r9-theme-fidelity-review.sh",
-    "audit-r9-launcher-review-fidelity.sh",
-    "org.sableos.hub/.MainActivity",
-    "04-theme-$MODE-start.png",
-    "05-theme-$MODE-sable-messages.png",
-    "R9_THEME_FIDELITY_PROVIDER_MODE=PASS",
-    "R9_THEME_FIDELITY_CROSS_APP_VISUAL_REVIEW=PENDING_USER_REVIEW",
-    "R9_THEME_FIDELITY_PLATFORM_NIGHT_MODE=DEFERRED_PHYSICAL_PANTHER",
-    "R9_THEME_FIDELITY_VANADIUM=DEFERRED_PHYSICAL_PANTHER",
-    "R9_THEME_FIDELITY_CAPTURE=PASS",
-)
-require(
-    "apps/r8/android/sablestart-visual-review/src/main/java/org/sableos/start/visualreview/R9LauncherVisualReviewActivity.kt",
-    "Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU",
-    "PackageManager.PackageInfoFlags.of(",
-    '@Suppress("DEPRECATION")',
-)
+
 require(
     "build/gates/r8-final-product-composition.sh",
     "--allow-framework-untracked",
@@ -850,9 +784,10 @@ require(
     "packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt",
     "apply_r9_systemui_coherence.py",
     "R9_SYSTEMUI_COHERENCE_SOURCE=PASS",
-    "R9_LAUNCHER_VISUAL_ACCEPTANCE_SEAL=DEFERRED_MODULE_QUALIFICATION",
-    "R9_L6_VISUAL_REVIEW_STATUS=PENDING_SOURCE_REVIEW",
-    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_PENDING_VISUAL_REVIEW",
+    "R9_LAUNCHER_VISUAL_ACCEPTANCE_SEAL=WAIVED_MAC_DEFERRED_PHYSICAL_PANTHER",
+    "R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9",
+    "R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED",
+    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_MODULE_QUALIFICATION",
 )
 require(
     "tests/systemui/device/r9_identity_audit.sh",
