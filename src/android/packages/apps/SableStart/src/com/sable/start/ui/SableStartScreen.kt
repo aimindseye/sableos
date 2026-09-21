@@ -1122,12 +1122,23 @@ private fun AppRow(
         ) {
             AppMark(app = app, size = 42)
             Spacer(Modifier.width(14.dp))
-            Text(
-                text = app.label,
+            Column(
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-            )
+            ) {
+                Text(
+                    text = app.label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                )
+                if (app.privacySummary.isNotBlank()) {
+                    Text(
+                        text = app.privacySummary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                }
+            }
         }
 
         TextButton(
@@ -1330,6 +1341,14 @@ private fun SablePeekScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (app.privacySummary.isNotBlank()) {
+                        Text(
+                            text = app.privacySummary,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                        )
+                    }
                 }
             }
 
