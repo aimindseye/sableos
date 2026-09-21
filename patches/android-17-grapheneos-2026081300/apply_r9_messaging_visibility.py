@@ -69,6 +69,11 @@ def run_git(repo: Path, *args: str) -> str:
 
 def assert_head(source: Path) -> None:
     repo = source / MESSAGING_REPO
+    manifest = source / MANIFEST
+    if not repo.is_dir():
+        raise VisibilityError(f"MESSAGING_SOURCE_MISSING={repo}")
+    if not manifest.is_file():
+        raise VisibilityError(f"MESSAGING_MANIFEST_MISSING={manifest}")
     actual = run_git(repo, "rev-parse", "HEAD")
     if actual != MESSAGING_HEAD:
         raise VisibilityError(
@@ -201,10 +206,14 @@ def main() -> int:
     if not (source / ".repo").exists():
         raise VisibilityError(f"NOT_ANDROID_REPO_ROOT={source}")
 
-    if args.mode == "apply":
-        apply(source)
-    else:
-        verify(source)
+    try:
+        if args.mode == "apply":
+            apply(source)
+        else:
+            verify(source)
+    except VisibilityError as exc:
+        print(f"R9_MESSAGING_VISIBILITY=FAIL {exc}")
+        return 1
     return 0
 
 
