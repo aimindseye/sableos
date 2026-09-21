@@ -356,7 +356,12 @@ nothing
 
 The user may disable this block.
 
-Weather requires an explicit configured provider and remains visually identified as remote/provider data.
+Weather remains visually identified as provider data. Production Live uses bounded app-owned
+snapshot providers for Weather, Calendar, Messages, Mail and Media. Launcher3 does not
+read those applications' sensitive databases directly. Photos remain local MediaStore data
+behind explicit photo permission. Refresh is driven by provider changes and HOME lifecycle;
+there is no ambient one-minute launcher polling loop. Message bodies and mail subjects are
+not rendered on Home.
 
 ## Gesture contract
 
@@ -513,7 +518,7 @@ R9-L1  Start root + one-hand geometry + favorites
 R9-L2  All Apps + Sable Rail
 R9-L3  Sable Search / Command
 R9-L4  Sable Peek
-R9-L5  contextual media/calendar live block
+R9-L5  provider-owned weather/calendar/messages/mail/media live block
 R9-L6  production-source screenshot review
 R9-L7  Panther image integration + physical HOME/Recents/runtime qualification
 ~~~
