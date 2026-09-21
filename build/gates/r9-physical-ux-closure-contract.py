@@ -98,6 +98,8 @@ require(
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
     "android.permission.MODIFY_DAY_NIGHT_MODE",
+    'host.count("private companion object {") != 1',
+    "Sable Quickstep host companion object cardinality mismatch",
 )
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt",
