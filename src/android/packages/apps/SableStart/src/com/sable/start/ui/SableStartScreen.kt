@@ -2346,17 +2346,27 @@ private fun appMark(app: AppEntry): String =
         .ifEmpty { "•" }
 
 private fun appColor(app: AppEntry): Color =
-    when (app.component.packageName) {
-        "org.sableos.hub" -> SableGreen
-        "org.sableos.mail" -> SableSlate
-        "org.sableos.calendar" -> SableOrange
-        "org.sableos.weather" -> SableBlue
-        "org.sableos.media" -> SablePurple
-        "com.android.gallery3d" -> SablePurple
-        "app.grapheneos.camera" -> SableSlate
-        "org.sableos.calculator" -> SableBlue
-        "com.android.documentsui" -> SableOrange
-        "com.android.dialer" -> SableBlue
+    when {
+        app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Messages", ignoreCase = true) -> SableGreen
+        app.component.packageName == "org.sableos.mail" ||
+            app.label.equals("Sable Mail", ignoreCase = true) -> SableSlate
+        app.component.packageName == "org.sableos.calendar" ||
+            app.label.equals("Calendar", ignoreCase = true) -> SableOrange
+        app.component.packageName == "org.sableos.weather" ||
+            app.label.equals("Sable Weather", ignoreCase = true) -> SableBlue
+        app.component.packageName == "org.sableos.media" ||
+            app.label.equals("Sable Media", ignoreCase = true) -> SablePurple
+        app.component.packageName == "com.android.gallery3d" ||
+            app.label.equals("Photos", ignoreCase = true) -> SablePurple
+        app.component.packageName == "app.grapheneos.camera" ||
+            app.label.equals("Camera", ignoreCase = true) -> SableSlate
+        app.component.packageName == "org.sableos.calculator" ||
+            app.label.equals("Sable Calculator", ignoreCase = true) -> SableBlue
+        app.component.packageName == "com.android.documentsui" ||
+            app.label.equals("Files", ignoreCase = true) -> SableOrange
+        app.component.packageName == "com.android.dialer" ||
+            app.label.equals("Phone", ignoreCase = true) -> SableBlue
         else -> {
             val index =
                 Math.floorMod(
@@ -2371,13 +2381,19 @@ private fun liveDatumForApp(
     app: AppEntry,
     snapshot: LiveSurfaceSnapshot,
 ): LiveDatum? =
-    when (app.component.packageName) {
-        "org.sableos.calendar" -> snapshot.calendar
-        "org.sableos.hub" -> snapshot.messages
-        "org.sableos.mail" -> snapshot.mail
-        "org.sableos.weather" -> snapshot.weather
-        "org.sableos.media" -> snapshot.music
-        "com.android.gallery3d" -> snapshot.photos
+    when {
+        app.component.packageName == "org.sableos.calendar" ||
+            app.label.equals("Calendar", ignoreCase = true) -> snapshot.calendar
+        app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Messages", ignoreCase = true) -> snapshot.messages
+        app.component.packageName == "org.sableos.mail" ||
+            app.label.equals("Sable Mail", ignoreCase = true) -> snapshot.mail
+        app.component.packageName == "org.sableos.weather" ||
+            app.label.equals("Sable Weather", ignoreCase = true) -> snapshot.weather
+        app.component.packageName == "org.sableos.media" ||
+            app.label.equals("Sable Media", ignoreCase = true) -> snapshot.music
+        app.component.packageName == "com.android.gallery3d" ||
+            app.label.equals("Photos", ignoreCase = true) -> snapshot.photos
         else -> null
     }
 
