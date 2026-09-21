@@ -539,6 +539,8 @@ require(
     "startStateRepository.loadAppearance()",
     "startStateRepository.saveAppearance(appearance)",
     "startStateRepository.resetAppearance()",
+    'const val HOST_AVD_GOOGLE_MESSAGES_PACKAGE = "com.google.android.apps.messaging"',
+    "component.packageName == HOST_AVD_GOOGLE_MESSAGES_PACKAGE",
     'const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"',
     "component.packageName == HOST_AVD_CHROME_PACKAGE",
 )
@@ -547,6 +549,7 @@ require(
     "R9_VISUAL_FIDELITY_APPEARANCE_PROVIDER=PASS",
     "R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS",
     "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED",
+    "R9_VISUAL_FIDELITY_HOST_GOOGLE_MESSAGES=DETECTED_FILTERED",
     "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
     "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
 )
