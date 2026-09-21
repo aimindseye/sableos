@@ -46,7 +46,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     private lateinit var launcherApps: LauncherApps
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
 
-    private var pinnedKeys: Set<String> = emptySet()
+    private var favoriteKeys: Set<String> = emptySet()
+    private var startTileKeys: Set<String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +57,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         liveSurfaceRepository = LiveSurfaceRepository(this)
 
         refreshInventory()
-        pinnedKeys = defaultPinnedKeys(appsState.value)
+        favoriteKeys = defaultPinnedKeys(appsState.value)
+        startTileKeys = null
 
         applyCurrentSystemBars()
 
@@ -66,9 +68,13 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 liveSurfaceRepository = liveSurfaceRepository,
                 appearance = appearanceState.value,
                 refreshGeneration = refreshGeneration.value,
-                initialPinnedKeys = pinnedKeys,
-                onPinnedKeysChanged = { keys ->
-                    pinnedKeys = keys
+                initialFavoriteKeys = favoriteKeys,
+                onFavoriteKeysChanged = { keys ->
+                    favoriteKeys = keys
+                },
+                initialStartTileKeys = startTileKeys,
+                onStartTileKeysChanged = { keys ->
+                    startTileKeys = keys
                 },
                 onAppearanceChanged = { appearance ->
                     appearanceState.value = appearance
@@ -113,7 +119,13 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 .flatMap { user ->
                     launcherApps.getActivityList(null, user).mapNotNull { info ->
                         val component = info.componentName
-                        val label = info.label?.toString()?.trim().orEmpty()
+                        val rawLabel = info.label?.toString()?.trim().orEmpty()
+                        val label =
+                            if (component.packageName == WEATHER_REVIEW_PACKAGE) {
+                                "Sable Weather"
+                            } else {
+                                rawLabel
+                            }
                         if (
                             label.isEmpty() ||
                             component.packageName == packageName ||
@@ -264,6 +276,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private companion object {
         const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+        const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
         const val REVIEW_PIN_COUNT = 3
 
         val REVIEW_PIN_LABELS =
