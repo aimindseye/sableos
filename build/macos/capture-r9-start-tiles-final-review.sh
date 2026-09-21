@@ -94,11 +94,26 @@ capture 03-start-tile-peek
 
 echo
 echo "===== HASH INTEGRITY ====="
+
+FINAL_FRAMES=(
+    "$EVIDENCE_DIR/00-start-tiles-top.png"
+    "$EVIDENCE_DIR/01-start-tiles-mid-scroll.png"
+    "$EVIDENCE_DIR/02-start-tiles-lower-scroll.png"
+    "$EVIDENCE_DIR/03-start-tile-peek.png"
+)
+
+for frame in "${FINAL_FRAMES[@]}"; do
+    test -s "$frame" || {
+        echo "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=FAIL_MISSING frame=$frame"
+        exit 8
+    }
+done
+
 if command -v sha256sum >/dev/null 2>&1; then
-    sha256sum "$EVIDENCE_DIR"/0[0-3]-start-*.png |
+    sha256sum "${FINAL_FRAMES[@]}" |
         tee "$EVIDENCE_DIR/start-tiles-final.sha256"
 else
-    shasum -a 256 "$EVIDENCE_DIR"/0[0-3]-start-*.png |
+    shasum -a 256 "${FINAL_FRAMES[@]}" |
         tee "$EVIDENCE_DIR/start-tiles-final.sha256"
 fi
 
