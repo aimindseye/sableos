@@ -69,9 +69,16 @@ require(
     "text = app.privacySummary",
     "onOpenAppInfo",
 )
+# Package names may be used internally for deterministic ordering and
+# component identity, but they must never be rendered as All Apps / Peek
+# user-facing copy. The product contract is "app name + privacy summary",
+# not package-name disclosure.
 forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
-    "component.packageName",
+    "text = app.component.packageName",
+    "text = component.packageName",
+    "text = app.component.flattenToString()",
+    "text = app.component.flattenToShortString()",
 )
 
 # ---------------------------------------------------------------------------
