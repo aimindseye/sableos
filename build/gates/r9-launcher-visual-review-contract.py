@@ -332,7 +332,12 @@ def main() -> int:
     )
     require(
         activity,
-        "info.componentName.packageName == packageName",
+        "val component = info.componentName",
+        "R9_VISUAL_REVIEW_COMPONENT_CAPTURE",
+    )
+    require(
+        activity,
+        "component.packageName == packageName",
         "R9_VISUAL_REVIEW_HOST_FILTERED",
     )
 
@@ -421,6 +426,7 @@ def main() -> int:
     print("R9_LOCAL_CONTEXT_TRUTHFUL_STATUS=PASS")
     print("R9_APPEARANCE_FLAT_CHOICES=PASS")
     print("R9_APPEARANCE_THEME_ACCENT_MODEL=PASS")
+    print("R9_VISUAL_REVIEW_COMPONENT_CAPTURE=PASS")
     print("R9_VISUAL_REVIEW_HOST_FILTERED=PASS")
     local_ci = (ROOT / "build/local-ci/run.sh").read_text()
     require(
