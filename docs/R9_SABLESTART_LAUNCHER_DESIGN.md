@@ -1,6 +1,6 @@
 # R9 SableStart launcher design expansion
 
-Status: **design-first release scope / implementation not yet authorized for a full Panther build**
+Status: **approved design scope / Mac gate waived for R9 / physical Panther is final visual authority**
 
 Date: 2026-09-20
 
@@ -8,15 +8,20 @@ Date: 2026-09-20
 
 R9 exists to make SableStart feel like the primary SableOS shell rather than a launcher prototype.
 
-The next full Panther image build is intentionally blocked until the launcher is visually reviewed from production-source UI states.
+The approved Daily Driver design remains the R9 visual target. For this build,
+Mac-mini visual validation is closed and the final visual decision is deferred
+to the physical Panther after Linux CI, module qualification and a fresh image
+build.
 
 ~~~
 R9_LAUNCHER_DESIGN_REVIEW_REQUIRED=YES
-R9_PRODUCTION_SOURCE_PREVIEW_REQUIRED=YES
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
+R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_LINUX_QUALIFICATION
 ~~~
 
-The build gate may be reopened only after a reviewed preview set proves the intended Start, All Apps, Search/Command, app-context and live-state layouts in both light/dark appearance.
+The build may proceed after ai-g732 qualification; visual/runtime acceptance is
+then completed on the flashed Panther.
 
 This does not block source review, tests, documentation, CI, standalone design work, or other non-image product work.
 
@@ -435,59 +440,27 @@ SableStart should look recognizably Sable:
 - tiles may use app/provider artwork only where the content itself is visual, such as media/photos;
 - motion remains in the 120/180/240ms Sable timing classes.
 
-## Production-source visual review gate
+## Production visual acceptance for this R9 build
 
-Before the next full Panther build, produce a visual review set from the same production SableStart composables/source path used by the product.
+The earlier Mac production-source review gate is superseded for this build.
+The approved Daily Driver frames remain the design reference, but the Mac AVD
+is not required to authorize the image.
 
-Required frames:
-
-~~~
-01 Start root — dark / Sable Blue
-02 Start root — light / Sable Blue
-03 All Apps — alphabet rail active
-04 Search / Command — mixed local results
-05 Sable Peek — app context
-06 Start — active media context
-07 Start — calendar/live context
-08 accessibility state — large font / visible focus
-~~~
-
-At least one frame must demonstrate one-handed lower-screen reach on Panther geometry.
-
-The review artifact must not revive the retired prototype/demo APK path. A review harness may exist only if it consumes production SableStart UI code and is excluded from product packages.
-
-Required decision markers:
+Required policy markers:
 
 ~~~
-R9_SABLESTART_VISUAL_REVIEW_SET=PASS
-R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
-R9_SABLESTART_ONE_HAND_REACH=PASS
-R9_SABLESTART_ALL_APPS_RAIL=PASS
-R9_SABLESTART_SEARCH_COMMAND=PASS
-R9_SABLESTART_PEEK=PASS
-R9_SABLESTART_LIGHT_DARK=PASS
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
+R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
+R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED
+R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
 ~~~
 
-Until those markers are satisfied:
+Production SableStart must still compile and lint through the Linux
+`sablestart-presentation-check`, pass the source/design contracts, compile
+inside Launcher3QuickStep during module qualification, and pass final physical
+Panther acceptance after flash.
 
-~~~
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
-~~~
-
-Visual authorization is source-bound. Any later mutation to production
-SableStart/Launcher3 presentation, Start-tile behavior, appearance, or other
-reviewed launcher UI invalidates the prior visual authorization and returns the
-gate to:
-
-~~~
-R9_SABLESTART_VISUAL_REVIEW_SET=PENDING_SOURCE_REVIEW
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
-~~~
-
-The final scrolling Start-tile slice is such a source mutation, so its fresh
-Mac visual set and subsequent physical Panther acceptance are required before
-a full Panther build may be authorized again.
+A review harness may remain in the repository as non-product tooling, but it is
+not executed by the R9 release-blocking Linux CI path.
 
 ## Runtime acceptance
 
@@ -519,8 +492,8 @@ R9-L2  All Apps + Sable Rail
 R9-L3  Sable Search / Command
 R9-L4  Sable Peek
 R9-L5  provider-owned weather/calendar/messages/mail/media live block
-R9-L6  production-source screenshot review
-R9-L7  Panther image integration + physical HOME/Recents/runtime qualification
+R9-L6  Linux production-source compile/design qualification
+R9-L7  Panther image integration + physical visual/HOME/Recents/runtime qualification
 ~~~
 
-The slices may be implemented in parallel where source boundaries allow, but R9-L6 is the gate before R9-L7 full Panther build.
+The slices may be implemented in parallel where source boundaries allow. For this build, successful R9-L6 Linux qualification authorizes the R9-L7 fresh Panther build; final visual acceptance occurs on the physical device.
