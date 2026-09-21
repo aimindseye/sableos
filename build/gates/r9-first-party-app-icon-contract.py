@@ -115,8 +115,9 @@ def main() -> int:
                 f"R9_ICON_{name.upper()}_APPROVED_LANGUAGE",
             )
 
-    weather_drawable_dir =
+    weather_drawable_dir = (
         ROOT / "apps/r8/android/weather/src/main/res/drawable"
+    )
     for filename in WEATHER_CONDITION_ICONS:
         text = read(
             weather_drawable_dir / filename,
