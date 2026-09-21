@@ -1910,12 +1910,17 @@ private fun resolveStartApps(
 
     val selected = linkedMapOf<String, AppEntry>()
 
-    PREFERRED_START_APP_GROUPS.forEach { aliases ->
-        apps.firstOrNull { app ->
-            aliases.any { preferred ->
-                app.label.equals(preferred, ignoreCase = true)
+    PREFERRED_START_APP_GROUPS.forEach { group ->
+        val selectedApp =
+            apps.firstOrNull { app ->
+                app.component.packageName in group.packageNames
+            } ?: apps.firstOrNull { app ->
+                group.labels.any { preferred ->
+                    app.label.equals(preferred, ignoreCase = true)
+                }
             }
-        }?.let { app ->
+
+        selectedApp?.let { app ->
             selected.putIfAbsent(app.stableKey(), app)
         }
     }
@@ -1943,10 +1948,11 @@ private fun startTileComparator(): Comparator<AppEntry> =
 
 private fun preferredStartRank(app: AppEntry): Int {
     val index =
-        PREFERRED_START_APP_GROUPS.indexOfFirst { aliases ->
-            aliases.any { preferred ->
-                app.label.equals(preferred, ignoreCase = true)
-            }
+        PREFERRED_START_APP_GROUPS.indexOfFirst { group ->
+            app.component.packageName in group.packageNames ||
+                group.labels.any { preferred ->
+                    app.label.equals(preferred, ignoreCase = true)
+                }
         }
     return if (index >= 0) index else Int.MAX_VALUE
 }
@@ -1975,18 +1981,49 @@ private fun appColor(app: AppEntry): Color {
     return SableTilePalette[index]
 }
 
+private data class PreferredStartAppGroup(
+    val packageNames: Set<String> = emptySet(),
+    val labels: List<String>,
+)
+
 private val PREFERRED_START_APP_GROUPS =
     listOf(
-        listOf("Phone"),
-        listOf("Sable Messages", "Messages"),
-        listOf("Sable Mail", "Mail"),
-        listOf("Calendar"),
-        listOf("Sable Weather", "Weather"),
-        listOf("Photos"),
-        listOf("Sable Media", "Media"),
-        listOf("Camera"),
-        listOf("Sable Calculator", "Calculator"),
-        listOf("Files"),
+        PreferredStartAppGroup(
+            packageNames = setOf("com.android.dialer"),
+            labels = listOf("Phone"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.hub"),
+            labels = listOf("Sable Messages", "Messages"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.mail"),
+            labels = listOf("Sable Mail", "Mail"),
+        ),
+        PreferredStartAppGroup(
+            labels = listOf("Calendar"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.weather"),
+            labels = listOf("Sable Weather", "Weather"),
+        ),
+        PreferredStartAppGroup(
+            labels = listOf("Photos"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.media"),
+            labels = listOf("Sable Media", "Media"),
+        ),
+        PreferredStartAppGroup(
+            labels = listOf("Camera"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.calculator"),
+            labels = listOf("Sable Calculator", "Calculator"),
+        ),
+        PreferredStartAppGroup(
+            labels = listOf("Files"),
+        ),
     )
 
 private const val DEFAULT_START_TILE_TARGET = 10
