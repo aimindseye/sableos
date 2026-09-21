@@ -681,7 +681,7 @@ def main() -> int:
     )
     require(
         production_ui,
-        "LocalDatumRow(",
+        "ApprovedLiveRow(",
         "R9_LOCAL_CONTEXT_FLAT_ROWS",
     )
     require(
