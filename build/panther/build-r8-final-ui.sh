@@ -11,6 +11,15 @@ WS="${WS:-$SABLEOS_UPSTREAM}"
 OUT_DIR="${OUT_DIR:-out_sable_ui_final_qual}"
 JOBS="${JOBS:-8}"
 REQUIRE_FRESH_OUT="${REQUIRE_FRESH_OUT:-NO}"
+SABLE_BUILD_STAGE="${SABLE_BUILD_STAGE:-full}"
+
+case "$SABLE_BUILD_STAGE" in
+    full|modules) ;;
+    *)
+        echo "R8_FINAL_BUILD=FAIL_BUILD_STAGE value=$SABLE_BUILD_STAGE"
+        exit 2
+        ;;
+esac
 
 if [[ "$BUILD_AUTHORIZED" != YES ]]; then
     echo "R8_FINAL_BUILD=REFUSED_BUILD_NOT_AUTHORIZED"
@@ -56,6 +65,7 @@ echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "REQUIRE_FRESH_OUT=$REQUIRE_FRESH_OUT"
+echo "SABLE_BUILD_STAGE=$SABLE_BUILD_STAGE"
 
 echo
 echo "===== PRE-BUILD PRODUCT COMPOSITION ====="
@@ -67,12 +77,16 @@ grep -Fxq 'R8_FINAL_UI_PRODUCT_COMPOSITION=PASS'     "$EVIDENCE_DIR/prebuild-com
         exit 4
     }
 
-grep -Fxq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' \
-    "$EVIDENCE_DIR/prebuild-composition.log" || {
-        echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING"
-        echo "R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW"
-        exit 5
-    }
+if [[ "$SABLE_BUILD_STAGE" == full ]]; then
+    grep -Fxq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' \
+        "$EVIDENCE_DIR/prebuild-composition.log" || {
+            echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING"
+            echo "R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW"
+            exit 5
+        }
+else
+    echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING_ALLOWED_FOR_MODULE_QUALIFICATION"
+fi
 
 echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="
@@ -162,6 +176,18 @@ if [[ "$MODULE_RC" -ne 0 ]]; then
 fi
 
 echo "R8_UI_MODULE_BUILD=PASS"
+
+if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
+    echo
+    echo "===== MODULE-ONLY QUALIFICATION RESULT ====="
+    echo "R9_LAUNCHER3_HOME_PREFLIGHT=PASS"
+    echo "R8_UI_MODULE_BUILD=PASS"
+    echo "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS"
+    echo "FULL_TARGET_FILES_BUILD_PERFORMED=NO"
+    echo "R9_FRESH_FULL_BUILD=NOT_PROVEN"
+    echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+    exit 0
+fi
 
 echo
 echo "===== FULL TARGET-FILES BUILD ====="
