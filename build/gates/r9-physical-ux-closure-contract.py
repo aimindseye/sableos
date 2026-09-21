@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -207,6 +209,42 @@ if failures:
     for failure in failures:
         print(f"FAILURE={failure}")
     raise SystemExit(1)
+
+self_tests = (
+    (
+        "R9_MESSAGING_VISIBILITY_SELF_TEST",
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_messaging_visibility.py",
+    ),
+    (
+        "R9_SYSTEMUI_COHERENCE_SELF_TEST",
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_systemui_coherence.py",
+    ),
+    (
+        "R9_LAUNCHER3_FOUNDATION_SELF_TEST",
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_launcher3_foundation.py",
+    ),
+)
+
+for marker, script in self_tests:
+    result = subprocess.run(
+        [sys.executable, str(script), "--self-test"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        check=False,
+    )
+    if result.stdout:
+        print(result.stdout, end="")
+    if result.returncode != 0:
+        print(f"{marker}=FAIL rc={result.returncode}")
+        raise SystemExit(result.returncode)
+    print(f"{marker}=PASS")
 
 print("R9_ALL_APPS_GRANTED_PRIVACY_SUMMARY=PASS")
 print("R9_GLOBAL_LIGHT_DARK_SYSTEM_MODE_CONTRACT=PASS")
