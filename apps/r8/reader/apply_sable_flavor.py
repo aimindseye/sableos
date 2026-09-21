@@ -917,11 +917,16 @@ class SableTextReaderUtilTest {
         '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-    <path android:fillColor="#4D9CFF" android:pathData="M4,5h40v38H4z" />
-    <path android:fillColor="#06111F" android:pathData="M9,11h13c4,0 7,2 8,4v23c-2,-2 -5,-3 -8,-3H9zM39,11H26c-2,0 -4,1 -6,2 2,1 4,3 5,5v17c3,-1 5,-1 7,0 3,0 5,1 7,3z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M12,15h8v2h-8zM12,20h8v2h-8zM28,15h8v2h-8zM28,20h8v2h-8z" />
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path android:fillColor="#161C24"
+        android:pathData="M32,16h192c8.8,0 16,7.2 16,16v192c0,8.8 -7.2,16 -16,16H32c-8.8,0 -16,-7.2 -16,-16V32c0,-8.8 7.2,-16 16,-16z" />
+    <group android:scaleX="0.70" android:scaleY="0.70"
+        android:translateX="38.4" android:translateY="34">
+        <path android:fillColor="#F7F9FC"
+            android:pathData="M232,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64ZM160,88h40a8,8,0,0,1,0,16H160a8,8,0,0,1,0-16Zm48,40a8,8,0,0,1-8,8H160a8,8,0,0,1,0-16h40A8,8,0,0,1,208,128Zm0,32a8,8,0,0,1-8,8H160a8,8,0,0,1,0-16h40A8,8,0,0,1,208,160Z" />
+    </group>
+    <path android:fillColor="#35C66B" android:pathData="M28,226h200v6H28z" />
 </vector>
 ''',
     )
