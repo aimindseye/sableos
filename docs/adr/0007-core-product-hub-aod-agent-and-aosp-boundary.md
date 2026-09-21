@@ -79,6 +79,8 @@ Sable Hub consumes the Android notification/conversation surface after the appli
 
 For Sable Mail, the retained mail client's own supported background synchronization / IMAP IDLE behavior is preferred. Sable must not add an FCM middleman that requires uploading mail credentials to a Sable server solely to generate notifications.
 
+For the GrapheneOS 2026081300 substrate, `external/Messaging` is a pinned `android_app_import` containing `prebuilt/Messaging.apk`; it is not source code with an Android manifest that Sable should rewrite. Sable preserves that prebuilt package unchanged for platform/default-messaging capability. Duplicate launcher presentation is handled in the Sable Launcher3 app-list layer by suppressing only package `com.android.messaging`. Sable Hub continues to use standard Android capability resolution such as `Intent.CATEGORY_APP_MESSAGING` rather than taking ownership of the prebuilt's SMS/MMS transport internals.
+
 Reference: GrapheneOS FAQ, “Do notifications work properly on GrapheneOS?” — https://grapheneos.org/faq#notifications
 
 ### AOD
