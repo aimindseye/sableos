@@ -479,8 +479,8 @@ def main() -> int:
     )
     require(
         production_ui,
-        ".height(96.dp)",
-        "R9_START_COMPACT_TILE_HEIGHT",
+        ".height(if (tile.wide) 106.dp else 118.dp)",
+        "R9_START_DIMENSIONAL_TILE_HEIGHT",
     )
     require(
         production_ui,
@@ -545,17 +545,17 @@ def main() -> int:
     )
     require(
         production_ui,
-        'text = "enable local data"',
-        "R9_LOCAL_CONTEXT_FLAT_PERMISSION_ACTION",
+        'text = "enable local photos"',
+        "R9_LOCAL_CONTEXT_PHOTO_PERMISSION_ACTION",
     )
     require(
         production_ui,
-        'text = "weather + tasks · provider not configured"',
-        "R9_LOCAL_CONTEXT_PROVIDER_STATUS",
+        'text = "privacy-safe summaries · no message bodies or mail subjects on Home"',
+        "R9_LOCAL_CONTEXT_PRIVACY_STATUS",
     )
     require(
         production_ui,
-        'text = "local only · no ambient network search"',
+        'text = "provider and lifecycle refresh · no ambient launcher network client"',
         "R9_LOCAL_CONTEXT_NETWORK_TRUTH",
     )
     require(
@@ -755,13 +755,13 @@ def main() -> int:
     print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
-    print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
+    print("R9_START_DIMENSIONAL_METRO_HIERARCHY=PASS")
     print("R9_SEARCH_FLAT_METRO_INPUT=PASS")
     print("R9_SEARCH_COMMAND_APP_HIERARCHY=PASS")
     print("R9_PEEK_FLAT_CONTEXTUAL_LAYER=PASS")
     print("R9_PEEK_ACTION_HIERARCHY=PASS")
     print("R9_LOCAL_CONTEXT_FLAT_ROWS=PASS")
-    print("R9_LOCAL_CONTEXT_TRUTHFUL_STATUS=PASS")
+    print("R9_LOCAL_CONTEXT_TRUTHFUL_STATUS=PASS_PROVIDER_OWNED")
     print("R9_APPEARANCE_FLAT_CHOICES=PASS")
     print("R9_APPEARANCE_THEME_ACCENT_MODEL=PASS")
     print("R9_VISUAL_REVIEW_COMPONENT_CAPTURE=PASS")
