@@ -230,7 +230,7 @@ echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_EXECUTION=DEFERRED_RELEASE_PROFILE"
 
 grep -Fq 'reset · follow system + Sable Blue' "$ROOT/build/gates/r8-final-product-composition.sh"
 grep -Fq 'R8_A_SHARED_DESIGN_STALE_APPEARANCE_COPY' "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'search + command' "$ROOT/build/gates/r9-sablestart-design-contract.py"
+grep -Fq 'R9-L3  Sable Search / Command' "$ROOT/build/gates/r9-sablestart-design-contract.py"
 grep -Fq 'HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md"
 grep -Fq 'HOME_ROLE_HOLDER=com.android.launcher3' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md"
 
