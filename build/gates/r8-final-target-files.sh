@@ -65,6 +65,7 @@ expected_packages = {
     "SableReader.apk": "org.sableos.reader",
     "SableHub.apk": "org.sableos.hub",
     "SableMail.apk": "org.sableos.mail",
+    "SableWeather.apk": "org.sableos.weather",
 }
 
 with (staged / "manifest.tsv").open(newline="", encoding="utf-8") as f:
@@ -162,9 +163,10 @@ declare -A expected_package=(
     [SableReader.apk]=org.sableos.reader
     [SableHub.apk]=org.sableos.hub
     [SableMail.apk]=org.sableos.mail
+    [SableWeather.apk]=org.sableos.weather
 )
 
-for apk in     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk
+for apk in     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
@@ -184,5 +186,6 @@ echo "R8_D2_READER_OCR_TARGET_FILES=PASS"
 echo "R8_E_MEDIA_TARGET_FILES=PASS"
 echo "R8_F_SABLE_HUB_MESSAGES_TARGET_FILES=PASS"
 echo "R8_G_SABLE_MAIL_TARGET_FILES=PASS"
+echo "R9_SABLE_WEATHER_TARGET_FILES=PASS"
 echo "R8_UI4_UI5_UI6_TARGET_FILES=PASS"
 echo "R8_FINAL_TARGET_FILES=PASS"
