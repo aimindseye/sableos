@@ -754,6 +754,7 @@ require(
     "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER",
     "R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS",
     "R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT=PASS_SABLE_MESSAGES",
+    "R9_PRODUCTION_MAC_APPROVAL_CAPTURE_CONTRACT=PASS_SABLE_OWNED_ONLY",
 )
 require(
     "apps/r8/android/sablestart-visual-review/src/main/AndroidManifest.xml",
@@ -792,6 +793,17 @@ require(
     "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS",
     "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
     "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
+)
+require(
+    "build/macos/capture-r9-production-approval.sh",
+    "20-production-start-dark",
+    "21-production-start-light",
+    "22-production-live-dark",
+    "23-production-calendar-dark",
+    "24-production-messages-dark",
+    "MAC_SCOPE=PRODUCTION_SABLE_OWNED_UI_ONLY",
+    "R9_PRODUCTION_VISUAL_CORE_PLATFORM_APPS=DEFERRED_PANTHER",
+    "R9_PRODUCTION_VISUAL=PASS_CAPTURE_COMPLETE",
 )
 require(
     "build/macos/capture-r9-theme-fidelity-review.sh",
