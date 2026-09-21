@@ -99,17 +99,15 @@ Visual approval authorizes only the visual direction. It does not prove:
 
 After approval, the next tranche ports the approved surfaces into production source, then adds real provider/role/lifecycle plumbing and gates.
 
-Required approval marker after user review:
+User visual approval was received on 2026-09-21.
 
 ```text
 R9_DAILY_DRIVER_VISUAL_DESIGN=APPROVED
 R9_DAILY_DRIVER_PRODUCTION_PLUMBING_AUTHORIZED=YES
-```
-
-Until then:
-
-```text
-R9_DAILY_DRIVER_VISUAL_DESIGN=PENDING_USER_REVIEW
-R9_DAILY_DRIVER_PRODUCTION_PLUMBING_AUTHORIZED=NO
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
+
+The approval authorizes production implementation of the reviewed visual language.
+It does **not** authorize a full Panther image yet. The image remains blocked until
+the approved surfaces are ported into production source, real providers/roles/
+lifecycle refresh are wired, and the new pre-image qualification gates pass.
