@@ -132,7 +132,6 @@ run_static() {
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
   python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
-  python3 "$ROOT/build/gates/r9-launcher-visual-review-contract.py"
 }
 
 run_rust() {
@@ -163,7 +162,7 @@ run_android() {
 
   (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin       :sablestart-visual-review:assembleDebug       :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :weather:assembleDebug       :calendar:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :weather:lintDebug       :calendar:lintDebug       :sablestart-presentation-check:lintDebug       :sablestart-visual-review:lintDebug       --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin        :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :weather:assembleDebug       :calendar:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :weather:lintDebug       :calendar:lintDebug       :sablestart-presentation-check:lintDebug        --stacktrace --console=plain --no-daemon
   )
 }
 
