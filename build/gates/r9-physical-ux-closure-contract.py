@@ -519,6 +519,7 @@ require(
     "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SCOPE=PASS_DEFERRED_PANTHER",
     "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_SCOPE=PASS_DEFERRED_PANTHER",
     "R9_VISUAL_REVIEW_FIDELITY_AUDIT_CONTRACT=PASS",
+    "R9_VISUAL_REVIEW_CROSS_APP_THEME_CAPTURE_CONTRACT=PASS_SABLE_MESSAGES",
 )
 require(
     "apps/r8/android/sablestart-visual-review/src/main/AndroidManifest.xml",
@@ -541,6 +542,25 @@ require(
     "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED",
     "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
     "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
+)
+require(
+    "build/macos/prepare-r9-launcher-visual-review.sh",
+    ":hub:assembleDebug",
+    "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
+    "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
+    "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
+)
+require(
+    "build/macos/capture-r9-theme-fidelity-review.sh",
+    "audit-r9-launcher-review-fidelity.sh",
+    "org.sableos.hub/.MainActivity",
+    "04-theme-$MODE-start.png",
+    "05-theme-$MODE-sable-messages.png",
+    "R9_THEME_FIDELITY_PROVIDER_MODE=PASS",
+    "R9_THEME_FIDELITY_CROSS_APP_VISUAL_REVIEW=PENDING_USER_REVIEW",
+    "R9_THEME_FIDELITY_PLATFORM_NIGHT_MODE=DEFERRED_PHYSICAL_PANTHER",
+    "R9_THEME_FIDELITY_VANADIUM=DEFERRED_PHYSICAL_PANTHER",
+    "R9_THEME_FIDELITY_CAPTURE=PASS",
 )
 require(
     "apps/r8/android/sablestart-visual-review/src/main/java/org/sableos/start/visualreview/R9LauncherVisualReviewActivity.kt",
@@ -590,6 +610,11 @@ require(
     "Instagram",
     "Facebook / Messenger",
     "Sable appearance has two layers",
+    "capture-r9-theme-fidelity-review.sh",
+    "Sable Messages as a second-process",
+    "R9_THEME_FIDELITY_SABLE_MESSAGES_CAPTURE=PASS",
+    "R9_THEME_FIDELITY_PLATFORM_NIGHT_MODE=DEFERRED_PHYSICAL_PANTHER",
+    "R9_THEME_FIDELITY_VANADIUM=DEFERRED_PHYSICAL_PANTHER",
 )
 require(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/HubModels.kt",
@@ -686,6 +711,7 @@ print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
 print("R9_VISUAL_REVIEW_MINSDK30_PACKAGEINFO_COMPAT=PASS")
 print("R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_FIDELITY=PASS")
+print("R9_VISUAL_REVIEW_CROSS_APP_THEME_FIDELITY=PASS_SABLE_MESSAGES_PROBE")
 print("R9_VISUAL_REVIEW_HOST_BROWSER_SCOPE=PASS_FILTERED_DEFERRED_PANTHER")
 print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
