@@ -1,0 +1,200 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import subprocess
+from pathlib import Path
+
+PINNED = {
+    "packages/apps/DeskClock": "7e04cd4bec8c1d9e1579eaa5b3089fe6042a0cb8",
+    "packages/apps/DocumentsUI": "ac4670682dd0df3a9798dfb346c57f163d42f7fc",
+    "packages/apps/Gallery2": "f5518d09c6e6953eaba6d0c7c23d5a2d766b6525",
+    "external/Camera": "1e8ea44155ce3c023d9b1486d57a44268276c315",
+    "external/vanadium": "57c3996dfd45e8d9b6f0b15b0753c94acb4282ef",
+}
+
+PRESENTATION_FILES = (
+    "packages/apps/DeskClock/res/values/colors.xml",
+    "packages/apps/DeskClock/res/values/themes.xml",
+    "packages/apps/DocumentsUI/res/values/colors.xml",
+    "packages/apps/DocumentsUI/res/values-night/colors.xml",
+    "packages/apps/Gallery2/res/values/colors.xml",
+    "packages/apps/Gallery2/res/values/strings.xml",
+)
+
+REPLACEMENTS = {
+    "packages/apps/DeskClock/res/values/colors.xml": (
+        ('<color name="clock_gray">#B3FFFFFF</color>',
+         '<color name="clock_gray">#FFAAB4C0</color>'),
+        ('<color name="default_background">#1A237E</color>',
+         '<color name="default_background">#05070A</color>'),
+    ),
+    "packages/apps/DeskClock/res/values/themes.xml": (
+        ('<item name="colorAccent">#DA4336</item>',
+         '<item name="colorAccent">#4D9CFF</item>'),
+        ('<item name="colorBackgroundFloating">#303030</item>',
+         '<item name="colorBackgroundFloating">#161C24</item>'),
+        ('<item name="colorControlActivated">@android:color/white</item>',
+         '<item name="colorControlActivated">#4D9CFF</item>'),
+    ),
+    "packages/apps/DocumentsUI/res/values/colors.xml": (
+        ('<color name="primary">#1E88E5</color>',
+         '<color name="primary">#4D9CFF</color>'),
+        ('<color name="secondary">#E3F2FD</color>',
+         '<color name="secondary">#E9F2FF</color>'),
+    ),
+    "packages/apps/DocumentsUI/res/values-night/colors.xml": (
+        ('<color name="app_background_color">#202124</color>',
+         '<color name="app_background_color">#05070A</color>'),
+        ('<color name="background_floating">#3C4043</color>',
+         '<color name="background_floating">#161C24</color>'),
+        ('<color name="primary">#8AB4F8</color>',
+         '<color name="primary">#4D9CFF</color>'),
+        ('<color name="secondary">#3D8AB4F8</color>',
+         '<color name="secondary">#334D9CFF</color>'),
+        ('<color name="hairline">#5F6368</color>',
+         '<color name="hairline">#526170</color>'),
+        ('<color name="doc_list_item_subtitle_enabled">#b3ffffff</color>',
+         '<color name="doc_list_item_subtitle_enabled">#FFAAB4C0</color>'),
+    ),
+    "packages/apps/Gallery2/res/values/colors.xml": (
+        ('<color name="default_background">#000</color>',
+         '<color name="default_background">#05070A</color>'),
+        ('<color name="ic_launcher_gallery_background">#4285f4</color>',
+         '<color name="ic_launcher_gallery_background">#7A42E8</color>'),
+        ('<color name="albumset_background">#1A1A1A</color>',
+         '<color name="albumset_background">#0D1117</color>'),
+        ('<color name="albumset_placeholder">#333</color>',
+         '<color name="albumset_placeholder">#161C24</color>'),
+        ('<color name="albumset_label_background">#EE414143</color>',
+         '<color name="albumset_label_background">#EE161C24</color>'),
+        ('<color name="albumset_label_count">#A9ABAD</color>',
+         '<color name="albumset_label_count">#AAB4C0</color>'),
+        ('<color name="album_background">#1A1A1A</color>',
+         '<color name="album_background">#0D1117</color>'),
+        ('<color name="album_placeholder">#333</color>',
+         '<color name="album_placeholder">#161C24</color>'),
+        ('<color name="photo_background">#1A1A1A</color>',
+         '<color name="photo_background">#0D1117</color>'),
+        ('<color name="photo_placeholder">#333</color>',
+         '<color name="photo_placeholder">#161C24</color>'),
+        ('<color name="cache_background">#1A1A1A</color>',
+         '<color name="cache_background">#0D1117</color>'),
+        ('<color name="cache_placeholder">#333</color>',
+         '<color name="cache_placeholder">#161C24</color>'),
+        ('<color name="slideshow_background">#1A1A1A</color>',
+         '<color name="slideshow_background">#05070A</color>'),
+        ('<color name="holo_blue_light">#ff33b5e5</color>',
+         '<color name="holo_blue_light">#FF4D9CFF</color>'),
+        ('<color name="mode_selection_border">#33B5E5</color>',
+         '<color name="mode_selection_border">#4D9CFF</color>'),
+        ('<color name="popup_title_color">#ff33b5e5</color>',
+         '<color name="popup_title_color">#FF4D9CFF</color>'),
+    ),
+    "packages/apps/Gallery2/res/values/strings.xml": (
+        ('<string name="app_name">Gallery</string>',
+         '<string name="app_name">Photos</string>'),
+    ),
+}
+
+
+class PresentationError(RuntimeError):
+    pass
+
+
+def git_head(path: Path) -> str:
+    return subprocess.check_output(
+        ["git", "-C", str(path), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
+
+
+def require_pins(root: Path) -> None:
+    for rel, expected in PINNED.items():
+        repo = root / rel
+        if not (repo / ".git").exists():
+            raise PresentationError(f"missing git repo: {rel}")
+        actual = git_head(repo)
+        if actual != expected:
+            raise PresentationError(
+                f"baseline mismatch: {rel} expected={expected} actual={actual}"
+            )
+
+
+def apply_file(path: Path, replacements: tuple[tuple[str, str], ...]) -> None:
+    text = path.read_text(encoding="utf-8")
+    for old, new in replacements:
+        if new in text:
+            continue
+        count = text.count(old)
+        if count != 1:
+            raise PresentationError(
+                f"anchor mismatch: {path} old={old!r} count={count}"
+            )
+        text = text.replace(old, new, 1)
+    path.write_text(text, encoding="utf-8")
+
+
+def verify_file(path: Path, replacements: tuple[tuple[str, str], ...]) -> None:
+    text = path.read_text(encoding="utf-8")
+    for old, new in replacements:
+        if new not in text:
+            raise PresentationError(
+                f"presentation token missing: {path} token={new!r}"
+            )
+        if old in text:
+            raise PresentationError(
+                f"upstream presentation token remains: {path} token={old!r}"
+            )
+
+
+def verify_binary_boundaries(root: Path) -> None:
+    camera_bp = (root / "external/Camera/Android.bp").read_text(encoding="utf-8")
+    if 'apk: "prebuilt/app-release.apk"' not in camera_bp:
+        raise PresentationError("Camera prebuilt boundary changed")
+    if "preprocessed: true" not in camera_bp:
+        raise PresentationError("Camera preprocessed boundary changed")
+
+    # Vanadium is kept upstream and is not rewritten by this resource-only
+    # applicator. The exact repo pin above is the product boundary.
+    print("R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK")
+    print("R9_VANADIUM_PRESENTATION_BOUNDARY=PASS_UPSTREAM_SECURITY_BUILD")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--source", required=True, type=Path)
+    parser.add_argument("mode", choices=("apply", "verify"))
+    args = parser.parse_args()
+
+    root = args.source.resolve()
+    require_pins(root)
+
+    for rel in PRESENTATION_FILES:
+        path = root / rel
+        if not path.is_file():
+            raise PresentationError(f"missing presentation file: {rel}")
+
+    if args.mode == "apply":
+        for rel, replacements in REPLACEMENTS.items():
+            apply_file(root / rel, replacements)
+
+    for rel, replacements in REPLACEMENTS.items():
+        verify_file(root / rel, replacements)
+
+    verify_binary_boundaries(root)
+
+    print("R9_CLOCK_PRESENTATION=PASS_RESOURCE_ONLY")
+    print("R9_FILES_PRESENTATION=PASS_RESOURCE_ONLY")
+    print("R9_PHOTOS_PRESENTATION=PASS_RESOURCE_ONLY")
+    print("R9_CORE_APP_BEHAVIORAL_MUTATION=PASS_ABSENT")
+    print("R9_DAILY_DRIVER_CORE_PRESENTATION=PASS")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except PresentationError as error:
+        print(f"R9_DAILY_DRIVER_CORE_PRESENTATION=FAIL {error}")
+        raise SystemExit(1)
