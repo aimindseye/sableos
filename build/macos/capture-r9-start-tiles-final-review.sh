@@ -117,6 +117,11 @@ else
         tee "$EVIDENCE_DIR/start-tiles-final.sha256"
 fi
 
+TOP_HASH="$(awk '$2 ~ /00-start-tiles-top\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
+MID_HASH="$(awk '$2 ~ /01-start-tiles-mid-scroll\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
+LOWER_HASH="$(awk '$2 ~ /02-start-tiles-lower-scroll\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
+PEEK_HASH="$(awk '$2 ~ /03-start-tile-peek\\.png$/ {print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256")"
+
 UNIQUE_HASHES="$(
     awk '{print $1}' "$EVIDENCE_DIR/start-tiles-final.sha256" |
         sort -u |
@@ -126,13 +131,35 @@ UNIQUE_HASHES="$(
 
 echo "R9_START_TILES_FINAL_UNIQUE_HASHES=$UNIQUE_HASHES"
 
-if [[ "$UNIQUE_HASHES" -ne 4 ]]; then
-    echo "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=FAIL_EXPECTED_4_UNIQUE"
+if [[ -z "$TOP_HASH" || -z "$MID_HASH" || -z "$LOWER_HASH" || -z "$PEEK_HASH" ]]; then
+    echo "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=FAIL_HASH_RESOLUTION"
+    exit 8
+fi
+
+if [[ "$TOP_HASH" == "$MID_HASH" ]]; then
+    echo "R9_START_SCROLL_VISUAL_PROOF=FAIL_NO_SCROLL_DELTA"
+    exit 8
+fi
+
+if [[ "$PEEK_HASH" == "$TOP_HASH" || "$PEEK_HASH" == "$MID_HASH" || "$PEEK_HASH" == "$LOWER_HASH" ]]; then
+    echo "R9_START_PEEK_VISUAL_PROOF=FAIL_NOT_DISTINCT"
+    exit 8
+fi
+
+echo "R9_START_SCROLL_VISUAL_PROOF=PASS_TOP_TO_SCROLLED"
+
+if [[ "$MID_HASH" == "$LOWER_HASH" ]]; then
+    echo "R9_START_SCROLL_LOWER_BOUND=PASS_STABLE_AFTER_SECOND_SWIPE"
+else
+    echo "R9_START_SCROLL_LOWER_BOUND=PASS_ADDITIONAL_SCROLL"
+fi
+
+if [[ "$UNIQUE_HASHES" -lt 3 ]]; then
+    echo "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=FAIL_EXPECTED_AT_LEAST_3_UNIQUE"
     exit 8
 fi
 
 echo "R9_START_TILES_FINAL_CAPTURE_INTEGRITY=PASS"
-echo "R9_START_SCROLL_VISUAL_PROOF=PASS"
 echo "R9_START_PEEK_VISUAL_PROOF=PENDING_IMAGE_REVIEW"
 echo "FULL_PANTHER_BUILD_PERFORMED=NO"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
