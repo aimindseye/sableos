@@ -102,6 +102,32 @@ ACTUAL_AVD="$("$ADB" -s "$SERIAL" emu avd name 2>/dev/null | tr -d '\r' | head -
 echo "ANDROID_SERIAL=$SERIAL"
 echo "ACTUAL_AVD=$ACTUAL_AVD"
 
+HOST_CHROME_PATH="$(
+    "$ADB" -s "$SERIAL" shell pm path com.android.chrome 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
+HOST_VANADIUM_PATH="$(
+    "$ADB" -s "$SERIAL" shell pm path app.vanadium.browser 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
+
+echo "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SOURCE=HOST_AVD_NOT_PRODUCT"
+if [[ -n "$HOST_CHROME_PATH" ]]; then
+    echo "R9_VISUAL_REVIEW_HOST_AVD_CHROME=DETECTED_FILTERED_FROM_REVIEW"
+else
+    echo "R9_VISUAL_REVIEW_HOST_AVD_CHROME=ABSENT"
+fi
+if [[ -n "$HOST_VANADIUM_PATH" ]]; then
+    echo "R9_VISUAL_REVIEW_HOST_AVD_VANADIUM=DETECTED_NONAUTHORITATIVE"
+else
+    echo "R9_VISUAL_REVIEW_HOST_AVD_VANADIUM=ABSENT_EXPECTED"
+fi
+echo "R9_VISUAL_REVIEW_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER"
+echo "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER"
+echo "R9_VISUAL_REVIEW_SABLE_APP_APPEARANCE_PROVIDER=AUTHORIZED_REVIEW_SURFACE"
+
 if [[ "${ALLOW_NON_PIXEL7_AVD:-NO}" != "YES" ]]; then
     if ! printf '%s' "$ACTUAL_AVD" | grep -Eiq 'pixel[_ -]?7|panther'; then
         echo "R9_VISUAL_REVIEW=FAIL_NOT_PIXEL7_AVD actual=$ACTUAL_AVD"
@@ -176,6 +202,18 @@ else
 fi
 
 "$ADB" -s "$SERIAL" install -r "$APK"
+
+APPEARANCE_PROVIDER="$(
+    "$ADB" -s "$SERIAL" shell content query         --uri content://org.sableos.start.appearance/appearance 2>/dev/null |
+        tr -d '\r' || true
+)"
+[[ -n "$APPEARANCE_PROVIDER" ]] || {
+    echo "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=FAIL_UNAVAILABLE"
+    exit 11
+}
+echo "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS"
+echo "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_ROW=$APPEARANCE_PROVIDER"
+
 "$ADB" -s "$SERIAL" shell am force-stop org.sableos.start.visualreview
 "$ADB" -s "$SERIAL" shell am start -W     -n org.sableos.start.visualreview/.R9LauncherVisualReviewActivity
 
