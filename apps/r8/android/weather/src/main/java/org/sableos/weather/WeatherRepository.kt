@@ -92,14 +92,12 @@ internal class WeatherRepository(
                 fahrenheit = fahrenheit,
             )
 
-        val protocol =
+        val protocol: String? =
             runCatching {
                 fetchHttps(url)
             }.mapCatching { json ->
                 WeatherNative.parseForecast(json)
-            }.getOrElse {
-                null
-            }
+            }.getOrNull()
 
         if (protocol.isNullOrBlank() || !protocol.startsWith("OK\n")) {
             val fallback = cached.snapshot
