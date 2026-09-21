@@ -33,7 +33,14 @@ compile/tests/lint, quality/coverage tasks and deterministic supply-chain
 evidence.
 
 `full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
-Text Reader and Mail qualification.
+Text Reader and Mail qualification. It is the pre-image source/build/security
+CI profile and does not authorize a Panther image build by itself.
+
+The source-bound Launcher visual acceptance seal is intentionally not part of
+`full`. Visual acceptance is an image-authorization gate and is required by the
+`release` profile and the full Panther product-composition path. This allows
+new source to compile and pass CI before a fresh visual review without weakening
+the rule that no image build proceeds from stale visual acceptance.
 
 ## One host toolchain
 
@@ -101,8 +108,10 @@ Network authorization in local CI applies only to pinned source/upstream
 retrieval such as Reader, Text Reader and Mail when those source caches are
 missing. It does not authorize host-tool installation.
 
-`release` runs `full` and then the source-bound Panther release-candidate
-driver.
+`release` runs `full`, requires the source-bound Launcher visual acceptance
+seal, and only then enters the Panther release-candidate driver. Do not use the
+`release` profile for pre-image compile qualification while visual acceptance is
+pending; use `ci full` followed by `qualify physical-ux`.
 
 Evidence defaults to:
 
