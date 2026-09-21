@@ -78,6 +78,14 @@ See `TITAN2_GSI_PLAN.md`.
 
 Read-only T0 stock/device inventory may begin independently for Titan 2 and Titan 2 Elite whenever each device is available. The R9 source-bound fresh-build prerequisite is now PASS. GSI mutation/flash remains gated on physical Pixel 7 acceptance.
 
+Titan 2 stock firmware/OTA corpus acquisition is now complete and byte-integrity
+sealed: 18 files, 61,417,875,932 bytes, remote-size verification 18/18 PASS,
+SHA-256 verification 18/18 PASS, checksum-manifest seal
+`21764a9839313e261b2a8d128ba6306085faf0525a159711c59469ed2edae6e1`.
+See `TITAN2_STOCK_FIRMWARE_CORPUS.md`. This is T0 acquisition evidence only;
+authenticity, extraction, restore, AVB and physical flash qualification remain
+separate gates.
+
 Titan 2 GSI feasibility is already demonstrated by community LineageOS/GSI work.
 Titan 2 Elite is treated as **GSI-capable candidate, not yet locally proven**:
 Android 16/Treble makes the architecture appropriate, but SableOS still requires
