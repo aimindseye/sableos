@@ -58,8 +58,15 @@ def main() -> int:
         "DimensionalWideTile(",
         "SableAppIcon(",
         "PhosphorGlyph(",
+        "import androidx.core.graphics.PathParser",
+        "val androidPath: android.graphics.Path =",
         '"message content stays private on Home"',
         '"subject previews off"',
+    )
+
+    forbid(
+        ACTIVITY,
+        "import android.util.PathParser",
     )
 
     require(
