@@ -125,6 +125,8 @@ run_static() {
   bash "$ROOT/build/gates/sable-pipeline-contract.sh"
   python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
   python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
+  python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
   bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
@@ -162,7 +164,7 @@ run_android() {
 
   (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin       :sablestart-visual-review:assembleDebug       :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :sablestart-presentation-check:lintDebug       :sablestart-visual-review:lintDebug       --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin       :sablestart-visual-review:assembleDebug       :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :weather:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :weather:lintDebug       :sablestart-presentation-check:lintDebug       :sablestart-visual-review:lintDebug       --stacktrace --console=plain --no-daemon
   )
 }
 
@@ -209,7 +211,7 @@ run_quality() {
 
   (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :weather:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :weather:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
   )
 
   verify_shared_security_tools
@@ -303,6 +305,7 @@ run_apk_seal() {
     "$ROOT/apps/r8/android/games/build/outputs/apk/game2048/debug/games-game2048-debug.apk"
     "$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk"
     "$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
+    "$ROOT/apps/r8/android/weather/build/outputs/apk/debug/weather-debug.apk"
   )
 
   : > "$EVIDENCE_DIR/R8_APK_SEALS.txt"
@@ -317,8 +320,8 @@ run_apk_seal() {
     "$aapt2" dump permissions "$apk"       | tee -a "$EVIDENCE_DIR/R8_APK_SEALS.txt"
   done
 
-  test "$(grep -c '^===== ' "$EVIDENCE_DIR/R8_APK_SEALS.txt")" -eq 6
-  for pkg in     org.sableos.calculator     org.sableos.media     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.hub
+  test "$(grep -c '^===== ' "$EVIDENCE_DIR/R8_APK_SEALS.txt")" -eq 7
+  for pkg in     org.sableos.calculator     org.sableos.media     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.hub     org.sableos.weather
   do
     grep -q "name='$pkg'" "$EVIDENCE_DIR/R8_APK_SEALS.txt"
   done
