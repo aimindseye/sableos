@@ -603,8 +603,22 @@ def repair_known_setup_strings_alias(source: Path) -> None:
     print("SABLE_UI5C_UI6_RESOURCE_REPAIR=PASS")
 
 
-def verify_ui4_tokens(framework: Path, ui4) -> None:
+def verify_ui4_tokens(
+    framework: Path,
+    ui4,
+    allowed_later_framework_modified: tuple[Path, ...] = (),
+) -> None:
+    allowed = set(allowed_later_framework_modified)
+    unknown = allowed - set(ui4.PATCHES)
+    if unknown:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
+            f"{sorted(path.as_posix() for path in unknown)!r}"
+        )
+
     for rel, replacements in ui4.PATCHES.items():
+        if rel in allowed:
+            continue
         text = (framework / rel).read_text(encoding="utf-8")
         for old, new in replacements:
             if old in text:
@@ -616,6 +630,7 @@ def verify_ui4_tokens(framework: Path, ui4) -> None:
 def verify(
     source: Path,
     allowed_later_framework_untracked: tuple[Path, ...] = (),
+    allowed_later_framework_modified: tuple[Path, ...] = (),
 ) -> None:
     assert_heads(source)
     verify_templates()
@@ -715,7 +730,11 @@ def verify(
         if needle not in controller:
             raise SystemExit(f"UI5C_ABOUT_REAL_PROPERTY_VERIFY_FAIL={needle}")
 
-    verify_ui4_tokens(framework, ui4)
+    verify_ui4_tokens(
+        framework,
+        ui4,
+        allowed_later_framework_modified,
+    )
 
     clock = (framework / CLOCK_SECTION).read_text(encoding="utf-8")
     dimens = (framework / SYSTEMUI_DIMENS).read_text(encoding="utf-8")
@@ -834,6 +853,17 @@ def main() -> int:
             "UI5C/UI6 dirty-scope validation while retaining semantic checks."
         ),
     )
+    parser.add_argument(
+        "--allow-framework-modified",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact UI4 frameworks/base path whose original UI4 replacement "
+            "tokens are intentionally superseded by a separately verified "
+            "later layer."
+        ),
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
@@ -842,10 +872,11 @@ def main() -> int:
             args.mode is not None
             or args.source is not None
             or args.allow_framework_untracked
+            or args.allow_framework_modified
         ):
             parser.error(
-                "--self-test cannot be combined with mode, --source, or "
-                "--allow-framework-untracked"
+                "--self-test cannot be combined with mode, --source, "
+                "--allow-framework-untracked, or --allow-framework-modified"
             )
         self_test()
         return 0
@@ -860,20 +891,23 @@ def main() -> int:
         raise SystemExit(f"NOT_ANDROID_REPO_ROOT={source}")
 
     if args.mode == "apply":
-        if args.allow_framework_untracked:
+        if args.allow_framework_untracked or args.allow_framework_modified:
             parser.error(
-                "--allow-framework-untracked is valid only with verify"
+                "--allow-framework-untracked/--allow-framework-modified "
+                "are valid only with verify"
             )
         apply(source)
     elif args.mode == "verify":
         verify(
             source,
             tuple(args.allow_framework_untracked),
+            tuple(args.allow_framework_modified),
         )
     else:
-        if args.allow_framework_untracked:
+        if args.allow_framework_untracked or args.allow_framework_modified:
             parser.error(
-                "--allow-framework-untracked is valid only with verify"
+                "--allow-framework-untracked/--allow-framework-modified "
+                "are valid only with verify"
             )
         repair_known_setup_strings_alias(source)
     return 0
