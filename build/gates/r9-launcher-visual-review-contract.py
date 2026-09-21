@@ -44,6 +44,16 @@ def main() -> int:
         / "src/android/packages/apps/SableStart/src/com/sable/start/ui"
         / "SableStartScreen.kt"
     ).read_text()
+    glyphs = (
+        ROOT
+        / "src/android/packages/apps/SableStart/src/com/sable/start/ui"
+        / "SableGlyphIcon.kt"
+    ).read_text()
+    fixtures = (
+        ROOT
+        / "apps/r8/android/sablestart-visual-review/src/main/java"
+        / "org/sableos/start/visualreview/DailyDriverReviewFixtures.kt"
+    ).read_text()
     quickstep = (
         ROOT
         / "patches/android-17-grapheneos-2026081300/r9_launcher3"
@@ -64,6 +74,50 @@ def main() -> int:
         'include(":sablestart-visual-review")',
         "R9_VISUAL_REVIEW_MODULE_REGISTERED",
     )
+    require(
+        glyphs,
+        "SableGlyphIcon(",
+        "R9_VISUAL_REVIEW_SHARED_GLYPH_RENDERER",
+    )
+    require(
+        glyphs,
+        '"org.sableos.weather" -> SableGlyphs.Weather',
+        "R9_VISUAL_REVIEW_WEATHER_GLYPH_BINDING",
+    )
+    require(
+        production_ui,
+        "approvedGlyphPackage(app)",
+        "R9_VISUAL_REVIEW_FIXTURE_LABEL_GLYPH_BINDING",
+    )
+    for needle in (
+        "ReviewWeatherSnapshotProvider",
+        "Jersey City · 68° · partly cloudy",
+        "ReviewMailSnapshotProvider",
+        "4 mail alerts",
+        "WeatherFixtureActivity",
+        "MailFixtureActivity",
+        "CalculatorFixtureActivity",
+    ):
+        require(
+            fixtures,
+            needle,
+            "R9_VISUAL_REVIEW_SOURCE_BOUND_FIXTURES",
+        )
+    for needle in (
+        'android:name=".ReviewWeatherSnapshotProvider"',
+        'android:authorities="org.sableos.weather.snapshot"',
+        'android:name=".ReviewMailSnapshotProvider"',
+        'android:authorities="org.sableos.mail.snapshot"',
+        'android:name=".WeatherFixtureActivity"',
+        'android:name=".MailFixtureActivity"',
+        'android:name=".CalculatorFixtureActivity"',
+    ):
+        require(
+            manifest,
+            needle,
+            "R9_VISUAL_REVIEW_FIXTURE_MANIFEST",
+        )
+
     require(
         module_build,
         'implementation(project(":sablestart-presentation-check"))',
