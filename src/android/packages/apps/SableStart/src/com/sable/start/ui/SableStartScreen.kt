@@ -947,9 +947,10 @@ private fun AppMark(
     fallbackContentColor: Color = MaterialTheme.colorScheme.onSurface,
     showFallbackSurface: Boolean = true,
 ) {
-    if (sableGlyphForPackage(app.component.packageName) != null) {
+    val glyphPackage = approvedGlyphPackage(app)
+    if (glyphPackage != null) {
         SableGlyphIcon(
-            packageName = app.component.packageName,
+            packageName = glyphPackage,
             accent = appColor(app),
             modifier = Modifier.size(size.dp),
             compact = size <= 46,
@@ -999,6 +1000,35 @@ private fun AppMark(
                 color = fallbackContentColor,
             )
         }
+    }
+}
+
+private fun approvedGlyphPackage(app: AppEntry): String? {
+    val packageName = app.component.packageName
+    if (sableGlyphForPackage(packageName) != null) return packageName
+
+    return when {
+        app.label.equals("Phone", ignoreCase = true) -> "com.android.dialer"
+        app.label.equals("Sable Messages", ignoreCase = true) ||
+            app.label.equals("Messages", ignoreCase = true) -> "org.sableos.hub"
+        app.label.equals("Sable Mail", ignoreCase = true) ||
+            app.label.equals("Mail", ignoreCase = true) -> "org.sableos.mail"
+        app.label.equals("Sable Calendar", ignoreCase = true) ||
+            app.label.equals("Calendar", ignoreCase = true) -> "org.sableos.calendar"
+        app.label.equals("Sable Weather", ignoreCase = true) ||
+            app.label.equals("Weather", ignoreCase = true) -> "org.sableos.weather"
+        app.label.equals("Photos", ignoreCase = true) ||
+            app.label.equals("Gallery", ignoreCase = true) -> "com.android.gallery3d"
+        app.label.equals("Sable Media", ignoreCase = true) ||
+            app.label.equals("Media", ignoreCase = true) -> "org.sableos.media"
+        app.label.equals("Camera", ignoreCase = true) -> "app.grapheneos.camera"
+        app.label.equals("Sable Calculator", ignoreCase = true) ||
+            app.label.equals("Calculator", ignoreCase = true) -> "org.sableos.calculator"
+        app.label.equals("Files", ignoreCase = true) -> "com.android.documentsui"
+        app.label.equals("Clock", ignoreCase = true) -> "com.android.deskclock"
+        app.label.equals("Vanadium", ignoreCase = true) -> "app.vanadium.browser"
+        app.label.equals("Settings", ignoreCase = true) -> "com.android.settings"
+        else -> null
     }
 }
 
