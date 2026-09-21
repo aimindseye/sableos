@@ -2,6 +2,23 @@
 
 Status: **required before Panther UI closure**
 
+## R9 validation authority update — 2026-09-21
+
+For this R9 build, the user has closed Mac-mini visual validation after repeated
+review-harness failures. Mac screenshots are therefore not a release gate.
+
+```
+R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
+R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED
+R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
+```
+
+The waiver does not waive production compilation, Linux CI, module
+qualification, product-composition checks, or physical-device acceptance.
+Start/Live/theme, Launcher3 HOME/Recents, SystemUI, Vanadium, Messaging,
+Calendar and other runtime presentation claims must be checked on the flashed
+Panther.
+
 This acceptance exists because the Pixel 7 AVD used for Mac visual design
 contains Google applications and emulator-specific package state that is not
 the SableOS/GrapheneOS Panther product.
