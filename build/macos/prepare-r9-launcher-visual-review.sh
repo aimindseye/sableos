@@ -250,9 +250,9 @@ echo "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS"
 "$ADB" -s "$SERIAL" install -r "$MEDIA_APK"
 
 "$ADB" -s "$SERIAL" shell pm grant \
-    org.sableos.calendar android.permission.READ_CALENDAR >/dev/null 2>&1 || true
+    org.sableos.calendar android.permission.READ_CALENDAR >/dev/null
 "$ADB" -s "$SERIAL" shell pm grant \
-    org.sableos.calendar android.permission.WRITE_CALENDAR >/dev/null 2>&1 || true
+    org.sableos.calendar android.permission.WRITE_CALENDAR >/dev/null
 
 echo "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS"
 echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS"
