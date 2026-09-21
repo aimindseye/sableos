@@ -260,6 +260,33 @@ require(
     "R9_SABLE_CALENDAR_MODULE_BUILD=PASS",
 )
 
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py",
+    '"packages/apps/DeskClock": "7e04cd4bec8c1d9e1579eaa5b3089fe6042a0cb8"',
+    '"packages/apps/DocumentsUI": "ac4670682dd0df3a9798dfb346c57f163d42f7fc"',
+    '"packages/apps/Gallery2": "f5518d09c6e6953eaba6d0c7c23d5a2d766b6525"',
+    '"external/Camera": "1e8ea44155ce3c023d9b1486d57a44268276c315"',
+    '"external/vanadium": "57c3996dfd45e8d9b6f0b15b0753c94acb4282ef"',
+    "R9_CLOCK_PRESENTATION=PASS_RESOURCE_ONLY",
+    "R9_FILES_PRESENTATION=PASS_RESOURCE_ONLY",
+    "R9_PHOTOS_PRESENTATION=PASS_RESOURCE_ONLY",
+    "R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK",
+    "R9_VANADIUM_PRESENTATION_BOUNDARY=PASS_UPSTREAM_SECURITY_BUILD",
+    "R9_CORE_APP_BEHAVIORAL_MUTATION=PASS_ABSENT",
+)
+require(
+    "build/panther/prepare-r8-final-ui.sh",
+    "apply_r9_daily_driver_core_presentation.py",
+    'python3 "$DAILY_DRIVER_CORE" --source "$WS" apply',
+    'python3 "$DAILY_DRIVER_CORE" --source "$WS" verify',
+    "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS",
+)
+require(
+    "build/gates/r8-final-product-composition.sh",
+    "apply_r9_daily_driver_core_presentation.py",
+    "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS_SOURCE",
+)
+
 # ---------------------------------------------------------------------------
 # Sable Weather: Rust domain + Android HTTPS shell + read-only Launcher snapshot.
 # ---------------------------------------------------------------------------
@@ -381,6 +408,130 @@ require(
     ":weather:assembleDebug",
     ":calendar:assembleDebug",
     "R9_SOURCE_BOUND_TEN_APK_FREEZE=PASS",
+)
+
+# ---------------------------------------------------------------------------
+# Sable Calendar + privacy-safe Live surface.
+# Calendar/Messages/Mail/Media own sensitive data and export bounded,
+# Launcher3-only snapshots. Launcher itself only requests local photo access.
+# ---------------------------------------------------------------------------
+for rel in (
+    "apps/r8/android/calendar/build.gradle.kts",
+    "apps/r8/android/calendar/src/main/AndroidManifest.xml",
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt",
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/CalendarRepository.kt",
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/CalendarSnapshotProvider.kt",
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubSnapshotProvider.kt",
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaSnapshotProvider.kt",
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaSnapshotStore.kt",
+):
+    require_file(rel)
+
+require(
+    "apps/r8/android/calendar/src/main/AndroidManifest.xml",
+    "android.permission.READ_CALENDAR",
+    "android.permission.WRITE_CALENDAR",
+    'android:authorities="org.sableos.calendar.snapshot"',
+    'android:authorities="org.sableos.start.appearance"',
+)
+require(
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/CalendarRepository.kt",
+    "CalendarContract.Instances.CONTENT_URI",
+    "CalendarContract.Events.CONTENT_URI",
+    "CalendarContract.Reminders.CONTENT_URI",
+    "CalendarContract.Reminders.MINUTES, 15",
+    "SableGlobalTheme" if False else "CalendarSnapshot",
+)
+require(
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt",
+    "SableGlobalTheme(window = window)",
+    'Agenda("AGENDA")',
+    'Month("MONTH")',
+    'NewEvent("NEW")',
+    "repository.createEvent(",
+)
+for provider in (
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/CalendarSnapshotProvider.kt",
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubSnapshotProvider.kt",
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaSnapshotProvider.kt",
+):
+    require(
+        provider,
+        "Binder.getCallingUid()",
+        "getPackagesForUid(callingUid)",
+        'check("com.android.launcher3" in packages)',
+        "UnsupportedOperationException",
+    )
+
+require(
+    "apps/r8/mail/apply_sable_flavor.py",
+    "SableMailSnapshotProvider.kt",
+    "NotificationManager::class.java",
+    "Notification.CATEGORY_EMAIL",
+    "Notification.CATEGORY_MESSAGE",
+    'check("com.android.launcher3" in packages)',
+    "content://org.sableos.mail.snapshot/current",
+)
+require(
+    "apps/r8/mail/verify_sable_mail.py",
+    "SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT=PASS_NOTIFICATION_COUNT_ONLY",
+    'android:authorities="org.sableos.mail.snapshot"',
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackService.kt",
+    "MediaSnapshotStore.update(",
+    "MediaSnapshotStore.clear(this)",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
+    "content://org.sableos.weather.snapshot/current",
+    "content://org.sableos.calendar.snapshot/current",
+    "content://org.sableos.hub.snapshot/current",
+    "content://org.sableos.mail.snapshot/current",
+    "content://org.sableos.media.snapshot/current",
+    "OBSERVED_URIS",
+    "Manifest.permission.READ_MEDIA_IMAGES",
+)
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
+    "Manifest.permission.READ_CALENDAR",
+    "Manifest.permission.READ_MEDIA_AUDIO",
+    "delay(60_000",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
+    "LiveSurfaceRepository.OBSERVED_URIS.forEach",
+    "contentResolver.registerContentObserver(",
+    "liveRefreshGeneration.value += 1",
+    "contentResolver.unregisterContentObserver(liveContentObserver)",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
+    "add(Manifest.permission.READ_CALENDAR)",
+    "add(Manifest.permission.READ_MEDIA_AUDIO)",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
+    'android:authorities="org.sableos.calendar.snapshot"',
+    'android:authorities="org.sableos.hub.snapshot"',
+    'android:authorities="org.sableos.mail.snapshot"',
+    'android:authorities="org.sableos.media.snapshot"',
+    'assert "android.permission.READ_CALENDAR" not in patched_manifest',
+    'assert "android.permission.READ_MEDIA_AUDIO" not in patched_manifest',
+)
+require(
+    "apps/r8/export-panther-app-bundle.sh",
+    "[org.sableos.calendar]=SableCalendar.apk",
+    "calendar/build/outputs/apk/debug/calendar-debug.apk",
+)
+require(
+    "product/r8/panther/Android.bp",
+    'name: "SableCalendar"',
+    'apk: "prebuilt/SableCalendar.apk"',
+)
+require(
+    "product/r8/panther/r8-product.mk",
+    "SableCalendar",
 )
 
 # ---------------------------------------------------------------------------
@@ -753,6 +904,10 @@ print("R9_SYSTEMUI_SABLE_ACCENT_CONTRACT=PASS")
 print("R9_SINGLE_VISIBLE_MESSAGES_CONTRACT=PASS")
 print("R9_FIRST_PARTY_PRODUCT_ICON_CONTRACT=PASS")
 print("R9_PHONE_CONTACTS_PRESENTATION_CONTRACT=PASS")
+print("R9_DAILY_DRIVER_CORE_PRESENTATION_CONTRACT=PASS")
+print("R9_SABLE_CALENDAR_PRODUCT_CONTRACT=PASS")
+print("R9_LIVE_SURFACE_PRIVACY_BOUNDARY=PASS_LAUNCHER_SNAPSHOT_ONLY")
+print("R9_LIVE_SURFACE_REFRESH=PASS_EVENT_AND_LIFECYCLE_DRIVEN")
 print("R9_SMS_MMS_BLOCKING_PLATFORM_CONTRACT=PASS")
 print("R9_SMS_MMS_SPAM_CLASSIFICATION_BOUNDARY=PASS")
 print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
