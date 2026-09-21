@@ -71,6 +71,7 @@ stale_tracked_paths="$(
         apps/r8/android/games \
         apps/r8/android/media \
         apps/r8/android/hub \
+        apps/r8/android/calendar \
         src/android/packages/apps/SableStart \
         | grep -E \
             '(^|/)(preview|prototype|mock|demo)(/|$)|(^|/)[^/]*(Preview|Prototype|Mock|Demo)[^/]*\.(kt|java|xml)$' \
