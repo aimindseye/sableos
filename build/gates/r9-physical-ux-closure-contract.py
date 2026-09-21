@@ -191,7 +191,10 @@ require(
 )
 require(
     "build/check-ci-policy.py",
+    "repo layout required array could not be parsed",
+    "repo layout retired_sablestart array could not be parsed",
     "obsolete standalone SableStart artifact remains in required layout",
+    "retired SableStart artifact missing from retired layout",
     "repo layout contract token missing",
 )
 
