@@ -156,6 +156,14 @@ def main() -> int:
     )
     require(
         activity,
+        "Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU",
+        "PackageManager.PackageInfoFlags.of(",
+        "@Suppress(\"DEPRECATION\")",
+        "PackageManager.GET_PERMISSIONS,",
+        "R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT",
+    )
+    require(
+        activity,
         "privacySummary =",
         "R9_VISUAL_REVIEW_PRIVACY_SUMMARY_POPULATED",
     )
@@ -593,6 +601,7 @@ def main() -> int:
     print("R9_VISUAL_REVIEW_ACTIVITY_RESULT_PERMISSIONS=PASS")
     print("R9_VISUAL_REVIEW_PERMISSION_SUMMARY_PARITY=PASS_CURRENT_USER")
     print("R9_VISUAL_REVIEW_PUBLIC_PACKAGE_MANAGER_PERMISSION_QUERY=PASS")
+    print("R9_VISUAL_REVIEW_PACKAGEINFO_API_COMPAT=PASS_MINSDK30")
     print("R9_VISUAL_REVIEW_MESSAGING_SUPPRESSION_PARITY=PASS")
     print("R9_VISUAL_REVIEW_SYSTEM_BAR_PARITY=PASS")
     print("R9_QUICKSTEP_SYSTEM_BAR_RESTORE=PASS")
