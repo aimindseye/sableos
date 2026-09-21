@@ -13,6 +13,11 @@ required=(
   build/panther/prepare-r8-final-ui.sh
   build/panther/build-r8-final-ui.sh
   build/panther/qualify-r9-physical-ux.sh
+  build/macos/prepare-r9-launcher-visual-review.sh
+  build/macos/capture-r9-launcher-visual-review.sh
+  build/macos/capture-r9-start-tiles-final-review.sh
+  build/macos/audit-r9-launcher-review-fidelity.sh
+  build/macos/capture-r9-theme-fidelity-review.sh
   patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py
   patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt
   src/android/packages/apps/SableStart/Android.bp
@@ -59,8 +64,9 @@ echo "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT"
 echo "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT"
 echo "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS"
 echo "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS"
+echo "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_REQUIRED_AND_SYNTAX_CHECKED"
 
-for sh in "$ROOT"/build/*.sh "$ROOT"/build/panther/*.sh "$ROOT"/build/gates/*.sh "$ROOT"/tests/sablestart/host/*.sh "$ROOT"/tests/sablestart/device/*.sh; do
+for sh in "$ROOT"/build/*.sh "$ROOT"/build/panther/*.sh "$ROOT"/build/gates/*.sh "$ROOT"/build/macos/*.sh "$ROOT"/tests/sablestart/host/*.sh "$ROOT"/tests/sablestart/device/*.sh; do
     test -f "$sh" || continue
     bash -n "$sh"
 done
