@@ -152,9 +152,13 @@ grep -Fq 'R8_STALE_WORKSPACE_PRODUCT_TREE' "$nostale"
 grep -Fq 'verify-r8-vendor-sable-inventory.py' "$nostale"
 grep -Fq 'R8_DUPLICATE_PRODUCT_BLUEPRINT' "$nostale"
 grep -Fq 'R8_VENDOR_SABLE_EXACT_INVENTORY=PASS' "$inventory"
-grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=8' "$inventory"
+if ! grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=9' "$inventory"; then
+    echo "R9_BUILD_DRIVER_NINE_APK_INVENTORY=FAIL"
+    exit 1
+fi
 python3 "$inventory" --self-test
 
+echo "R9_BUILD_DRIVER_NINE_APK_INVENTORY=PASS"
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
 
 grep -Fq 'name: "sable_start_presentation_srcs"' "$start_bp"
@@ -198,11 +202,18 @@ combined_line="$(grep -nF '===== COMBINED UI MODULE COMPILE GATE =====' "$finalb
 echo "R9_LAUNCHER3_HOME_PREFLIGHT_CONTRACT=PASS"
 
 grep -Fq 'r9-launcher-visual-acceptance.py' "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' "$visual_acceptance"
 grep -Fq 'R9_L6_VISUAL_REVIEW_STATUS=PASS' "$visual_acceptance"
-python3 "$visual_acceptance"
+grep -Fq 'R9_L6_VISUAL_REVIEW_SCOPE=MAC_DESIGN_COMPLETE' "$visual_acceptance"
+grep -Fq 'r9-launcher-visual-acceptance.py' "$local_ci"
+grep -Fq 'SABLE_LOCAL_CI_STAGE_VISUAL_ACCEPTANCE=PASS' "$local_ci"
 
-echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_BUILD_GATE=PASS"
+if grep -Fq 'python3 "$visual_acceptance"' "$0"; then
+    echo "R9_BUILD_DRIVER_VISUAL_ACCEPTANCE_SCOPE=FAIL_STATIC_CONTRACT_EXECUTION"
+    exit 1
+fi
+
+echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_WIRING=PASS"
+echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_EXECUTION=DEFERRED_RELEASE_PROFILE"
 
 grep -Fq 'reset · follow system + Sable Blue' "$ROOT/build/gates/r8-final-product-composition.sh"
 grep -Fq 'R8_A_SHARED_DESIGN_STALE_APPEARANCE_COPY' "$ROOT/build/gates/r8-final-product-composition.sh"
