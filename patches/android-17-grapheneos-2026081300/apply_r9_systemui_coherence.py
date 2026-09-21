@@ -416,10 +416,14 @@ def main() -> int:
     if not (source / ".repo").exists():
         raise CoherenceError(f"NOT_ANDROID_REPO_ROOT={source}")
 
-    if args.mode == "apply":
-        apply(source, root)
-    else:
-        verify(source, root)
+    try:
+        if args.mode == "apply":
+            apply(source, root)
+        else:
+            verify(source, root)
+    except CoherenceError as exc:
+        print(f"R9_SYSTEMUI_COHERENCE=FAIL {exc}")
+        return 1
     return 0
 
 
