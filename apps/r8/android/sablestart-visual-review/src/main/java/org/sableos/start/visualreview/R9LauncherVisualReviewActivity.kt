@@ -110,6 +110,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 appearanceState.value = startStateRepository.loadAppearance()
             }
             applyCurrentSystemBars()
+            refreshGeneration.value += 1
         }
     }
 
@@ -256,10 +257,8 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
     private fun requestLivePermissions() {
         val permissions =
             buildList {
-                add(Manifest.permission.READ_CALENDAR)
                 if (Build.VERSION.SDK_INT >= 33) {
                     add(Manifest.permission.READ_MEDIA_IMAGES)
-                    add(Manifest.permission.READ_MEDIA_AUDIO)
                 } else {
                     add(Manifest.permission.READ_EXTERNAL_STORAGE)
                 }
