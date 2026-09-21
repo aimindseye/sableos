@@ -214,6 +214,21 @@ def main() -> int:
         '"Sable Weather"',
         "R9_VISUAL_REVIEW_WEATHER_TILE_LABEL",
     )
+    require(
+        activity,
+        'const val EXTRA_EXTENDED_START_TILES = "extendedStartTiles"',
+        "R9_VISUAL_REVIEW_EXTENDED_START_FLAG",
+    )
+    require(
+        activity,
+        "const val REVIEW_START_TILE_COUNT = 14",
+        "R9_VISUAL_REVIEW_EXTENDED_START_COUNT",
+    )
+    require(
+        activity,
+        "extendedStartTileKeys(appsState.value)",
+        "R9_VISUAL_REVIEW_EXTENDED_START_SEED",
+    )
     for frame in (
         "00-start-tiles-top",
         "01-start-tiles-mid-scroll",
@@ -234,6 +249,16 @@ def main() -> int:
         start_capture,
         "org.sableos.weather.visualreview",
         "R9_START_FINAL_WEATHER_FIXTURE_CHECK",
+    )
+    require(
+        start_capture,
+        "--ez extendedStartTiles true",
+        "R9_START_FINAL_EXTENDED_SCROLL_FIXTURE",
+    )
+    require(
+        start_capture,
+        "R9_START_SCROLL_FIXTURE=EXTENDED_14_TILES",
+        "R9_START_FINAL_EXTENDED_SCROLL_MARKER",
     )
     forbid(
         activity,
@@ -549,6 +574,7 @@ def main() -> int:
     print("R9_START_STATE_PERSISTENCE_SEPARATED=PASS")
     print("R9_START_FINAL_CAPTURE_SET=PASS")
     print("R9_START_FINAL_WEATHER_FIXTURE_CHECK=PASS")
+    print("R9_START_FINAL_SCROLL_FIXTURE=PASS_EXTENDED_14")
     print("R9_START_EMPTY_FAVORITES_HIDDEN=PASS")
     print("R9_START_ODD_TILE_LAYOUT=PASS")
     print("R9_START_COMPACT_METRO_HIERARCHY=PASS")
