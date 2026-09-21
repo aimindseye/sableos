@@ -5,6 +5,7 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Binder
 
 class WeatherSnapshotProvider : ContentProvider() {
     override fun onCreate(): Boolean = true
@@ -16,6 +17,10 @@ class WeatherSnapshotProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
         sortOrder: String?,
     ): Cursor? {
+        if (!isAllowedCaller()) {
+            return null
+        }
+
         if (
             uri.authority != WeatherSnapshotContract.AUTHORITY ||
             uri.pathSegments != listOf(WeatherSnapshotContract.PATH_CURRENT)
@@ -88,6 +93,22 @@ class WeatherSnapshotProvider : ContentProvider() {
         selection: String?,
         selectionArgs: Array<out String>?,
     ): Int = 0
+
+    private fun isAllowedCaller(): Boolean {
+        val appContext = context?.applicationContext ?: return false
+        val callingUid = Binder.getCallingUid()
+
+        if (callingUid == appContext.applicationInfo.uid) {
+            return true
+        }
+
+        return appContext.packageManager
+            .getPackagesForUid(callingUid)
+            .orEmpty()
+            .any { packageName ->
+                packageName == "com.android.launcher3"
+            }
+    }
 
     private fun conditionLabel(condition: WeatherCondition): String =
         when (condition) {
