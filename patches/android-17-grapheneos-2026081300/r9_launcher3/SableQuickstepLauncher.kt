@@ -1,6 +1,7 @@
 package com.android.launcher3.sable
 
 import android.Manifest
+import android.app.UiModeManager
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -22,6 +23,7 @@ import com.android.launcher3.uioverrides.QuickstepLauncher
 import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.PackageManagerHelper
 import com.android.launcher3.views.BaseDragLayer
+import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
 import org.sableos.design.applySableSystemBars
 import org.sableos.design.resolveSableDarkAppearance
@@ -172,11 +174,13 @@ class SableQuickstepLauncher : QuickstepLauncher() {
                         onAppearanceChanged = { appearance ->
                             appearanceState.value = appearance
                             startStateRepository.saveAppearance(appearance)
+                            applyAppearanceToSystem(appearance)
                             applyCurrentSystemBars()
                         },
                         onResetAppearance = {
                             appearanceState.value =
                                 startStateRepository.resetAppearance()
+                            applyAppearanceToSystem(appearanceState.value)
                             applyCurrentSystemBars()
                         },
                         onLaunchApp = ::launchApp,
@@ -337,6 +341,45 @@ class SableQuickstepLauncher : QuickstepLauncher() {
                 Intent(Settings.ACTION_SETTINGS),
                 null,
             )
+        }
+    }
+
+    private fun applyAppearanceToSystem(
+        appearance: SableAppearance,
+    ) {
+        val uiModeManager =
+            getSystemService(UiModeManager::class.java)
+                ?: return
+
+        runCatching {
+            when (appearance.mode) {
+                AppearanceMode.FollowSystem -> {
+                    startStateRepository
+                        .loadSystemNightModeBeforeOverride()
+                        ?.let { previousMode ->
+                            uiModeManager.setNightMode(previousMode)
+                            startStateRepository
+                                .clearSystemNightModeBeforeOverride()
+                        }
+                }
+
+                AppearanceMode.Light,
+                AppearanceMode.Dark,
+                -> {
+                    startStateRepository
+                        .rememberSystemNightModeBeforeOverride(
+                            uiModeManager.nightMode,
+                        )
+
+                    uiModeManager.setNightMode(
+                        if (appearance.mode == AppearanceMode.Dark) {
+                            UiModeManager.MODE_NIGHT_YES
+                        } else {
+                            UiModeManager.MODE_NIGHT_NO
+                        },
+                    )
+                }
+            }
         }
     }
 
