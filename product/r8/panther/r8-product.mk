@@ -16,4 +16,5 @@ PRODUCT_PACKAGES += \
     SableReader \
     SableHub \
     SableMail \
-    SableWeather
+    SableWeather \
+    SableCalendar
