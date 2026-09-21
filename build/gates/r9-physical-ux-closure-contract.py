@@ -172,6 +172,13 @@ require(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/HubRepository.kt",
     "Intent.CATEGORY_APP_MESSAGING",
 )
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "if (pivot == HubPivot.Messages) 1.12f else 1f",
+    "contentPadding = PaddingValues(horizontal = SableSpacing.Xs)",
+    "maxLines = 1",
+    "softWrap = false",
+)
 
 # ---------------------------------------------------------------------------
 # Repo layout: standalone SableStart build entry point is retired. Production
