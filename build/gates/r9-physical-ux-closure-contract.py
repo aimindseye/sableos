@@ -286,9 +286,15 @@ require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
     "Binder.getCallingUid()",
     'packageName == "com.android.launcher3"',
+    ".newRow()",
+    '.add(state.availability.name.uppercase())',
     "override fun insert",
     "override fun update",
     "override fun delete",
+)
+forbid(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
+    "cursor.addRow(\n            arrayOf(",
 )
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
@@ -616,6 +622,7 @@ print("R9_SMS_MMS_BLOCKING_PLATFORM_CONTRACT=PASS")
 print("R9_SMS_MMS_SPAM_CLASSIFICATION_BOUNDARY=PASS")
 print("R9_SABLE_WEATHER_PRODUCT_CONTRACT=PASS")
 print("R9_WEATHER_JSON_KEY_PARSER_CONTRACT=PASS")
+print("R9_WEATHER_CURSOR_ROW_TYPE_CONTRACT=PASS")
 print("R9_SOURCE_BOUND_NINE_APK_CONTRACT=PASS")
 print("R9_BUILD_DRIVER_NINE_APK_CONTRACT=PASS")
 print("R9_PREIMAGE_VISUAL_ACCEPTANCE_SCOPE=PASS_DEFERRED_RELEASE")
