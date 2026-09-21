@@ -229,6 +229,7 @@ MANIFEST_HEADER_REPLACEMENT = MANIFEST_HEADER + '''
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -1344,6 +1345,7 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         "android.permission.READ_CALENDAR",
         "android.permission.READ_MEDIA_IMAGES",
         "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.MODIFY_DAY_NIGHT_MODE",
         'android:authorities="org.sableos.start.appearance"',
         'android:name="org.sableos.start.platform.SableAppearanceProvider"',
     ):
