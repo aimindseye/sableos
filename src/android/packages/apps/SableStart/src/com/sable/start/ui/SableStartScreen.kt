@@ -1700,7 +1700,7 @@ private fun LiveSurfaceScreen(
     ) {
         item {
             MetroHeader(
-                title = "local context",
+                title = "live",
                 onBack = onBack,
             )
             Spacer(Modifier.height(12.dp))
@@ -1717,16 +1717,18 @@ private fun LiveSurfaceScreen(
         }
 
         item {
+            LocalDatumRow("☁", snapshot.weather)
             LocalDatumRow("17", snapshot.calendar)
+            LocalDatumRow("●", snapshot.messages)
+            LocalDatumRow("✉", snapshot.mail)
             LocalDatumRow("♪", snapshot.music)
             LocalDatumRow("▣", snapshot.photos)
             Spacer(Modifier.height(10.dp))
         }
 
         if (
-            snapshot.photos.availability == LiveAvailability.PERMISSION_REQUIRED ||
-                snapshot.music.availability == LiveAvailability.PERMISSION_REQUIRED ||
-                snapshot.calendar.availability == LiveAvailability.PERMISSION_REQUIRED
+            snapshot.photos.availability ==
+                LiveAvailability.PERMISSION_REQUIRED
         ) {
             item {
                 Row(
@@ -1734,13 +1736,14 @@ private fun LiveSurfaceScreen(
                         Modifier
                             .fillMaxWidth()
                             .heightIn(min = 54.dp)
+                            .clip(RoundedCornerShape(6.dp))
                             .background(MaterialTheme.colorScheme.primary)
                             .clickable(onClick = onRequestPermissions)
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "enable local data",
+                        text = "enable local photos",
                         fontSize = 20.sp,
                         lineHeight = 22.sp,
                         fontWeight = FontWeight.Medium,
@@ -1759,13 +1762,15 @@ private fun LiveSurfaceScreen(
 
         item {
             Text(
-                text = "weather + tasks · provider not configured",
+                text =
+                    "privacy-safe summaries · no message bodies or mail subjects on Home",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "local only · no ambient network search",
+                text =
+                    "provider and lifecycle refresh · no ambient launcher network client",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -2022,7 +2027,9 @@ private fun preferredStartRank(app: AppEntry): Int {
 private fun chooseContextDatum(snapshot: LiveSurfaceSnapshot): LiveDatum? =
     when {
         snapshot.calendar.availability == LiveAvailability.LIVE -> snapshot.calendar
+        snapshot.weather.availability == LiveAvailability.LIVE -> snapshot.weather
         snapshot.music.availability == LiveAvailability.LIVE -> snapshot.music
+        snapshot.messages.availability == LiveAvailability.LIVE -> snapshot.messages
         snapshot.photos.availability == LiveAvailability.LIVE -> snapshot.photos
         else -> null
     }
@@ -2038,10 +2045,45 @@ private fun appMark(app: AppEntry): String =
         .uppercase()
         .ifEmpty { "•" }
 
-private fun appColor(app: AppEntry): Color {
-    val index = Math.floorMod(app.stableKey().hashCode(), SableTilePalette.size)
-    return SableTilePalette[index]
-}
+private fun appColor(app: AppEntry): Color =
+    when (app.component.packageName) {
+        "org.sableos.hub" -> SableGreen
+        "org.sableos.mail" -> SableSlate
+        "org.sableos.calendar" -> SableOrange
+        "org.sableos.weather" -> SableBlue
+        "org.sableos.media" -> SablePurple
+        "com.android.gallery3d" -> SablePurple
+        "app.grapheneos.camera" -> SableSlate
+        "org.sableos.calculator" -> SableBlue
+        "com.android.documentsui" -> SableOrange
+        "com.android.dialer" -> SableBlue
+        else -> {
+            val index =
+                Math.floorMod(
+                    app.stableKey().hashCode(),
+                    SableTilePalette.size,
+                )
+            SableTilePalette[index]
+        }
+    }
+
+private fun liveDatumForApp(
+    app: AppEntry,
+    snapshot: LiveSurfaceSnapshot,
+): LiveDatum? =
+    when (app.component.packageName) {
+        "org.sableos.calendar" -> snapshot.calendar
+        "org.sableos.hub" -> snapshot.messages
+        "org.sableos.mail" -> snapshot.mail
+        "org.sableos.weather" -> snapshot.weather
+        "org.sableos.media" -> snapshot.music
+        "com.android.gallery3d" -> snapshot.photos
+        else -> null
+    }
+
+private fun isWideStartTile(app: AppEntry): Boolean =
+    app.component.packageName == "org.sableos.calendar" ||
+        app.component.packageName == "org.sableos.media"
 
 private data class PreferredStartAppGroup(
     val packageNames: Set<String> = emptySet(),
@@ -2051,39 +2093,43 @@ private data class PreferredStartAppGroup(
 private val PREFERRED_START_APP_GROUPS =
     listOf(
         PreferredStartAppGroup(
-            packageNames = setOf("com.android.dialer"),
-            labels = listOf("Phone"),
+            packageNames = setOf("org.sableos.calendar"),
+            labels = listOf("Sable Calendar", "Calendar"),
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.hub"),
             labels = listOf("Sable Messages", "Messages"),
         ),
         PreferredStartAppGroup(
-            packageNames = setOf("org.sableos.mail"),
-            labels = listOf("Sable Mail", "Mail"),
-        ),
-        PreferredStartAppGroup(
-            labels = listOf("Calendar"),
-        ),
-        PreferredStartAppGroup(
             packageNames = setOf("org.sableos.weather"),
             labels = listOf("Sable Weather", "Weather"),
-        ),
-        PreferredStartAppGroup(
-            labels = listOf("Photos"),
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.media"),
             labels = listOf("Sable Media", "Media"),
         ),
         PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.mail"),
+            labels = listOf("Sable Mail", "Mail"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("com.android.dialer"),
+            labels = listOf("Phone"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("app.grapheneos.camera"),
             labels = listOf("Camera"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("com.android.gallery3d"),
+            labels = listOf("Photos", "Gallery"),
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.calculator"),
             labels = listOf("Sable Calculator", "Calculator"),
         ),
         PreferredStartAppGroup(
+            packageNames = setOf("com.android.documentsui"),
             labels = listOf("Files"),
         ),
     )
