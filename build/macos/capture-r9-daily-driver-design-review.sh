@@ -118,6 +118,29 @@ INDEX=0
 : > "$EVIDENCE_DIR/frames.tsv"
 printf 'frame\tfile\tsha256\n' >> "$EVIDENCE_DIR/frames.tsv"
 
+INDEX_HTML="$EVIDENCE_DIR/index.html"
+cat > "$INDEX_HTML" <<'HTML'
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SableOS R9 daily-driver visual review</title>
+<style>
+body { margin: 0; padding: 24px; background: #05070a; color: #f7f9fc; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+h1 { font-weight: 300; }
+p { color: #aab4c0; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; align-items: start; }
+figure { margin: 0; background: #0d1117; border: 1px solid #26313d; padding: 12px; border-radius: 8px; }
+img { width: 100%; height: auto; display: block; }
+figcaption { margin-top: 10px; color: #aab4c0; text-transform: uppercase; letter-spacing: .04em; }
+</style>
+</head>
+<body>
+<h1>SableOS R9 daily-driver visual review</h1>
+<p>Static fixtures for visual approval only. No production plumbing is implied.</p>
+<div class="grid">
+HTML
+
 for FRAME in $FRAMES; do
     FILE="$(printf '%02d-%s.png' "$INDEX" "$FRAME")"
     DEST="$EVIDENCE_DIR/$FILE"
@@ -137,8 +160,15 @@ for FRAME in $FRAMES; do
     fi
 
     printf '%s\t%s\t%s\n' "$FRAME" "$FILE" "$DIGEST" | tee -a "$EVIDENCE_DIR/frames.tsv"
+    printf '<figure><img src="%s" alt="%s"><figcaption>%s</figcaption></figure>\n' "$FILE" "$FRAME" "$FRAME" >> "$INDEX_HTML"
     INDEX=$((INDEX + 1))
 done
+
+cat >> "$INDEX_HTML" <<'HTML'
+</div>
+</body>
+</html>
+HTML
 
 {
     echo "source_commit=$SOURCE_COMMIT"
@@ -161,3 +191,5 @@ echo "R9_DAILY_DRIVER_PRODUCTION_PLUMBING_AUTHORIZED=NO"
 echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO"
 echo "R9_DAILY_DRIVER_VISUAL_REVIEW_CAPTURE=PASS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+echo "REVIEW_INDEX=$INDEX_HTML"
+echo "OPEN_REVIEW_INDEX=open $INDEX_HTML"
