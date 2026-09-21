@@ -564,7 +564,18 @@ def repair_known_setup_strings_alias(source: Path) -> None:
         raise SystemExit("UI5C_REPAIR_SETTINGS_SCOPE_MISMATCH")
 
     actual_framework = status_set(framework)
-    framework_pre = actual_framework - UI6_NEW_DIRT
+    allowed_later_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_framework_untracked
+    }
+    missing_allowed_later = allowed_later_dirt - actual_framework
+    if missing_allowed_later:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
+            f"{sorted(missing_allowed_later)!r}"
+        )
+    framework_for_ui6 = actual_framework - allowed_later_dirt
+    framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
     )
@@ -613,7 +624,10 @@ def verify_ui4_tokens(framework: Path, ui4) -> None:
                 raise SystemExit(f"UI5C_UI6_UI4_NEW_TOKEN_MISSING={rel}")
 
 
-def verify(source: Path) -> None:
+def verify(
+    source: Path,
+    allowed_later_framework_untracked: tuple[Path, ...] = (),
+) -> None:
     assert_heads(source)
     verify_templates()
 
@@ -650,7 +664,7 @@ def verify(source: Path) -> None:
         raise SystemExit(
             f"UI6_FRAMEWORK_PRE_SCOPE_RECOVERY_FAIL={sorted(framework_pre)!r}"
         )
-    if actual_framework != framework_pre | UI6_NEW_DIRT:
+    if framework_for_ui6 != framework_pre | UI6_NEW_DIRT:
         raise SystemExit("UI6_FRAMEWORK_FINAL_DIRTY_SCOPE_MISMATCH")
     if not set(ui4.BRANDING_DIRT) <= framework_pre:
         raise SystemExit("UI6_FINAL_BRANDING_SCOPE_MISSING")
@@ -810,12 +824,29 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", nargs="?", choices=("apply", "verify", "repair-known-setup-strings"))
     parser.add_argument("--source", type=Path)
+    parser.add_argument(
+        "--allow-framework-untracked",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact later-layer untracked frameworks/base path to subtract from "
+            "UI5C/UI6 dirty-scope validation while retaining semantic checks."
+        ),
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
     if args.self_test:
-        if args.mode is not None or args.source is not None:
-            parser.error("--self-test cannot be combined with mode or --source")
+        if (
+            args.mode is not None
+            or args.source is not None
+            or args.allow_framework_untracked
+        ):
+            parser.error(
+                "--self-test cannot be combined with mode, --source, or "
+                "--allow-framework-untracked"
+            )
         self_test()
         return 0
 
@@ -829,10 +860,21 @@ def main() -> int:
         raise SystemExit(f"NOT_ANDROID_REPO_ROOT={source}")
 
     if args.mode == "apply":
+        if args.allow_framework_untracked:
+            parser.error(
+                "--allow-framework-untracked is valid only with verify"
+            )
         apply(source)
     elif args.mode == "verify":
-        verify(source)
+        verify(
+            source,
+            tuple(args.allow_framework_untracked),
+        )
     else:
+        if args.allow_framework_untracked:
+            parser.error(
+                "--allow-framework-untracked is valid only with verify"
+            )
         repair_known_setup_strings_alias(source)
     return 0
 
