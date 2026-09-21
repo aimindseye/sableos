@@ -957,6 +957,93 @@ internal object SableMailAppearanceSync {
 ''',
     )
 
+    mail_snapshot_provider = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/SableMailSnapshotProvider.kt"
+    )
+    write(
+        mail_snapshot_provider,
+        '''package net.thunderbird.android
+
+import android.app.Notification
+import android.app.NotificationManager
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.database.Cursor
+import android.database.MatrixCursor
+import android.net.Uri
+
+class SableMailSnapshotProvider : ContentProvider() {
+    override fun onCreate(): Boolean = true
+
+    override fun query(
+        uri: Uri,
+        projection: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+        sortOrder: String?,
+    ): Cursor {
+        val appContext = checkNotNull(context)
+        val manager = appContext.getSystemService(NotificationManager::class.java)
+        val count =
+            runCatching {
+                manager?.activeNotifications
+                    .orEmpty()
+                    .count { item ->
+                        item.notification.category == Notification.CATEGORY_EMAIL ||
+                            item.notification.category == Notification.CATEGORY_MESSAGE
+                    }
+            }.getOrDefault(0)
+
+        val detail =
+            when (count) {
+                0 -> "no mail alerts"
+                1 -> "1 mail alert"
+                else -> count.toString() + " mail alerts"
+            }
+
+        return MatrixCursor(COLUMNS).apply {
+            addRow(
+                arrayOf(
+                    "Mail",
+                    detail,
+                    if (count == 0) "EMPTY" else "LIVE",
+                    System.currentTimeMillis(),
+                ),
+            )
+            setNotificationUri(appContext.contentResolver, SNAPSHOT_URI)
+        }
+    }
+
+    override fun getType(uri: Uri): String =
+        "vnd.android.cursor.item/vnd.org.sableos.mail.snapshot"
+
+    override fun insert(uri: Uri, values: ContentValues?): Uri? =
+        throw UnsupportedOperationException("Read-only provider")
+
+    override fun delete(
+        uri: Uri,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+    ): Int = throw UnsupportedOperationException("Read-only provider")
+
+    override fun update(
+        uri: Uri,
+        values: ContentValues?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+    ): Int = throw UnsupportedOperationException("Read-only provider")
+
+    companion object {
+        val SNAPSHOT_URI: Uri =
+            Uri.parse("content://org.sableos.mail.snapshot/current")
+        private val COLUMNS =
+            arrayOf("title", "detail", "availability", "observed_at")
+    }
+}
+''',
+    )
+
     core_theme_manager = (
         root
         / "core/ui/theme/manager/src/main/java/net/thunderbird/core/ui/theme/manager/ThemeManager.kt"
@@ -1015,6 +1102,21 @@ internal object SableMailAppearanceSync {
     manifest_text = manifest_text.replace(
         "@style/Theme.Thunderbird.DayNight.Dialog.Translucent",
         "@style/Theme.SableMail.DayNight.Dialog.Translucent",
+    )
+    provider_anchor = "\n    </application>"
+    if manifest_text.count(provider_anchor) != 1:
+        fail("SABLE_MAIL_MANIFEST=FAIL_PROVIDER_ANCHOR")
+    manifest_text = manifest_text.replace(
+        provider_anchor,
+        """
+        <provider
+            android:name="net.thunderbird.android.SableMailSnapshotProvider"
+            android:authorities="org.sableos.mail.snapshot"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
+    </application>""",
+        1,
     )
     manifest.write_text(manifest_text, encoding="utf-8")
 
