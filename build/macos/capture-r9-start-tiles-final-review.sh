@@ -68,9 +68,13 @@ fi
 echo "R9_START_WEATHER_VISUAL_FIXTURE=PASS_INSTALLED"
 
 "$ADB" -s "$SERIAL" shell am force-stop "$PACKAGE"
-"$ADB" -s "$SERIAL" shell am start -W -n "$COMPONENT" >/dev/null
+"$ADB" -s "$SERIAL" shell am start -W \
+    -n "$COMPONENT" \
+    --ez extendedStartTiles true \
+    >/dev/null
 sleep 1
 
+echo "R9_START_SCROLL_FIXTURE=EXTENDED_14_TILES"
 capture 00-start-tiles-top
 
 "$ADB" -s "$SERIAL" shell input swipe 540 1900 540 900 450
