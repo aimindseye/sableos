@@ -143,6 +143,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                             label.isEmpty() ||
                             component.packageName == packageName ||
                             component.packageName == GRAPHENE_MESSAGING_PACKAGE ||
+                            component.packageName == HOST_AVD_GOOGLE_MESSAGES_PACKAGE ||
                             component.packageName == HOST_AVD_CHROME_PACKAGE
                         ) {
                             null
@@ -320,6 +321,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private companion object {
         const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+        const val HOST_AVD_GOOGLE_MESSAGES_PACKAGE = "com.google.android.apps.messaging"
         const val HOST_AVD_CHROME_PACKAGE = "com.android.chrome"
         const val WEATHER_REVIEW_PACKAGE = "org.sableos.weather.visualreview"
         const val EXTRA_EXTENDED_START_TILES = "extendedStartTiles"
