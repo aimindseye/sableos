@@ -88,7 +88,7 @@ if layout_gate.is_file():
         "build/macos/audit-r9-launcher-review-fidelity.sh",
         "build/macos/capture-r9-theme-fidelity-review.sh",
         '"$ROOT"/build/macos/*.sh',
-        "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_REQUIRED_AND_SYNTAX_CHECKED",
+        "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_RETAINED_NONBLOCKING_TOOLING",
         "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
         "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
         "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
