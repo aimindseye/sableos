@@ -579,7 +579,10 @@ private fun MetroTile(
         }
     val liveTile =
         tile.app.component.packageName in
-            setOf("org.sableos.hub", "org.sableos.weather", "org.sableos.mail")
+            setOf("org.sableos.hub", "org.sableos.weather", "org.sableos.mail") ||
+            tile.app.label.equals("Sable Messages", ignoreCase = true) ||
+            tile.app.label.equals("Sable Weather", ignoreCase = true) ||
+            tile.app.label.equals("Sable Mail", ignoreCase = true)
 
     Box(
         modifier =
@@ -783,8 +786,9 @@ private fun approvedMetric(
     live: LiveDatum?,
 ): Pair<String, String> {
     val detail = live?.detail.orEmpty()
-    return when (app.component.packageName) {
-        "org.sableos.weather" -> {
+    return when {
+        app.component.packageName == "org.sableos.weather" ||
+            app.label.equals("Sable Weather", ignoreCase = true) -> {
             val parts = detail.split(" · ")
             val temperature =
                 parts.firstOrNull { it.trim().endsWith("°") }
@@ -798,12 +802,14 @@ private fun approvedMetric(
             temperature to condition
         }
 
-        "org.sableos.hub" -> {
+        app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Messages", ignoreCase = true) -> {
             val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
-            count to if (count == "1") "unread" else "unread"
+            count to "unread"
         }
 
-        "org.sableos.mail" -> {
+        app.component.packageName == "org.sableos.mail" ||
+            app.label.equals("Sable Mail", ignoreCase = true) -> {
             val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
             count to "unread"
         }
