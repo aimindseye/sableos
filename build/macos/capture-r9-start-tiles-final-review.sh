@@ -57,15 +57,7 @@ echo "SOURCE_COMMIT=$(git -C "$ROOT" rev-parse HEAD)"
 echo "SERIAL=$SERIAL"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 
-if ! "$ADB" -s "$SERIAL" shell pm path org.sableos.weather.visualreview |
-    grep -q '^package:'
-then
-    echo "R9_START_WEATHER_VISUAL_FIXTURE=FAIL_NOT_INSTALLED"
-    echo "Reinstall/run the approved Sable Weather visual-review APK on this AVD first."
-    exit 7
-fi
-
-echo "R9_START_WEATHER_VISUAL_FIXTURE=PASS_INSTALLED"
+echo "R9_START_WEATHER_VISUAL_FIXTURE=RETIRED_PRODUCTION_PROVIDER_MODEL"
 
 "$ADB" -s "$SERIAL" shell am force-stop "$PACKAGE"
 "$ADB" -s "$SERIAL" shell am start -W \
