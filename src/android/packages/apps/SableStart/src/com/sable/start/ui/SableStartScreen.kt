@@ -4,9 +4,6 @@ import android.content.Context
 import android.content.pm.LauncherApps
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Paint as AndroidPaint
-import android.util.PathParser
-import androidx.compose.foundation.Canvas as ComposeCanvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,8 +49,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -459,67 +454,19 @@ private fun startGreeting(): String =
 private fun SettingsShortcut(
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(11.dp)
     Box(
         modifier =
             Modifier
                 .size(46.dp)
-                .shadow(2.dp, shape)
-                .clip(shape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surfaceVariant,
-                            SableSlate.copy(alpha = 0.30f),
-                        ),
-                    ),
-                )
-                .border(1.dp, SableSlate.copy(alpha = 0.55f), shape)
                 .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        PhosphorSettingsGlyph(
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.size(27.dp),
+        SableGlyphIcon(
+            packageName = "com.android.settings",
+            accent = SableSlate,
+            modifier = Modifier.size(46.dp),
+            compact = true,
         )
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(SableSlate),
-        )
-    }
-}
-
-@Composable
-private fun PhosphorSettingsGlyph(
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    val path =
-        remember {
-            PathParser.createPathFromPathData(
-                "M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm109.94-52.79a8,8,0,0,0-3.89-5.4l-29.83-17-.12-33.62a8,8,0,0,0-2.83-6.08,111.91,111.91,0,0,0-36.72-20.67,8,8,0,0,0-6.46.59L128,41.85,97.88,25a8,8,0,0,0-6.47-.6A112.1,112.1,0,0,0,54.73,45.15a8,8,0,0,0-2.83,6.07l-.15,33.65-29.83,17a8,8,0,0,0-3.89,5.4,106.47,106.47,0,0,0,0,41.56,8,8,0,0,0,3.89,5.4l29.83,17,.12,33.62a8,8,0,0,0,2.83,6.08,111.91,111.91,0,0,0,36.72,20.67,8,8,0,0,0,6.46-.59L128,214.15,158.12,231a7.91,7.91,0,0,0,3.9,1,8.09,8.09,0,0,0,2.57-.42,112.1,112.1,0,0,0,36.68-20.73,8,8,0,0,0,2.83-6.07l.15-33.65,29.83-17a8,8,0,0,0,3.89-5.4A106.47,106.47,0,0,0,237.94,107.21Zm-15,34.91-28.57,16.25a8,8,0,0,0-3,3c-.58,1-1.19,2.06-1.81,3.06a7.94,7.94,0,0,0-1.22,4.21l-.15,32.25a95.89,95.89,0,0,1-25.37,14.3L134,199.13a8,8,0,0,0-3.91-1h-.19c-1.21,0-2.43,0-3.64,0a8.08,8.08,0,0,0-4.1,1l-28.84,16.1A96,96,0,0,1,67.88,201l-.11-32.2a8,8,0,0,0-1.22-4.22c-.62-1-1.23-2-1.8-3.06a8.09,8.09,0,0,0-3-3.06l-28.6-16.29a90.49,90.49,0,0,1,0-28.26L61.67,97.63a8,8,0,0,0,3-3c.58-1,1.19-2.06,1.81-3.06a7.94,7.94,0,0,0,1.22-4.21l.15-32.25a95.89,95.89,0,0,1,25.37-14.3L122,56.87a8,8,0,0,0,4.1,1c1.21,0,2.43,0,3.64,0a8.08,8.08,0,0,0,4.1-1l28.84-16.1A96,96,0,0,1,188.12,55l.11,32.2a8,8,0,0,0,1.22,4.22c.62,1,1.23,2,1.8,3.06a8.09,8.09,0,0,0,3,3.06l28.6,16.29A90.49,90.49,0,0,1,222.9,142.12Z",
-            )
-        }
-
-    ComposeCanvas(modifier = modifier) {
-        val iconSize = size.minDimension
-        val scale = iconSize / 256f
-        drawIntoCanvas { canvas ->
-            val native = canvas.nativeCanvas
-            val save = native.save()
-            native.scale(scale, scale)
-            val paint =
-                AndroidPaint(AndroidPaint.ANTI_ALIAS_FLAG).apply {
-                    style = AndroidPaint.Style.FILL
-                    this.color = color.toArgb()
-                }
-            native.drawPath(path, paint)
-            native.restoreToCount(save)
-        }
     }
 }
 
@@ -899,6 +846,446 @@ private fun SearchLaunchButton(
             Text(
                 text = "apps · settings · Sable actions",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppsScreen(
+    apps: List<AppEntry>,
+    onBack: () -> Unit,
+    onSearch: () -> Unit,
+    onLaunchApp: (AppEntry) -> Unit,
+    onOpenPeek: (AppEntry) -> Unit,
+) {
+    val rows = remember(apps) { buildRailRows(apps) }
+    val letters = remember(rows) { rows.map { it.section }.distinct() }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var activeLetter by remember(letters) {
+        mutableStateOf(letters.firstOrNull().orEmpty())
+    }
+
+    Box(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(top = 18.dp, bottom = 18.dp),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = 20.dp, end = 38.dp),
+        ) {
+            MetroHeader(
+                title = "all apps",
+                onBack = onBack,
+            )
+            Spacer(Modifier.height(8.dp))
+            SearchLaunchButton(onClick = onSearch)
+            Spacer(Modifier.height(12.dp))
+
+            if (rows.isEmpty()) {
+                EmptyState("No launchable apps are available.")
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    state = listState,
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                ) {
+                    items(
+                        items = rows,
+                        key = { it.app.stableKey() },
+                    ) { row ->
+                        if (row.startsSection) {
+                            Text(
+                                text = row.section,
+                                style = MaterialTheme.typography.headlineLarge,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp),
+                            )
+                        }
+                        AppRow(
+                            app = row.app,
+                            onClick = { onLaunchApp(row.app) },
+                            onContext = { onOpenPeek(row.app) },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (letters.isNotEmpty()) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .fillMaxHeight()
+                        .width(22.dp)
+                        .pointerInput(letters, rows) {
+                            fun jumpTo(y: Float) {
+                                if (letters.isEmpty() || size.height <= 0) return
+                                val slot =
+                                    ((y / size.height) * letters.size)
+                                        .toInt()
+                                        .coerceIn(0, letters.lastIndex)
+                                val letter = letters[slot]
+                                val index = rows.indexOfFirst { it.section == letter }
+                                if (index >= 0) {
+                                    activeLetter = letter
+                                    scope.launch {
+                                        listState.scrollToItem(index)
+                                    }
+                                }
+                            }
+
+                            detectDragGestures(
+                                onDragStart = { offset -> jumpTo(offset.y) },
+                                onDrag = { change, _ ->
+                                    jumpTo(change.position.y)
+                                    change.consume()
+                                },
+                            )
+                        },
+            )
+
+            Column(
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .width(38.dp)
+                        .pointerInput(letters, rows) {
+                            fun jumpTo(y: Float) {
+                                if (letters.isEmpty() || size.height <= 0) return
+                                val slot =
+                                    ((y / size.height) * letters.size)
+                                        .toInt()
+                                        .coerceIn(0, letters.lastIndex)
+                                val letter = letters[slot]
+                                val index = rows.indexOfFirst { it.section == letter }
+                                if (index >= 0) {
+                                    activeLetter = letter
+                                    scope.launch {
+                                        listState.scrollToItem(index)
+                                    }
+                                }
+                            }
+
+                            detectDragGestures(
+                                onDragStart = { offset -> jumpTo(offset.y) },
+                                onDrag = { change, _ ->
+                                    jumpTo(change.position.y)
+                                    change.consume()
+                                },
+                            )
+                        },
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                letters.forEach { letter ->
+                    val selected = letter == activeLetter
+                    Text(
+                        text = letter,
+                        modifier =
+                            Modifier
+                                .clickable {
+                                    val index = rows.indexOfFirst { it.section == letter }
+                                    if (index >= 0) {
+                                        activeLetter = letter
+                                        scope.launch {
+                                            listState.animateScrollToItem(index)
+                                        }
+                                    }
+                                }
+                                .padding(horizontal = 10.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color =
+                            if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        fontWeight =
+                            if (selected) {
+                                FontWeight.Bold
+                            } else {
+                                FontWeight.Normal
+                            },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchScreen(
+    apps: List<AppEntry>,
+    onBack: () -> Unit,
+    onLaunchApp: (AppEntry) -> Unit,
+    onOpenPeek: (AppEntry) -> Unit,
+    onAllApps: () -> Unit,
+    onAppearance: () -> Unit,
+    onLive: () -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    val normalizedQuery = query.trim()
+    val locale = Locale.getDefault()
+    val filteredApps =
+        remember(apps, normalizedQuery) {
+            if (normalizedQuery.isEmpty()) {
+                apps.take(6)
+            } else {
+                apps.filter { app ->
+                    app.label.contains(normalizedQuery, ignoreCase = true)
+                }.take(12)
+            }
+        }
+
+    val commands =
+        listOf(
+            SearchCommand(
+                title = "All apps",
+                subtitle = "Alphabetical launcher list",
+                mark = "A",
+                onClick = onAllApps,
+            ),
+            SearchCommand(
+                title = "Appearance",
+                subtitle = "Theme and Sable accent",
+                mark = "◐",
+                onClick = onAppearance,
+            ),
+            SearchCommand(
+                title = "Local context",
+                subtitle = "Calendar, photos and local media state",
+                mark = "◫",
+                onClick = onLive,
+            ),
+            SearchCommand(
+                title = "System Settings",
+                subtitle = "Open Android settings",
+                mark = "⚙",
+                onClick = onOpenSettings,
+            ),
+        )
+    val filteredCommands =
+        commands.filter { command ->
+            normalizedQuery.isEmpty() ||
+                command.title.lowercase(locale).contains(normalizedQuery.lowercase(locale)) ||
+                command.subtitle.lowercase(locale).contains(normalizedQuery.lowercase(locale))
+        }
+
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+    ) {
+        MetroHeader(
+            title = "search",
+            onBack = onBack,
+        )
+        Spacer(Modifier.height(10.dp))
+
+        SableSearchField(
+            value = query,
+            onValueChange = { query = it },
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp),
+        ) {
+            if (filteredCommands.isNotEmpty()) {
+                item {
+                    SectionLabel(
+                        if (normalizedQuery.isEmpty()) {
+                            "quick actions"
+                        } else {
+                            "commands"
+                        },
+                    )
+                }
+                items(filteredCommands) { command ->
+                    SearchCommandRow(command)
+                }
+                item {
+                    Spacer(Modifier.height(12.dp))
+                }
+            }
+
+            if (filteredApps.isNotEmpty()) {
+                item {
+                    SectionLabel("apps")
+                }
+                items(
+                    items = filteredApps,
+                    key = { it.stableKey() },
+                ) { app ->
+                    AppRow(
+                        app = app,
+                        onClick = { onLaunchApp(app) },
+                        onContext = { onOpenPeek(app) },
+                    )
+                }
+            } else if (filteredCommands.isEmpty()) {
+                item {
+                    EmptyState("No local results match “$normalizedQuery”.")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SableSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 62.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .height(46.dp)
+                    .background(MaterialTheme.colorScheme.primary),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                singleLine = true,
+                textStyle =
+                    MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+                decorationBox = { innerTextField ->
+                    if (value.isEmpty()) {
+                        Text(
+                            text = "search apps + Sable actions",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    innerTextField()
+                },
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant),
+            )
+        }
+    }
+}
+
+@Composable
+private fun SearchCommandRow(
+    command: SearchCommand,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 58.dp)
+                .clickable(onClick = command.onClick)
+                .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = command.mark,
+            modifier = Modifier.width(38.dp),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(8.dp))
+        Column {
+            Text(
+                text = command.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = command.subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AppRow(
+    app: AppEntry,
+    onClick: () -> Unit,
+    onContext: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 58.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 58.dp)
+                    .clickable(onClick = onClick)
+                    .padding(vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppMark(app = app, size = 42)
+            Spacer(Modifier.width(14.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(
+                    text = app.label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                )
+                if (app.privacySummary.isNotBlank()) {
+                    Text(
+                        text = app.privacySummary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                }
+            }
+        }
+
+        TextButton(
+            onClick = onContext,
+            modifier = Modifier.heightIn(min = 48.dp),
+        ) {
+            Text(
+                text = "›",
+                fontSize = 26.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
