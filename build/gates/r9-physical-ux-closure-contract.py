@@ -179,13 +179,14 @@ require(
     "contentPadding = PaddingValues(horizontal = SableSpacing.Xs)",
     "maxLines = 1",
     "softWrap = false",
-    'text = "Messaging status"',
-    '"Sable Messages can read and send SMS when access is granted. MMS/RCS can open the system messaging service when needed."',
-    'text = "Open MMS / RCS"',
-    'subtitle = "Write an SMS here. MMS/RCS can be handed off when needed."',
-    'text = "Open messaging"',
-    '"SMS history is not available in Sable Messages yet."',
-    '"Grant SMS access when available, or open the system messaging service."',
+    'text = "Messages"',
+    '"Grant Messages access to show conversations and send SMS."',
+    '"Contacts access is optional and only improves people matching."',
+    'text = "MMS / RCS"',
+    'subtitle = "Write a message."',
+    '"Private web session"',
+    '"Services open in private, isolated web sessions when a native integration is not available."',
+    '"No conversations yet."',
 )
 forbid(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
@@ -196,6 +197,10 @@ forbid(
     'text = "Use transport"',
     '"SMS history is not available to Sable Hub yet."',
     '"Grant SMS access if this Sable build allows it, or use the Android transport fallback."',
+    '"SMS history is not available in Sable Messages yet."',
+    '"Sable Messages can read and send SMS when access is granted. MMS/RCS can open the system messaging service when needed."',
+    'text = "Open MMS / RCS"',
+    'subtitle = "Write an SMS here. MMS/RCS can be handed off when needed."',
 )
 
 # ---------------------------------------------------------------------------
@@ -465,6 +470,7 @@ require(
 require(
     "apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt",
     "SableGlobalTheme(window = window)",
+    "contentColor = MaterialTheme.colorScheme.onBackground",
     'Agenda("AGENDA")',
     'Month("MONTH")',
     'NewEvent("NEW")',
@@ -778,8 +784,12 @@ require(
     "build/macos/prepare-r9-launcher-visual-review.sh",
     ":hub:assembleDebug",
     ":calendar:assembleDebug",
+    ":media:assembleDebug",
+    "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS",
     "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS",
     "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS",
+    "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS",
+    "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS",
     "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
     "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
 )
@@ -934,6 +944,8 @@ print("R9_ALL_APPS_GRANTED_PRIVACY_SUMMARY=PASS")
 print("R9_GLOBAL_LIGHT_DARK_SYSTEM_MODE_CONTRACT=PASS")
 print("R9_SYSTEMUI_SABLE_ACCENT_CONTRACT=PASS")
 print("R9_SINGLE_VISIBLE_MESSAGES_CONTRACT=PASS")
+print("R9_MESSAGES_USER_FACING_COPY=PASS_NO_TRANSPORT_IMPLEMENTATION_DETAIL")
+print("R9_CALENDAR_DARK_CONTENT_COLOR=PASS")
 print("R9_FIRST_PARTY_PRODUCT_ICON_CONTRACT=PASS")
 print("R9_PHONE_CONTACTS_PRESENTATION_CONTRACT=PASS")
 print("R9_DAILY_DRIVER_CORE_PRESENTATION_CONTRACT=PASS")
