@@ -1374,6 +1374,8 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         "override fun onStateSetEnd(state: LauncherState)",
         "protected override fun getOnBackAnimationCallback()",
         "SableStartScreen(",
+        'const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
+        "component.packageName == GRAPHENE_MESSAGING_PACKAGE",
         "homeGeneration = homeGeneration.value",
         "backGeneration = backGeneration.value",
     )
