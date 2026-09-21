@@ -39,6 +39,39 @@ bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --pr
 bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
 ```
 
+## R9 pre-image closure sequence
+
+Before any fresh Panther target-files/image build, R9 uses two source-bound
+pre-image passes:
+
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 qualify physical-ux
+```
+
+`ci full` builds and quality/security-checks repository-contained Rust and
+Android sources, including Sable Weather, plus the pinned Reader, Text Reader
+and Mail compositions. It does not authorize an Android image build.
+
+`qualify physical-ux` applies/verifies the pinned Android 17 presentation
+deltas and performs the module-only platform compile gate for Launcher3,
+Dialer, Contacts, Settings, SystemUI, SetupWizard and the complete Sable
+product set. It explicitly reports:
+
+```text
+FULL_TARGET_FILES_BUILD_AUTHORIZED=NO
+```
+
+A failure in either pass is fixed at the narrow failing edge and receives a
+regression gate before the pass is repeated.
+
+Do not use `ci release` while the current source-bound Launcher visual
+acceptance seal is pending. The release profile requires fresh visual
+acceptance before entering the full Panther release-candidate path.
+
+The image build is authorized only after pre-image CI/module qualification and
+fresh visual acceptance are all green.
+
 ## Build-source identity versus tooling identity
 
 The source commit which produced target-files is independent from a later commit containing deployment tooling. Every deployment records:
