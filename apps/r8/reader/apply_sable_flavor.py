@@ -165,7 +165,7 @@ fun ProductReaderTheme(
     contrast: Float,
     content: @Composable () -> Unit,
 ) {
-    if (!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK) {
+    if (!BuildConfig.SABLE_PRODUCT) {
         VaachakTheme(
             themeMode = themeMode,
             contrast = contrast,
@@ -174,6 +174,9 @@ fun ProductReaderTheme(
         return
     }
 
+    // SableOS owns application chrome appearance globally. Upstream Reader
+    // theme preferences, including E_INK, must not bypass the shared Sable
+    // light/dark/accent contract for the Sable product flavor.
     SableTheme(
         appearance = rememberGlobalSableAppearance(),
         content = content,
