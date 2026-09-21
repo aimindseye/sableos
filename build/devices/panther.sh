@@ -31,6 +31,14 @@ sable_device_accept() {
       EVIDENCE_DIR="$evidence" \
         bash "$ROOT/tests/launcher3/device/r9_home_acceptance.sh"
       ;;
+    R9:identity|r9:identity)
+      local stamp evidence
+      stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+      evidence="$evidence_root/panther/r9-physical/${stamp}_system-identity"
+      SERIAL="$serial" \
+      EVIDENCE_DIR="$evidence" \
+        bash "$ROOT/tests/systemui/device/r9_identity_audit.sh"
+      ;;
     *)
       echo "SABLE_DEVICE_ACCEPT=UNSUPPORTED device=panther release=$release suite=$suite" >&2
       return 64
