@@ -91,6 +91,14 @@ verify_ui5c_with_full_r9_later() {
     python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         "${UI5C_SETTINGS_LATER_ARGS[@]}"         verify
 }
 
+repair_ui5c_known_with_systemui_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         repair-known-setup-strings
+}
+
+repair_ui5c_known_with_full_r9_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         "${UI5C_SETTINGS_LATER_ARGS[@]}"         repair-known-setup-strings
+}
+
 run_self_test() {
     local name="$1"
     local script="$2"
@@ -128,7 +136,11 @@ elif python3 "$UI5C_UI6" --source "$WS" verify; then
 else
     # A previously observed UI5C resource-alias failure has a dedicated
     # fail-closed repair. It only mutates the exact known wrong file hash.
-    if python3 "$UI5C_UI6" --source "$WS" repair-known-setup-strings; then
+    if repair_ui5c_known_with_full_r9_later; then
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_R9_LATER_DIRT"
+    elif repair_ui5c_known_with_systemui_later; then
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_SYSTEMUI_LATER_DIRT"
+    elif python3 "$UI5C_UI6" --source "$WS" repair-known-setup-strings; then
         echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE"
     else
         echo "R8_CUMULATIVE_SYSTEM_SURFACES=ADVANCING_RECOGNIZED_STAGE"
