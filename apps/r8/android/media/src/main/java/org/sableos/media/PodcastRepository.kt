@@ -95,8 +95,7 @@ internal class PodcastRepository(
                         failures += 1
                         subscription
                     }
-                }
-                .sortedBy { it.title.lowercase(Locale.getDefault()) }
+                }.sortedBy { it.title.lowercase(Locale.getDefault()) }
 
         persist(refreshed)
         return PodcastRefreshResult(
@@ -339,8 +338,7 @@ internal class PodcastStateRepository(
                     if (!add(episodeId)) {
                         remove(episodeId)
                     }
-                }
-                .toSet()
+                }.toSet()
 
         persistSet(
             key = KEY_SAVED,
