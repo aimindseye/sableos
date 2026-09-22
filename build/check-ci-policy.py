@@ -39,6 +39,7 @@ required = (
     ROOT / "build" / "check-gradle-supply-chain.py",
     ROOT / "build" / "gates" / "r9-sms-mms-blocking-contract.py",
     ROOT / "build" / "gates" / "r9-first-party-app-icon-contract.py",
+    ROOT / "build" / "gates" / "r9-system-cohesion-contract.py",
     ROOT / "apps" / "r8" / "rust" / "Cargo.lock",
     ROOT / "apps" / "r8" / "rust" / "rust-toolchain.toml",
     ROOT / "apps" / "r8" / "android" / "gradle" / "verification-metadata.xml",
