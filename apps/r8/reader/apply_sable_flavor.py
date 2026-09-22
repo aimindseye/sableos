@@ -397,10 +397,15 @@ def main() -> None:
     )
     replace_exact_text(
         catalog_view_model,
+        'pub.metadata.authors.firstOrNull()?.name?.toString() ?: "Unknown"',
+        'pub.metadata.authors.firstOrNull()?.name ?: "Unknown"',
+        "SABLE_READER_WARNING_FEED_AUTHOR_TO_STRING",
+    )
+    replace_exact_text(
+        catalog_view_model,
         'publication.metadata.authors.firstOrNull()?.name?.toString() ?: "Unknown"',
         'publication.metadata.authors.firstOrNull()?.name ?: "Unknown"',
-        "SABLE_READER_WARNING_AUTHOR_TO_STRING",
-        expected=2,
+        "SABLE_READER_WARNING_DOWNLOAD_AUTHOR_TO_STRING",
     )
 
     reader_screen_warning_path = (
