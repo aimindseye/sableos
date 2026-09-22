@@ -95,7 +95,7 @@ public final class SableAppearanceProvider extends ContentProvider {
             String[] selectionArgs,
             String sortOrder) {
         enforceUri(uri);
-        Context context = requireContext();
+        Context context = requireProviderContext();
 
         MatrixCursor cursor = new MatrixCursor(
                 new String[] {
@@ -122,7 +122,7 @@ public final class SableAppearanceProvider extends ContentProvider {
         enforceUri(uri);
         enforceWriter();
 
-        Context context = requireContext();
+        Context context = requireProviderContext();
         SharedPreferences preferences = prefs(context);
 
         String currentMode = readMode(context);
@@ -183,7 +183,7 @@ public final class SableAppearanceProvider extends ContentProvider {
         throw new UnsupportedOperationException("Sable appearance cannot be deleted");
     }
 
-    private Context requireContext() {
+    private Context requireProviderContext() {
         Context context = getContext();
         if (context == null) {
             throw new IllegalStateException("Settings context unavailable");
@@ -203,7 +203,7 @@ public final class SableAppearanceProvider extends ContentProvider {
             return;
         }
 
-        PackageManager pm = requireContext().getPackageManager();
+        PackageManager pm = requireProviderContext().getPackageManager();
         String[] packages = pm.getPackagesForUid(callingUid);
         if (packages != null && Arrays.asList(packages).contains("com.android.launcher3")) {
             return;
