@@ -23,11 +23,6 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <provider
-            android:name="org.sableos.start.platform.SableAppearanceProvider"
-            android:authorities="org.sableos.start.appearance"
-            android:exported="true"
-            android:grantUriPermissions="false" />
-        <provider
             android:name=".ReviewWeatherSnapshotProvider"
             android:authorities="org.sableos.weather.snapshot"
             android:exported="true"
