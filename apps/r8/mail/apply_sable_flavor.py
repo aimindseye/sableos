@@ -735,7 +735,7 @@ internal data class SableMailAppearance(
 )
 
 internal object SableMailAppearanceReader {
-    private const val AUTHORITY = "org.sableos.start.appearance"
+    private const val AUTHORITY = "org.sableos.appearance"
     private val URI = Uri.parse("content://$AUTHORITY/appearance")
 
     fun read(context: Context): SableMailAppearance =
@@ -1097,7 +1097,7 @@ class SableMailSnapshotProvider : ContentProvider() {
         application_anchor,
         """
     <queries>
-        <provider android:authorities="org.sableos.start.appearance" />
+        <provider android:authorities="org.sableos.appearance" />
     </queries>
 
     <application""",
