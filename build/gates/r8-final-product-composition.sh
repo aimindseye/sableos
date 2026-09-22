@@ -105,7 +105,14 @@ do
     grep -Fq "$needle" "$GLOBAL_APPEARANCE" || fail R8_GLOBAL_APPEARANCE_SOURCE
 done
 
-if grep -R -Fq 'org.sableos.start.appearance' \
+# Scan production/runtime inputs for the retired Launcher-owned authority.
+# Unit tests intentionally retain the literal as a negative regression assertion,
+# and Markdown may document migration history; neither is runtime composition.
+if grep -R -Fq \
+    --exclude-dir=test \
+    --exclude-dir=androidTest \
+    --exclude='*.md' \
+    'org.sableos.start.appearance' \
     "$ROOT/src/android/packages/apps/SableStart" \
     "$ROOT/apps/r8/android" \
     "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
@@ -113,6 +120,8 @@ if grep -R -Fq 'org.sableos.start.appearance' \
 then
     fail R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY
 fi
+
+echo "R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY=PASS"
 
 [[ ! -e "$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt" ]] \
     || fail R9_RETIRED_LAUNCHER_APPEARANCE_PROVIDER
