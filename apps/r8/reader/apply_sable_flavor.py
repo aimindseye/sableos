@@ -1090,7 +1090,7 @@ class SableTextReaderUtilTest {
         android:required="false" />
 
     <queries>
-        <provider android:authorities="org.sableos.start.appearance" />
+        <provider android:authorities="org.sableos.appearance" />
     </queries>
 
     <application
