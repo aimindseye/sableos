@@ -12,12 +12,13 @@ set -euo pipefail
 
 ADB="${ADB:-adb}"
 SERIAL="${1:-${ANDROID_SERIAL:-}}"
+APKANALYZER="${APKANALYZER:-/srv/data/sable-host-tools/android/r8/sdk/cmdline-tools/latest/bin/apkanalyzer}"
 
 adb_cmd() {
     if [[ -n "$SERIAL" ]]; then
-        "$ADB" -s "$SERIAL" "$@"
+        "$ADB" -s "$SERIAL" "$@" </dev/null
     else
-        "$ADB" "$@"
+        "$ADB" "$@" </dev/null
     fi
 }
 
@@ -136,27 +137,95 @@ grep -Fxq 'com.android.messaging' <<<"$SMS_ROLE" ||
     fail R9_FINAL_UI_SMS_ROLE "holders=$SMS_ROLE"
 echo "R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING"
 
-HUB_DUMP="$(adb_cmd shell pm dump org.sableos.hub 2>/dev/null || true)"
-capsules=(
-    .web.WhatsAppCapsuleActivity
-    .web.InstagramCapsuleActivity
-    .web.MessengerCapsuleActivity
-    .web.LinkedInCapsuleActivity
-)
+echo
+echo "===== INSTALLED SABLE MESSAGES CAPSULE MANIFEST ====="
 
-capsule_count=0
-for capsule in "${capsules[@]}"; do
-    if grep -Fq "$capsule" <<<"$HUB_DUMP"; then
-        echo "R9_FINAL_UI_PROVIDER_CAPSULE=PASS component=$capsule"
-        ((capsule_count+=1))
-    else
-        fail R9_FINAL_UI_PROVIDER_CAPSULE "missing=$capsule"
-    fi
-done
+[[ -x "$APKANALYZER" ]] ||
+    fail R9_FINAL_UI_APKANALYZER "missing=$APKANALYZER"
 
-[[ "$capsule_count" -eq 4 ]] ||
-    fail R9_FINAL_UI_PROVIDER_CAPSULES "count=$capsule_count"
-echo "R9_FINAL_UI_PROVIDER_CAPSULES=PASS_4"
+CAPSULE_TMP="$(mktemp -d)"
+trap 'rm -rf "$CAPSULE_TMP"' EXIT
+HUB_APK="$CAPSULE_TMP/SableHub.apk"
+HUB_MANIFEST="$CAPSULE_TMP/AndroidManifest.xml"
+
+adb_cmd pull "$SABLE_MESSAGES_PATH" "$HUB_APK" >/dev/null 2>&1 ||
+    fail R9_FINAL_UI_SABLE_MESSAGES_APK_PULL "path=$SABLE_MESSAGES_PATH"
+
+[[ -s "$HUB_APK" ]] ||
+    fail R9_FINAL_UI_SABLE_MESSAGES_APK_PULL "empty=$HUB_APK"
+
+"$APKANALYZER" manifest print "$HUB_APK" > "$HUB_MANIFEST" ||
+    fail R9_FINAL_UI_SABLE_MESSAGES_MANIFEST_DECODE
+
+python3 - "$HUB_MANIFEST" <<'PY' ||
+import sys
+import xml.etree.ElementTree as ET
+
+manifest_path = sys.argv[1]
+android = "{http://schemas.android.com/apk/res/android}"
+root = ET.parse(manifest_path).getroot()
+
+expected = {
+    "org.sableos.hub.web.WhatsAppCapsuleActivity": ":whatsapp",
+    "org.sableos.hub.web.InstagramCapsuleActivity": ":instagram",
+    "org.sableos.hub.web.MessengerCapsuleActivity": ":messenger",
+    "org.sableos.hub.web.LinkedInCapsuleActivity": ":linkedin",
+}
+
+activities = {}
+for activity in root.findall("./application/activity"):
+    name = activity.get(android + "name", "")
+    process = activity.get(android + "process", "")
+    exported = activity.get(android + "exported", "")
+    activities[name] = (process, exported)
+
+failed = False
+for name, expected_process in expected.items():
+    actual = activities.get(name)
+    if actual is None:
+        # Some decoders preserve the source-relative class name.
+        short = name.removeprefix("org.sableos.hub")
+        actual = activities.get(short)
+    if actual is None:
+        print(f"R9_FINAL_UI_PROVIDER_CAPSULE=FAIL missing={name}")
+        failed = True
+        continue
+
+    process, exported = actual
+    if process != expected_process:
+        print(
+            "R9_FINAL_UI_PROVIDER_CAPSULE=FAIL "
+            f"component={name} process={process!r} "
+            f"expected_process={expected_process!r}"
+        )
+        failed = True
+        continue
+
+    if exported.lower() != "false":
+        print(
+            "R9_FINAL_UI_PROVIDER_CAPSULE=FAIL "
+            f"component={name} exported={exported!r} "
+            "expected_exported=false"
+        )
+        failed = True
+        continue
+
+    print(
+        "R9_FINAL_UI_PROVIDER_CAPSULE=PASS "
+        f"component={name} process={process} exported=false"
+    )
+
+if failed:
+    raise SystemExit(1)
+
+print("R9_FINAL_UI_PROVIDER_CAPSULES=PASS_4")
+PY
+{
+    rc=$?
+    fail R9_FINAL_UI_PROVIDER_CAPSULES "installed_apk_manifest_check_rc=$rc"
+}
+
+echo "R9_FINAL_UI_SABLE_MESSAGES_INSTALLED_MANIFEST=PASS"
 
 echo
 echo "===== LIVE PROVIDER UNRELATED-CALLER NEGATIVE PROBE ====="
@@ -175,9 +244,8 @@ for spec in "${provider_specs[@]}"; do
     package="${spec%%:*}"
     authority="${spec#*:}"
 
-    pkg_dump="$(adb_cmd shell pm dump "$package" 2>/dev/null || true)"
-    grep -Fq "$authority" <<<"$pkg_dump" ||
-        fail R9_FINAL_UI_LIVE_PROVIDER_REGISTERED             "package=$package authority=$authority"
+    [[ -n "$(package_path "$package")" ]] ||
+        fail R9_FINAL_UI_LIVE_PROVIDER_PACKAGE             "package=$package authority=$authority"
 
     set +e
     probe="$(
@@ -186,24 +254,33 @@ for spec in "${provider_specs[@]}"; do
     probe_rc=$?
     set -e
 
-    if grep -Eq         'SecurityException|Permission Denial|No result found'         <<<"$probe"
+    if grep -Eqi         'No content provider found|Unable to find provider|Unknown authority'         <<<"$probe"
     then
-        echo "R9_FINAL_UI_LIVE_PROVIDER_SHELL_REJECT=PASS authority=$authority rc=$probe_rc"
+        echo "R9_FINAL_UI_LIVE_PROVIDER_REGISTERED=FAIL authority=$authority"
+        printf '%s\n' "$probe"
+        fail R9_FINAL_UI_LIVE_PROVIDER_CALLER_BOUNDARY             "authority=$authority provider-missing"
+    fi
+
+    if grep -Eq         'SecurityException|Permission Denial'         <<<"$probe"
+    then
+        echo "R9_FINAL_UI_LIVE_PROVIDER_REGISTERED=PASS authority=$authority"
+        echo "R9_FINAL_UI_LIVE_PROVIDER_SHELL_REJECT=PASS authority=$authority mode=security_exception rc=$probe_rc"
         ((provider_boundary_count+=1))
         continue
     fi
 
-    if [[ "$probe_rc" -ne 0 ]] &&
-       ! grep -Eq            'No content provider found|Unknown URI|Unknown authority'            <<<"$probe"
+    if grep -Fxq 'No result found.' <<<"$probe" ||
+       grep -Fxq 'No result found' <<<"$probe"
     then
-        echo "R9_FINAL_UI_LIVE_PROVIDER_SHELL_REJECT=PASS authority=$authority rc=$probe_rc"
+        echo "R9_FINAL_UI_LIVE_PROVIDER_REGISTERED=PASS authority=$authority"
+        echo "R9_FINAL_UI_LIVE_PROVIDER_SHELL_REJECT=PASS authority=$authority mode=null_cursor rc=$probe_rc"
         ((provider_boundary_count+=1))
         continue
     fi
 
-    echo "R9_FINAL_UI_LIVE_PROVIDER_PROBE_OUTPUT authority=$authority"
+    echo "R9_FINAL_UI_LIVE_PROVIDER_PROBE_OUTPUT authority=$authority rc=$probe_rc"
     printf '%s\n' "$probe"
-    fail R9_FINAL_UI_LIVE_PROVIDER_CALLER_BOUNDARY         "authority=$authority unexpectedly-readable-or-unregistered"
+    fail R9_FINAL_UI_LIVE_PROVIDER_CALLER_BOUNDARY         "authority=$authority unexpected-result"
 done
 
 [[ "$provider_boundary_count" -eq 5 ]] ||
