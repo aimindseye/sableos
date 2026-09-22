@@ -147,7 +147,8 @@ internal class MediaLibraryStateRepository(
         current: Set<String>,
         value: String,
     ): Set<String> =
-        current.toMutableSet()
+        current
+            .toMutableSet()
             .apply {
                 if (!add(value)) {
                     remove(value)
