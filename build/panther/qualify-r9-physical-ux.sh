@@ -34,9 +34,11 @@ echo "EXPECTED_SOURCE_COMMIT=$EXPECTED_SOURCE_COMMIT"
 python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
 python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
 python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
 python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
 bash "$ROOT/build/gates/sable-pipeline-contract.sh"
 
+echo "R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS"
 echo "R9_PHYSICAL_UX_STATIC_CONTRACTS=PASS"
 
 SOURCE_MUTATION_AUTHORIZED=YES \
