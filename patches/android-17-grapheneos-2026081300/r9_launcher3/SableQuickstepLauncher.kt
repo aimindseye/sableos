@@ -154,11 +154,11 @@ class SableQuickstepLauncher : QuickstepLauncher() {
     override fun onStateSetStart(state: LauncherState) {
         super.onStateSetStart(state)
 
-        // Keep the Sable surface covering the native workspace while Quickstep
-        // animates away from HOME. It is hidden only after Overview/Recents is
-        // actually reached, so intermediate Quickstep workspace frames never
-        // become a second user-facing launcher.
-        if (state == LauncherState.NORMAL) {
+        // Keep Sable above every HOME/intermediate Quickstep state. A bottom-edge
+        // gesture may pass through HINT_STATE before Overview commits; hiding the
+        // Compose surface during that hint exposed native workspace pixels on the
+        // physical Panther. Only committed Overview states may own presentation.
+        if (!isCommittedOverviewState(state)) {
             updateSableVisibility(true)
         }
     }
@@ -182,14 +182,29 @@ class SableQuickstepLauncher : QuickstepLauncher() {
             }
 
             else -> {
-                updateSableVisibility(!state.isRecentsViewVisible)
+                updateSableVisibility(!isCommittedOverviewState(state))
             }
         }
     }
 
+    private fun isCommittedOverviewState(state: LauncherState): Boolean =
+        state == LauncherState.OVERVIEW ||
+            state == LauncherState.OVERVIEW_MODAL_TASK ||
+            state == LauncherState.OVERVIEW_SPLIT_SELECT
+
     /** Used by bounded Quickstep touch-controller guards. */
     fun isSableSurfaceActive(): Boolean =
         sableView?.visibility == View.VISIBLE
+
+    protected override fun shouldDisableBackGesture(): Boolean =
+        if (isSableSurfaceActive() && canSableNavigateBack) {
+            // Launcher normally disables Back from HOME. Sable sub-surfaces are
+            // real in-launcher navigation destinations, so edge Back must remain
+            // enabled while Compose reports that it can navigate back.
+            false
+        } else {
+            super.shouldDisableBackGesture()
+        }
 
     protected override fun getOnBackAnimationCallback(): OnBackAnimationCallback =
         if (
@@ -295,6 +310,12 @@ class SableQuickstepLauncher : QuickstepLauncher() {
             }
 
         sableView?.visibility = visibility
+        if (visible) {
+            // Launcher3 can attach/update native children during gesture state
+            // transitions. Re-assert the Sable surface as the top HOME layer so
+            // aborted/hint gestures cannot reveal workspace icons underneath.
+            sableView?.bringToFront()
+        }
 
         val underlyingAccessibility =
             if (visible) {
