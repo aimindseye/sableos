@@ -306,24 +306,31 @@ internal fun MediaScreen(
 
                         MediaDestination.Podcasts ->
                             PodcastScreen(
-                                subscriptions = podcastSubscriptions,
-                                savedEpisodeIds = savedPodcastEpisodeIds,
-                                playedEpisodeIds = playedPodcastEpisodeIds,
-                                feedUrl = podcastFeedUrl,
-                                busy = podcastBusy,
-                                message = podcastMessage,
-                                playback = playback,
-                                showMiniPlayer = settings.showMiniPlayer,
-                                onFeedUrlChange = onPodcastFeedUrlChange,
-                                onAddFeed = onAddPodcastFeed,
-                                onRefresh = onRefreshPodcasts,
-                                onRemoveSubscription = onRemovePodcastSubscription,
-                                onPlayEpisode = onPlayPodcastEpisode,
-                                onQueueEpisode = onQueuePodcastEpisode,
-                                onToggleSavedEpisode = onToggleSavedPodcastEpisode,
-                                onOpenNowPlaying = {
-                                    onDestinationChange(MediaDestination.NowPlaying)
-                                },
+                                state =
+                                    PodcastScreenState(
+
+                                        subscriptions = podcastSubscriptions,
+                                        savedEpisodeIds = savedPodcastEpisodeIds,
+                                        playedEpisodeIds = playedPodcastEpisodeIds,
+                                        feedUrl = podcastFeedUrl,
+                                        busy = podcastBusy,
+                                        message = podcastMessage,
+                                        playback = playback,
+                                        showMiniPlayer = settings.showMiniPlayer,
+                                    ),
+                                actions =
+                                    PodcastScreenActions(
+                                        onFeedUrlChange = onPodcastFeedUrlChange,
+                                        onAddFeed = onAddPodcastFeed,
+                                        onRefresh = onRefreshPodcasts,
+                                        onRemoveSubscription = onRemovePodcastSubscription,
+                                        onPlayEpisode = onPlayPodcastEpisode,
+                                        onQueueEpisode = onQueuePodcastEpisode,
+                                        onToggleSavedEpisode = onToggleSavedPodcastEpisode,
+                                        onOpenNowPlaying = {
+                                            onDestinationChange(MediaDestination.NowPlaying)
+                                        },
+                                    ),
                             )
 
                         MediaDestination.NowPlaying ->
