@@ -22,6 +22,7 @@ from pathlib import Path
 
 SETTINGS_HEAD = "71bd21cda07f4dfdcec2aabb16bc570be5bd8d35"
 SETTINGS_REPO = Path("packages/apps/Settings")
+FRAMEWORK_MANIFEST = Path("frameworks/base/core/res/AndroidManifest.xml")
 
 MANIFEST = Path("AndroidManifest.xml")
 SETTINGS_GATEWAY = Path("src/com/android/settings/core/gateway/SettingsGateway.java")
@@ -336,6 +337,21 @@ def verify(source: Path) -> None:
             f"expected={sorted(expected)!r} actual={sorted(actual)!r}"
         )
 
+    framework_manifest = (source / FRAMEWORK_MANIFEST).read_text(encoding="utf-8")
+    network_permission_anchor = '<permission android:name="android.permission.INTERNET"'
+    network_index = framework_manifest.find(network_permission_anchor)
+    if network_index < 0:
+        raise SystemExit("R9_GRAPHENE_NETWORK_PERMISSION_MISSING")
+    network_end = framework_manifest.find("/>", network_index)
+    if network_end < 0:
+        raise SystemExit("R9_GRAPHENE_NETWORK_PERMISSION_DEFINITION_INVALID")
+    network_definition = framework_manifest[network_index:network_end + 2]
+    if 'android:protectionLevel="dangerous|instant"' not in network_definition:
+        raise SystemExit(
+            "R9_GRAPHENE_NETWORK_PERMISSION_NOT_RUNTIME_REVOKABLE="
+            + network_definition.replace("\n", " ")
+        )
+
     manifest = (settings / MANIFEST).read_text(encoding="utf-8")
     required_manifest = (
         'android.permission.MODIFY_DAY_NIGHT_MODE',
@@ -422,6 +438,7 @@ def verify(source: Path) -> None:
     print("R9_SETTINGS_PROVIDER_CONTENTPROVIDER_API_COMPAT=PASS")
     print("R9_SETTINGS_APPEARANCE_ENTRY=PASS")
     print("R9_SETTINGS_APPEARANCE_GATEWAY=PASS")
+    print("R9_GRAPHENE_NETWORK_PERMISSION_BASE=PASS_DANGEROUS_INSTANT")
     print("R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION")
     print("R9_SETTINGS_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT")
     print("R9_SETTINGS_COHESION=PASS")
