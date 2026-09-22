@@ -24,6 +24,7 @@ SETTINGS_HEAD = "71bd21cda07f4dfdcec2aabb16bc570be5bd8d35"
 SETTINGS_REPO = Path("packages/apps/Settings")
 
 MANIFEST = Path("AndroidManifest.xml")
+SETTINGS_GATEWAY = Path("src/com/android/settings/core/gateway/SettingsGateway.java")
 TOP_LEVEL_XMLS = (
     Path("res/xml/top_level_settings.xml"),
     Path("res/xml/top_level_settings_expressive.xml"),
@@ -48,6 +49,7 @@ NEW_FILES = (
 
 COHESION_DIRT = {
     " M AndroidManifest.xml",
+    " M src/com/android/settings/core/gateway/SettingsGateway.java",
     " M res/xml/top_level_settings.xml",
     " M res/xml/top_level_settings_expressive.xml",
     " M res/xml/top_level_settings_expressive_desktop.xml",
@@ -85,6 +87,19 @@ APP_BLOCK = APP_ANCHOR + '''
             </intent-filter>
         </receiver>
 '''
+
+GATEWAY_IMPORT_OLD = "import com.android.settings.safetycenter.MoreSecurityPrivacyFragment;\n"
+GATEWAY_IMPORT_NEW = (
+    GATEWAY_IMPORT_OLD
+    + "import com.android.settings.sable.SableAppearanceSettings;\n"
+)
+GATEWAY_ENTRY_OLD = """    public static final String[] ENTRY_FRAGMENTS = {
+            com.android.settings.applications.AppNativeDebuggingFragment.class.getName(),
+"""
+GATEWAY_ENTRY_NEW = """    public static final String[] ENTRY_FRAGMENTS = {
+            SableAppearanceSettings.class.getName(),
+            com.android.settings.applications.AppNativeDebuggingFragment.class.getName(),
+"""
 
 APPEARANCE_BLOCK = '''        <com.android.settings.widget.HomepagePreference
             android:fragment="com.android.settings.sable.SableAppearanceSettings"
@@ -235,6 +250,22 @@ def apply(source: Path) -> None:
             encoding="utf-8",
         )
 
+    gateway_path = settings / SETTINGS_GATEWAY
+    gateway = gateway_path.read_text(encoding="utf-8")
+    gateway = replace_once(
+        gateway,
+        GATEWAY_IMPORT_OLD,
+        GATEWAY_IMPORT_NEW,
+        "settings-gateway:appearance-import",
+    )
+    gateway = replace_once(
+        gateway,
+        GATEWAY_ENTRY_OLD,
+        GATEWAY_ENTRY_NEW,
+        "settings-gateway:appearance-entry",
+    )
+    gateway_path.write_text(gateway, encoding="utf-8")
+
     for dest in NEW_FILES:
         dst = settings / dest
         dst.parent.mkdir(parents=True, exist_ok=True)
@@ -270,6 +301,14 @@ def verify(source: Path) -> None:
     for needle in required_manifest:
         if needle not in manifest:
             raise SystemExit(f"R9_SETTINGS_COHESION_MANIFEST_MISSING={needle}")
+
+    gateway = (settings / SETTINGS_GATEWAY).read_text(encoding="utf-8")
+    for needle in (
+        "import com.android.settings.sable.SableAppearanceSettings;",
+        "SableAppearanceSettings.class.getName(),",
+    ):
+        if gateway.count(needle) != 1:
+            raise SystemExit(f"R9_SETTINGS_GATEWAY_APPEARANCE_ENTRY_FAIL={needle}")
 
     for rel in TOP_LEVEL_XMLS:
         text = (settings / rel).read_text(encoding="utf-8")
@@ -308,6 +347,7 @@ def verify(source: Path) -> None:
     print("R9_SYSTEM_APPEARANCE_DEVICE_PROTECTED_STORAGE=PASS")
     print("R9_SYSTEM_APPEARANCE_BOOT_RESTORE_SOURCE=PASS")
     print("R9_SETTINGS_APPEARANCE_ENTRY=PASS")
+    print("R9_SETTINGS_APPEARANCE_GATEWAY=PASS")
     print("R9_SETTINGS_COHESION=PASS")
 
 
@@ -347,6 +387,22 @@ def self_test() -> None:
     transformed = transform_top_level(sample_xml, "self-test")
     if transformed.count('android:key="top_level_sable_appearance"') != 1:
         raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_TOP_LEVEL_FAIL")
+
+    gateway_sample = GATEWAY_IMPORT_OLD + GATEWAY_ENTRY_OLD
+    gateway_sample = replace_once(
+        gateway_sample,
+        GATEWAY_IMPORT_OLD,
+        GATEWAY_IMPORT_NEW,
+        "self-test-gateway-import",
+    )
+    gateway_sample = replace_once(
+        gateway_sample,
+        GATEWAY_ENTRY_OLD,
+        GATEWAY_ENTRY_NEW,
+        "self-test-gateway-entry",
+    )
+    if "SableAppearanceSettings.class.getName()," not in gateway_sample:
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_GATEWAY_FAIL")
 
     print("R9_SETTINGS_COHESION_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
