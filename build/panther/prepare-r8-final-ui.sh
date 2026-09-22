@@ -47,6 +47,50 @@ MESSAGING_VISIBILITY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_me
 PHONE_CONTACTS="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
 DAILY_DRIVER_CORE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py"
 
+# UI5C/UI6 is the sealed base for later R9 SystemUI/Settings layers. Git status
+# cannot distinguish an older modification from a later modification to the
+# same tracked file, so the UI5C verifier explicitly skips superseded UI4
+# semantics for Tile.kt while retaining its dirty-scope entry. The untracked
+# bridge is subtracted from the UI5C scope and then independently validated by
+# the R9 SystemUI applicator.
+UI5C_SYSTEMUI_LATER_ARGS=(
+    --allow-framework-untracked
+    packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt
+    --allow-framework-modified
+    packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt
+)
+
+UI5C_SETTINGS_LATER_ARGS=(
+    --allow-settings-modified
+    AndroidManifest.xml
+    --allow-settings-modified
+    src/com/android/settings/core/gateway/SettingsGateway.java
+    --allow-settings-untracked
+    res/xml/sable_appearance_settings.xml
+    --allow-settings-untracked
+    res/xml/sable_network_manager_settings.xml
+    --allow-settings-untracked
+    res/values/strings_sable_cohesion.xml
+    --allow-settings-untracked
+    src/com/android/settings/sable/SableAppearanceContract.java
+    --allow-settings-untracked
+    src/com/android/settings/sable/SableAppearanceProvider.java
+    --allow-settings-untracked
+    src/com/android/settings/sable/SableAppearanceBootReceiver.java
+    --allow-settings-untracked
+    src/com/android/settings/sable/SableAppearanceSettings.java
+    --allow-settings-untracked
+    src/com/android/settings/sable/SableNetworkManagerSettings.java
+)
+
+verify_ui5c_with_systemui_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         verify
+}
+
+verify_ui5c_with_full_r9_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         "${UI5C_SETTINGS_LATER_ARGS[@]}"         verify
+}
+
 run_self_test() {
     local name="$1"
     local script="$2"
@@ -75,6 +119,10 @@ echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
 if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify; then
     echo "R9_SYSTEMUI_COHERENCE=ALREADY_APPLIED"
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
+elif verify_ui5c_with_full_r9_later; then
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_LATER_DIRT_RECOGNIZED"
+elif verify_ui5c_with_systemui_later; then
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED"
 elif python3 "$UI5C_UI6" --source "$WS" verify; then
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=ALREADY_APPLIED"
 else
