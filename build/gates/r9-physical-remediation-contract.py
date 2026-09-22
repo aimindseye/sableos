@@ -124,6 +124,32 @@ require(
     "Reader modern Hilt Compose package",
 )
 
+require(
+    "Light and Dark follow SableOS.",
+    reader_patch,
+    "Reader Sable-owned light-dark settings copy",
+)
+require(
+    "R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL",
+    reader_patch,
+    "Reader global light-dark ownership marker",
+)
+require(
+    "SableContinuousLibraryGrid(",
+    reader_patch,
+    "Reader continuous Sable bookshelf",
+)
+require(
+    "LazyVerticalGrid(",
+    reader_patch,
+    "Reader vertical library grid",
+)
+require(
+    "R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID",
+    reader_patch,
+    "Reader continuous-library marker",
+)
+
 if failures:
     print("R9_PHYSICAL_REMEDIATION_CONTRACT=FAIL")
     for failure in failures:
@@ -136,5 +162,7 @@ print("R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS")
 print("R9_READER_GLOBAL_THEME_CONTRACT=PASS")
 print("R9_READER_READIUM_APPEARANCE_BRIDGE=PASS")
 print("R9_READER_EXPLICIT_SEPIA_EINK_OVERRIDES=PASS")
+print("R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL")
+print("R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID")
 print("R9_READER_WARNING_CLEANUP_CONTRACT=PASS")
 print("R9_PHYSICAL_REMEDIATION_CONTRACT=PASS")
