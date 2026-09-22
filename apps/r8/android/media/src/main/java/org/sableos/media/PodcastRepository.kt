@@ -143,13 +143,22 @@ internal class PodcastRepository(
                 "Podcast feed returned HTTP $status."
             }
 
+            val resolvedFeedUrl =
+                connection.url
+                    ?.toString()
+                    ?.takeIf { it.isNotBlank() }
+                    ?: feedUrl
+            require(isSupportedFeedUrl(resolvedFeedUrl)) {
+                "Podcast feed redirected to an unsupported URL."
+            }
+
             val bytes =
                 connection.inputStream.use { input ->
                     readLimited(input)
                 }
 
             return parseFeed(
-                feedUrl = connection.url?.toString()?.takeIf { it.isNotBlank() } ?: feedUrl,
+                feedUrl = resolvedFeedUrl,
                 bytes = bytes,
             )
         } finally {
