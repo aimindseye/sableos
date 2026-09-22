@@ -244,9 +244,9 @@ internal object PodcastFeedParser {
                 pattern,
                 Locale.US,
             ).apply {
-                    isLenient = true
-                    timeZone = UTC
-                }.parse(value)
+                isLenient = true
+                timeZone = UTC
+            }.parse(value)
                 ?.time
         }.getOrNull()
 
