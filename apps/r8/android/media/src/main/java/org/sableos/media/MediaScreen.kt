@@ -104,6 +104,7 @@ internal fun MediaScreen(
     onRefreshPodcasts: () -> Unit,
     onRemovePodcastSubscription: (PodcastSubscription) -> Unit,
     onPlayPodcastEpisode: (PodcastEpisode) -> Unit,
+    onQueuePodcastEpisode: (PodcastEpisode) -> Unit,
     onToggleSavedPodcastEpisode: (PodcastEpisode) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
     onToggleFavoriteStation: (RadioStation) -> Unit,
@@ -244,6 +245,7 @@ internal fun MediaScreen(
                                 onRefresh = onRefreshPodcasts,
                                 onRemoveSubscription = onRemovePodcastSubscription,
                                 onPlayEpisode = onPlayPodcastEpisode,
+                                onQueueEpisode = onQueuePodcastEpisode,
                                 onToggleSavedEpisode = onToggleSavedPodcastEpisode,
                                 onOpenNowPlaying = {
                                     onDestinationChange(MediaDestination.NowPlaying)
