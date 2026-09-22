@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
     <queries>
-        <provider android:authorities="org.sableos.start.appearance" />
+        <provider android:authorities="org.sableos.appearance" />
     </queries>
     <application
         android:allowBackup="false"
