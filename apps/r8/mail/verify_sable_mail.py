@@ -346,12 +346,6 @@ def main() -> None:
         "org.sableos.start.appearance",
         "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY",
     )
-    reject_text(
-        manifest,
-        'android:authorities="org.sableos.start.appearance"',
-        "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY",
-    )
-    print("SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY=PASS_ABSENT")
     print("SABLE_MAIL_GLOBAL_APPEARANCE_SOURCE=PASS")
 
     manifest = app / "src/main/AndroidManifest.xml"
@@ -370,6 +364,12 @@ def main() -> None:
         'android:authorities="org.sableos.appearance"',
         "SABLE_MAIL_APPEARANCE_PROVIDER_VISIBILITY",
     )
+    reject_text(
+        manifest,
+        'android:authorities="org.sableos.start.appearance"',
+        "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY",
+    )
+    print("SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY=PASS_ABSENT")
     require_text(
         manifest,
         'android:authorities="org.sableos.mail.snapshot"',
