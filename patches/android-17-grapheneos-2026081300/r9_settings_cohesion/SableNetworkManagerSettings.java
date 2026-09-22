@@ -20,7 +20,6 @@ import com.android.settings.SettingsPreferenceFragment;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -43,7 +42,7 @@ public final class SableNetworkManagerSettings extends SettingsPreferenceFragmen
 
     @Override
     public int getMetricsCategory() {
-        return SettingsEnums.APPLICATIONS;
+        return SettingsEnums.MANAGE_APPLICATIONS;
     }
 
     @Override
@@ -91,7 +90,7 @@ public final class SableNetworkManagerSettings extends SettingsPreferenceFragmen
         }
 
         Collator collator = Collator.getInstance();
-        apps.sort(Comparator.comparing(app -> app.label, collator));
+        apps.sort((left, right) -> collator.compare(left.label, right.label));
 
         for (NetworkApp app : apps) {
             SwitchPreferenceCompat preference = new SwitchPreferenceCompat(requireContext());
