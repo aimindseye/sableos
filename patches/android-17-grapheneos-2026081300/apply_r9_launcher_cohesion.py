@@ -71,7 +71,8 @@ NO_BUTTON_ANCHOR_NEW = """        mDidTouchStartInNavBar = (ev.getEdgeFlags() & 
         // used for Quickstep Overview/Recents.
         if (mLauncher instanceof SableQuickstepLauncher
                 && ((SableQuickstepLauncher) mLauncher).isSableSurfaceActive()
-                && !mDidTouchStartInNavBar) {
+                && !mDidTouchStartInNavBar
+                && !mIsTrackpadSwipe) {
             return false;
         }
 
@@ -204,6 +205,7 @@ def verify(source: Path) -> None:
         "SableQuickstepLauncher",
         "isSableSurfaceActive()",
         "!mDidTouchStartInNavBar",
+        "!mIsTrackpadSwipe",
         "return false;",
     ):
         if needle not in no_button_text:
@@ -212,6 +214,7 @@ def verify(source: Path) -> None:
     print("R9_SABLE_NATIVE_ALL_APPS_TOUCH_ESCAPE=PASS_BLOCKED")
     print("R9_SABLE_START_VERTICAL_DRAG_OWNERSHIP=PASS")
     print("R9_QUICKSTEP_NAVBAR_OVERVIEW_PATH=PASS_PRESERVED")
+    print("R9_QUICKSTEP_TRACKPAD_OVERVIEW_PATH=PASS_PRESERVED")
     print("R9_LAUNCHER_COHESION=PASS")
 
 
@@ -224,7 +227,7 @@ def self_test() -> None:
 
     if "isSableSurfaceActive()" not in p:
         raise SystemExit("R9_LAUNCHER_COHESION_SELF_TEST_PORTRAIT_FAIL")
-    if "!mDidTouchStartInNavBar" not in n:
+    if "!mDidTouchStartInNavBar" not in n or "!mIsTrackpadSwipe" not in n:
         raise SystemExit("R9_LAUNCHER_COHESION_SELF_TEST_NO_BUTTON_FAIL")
 
     print("R9_LAUNCHER_COHESION_SELF_TEST=PASS")
