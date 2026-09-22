@@ -42,6 +42,10 @@ R9_SABLE_SYSTEMUI_APPEARANCE=PASS
 R9_SABLE_CORE_APPS_APPEARANCE=PASS
 R9_SABLE_READER_APPEARANCE=PASS
 R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS
+R9_SABLE_NETWORK_MANAGER_UI=PASS
+R9_SABLE_NETWORK_PERMISSION_REVOKE=PASS
+R9_SABLE_NETWORK_PERMISSION_RESTORE=PASS
+R9_SABLE_NETWORK_FIXED_POLICY=PASS
 ```
 
 Use `tests/systemui/device/r9_branding_surface_audit.sh` for read-only scene capture; the complete required scene set is defined in `docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md`.
@@ -142,6 +146,31 @@ R9_SABLE_SYSTEM_NIGHT_PROPAGATION=PASS
 R9_SABLE_SYSTEMUI_APPEARANCE=PASS
 R9_SABLE_CORE_APPS_APPEARANCE=PASS
 R9_SABLE_READER_APPEARANCE=PASS
+```
+
+## Network Manager
+
+Sable Settings exposes GrapheneOS' existing per-app Network permission as a
+first-class Network Manager. The R9 implementation uses one `Network access`
+switch because GrapheneOS' permission covers all network transports. The
+reviewed Unihertz video has separate Mobile and WLAN switches; those are not
+claimed or emulated by R9.
+
+The physical test must use a noncritical app which requests
+`android.permission.INTERNET`, toggle it OFF in Sable Network Manager, verify
+the runtime permission becomes denied and network access stops, then toggle it
+back ON and verify access returns. System-fixed and policy-fixed rows must be
+nonmutable.
+
+Detailed contract: `docs/R9_NETWORK_MANAGER.md`.
+
+Required markers:
+
+```text
+R9_SABLE_NETWORK_MANAGER_UI=PASS
+R9_SABLE_NETWORK_PERMISSION_REVOKE=PASS
+R9_SABLE_NETWORK_PERMISSION_RESTORE=PASS
+R9_SABLE_NETWORK_FIXED_POLICY=PASS
 ```
 
 ## Messaging identity
