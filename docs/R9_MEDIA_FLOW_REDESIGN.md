@@ -303,6 +303,46 @@ Because Sable Media is one of the ten source-bound first-party APKs, final WS7
 qualification must regenerate the ten-APK bundle at the exact final Media Flow
 source commit.
 
+## WS7 appearance-consumer gate correction
+
+The first source-bound WS7 run after focused Media Flow qualification reached
+final product composition with the ten-APK bundle correctly bound to
+`463f36dd30d0fe24474e19984c0917fe6ec830b0`, including the qualified
+`SableMedia.apk`.
+
+The run then failed only at:
+
+```text
+R8_GLOBAL_APPEARANCE_CONSUMER=FAIL
+R8_NO_STALE_PRODUCT_CODE=FAIL
+R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+This was a stale gate-owner assumption introduced by the Kotlin quality
+refactor. `SableGlobalTheme(window = window)` moved from
+`media/MainActivity.kt` to `media/MediaApp.kt` when the Activity was reduced
+to lifecycle/service hosting. Runtime appearance ownership remained present.
+
+The correction updates both:
+
+- `build/gates/r8-no-stale-product-code.sh`;
+- `build/gates/r8-final-product-composition.sh`;
+
+to verify the actual Media appearance owner in `MediaApp.kt`. The Media Flow
+contract now also requires the theme call in `MediaApp.kt`, forbids the old
+ownership in `MainActivity.kt`, and emits:
+
+```text
+R9_MEDIA_FLOW_GLOBAL_APPEARANCE_OWNER=PASS_MEDIA_APP
+```
+
+No application behavior or APK source was changed by this gate correction.
+However, release evidence remains repository-source-bound, so the prior
+`463f36d...` focused/WS7 source identity does not authorize the new gate-fix
+head. Focused Media qualification and WS7 must be rerun at the new immutable
+source before a full Panther target-files build is authorized.
+
 ## Physical Panther acceptance
 
 After a fresh image is eventually built and flashed through the standard Sable
