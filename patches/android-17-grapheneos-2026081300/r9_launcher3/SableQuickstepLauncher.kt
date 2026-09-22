@@ -1,7 +1,6 @@
 package com.android.launcher3.sable
 
 import android.Manifest
-import android.app.UiModeManager
 import android.content.Intent
 import android.database.ContentObserver
 import android.content.pm.PackageInfo
@@ -26,10 +25,12 @@ import com.android.launcher3.uioverrides.QuickstepLauncher
 import com.android.launcher3.util.ComponentKey
 import com.android.launcher3.util.PackageManagerHelper
 import com.android.launcher3.views.BaseDragLayer
-import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
+import org.sableos.design.SableGlobalAppearanceContract
 import org.sableos.design.applySableSystemBars
 import org.sableos.design.resolveSableDarkAppearance
+import org.sableos.design.readGlobalSableAppearance
+import org.sableos.design.writeGlobalSableAppearance
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LiveSurfaceRepository
 import org.sableos.start.platform.StartStateRepository
@@ -40,7 +41,9 @@ import org.sableos.start.ui.SableStartScreen
  *
  * Launcher3 remains responsible for model loading, package/profile changes,
  * lifecycle, state restoration, app launching, widgets/shortcuts and Recents.
- * Sable owns the NORMAL-state presentation layered over that machinery.
+ * Sable owns every HOME-facing presentation surface (Start, All Apps, Search,
+ * Peek and Appearance). Quickstep remains responsible for Recents/Overview
+ * and task/navigation integration only.
  */
 class SableQuickstepLauncher : QuickstepLauncher() {
     private val appsState = mutableStateOf<List<AppEntry>>(emptyList())
@@ -60,6 +63,14 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
                 liveRefreshGeneration.value += 1
+            }
+        }
+
+    private val appearanceContentObserver =
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                appearanceState.value = readGlobalSableAppearance(this@SableQuickstepLauncher)
+                applyCurrentSystemBars()
             }
         }
 
@@ -86,7 +97,7 @@ class SableQuickstepLauncher : QuickstepLauncher() {
 
         liveSurfaceRepository = LiveSurfaceRepository(this)
         startStateRepository = StartStateRepository(this)
-        appearanceState.value = startStateRepository.loadAppearance()
+        appearanceState.value = readGlobalSableAppearance(this)
 
         LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
             runCatching {
@@ -98,6 +109,14 @@ class SableQuickstepLauncher : QuickstepLauncher() {
             }
         }
 
+        runCatching {
+            contentResolver.registerContentObserver(
+                SableGlobalAppearanceContract.CONTENT_URI,
+                false,
+                appearanceContentObserver,
+            )
+        }
+
         allAppsStore =
             activityComponent.appsStore.also { store ->
                 store.addUpdateListener(appsUpdateListener)
@@ -106,7 +125,7 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         refreshAppsFromLauncherModel()
         installSableSurface()
         applyCurrentSystemBars()
-        updateSableVisibility(isInState(LauncherState.NORMAL))
+        updateSableVisibility(true)
     }
 
     override fun onResume() {
@@ -119,6 +138,8 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         if (allAppsStore != null) {
             refreshAppsFromLauncherModel()
         }
+        appearanceState.value = readGlobalSableAppearance(this)
+        applyCurrentSystemBars()
         liveRefreshGeneration.value += 1
     }
 
@@ -132,19 +153,43 @@ class SableQuickstepLauncher : QuickstepLauncher() {
 
     override fun onStateSetStart(state: LauncherState) {
         super.onStateSetStart(state)
-        if (state != LauncherState.NORMAL) {
-            updateSableVisibility(false)
+
+        // Keep the Sable surface covering the native workspace while Quickstep
+        // animates away from HOME. It is hidden only after Overview/Recents is
+        // actually reached, so intermediate Quickstep workspace frames never
+        // become a second user-facing launcher.
+        if (state == LauncherState.NORMAL) {
+            updateSableVisibility(true)
         }
     }
 
     override fun onStateSetEnd(state: LauncherState) {
         super.onStateSetEnd(state)
-        updateSableVisibility(state == LauncherState.NORMAL)
-        if (state == LauncherState.NORMAL) {
-            refreshAppsFromLauncherModel()
-            applyCurrentSystemBars()
+
+        when (state) {
+            LauncherState.NORMAL -> {
+                updateSableVisibility(true)
+                refreshAppsFromLauncherModel()
+                applyCurrentSystemBars()
+            }
+
+            LauncherState.ALL_APPS -> {
+                // Native Launcher3 All Apps is not a Sable product surface.
+                // Fail closed back to HOME if a non-touch upstream path reaches
+                // it despite the Sable touch-controller gate.
+                updateSableVisibility(true)
+                stateManager.goToState(LauncherState.NORMAL, false)
+            }
+
+            else -> {
+                updateSableVisibility(!state.isRecentsViewVisible)
+            }
         }
     }
+
+    /** Used by bounded Quickstep touch-controller guards. */
+    fun isSableSurfaceActive(): Boolean =
+        sableView?.visibility == View.VISIBLE
 
     protected override fun getOnBackAnimationCallback(): OnBackAnimationCallback =
         if (
@@ -171,6 +216,9 @@ class SableQuickstepLauncher : QuickstepLauncher() {
     override fun onDestroy() {
         runCatching {
             contentResolver.unregisterContentObserver(liveContentObserver)
+        }
+        runCatching {
+            contentResolver.unregisterContentObserver(appearanceContentObserver)
         }
 
         allAppsStore?.removeUpdateListener(appsUpdateListener)
@@ -211,19 +259,20 @@ class SableQuickstepLauncher : QuickstepLauncher() {
                         initialStartTileKeys = startStateRepository.loadStartTileKeys(),
                         onStartTileKeysChanged = startStateRepository::saveStartTileKeys,
                         onAppearanceChanged = { appearance ->
-                            appearanceState.value = appearance
-                            startStateRepository.saveAppearance(appearance)
-                            applyAppearanceToSystem(appearance)
-                            applyCurrentSystemBars()
+                            if (writeGlobalSableAppearance(this, appearance)) {
+                                appearanceState.value = appearance
+                                applyCurrentSystemBars()
+                            }
                         },
                         onResetAppearance = {
-                            appearanceState.value =
-                                startStateRepository.resetAppearance()
-                            applyAppearanceToSystem(appearanceState.value)
-                            applyCurrentSystemBars()
+                            val reset = SableAppearance()
+                            if (writeGlobalSableAppearance(this, reset)) {
+                                appearanceState.value = reset
+                                applyCurrentSystemBars()
+                            }
                         },
                         onLaunchApp = ::launchApp,
-                        onOpenSettings = ::openSettings,
+                        onOpenSystemSettings = ::openSystemSettings,
                         onOpenAppInfo = ::openAppDetails,
                         onRequestLivePermissions = ::requestLivePermissions,
                     )
@@ -376,52 +425,13 @@ class SableQuickstepLauncher : QuickstepLauncher() {
         )
     }
 
-    private fun openSettings() {
+    private fun openSystemSettings() {
         runCatching {
             startActivitySafely(
                 sableView,
                 Intent(Settings.ACTION_SETTINGS),
                 null,
             )
-        }
-    }
-
-    private fun applyAppearanceToSystem(
-        appearance: SableAppearance,
-    ) {
-        val uiModeManager =
-            getSystemService(UiModeManager::class.java)
-                ?: return
-
-        runCatching {
-            when (appearance.mode) {
-                AppearanceMode.FollowSystem -> {
-                    startStateRepository
-                        .loadSystemNightModeBeforeOverride()
-                        ?.let { previousMode ->
-                            uiModeManager.setNightMode(previousMode)
-                            startStateRepository
-                                .clearSystemNightModeBeforeOverride()
-                        }
-                }
-
-                AppearanceMode.Light,
-                AppearanceMode.Dark,
-                -> {
-                    startStateRepository
-                        .rememberSystemNightModeBeforeOverride(
-                            uiModeManager.nightMode,
-                        )
-
-                    uiModeManager.setNightMode(
-                        if (appearance.mode == AppearanceMode.Dark) {
-                            UiModeManager.MODE_NIGHT_YES
-                        } else {
-                            UiModeManager.MODE_NIGHT_NO
-                        },
-                    )
-                }
-            }
         }
     }
 
