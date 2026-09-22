@@ -392,10 +392,13 @@ internal fun MediaApp(
                     onAddPodcastFeed = {
                         val candidate = podcastFeedUrl.trim()
                         when {
-                            podcastBusy -> Unit
+                            podcastBusy -> {
+                                Unit
+                            }
 
-                            !PodcastRepository.isSupportedFeedUrl(candidate) ->
+                            !PodcastRepository.isSupportedFeedUrl(candidate) -> {
                                 podcastMessage = "Podcast feed must use HTTPS."
+                            }
 
                             else -> {
                                 val currentSubscriptions = podcastSubscriptions
@@ -592,11 +595,13 @@ internal fun MediaApp(
                         val candidate = stationUrl.trim()
 
                         when {
-                            editing == null ->
+                            editing == null -> {
                                 message = "Choose a station to edit."
+                            }
 
-                            !RadioStationRepository.isSupportedUrl(candidate) ->
+                            !RadioStationRepository.isSupportedUrl(candidate) -> {
                                 message = "Station URL must use HTTP or HTTPS."
+                            }
 
                             else -> {
                                 stations =
