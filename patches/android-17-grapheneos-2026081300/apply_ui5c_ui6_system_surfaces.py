@@ -631,6 +631,8 @@ def verify(
     source: Path,
     allowed_later_framework_untracked: tuple[Path, ...] = (),
     allowed_later_framework_modified: tuple[Path, ...] = (),
+    allowed_later_settings_untracked: tuple[Path, ...] = (),
+    allowed_later_settings_modified: tuple[Path, ...] = (),
 ) -> None:
     assert_heads(source)
     verify_templates()
@@ -653,10 +655,28 @@ def verify(
 
     expected_settings = expected_settings_pre_dirt(ui5b) | SETTINGS_EXTRA_DIRT
     actual_settings = status_set(settings)
-    if actual_settings != expected_settings:
+
+    allowed_settings_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_settings_untracked
+    } | {
+        f" M {path.as_posix()}"
+        for path in allowed_later_settings_modified
+    }
+    missing_allowed_settings = allowed_settings_dirt - actual_settings
+    if missing_allowed_settings:
+        raise SystemExit(
+            "UI5C_ALLOWED_LATER_SETTINGS_DIRT_MISSING="
+            f"{sorted(missing_allowed_settings)!r}"
+        )
+
+    settings_for_ui5c = actual_settings - allowed_settings_dirt
+    if settings_for_ui5c != expected_settings:
         raise SystemExit(
             "UI5C_SETTINGS_FINAL_DIRTY_SCOPE_MISMATCH="
-            f"expected={sorted(expected_settings)!r} actual={sorted(actual_settings)!r}"
+            f"expected={sorted(expected_settings)!r} "
+            f"actual={sorted(settings_for_ui5c)!r} "
+            f"allowed_later={sorted(allowed_settings_dirt)!r}"
         )
 
     actual_framework = status_set(framework)
@@ -864,6 +884,28 @@ def main() -> int:
             "later layer."
         ),
     )
+    parser.add_argument(
+        "--allow-settings-untracked",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact later-layer untracked packages/apps/Settings path to "
+            "subtract from UI5C dirty-scope validation while retaining "
+            "UI5C semantic checks."
+        ),
+    )
+    parser.add_argument(
+        "--allow-settings-modified",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact later-layer modified packages/apps/Settings path to "
+            "subtract from UI5C dirty-scope validation while retaining "
+            "UI5C semantic checks."
+        ),
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
@@ -873,10 +915,13 @@ def main() -> int:
             or args.source is not None
             or args.allow_framework_untracked
             or args.allow_framework_modified
+            or args.allow_settings_untracked
+            or args.allow_settings_modified
         ):
             parser.error(
                 "--self-test cannot be combined with mode, --source, "
-                "--allow-framework-untracked, or --allow-framework-modified"
+                "--allow-framework-untracked/--allow-framework-modified or "
+                "--allow-settings-untracked/--allow-settings-modified"
             )
         self_test()
         return 0
@@ -891,10 +936,14 @@ def main() -> int:
         raise SystemExit(f"NOT_ANDROID_REPO_ROOT={source}")
 
     if args.mode == "apply":
-        if args.allow_framework_untracked or args.allow_framework_modified:
+        if (
+            args.allow_framework_untracked
+            or args.allow_framework_modified
+            or args.allow_settings_untracked
+            or args.allow_settings_modified
+        ):
             parser.error(
-                "--allow-framework-untracked/--allow-framework-modified "
-                "are valid only with verify"
+                "--allow-framework-* and --allow-settings-* are valid only with verify"
             )
         apply(source)
     elif args.mode == "verify":
@@ -902,12 +951,18 @@ def main() -> int:
             source,
             tuple(args.allow_framework_untracked),
             tuple(args.allow_framework_modified),
+            tuple(args.allow_settings_untracked),
+            tuple(args.allow_settings_modified),
         )
     else:
-        if args.allow_framework_untracked or args.allow_framework_modified:
+        if (
+            args.allow_framework_untracked
+            or args.allow_framework_modified
+            or args.allow_settings_untracked
+            or args.allow_settings_modified
+        ):
             parser.error(
-                "--allow-framework-untracked/--allow-framework-modified "
-                "are valid only with verify"
+                "--allow-framework-* and --allow-settings-* are valid only with verify"
             )
         repair_known_setup_strings_alias(source)
     return 0
