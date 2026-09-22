@@ -248,16 +248,23 @@ echo "R9_SABLESTART_PRESENTATION_SYNC=PASS"
 echo
 echo "===== LAUNCHER3 HOME + QUICKSTEP COHESION ====="
 
-if python3 "$LAUNCHER_COHERENCE" --source "$WS" verify; then
+if python3 "$LAUNCHER_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
     echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING"
     echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED"
 else
-    python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply
-    python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
+    if python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify >/dev/null 2>&1; then
+        python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
+        echo "R9_LAUNCHER3_FOUNDATION=PASS_EXISTING"
+    else
+        python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply
+        python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
+        echo "R9_LAUNCHER3_FOUNDATION=APPLIED"
+    fi
     echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 
-    python3 "$LAUNCHER_COHESION" --source "$WS" apply
-    python3 "$LAUNCHER_COHESION" --source "$WS" verify
+    python3 "$LAUNCHER_COHERENCE" --source "$WS" apply
+    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
     echo "R9_LAUNCHER_COHESION=APPLIED"
 fi
 
