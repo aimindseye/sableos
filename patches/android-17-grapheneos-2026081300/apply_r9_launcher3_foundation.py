@@ -232,6 +232,7 @@ MANIFEST_HEADER_REPLACEMENT = MANIFEST_HEADER + '''
         android:maxSdkVersion="32" />
 
     <queries>
+        <provider android:authorities="org.sableos.appearance" />
         <provider android:authorities="org.sableos.weather.snapshot" />
         <provider android:authorities="org.sableos.calendar.snapshot" />
         <provider android:authorities="org.sableos.hub.snapshot" />
@@ -1375,6 +1376,7 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
     for token in (
         ACTIVITY_NEW,
         "android.permission.READ_MEDIA_IMAGES",
+        'android:authorities="org.sableos.appearance"',
         'android:authorities="org.sableos.weather.snapshot"',
         'android:authorities="org.sableos.calendar.snapshot"',
         'android:authorities="org.sableos.hub.snapshot"',
@@ -1907,6 +1909,7 @@ suffix
     assert "org.sableos.start.appearance" not in patched_manifest
     assert "SableAppearanceProvider" not in patched_manifest
     assert "MODIFY_DAY_NIGHT_MODE" not in patched_manifest
+    assert 'android:authorities="org.sableos.appearance"' in patched_manifest
     assert "org.sableos.weather.snapshot" in patched_manifest
     assert "org.sableos.calendar.snapshot" in patched_manifest
     assert "org.sableos.hub.snapshot" in patched_manifest
