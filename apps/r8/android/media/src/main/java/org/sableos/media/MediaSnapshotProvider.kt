@@ -2,6 +2,7 @@ package org.sableos.media
 
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.Context
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
@@ -21,39 +22,30 @@ class MediaSnapshotProvider : ContentProvider() {
         val appContext = checkNotNull(context)
         enforceLauncherCaller(appContext)
         val snapshot = MediaSnapshotStore.read(appContext)
-        val hasMedia = snapshot.title.isNotBlank()
-        val detail =
-            if (!hasMedia) {
-                "nothing playing"
-            } else {
-                buildString {
-                    append(snapshot.title)
-                    if (snapshot.artist.isNotBlank()) {
-                        append(" · ")
-                        append(snapshot.artist)
-                    }
-                    append(if (snapshot.playing) " · playing" else " · paused")
-                }
-            }
 
         return MatrixCursor(COLUMNS).apply {
             addRow(
                 arrayOf<Any?>(
                     "Media",
-                    detail,
-                    if (hasMedia) "LIVE" else "EMPTY",
+                    snapshotDetail(snapshot),
+                    if (snapshot.title.isNotBlank()) "LIVE" else "EMPTY",
                     snapshot.observedAt,
                 ),
             )
-            setNotificationUri(appContext.contentResolver, MediaSnapshotStore.SNAPSHOT_URI)
+            setNotificationUri(
+                appContext.contentResolver,
+                MediaSnapshotStore.SNAPSHOT_URI,
+            )
         }
     }
 
     override fun getType(uri: Uri): String =
         "vnd.android.cursor.item/vnd.org.sableos.media.snapshot"
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw UnsupportedOperationException("Read-only provider")
+    override fun insert(
+        uri: Uri,
+        values: ContentValues?,
+    ): Uri? = throw UnsupportedOperationException("Read-only provider")
 
     override fun delete(
         uri: Uri,
@@ -68,13 +60,33 @@ class MediaSnapshotProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int = throw UnsupportedOperationException("Read-only provider")
 
-    private fun enforceLauncherCaller(context: android.content.Context) {
+    private fun snapshotDetail(snapshot: MediaSnapshot): String {
+        if (snapshot.title.isBlank()) {
+            return "nothing playing"
+        }
+
+        return buildString {
+            append(snapshot.title)
+            if (snapshot.artist.isNotBlank()) {
+                append(" · ")
+                append(snapshot.artist)
+            }
+            append(if (snapshot.playing) " · playing" else " · paused")
+        }
+    }
+
+    private fun enforceLauncherCaller(context: Context) {
         val callingUid = Binder.getCallingUid()
-        if (callingUid == Process.myUid()) return
+        if (callingUid == Process.myUid()) {
+            return
+        }
+
         val packages =
-            context.packageManager.getPackagesForUid(callingUid)
+            context.packageManager
+                .getPackagesForUid(callingUid)
                 ?.toSet()
                 .orEmpty()
+
         if ("com.android.launcher3" !in packages) {
             throw SecurityException(
                 "Sable live snapshot is restricted to Launcher3.",
@@ -82,8 +94,13 @@ class MediaSnapshotProvider : ContentProvider() {
         }
     }
 
-    companion object {
-        private val COLUMNS =
-            arrayOf("title", "detail", "availability", "observed_at")
+    private companion object {
+        val COLUMNS =
+            arrayOf(
+                "title",
+                "detail",
+                "availability",
+                "observed_at",
+            )
     }
 }
