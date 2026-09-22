@@ -195,10 +195,20 @@ warnings. The Media Flow implementation now:
   traversal, playlist decoding, snapshot formatting, and persistence helpers;
 - replaces anonymous timing/size values with named constants where they carry
   domain meaning;
-- uses Compose-aware detekt and ktlint naming policy rather than renaming
-  PascalCase composables or creating a lint baseline;
+- uses a schema-valid, presentation-file-scoped detekt policy for generic
+  complexity/naming rules that detekt 1.23.8 cannot exempt by `@Composable`,
+  while ktlint uses its supported annotation-aware Compose naming option;
+- does not create a detekt baseline or blanket-disable the Media quality tasks;
 - enables Kotlin compiler `allWarningsAsErrors` for the Media module;
 - makes Media detekt and ktlint tasks fail the build on findings.
+
+The detekt policy is intentionally narrow: only
+`MediaApp.kt`, `MediaScreen.kt`, `MediaC2Screens.kt`, and
+`PodcastScreen.kt` are excluded from generic UI-incompatible
+`CyclomaticComplexMethod` / `LongMethod` / `LongParameterList` /
+`FunctionNaming` checks. All other detekt rules still apply to those files,
+and all rules remain active for repositories, playback, parsers, scanners,
+services, and providers.
 
 The focused qualifier must therefore be warning-clean. A valid result contains
 no Kotlin compiler `w:` diagnostics, no detekt finding list, and no ktlint
