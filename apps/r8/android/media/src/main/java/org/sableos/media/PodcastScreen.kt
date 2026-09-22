@@ -95,8 +95,7 @@ internal fun PodcastScreen(
 
     val latest =
         remember(subscriptions) {
-            subscriptions
-                .flatMap { it.episodes }
+            subscriptions.flatMap { it.episodes }
                 .sortedWith(
                     compareByDescending<PodcastEpisode> { it.publishedAt }
                         .thenBy { it.title.lowercase() },
@@ -106,8 +105,7 @@ internal fun PodcastScreen(
 
     val saved =
         remember(subscriptions, savedEpisodeIds) {
-            subscriptions
-                .flatMap { it.episodes }
+            subscriptions.flatMap { it.episodes }
                 .filter { it.id in savedEpisodeIds }
                 .sortedWith(
                     compareByDescending<PodcastEpisode> { it.publishedAt }
