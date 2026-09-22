@@ -124,6 +124,7 @@ run_static() {
   bash "$ROOT/build/gates/r8-build-driver-contract.sh"
   bash "$ROOT/build/gates/sable-pipeline-contract.sh"
   python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
+  python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
   python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
   python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
   python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
