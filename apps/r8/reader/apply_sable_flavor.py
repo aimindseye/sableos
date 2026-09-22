@@ -100,6 +100,14 @@ def main() -> None:
         fail(f"missing {gradle_file}")
 
     gradle_text = gradle_file.read_text(encoding="utf-8")
+    if 'compileSdk = libs.versions.android.compileSdk.get().toInt()' not in gradle_text:
+        fail("Vaachak compileSdk anchor changed; inspect upstream")
+    gradle_text = gradle_text.replace(
+        'compileSdk = libs.versions.android.compileSdk.get().toInt()',
+        '    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    ndkVersion = "30.0.16248370"',
+        1,
+    )
     anchor = "    val releaseSigningConfig = if (isReleaseLikeTaskRequested) {\n"
     if anchor not in gradle_text:
         fail("Vaachak Gradle anchor changed; inspect upstream before updating the pin")
@@ -139,6 +147,23 @@ def main() -> None:
         fail("Vaachak LeakCanary dependency anchor changed; inspect upstream")
     gradle_text = gradle_text.replace(leakcanary_dependency, "", 1)
 
+    version_catalog = mobile_root / "gradle" / "libs.versions.toml"
+    version_catalog_text = version_catalog.read_text(encoding="utf-8")
+    hilt_catalog_anchor = (
+        'androidx-hilt-navigation-compose = { group = "androidx.hilt", '
+        'name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }\n'
+    )
+    if hilt_catalog_anchor not in version_catalog_text:
+        fail("Vaachak Hilt version-catalog anchor changed; inspect upstream")
+    version_catalog_text = version_catalog_text.replace(
+        hilt_catalog_anchor,
+        hilt_catalog_anchor
+        + 'androidx-hilt-lifecycle-viewmodel-compose = { group = "androidx.hilt", '
+        + 'name = "hilt-lifecycle-viewmodel-compose", version.ref = "hiltNavigationCompose" }\n',
+        1,
+    )
+    version_catalog.write_text(version_catalog_text, encoding="utf-8")
+
     dependencies_anchor = "dependencies {\n"
     if gradle_text.count(dependencies_anchor) != 1:
         fail("Vaachak dependencies anchor changed; inspect upstream")
@@ -157,6 +182,15 @@ def main() -> None:
     gradle_text = gradle_text.replace(
         dependencies_anchor,
         sable_ocr_dependencies,
+        1,
+    )
+    hilt_dependency_anchor = "    implementation(libs.androidx.hilt.navigation.compose)\n"
+    if hilt_dependency_anchor not in gradle_text:
+        fail("Vaachak Hilt dependency anchor changed; inspect upstream")
+    gradle_text = gradle_text.replace(
+        hilt_dependency_anchor,
+        hilt_dependency_anchor
+        + "    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)\n",
         1,
     )
 
