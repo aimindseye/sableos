@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 media_screen = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt").read_text()
-main_activity = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt").read_text()
+media_app = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt").read_text()
 playback = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackController.kt").read_text()
 reader_patch = (ROOT / "apps/r8/reader/apply_sable_flavor.py").read_text()
 
@@ -54,17 +54,17 @@ require(
 
 require(
     "withContext(Dispatchers.IO)",
-    main_activity,
+    media_app,
     "background media import",
 )
 require(
     "audioFolderScanner.scan(treeUri)",
-    main_activity,
+    media_app,
     "folder scan",
 )
 require(
     "localAudioRepository.addUris(",
-    main_activity,
+    media_app,
     "metadata import",
 )
 
