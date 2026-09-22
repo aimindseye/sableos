@@ -230,6 +230,8 @@ python3 \
     packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt \
     --allow-settings-modified \
     AndroidManifest.xml \
+    --allow-settings-modified \
+    src/com/android/settings/core/gateway/SettingsGateway.java \
     --allow-settings-untracked \
     res/xml/sable_appearance_settings.xml \
     --allow-settings-untracked \
