@@ -42,6 +42,11 @@ R9_SABLE_SYSTEMUI_APPEARANCE=PASS
 R9_SABLE_CORE_APPS_APPEARANCE=PASS
 R9_SABLE_READER_APPEARANCE=PASS
 R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS
+```
+
+Use `tests/systemui/device/r9_branding_surface_audit.sh` for read-only scene capture; the complete required scene set is defined in `docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md`.
+
+```text
 R9_PHYSICAL_DAILY_DRIVER_ACCEPTANCE=PASS
 ```
 
