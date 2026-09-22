@@ -185,7 +185,9 @@ internal object PodcastFeedParser {
         (0 until parser.attributeCount)
             .firstOrNull { index ->
                 localName(parser.getAttributeName(index)) == name
-            }?.let(parser::getAttributeValue)
+            }?.let { index ->
+                parser.getAttributeValue(index)
+            }
 
     private fun localName(value: String?): String =
         value
