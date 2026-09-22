@@ -757,6 +757,7 @@ require(
     "R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS",
     "R9_PODCAST_NO_BACKGROUND_POLLING=PASS",
     "R9_PODCAST_NO_ANALYTICS_SDK=PASS",
+    "R9_MEDIA_FLOW_CANONICAL_SDK_QUALIFIER=PASS",
     "R9_MEDIA_FLOW_CONTRACT=PASS",
 )
 require(
@@ -765,6 +766,8 @@ require(
     "There remains exactly one playback substrate",
     "Offline podcast download management",
     "R9_MEDIA_FLOW_PODCAST_STREAM_PLAYBACK=PASS",
+    "fail-closed driver",
+    "ANDROID_HOME",
 )
 require(
     "build/panther/qualify-r9-physical-ux.sh",
