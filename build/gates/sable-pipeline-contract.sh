@@ -24,7 +24,10 @@ echo "SABLE_PIPELINE_SHELL_SYNTAX=PASS"
 
 python3 -m py_compile \
   "$ROOT/build/deploy/target_files_plan.py" \
-  "$ROOT/build/deploy/artifact_registry.py"
+  "$ROOT/build/deploy/artifact_registry.py" \
+  "$ROOT/apps/r8/reader/apply_sable_flavor.py" \
+  "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
+  "$ROOT/apps/r8/mail/verify_sable_mail.py"
 echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
 python3 "$ROOT/build/deploy/target_files_plan.py" --self-test
