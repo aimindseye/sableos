@@ -30,7 +30,11 @@ python3 -m py_compile \
   "$ROOT/build/deploy/artifact_registry.py" \
   "$ROOT/apps/r8/reader/apply_sable_flavor.py" \
   "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
-  "$ROOT/apps/r8/mail/verify_sable_mail.py"
+  "$ROOT/apps/r8/mail/verify_sable_mail.py" \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py" \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" \
+  "$ROOT/build/gates/r9-system-cohesion-contract.py"
 echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
 python3 "$ROOT/build/deploy/target_files_plan.py" --self-test
