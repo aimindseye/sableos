@@ -271,8 +271,9 @@ A follow-up WS7 run proved the first scope correction was still too broad:
 although source `src/test` was excluded, the composition gate executes after
 Gradle tests/builds and recursively traversed generated `build/` output, where
 the compiled negative regression assertion still contains the retired authority
-literal. Generated build/cache/output directories are now excluded from this
-source-composition check as well.
+literal. The retirement check now uses `git grep` over tracked production
+source only, with test-source and Markdown exclusions. Untracked/generated
+Gradle output therefore cannot participate in the source-composition decision.
 
 
 No full image yet.
