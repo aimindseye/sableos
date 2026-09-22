@@ -180,24 +180,22 @@ SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/pant
 echo "R9_SABLESTART_PRESENTATION_SYNC=PASS"
 
 echo
-echo "===== LAUNCHER3 HOME OWNERSHIP APPLY ====="
-
-python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply
-python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
-
-echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
-echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
-
-echo
-echo "===== R9 LAUNCHER / QUICKSTEP COHESION ====="
+echo "===== LAUNCHER3 HOME + QUICKSTEP COHESION ====="
 
 if python3 "$LAUNCHER_COHERENCE" --source "$WS" verify; then
+    echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING"
     echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED"
 else
-    python3 "$LAUNCHER_COHERENCE" --source "$WS" apply
-    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
+    python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply
+    python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
+    echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
+
+    python3 "$LAUNCHER_COHESION" --source "$WS" apply
+    python3 "$LAUNCHER_COHESION" --source "$WS" verify
     echo "R9_LAUNCHER_COHESION=APPLIED"
 fi
+
+echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 echo "R9_LAUNCHER_COHESION=PASS"
 
 echo
