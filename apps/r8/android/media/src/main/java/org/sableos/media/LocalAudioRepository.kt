@@ -81,37 +81,37 @@ internal class LocalAudioRepository(
         return updated
     }
 
-    private fun decodeItem(item: JSONObject?): LocalAudioItem? {
-        item ?: return null
+    private fun decodeItem(item: JSONObject?): LocalAudioItem? =
+        item?.let { json ->
+            val uriValue = json.optString("uri")
+            val title = json.optString("title")
 
-        val uriValue = item.optString("uri")
-        val title = item.optString("title")
-        if (uriValue.isBlank() || title.isBlank()) {
-            return null
-        }
+            if (uriValue.isBlank() || title.isBlank()) {
+                null
+            } else {
+                val parsedUri = Uri.parse(uriValue)
+                val durationMs = json.optLong("durationMs", 0L)
+                val sourceKey =
+                    json
+                        .optString("sourceKey")
+                        .takeIf { it.isNotBlank() }
+                        ?: sourceKeyFor(
+                            uri = parsedUri,
+                            fallbackName = title,
+                            fallbackSize = UNKNOWN_FILE_SIZE,
+                            durationMs = durationMs,
+                        )
 
-        val parsedUri = Uri.parse(uriValue)
-        val durationMs = item.optLong("durationMs", 0L)
-        val sourceKey =
-            item
-                .optString("sourceKey")
-                .takeIf { it.isNotBlank() }
-                ?: sourceKeyFor(
-                    uri = parsedUri,
-                    fallbackName = title,
-                    fallbackSize = UNKNOWN_FILE_SIZE,
+                LocalAudioItem(
+                    uri = uriValue,
+                    sourceKey = sourceKey,
+                    title = title,
+                    artist = json.optString("artist", "Unknown artist"),
+                    album = json.optString("album", "Local audio"),
                     durationMs = durationMs,
                 )
-
-        return LocalAudioItem(
-            uri = uriValue,
-            sourceKey = sourceKey,
-            title = title,
-            artist = item.optString("artist", "Unknown artist"),
-            album = item.optString("album", "Local audio"),
-            durationMs = durationMs,
-        )
-    }
+            }
+        }
 
     private fun inspect(uri: Uri): LocalAudioItem {
         val document = queryDocumentInfo(uri)
