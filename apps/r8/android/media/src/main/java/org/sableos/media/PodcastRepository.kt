@@ -1,20 +1,13 @@
 package org.sableos.media
 
 import android.content.Context
-import android.text.Html
-import android.util.Xml
 import org.json.JSONArray
 import org.json.JSONObject
-import org.xmlpull.v1.XmlPullParser
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.TimeZone
-import java.util.UUID
 
 internal data class PodcastEpisode(
     val id: String,
@@ -47,7 +40,7 @@ internal class PodcastRepository(
 ) {
     private val preferences =
         context.getSharedPreferences(
-            "sable_media_podcasts",
+            PODCAST_PREFS,
             Context.MODE_PRIVATE,
         )
 
@@ -56,12 +49,10 @@ internal class PodcastRepository(
 
         return runCatching {
             val array = JSONArray(raw)
-            buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.optJSONObject(index) ?: continue
-                    decodeSubscription(item)?.let(::add)
-                }
-            }.sortedBy { it.title.lowercase(Locale.getDefault()) }
+            List(array.length()) { index ->
+                decodeSubscription(array.optJSONObject(index))
+            }.filterNotNull()
+                .sortedBy { it.title.lowercase(Locale.getDefault()) }
         }.getOrDefault(emptyList())
     }
 
@@ -69,7 +60,7 @@ internal class PodcastRepository(
         current: List<PodcastSubscription>,
         feedUrl: String,
     ): List<PodcastSubscription> {
-        val normalized = normalizeFeedUrl(feedUrl)
+        val normalized = feedUrl.trim()
         require(isSupportedFeedUrl(normalized)) {
             "Podcast feed must use HTTPS."
         }
@@ -124,40 +115,27 @@ internal class PodcastRepository(
     }
 
     private fun fetch(feedUrl: String): PodcastSubscription {
-        val connection =
-            (URL(feedUrl).openConnection() as HttpURLConnection).apply {
-                connectTimeout = CONNECT_TIMEOUT_MS
-                readTimeout = READ_TIMEOUT_MS
-                instanceFollowRedirects = true
-                requestMethod = "GET"
-                setRequestProperty(
-                    "Accept",
-                    "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.1",
-                )
-                setRequestProperty("User-Agent", USER_AGENT)
-            }
+        val connection = openConnection(feedUrl)
 
         try {
-            val status = connection.responseCode
-            require(status in 200..299) {
-                "Podcast feed returned HTTP $status."
+            require(connection.responseCode in HTTP_SUCCESS_RANGE) {
+                "Podcast feed returned HTTP ${connection.responseCode}."
             }
 
             val resolvedFeedUrl =
                 connection.url
                     ?.toString()
-                    ?.takeIf { it.isNotBlank() }
+                    ?.takeIf(String::isNotBlank)
                     ?: feedUrl
+
             require(isSupportedFeedUrl(resolvedFeedUrl)) {
                 "Podcast feed redirected to a non-HTTPS URL."
             }
 
             val bytes =
-                connection.inputStream.use { input ->
-                    readLimited(input)
-                }
+                connection.inputStream.use(::readLimited)
 
-            return parseFeed(
+            return PodcastFeedParser.parse(
                 feedUrl = resolvedFeedUrl,
                 bytes = bytes,
             )
@@ -166,234 +144,44 @@ internal class PodcastRepository(
         }
     }
 
-    private fun readLimited(
-        input: java.io.InputStream,
-    ): ByteArray {
+    private fun openConnection(feedUrl: String): HttpURLConnection =
+        (URL(feedUrl).openConnection() as HttpURLConnection).apply {
+            connectTimeout = CONNECT_TIMEOUT_MS
+            readTimeout = READ_TIMEOUT_MS
+            instanceFollowRedirects = true
+            requestMethod = HTTP_METHOD_GET
+            setRequestProperty(
+                HEADER_ACCEPT,
+                PODCAST_ACCEPT,
+            )
+            setRequestProperty(
+                HEADER_USER_AGENT,
+                USER_AGENT,
+            )
+        }
+
+    private fun readLimited(input: InputStream): ByteArray {
         val output = ByteArrayOutputStream()
-        val buffer = ByteArray(16 * 1024)
+        val buffer = ByteArray(READ_BUFFER_BYTES)
         var total = 0
+        var read = input.read(buffer)
 
-        while (true) {
-            val read = input.read(buffer)
-            if (read < 0) break
-
+        while (read >= 0) {
             total += read
             require(total <= MAX_FEED_BYTES) {
                 "Podcast feed is larger than the Sable Media safety limit."
             }
             output.write(buffer, 0, read)
+            read = input.read(buffer)
         }
 
         return output.toByteArray()
     }
 
-    private fun parseFeed(
-        feedUrl: String,
-        bytes: ByteArray,
-    ): PodcastSubscription {
-        val parser = Xml.newPullParser()
-        parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
-        val prolog =
-            String(
-                bytes,
-                0,
-                minOf(bytes.size, 4_096),
-                StandardCharsets.ISO_8859_1,
-            )
-        require(!prolog.contains("<!DOCTYPE", ignoreCase = true)) {
-            "Podcast feed document types are not accepted."
-        }
-
-        parser.setInput(
-            ByteArrayInputStream(bytes),
-            null,
-        )
-
-        val podcastId = stableId(feedUrl)
-        var feedTitle = ""
-        var feedAuthor = ""
-        var feedDescription = ""
-        var inEntry = false
-        var currentTag = ""
-        var current: EpisodeBuilder? = null
-        val episodes = mutableListOf<PodcastEpisode>()
-
-        while (parser.eventType != XmlPullParser.END_DOCUMENT) {
-            when (parser.eventType) {
-                XmlPullParser.START_TAG -> {
-                    val tag = localName(parser.name)
-                    currentTag = tag
-
-                    if (tag == "item" || tag == "entry") {
-                        inEntry = true
-                        current = EpisodeBuilder()
-                    } else if (inEntry && (tag == "enclosure" || tag == "content")) {
-                        val candidate =
-                            attribute(parser, "url")
-                                .orEmpty()
-                                .trim()
-                        val type =
-                            attribute(parser, "type")
-                                .orEmpty()
-                                .lowercase(Locale.US)
-
-                        if (
-                            candidate.isNotBlank() &&
-                            (type.isBlank() || type.startsWith("audio/"))
-                        ) {
-                            current?.mediaUrl = candidate
-                        }
-                    } else if (inEntry && tag == "link") {
-                        val rel =
-                            attribute(parser, "rel")
-                                .orEmpty()
-                                .lowercase(Locale.US)
-                        val href =
-                            attribute(parser, "href")
-                                .orEmpty()
-                                .trim()
-                        val type =
-                            attribute(parser, "type")
-                                .orEmpty()
-                                .lowercase(Locale.US)
-
-                        if (
-                            href.isNotBlank() &&
-                            rel == "enclosure" &&
-                            (type.isBlank() || type.startsWith("audio/"))
-                        ) {
-                            current?.mediaUrl = href
-                        }
-                    }
-                }
-
-                XmlPullParser.TEXT,
-                XmlPullParser.CDSECT,
-                -> {
-                    val value = parser.text?.trim().orEmpty()
-                    if (value.isNotBlank()) {
-                        if (inEntry) {
-                            when (currentTag) {
-                                "title" -> current?.title = appendText(current?.title, value)
-                                "guid", "id" -> current?.guid = appendText(current?.guid, value)
-                                "pubdate", "published", "updated" ->
-                                    current?.published = appendText(current?.published, value)
-                                "description", "summary", "encoded" ->
-                                    current?.description = appendText(current?.description, value)
-                                "duration" ->
-                                    current?.duration = appendText(current?.duration, value)
-                            }
-                        } else {
-                            when (currentTag) {
-                                "title" ->
-                                    if (feedTitle.isBlank()) {
-                                        feedTitle = value
-                                    }
-
-                                "author", "creator", "name" ->
-                                    if (feedAuthor.isBlank()) {
-                                        feedAuthor = value
-                                    }
-
-                                "description", "subtitle" ->
-                                    if (feedDescription.isBlank()) {
-                                        feedDescription = value
-                                    }
-                            }
-                        }
-                    }
-                }
-
-                XmlPullParser.END_TAG -> {
-                    val tag = localName(parser.name)
-                    if (tag == "item" || tag == "entry") {
-                        current
-                            ?.toEpisode(
-                                podcastId = podcastId,
-                                podcastTitle =
-                                    cleanText(feedTitle)
-                                        .ifBlank { "Podcast" },
-                            )
-                            ?.let(episodes::add)
-                        current = null
-                        inEntry = false
-                    }
-                    currentTag = ""
-                }
-            }
-
-            parser.next()
-        }
-
-        val normalizedTitle =
-            cleanText(feedTitle)
-                .ifBlank {
-                    URL(feedUrl).host
-                        ?.removePrefix("www.")
-                        ?.takeIf { it.isNotBlank() }
-                        ?: "Podcast"
-                }
-
-        val normalizedEpisodes =
-            episodes
-                .map { episode ->
-                    episode.copy(
-                        podcastTitle = normalizedTitle,
-                    )
-                }
-                .distinctBy { it.id }
-                .sortedWith(
-                    compareByDescending<PodcastEpisode> { it.publishedAt }
-                        .thenBy { it.title.lowercase(Locale.getDefault()) },
-                )
-                .take(MAX_EPISODES_PER_FEED)
-
-        require(normalizedEpisodes.isNotEmpty()) {
-            "No playable audio episodes were found in this feed."
-        }
-
-        return PodcastSubscription(
-            id = podcastId,
-            feedUrl = feedUrl,
-            title = normalizedTitle,
-            author = cleanText(feedAuthor),
-            description = cleanText(feedDescription),
-            episodes = normalizedEpisodes,
-            refreshedAt = System.currentTimeMillis(),
-        )
-    }
-
-    private fun persist(
-        subscriptions: List<PodcastSubscription>,
-    ) {
+    private fun persist(subscriptions: List<PodcastSubscription>) {
         val array = JSONArray()
-
         subscriptions.forEach { subscription ->
-            val episodes = JSONArray()
-            subscription.episodes.forEach { episode ->
-                episodes.put(
-                    JSONObject()
-                        .put("id", episode.id)
-                        .put("podcastId", episode.podcastId)
-                        .put("podcastTitle", episode.podcastTitle)
-                        .put("title", episode.title)
-                        .put("mediaUrl", episode.mediaUrl)
-                        .put("description", episode.description)
-                        .put("publishedAt", episode.publishedAt)
-                        .put("durationMs", episode.durationMs),
-                )
-            }
-
-            array.put(
-                JSONObject()
-                    .put("id", subscription.id)
-                    .put("feedUrl", subscription.feedUrl)
-                    .put("title", subscription.title)
-                    .put("author", subscription.author)
-                    .put("description", subscription.description)
-                    .put("refreshedAt", subscription.refreshedAt)
-                    .put("episodes", episodes),
-            )
+            array.put(encodeSubscription(subscription))
         }
 
         preferences
@@ -402,54 +190,60 @@ internal class PodcastRepository(
             .apply()
     }
 
-    private fun decodeSubscription(
-        item: JSONObject,
-    ): PodcastSubscription? {
+    private fun encodeSubscription(
+        subscription: PodcastSubscription,
+    ): JSONObject =
+        JSONObject()
+            .put("id", subscription.id)
+            .put("feedUrl", subscription.feedUrl)
+            .put("title", subscription.title)
+            .put("author", subscription.author)
+            .put("description", subscription.description)
+            .put("refreshedAt", subscription.refreshedAt)
+            .put(
+                "episodes",
+                JSONArray().apply {
+                    subscription.episodes.forEach { episode ->
+                        put(encodeEpisode(episode))
+                    }
+                },
+            )
+
+    private fun encodeEpisode(episode: PodcastEpisode): JSONObject =
+        JSONObject()
+            .put("id", episode.id)
+            .put("podcastId", episode.podcastId)
+            .put("podcastTitle", episode.podcastTitle)
+            .put("title", episode.title)
+            .put("mediaUrl", episode.mediaUrl)
+            .put("description", episode.description)
+            .put("publishedAt", episode.publishedAt)
+            .put("durationMs", episode.durationMs)
+
+    private fun decodeSubscription(item: JSONObject?): PodcastSubscription? {
+        item ?: return null
+
         val id = item.optString("id")
         val feedUrl = item.optString("feedUrl")
         val title = item.optString("title")
 
         if (
             id.isBlank() ||
-            !isSupportedFeedUrl(feedUrl) ||
-            title.isBlank()
+            title.isBlank() ||
+            !isSupportedFeedUrl(feedUrl)
         ) {
             return null
         }
 
         val episodesArray = item.optJSONArray("episodes") ?: JSONArray()
         val episodes =
-            buildList {
-                for (index in 0 until episodesArray.length()) {
-                    val episode = episodesArray.optJSONObject(index) ?: continue
-                    val episodeId = episode.optString("id")
-                    val mediaUrl = episode.optString("mediaUrl")
-                    val episodeTitle = episode.optString("title")
-
-                    if (
-                        episodeId.isBlank() ||
-                        mediaUrl.isBlank() ||
-                        episodeTitle.isBlank()
-                    ) {
-                        continue
-                    }
-
-                    add(
-                        PodcastEpisode(
-                            id = episodeId,
-                            podcastId = id,
-                            podcastTitle =
-                                episode.optString("podcastTitle")
-                                    .ifBlank { title },
-                            title = episodeTitle,
-                            mediaUrl = mediaUrl,
-                            description = episode.optString("description"),
-                            publishedAt = episode.optLong("publishedAt", 0L),
-                            durationMs = episode.optLong("durationMs", 0L),
-                        ),
-                    )
-                }
-            }
+            List(episodesArray.length()) { index ->
+                decodeEpisode(
+                    item = episodesArray.optJSONObject(index),
+                    podcastId = id,
+                    podcastTitle = title,
+                )
+            }.filterNotNull()
 
         return PodcastSubscription(
             id = id,
@@ -462,170 +256,59 @@ internal class PodcastRepository(
         )
     }
 
-    private fun normalizeFeedUrl(value: String): String = value.trim()
+    private fun decodeEpisode(
+        item: JSONObject?,
+        podcastId: String,
+        podcastTitle: String,
+    ): PodcastEpisode? {
+        item ?: return null
 
-    private data class EpisodeBuilder(
-        var title: String = "",
-        var guid: String = "",
-        var mediaUrl: String = "",
-        var description: String = "",
-        var published: String = "",
-        var duration: String = "",
-    ) {
-        fun toEpisode(
-            podcastId: String,
-            podcastTitle: String,
-        ): PodcastEpisode? {
-            val playableUrl = mediaUrl.trim()
-            if (!isSupportedMediaUrl(playableUrl)) return null
+        val id = item.optString("id")
+        val mediaUrl = item.optString("mediaUrl")
+        val title = item.optString("title")
 
-            val normalizedTitle =
-                cleanText(title)
-                    .ifBlank { "Untitled episode" }
-            val publishedAt = parsePublishedAt(published)
-            val stableEpisodeKey =
-                guid.trim()
-                    .ifBlank { playableUrl }
-                    .ifBlank { "$normalizedTitle:$publishedAt" }
-
-            return PodcastEpisode(
-                id = stableId("$podcastId:$stableEpisodeKey"),
-                podcastId = podcastId,
-                podcastTitle = podcastTitle,
-                title = normalizedTitle,
-                mediaUrl = playableUrl,
-                description = cleanText(description),
-                publishedAt = publishedAt,
-                durationMs = parseDurationMs(duration),
-            )
-        }
-    }
-
-    companion object {
-        private const val KEY_SUBSCRIPTIONS = "subscriptions"
-        private const val USER_AGENT = "SableMedia/0.2 (Android; privacy-first podcast client)"
-        private const val CONNECT_TIMEOUT_MS = 12_000
-        private const val READ_TIMEOUT_MS = 20_000
-        private const val MAX_FEED_BYTES = 4 * 1024 * 1024
-        private const val MAX_EPISODES_PER_FEED = 200
-
-        fun isSupportedFeedUrl(value: String): Boolean {
-            val normalized = value.trim()
-            val protocol =
-                runCatching {
-                    URL(normalized).protocol.lowercase(Locale.US)
-                }.getOrNull()
-            return protocol == "https"
-        }
-
-        private fun isSupportedMediaUrl(value: String): Boolean {
-            val protocol =
-                runCatching {
-                    URL(value.trim()).protocol.lowercase(Locale.US)
-                }.getOrNull()
-            return protocol == "https"
-        }
-
-        private fun attribute(
-            parser: XmlPullParser,
-            name: String,
-        ): String? {
-            for (index in 0 until parser.attributeCount) {
-                if (localName(parser.getAttributeName(index)) == name) {
-                    return parser.getAttributeValue(index)
-                }
-            }
+        if (
+            id.isBlank() ||
+            title.isBlank() ||
+            !PodcastUrlPolicy.isHttpsUrl(mediaUrl)
+        ) {
             return null
         }
 
-        private fun localName(value: String?): String =
-            value
-                .orEmpty()
-                .substringAfterLast(':')
-                .lowercase(Locale.US)
+        return PodcastEpisode(
+            id = id,
+            podcastId = podcastId,
+            podcastTitle =
+                item
+                    .optString("podcastTitle")
+                    .ifBlank { podcastTitle },
+            title = title,
+            mediaUrl = mediaUrl,
+            description = item.optString("description"),
+            publishedAt = item.optLong("publishedAt", 0L),
+            durationMs = item.optLong("durationMs", 0L),
+        )
+    }
 
-        private fun appendText(
-            existing: String?,
-            value: String,
-        ): String =
-            if (existing.isNullOrBlank()) {
-                value
-            } else {
-                "$existing $value"
-            }
+    companion object {
+        fun isSupportedFeedUrl(value: String): Boolean =
+            PodcastUrlPolicy.isHttpsUrl(value)
 
-        private fun cleanText(value: String): String =
-            Html.fromHtml(
-                value,
-                Html.FROM_HTML_MODE_LEGACY,
-            ).toString()
-                .replace(Regex("\\s+"), " ")
-                .trim()
-                .take(4_000)
-
-        private fun parsePublishedAt(value: String): Long {
-            val candidate = value.trim()
-            if (candidate.isBlank()) return 0L
-
-            val patterns =
-                listOf(
-                    "EEE, dd MMM yyyy HH:mm:ss Z",
-                    "EEE, dd MMM yyyy HH:mm Z",
-                    "yyyy-MM-dd'T'HH:mm:ssXXX",
-                    "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                    "yyyy-MM-dd",
-                )
-
-            patterns.forEach { pattern ->
-                val parsed =
-                    runCatching {
-                        SimpleDateFormat(
-                            pattern,
-                            Locale.US,
-                        ).apply {
-                            isLenient = true
-                            timeZone = TimeZone.getTimeZone("UTC")
-                        }.parse(candidate)
-                    }.getOrNull()
-
-                if (parsed != null) {
-                    return parsed.time
-                }
-            }
-
-            return 0L
-        }
-
-        private fun parseDurationMs(value: String): Long {
-            val candidate = value.trim()
-            if (candidate.isBlank()) return 0L
-
-            candidate.toLongOrNull()?.let { seconds ->
-                return seconds.coerceAtLeast(0L) * 1_000L
-            }
-
-            val parts =
-                candidate
-                    .split(':')
-                    .mapNotNull { it.toLongOrNull() }
-
-            if (parts.isEmpty()) return 0L
-
-            val seconds =
-                when (parts.size) {
-                    3 -> parts[0] * 3_600L + parts[1] * 60L + parts[2]
-                    2 -> parts[0] * 60L + parts[1]
-                    1 -> parts[0]
-                    else -> 0L
-                }
-
-            return seconds.coerceAtLeast(0L) * 1_000L
-        }
-
-        private fun stableId(value: String): String =
-            UUID.nameUUIDFromBytes(
-                value.toByteArray(StandardCharsets.UTF_8),
-            ).toString()
+        private const val PODCAST_PREFS = "sable_media_podcasts"
+        private const val KEY_SUBSCRIPTIONS = "subscriptions"
+        private const val USER_AGENT =
+            "SableMedia/0.2 (Android; privacy-first podcast client)"
+        private const val CONNECT_TIMEOUT_MS = 12_000
+        private const val READ_TIMEOUT_MS = 20_000
+        private const val MAX_FEED_BYTES = 4 * 1_024 * 1_024
+        private const val READ_BUFFER_BYTES = 16 * 1_024
+        private const val HTTP_METHOD_GET = "GET"
+        private const val HEADER_ACCEPT = "Accept"
+        private const val HEADER_USER_AGENT = "User-Agent"
+        private const val PODCAST_ACCEPT =
+            "application/rss+xml, application/atom+xml, " +
+                "application/xml, text/xml;q=0.9, */*;q=0.1"
+        private val HTTP_SUCCESS_RANGE = 200..299
     }
 }
 
@@ -634,7 +317,7 @@ internal class PodcastStateRepository(
 ) {
     private val preferences =
         context.getSharedPreferences(
-            "sable_media_podcast_state",
+            STATE_PREFS,
             Context.MODE_PRIVATE,
         )
 
@@ -661,11 +344,10 @@ internal class PodcastStateRepository(
                 }
             }.toSet()
 
-        preferences
-            .edit()
-            .putStringSet(KEY_SAVED, updated)
-            .apply()
-
+        persistSet(
+            key = KEY_SAVED,
+            value = updated,
+        )
         return updated
     }
 
@@ -673,18 +355,36 @@ internal class PodcastStateRepository(
         current: Set<String>,
         episodeId: String,
     ): Set<String> {
-        if (episodeId in current) return current
+        val updated =
+            if (episodeId in current) {
+                current
+            } else {
+                current + episodeId
+            }
 
-        val updated = current + episodeId
-        preferences
-            .edit()
-            .putStringSet(KEY_PLAYED, updated)
-            .apply()
+        if (updated !== current) {
+            persistSet(
+                key = KEY_PLAYED,
+                value = updated,
+            )
+        }
+
         return updated
     }
 
-    companion object {
-        private const val KEY_SAVED = "saved_episode_ids"
-        private const val KEY_PLAYED = "played_episode_ids"
+    private fun persistSet(
+        key: String,
+        value: Set<String>,
+    ) {
+        preferences
+            .edit()
+            .putStringSet(key, value)
+            .apply()
+    }
+
+    private companion object {
+        const val STATE_PREFS = "sable_media_podcast_state"
+        const val KEY_SAVED = "saved_episode_ids"
+        const val KEY_PLAYED = "played_episode_ids"
     }
 }
