@@ -225,6 +225,36 @@ R9_MEDIA_FLOW_KOTLIN_QUALITY=PASS_WARNINGS_DETEKT_KTLINT
 R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS
 ```
 
+## Strict-quality qualification correction
+
+The strict focused qualifier was run against
+`508a5fa1853f2af71bb339aa78a6d084c9f7c2e4`. The source/static contracts
+passed, and the fail-closed Gradle phase then correctly rejected the candidate
+before producing new qualification evidence.
+
+Two bounded defect classes were exposed:
+
+- detekt reported six findings: `PlaybackController` had eleven visible
+  functions at a threshold of eleven; four persisted-state decoder functions
+  exceeded the return-count limit; and the large artwork ratio remained an
+  anonymous numeric literal;
+- Kotlin compilation found four call sites where `MediaHostServices`
+  function-valued actions were invoked with named arguments. Kotlin function
+  types do not permit named-argument invocation.
+
+The correction keeps the quality policy intact:
+
+- playback previous/next are consolidated behind
+  `PlaybackSkip.Previous` / `PlaybackSkip.Next` and one `skip` command;
+- persisted-state decoders use expression-style nullable decoding rather than
+  stacked guard returns;
+- the large artwork ratio is a named constant;
+- function-valued Media host actions are called positionally.
+
+No detekt rule, ktlint rule, compiler warning policy, or fail-closed qualifier
+was weakened to obtain this correction. The failed run does not authorize WS7
+or a Panther image; qualification must be repeated at the new immutable head.
+
 ## Module qualification
 
 The first manual focused-build attempt proved the static Media Flow and pipeline
