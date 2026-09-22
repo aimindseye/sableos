@@ -451,7 +451,9 @@ internal fun MediaApp(
                                         if (refresh.failedFeeds == 0) {
                                             "Podcasts refreshed."
                                         } else {
-                                            "Podcasts refreshed with ${refresh.failedFeeds} feed failure(s); cached episodes were kept."
+                                            "Podcasts refreshed with " +
+                                                "${refresh.failedFeeds} feed failure(s); " +
+                                                "cached episodes were kept."
                                         }
                                 }.onFailure { error ->
                                     podcastMessage =
