@@ -228,6 +228,20 @@ python3 \
     packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt \
     --allow-framework-modified \
     packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt \
+    --allow-settings-modified \
+    AndroidManifest.xml \
+    --allow-settings-untracked \
+    res/xml/sable_appearance_settings.xml \
+    --allow-settings-untracked \
+    res/values/strings_sable_cohesion.xml \
+    --allow-settings-untracked \
+    src/com/android/settings/sable/SableAppearanceContract.java \
+    --allow-settings-untracked \
+    src/com/android/settings/sable/SableAppearanceProvider.java \
+    --allow-settings-untracked \
+    src/com/android/settings/sable/SableAppearanceBootReceiver.java \
+    --allow-settings-untracked \
+    src/com/android/settings/sable/SableAppearanceSettings.java \
     verify \
     || fail R8_UI4_UI5_UI6_CUMULATIVE_SOURCE
 
@@ -236,8 +250,16 @@ python3 \
     --source "$WS" verify \
     || fail R9_SYSTEMUI_COHERENCE_SOURCE
 
+python3 "$SETTINGS_COHESION" --source "$WS" verify \
+    || fail R9_SETTINGS_COHESION_SOURCE
+
+python3 "$LAUNCHER_COHESION" --source "$WS" verify \
+    || fail R9_LAUNCHER_COHESION_SOURCE
+
 echo "R8_UI4_UI5_UI6_CUMULATIVE_SOURCE=PASS"
 echo "R9_SYSTEMUI_COHERENCE_SOURCE=PASS"
+echo "R9_SETTINGS_COHESION_SOURCE=PASS"
+echo "R9_LAUNCHER_COHESION_SOURCE=PASS"
 
 echo
 echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
