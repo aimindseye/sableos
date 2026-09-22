@@ -25,11 +25,13 @@ NO_BUTTON = Path(
 
 COHESION_DIRTY_PATHS = {PORTRAIT.as_posix(), NO_BUTTON.as_posix()}
 
-# Canonical host blob from the immediately preceding frozen WS7 source
-# (d836cdb9eba13cff864186ea156a347b7b7cc273). This is the only stale host
-# accepted for an in-place cohesion refresh after the activity-context fix.
+# Exact previously-qualified host blobs accepted for an in-place cohesion
+# refresh. The second blob is the flashed 8e54b40 R9 candidate host; accepting
+# it lets the physical-fix tranche upgrade the existing Panther workspace
+# without clean/clobber while still rejecting unknown Launcher3 dirt.
 PREVIOUS_CANONICAL_HOST_BLOBS = {
     "a3bf622a048d399cf4a9ffa89e3cbbdb58f1ac97",
+    "b463b823ea075af2d55d5edcc5388057c0faca8c",
 }
 
 PORTRAIT_IMPORT_OLD = (
