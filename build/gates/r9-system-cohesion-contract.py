@@ -104,6 +104,13 @@ require_absent(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/"
     "SableAppearanceProvider.kt"
 )
+require(
+    "build/panther/sync-sablestart.sh",
+    "retired=(",
+    "src/com/sable/start/platform/SableAppearanceProvider.kt",
+    "R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED",
+    "R9_SABLESTART_GLOBAL_APPEARANCE_OWNER=SETTINGS",
+)
 forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/"
     "StartStateRepository.kt",
@@ -319,6 +326,7 @@ print("R9_WS0_REJECTED_CANDIDATE_CONTRACT=PASS")
 print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
 print("R9_DESIGN_APPEARANCE_AUTHORITY_TEST=PASS_CURRENT_AND_LEGACY_REJECTED")
 print("R9_LAUNCHER_GLOBAL_APPEARANCE_OWNERSHIP=PASS_RETIRED")
+print("R9_SABLESTART_SYNC_APPEARANCE_PROVIDER=PASS_RETIRED")
 print("R9_SABLE_NATIVE_LAUNCHER_ESCAPE=PASS_SOURCE_BLOCKED")
 print("R9_SABLE_SETTINGS_TOP_LEVEL=PASS_SOURCE")
 print("R9_SABLE_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION_SOURCE")
