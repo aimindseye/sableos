@@ -30,7 +30,7 @@ implementation underneath.
 WS0=PASS_SOURCE
 WS1=PASS_SOURCE_SETTINGS_HOSTED_APPEARANCE
 WS2=PASS_SOURCE_SABLE_HOME_QUICKSTEP_RECENTS
-WS3=PASS_SOURCE_SETTINGS_APPEARANCE_ENTRY
+WS3=PASS_SOURCE_SETTINGS_APPEARANCE_AND_NETWORK_MANAGER
 WS4=PASS_SOURCE_SYSTEMUI_SHARED_AUTHORITY
 WS5=PASS_SOURCE_READER_READIUM_BRIDGE
 WS6=PASS_SOURCE_PLATFORM_CLASSIFICATION
@@ -42,6 +42,10 @@ Implemented source boundaries:
 
 - Settings owns global appearance persistence, write authorization and
   locked-boot/boot/package-replace restoration.
+- Sable Settings adds Network Manager backed directly by GrapheneOS'
+  user-revocable `android.permission.INTERNET`; R9 intentionally does not
+  fabricate separate Mobile/WLAN toggles because the base does not provide
+  transport-scoped per-app enforcement.
 - Launcher3 no longer requests `MODIFY_DAY_NIGHT_MODE` and no longer hosts the
   appearance provider.
 - Sable Start writes the Settings authority and prevents native Launcher3
