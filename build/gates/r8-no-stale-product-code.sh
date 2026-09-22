@@ -173,7 +173,7 @@ done
 for source in \
     "$ROOT/apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt" \
     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt" \
-    "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt" \
+    "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt" \
     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt" \
     "$ROOT/apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt" \
     "$ROOT/apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt"
