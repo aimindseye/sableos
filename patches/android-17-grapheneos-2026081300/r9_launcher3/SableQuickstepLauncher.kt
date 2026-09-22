@@ -259,14 +259,14 @@ class SableQuickstepLauncher : QuickstepLauncher() {
                         initialStartTileKeys = startStateRepository.loadStartTileKeys(),
                         onStartTileKeysChanged = startStateRepository::saveStartTileKeys,
                         onAppearanceChanged = { appearance ->
-                            if (writeGlobalSableAppearance(this, appearance)) {
+                            if (writeGlobalSableAppearance(this@SableQuickstepLauncher, appearance)) {
                                 appearanceState.value = appearance
                                 applyCurrentSystemBars()
                             }
                         },
                         onResetAppearance = {
                             val reset = SableAppearance()
-                            if (writeGlobalSableAppearance(this, reset)) {
+                            if (writeGlobalSableAppearance(this@SableQuickstepLauncher, reset)) {
                                 appearanceState.value = reset
                                 applyCurrentSystemBars()
                             }
