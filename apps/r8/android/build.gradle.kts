@@ -20,6 +20,7 @@ subprojects {
 
     extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
         buildUponDefaultConfig = true
+        config.setFrom(rootProject.file("config/detekt.yml"))
         ignoreFailures = true
         parallel = true
     }
