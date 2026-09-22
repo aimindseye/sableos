@@ -215,16 +215,17 @@ internal fun MediaApp(
                         }
                     }
 
-                result.onSuccess { (updatedItems, updatedPlaylists) ->
-                    localItems = updatedItems
-                    playlists = updatedPlaylists
-                    libraryPivot = LibraryPivot.Songs
-                    message =
-                        "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
-                }
+                result
+                    .onSuccess { (updatedItems, updatedPlaylists) ->
+                        localItems = updatedItems
+                        playlists = updatedPlaylists
+                        libraryPivot = LibraryPivot.Songs
+                        message =
+                            "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
+                    }
                     .onFailure {
-                    message = "Audio import failed. Existing collection was not changed."
-                }
+                        message = "Audio import failed. Existing collection was not changed."
+                    }
             }
         }
 
@@ -278,20 +279,21 @@ internal fun MediaApp(
                         }
                     }
 
-                result.onSuccess { (updatedItems, updatedPlaylists, importedCount) ->
-                    if (importedCount == 0) {
-                        message = "No audio files found in that folder."
-                    } else {
-                        localItems = updatedItems
-                        playlists = updatedPlaylists
-                        libraryPivot = LibraryPivot.Songs
-                        message =
-                            "$importedCount audio file${if (importedCount == 1) "" else "s"} imported from folder."
+                result
+                    .onSuccess { (updatedItems, updatedPlaylists, importedCount) ->
+                        if (importedCount == 0) {
+                            message = "No audio files found in that folder."
+                        } else {
+                            localItems = updatedItems
+                            playlists = updatedPlaylists
+                            libraryPivot = LibraryPivot.Songs
+                            message =
+                                "$importedCount audio file${if (importedCount == 1) "" else "s"} imported from folder."
+                        }
                     }
-                }
                     .onFailure {
-                    message = "Folder import failed. Existing collection was not changed."
-                }
+                        message = "Folder import failed. Existing collection was not changed."
+                    }
             }
         }
 
@@ -417,18 +419,19 @@ internal fun MediaApp(
                                             }
                                         }
 
-                                    result.onSuccess { updated ->
-                                        podcastSubscriptions = updated
-                                        podcastFeedUrl = ""
-                                        podcastMessage =
-                                            "Podcast subscribed. Refresh remains manual."
-                                    }
+                                    result
+                                        .onSuccess { updated ->
+                                            podcastSubscriptions = updated
+                                            podcastFeedUrl = ""
+                                            podcastMessage =
+                                                "Podcast subscribed. Refresh remains manual."
+                                        }
                                         .onFailure { error ->
-                                        podcastMessage =
-                                            error.message
-                                                ?.takeIf { it.isNotBlank() }
-                                                ?: "Podcast feed could not be added."
-                                    }
+                                            podcastMessage =
+                                                error.message
+                                                    ?.takeIf { it.isNotBlank() }
+                                                    ?: "Podcast feed could not be added."
+                                        }
                                     podcastBusy = false
                                 }
                             }
@@ -450,23 +453,24 @@ internal fun MediaApp(
                                         }
                                     }
 
-                                result.onSuccess { refresh ->
-                                    podcastSubscriptions = refresh.subscriptions
-                                    podcastMessage =
-                                        if (refresh.failedFeeds == 0) {
-                                            "Podcasts refreshed."
-                                        } else {
-                                            "Podcasts refreshed with " +
-                                                "${refresh.failedFeeds} feed failure(s); " +
-                                                "cached episodes were kept."
-                                        }
-                                }
+                                result
+                                    .onSuccess { refresh ->
+                                        podcastSubscriptions = refresh.subscriptions
+                                        podcastMessage =
+                                            if (refresh.failedFeeds == 0) {
+                                                "Podcasts refreshed."
+                                            } else {
+                                                "Podcasts refreshed with " +
+                                                    "${refresh.failedFeeds} feed failure(s); " +
+                                                    "cached episodes were kept."
+                                            }
+                                    }
                                     .onFailure { error ->
-                                    podcastMessage =
-                                        error.message
-                                            ?.takeIf { it.isNotBlank() }
-                                            ?: "Podcast refresh failed; cached episodes were kept."
-                                }
+                                        podcastMessage =
+                                            error.message
+                                                ?.takeIf { it.isNotBlank() }
+                                                ?: "Podcast refresh failed; cached episodes were kept."
+                                    }
                                 podcastBusy = false
                             }
                         }
