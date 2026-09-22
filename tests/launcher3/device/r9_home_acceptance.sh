@@ -21,6 +21,18 @@ adb_cmd() {
     fi
 }
 
+package_path() {
+    local raw
+    raw="$(adb_cmd shell pm path "$1" 2>/dev/null || true)"
+    awk '
+        /^package:/ {
+            sub(/^package:/, "")
+            print
+            exit
+        }
+    ' <<<"$raw"
+}
+
 EXPECTED_PACKAGE="com.android.launcher3"
 EXPECTED_ACTIVITY="com.android.launcher3.sable.SableQuickstepLauncher"
 EXPECTED_COMPONENT="$EXPECTED_PACKAGE/$EXPECTED_ACTIVITY"
@@ -81,14 +93,11 @@ printf '%s\n' "$role_holders" > "$EVIDENCE_DIR/home-role-holders.txt"
 grep -Fxq "$EXPECTED_PACKAGE" <<<"$role_holders" || fail HOME_ROLE_HOLDER
 rec HOME_ROLE_HOLDER "$EXPECTED_PACKAGE"
 
-if adb_cmd shell pm path "$RETIRED_PACKAGE" 2>/dev/null     | tr -d '\r' | grep -q '^package:'; then
-    fail RETIRED_SABLESTART_PACKAGE_ABSENT
-fi
+retired_path="$(package_path "$RETIRED_PACKAGE")"
+[[ -z "$retired_path" ]] || fail RETIRED_SABLESTART_PACKAGE_ABSENT
 rec RETIRED_SABLESTART_PACKAGE_ABSENT PASS
 
-launcher_path="$(
-    adb_cmd shell pm path "$EXPECTED_PACKAGE" 2>/dev/null         | tr -d '\r' | sed -n 's/^package://p' | head -n1
-)"
+launcher_path="$(package_path "$EXPECTED_PACKAGE")"
 [[ -n "$launcher_path" ]] || fail LAUNCHER3_PACKAGE_PRESENT
 printf '%s\n' "$launcher_path" > "$EVIDENCE_DIR/launcher-package-path.txt"
 rec LAUNCHER3_PACKAGE_PRESENT PASS
