@@ -68,6 +68,8 @@ fi
 
 grep -Fq 'AndroidManifest.xml'     "$ROOT/build/panther/sync-sablestart.sh"
 grep -Fq 'retired=('     "$ROOT/build/panther/sync-sablestart.sh"
+grep -Fq 'src/com/sable/start/platform/SableAppearanceProvider.kt'     "$ROOT/build/panther/sync-sablestart.sh"
+grep -Fq 'R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED'     "$ROOT/build/panther/sync-sablestart.sh"
 
 echo "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT"
 echo "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT"
