@@ -28,6 +28,7 @@ Classification values:
 | Settings home header | SABLE_OWNED | SableOS presentation with real Android Settings fragments underneath. |
 | Settings Appearance | SABLE_OWNED | Backed by `content://org.sableos.appearance/appearance`; Settings owns persistence and boot restoration. |
 | Settings Applications | SABLE_OWNED | App name plus effective sensitive-permission summary; package details remain in deeper evidence surfaces. |
+| Settings Network Manager | SABLE_OWNED | Exposes GrapheneOS' per-app Network permission through one all-network access switch per mutable app. It does not claim separate Mobile/WLAN enforcement. |
 | Settings App Security & Privacy | SABLE_OWNED | Read-only evidence assembled from Android PackageManager/AppOps/local APK metadata. |
 | About SableOS | SABLE_OWNED | Sable title/presentation, real device/build properties. |
 | SetupWizard welcome/finish | SABLE_OWNED | SableOS name/icon/presentation. Backup compatibility copy must not falsely claim GrapheneOS-only ownership. |
