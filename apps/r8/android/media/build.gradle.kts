@@ -41,7 +41,6 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
-
 extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
     config.setFrom(rootProject.file("config/detekt.yml"))
     ignoreFailures = false
