@@ -133,6 +133,12 @@ for rel in (
         "WebView",
     )
 
+require(
+    "apps/r8/android/media/build.gradle.kts",
+    "versionCode = 2",
+    'versionName = "0.2.0"',
+)
+
 forbid(
     "apps/r8/android/media/build.gradle.kts",
     "coil",
