@@ -165,6 +165,7 @@ R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS
 R9_PODCAST_NO_BACKGROUND_POLLING=PASS
 R9_PODCAST_NO_ANALYTICS_SDK=PASS
 R9_PODCAST_STORAGE_PERMISSION_EXPANSION=PASS_ABSENT
+R9_MEDIA_FLOW_CANONICAL_SDK_QUALIFIER=PASS
 R9_MEDIA_FLOW_CONTRACT=PASS
 ```
 
@@ -174,10 +175,37 @@ pipeline contract.
 
 ## Module qualification
 
+The first manual focused-build attempt proved the static Media Flow and pipeline
+contracts, but Gradle stopped before Kotlin/Java compilation because no Android
+SDK location was exported. That invocation then printed a false PASS marker
+because its final echo was unconditional. Neither outcome is valid build
+evidence.
+
+Focused qualification is therefore owned by the checked-in fail-closed driver:
+
+```bash
+EXPECTED_SOURCE_COMMIT="$(git rev-parse HEAD)" \
+  bash build/panther/qualify-r9-media-flow.sh
+```
+
+The driver:
+
+- uses `set -euo pipefail`;
+- sources `build/config/r8-host-tools.env`;
+- verifies the canonical host-tool installation;
+- exports `ANDROID_HOME` and `ANDROID_SDK_ROOT` from `SABLE_ANDROID_SDK`;
+- keeps Gradle offline;
+- builds only the Media module plus its lint/detekt/ktlint gates;
+- emits PASS only after the APK exists.
+
 Before a fresh Panther image, this branch must pass at minimum:
 
 ```text
-:media:assembleDebug
+R9_MEDIA_FLOW_ANDROID_SDK=PASS
+R9_MEDIA_FLOW_CONTRACT=PASS
+BUILD SUCCESSFUL
+R9_MEDIA_FLOW_APK=PASS
+R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS
 R9_MEDIA_FLOW_STATIC_CONTRACT=PASS
 R9_LAUNCHER3_HOME_PREFLIGHT=PASS
 R8_UI_MODULE_BUILD=PASS
