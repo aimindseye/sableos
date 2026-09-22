@@ -128,7 +128,7 @@ echo "R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY=PASS"
 [[ ! -e "$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt" ]] \
     || fail R9_RETIRED_LAUNCHER_APPEARANCE_PROVIDER
 
-for source in     "$ROOT/apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt"     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt"     "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt"     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt"
+for source in     "$ROOT/apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt"     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt"     "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt"     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt"
 do
     grep -Fq 'SableGlobalTheme(window = window)' "$source"         || fail R8_GLOBAL_APPEARANCE_CONSUMER
 done
