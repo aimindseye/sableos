@@ -11,6 +11,7 @@ for f in \
   "$ROOT/build/deploy/flash.sh" \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
+  "$ROOT/build/check-repo-layout.sh" \
   "$ROOT/build/devices/panther.sh" \
   "$ROOT/build/devices/titan2.sh" \
   "$ROOT/build/devices/titan2-elite.sh" \
@@ -100,6 +101,8 @@ grep -Fq 'FULL_TARGET_FILES_BUILD_AUTHORIZED=NO' "$QUAL"
 grep -Fq 'SABLE_QUALIFICATION_ONLY=YES' "$QUAL"
 grep -Fq 'r9-sms-mms-blocking-contract.py' "$QUAL"
 grep -Fq 'r9-first-party-app-icon-contract.py' "$QUAL"
+grep -Fq 'r9-system-cohesion-contract.py' "$QUAL"
+grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
 grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
 grep -Fq 'R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS' "$FINAL_BUILD"
 grep -Fq 'FULL_TARGET_FILES_BUILD_PERFORMED=NO' "$FINAL_BUILD"
@@ -108,6 +111,7 @@ grep -Fq 'R8_RELEASE_CANDIDATE=NOT_RUN' "$RC_DRIVER"
 echo "SABLE_PIPELINE_MODULE_QUALIFICATION_POLICY=PASS"
 echo "SABLE_PIPELINE_SMS_MMS_BLOCKING_GATE=PASS"
 echo "SABLE_PIPELINE_FIRST_PARTY_ICON_GATE=PASS"
+echo "SABLE_PIPELINE_SYSTEM_COHESION_GATE=PASS"
 
 grep -Fq 'R9:identity|r9:identity' "$ROOT/build/devices/panther.sh"
 grep -Fq 'DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
