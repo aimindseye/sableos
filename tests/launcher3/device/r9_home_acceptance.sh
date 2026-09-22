@@ -174,6 +174,7 @@ else
 fi
 
 FINAL=PASS
+
 for key in \
     R9_DEVICE_REACHABLE \
     RETIRED_SABLESTART_PACKAGE_ABSENT \
@@ -186,38 +187,35 @@ for key in \
     SABLE_PEEK \
     ALL_APPS_PERMISSION_SUMMARIES
 do
-    grep -q "^$key=PASS$" "$REPORT" || FINAL=FAIL
+    grep -Fxq "$key=PASS" "$REPORT" || FINAL=FAIL
 done
 
 if [[ "$R9_HOME_INCLUDE_THEME_REVIEW" == YES ]]; then
-    grep -q '^THEME_PROPAGATION=PASS
-grep -q '^HOME_RESOLVER=com.android.launcher3/com.android.launcher3.sable.SableQuickstepLauncher$' "$REPORT"     || FINAL=FAIL
-grep -q '^HOME_ROLE_HOLDER=com.android.launcher3$' "$REPORT" || FINAL=FAIL
-grep -q '^COLD_HOME_LAUNCH_CRASHES=0$' "$REPORT" || FINAL=FAIL
-
-rec R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE "$FINAL"
-
-(
-    cd "$EVIDENCE_DIR"
-    find . -type f ! -name SHA256SUMS.txt -print0         | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
-)
-
-echo "EVIDENCE_DIR=$EVIDENCE_DIR"
-echo "RESULT=$FINAL"
-[[ "$FINAL" == PASS ]]
- "$REPORT" || FINAL=FAIL
+    grep -Fxq 'THEME_PROPAGATION=PASS' "$REPORT" || FINAL=FAIL
+else
+    grep -Fxq         'THEME_PROPAGATION=DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_GATE'         "$REPORT" || FINAL=FAIL
 fi
-grep -q '^HOME_RESOLVER=com.android.launcher3/com.android.launcher3.sable.SableQuickstepLauncher$' "$REPORT"     || FINAL=FAIL
-grep -q '^HOME_ROLE_HOLDER=com.android.launcher3$' "$REPORT" || FINAL=FAIL
-grep -q '^COLD_HOME_LAUNCH_CRASHES=0$' "$REPORT" || FINAL=FAIL
+
+grep -Fxq     'HOME_RESOLVER=com.android.launcher3/com.android.launcher3.sable.SableQuickstepLauncher'     "$REPORT" || FINAL=FAIL
+
+grep -Fxq     'HOME_ROLE_HOLDER=com.android.launcher3'     "$REPORT" || FINAL=FAIL
+
+grep -Fxq     'COLD_HOME_LAUNCH_CRASHES=0'     "$REPORT" || FINAL=FAIL
 
 rec R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE "$FINAL"
 
 (
     cd "$EVIDENCE_DIR"
-    find . -type f ! -name SHA256SUMS.txt -print0         | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+    find . -type f ! -name SHA256SUMS.txt -print0 |
+        sort -z |
+        xargs -0 sha256sum > SHA256SUMS.txt
 )
 
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "RESULT=$FINAL"
-[[ "$FINAL" == PASS ]]
+
+if [[ "$FINAL" != PASS ]]; then
+    exit 1
+fi
+
+exit 0
