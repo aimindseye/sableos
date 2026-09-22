@@ -227,7 +227,6 @@ MANIFEST_HEADER = '''<manifest
 '''
 MANIFEST_HEADER_REPLACEMENT = MANIFEST_HEADER + '''
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
@@ -251,13 +250,16 @@ ACTIVITY_NEW = (
 PROVIDER_ANCHOR = '''        <!--
         Main launcher activity. When extending only change the name, and keep all the
 '''
-PROVIDER_BLOCK = '''        <provider
+LEGACY_PROVIDER_BLOCK = '''        <provider
             android:name="org.sableos.start.platform.SableAppearanceProvider"
             android:authorities="org.sableos.start.appearance"
             android:exported="true"
             android:grantUriPermissions="false" />
 
-''' + PROVIDER_ANCHOR
+'''
+LEGACY_MODIFY_NIGHT_PERMISSION = (
+    '    <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />\n'
+)
 
 LABEL_OLD = (
     '<string name="derived_app_name" translatable="false">Launcher</string>'
@@ -343,12 +345,12 @@ def patch_manifest(text: str) -> str:
         MANIFEST_HEADER_REPLACEMENT,
         "Quickstep manifest permissions",
     )
-    text = replace_once(
-        text,
-        PROVIDER_ANCHOR,
-        PROVIDER_BLOCK,
-        "Quickstep Sable appearance provider",
-    )
+
+    # R9 system-cohesion migration: Settings owns global appearance.
+    # Normalize previously-applied Launcher-hosted provider/permission residue.
+    text = text.replace(LEGACY_PROVIDER_BLOCK, "")
+    text = text.replace(LEGACY_MODIFY_NIGHT_PERMISSION, "")
+
     text = replace_once(
         text,
         ACTIVITY_OLD,
@@ -1295,6 +1297,7 @@ def require_workspace_sources(source: pathlib.Path) -> None:
         "src/com/sable/start/SableStartActivity.kt",
         "src/com/sable/start/bridge/SableStartNative.kt",
         "src/com/sable/start/platform/LauncherAppsRepository.kt",
+        "src/com/sable/start/platform/SableAppearanceProvider.kt",
     )
     start_root = source / "packages/apps/SableStart"
     for rel in retired_paths:
@@ -1349,9 +1352,6 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
     for token in (
         ACTIVITY_NEW,
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.MODIFY_DAY_NIGHT_MODE",
-        'android:authorities="org.sableos.start.appearance"',
-        'android:name="org.sableos.start.platform.SableAppearanceProvider"',
         'android:authorities="org.sableos.weather.snapshot"',
         'android:authorities="org.sableos.calendar.snapshot"',
         'android:authorities="org.sableos.hub.snapshot"',
@@ -1361,8 +1361,16 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         if token not in manifest:
             raise FoundationError(f"Quickstep manifest token missing: {token}")
 
-    if ACTIVITY_OLD in manifest:
-        raise FoundationError("upstream QuickstepLauncher remains the HOME component")
+    for forbidden in (
+        ACTIVITY_OLD,
+        "android.permission.MODIFY_DAY_NIGHT_MODE",
+        'android:authorities="org.sableos.start.appearance"',
+        'android:name="org.sableos.start.platform.SableAppearanceProvider"',
+    ):
+        if forbidden in manifest:
+            raise FoundationError(
+                f"legacy Launcher appearance ownership remains: {forbidden}"
+            )
 
     if LABEL_NEW not in strings:
         raise FoundationError("Sable Start product label missing")
@@ -1381,6 +1389,9 @@ def verify_tree(source: pathlib.Path, *, check_head: bool = True) -> None:
         "PackageManagerHelper.startDetailsActivityForInfo(",
         "override fun onStateSetStart(state: LauncherState)",
         "override fun onStateSetEnd(state: LauncherState)",
+        "fun isSableSurfaceActive(): Boolean",
+        "readGlobalSableAppearance(",
+        "writeGlobalSableAppearance(",
         "protected override fun getOnBackAnimationCallback()",
         "SableStartScreen(",
         'const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
@@ -1870,7 +1881,9 @@ suffix
     assert patch_manifest(patched_manifest) == patched_manifest
     assert ACTIVITY_NEW in patched_manifest
     assert ACTIVITY_OLD not in patched_manifest
-    assert "org.sableos.start.appearance" in patched_manifest
+    assert "org.sableos.start.appearance" not in patched_manifest
+    assert "SableAppearanceProvider" not in patched_manifest
+    assert "MODIFY_DAY_NIGHT_MODE" not in patched_manifest
     assert "org.sableos.weather.snapshot" in patched_manifest
     assert "org.sableos.calendar.snapshot" in patched_manifest
     assert "org.sableos.hub.snapshot" in patched_manifest
