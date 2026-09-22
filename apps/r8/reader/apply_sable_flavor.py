@@ -311,7 +311,7 @@ def main() -> None:
     replace_exact_text(
         android_tts_manager,
         "            override fun onError(utteranceId: String?) {",
-        "            @Suppress(\"DEPRECATION\")\n"
+        "            @Suppress(\"OVERRIDE_DEPRECATION\")\n"
         "            override fun onError(utteranceId: String?) {",
         "SABLE_READER_WARNING_TTS_DEPRECATED_OVERRIDE",
     )
