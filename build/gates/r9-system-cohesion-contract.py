@@ -207,6 +207,14 @@ require(
 # WS6: product-shell classification is explicit and does not use unsafe global
 # rebranding of truthful upstream implementation identifiers.
 require(
+    "docs/R9_NETWORK_MANAGER.md",
+    "android.permission.INTERNET",
+    "grantRuntimePermission(package, INTERNET, user)",
+    "revokeRuntimePermission(package, INTERNET, user, reason)",
+    "R9_SABLE_NETWORK_MANAGER_UI=PASS",
+    "Transport-specific Mobile/WLAN acceptance is explicitly **not** part of R9.",
+)
+require(
     "docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md",
     "SABLE_OWNED",
     "SABLE_PRESENTED_ANDROID",
