@@ -4,23 +4,34 @@ config:
 
 complexity:
   CyclomaticComplexMethod:
-    ignoreAnnotated:
-      - Composable
+    excludes:
+      - "**/media/MediaApp.kt"
+      - "**/media/MediaScreen.kt"
+      - "**/media/MediaC2Screens.kt"
+      - "**/media/PodcastScreen.kt"
   LongMethod:
-    ignoreAnnotated:
-      - Composable
+    excludes:
+      - "**/media/MediaApp.kt"
+      - "**/media/MediaScreen.kt"
+      - "**/media/MediaC2Screens.kt"
+      - "**/media/PodcastScreen.kt"
   LongParameterList:
-    ignoreAnnotated:
-      - Composable
+    excludes:
+      - "**/media/MediaScreen.kt"
+      - "**/media/MediaC2Screens.kt"
+      - "**/media/PodcastScreen.kt"
   TooManyFunctions:
+    ignorePrivate: true
     ignoreAnnotatedFunctions:
       - Composable
-    ignorePrivate: true
 
 naming:
   FunctionNaming:
-    ignoreAnnotated:
-      - Composable
+    excludes:
+      - "**/media/MediaApp.kt"
+      - "**/media/MediaScreen.kt"
+      - "**/media/MediaC2Screens.kt"
+      - "**/media/PodcastScreen.kt"
 
 style:
   MagicNumber:
