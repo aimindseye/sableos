@@ -192,8 +192,13 @@ require(
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py",
+    "--allow-framework-untracked",
+    "--allow-framework-modified",
     "--allow-settings-untracked",
     "--allow-settings-modified",
+    "allowed_later_framework_untracked",
+    "allowed_later_framework_modified",
+    "repair_known_setup_strings_alias(",
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
@@ -276,7 +281,11 @@ require(
     "UI5C_SETTINGS_LATER_ARGS=(",
     "verify_ui5c_with_systemui_later",
     "verify_ui5c_with_full_r9_later",
+    "repair_ui5c_known_with_systemui_later",
+    "repair_ui5c_known_with_full_r9_later",
     "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED",
+    "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_SYSTEMUI_LATER_DIRT",
+    "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_R9_LATER_DIRT",
     "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_LATER_DIRT_RECOGNIZED",
     'echo "===== R9 SETTINGS / APPEARANCE COHESION ====="',
     'python3 "$SETTINGS_COHERENCE" --source "$WS" verify',
