@@ -64,6 +64,40 @@ def main() -> None:
             f"expected={EXPECTED_COMMIT} actual={actual}"
         )
 
+    # Sable Mail does not use Thunderbird's dependency-update task during
+    # product assembly. Remove that supportive plugin from the ephemeral
+    # checkout so Gradle 9.6 does not emit its deprecated plugin-id warning.
+    root_build = root / "build.gradle.kts"
+    remove_once(
+        root_build,
+        '    id("thunderbird.dependency.check")\n',
+    )
+
+    build_plugin_build = root / "build-plugin/build.gradle.kts"
+    remove_once(
+        build_plugin_build,
+        "    implementation(plugin(libs.plugins.dependency.check))\n",
+    )
+    replace_once(
+        build_plugin_build,
+        '    implementation(project(":plugin"))\n',
+        '    implementation(dependencies.project(":plugin"))\n',
+    )
+
+    build_plugin_plugin_build = root / "build-plugin/plugin/build.gradle.kts"
+    remove_once(
+        build_plugin_plugin_build,
+        "    implementation(plugin(libs.plugins.dependency.check))\n",
+    )
+
+    write(
+        root / "build-plugin/src/main/kotlin/thunderbird.dependency.check.gradle.kts",
+        """// Sable Mail product assembly intentionally omits Thunderbird's
+// dependency-update reporting plugin. Dependency freshness remains owned by
+// the pinned upstream commit and Sable's explicit upstream-update process.
+""",
+    )
+
     app = root / "app-thunderbird"
     build = app / "build.gradle.kts"
 
@@ -1233,6 +1267,8 @@ class SableMailSnapshotProvider : ContentProvider() {
     print("SABLE_MAIL_DEVELOPMENT_SIGNING=DEBUG_KEY_ONLY")
     print("SABLE_MAIL_TELEMETRY=NOOP_UPLOAD_DISABLED")
     print("SABLE_MAIL_FUNDING=NOOP")
+    print("SABLE_MAIL_DEPENDENCY_UPDATE_TOOLING=REMOVED_BUILD_ONLY")
+    print("SABLE_MAIL_GRADLE_PROJECT_DEPENDENCY_API=DEPENDENCY_HANDLER_PROJECT")
     print("SABLE_MAIL_MIGRATION_UI=NOOP")
     print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=REMOVED_FROM_PRODUCT_APP")
     print("SABLE_MAIL_THUNDERMAIL=REMOVED_FROM_PRODUCT_RUNTIME_GRAPH")
