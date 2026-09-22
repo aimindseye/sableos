@@ -257,7 +257,7 @@ SableStart.apk = absent
 org.sableos.start standalone HOME package = absent
 ```
 
-The existing appearance provider authority remains `org.sableos.start.appearance` for first-party compatibility, even though its implementation executes inside the Launcher3 process.
+Global Sable appearance is owned by Settings at `content://org.sableos.appearance/appearance`. Launcher3-hosted Sable Start consumes that authority; the retired `org.sableos.start.appearance` provider must not reappear in production source.
 
 ## Panther physical acceptance
 
@@ -307,7 +307,13 @@ target-files composition was valid, but the run is classified as an
 **incremental product-build/composition pass**, not the fresh full-build proof
 required before physical-device qualification.
 
-R9 release-candidate qualification therefore uses a source-bound output:
+The output policy is split by purpose:
+
+- WS7 module-only/pre-image qualification reuses the canonical warmed
+  `SABLE_R8_OUT_DIR` (currently `out_sable_r8_final`) and refuses a cold
+  output. Source identity is carried by the repository commit, generated
+  ten-APK bundle, and evidence rather than by a fresh OUT name.
+- WS8 full release-candidate qualification uses a source-bound fresh output:
 
 ```text
 out_sable_r9_full_<source-sha12>
