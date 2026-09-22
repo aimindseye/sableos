@@ -153,8 +153,7 @@ internal class MediaLibraryStateRepository(
                 if (!add(value)) {
                     remove(value)
                 }
-            }
-            .toSet()
+            }.toSet()
 
     private fun persistStringSet(
         key: String,
