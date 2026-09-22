@@ -25,7 +25,14 @@ R9_WS4_SYSTEMUI_COHESION=PASS_SOURCE
 R9_WS5_CORE_APP_READER_APPEARANCE=PASS_SOURCE
 R9_WS6_PLATFORM_SURFACE_CLASSIFICATION=PASS_SOURCE
 R9_WS7_STATIC_PIPELINE_PREFLIGHT=PASS_20260922
-R9_WS7_PREIMAGE_QUALIFICATION=RETRY_REQUIRED_AFTER_CONTRACT_FIX_AND_NETWORK_MANAGER_ADD
+R9_WS7_FIRST_PARTY_ANDROID_BUILD=PASS
+R9_WS7_READER_BUILD=PASS
+R9_WS7_MAIL_BUILD=PASS
+R9_WS7_TEN_APK_BUNDLE=PASS
+R9_WS7_ANDROID_PREPARATION=RETRY_REQUIRED_AFTER_CUMULATIVE_STAGE_RECOGNITION_FIX
+R9_READER_NATIVE_STRIP_WARNING_COUNT=0
+R9_READER_KOTLIN_WARNING_COUNT=13_DIAGNOSTIC_LINES_ADDED_NEXT_RUN
+R9_SDK_XML_WARNING=KNOWN_NONBLOCKING_CMDLINE_TOOLS_22_0
 R9_WS8_FRESH_IMAGE_PHYSICAL_ACCEPTANCE=BLOCKED_ON_WS7
 R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
 R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
@@ -50,7 +57,14 @@ The source/classification contracts are
 `docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md` and
 `build/gates/r9-system-cohesion-contract.py`.
 
-The next authoritative action is local Panther module qualification on
+The latest WS7 attempt passed the first-party Android build, Sable Reader,
+Sable Mail and the source-bound ten-APK bundle. It then stopped during Android
+workspace preparation because the cumulative-state detector fed a valid
+UI5C+later-R9 workspace back through obsolete exact-scope UI5A/UI5B/UI4 checks.
+The preparation driver now recognizes exact later SystemUI/Settings dirt over
+the sealed UI5C/UI6 base and keeps unknown dirt fail-closed.
+
+The next authoritative action is to rerun local Panther module qualification on
 `ai-g732`. Only after that passes is one fresh target-files build authorized.
 
 
