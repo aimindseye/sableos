@@ -461,6 +461,20 @@ class MainActivity : ComponentActivity() {
                         )
                         destination = MediaDestination.NowPlaying
                     },
+                    onQueuePodcastEpisode = { episode ->
+                        val queued =
+                            playbackController.addToQueue(
+                                uri = episode.mediaUrl,
+                                title = episode.title,
+                                source = episode.podcastTitle,
+                            )
+                        podcastMessage =
+                            if (queued) {
+                                "Added to Up Next."
+                            } else {
+                                "Player is still connecting. Try again."
+                            }
+                    },
                     onToggleSavedPodcastEpisode = { episode ->
                         savedPodcastEpisodeIds =
                             podcastStateRepository.toggleSaved(
