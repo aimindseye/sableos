@@ -19,10 +19,20 @@ object MediaSnapshotStore {
         player: Player,
     ) {
         val metadata = player.currentMediaItem?.mediaMetadata
-        val title = metadata?.title?.toString()?.trim().orEmpty()
-        val artist = metadata?.artist?.toString()?.trim().orEmpty()
+        val title =
+            metadata
+                ?.title
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val artist =
+            metadata
+                ?.artist
+                ?.toString()
+                ?.trim()
+                .orEmpty()
 
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        preferences(context)
             .edit()
             .putString(KEY_TITLE, title)
             .putString(KEY_ARTIST, artist)
@@ -34,16 +44,17 @@ object MediaSnapshotStore {
     }
 
     fun clear(context: Context) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        preferences(context)
             .edit()
             .clear()
             .putLong(KEY_OBSERVED_AT, System.currentTimeMillis())
             .apply()
+
         context.contentResolver.notifyChange(SNAPSHOT_URI, null)
     }
 
     fun read(context: Context): MediaSnapshot {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prefs = preferences(context)
         return MediaSnapshot(
             title = prefs.getString(KEY_TITLE, "").orEmpty(),
             artist = prefs.getString(KEY_ARTIST, "").orEmpty(),
@@ -51,6 +62,12 @@ object MediaSnapshotStore {
             observedAt = prefs.getLong(KEY_OBSERVED_AT, 0L),
         )
     }
+
+    private fun preferences(context: Context) =
+        context.getSharedPreferences(
+            PREFS,
+            Context.MODE_PRIVATE,
+        )
 }
 
 data class MediaSnapshot(
