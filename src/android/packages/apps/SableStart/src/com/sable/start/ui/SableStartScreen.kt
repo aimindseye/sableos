@@ -143,7 +143,7 @@ fun SableStartScreen(
     onAppearanceChanged: (SableAppearance) -> Unit = {},
     onResetAppearance: () -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
-    onOpenSettings: () -> Unit,
+    onOpenSystemSettings: () -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
 ) {
@@ -268,7 +268,9 @@ fun SableStartScreen(
                             onLive = {
                                 destination = SableStartDestination.Live
                             },
-                            onOpenSettings = onOpenSettings,
+                            onAppearance = {
+                                destination = SableStartDestination.Appearance
+                            },
                         )
 
                     SableStartDestination.Apps ->
@@ -301,7 +303,7 @@ fun SableStartScreen(
                             onLive = {
                                 destination = SableStartDestination.Live
                             },
-                            onOpenSettings = onOpenSettings,
+                            onOpenSettings = onOpenSystemSettings,
                         )
 
                     SableStartDestination.Live ->
@@ -374,7 +376,7 @@ private fun StartScreen(
     onAllApps: () -> Unit,
     onSearch: () -> Unit,
     onLive: () -> Unit,
-    onOpenSettings: () -> Unit,
+    onAppearance: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -406,8 +408,8 @@ private fun StartScreen(
                     )
                 }
                 Spacer(Modifier.weight(1f))
-                SettingsShortcut(
-                    onClick = onOpenSettings,
+                SableControlShortcut(
+                    onClick = onAppearance,
                 )
             }
 
@@ -451,7 +453,7 @@ private fun startGreeting(): String =
     }
 
 @Composable
-private fun SettingsShortcut(
+private fun SableControlShortcut(
     onClick: () -> Unit,
 ) {
     Box(
