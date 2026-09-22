@@ -103,6 +103,26 @@ require(
     reader_patch,
     "Reader effective preferences submission",
 )
+require(
+    "SABLE_READER_WARNING_CLEANUP=PASS",
+    reader_patch,
+    "Reader bounded warning cleanup marker",
+)
+require(
+    "SABLE_READER_HILT_VIEWMODEL_MIGRATION=PASS",
+    reader_patch,
+    "Reader Hilt Compose migration",
+)
+require(
+    'ndkVersion = "30.0.16248370"',
+    reader_patch,
+    "Reader pinned NDK strip toolchain",
+)
+require(
+    "androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel",
+    reader_patch,
+    "Reader modern Hilt Compose package",
+)
 
 if failures:
     print("R9_PHYSICAL_REMEDIATION_CONTRACT=FAIL")
@@ -116,4 +136,5 @@ print("R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS")
 print("R9_READER_GLOBAL_THEME_CONTRACT=PASS")
 print("R9_READER_READIUM_APPEARANCE_BRIDGE=PASS")
 print("R9_READER_EXPLICIT_SEPIA_EINK_OVERRIDES=PASS")
+print("R9_READER_WARNING_CLEANUP_CONTRACT=PASS")
 print("R9_PHYSICAL_REMEDIATION_CONTRACT=PASS")
