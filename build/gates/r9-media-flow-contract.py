@@ -143,6 +143,18 @@ require(
     'versionName = "0.2.0"',
 )
 
+require(
+    "build/panther/qualify-r9-media-flow.sh",
+    "set -euo pipefail",
+    'source "$ROOT/build/config/r8-host-tools.env"',
+    'export ANDROID_HOME="$SABLE_ANDROID_SDK"',
+    'export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"',
+    "NETWORK_FETCH_AUTHORIZED=NO",
+    "FULL_TARGET_FILES_BUILD_AUTHORIZED=NO",
+    "R9_MEDIA_FLOW_ANDROID_SDK=PASS",
+    "R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS",
+)
+
 forbid(
     "apps/r8/android/media/build.gradle.kts",
     "coil",
@@ -170,4 +182,5 @@ print("R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS")
 print("R9_PODCAST_NO_BACKGROUND_POLLING=PASS")
 print("R9_PODCAST_NO_ANALYTICS_SDK=PASS")
 print("R9_PODCAST_STORAGE_PERMISSION_EXPANSION=PASS_ABSENT")
+print("R9_MEDIA_FLOW_CANONICAL_SDK_QUALIFIER=PASS")
 print("R9_MEDIA_FLOW_CONTRACT=PASS")
