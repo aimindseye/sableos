@@ -1,0 +1,226 @@
+# R9 System Cohesion Closure
+
+Status: **active / physical R9 candidate rejected**
+
+Integration branch:
+
+```text
+r9/system-cohesion-closure-20260921
+```
+
+Baseline branch commit:
+
+```text
+c04f62aa894788091cd3dc15c01603902a3cd455
+```
+
+Failed physical image source:
+
+```text
+d35a1c9f79da1d7a0d114602f8b41fd4f799df35
+```
+
+This tranche converts the current Sable presentation overlays into a coherent
+SableOS product shell while retaining Android/GrapheneOS security and service
+implementation underneath.
+
+## Serial workstreams
+
+### WS0 — Baseline and acceptance contract
+
+Freeze the current failed physical evidence and introduce source/runtime gates
+for the defects exposed on Panther. No feature mutation is accepted without a
+corresponding fail-closed contract.
+
+Exit gate:
+- physical failure evidence referenced;
+- no-native-launcher-escape contract exists;
+- appearance ownership contract exists;
+- final physical acceptance markers documented.
+
+### WS1 — System-owned appearance authority
+
+Replace Launcher3 ownership of global appearance with a privileged Sable system
+authority. Launcher and Settings become editors/clients. Existing first-party
+apps and SystemUI consume the same authority.
+
+Required behavior:
+- follow-system/light/dark;
+- Sable accent preset;
+- persisted state available after reboot;
+- persisted explicit light/dark re-applies Android `UiModeManager`;
+- observers update without app-specific duplicated preference stores.
+
+Exit gate:
+- one authority;
+- no Launcher3-only global preference ownership;
+- Settings and Launcher read/write through the same contract;
+- boot/user-unlock restoration path covered by tests.
+
+### WS2 — Launcher and Quickstep ownership
+
+Keep Launcher3/Quickstep as HOME/Recents infrastructure but prevent its native
+workspace/app drawer from becoming a second user-facing launcher.
+
+Sable owns:
+- Start;
+- All Apps;
+- Search;
+- Sable Peek;
+- launcher appearance navigation.
+
+Quickstep owns:
+- Recents/Overview;
+- task/gesture integration needed by Android.
+
+Fix:
+- vertical touch/scroll interception;
+- native All Apps escape;
+- HOME reset semantics;
+- Start gear -> Sable control/Appearance;
+- Android Settings remains an explicit secondary route.
+
+Exit gate:
+- Start scrolls normally;
+- swipe/navigation cannot expose native Launcher3 drawer/workspace;
+- Recents remains native Quickstep;
+- Sable All Apps/Search/Peek all work;
+- permission subtitles remain.
+
+### WS3 — Sable Settings control center
+
+Compose UI5A, UI5B and UI5C into one coherent Settings product surface rather
+than disconnected deltas.
+
+Top-level Sable responsibilities:
+- Appearance;
+- Privacy & Security;
+- Applications;
+- Connectivity;
+- Device;
+- People & Accounts;
+- System;
+- About SableOS.
+
+Underlying Android/GrapheneOS fragments continue to perform enforcement and
+policy mutation.
+
+Exit gate:
+- Appearance is first-class and backed by WS1;
+- Applications permission summaries work;
+- Application Security & Privacy evidence remains accessible;
+- About uses real device/build properties;
+- no security control is reimplemented unnecessarily.
+
+### WS4 — SystemUI and key system surfaces
+
+Finish Sable coherence for:
+- status/notification shade;
+- Quick Settings;
+- media controls;
+- privacy indicators;
+- lockscreen/keyguard;
+- bounded system presentation reached in normal daily use.
+
+Preserve upstream:
+- notification behavior/ranking;
+- privacy logic;
+- tile state;
+- media routing;
+- authentication;
+- accessibility;
+- gesture/falsing/security state machines.
+
+Exit gate:
+- system night-mode follows WS1;
+- active Sable accent is observed;
+- physical visual states have dedicated acceptance markers.
+
+### WS5 — Core apps and Reader
+
+Audit base-product apps in both light and dark:
+- Phone;
+- Contacts;
+- Files/DocumentsUI;
+- Clock;
+- Photos/Gallery;
+- Vanadium;
+- Camera where supported by its upstream pipeline;
+- all first-party Sable apps.
+
+Reader additionally bridges global Sable light/dark to default Readium page
+theme while retaining explicit reading-only overrides such as Sepia/E-ink.
+
+Exit gate:
+- light -> dark -> light state works;
+- no Sable app has conflicting chrome/content colors;
+- Reader chrome and default reading canvas agree;
+- no unsafe binary patching of security-sensitive apps.
+
+### WS6 — Residual platform and branding audit
+
+Traverse remaining visible platform flows and classify every surface:
+
+```text
+SABLE_OWNED
+SABLE_PRESENTED_ANDROID
+INTENTIONALLY_UPSTREAM
+```
+
+Scope includes SetupWizard, About, PermissionController, install/package flows,
+chooser/share, accounts/accessibility entry surfaces and other base-system UI
+encountered during daily-driver traversal.
+
+User-facing ownership should be SableOS where truthful. Internal GrapheneOS
+package names, APIs, services and provider identifiers are not cosmetically
+renamed.
+
+Exit gate:
+- no accidental GrapheneOS/Android product-shell leakage in intended Sable
+  surfaces;
+- intentional upstream identifiers are documented rather than hidden.
+
+### WS7 — Integrated pre-image qualification
+
+No full image yet.
+
+Run:
+- self-tests;
+- exact-source applicator verification;
+- Launcher3 module build;
+- Settings module build;
+- SystemUI/framework module qualification;
+- Reader and Sable app builds;
+- product-composition/stale-code gates;
+- new system-cohesion source contracts.
+
+Exit gate:
+all pre-image gates green on one immutable source commit.
+
+### WS8 — Fresh Panther candidate and physical acceptance
+
+Build exactly one new candidate after WS0-WS7.
+
+Then:
+- target-files identity/freshness;
+- inactive-slot preserved-data flash;
+- package/runtime identity;
+- HOME/Quickstep;
+- Settings/Appearance;
+- SystemUI;
+- core apps;
+- Reader;
+- light -> dark -> light;
+- branding;
+- daily-driver regression.
+
+R9 closes only when the physical device can no longer fall through into an
+unintended alternate product presentation.
+
+## Execution policy
+
+Workstreams are serial. Later streams may add tests while earlier work is in
+progress, but implementation dependencies do not leapfrog the sequence.
+
+There will be one integration branch and one final integration PR/candidate,
+not one PR per workstream.
