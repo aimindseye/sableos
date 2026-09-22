@@ -235,7 +235,7 @@ python3 "$REPO/apps/r8/mail/verify_sable_mail.py" "$WORK/mail"
 
 (
     cd "$WORK/mail"
-    ./gradlew         --offline         :app-thunderbird:assembleFossRelease         -Pci=true         --stacktrace         --console=plain         --no-daemon
+    ./gradlew         --offline         :app-thunderbird:assembleFossRelease         -Pci=true         --stacktrace         --console=plain         --warning-mode all         --no-daemon
 ) 2>&1 | tee "$EVIDENCE/mail-build.log"
 
 mapfile -t mail_apks < <(
@@ -253,7 +253,15 @@ sha256sum "$SABLE_MAIL_APK"
 MAIL_GRADLE_DEPRECATION_SUMMARY_COUNT="$(
     grep -Fc 'Deprecated Gradle features were used in this build'         "$EVIDENCE/mail-build.log" || true
 )"
+MAIL_GRADLE_DEPRECATION_DETAIL_COUNT="$(
+    grep -Eic 'deprecated|deprecation' "$EVIDENCE/mail-build.log" || true
+)"
 echo "R9_MAIL_GRADLE_DEPRECATION_SUMMARY_COUNT=$MAIL_GRADLE_DEPRECATION_SUMMARY_COUNT"
+echo "R9_MAIL_GRADLE_DEPRECATION_DETAIL_COUNT=$MAIL_GRADLE_DEPRECATION_DETAIL_COUNT"
+if [[ "$MAIL_GRADLE_DEPRECATION_DETAIL_COUNT" -gt 0 ]]; then
+    echo "===== R9 MAIL GRADLE DEPRECATION DETAILS ====="
+    grep -Ei 'deprecated|deprecation' "$EVIDENCE/mail-build.log" | head -n 80 || true
+fi
 echo "R8_SABLE_MAIL_BUILD=PASS"
 
 echo
