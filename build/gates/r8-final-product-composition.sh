@@ -212,6 +212,7 @@ fi
 
 grep -Fq 'src/com/sable/start/ui/SableStartScreen.kt'     "$ROOT/build/panther/sync-sablestart.sh"     || fail R8_SABLESTART_SYNC_CONTRACT
 
+grep -Fq 'R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED'     "$ROOT/build/panther/sync-sablestart.sh"     || fail R9_SABLESTART_SYNC_APPEARANCE_PROVIDER
 if grep -Fq 'SableStartRoot.kt' "$ROOT/build/panther/sync-sablestart.sh"; then
     fail R8_SABLESTART_STALE_ROOT_REFERENCE
 fi
