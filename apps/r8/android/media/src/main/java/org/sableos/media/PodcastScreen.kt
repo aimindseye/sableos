@@ -265,8 +265,11 @@ private fun PodcastStatusDeck(
             SableActionButton(
                 text = if (busy) "Refreshing…" else "Refresh",
                 primary = false,
-                enabled = !busy && subscriptionCount > 0,
-                onClick = onRefresh,
+                onClick = {
+                    if (!busy && subscriptionCount > 0) {
+                        onRefresh()
+                    }
+                },
             )
         }
     }
@@ -510,9 +513,12 @@ private fun PodcastFeedEntry(
             )
             SableActionButton(
                 text = if (enabled) "Subscribe" else "Working…",
-                enabled = enabled && value.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
-                onClick = onAdd,
+                onClick = {
+                    if (enabled && value.isNotBlank()) {
+                        onAdd()
+                    }
+                },
             )
         }
     }
