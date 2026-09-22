@@ -67,7 +67,7 @@ Current R9 Media Flow behavior:
 
 - the user pastes a publisher RSS or Atom feed URL;
 - feed refresh happens only when subscribing or pressing Refresh;
-- only HTTP(S) feed and episode URLs are accepted;
+- only HTTP(S) feed and episode URLs are accepted, including the final URL after redirects;
 - no podcast account is required;
 - no analytics SDK is introduced;
 - no podcast recommendation/discovery directory is queried;
@@ -96,7 +96,9 @@ PlaybackService
 
 Podcast playback does not introduce a second service/player stack. Podcast
 episodes enter the existing Now Playing surface through `ACTION_PLAY_URI`.
-The existing queue remains the common playback queue.
+The podcast `+` action uses the existing MediaController to append an episode
+to the same Up Next queue used by local music. No podcast-specific player or
+queue service is introduced.
 
 ## Persistence
 
