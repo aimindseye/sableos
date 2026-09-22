@@ -11,6 +11,7 @@ for f in \
   "$ROOT/build/deploy/flash.sh" \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
+  "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh" \
   "$ROOT/build/check-repo-layout.sh" \
   "$ROOT/build/devices/panther.sh" \
   "$ROOT/build/devices/titan2.sh" \
@@ -116,6 +117,9 @@ echo "SABLE_PIPELINE_SYSTEM_COHESION_GATE=PASS"
 grep -Fq 'R9:identity|r9:identity' "$ROOT/build/devices/panther.sh"
 grep -Fq 'DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
 grep -Fq 'R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
+grep -Fq 'DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY' "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh"
+grep -Fq 'R9_BRANDING_SURFACE_AUDIT=PASS_CAPTURED' "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh"
 echo "SABLE_PIPELINE_READ_ONLY_IDENTITY_AUDIT=PASS"
+echo "SABLE_PIPELINE_READ_ONLY_BRANDING_AUDIT=PASS"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"
