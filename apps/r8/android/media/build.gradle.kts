@@ -22,7 +22,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            allWarningsAsErrors.set(true)
+        }
+    }
 }
 
 dependencies {
@@ -34,4 +39,13 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.9.2")
     implementation("androidx.media3:media3-session:1.9.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
+}
+
+
+extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+    ignoreFailures = false
+}
+
+extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    ignoreFailures.set(false)
 }
