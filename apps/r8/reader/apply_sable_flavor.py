@@ -274,7 +274,10 @@ def main() -> None:
     )
     add_file_opt_in(
         reader_settings_sheet,
-        "@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)",
+        "@file:OptIn(" 
+        "org.readium.r2.shared.ExperimentalReadiumApi::class, "
+        "androidx.compose.material3.ExperimentalMaterial3Api::class"
+        ")",
         "SABLE_READER_WARNING_READIUM_SETTINGS_OPT_IN",
     )
 
@@ -284,7 +287,10 @@ def main() -> None:
     )
     add_file_opt_in(
         tts_settings_sheet,
-        "@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)",
+        "@file:OptIn("
+        "org.readium.r2.shared.ExperimentalReadiumApi::class, "
+        "androidx.compose.material3.ExperimentalMaterial3Api::class"
+        ")",
         "SABLE_READER_WARNING_READIUM_TTS_OPT_IN",
     )
     replace_exact_text(
