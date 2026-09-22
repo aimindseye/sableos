@@ -169,6 +169,11 @@ echo "R9_FIRST_PARTY_RUST_TESTS=PASS"
 cd "$REPO/apps/r8/android"
 ./gradlew     --offline     :design:testDebugUnitTest     :calculator:assembleDebug     :games:assembleSudokuDebug     :games:assembleMinesweeperDebug     :games:assembleGame2048Debug     :media:assembleDebug     :hub:testDebugUnitTest     :hub:assembleDebug     :weather:assembleDebug     :calendar:assembleDebug     --stacktrace     --console=plain     --no-daemon     2>&1 | tee "$EVIDENCE/first-party-build.log"
 
+FIRST_PARTY_SDK_XML_WARNING_COUNT="$(
+    grep -Fc 'Warning: SDK processing. This version only understands SDK XML versions up to 3'         "$EVIDENCE/first-party-build.log" || true
+)"
+echo "R9_FIRST_PARTY_SDK_XML_WARNING_COUNT=$FIRST_PARTY_SDK_XML_WARNING_COUNT"
+
 echo "R8_FIRST_PARTY_ANDROID_BUILD=PASS"
 echo "R9_SABLE_WEATHER_ANDROID_BUILD=PASS"
 
@@ -199,6 +204,20 @@ mapfile -t reader_apks < <(
 }
 SABLE_READER_APK="${reader_apks[0]}"
 sha256sum "$SABLE_READER_APK"
+
+READER_KOTLIN_WARNING_COUNT="$(
+    grep -Ec '^w: file://' "$EVIDENCE/reader-build.log" || true
+)"
+READER_NATIVE_STRIP_WARNING_COUNT="$(
+    grep -Fc 'Unable to strip the following libraries' "$EVIDENCE/reader-build.log" || true
+)"
+READER_SDK_XML_WARNING_COUNT="$(
+    grep -Fc 'Warning: SDK processing. This version only understands SDK XML versions up to 3'         "$EVIDENCE/reader-build.log" || true
+)"
+
+echo "R9_READER_KOTLIN_WARNING_COUNT=$READER_KOTLIN_WARNING_COUNT"
+echo "R9_READER_NATIVE_STRIP_WARNING_COUNT=$READER_NATIVE_STRIP_WARNING_COUNT"
+echo "R9_READER_SDK_XML_WARNING_COUNT=$READER_SDK_XML_WARNING_COUNT"
 echo "R8_SABLE_READER_BUILD=PASS"
 
 echo
