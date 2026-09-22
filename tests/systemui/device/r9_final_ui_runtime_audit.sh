@@ -138,10 +138,10 @@ echo "R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING"
 
 HUB_DUMP="$(adb_cmd shell pm dump org.sableos.hub 2>/dev/null || true)"
 capsules=(
-    org.sableos.hub.web.WhatsAppCapsuleActivity
-    org.sableos.hub.web.InstagramCapsuleActivity
-    org.sableos.hub.web.MessengerCapsuleActivity
-    org.sableos.hub.web.LinkedInCapsuleActivity
+    .web.WhatsAppCapsuleActivity
+    .web.InstagramCapsuleActivity
+    .web.MessengerCapsuleActivity
+    .web.LinkedInCapsuleActivity
 )
 
 capsule_count=0
