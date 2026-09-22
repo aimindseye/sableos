@@ -25,6 +25,13 @@ NO_BUTTON = Path(
 
 COHESION_DIRTY_PATHS = {PORTRAIT.as_posix(), NO_BUTTON.as_posix()}
 
+# Canonical host blob from the immediately preceding frozen WS7 source
+# (d836cdb9eba13cff864186ea156a347b7b7cc273). This is the only stale host
+# accepted for an in-place cohesion refresh after the activity-context fix.
+PREVIOUS_CANONICAL_HOST_BLOBS = {
+    "a3bf622a048d399cf4a9ffa89e3cbbdb58f1ac97",
+}
+
 PORTRAIT_IMPORT_OLD = (
     "import com.android.launcher3.states.StateAnimationConfig;\n"
 )
@@ -156,6 +163,58 @@ def apply(source: Path) -> None:
     print("R9_LAUNCHER_COHESION_APPLY=PASS")
 
 
+def refresh_canonical_host(source: Path) -> None:
+    foundation = load_foundation()
+    launcher = source / LAUNCHER_REPO
+
+    if foundation.git_head(launcher) != foundation.LAUNCHER3_HEAD:
+        raise SystemExit("R9_LAUNCHER_COHESION_REFRESH_HEAD_MISMATCH")
+
+    expected = set(foundation.FOUNDATION_DIRTY_PATHS) | COHESION_DIRTY_PATHS
+    actual = foundation.launcher_dirty_paths(launcher)
+    if actual != expected:
+        raise SystemExit(
+            "R9_LAUNCHER_COHESION_REFRESH_DIRTY_SCOPE_FAIL="
+            f"expected={sorted(expected)!r} actual={sorted(actual)!r}"
+        )
+
+    portrait_text = (launcher / PORTRAIT).read_text(encoding="utf-8")
+    no_button_text = (launcher / NO_BUTTON).read_text(encoding="utf-8")
+    for needle in (
+        "SableQuickstepLauncher",
+        "isSableSurfaceActive()",
+        "!(this instanceof NoButtonNavbarToOverviewTouchController)",
+    ):
+        if needle not in portrait_text:
+            raise SystemExit(
+                f"R9_LAUNCHER_COHESION_REFRESH_PORTRAIT_GUARD_MISSING={needle}"
+            )
+    for needle in (
+        "SableQuickstepLauncher",
+        "isSableSurfaceActive()",
+        "!mDidTouchStartInNavBar",
+    ):
+        if needle not in no_button_text:
+            raise SystemExit(
+                f"R9_LAUNCHER_COHESION_REFRESH_NAV_GUARD_MISSING={needle}"
+            )
+
+    host = launcher / foundation.HOST_REL
+    actual_host_blob = foundation.worktree_blob(launcher, foundation.HOST_REL)
+    if actual_host_blob not in PREVIOUS_CANONICAL_HOST_BLOBS:
+        raise SystemExit(
+            "R9_LAUNCHER_COHESION_REFRESH_HOST_BLOB_FAIL="
+            f"actual={actual_host_blob}"
+        )
+
+    host.write_bytes(foundation.HOST_SOURCE.read_bytes())
+    verify(source)
+    print(
+        "R9_LAUNCHER_COHESION_CANONICAL_HOST_REFRESH=PASS "
+        f"from={actual_host_blob}"
+    )
+
+
 def verify(source: Path) -> None:
     foundation = load_foundation()
     launcher = source / LAUNCHER_REPO
@@ -235,7 +294,11 @@ def self_test() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        choices=("apply", "verify", "refresh-canonical-host"),
+    )
     parser.add_argument("--source", type=Path)
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
@@ -253,6 +316,8 @@ def main() -> int:
 
     if args.mode == "apply":
         apply(source)
+    elif args.mode == "refresh-canonical-host":
+        refresh_canonical_host(source)
     else:
         verify(source)
     return 0
