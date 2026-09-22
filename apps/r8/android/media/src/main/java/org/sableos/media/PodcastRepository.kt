@@ -77,9 +77,7 @@ internal class PodcastRepository(
         return updated
     }
 
-    fun refreshAll(
-        current: List<PodcastSubscription>,
-    ): PodcastRefreshResult {
+    fun refreshAll(current: List<PodcastSubscription>): PodcastRefreshResult {
         if (current.isEmpty()) {
             return PodcastRefreshResult(
                 subscriptions = emptyList(),
@@ -89,14 +87,16 @@ internal class PodcastRepository(
 
         var failures = 0
         val refreshed =
-            current.map { subscription ->
+            current
+                .map { subscription ->
                 runCatching {
                     fetch(subscription.feedUrl)
                 }.getOrElse {
                     failures += 1
                     subscription
                 }
-            }.sortedBy { it.title.lowercase(Locale.getDefault()) }
+            }
+                .sortedBy { it.title.lowercase(Locale.getDefault()) }
 
         persist(refreshed)
         return PodcastRefreshResult(
@@ -190,9 +190,7 @@ internal class PodcastRepository(
             .apply()
     }
 
-    private fun encodeSubscription(
-        subscription: PodcastSubscription,
-    ): JSONObject =
+    private fun encodeSubscription(subscription: PodcastSubscription): JSONObject =
         JSONObject()
             .put("id", subscription.id)
             .put("feedUrl", subscription.feedUrl)
@@ -289,8 +287,7 @@ internal class PodcastRepository(
         }
 
     companion object {
-        fun isSupportedFeedUrl(value: String): Boolean =
-            PodcastUrlPolicy.isHttpsUrl(value)
+        fun isSupportedFeedUrl(value: String): Boolean = PodcastUrlPolicy.isHttpsUrl(value)
 
         private const val PODCAST_PREFS = "sable_media_podcasts"
         private const val KEY_SUBSCRIPTIONS = "subscriptions"
@@ -336,11 +333,12 @@ internal class PodcastStateRepository(
         episodeId: String,
     ): Set<String> {
         val updated =
-            current.toMutableSet().apply {
-                if (!add(episodeId)) {
-                    remove(episodeId)
-                }
-            }.toSet()
+            current.toMutableSet()
+                .apply {
+                    if (!add(episodeId)) {
+                        remove(episodeId)
+                    }
+                }.toSet()
 
         persistSet(
             key = KEY_SAVED,
