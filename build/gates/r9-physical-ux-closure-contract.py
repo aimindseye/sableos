@@ -744,6 +744,32 @@ require(
     'android:icon="@drawable/ic_sable_mail"',
 )
 
+# Media Flow is a new pre-image boundary on top of the qualified cohesion base.
+require_file("build/gates/r9-media-flow-contract.py")
+require(
+    "build/gates/r9-media-flow-contract.py",
+    "R9_MEDIA_FLOW_PANORAMA_NAVIGATION=PASS",
+    "R9_MEDIA_FLOW_SINGLE_MEDIA3_SESSION=PASS",
+    "R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS",
+    "R9_PODCAST_MANUAL_REFRESH=PASS",
+    "R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS",
+    "R9_PODCAST_NO_BACKGROUND_POLLING=PASS",
+    "R9_PODCAST_NO_ANALYTICS_SDK=PASS",
+    "R9_MEDIA_FLOW_CONTRACT=PASS",
+)
+require(
+    "docs/R9_MEDIA_FLOW_REDESIGN.md",
+    "explicit-network-action only",
+    "There remains exactly one playback substrate",
+    "Offline podcast download management",
+    "R9_MEDIA_FLOW_PODCAST_STREAM_PLAYBACK=PASS",
+)
+require(
+    "build/panther/qualify-r9-physical-ux.sh",
+    "r9-media-flow-contract.py",
+    "R9_MEDIA_FLOW_STATIC_CONTRACT=PASS",
+)
+
 # Media/Reader physical remediation remains part of the same pre-image closure.
 require(
     "build/gates/r9-physical-remediation-contract.py",
@@ -1052,6 +1078,7 @@ print("R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_FIDELITY=RETIRED_SYSTEM_AUTHORITY_PH
 print("R9_VISUAL_REVIEW_CROSS_APP_THEME_FIDELITY=DEFERRED_PHYSICAL_PANTHER")
 print("R9_VISUAL_REVIEW_HOST_BROWSER_SCOPE=PASS_FILTERED_DEFERRED_PANTHER")
 print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
+print("R9_MEDIA_FLOW_PREIMAGE_CONTRACT=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
 print("R9_READER_READIUM_APPEARANCE_CONTRACT=PASS")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
