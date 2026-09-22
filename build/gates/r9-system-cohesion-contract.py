@@ -118,6 +118,7 @@ require(
     "src/com/sable/start/platform/SableAppearanceProvider.kt",
     "R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED",
     "R9_SABLESTART_GLOBAL_APPEARANCE_OWNER=SETTINGS",
+    "SABLESTART_SYNC=REFUSED_SOURCED_SCRIPT",
 )
 forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/"
