@@ -1,0 +1,23 @@
+config:
+  validation: true
+  warningsAsErrors: true
+
+complexity:
+  CyclomaticComplexMethod:
+    ignoreAnnotated:
+      - Composable
+  LongMethod:
+    ignoreAnnotated:
+      - Composable
+  LongParameterList:
+    ignoreAnnotated:
+      - Composable
+  TooManyFunctions:
+    ignoreAnnotatedFunctions:
+      - Composable
+    ignorePrivate: true
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - Composable
