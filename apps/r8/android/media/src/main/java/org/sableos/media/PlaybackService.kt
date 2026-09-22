@@ -46,9 +46,7 @@ class PlaybackService : MediaSessionService() {
                 .build()
     }
 
-    override fun onGetSession(
-        controllerInfo: MediaSession.ControllerInfo,
-    ): MediaSession? = session
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
     override fun onStartCommand(
         intent: Intent?,
