@@ -169,10 +169,19 @@ require(
 )
 require(
     "apps/r8/android/config/detekt.yml",
-    "ignoreAnnotated:",
-    "- Composable",
+    "CyclomaticComplexMethod:",
+    "LongMethod:",
+    "LongParameterList:",
+    "TooManyFunctions:",
+    "FunctionNaming:",
+    '"**/media/MediaApp.kt"',
+    '"**/media/MediaScreen.kt"',
+    '"**/media/MediaC2Screens.kt"',
+    '"**/media/PodcastScreen.kt"',
     "ignoreAnnotatedFunctions:",
+    "- Composable",
     "ignorePrivate: true",
+    "ignorePropertyDeclaration: true",
 )
 require(
     "apps/r8/android/media/.editorconfig",
