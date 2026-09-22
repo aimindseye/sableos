@@ -228,10 +228,14 @@ require(
 # WS7: canonical preparation/qualification must carry the cohesion layers.
 require(
     "build/panther/prepare-r8-final-ui.sh",
-    "apply_r9_settings_cohesion.py",
-    "apply_r9_launcher_cohesion.py",
-    "R9_SETTINGS_COHESION=PASS",
-    "R9_LAUNCHER_COHESION=PASS",
+    'SETTINGS_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py"',
+    'LAUNCHER_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"',
+    'echo "===== R9 SETTINGS / APPEARANCE COHESION ====="',
+    'python3 "$SETTINGS_COHERENCE" --source "$WS" verify',
+    'python3 "$SETTINGS_COHERENCE" --source "$WS" apply',
+    'echo "===== LAUNCHER3 HOME + QUICKSTEP COHESION ====="',
+    'python3 "$LAUNCHER_COHESION" --source "$WS" verify',
+    'python3 "$LAUNCHER_COHESION" --source "$WS" apply',
 )
 require(
     "build/gates/r8-final-product-composition.sh",
@@ -265,6 +269,7 @@ print("R9_PLATFORM_SURFACE_CLASSIFICATION=PASS")
 print("R9_SABLE_OWNED_BRANDING_CONTRACT=PASS")
 print("R9_INTENTIONAL_UPSTREAM_BOUNDARY=PASS")
 print("R9_WS6_SOURCE_AUDIT=PASS")
+print("R9_WS7_PREPARE_STRUCTURE=PASS")
 print("R9_WS7_INTEGRATION_CONTRACT=PASS")
 print("R9_PHYSICAL_ACCEPTANCE=REQUIRED_FRESH_PANTHER")
 print("R9_SYSTEM_COHESION_CONTRACT=PASS")
