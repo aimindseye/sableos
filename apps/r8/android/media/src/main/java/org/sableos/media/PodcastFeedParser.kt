@@ -243,12 +243,10 @@ internal object PodcastFeedParser {
             SimpleDateFormat(
                 pattern,
                 Locale.US,
-            )
-                .apply {
+            ).apply {
                     isLenient = true
                     timeZone = UTC
-                }
-                .parse(value)
+                }.parse(value)
                 ?.time
         }.getOrNull()
 
@@ -380,8 +378,7 @@ internal object PodcastFeedParser {
                     podcastTitle =
                         cleanText(feedTitle)
                             .ifBlank { "Podcast" },
-                )
-                ?.let(episodes::add)
+                )?.let(episodes::add)
 
             currentEpisode = null
             inEpisode = false
