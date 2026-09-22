@@ -17,7 +17,20 @@ set -euo pipefail
 umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# This runner may be materialized into /tmp or an evidence directory, so its
+# own path is not a reliable repository locator. Prefer an explicit repo root;
+# fall back to the canonical SableOS integration checkout.
+ROOT="${R9_REPO:-/srv/data/sable-build/sableos/repo}"
+
+[[ -d "$ROOT/.git" ]] || {
+    echo "R9_REPO=FAIL path=$ROOT" >&2
+    echo "R9_RUNTIME_DRIVER=FAIL" >&2
+    echo "RETURNING_TO_OPERATOR_SHELL=YES" >&2
+    exit 12
+}
+
+echo "R9_REPO=$ROOT"
 
 ADB="${ADB:-/srv/data/sable-host-tools/android/r8/sdk/platform-tools/adb}"
 SERIAL="${SERIAL:-${ANDROID_SERIAL:-}}"
