@@ -95,17 +95,18 @@ internal fun PodcastScreen(
 
     val latest =
         remember(subscriptions) {
-            subscriptions.flatMap { it.episodes }
+            subscriptions
+                .flatMap { it.episodes }
                 .sortedWith(
                     compareByDescending<PodcastEpisode> { it.publishedAt }
                         .thenBy { it.title.lowercase() },
-                )
-                .take(LATEST_EPISODE_LIMIT)
+                ).take(LATEST_EPISODE_LIMIT)
         }
 
     val saved =
         remember(subscriptions, savedEpisodeIds) {
-            subscriptions.flatMap { it.episodes }
+            subscriptions
+                .flatMap { it.episodes }
                 .filter { it.id in savedEpisodeIds }
                 .sortedWith(
                     compareByDescending<PodcastEpisode> { it.publishedAt }
@@ -730,9 +731,7 @@ private fun PodcastEmptyPanel(
     }
 }
 
-private fun podcastEpisodeMeta(
-    episode: PodcastEpisode,
-): String {
+private fun podcastEpisodeMeta(episode: PodcastEpisode): String {
     val pieces = mutableListOf<String>()
 
     if (episode.publishedAt > 0L) {
@@ -751,9 +750,7 @@ private fun podcastEpisodeMeta(
     return pieces.joinToString(" · ").ifBlank { "episode" }
 }
 
-private fun formatPodcastDate(
-    epochMs: Long,
-): String =
+private fun formatPodcastDate(epochMs: Long): String =
     if (epochMs <= 0L) {
         "unknown"
     } else {
