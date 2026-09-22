@@ -397,6 +397,170 @@ def main() -> None:
         "SABLE_READER_WARNING_STACK_COVER_FILE",
     )
 
+    # Sable's touch-first bookshelf must not look capped at one 3x2 page.
+    # Keep upstream paging for the upstream flavor, but render the Sable flavor
+    # as one continuous vertical library with an explicit total count.
+    bookshelf_text = bookshelf_screen.read_text(encoding="utf-8")
+    bookshelf_import_anchor = (
+        "import androidx.compose.foundation.lazy.LazyRow\n"
+        "import androidx.compose.foundation.lazy.items\n"
+    )
+    bookshelf_import_replacement = (
+        bookshelf_import_anchor
+        + "import androidx.compose.foundation.lazy.grid.GridCells\n"
+        + "import androidx.compose.foundation.lazy.grid.LazyVerticalGrid\n"
+        + "import androidx.compose.foundation.lazy.grid.items as gridItems\n"
+    )
+    if bookshelf_import_replacement not in bookshelf_text:
+        if bookshelf_import_anchor not in bookshelf_text:
+            fail("SABLE_READER_LIBRARY_GRID_IMPORT_ANCHOR_CHANGED")
+        bookshelf_text = bookshelf_text.replace(
+            bookshelf_import_anchor,
+            bookshelf_import_replacement,
+            1,
+        )
+
+    build_config_anchor = (
+        "import org.vaachak.reader.core.domain.model.DitheringMode\n"
+    )
+    build_config_replacement = (
+        build_config_anchor
+        + "import org.vaachak.reader.leisure.BuildConfig\n"
+    )
+    if "import org.vaachak.reader.leisure.BuildConfig\n" not in bookshelf_text:
+        if build_config_anchor not in bookshelf_text:
+            fail("SABLE_READER_LIBRARY_BUILD_CONFIG_ANCHOR_CHANGED")
+        bookshelf_text = bookshelf_text.replace(
+            build_config_anchor,
+            build_config_replacement,
+            1,
+        )
+
+    paginated_header = """fun PaginatedGrid(
+    items: List<LibraryItem>,
+    itemsPerPage: Int,
+    columns: Int,
+    state: BookshelfUiState,
+    contentColor: Color,
+    viewModel: BookshelfViewModel,
+    onBookClick: (String) -> Unit,
+    onDeleteBook: (BookEntity) -> Unit,
+    bottomBarTextLeft: String
+) {
+"""
+    sable_grid_dispatch = paginated_header + """    if (BuildConfig.SABLE_PRODUCT) {
+        SableContinuousLibraryGrid(
+            items = items,
+            columns = columns,
+            state = state,
+            contentColor = contentColor,
+            viewModel = viewModel,
+            onBookClick = onBookClick,
+            onDeleteBook = onDeleteBook,
+            bottomBarTextLeft = bottomBarTextLeft,
+        )
+        return
+    }
+
+"""
+    if "SableContinuousLibraryGrid(" not in bookshelf_text:
+        if bookshelf_text.count(paginated_header) != 1:
+            fail("SABLE_READER_LIBRARY_PAGER_HEADER_CHANGED")
+        bookshelf_text = bookshelf_text.replace(
+            paginated_header,
+            sable_grid_dispatch,
+            1,
+        )
+
+        paginated_annotation = """@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun PaginatedGrid(
+"""
+        continuous_grid = """@Composable
+private fun SableContinuousLibraryGrid(
+    items: List<LibraryItem>,
+    columns: Int,
+    state: BookshelfUiState,
+    contentColor: Color,
+    viewModel: BookshelfViewModel,
+    onBookClick: (String) -> Unit,
+    onDeleteBook: (BookEntity) -> Unit,
+    bottomBarTextLeft: String,
+) {
+    if (items.isEmpty()) {
+        Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                "No books found",
+                color = contentColor.copy(alpha = 0.5f),
+            )
+        }
+        return
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            gridItems(items) { item ->
+                when (item) {
+                    is LibraryItem.Book ->
+                        NeoReaderCoverCard(
+                            book = item.entity,
+                            state = state,
+                            onClick = { onBookClick(item.entity.bookHash) },
+                            onDelete = { onDeleteBook(item.entity) },
+                        )
+                    is LibraryItem.Stack ->
+                        StackGridItem(
+                            stack = item,
+                            state = state,
+                            onClick = { viewModel.openStack(item.name) },
+                        )
+                }
+            }
+        }
+
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                bottomBarTextLeft,
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor.copy(alpha = 0.7f),
+            )
+            Text(
+                "items: " + items.size,
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor,
+            )
+        }
+    }
+}
+
+""" + paginated_annotation
+        if bookshelf_text.count(paginated_annotation) != 1:
+            fail("SABLE_READER_LIBRARY_PAGER_ANNOTATION_CHANGED")
+        bookshelf_text = bookshelf_text.replace(
+            paginated_annotation,
+            continuous_grid,
+            1,
+        )
+
+    bookshelf_screen.write_text(bookshelf_text, encoding="utf-8")
+    print("R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID")
+
     catalog_view_model = (
         leisure_sources
         / "org/vaachak/reader/leisure/ui/catalog/CatalogViewModel.kt"
@@ -708,6 +872,149 @@ fun ProductReaderTheme(
         reader_text = reader_text.replace(submit_old, submit_new, 1)
 
     reader_screen.write_text(reader_text, encoding="utf-8")
+
+    # The Sable flavor must not present ordinary Light/Dark as Reader-owned
+    # appearance controls. SableOS owns those modes globally; Reader retains
+    # only reading-specific Sepia (and the separate E-ink mode).
+    reader_settings_text = reader_settings_sheet.read_text(encoding="utf-8")
+    reader_settings_import_anchor = (
+        "import org.vaachak.reader.leisure.ui.reader.ReaderViewModel\n"
+    )
+    reader_settings_import_replacement = (
+        reader_settings_import_anchor
+        + "import org.vaachak.reader.leisure.BuildConfig\n"
+    )
+    if "import org.vaachak.reader.leisure.BuildConfig\n" not in reader_settings_text:
+        if reader_settings_import_anchor not in reader_settings_text:
+            fail("SABLE_READER_SETTINGS_BUILD_CONFIG_ANCHOR_CHANGED")
+        reader_settings_text = reader_settings_text.replace(
+            reader_settings_import_anchor,
+            reader_settings_import_replacement,
+            1,
+        )
+
+    page_color_old = """                    item {
+                        SettingsSectionTitle("Page Color")
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            val currentTheme = prefs.theme ?: Theme.LIGHT
+                            ThemeOption(
+                                name = "Light",
+                                bg = Color.White,
+                                fg = Color.Black,
+                                selected = currentTheme == Theme.LIGHT,
+                                enabled = areSettingsEnabled,
+                                modifier = Modifier.tid(Tid.ReaderSettings.themeLight)
+                            ) {
+                                update(prefs.copy(theme = Theme.LIGHT))
+                            }
+                            ThemeOption(
+                                name = "Dark",
+                                bg = Color(0xFF121212),
+                                fg = Color.White,
+                                selected = currentTheme == Theme.DARK,
+                                enabled = areSettingsEnabled,
+                                modifier = Modifier.tid(Tid.ReaderSettings.themeDark)
+                            ) {
+                                update(prefs.copy(theme = Theme.DARK))
+                            }
+                            ThemeOption(
+                                name = "Sepia",
+                                bg = Color(0xFFF5E6D3),
+                                fg = Color(0xFF5F4B32),
+                                selected = currentTheme == Theme.SEPIA,
+                                enabled = areSettingsEnabled,
+                                modifier = Modifier.tid(Tid.ReaderSettings.themeSepia)
+                            ) {
+                                update(prefs.copy(theme = Theme.SEPIA))
+                            }
+                        }
+                    }
+"""
+    page_color_new = """                    item {
+                        SettingsSectionTitle("Page Color")
+                        val currentTheme = prefs.theme ?: Theme.LIGHT
+                        if (BuildConfig.SABLE_PRODUCT) {
+                            Text(
+                                "Light and Dark follow SableOS. Sepia is an optional reading override.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = contentColor.copy(alpha = 0.72f),
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                ThemeOption(
+                                    name = "Sepia",
+                                    bg = Color(0xFFF5E6D3),
+                                    fg = Color(0xFF5F4B32),
+                                    selected = currentTheme == Theme.SEPIA,
+                                    enabled = areSettingsEnabled,
+                                    modifier = Modifier.tid(Tid.ReaderSettings.themeSepia)
+                                ) {
+                                    update(prefs.copy(theme = Theme.SEPIA))
+                                }
+                                if (currentTheme == Theme.SEPIA) {
+                                    OutlinedButton(
+                                        onClick = {
+                                            update(prefs.copy(theme = Theme.LIGHT))
+                                        },
+                                        enabled = areSettingsEnabled,
+                                    ) {
+                                        Text("Follow SableOS")
+                                    }
+                                } else {
+                                    Text(
+                                        "Following SableOS",
+                                        modifier = Modifier.padding(vertical = 12.dp),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = primaryColor,
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                ThemeOption(
+                                    name = "Light",
+                                    bg = Color.White,
+                                    fg = Color.Black,
+                                    selected = currentTheme == Theme.LIGHT,
+                                    enabled = areSettingsEnabled,
+                                    modifier = Modifier.tid(Tid.ReaderSettings.themeLight)
+                                ) {
+                                    update(prefs.copy(theme = Theme.LIGHT))
+                                }
+                                ThemeOption(
+                                    name = "Dark",
+                                    bg = Color(0xFF121212),
+                                    fg = Color.White,
+                                    selected = currentTheme == Theme.DARK,
+                                    enabled = areSettingsEnabled,
+                                    modifier = Modifier.tid(Tid.ReaderSettings.themeDark)
+                                ) {
+                                    update(prefs.copy(theme = Theme.DARK))
+                                }
+                                ThemeOption(
+                                    name = "Sepia",
+                                    bg = Color(0xFFF5E6D3),
+                                    fg = Color(0xFF5F4B32),
+                                    selected = currentTheme == Theme.SEPIA,
+                                    enabled = areSettingsEnabled,
+                                    modifier = Modifier.tid(Tid.ReaderSettings.themeSepia)
+                                ) {
+                                    update(prefs.copy(theme = Theme.SEPIA))
+                                }
+                            }
+                        }
+                    }
+"""
+    if "Light and Dark follow SableOS." not in reader_settings_text:
+        if reader_settings_text.count(page_color_old) != 1:
+            fail("SABLE_READER_SETTINGS_PAGE_COLOR_ANCHOR_CHANGED")
+        reader_settings_text = reader_settings_text.replace(
+            page_color_old,
+            page_color_new,
+            1,
+        )
+    reader_settings_sheet.write_text(reader_settings_text, encoding="utf-8")
+    print("R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL")
+    print("R9_READER_SETTINGS_OVERRIDES=PASS_SEPIA_ONLY")
 
     # Compose the pinned MIT-licensed text capability into only the Sable product
     # flavor. Translation and the Text Reader launcher/theme remain excluded.
@@ -1508,6 +1815,8 @@ class SableTextReaderUtilTest {
     print("SABLE_READER_CANONICAL_DESIGN=COMPOSED")
     print("R9_READER_READIUM_APPEARANCE_BRIDGE=PASS")
     print("R9_READER_READING_OVERRIDES=SEPIA_EINK_ONLY")
+    print("R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL")
+    print("R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID")
     print("SABLE_READER_TEXT_UTIL=PINNED_TEXTREADER_COMPOSED")
     print("SABLE_READER_TEXT_VIEW=ENABLED")
     print("SABLE_READER_TEXT_SEND=ENABLED")
