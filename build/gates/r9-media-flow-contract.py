@@ -52,6 +52,7 @@ require(
     "PodcastStatusDeck(",
     "PodcastEpisodeRow(",
     "PodcastFeedEntry(",
+    "onQueueEpisode",
     "No podcast account, analytics SDK, recommendation profile, or automatic directory query",
     "Saved does not imply downloaded.",
 )
@@ -82,8 +83,16 @@ require(
     "podcastRepository.refreshAll(",
     "podcastStateRepository.toggleSaved(",
     "podcastStateRepository.markPlayed(",
+    "playbackController.addToQueue(",
     "playUri(",
     "destination = MediaDestination.NowPlaying",
+)
+
+require(
+    f"{MEDIA_KT}/PlaybackController.kt",
+    "fun addToQueue(",
+    "player.addMediaItem(item)",
+    "publishState(refreshQueue = true)",
 )
 
 require(
@@ -141,6 +150,7 @@ if failures:
 
 print("R9_MEDIA_FLOW_PANORAMA_NAVIGATION=PASS")
 print("R9_MEDIA_FLOW_SINGLE_MEDIA3_SESSION=PASS")
+print("R9_MEDIA_FLOW_SHARED_UP_NEXT=PASS")
 print("R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS")
 print("R9_PODCAST_MANUAL_REFRESH=PASS")
 print("R9_PODCAST_FEED_SIZE_BOUND=PASS")
