@@ -40,7 +40,7 @@ def main() -> int:
 
     start_text = start.read_text(encoding="utf-8")
     for token in (
-        "SettingsShortcut(",
+        "SableControlShortcut(",
         "ApprovedStartNavigationRow(",
         "ApprovedLiveRow(",
         "private fun AppsScreen(",
