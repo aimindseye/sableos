@@ -240,6 +240,22 @@ MANIFEST_HEADER_REPLACEMENT = MANIFEST_HEADER + '''
     </queries>
 '''
 
+LEGACY_MANIFEST_HEADER_REPLACEMENT = MANIFEST_HEADER + '''
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <queries>
+        <provider android:authorities="org.sableos.weather.snapshot" />
+        <provider android:authorities="org.sableos.calendar.snapshot" />
+        <provider android:authorities="org.sableos.hub.snapshot" />
+        <provider android:authorities="org.sableos.mail.snapshot" />
+        <provider android:authorities="org.sableos.media.snapshot" />
+    </queries>
+'''
+
 ACTIVITY_OLD = (
     'android:name="com.android.launcher3.uioverrides.QuickstepLauncher"'
 )
@@ -339,12 +355,19 @@ def patch_android_bp(text: str) -> str:
 
 
 def patch_manifest(text: str) -> str:
-    text = replace_once(
-        text,
-        MANIFEST_HEADER,
-        MANIFEST_HEADER_REPLACEMENT,
-        "Quickstep manifest permissions",
-    )
+    if LEGACY_MANIFEST_HEADER_REPLACEMENT in text:
+        text = text.replace(
+            LEGACY_MANIFEST_HEADER_REPLACEMENT,
+            MANIFEST_HEADER_REPLACEMENT,
+            1,
+        )
+    else:
+        text = replace_once(
+            text,
+            MANIFEST_HEADER,
+            MANIFEST_HEADER_REPLACEMENT,
+            "Quickstep manifest permissions",
+        )
 
     # R9 system-cohesion migration: Settings owns global appearance.
     # Normalize previously-applied Launcher-hosted provider/permission residue.
