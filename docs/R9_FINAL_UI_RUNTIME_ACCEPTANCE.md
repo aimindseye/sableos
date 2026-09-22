@@ -71,96 +71,73 @@ the SableOS/GrapheneOS Panther product.
 
 ## Appearance
 
-Sable appearance has two layers:
+Sable appearance has one system authority:
 
-1. Sable-owned applications consume the Sable appearance provider directly.
-2. Sable Start bridges Light/Dark to Android system night mode through
-   `UiModeManager`.
+`content://org.sableos.appearance/appearance`
 
-The Panther acceptance must verify both layers.
+The provider is hosted by the privileged Settings package and stores its state
+in device-protected storage. It owns:
 
-### Mac visual-review fidelity boundary
+- Follow system / Light / Dark;
+- the Sable accent preset;
+- restoration of explicit Light/Dark through Android `UiModeManager` during
+  locked boot, normal boot and Settings package replacement.
 
-The Mac mini Pixel 7 AVD is a design/interaction host, not a SableOS product
-image. The visual-review APK therefore emulates only the cross-application
-Sable appearance provider contract that an unprivileged review APK can
-faithfully exercise:
+Launcher3 is no longer the operating-system appearance authority. Sable Start
+may edit the same provider for fast access, while Settings exposes the
+first-class Appearance page. Sable-owned applications observe the provider
+through `SableGlobalTheme`; SystemUI observes its accent and Android system
+night mode; platform/core applications follow Android DayNight/system mode when
+their upstream implementation supports it.
 
-- it registers the same `org.sableos.start.appearance` provider authority;
-- it persists appearance through the production `StartStateRepository`;
-- installed Sable-owned review apps can observe Light/Dark/accent updates through
-  the same `SableGlobalTheme` content-observer path used by production.
+The Panther acceptance must prove the complete chain:
 
-The Mac review APK does **not** claim to prove the privileged Android
-`UiModeManager.setNightMode()` bridge. Platform-app night-mode propagation is
-Panther physical acceptance only.
-
-The stock Pixel AVD may contain Google Chrome `com.android.chrome`. Chrome is
-filtered from the Sable launcher visual-review inventory so it cannot be
-mistaken for SableOS product composition. The harness does not rename Chrome or
-inject a fake Vanadium entry. Vanadium package/default-browser identity remains
-Panther physical acceptance only.
-
-The stock Pixel AVD may also contain Google Messages
-`com.google.android.apps.messaging`. It is filtered from the visual-review
-launcher inventory alongside the retained GrapheneOS transport package
-`com.android.messaging`, so the Mac Start surface presents only Sable Messages.
-This is review-host filtering only; the clean Panther product must still prove
-Google Messages absent and GrapheneOS Messaging retained as the hidden transport
-substrate.
-
-The scripted Mac fidelity audit is:
-
-```
-bash build/macos/audit-r9-launcher-review-fidelity.sh [follow-system|light|dark]
+```text
+Settings appearance selection
+        -> org.sableos.appearance
+        -> persisted device-protected state
+        -> UiModeManager
+        -> SystemUI / platform apps
+        -> Sable app observers
 ```
 
-A successful audit proves the cross-process appearance provider state and
-explicitly reports browser/system-night claims as deferred to Panther.
+A reboot while explicit Dark or Light is selected must restore the same mode
+without opening Launcher or Settings.
 
-The Mac prepare flow also builds and installs Sable Messages as a second-process
-theme probe. After selecting Light or Dark in the Start review UI, capture the
-cross-app proof with:
+Sable-owned applications that must follow the selected appearance include
+Start, Messages, Mail, Media, Reader, Calculator, Games, Weather and Calendar.
+Reader additionally maps normal Readium page Light/Dark to the Sable system
+mode. Sepia and E-ink remain explicit reading-only overrides.
 
+Platform/core surfaces that must follow Android system night mode include
+Settings, SystemUI, Phone, Contacts, Clock, Files, Photos/Gallery, Vanadium and
+other bundled apps that honor Android DayNight/system appearance. Camera
+remains within its upstream preprocessed/security boundary and is accepted
+according to the appearance support of that upstream package.
+
+Third-party applications installed later are not forcibly recolored. They
+follow Sable Light/Dark only when they honor Android system night mode or a
+compatible platform appearance API.
+
+### Mac boundary
+
+The Mac mini is not required for this closure and may remain asleep. The
+standalone launcher review APK is a design-only host with local appearance
+state; it does not emulate or own the production privileged appearance
+provider. It cannot prove boot restoration, `UiModeManager`, SystemUI,
+Vanadium, Quickstep or platform-app appearance. All final appearance authority
+is physical Panther.
+
+Required physical markers:
+
+```text
+R9_SABLE_APPEARANCE_CONTROL=PASS
+R9_SABLE_APPEARANCE_BOOT_RESTORE=PASS
+R9_SABLE_SYSTEM_NIGHT_PROPAGATION=PASS
+R9_SABLE_SYSTEMUI_APPEARANCE=PASS
+R9_SABLE_CORE_APPS_APPEARANCE=PASS
+R9_SABLE_READER_APPEARANCE=PASS
 ```
-bash build/macos/capture-r9-theme-fidelity-review.sh dark
-# or:
-bash build/macos/capture-r9-theme-fidelity-review.sh light
-```
-
-The capture command refuses to proceed if the appearance provider does not
-report the expected mode, then captures both Sable Start and Sable Messages.
-Human review of those two frames is the Mac proof that Sable-owned applications
-observe the same selected appearance across app processes. It does not promote
-platform night mode or browser identity to Mac-proven status.
-
-Sable-owned applications that must follow the selected Sable appearance:
-
-- Sable Start / Launcher presentation;
-- Sable Messages / Hub;
-- Sable Mail;
-- Sable Media;
-- Sable Reader;
-- Sable Calculator;
-- all three Sable Games;
-- Sable Weather;
-- Sable Calendar.
-
-Platform surfaces that must follow Android system night mode after the bridge:
-
-- Settings / SystemUI;
-- Phone / Dialer;
-- Contacts;
-- Clock;
-- Files;
-- Photos / Gallery;
-- Camera where its upstream UI honors system appearance;
-- Vanadium;
-- other platform applications that honor Android DayNight/system dark mode.
-
-Third-party applications installed later from Play, F-Droid or elsewhere are
-not forcibly re-themed. They follow Sable dark/light only when they honor
-Android system night mode or compatible dynamic-color APIs.
 
 ## Messaging identity
 
