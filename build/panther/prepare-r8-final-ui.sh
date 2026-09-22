@@ -252,6 +252,10 @@ if python3 "$LAUNCHER_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
     python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
     echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING"
     echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED"
+elif python3 "$LAUNCHER_COHERENCE" --source "$WS" refresh-canonical-host >/dev/null 2>&1; then
+    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
+    echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING_REFRESHED"
+    echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED_HOST_REFRESHED"
 else
     if python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify >/dev/null 2>&1; then
         python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
