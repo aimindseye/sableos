@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sable_appearance_title">Appearance</string>
+    <string name="sable_appearance_summary">Theme and Sable accent</string>
+    <string name="sable_appearance_theme_title">Theme</string>
+    <string name="sable_appearance_accent_title">Accent</string>
+    <string name="sable_appearance_system_category">System display</string>
+    <string name="sable_appearance_android_display_title">Android display settings</string>
+    <string name="sable_appearance_android_display_summary">Brightness, display size, wallpaper and other platform display controls</string>
+
+    <string-array name="sable_appearance_mode_entries">
+        <item>Follow system</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="sable_appearance_mode_values">
+        <item>follow-system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+
+    <string-array name="sable_appearance_accent_entries">
+        <item>Sable Blue</item>
+        <item>Green</item>
+        <item>Purple</item>
+        <item>Orange</item>
+        <item>Slate</item>
+    </string-array>
+    <string-array name="sable_appearance_accent_values">
+        <item>blue</item>
+        <item>green</item>
+        <item>purple</item>
+        <item>orange</item>
+        <item>slate</item>
+    </string-array>
+</resources>
