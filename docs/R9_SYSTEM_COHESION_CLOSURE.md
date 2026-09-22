@@ -267,6 +267,13 @@ Markdown inputs. The stale SableStart portability document was also reconciled
 to the Settings-owned `content://org.sableos.appearance/appearance` contract
 with the Launcher-owned appearance provider explicitly retired.
 
+A follow-up WS7 run proved the first scope correction was still too broad:
+although source `src/test` was excluded, the composition gate executes after
+Gradle tests/builds and recursively traversed generated `build/` output, where
+the compiled negative regression assertion still contains the retired authority
+literal. Generated build/cache/output directories are now excluded from this
+source-composition check as well.
+
 
 No full image yet.
 
