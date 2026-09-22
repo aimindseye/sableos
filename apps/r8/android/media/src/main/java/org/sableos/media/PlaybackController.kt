@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -125,6 +127,28 @@ internal class PlaybackController(
         if (index !in 0 until player.mediaItemCount) return
         player.seekToDefaultPosition(index)
         player.play()
+    }
+
+    fun addToQueue(
+        uri: String,
+        title: String,
+        source: String,
+    ): Boolean {
+        val player = controller ?: return false
+        val item =
+            MediaItem.Builder()
+                .setUri(uri)
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setTitle(title)
+                        .setArtist(source)
+                        .build(),
+                )
+                .build()
+
+        player.addMediaItem(item)
+        publishState(refreshQueue = true)
+        return true
     }
 
     fun moveQueueItem(
