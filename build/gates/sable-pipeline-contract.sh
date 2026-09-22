@@ -10,6 +10,9 @@ for f in \
   "$ROOT/build/deploy/common.sh" \
   "$ROOT/build/deploy/flash.sh" \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
+  "$ROOT/build/panther/prepare-r8-final-ui.sh" \
+  "$ROOT/build/panther/run-r8-release-candidate.sh" \
+  "$ROOT/build/host/verify-r8-host-tools.sh" \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
   "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh" \
   "$ROOT/build/check-repo-layout.sh" \
