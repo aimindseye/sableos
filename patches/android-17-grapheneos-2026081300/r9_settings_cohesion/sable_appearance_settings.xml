@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <ListPreference
+        android:key="sable_appearance_mode"
+        android:title="@string/sable_appearance_theme_title"
+        android:entries="@array/sable_appearance_mode_entries"
+        android:entryValues="@array/sable_appearance_mode_values" />
+
+    <ListPreference
+        android:key="sable_appearance_accent"
+        android:title="@string/sable_appearance_accent_title"
+        android:entries="@array/sable_appearance_accent_entries"
+        android:entryValues="@array/sable_appearance_accent_values" />
+
+    <PreferenceCategory
+        android:title="@string/sable_appearance_system_category">
+
+        <Preference
+            android:title="@string/sable_appearance_android_display_title"
+            android:summary="@string/sable_appearance_android_display_summary"
+            android:fragment="com.android.settings.DisplaySettings" />
+
+    </PreferenceCategory>
+</PreferenceScreen>
