@@ -56,7 +56,9 @@ echo "VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER"
 bash "$ROOT/build/macos/audit-r9-launcher-review-fidelity.sh" "$MODE"
 
 "$ADB" -s "$SERIAL" shell am force-stop org.sableos.start.visualreview
-"$ADB" -s "$SERIAL" shell am start -W     -n org.sableos.start.visualreview/.R9LauncherVisualReviewActivity >/dev/null
+"$ADB" -s "$SERIAL" shell am start -W \
+    -n org.sableos.start.visualreview/.R9LauncherVisualReviewActivity \
+    --es appearanceMode "$MODE" >/dev/null
 sleep 1
 
 START_PNG="$EVIDENCE_DIR/04-theme-$MODE-start.png"
@@ -75,9 +77,8 @@ HUB_PNG="$EVIDENCE_DIR/05-theme-$MODE-sable-messages.png"
     echo "serial=$SERIAL"
     echo "start_png=$START_PNG"
     echo "hub_png=$HUB_PNG"
-    echo "appearance_provider:"
-    "$ADB" -s "$SERIAL" shell content query         --uri content://org.sableos.start.appearance/appearance 2>/dev/null |
-        tr -d '\r'
+    echo "review_mode=$MODE"
+    echo "appearance_provider=RETIRED_SYSTEM_AUTHORITY_PHYSICAL_ONLY"
 } > "$EVIDENCE_DIR/theme-$MODE-fidelity.state.txt"
 
 if command -v sha256sum >/dev/null 2>&1; then
@@ -88,7 +89,8 @@ else
         tee "$EVIDENCE_DIR/theme-$MODE-fidelity.sha256"
 fi
 
-echo "R9_THEME_FIDELITY_PROVIDER_MODE=PASS value=$MODE"
+echo "R9_THEME_FIDELITY_REVIEW_MODE=PASS_LOCAL_DESIGN_HOST value=$MODE"
+echo "R9_THEME_FIDELITY_PROVIDER_MODE=RETIRED_SYSTEM_AUTHORITY_PHYSICAL_ONLY"
 echo "R9_THEME_FIDELITY_START_CAPTURE=PASS"
 echo "R9_THEME_FIDELITY_SABLE_MESSAGES_CAPTURE=PASS"
 echo "R9_THEME_FIDELITY_CROSS_APP_VISUAL_REVIEW=PENDING_USER_REVIEW"
