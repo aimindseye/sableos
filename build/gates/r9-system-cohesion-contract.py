@@ -110,6 +110,12 @@ require(
     "createDeviceProtectedStorageContext()",
     "LOCKED_BOOT_COMPLETED",
     "R9_SYSTEM_APPEARANCE_BOOT_RESTORE_SOURCE=PASS",
+    "SableNetworkManagerSettings.java",
+    "sable_network_manager_settings.xml",
+    "android.permission.GRANT_RUNTIME_PERMISSIONS",
+    "android.permission.REVOKE_RUNTIME_PERMISSIONS",
+    "R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION",
+    "R9_SETTINGS_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT",
 )
 
 # WS2: Sable owns all HOME-facing presentation; Quickstep only escapes for
@@ -158,6 +164,15 @@ require(
 require(
     "patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py",
     "SABLE_UI5B_MUTATING_CONTROLS=NONE",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableNetworkManagerSettings.java",
+    "Manifest.permission.INTERNET",
+    "PermissionManager",
+    "grantRuntimePermission(",
+    "revokeRuntimePermission(",
+    "FLAG_PERMISSION_SYSTEM_FIXED",
+    "FLAG_PERMISSION_POLICY_FIXED",
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py",
@@ -263,6 +278,8 @@ print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
 print("R9_LAUNCHER_GLOBAL_APPEARANCE_OWNERSHIP=PASS_RETIRED")
 print("R9_SABLE_NATIVE_LAUNCHER_ESCAPE=PASS_SOURCE_BLOCKED")
 print("R9_SABLE_SETTINGS_TOP_LEVEL=PASS_SOURCE")
+print("R9_SABLE_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION_SOURCE")
+print("R9_SABLE_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT")
 print("R9_SYSTEMUI_APPEARANCE=PASS_SOURCE")
 print("R9_READER_APPEARANCE=PASS_SOURCE")
 print("R9_PLATFORM_SURFACE_CLASSIFICATION=PASS")
