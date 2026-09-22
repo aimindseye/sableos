@@ -211,6 +211,14 @@ require(
     "android:string/android_system_label",
     "android:string/adb_active_notification_title",
 )
+require(
+    "tests/systemui/device/r9_branding_surface_audit.sh",
+    "DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY",
+    "SABLE_OWNED",
+    "SABLE_PRESENTED_ANDROID",
+    "R9_VISIBLE_GRAPHENEOS_PRODUCT_COPY",
+    "R9_BRANDING_SURFACE_AUDIT=PASS_CAPTURED",
+)
 
 # WS7: canonical preparation/qualification must carry the cohesion layers.
 require(
