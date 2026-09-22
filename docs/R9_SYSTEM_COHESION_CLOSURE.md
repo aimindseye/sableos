@@ -34,7 +34,7 @@ WS3=PASS_SOURCE_SETTINGS_APPEARANCE_AND_NETWORK_MANAGER
 WS4=PASS_SOURCE_SYSTEMUI_SHARED_AUTHORITY
 WS5=PASS_SOURCE_READER_READIUM_BRIDGE
 WS6=PASS_SOURCE_PLATFORM_CLASSIFICATION
-WS7=READY_AI_G732_MODULE_QUALIFICATION
+WS7=IN_PROGRESS_AI_G732_MODULE_QUALIFICATION
 WS8=BLOCKED_UNTIL_WS7_PASS
 ```
 
@@ -221,6 +221,25 @@ Exit gate:
 - intentional upstream identifiers are documented rather than hidden.
 
 ### WS7 — Integrated pre-image qualification
+
+Current 2026-09-22 checkpoint:
+
+- first-party Android build: PASS;
+- Sable Reader build: PASS, tracked Kotlin/native-strip warnings both 0;
+- Sable Mail build and policy verification: PASS;
+- source-bound ten-APK bundle: PASS;
+- UI5C/UI6 cumulative-state recognition: PASS;
+- SystemUI coherence upgraded from the exact legacy Launcher appearance
+  authority to the Settings-owned authority: PASS;
+- Settings appearance + Network Manager cohesion: PASS;
+- shared Sable Design synchronization: PASS;
+- SableStart sync contract: corrected after detecting the retired
+  `SableAppearanceProvider.kt` was still listed as required by the sync
+  script.
+
+Full target-files build remains blocked until the remainder of WS7 module
+qualification passes on one immutable source commit.
+
 
 No full image yet.
 
