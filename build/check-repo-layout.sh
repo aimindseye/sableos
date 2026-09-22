@@ -68,8 +68,16 @@ fi
 
 grep -Fq 'AndroidManifest.xml'     "$ROOT/build/panther/sync-sablestart.sh"
 grep -Fq 'retired=('     "$ROOT/build/panther/sync-sablestart.sh"
-grep -Fq 'src/com/sable/start/platform/SableAppearanceProvider.kt'     "$ROOT/build/panther/sync-sablestart.sh"
-grep -Fq 'R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED'     "$ROOT/build/panther/sync-sablestart.sh"
+SYNC_SABLESTART="$ROOT/build/panther/sync-sablestart.sh"
+required_block="$(sed -n '/^required=(/,/^)/p' "$SYNC_SABLESTART")"
+retired_block="$(sed -n '/^retired=(/,/^)/p' "$SYNC_SABLESTART")"
+
+if grep -Fq 'src/com/sable/start/platform/SableAppearanceProvider.kt' <<<"$required_block"; then
+    echo "SABLEOS_REPO_LAYOUT=FAIL_APPEARANCE_PROVIDER_STILL_REQUIRED_BY_SYNC"
+    exit 1
+fi
+grep -Fq 'src/com/sable/start/platform/SableAppearanceProvider.kt' <<<"$retired_block"
+grep -Fq 'R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED' "$SYNC_SABLESTART"
 
 echo "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT"
 echo "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT"
