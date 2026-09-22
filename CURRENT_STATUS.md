@@ -20,11 +20,12 @@ BRANCH=r9/system-cohesion-closure-20260921
 R9_WS0_BASELINE_CONTRACT=PASS_SOURCE
 R9_WS1_SYSTEM_APPEARANCE_AUTHORITY=PASS_SOURCE_SETTINGS_HOSTED
 R9_WS2_SABLE_HOME_OWNERSHIP=PASS_SOURCE
-R9_WS3_SETTINGS_CONTROL_CENTER=PASS_SOURCE
+R9_WS3_SETTINGS_CONTROL_CENTER=PASS_SOURCE_APPEARANCE_NETWORK_MANAGER
 R9_WS4_SYSTEMUI_COHESION=PASS_SOURCE
 R9_WS5_CORE_APP_READER_APPEARANCE=PASS_SOURCE
 R9_WS6_PLATFORM_SURFACE_CLASSIFICATION=PASS_SOURCE
-R9_WS7_PREIMAGE_QUALIFICATION=READY_AI_G732_EXECUTION
+R9_WS7_STATIC_PIPELINE_PREFLIGHT=PASS_20260922
+R9_WS7_PREIMAGE_QUALIFICATION=RETRY_REQUIRED_AFTER_CONTRACT_FIX_AND_NETWORK_MANAGER_ADD
 R9_WS8_FRESH_IMAGE_PHYSICAL_ACCEPTANCE=BLOCKED_ON_WS7
 R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
 R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
@@ -37,6 +38,12 @@ device-protected storage and restores explicit Light/Dark through
 `UiModeManager`. Launcher, SystemUI and first-party apps consume the same
 contract. Quickstep remains the Android Recents/task implementation while
 Sable owns every HOME-facing launcher destination.
+
+Sable Settings now also contains a **Network Manager** backed directly by the
+GrapheneOS user-revocable `android.permission.INTERNET`. It provides one
+all-network access switch per mutable app. The reviewed Unihertz Mobile/WLAN
+split is not emulated because the GrapheneOS base does not provide
+transport-specific per-app enforcement; see `docs/R9_NETWORK_MANAGER.md`.
 
 The source/classification contracts are
 `docs/R9_SYSTEM_COHESION_CLOSURE.md`,
