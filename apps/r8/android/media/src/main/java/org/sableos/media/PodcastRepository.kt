@@ -89,13 +89,13 @@ internal class PodcastRepository(
         val refreshed =
             current
                 .map { subscription ->
-                runCatching {
-                    fetch(subscription.feedUrl)
-                }.getOrElse {
-                    failures += 1
-                    subscription
+                    runCatching {
+                        fetch(subscription.feedUrl)
+                    }.getOrElse {
+                        failures += 1
+                        subscription
+                    }
                 }
-            }
                 .sortedBy { it.title.lowercase(Locale.getDefault()) }
 
         persist(refreshed)
@@ -333,13 +333,14 @@ internal class PodcastStateRepository(
         episodeId: String,
     ): Set<String> {
         val updated =
-            current.toMutableSet()
+            current
+                .toMutableSet()
                 .apply {
                     if (!add(episodeId)) {
                         remove(episodeId)
                     }
                 }
-            .toSet()
+                .toSet()
 
         persistSet(
             key = KEY_SAVED,
