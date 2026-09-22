@@ -35,7 +35,11 @@ CONTRACT = Path("src/com/android/settings/sable/SableAppearanceContract.java")
 PROVIDER = Path("src/com/android/settings/sable/SableAppearanceProvider.java")
 BOOT_RECEIVER = Path("src/com/android/settings/sable/SableAppearanceBootReceiver.java")
 SETTINGS_FRAGMENT = Path("src/com/android/settings/sable/SableAppearanceSettings.java")
+NETWORK_MANAGER_FRAGMENT = Path(
+    "src/com/android/settings/sable/SableNetworkManagerSettings.java"
+)
 APPEARANCE_XML = Path("res/xml/sable_appearance_settings.xml")
+NETWORK_MANAGER_XML = Path("res/xml/sable_network_manager_settings.xml")
 STRINGS = Path("res/values/strings_sable_cohesion.xml")
 
 NEW_FILES = (
@@ -43,7 +47,9 @@ NEW_FILES = (
     PROVIDER,
     BOOT_RECEIVER,
     SETTINGS_FRAGMENT,
+    NETWORK_MANAGER_FRAGMENT,
     APPEARANCE_XML,
+    NETWORK_MANAGER_XML,
     STRINGS,
 )
 
@@ -54,17 +60,21 @@ COHESION_DIRT = {
     " M res/xml/top_level_settings_expressive.xml",
     " M res/xml/top_level_settings_expressive_desktop.xml",
     "?? res/xml/sable_appearance_settings.xml",
+    "?? res/xml/sable_network_manager_settings.xml",
     "?? res/values/strings_sable_cohesion.xml",
     "?? src/com/android/settings/sable/SableAppearanceBootReceiver.java",
     "?? src/com/android/settings/sable/SableAppearanceContract.java",
     "?? src/com/android/settings/sable/SableAppearanceProvider.java",
     "?? src/com/android/settings/sable/SableAppearanceSettings.java",
+    "?? src/com/android/settings/sable/SableNetworkManagerSettings.java",
 }
 
 PERMISSION_ANCHOR = '    <uses-permission android:name="android.permission.WRITE_SETTINGS" />\n'
 PERMISSION_BLOCK = (
     PERMISSION_ANCHOR
     + '    <uses-permission android:name="android.permission.MODIFY_DAY_NIGHT_MODE" />\n'
+    + '    <uses-permission android:name="android.permission.GRANT_RUNTIME_PERMISSIONS" />\n'
+    + '    <uses-permission android:name="android.permission.REVOKE_RUNTIME_PERMISSIONS" />\n'
 )
 
 APP_ANCHOR = '        <uses-library android:name="org.apache.http.legacy" />\n'
@@ -92,12 +102,14 @@ GATEWAY_IMPORT_OLD = "import com.android.settings.safetycenter.MoreSecurityPriva
 GATEWAY_IMPORT_NEW = (
     GATEWAY_IMPORT_OLD
     + "import com.android.settings.sable.SableAppearanceSettings;\n"
+    + "import com.android.settings.sable.SableNetworkManagerSettings;\n"
 )
 GATEWAY_ENTRY_OLD = """    public static final String[] ENTRY_FRAGMENTS = {
             com.android.settings.applications.AppNativeDebuggingFragment.class.getName(),
 """
 GATEWAY_ENTRY_NEW = """    public static final String[] ENTRY_FRAGMENTS = {
             SableAppearanceSettings.class.getName(),
+            SableNetworkManagerSettings.class.getName(),
             com.android.settings.applications.AppNativeDebuggingFragment.class.getName(),
 """
 
@@ -109,6 +121,17 @@ APPEARANCE_BLOCK = '''        <com.android.settings.widget.HomepagePreference
             android:title="@string/sable_appearance_title"
             android:summary="@string/sable_appearance_summary"
             settings:highlightableMenuKey="@string/menu_key_display"/>
+
+'''
+
+NETWORK_MANAGER_BLOCK = '''        <com.android.settings.widget.HomepagePreference
+            android:fragment="com.android.settings.sable.SableNetworkManagerSettings"
+            android:icon="@drawable/ic_settings_wireless_filled"
+            android:key="top_level_sable_network_manager"
+            android:order="-25"
+            android:title="@string/sable_network_manager_title"
+            android:summary="@string/sable_network_manager_summary"
+            settings:highlightableMenuKey="@string/menu_key_privacy"/>
 
 '''
 
@@ -154,7 +177,9 @@ def template_for(dest: Path) -> Path:
         PROVIDER: templates_dir() / "SableAppearanceProvider.java",
         BOOT_RECEIVER: templates_dir() / "SableAppearanceBootReceiver.java",
         SETTINGS_FRAGMENT: templates_dir() / "SableAppearanceSettings.java",
+        NETWORK_MANAGER_FRAGMENT: templates_dir() / "SableNetworkManagerSettings.java",
         APPEARANCE_XML: templates_dir() / "sable_appearance_settings.xml",
+        NETWORK_MANAGER_XML: templates_dir() / "sable_network_manager_settings.xml",
         STRINGS: templates_dir() / "strings_sable_cohesion.xml",
     }
     return mapping[dest]
@@ -186,21 +211,44 @@ def replace_once(text: str, old: str, new: str, label: str) -> str:
     return text.replace(old, new, 1)
 
 
-def transform_top_level(text: str, label: str) -> str:
-    if 'android:key="top_level_sable_appearance"' in text:
+def insert_into_category(
+    text: str,
+    category_key: str,
+    entry_key: str,
+    block: str,
+    label: str,
+) -> str:
+    if entry_key in text:
         return text
 
-    key = 'android:key="top_level_personalize_category"'
-    key_index = text.find(key)
-    if key_index < 0 or text.find(key, key_index + 1) >= 0:
-        raise SystemExit(f"SABLE_APPEARANCE_CATEGORY_PRECONDITION_FAIL={label}")
+    key_index = text.find(category_key)
+    if key_index < 0 or text.find(category_key, key_index + 1) >= 0:
+        raise SystemExit(f"SABLE_SETTINGS_CATEGORY_PRECONDITION_FAIL={label}:{category_key}")
 
     category_end = text.find(">", key_index)
     if category_end < 0:
-        raise SystemExit(f"SABLE_APPEARANCE_CATEGORY_BOUNDARY_FAIL={label}")
+        raise SystemExit(f"SABLE_SETTINGS_CATEGORY_BOUNDARY_FAIL={label}:{category_key}")
 
     insertion = category_end + 1
-    return text[:insertion] + "\n" + APPEARANCE_BLOCK + text[insertion:]
+    return text[:insertion] + "\n" + block + text[insertion:]
+
+
+def transform_top_level(text: str, label: str) -> str:
+    text = insert_into_category(
+        text,
+        'android:key="top_level_personalize_category"',
+        'android:key="top_level_sable_appearance"',
+        APPEARANCE_BLOCK,
+        label,
+    )
+    text = insert_into_category(
+        text,
+        'android:key="top_level_security_privacy_category"',
+        'android:key="top_level_sable_network_manager"',
+        NETWORK_MANAGER_BLOCK,
+        label,
+    )
+    return text
 
 
 def verify_templates() -> None:
@@ -291,6 +339,8 @@ def verify(source: Path) -> None:
     manifest = (settings / MANIFEST).read_text(encoding="utf-8")
     required_manifest = (
         'android.permission.MODIFY_DAY_NIGHT_MODE',
+        'android.permission.GRANT_RUNTIME_PERMISSIONS',
+        'android.permission.REVOKE_RUNTIME_PERMISSIONS',
         'android:name=".sable.SableAppearanceProvider"',
         'android:authorities="org.sableos.appearance"',
         'android:name=".sable.SableAppearanceBootReceiver"',
@@ -305,7 +355,9 @@ def verify(source: Path) -> None:
     gateway = (settings / SETTINGS_GATEWAY).read_text(encoding="utf-8")
     for needle in (
         "import com.android.settings.sable.SableAppearanceSettings;",
+        "import com.android.settings.sable.SableNetworkManagerSettings;",
         "SableAppearanceSettings.class.getName(),",
+        "SableNetworkManagerSettings.class.getName(),",
     ):
         if gateway.count(needle) != 1:
             raise SystemExit(f"R9_SETTINGS_GATEWAY_APPEARANCE_ENTRY_FAIL={needle}")
@@ -316,6 +368,10 @@ def verify(source: Path) -> None:
             raise SystemExit(f"R9_SETTINGS_APPEARANCE_ENTRY_FAIL={rel}")
         if "com.android.settings.sable.SableAppearanceSettings" not in text:
             raise SystemExit(f"R9_SETTINGS_APPEARANCE_FRAGMENT_FAIL={rel}")
+        if text.count('android:key="top_level_sable_network_manager"') != 1:
+            raise SystemExit(f"R9_SETTINGS_NETWORK_MANAGER_ENTRY_FAIL={rel}")
+        if "com.android.settings.sable.SableNetworkManagerSettings" not in text:
+            raise SystemExit(f"R9_SETTINGS_NETWORK_MANAGER_FRAGMENT_FAIL={rel}")
 
     for dest in NEW_FILES:
         installed = settings / dest
@@ -347,12 +403,27 @@ def verify(source: Path) -> None:
     if "SableAppearanceProvider.applyStoredMode(context)" not in receiver:
         raise SystemExit("R9_SETTINGS_APPEARANCE_BOOT_RESTORE_MISSING")
 
+    network_manager = (settings / NETWORK_MANAGER_FRAGMENT).read_text(encoding="utf-8")
+    for needle in (
+        "Manifest.permission.INTERNET",
+        "PermissionManager",
+        "grantRuntimePermission(",
+        "revokeRuntimePermission(",
+        "FLAG_PERMISSION_SYSTEM_FIXED",
+        "FLAG_PERMISSION_POLICY_FIXED",
+        "PackageManager.GET_PERMISSIONS",
+    ):
+        if needle not in network_manager:
+            raise SystemExit(f"R9_SETTINGS_NETWORK_MANAGER_MISSING={needle}")
+
     print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
     print("R9_SYSTEM_APPEARANCE_DEVICE_PROTECTED_STORAGE=PASS")
     print("R9_SYSTEM_APPEARANCE_BOOT_RESTORE_SOURCE=PASS")
     print("R9_SETTINGS_PROVIDER_CONTENTPROVIDER_API_COMPAT=PASS")
     print("R9_SETTINGS_APPEARANCE_ENTRY=PASS")
     print("R9_SETTINGS_APPEARANCE_GATEWAY=PASS")
+    print("R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION")
+    print("R9_SETTINGS_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT")
     print("R9_SETTINGS_COHESION=PASS")
 
 
@@ -387,11 +458,17 @@ def self_test() -> None:
         android:order="-120"
         android:key="top_level_personalize_category">
     </PreferenceCategory>
+    <PreferenceCategory
+        android:order="-100"
+        android:key="top_level_security_privacy_category">
+    </PreferenceCategory>
 </PreferenceScreen>
 """
     transformed = transform_top_level(sample_xml, "self-test")
     if transformed.count('android:key="top_level_sable_appearance"') != 1:
         raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_TOP_LEVEL_FAIL")
+    if transformed.count('android:key="top_level_sable_network_manager"') != 1:
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_NETWORK_MANAGER_FAIL")
 
     gateway_sample = GATEWAY_IMPORT_OLD + GATEWAY_ENTRY_OLD
     gateway_sample = replace_once(
@@ -408,6 +485,8 @@ def self_test() -> None:
     )
     if "SableAppearanceSettings.class.getName()," not in gateway_sample:
         raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_GATEWAY_FAIL")
+    if "SableNetworkManagerSettings.class.getName()," not in gateway_sample:
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_NETWORK_GATEWAY_FAIL")
 
     print("R9_SETTINGS_COHESION_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
