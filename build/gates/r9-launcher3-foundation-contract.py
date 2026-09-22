@@ -127,7 +127,8 @@ def check() -> list[str]:
         "fun isSableSurfaceActive(): Boolean",
         "LauncherState.ALL_APPS ->",
         "readGlobalSableAppearance(",
-        "writeGlobalSableAppearance(",
+        "writeGlobalSableAppearance(this@SableQuickstepLauncher, appearance)",
+        "writeGlobalSableAppearance(this@SableQuickstepLauncher, reset)",
         "val activityWindow = window ?: return",
         "window = activityWindow",
     ):
