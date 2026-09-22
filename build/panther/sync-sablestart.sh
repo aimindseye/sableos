@@ -20,7 +20,6 @@ required=(
   src/com/sable/start/live/LiveSurfaceModels.kt
   src/com/sable/start/model/AppEntry.kt
   src/com/sable/start/platform/LiveSurfaceRepository.kt
-  src/com/sable/start/platform/SableAppearanceProvider.kt
   src/com/sable/start/platform/StartStateRepository.kt
   src/com/sable/start/ui/SableStartScreen.kt
   src/com/sable/start/ui/SableGlyphIcon.kt
@@ -33,6 +32,7 @@ retired=(
   src/com/sable/start/SableStartActivity.kt
   src/com/sable/start/bridge/SableStartNative.kt
   src/com/sable/start/platform/LauncherAppsRepository.kt
+  src/com/sable/start/platform/SableAppearanceProvider.kt
 )
 
 missing=0
@@ -66,6 +66,8 @@ for rel in "${retired[@]}"; do
 done
 
 echo "SABLESTART_PRESENTATION_SYNC=PASS"
+echo "R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED"
+echo "R9_SABLESTART_GLOBAL_APPEARANCE_OWNER=SETTINGS"
 echo "SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT"
 echo "SOURCE=$SRC"
 echo "DESTINATION=$DST"
