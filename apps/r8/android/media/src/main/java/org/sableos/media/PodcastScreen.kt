@@ -33,6 +33,13 @@ import org.sableos.design.SableSpacing
 import java.text.DateFormat
 import java.util.Date
 
+private const val LATEST_EPISODE_LIMIT = 36
+private const val PODCAST_SEED_MULTIPLIER = 31
+private const val MILLIS_PER_MINUTE = 60_000L
+private val PodcastHeroSize = 72.dp
+private val PodcastControlSize = 42.dp
+private val PodcastArtworkSize = 58.dp
+
 private enum class PodcastPivot(
     val label: String,
 ) {
@@ -94,7 +101,7 @@ internal fun PodcastScreen(
                     compareByDescending<PodcastEpisode> { it.publishedAt }
                         .thenBy { it.title.lowercase() },
                 )
-                .take(36)
+                .take(LATEST_EPISODE_LIMIT)
         }
 
     val saved =
@@ -178,7 +185,9 @@ internal fun PodcastScreen(
                     PodcastEmptyPanel(
                         title = "No subscriptions",
                         detail =
-                            "Paste a direct podcast feed URL below. There is no account, recommendation profile, or ambient directory lookup.",
+                            "Paste a direct podcast feed URL below. " +
+                                "There is no account, recommendation profile, " +
+                                "or ambient directory lookup.",
                     )
                 } else {
                     subscriptions.forEach { subscription ->
@@ -264,9 +273,9 @@ private fun PodcastStatusDeck(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PodcastArtworkTile(
-                seed = subscriptionCount * 31 + episodeCount,
+                seed = subscriptionCount * PODCAST_SEED_MULTIPLIER + episodeCount,
                 label = "P",
-                size = 72.dp,
+                size = PodcastHeroSize,
             )
 
             Column(
@@ -373,7 +382,7 @@ private fun PodcastEpisodeRow(
 
             Surface(
                 onClick = onQueue,
-                modifier = Modifier.width(42.dp),
+                modifier = Modifier.width(PodcastControlSize),
                 shape = MaterialTheme.shapes.small,
                 color = Color.Transparent,
                 contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -396,7 +405,7 @@ private fun PodcastEpisodeRow(
 
             Surface(
                 onClick = onToggleSaved,
-                modifier = Modifier.width(42.dp),
+                modifier = Modifier.width(PodcastControlSize),
                 shape = MaterialTheme.shapes.small,
                 color = Color.Transparent,
                 contentColor =
@@ -424,7 +433,7 @@ private fun PodcastEpisodeRow(
 
             Surface(
                 onClick = onPlay,
-                modifier = Modifier.width(42.dp),
+                modifier = Modifier.width(PodcastControlSize),
                 shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -587,7 +596,9 @@ private fun PodcastPrivacyNote() {
         )
         Text(
             text =
-                "Sable Media refreshes only feeds you add and streams only episodes you choose. No podcast account, analytics SDK, recommendation profile, or automatic directory query is built into this flow.",
+                "Sable Media refreshes only feeds you add and streams only episodes you choose. " +
+                    "No podcast account, analytics SDK, recommendation profile, " +
+                    "or automatic directory query is built into this flow.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -598,7 +609,7 @@ private fun PodcastPrivacyNote() {
 private fun PodcastArtworkTile(
     seed: Int,
     label: String,
-    size: androidx.compose.ui.unit.Dp = 58.dp,
+    size: androidx.compose.ui.unit.Dp = PodcastArtworkSize,
 ) {
     val palette =
         listOf(
@@ -730,7 +741,7 @@ private fun podcastEpisodeMeta(
         pieces += formatPodcastDate(episode.publishedAt)
     }
     if (episode.durationMs > 0L) {
-        val minutes = episode.durationMs / 60_000L
+        val minutes = episode.durationMs / MILLIS_PER_MINUTE
         pieces +=
             when {
                 minutes < 1L -> "< 1 min"
