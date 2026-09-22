@@ -316,9 +316,11 @@ internal fun MediaScreen(
 
                 item {
                     when (destination) {
-                        MediaDestination.Collection -> Unit
+                        MediaDestination.Collection -> {
+                            Unit
+                        }
 
-                        MediaDestination.Podcasts ->
+                        MediaDestination.Podcasts -> {
                             PodcastScreen(
                                 state =
                                     PodcastScreenState(
@@ -345,8 +347,9 @@ internal fun MediaScreen(
                                         },
                                     ),
                             )
+                        }
 
-                        MediaDestination.NowPlaying ->
+                        MediaDestination.NowPlaying -> {
                             NowPlayingScreen(
                                 playback = playback,
                                 onPlayPause = onPlayPause,
@@ -355,8 +358,9 @@ internal fun MediaScreen(
                                 onStop = onStop,
                                 onSeek = onSeek,
                             )
+                        }
 
-                        MediaDestination.Radio ->
+                        MediaDestination.Radio -> {
                             RadioScreen(
                                 stations = stations,
                                 playback = playback,
@@ -373,8 +377,9 @@ internal fun MediaScreen(
                                     onDestinationChange(MediaDestination.NowPlaying)
                                 },
                             )
+                        }
 
-                        MediaDestination.ManageStations ->
+                        MediaDestination.ManageStations -> {
                             ManageStationsScreen(
                                 stations = stations,
                                 editingStation = editingStation,
@@ -391,8 +396,9 @@ internal fun MediaScreen(
                                     onDestinationChange(MediaDestination.Radio)
                                 },
                             )
+                        }
 
-                        MediaDestination.AddStation ->
+                        MediaDestination.AddStation -> {
                             AddStationScreen(
                                 stationName = stationName,
                                 stationUrl = stationUrl,
@@ -402,8 +408,9 @@ internal fun MediaScreen(
                                 onSave = onSaveNewStation,
                                 onCancel = onCancelStationFlow,
                             )
+                        }
 
-                        MediaDestination.Queue ->
+                        MediaDestination.Queue -> {
                             QueueScreen(
                                 playback = playback,
                                 onPlayIndex = onPlayQueueIndex,
@@ -417,8 +424,9 @@ internal fun MediaScreen(
                                     onDestinationChange(MediaDestination.NowPlaying)
                                 },
                             )
+                        }
 
-                        MediaDestination.PlaylistEditor ->
+                        MediaDestination.PlaylistEditor -> {
                             PlaylistEditorScreen(
                                 editingPlaylist = editingPlaylist,
                                 playlistName = playlistName,
@@ -429,8 +437,9 @@ internal fun MediaScreen(
                                 onSave = onSavePlaylist,
                                 onCancel = onCancelPlaylistEditor,
                             )
+                        }
 
-                        MediaDestination.Settings ->
+                        MediaDestination.Settings -> {
                             SettingsScreen(
                                 settings = settings,
                                 onSettingsChange = onSettingsChange,
@@ -438,6 +447,7 @@ internal fun MediaScreen(
                                     onDestinationChange(MediaDestination.Collection)
                                 },
                             )
+                        }
                     }
                 }
             }
