@@ -1,0 +1,13 @@
+root = false
+
+[**/MediaScreen.kt]
+ktlint_standard_function-naming = disabled
+
+[**/PodcastScreen.kt]
+ktlint_standard_function-naming = disabled
+
+[**/MediaC2Screens.kt]
+ktlint_standard_function-naming = disabled
+
+[**/MediaApp.kt]
+ktlint_standard_function-naming = disabled
