@@ -102,6 +102,7 @@ require(
     "podcastStateRepository.markPlayed(",
     "playbackController.addToQueue(",
     "destination = MediaDestination.NowPlaying",
+    "SableGlobalTheme(window = window)",
 )
 require(
     f"{MEDIA_KT}/MainActivity.kt",
@@ -110,6 +111,19 @@ require(
     "MediaApp(",
     "playUri = ::playUri",
     "playLocalQueue = ::playLocalQueue",
+)
+
+forbid(
+    f"{MEDIA_KT}/MainActivity.kt",
+    "SableGlobalTheme(window = window)",
+)
+require(
+    "build/gates/r8-no-stale-product-code.sh",
+    'apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt',
+)
+require(
+    "build/gates/r8-final-product-composition.sh",
+    'apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt',
 )
 
 require(
@@ -245,5 +259,6 @@ print("R9_MEDIA_FLOW_KOTLIN_WARNINGS_AS_ERRORS=PASS")
 print("R9_MEDIA_FLOW_DETEKT_FAIL_CLOSED=PASS")
 print("R9_MEDIA_FLOW_KTLINT_FAIL_CLOSED=PASS")
 print("R9_MEDIA_FLOW_COMPOSE_NAMING_POLICY=PASS")
+print("R9_MEDIA_FLOW_GLOBAL_APPEARANCE_OWNER=PASS_MEDIA_APP")
 print("R9_MEDIA_FLOW_CANONICAL_SDK_QUALIFIER=PASS")
 print("R9_MEDIA_FLOW_CONTRACT=PASS")
