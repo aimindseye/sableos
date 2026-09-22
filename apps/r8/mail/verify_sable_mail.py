@@ -105,6 +105,47 @@ def main() -> None:
             "SABLE_MAIL_FUNDING_SETTINGS_SOURCE",
             f"unexpected={funding_settings}",
         )
+    root_build = root / "build.gradle.kts"
+    dependency_check_plugin = (
+        root / "build-plugin/src/main/kotlin/thunderbird.dependency.check.gradle.kts"
+    )
+    build_plugin_build = root / "build-plugin/build.gradle.kts"
+    build_plugin_plugin_build = root / "build-plugin/plugin/build.gradle.kts"
+
+    reject_text(
+        root_build,
+        'id("thunderbird.dependency.check")',
+        "SABLE_MAIL_DEPENDENCY_UPDATE_PLUGIN_ROOT",
+    )
+    require_text(
+        dependency_check_plugin,
+        "Sable Mail product assembly intentionally omits",
+        "SABLE_MAIL_DEPENDENCY_UPDATE_PLUGIN_NOOP",
+    )
+    reject_text(
+        dependency_check_plugin,
+        'id("com.github.ben-manes.versions")',
+        "SABLE_MAIL_DEPRECATED_VERSIONS_PLUGIN_ID",
+    )
+    require_text(
+        build_plugin_build,
+        'implementation(dependencies.project(":plugin"))',
+        "SABLE_MAIL_GRADLE_PROJECT_DEPENDENCY_API",
+    )
+    reject_text(
+        build_plugin_build,
+        'implementation(project(":plugin"))',
+        "SABLE_MAIL_DEPRECATED_PROJECT_DEPENDENCY_NOTATION",
+    )
+    for plugin_build in (build_plugin_build, build_plugin_plugin_build):
+        reject_text(
+            plugin_build,
+            "implementation(plugin(libs.plugins.dependency.check))",
+            "SABLE_MAIL_DEPENDENCY_UPDATE_PLUGIN_CLASSPATH",
+        )
+
+    print("SABLE_MAIL_DEPENDENCY_UPDATE_TOOLING=PASS_REMOVED_BUILD_ONLY")
+    print("SABLE_MAIL_GRADLE_PROJECT_DEPENDENCY_API=PASS_DEPENDENCY_HANDLER_PROJECT")
     print("SABLE_MAIL_FUNDING_SETTINGS_SOURCE=PASS_ABSENT")
     print("SABLE_MAIL_BUILD_CONFIGURATION=PASS")
 
