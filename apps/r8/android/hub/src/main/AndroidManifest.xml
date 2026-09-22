@@ -13,7 +13,7 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
     <queries>
-        <provider android:authorities="org.sableos.start.appearance" />
+        <provider android:authorities="org.sableos.appearance" />
     </queries>
 
     <application
