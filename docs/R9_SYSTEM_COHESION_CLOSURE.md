@@ -255,6 +255,18 @@ any future mutation of Thunderbird's root `build.gradle.kts` or
 `build-plugin/` tree. The upstream deprecation lines remain diagnostic and
 nonblocking.
 
+The subsequent WS7 run reached final product composition with the ten-APK
+freeze, cumulative SystemUI/Settings/Launcher preparation, final source
+verification, and the no-stale-product gate all passing. It stopped only at
+`R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY`. That was a qualification
+false-positive: the composition gate recursively scanned Android unit tests and
+matched the deliberate negative regression assertion proving that
+`org.sableos.start.appearance` is not the active authority. The gate now keeps
+the broad production/runtime scan while excluding `test`, `androidTest`, and
+Markdown inputs. The stale SableStart portability document was also reconciled
+to the Settings-owned `content://org.sableos.appearance/appearance` contract
+with the Launcher-owned appearance provider explicitly retired.
+
 
 No full image yet.
 
