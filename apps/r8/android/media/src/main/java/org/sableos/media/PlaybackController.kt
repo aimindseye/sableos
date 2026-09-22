@@ -17,6 +17,11 @@ internal data class QueueItemUiState(
     val source: String,
 )
 
+internal enum class PlaybackSkip {
+    Previous,
+    Next,
+}
+
 internal data class PlaybackUiState(
     val connected: Boolean = false,
     val title: String = "Nothing queued",
@@ -107,12 +112,11 @@ internal class PlaybackController(
         controller?.seekTo(positionMs.coerceAtLeast(0L))
     }
 
-    fun previous() {
-        controller?.seekToPreviousMediaItem()
-    }
-
-    fun next() {
-        controller?.seekToNextMediaItem()
+    fun skip(direction: PlaybackSkip) {
+        when (direction) {
+            PlaybackSkip.Previous -> controller?.seekToPreviousMediaItem()
+            PlaybackSkip.Next -> controller?.seekToNextMediaItem()
+        }
     }
 
     fun playQueueIndex(index: Int) {
