@@ -88,6 +88,18 @@ candidate, capture at minimum:
 10. any unexpected GrapheneOS-branded surface encountered during normal
     daily-driver traversal.
 
+Read-only scene capture helper:
+
+```bash
+SCENE=settings-home \
+SERIAL=<serial> \
+DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY \
+bash tests/systemui/device/r9_branding_surface_audit.sh
+```
+
+Run the helper after manually navigating to each required scene. It captures the
+current window, UI hierarchy and screenshot without sending input events.
+
 Required final marker:
 
 ```text
