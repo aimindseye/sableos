@@ -33,6 +33,54 @@ def copy_file(source: pathlib.Path, destination: pathlib.Path) -> None:
     shutil.copy2(source, destination)
 
 
+def replace_exact_text(
+    path: pathlib.Path,
+    old: str,
+    new: str,
+    label: str,
+    expected: int = 1,
+) -> None:
+    text = path.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count != expected:
+        fail(
+            f"{label}: expected {expected} occurrence(s), "
+            f"found {count} in {path}"
+        )
+    path.write_text(text.replace(old, new), encoding="utf-8")
+
+
+def add_file_opt_in(
+    path: pathlib.Path,
+    annotation: str,
+    label: str,
+) -> None:
+    text = path.read_text(encoding="utf-8")
+    if annotation in text:
+        return
+    package_marker = "package "
+    package_index = text.find(package_marker)
+    if package_index < 0:
+        fail(f"{label}: package declaration missing in {path}")
+    text = text[:package_index] + annotation + "\n\n" + text[package_index:]
+    path.write_text(text, encoding="utf-8")
+
+
+def migrate_hilt_viewmodel_imports(source_root: pathlib.Path) -> int:
+    old = "import androidx.hilt.navigation.compose.hiltViewModel"
+    new = "import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel"
+    count = 0
+    for path in sorted(source_root.rglob("*.kt")):
+        text = path.read_text(encoding="utf-8")
+        occurrences = text.count(old)
+        if occurrences:
+            path.write_text(text.replace(old, new), encoding="utf-8")
+            count += occurrences
+    if count == 0:
+        fail("SABLE_READER_HILT_VIEWMODEL_MIGRATION=FAIL_NO_OLD_IMPORTS")
+    return count
+
+
 def repo_root() -> pathlib.Path:
     return pathlib.Path(__file__).resolve().parents[3]
 
