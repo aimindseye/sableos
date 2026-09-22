@@ -48,7 +48,8 @@ copying their code:
 - a latest-episode view;
 - a saved listening list;
 - a visible queue / now-playing path;
-- direct episode playback.
+- direct episode playback;
+- an explicit "+" action that sends podcast episodes into the same Up Next queue as local music.
 
 References used for interaction research:
 
@@ -152,6 +153,7 @@ Required markers:
 ```text
 R9_MEDIA_FLOW_PANORAMA_NAVIGATION=PASS
 R9_MEDIA_FLOW_SINGLE_MEDIA3_SESSION=PASS
+R9_MEDIA_FLOW_SHARED_UP_NEXT=PASS
 R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS
 R9_PODCAST_MANUAL_REFRESH=PASS
 R9_PODCAST_FEED_SIZE_BOUND=PASS
