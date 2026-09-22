@@ -71,6 +71,12 @@ require(
     "contentResolver.update(",
     "registerContentObserver",
 )
+require(
+    "apps/r8/android/design/src/test/java/org/sableos/design/SableDesignContractTest.kt",
+    '"org.sableos.appearance"',
+    '"org.sableos.start.appearance"',
+    "SableGlobalAppearanceContract.AUTHORITY !=",
+)
 for rel in (
     "apps/r8/android/calculator/src/main/AndroidManifest.xml",
     "apps/r8/android/calendar/src/main/AndroidManifest.xml",
@@ -283,6 +289,7 @@ if failures:
 
 print("R9_WS0_REJECTED_CANDIDATE_CONTRACT=PASS")
 print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
+print("R9_DESIGN_APPEARANCE_AUTHORITY_TEST=PASS_CURRENT_AND_LEGACY_REJECTED")
 print("R9_LAUNCHER_GLOBAL_APPEARANCE_OWNERSHIP=PASS_RETIRED")
 print("R9_SABLE_NATIVE_LAUNCHER_ESCAPE=PASS_SOURCE_BLOCKED")
 print("R9_SABLE_SETTINGS_TOP_LEVEL=PASS_SOURCE")
