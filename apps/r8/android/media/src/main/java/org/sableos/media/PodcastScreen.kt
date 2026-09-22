@@ -56,6 +56,7 @@ internal fun PodcastScreen(
     onRefresh: () -> Unit,
     onRemoveSubscription: (PodcastSubscription) -> Unit,
     onPlayEpisode: (PodcastEpisode) -> Unit,
+    onQueueEpisode: (PodcastEpisode) -> Unit,
     onToggleSavedEpisode: (PodcastEpisode) -> Unit,
     onOpenNowPlaying: () -> Unit,
 ) {
@@ -141,6 +142,7 @@ internal fun PodcastScreen(
                             saved = episode.id in savedEpisodeIds,
                             played = episode.id in playedEpisodeIds,
                             onPlay = { onPlayEpisode(episode) },
+                            onQueue = { onQueueEpisode(episode) },
                             onToggleSaved = { onToggleSavedEpisode(episode) },
                         )
                     }
@@ -178,6 +180,7 @@ internal fun PodcastScreen(
                             saved = true,
                             played = episode.id in playedEpisodeIds,
                             onPlay = { onPlayEpisode(episode) },
+                            onQueue = { onQueueEpisode(episode) },
                             onToggleSaved = { onToggleSavedEpisode(episode) },
                         )
                     }
@@ -281,6 +284,7 @@ private fun PodcastEpisodeRow(
     saved: Boolean,
     played: Boolean,
     onPlay: () -> Unit,
+    onQueue: () -> Unit,
     onToggleSaved: () -> Unit,
 ) {
     Surface(
@@ -344,8 +348,31 @@ private fun PodcastEpisodeRow(
             }
 
             Surface(
+                onClick = onQueue,
+                modifier = Modifier.width(42.dp),
+                shape = MaterialTheme.shapes.small,
+                color = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                border =
+                    BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outlineVariant,
+                    ),
+            ) {
+                Box(
+                    modifier = Modifier.aspectRatio(1f),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = "+",
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                }
+            }
+
+            Surface(
                 onClick = onToggleSaved,
-                modifier = Modifier.width(46.dp),
+                modifier = Modifier.width(42.dp),
                 shape = MaterialTheme.shapes.small,
                 color = Color.Transparent,
                 contentColor =
@@ -373,7 +400,7 @@ private fun PodcastEpisodeRow(
 
             Surface(
                 onClick = onPlay,
-                modifier = Modifier.width(46.dp),
+                modifier = Modifier.width(42.dp),
                 shape = MaterialTheme.shapes.small,
                 color = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
