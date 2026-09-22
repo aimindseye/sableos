@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    echo "SABLESTART_SYNC=REFUSED_SOURCED_SCRIPT" >&2
+    echo "Run with: bash ${BASH_SOURCE[0]}" >&2
+    return 64
+fi
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
