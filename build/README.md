@@ -89,6 +89,36 @@ composition, exact eight-APK freeze, workspace/product preparation, exact
 preflight, the combined Settings/SystemUI module gate, and the final Panther
 target-files build. Device contact and flashing remain separate operations.
 
+## R9 system-cohesion pre-image qualification
+
+Before the next full Panther image, run the source-bound R9 module
+qualification. This executes the integrated system-cohesion source contract,
+rebuilds the ten first-party APKs plus Reader/Mail, upgrades the recognized
+long-lived Android workspace deltas, stages the source-bound bundle, and
+compiles Launcher3QuickStep, Settings, SystemUI and the daily-driver module set.
+It does **not** build target-files, contact a device, flash, clean or clobber.
+
+```bash
+bash build/sable.sh panther R9 qualify physical-ux
+```
+
+Required terminal marker:
+
+```text
+R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_MODULE_QUALIFICATION
+```
+
+Only after those markers pass, start the one fresh R9 Panther build:
+
+```bash
+bash build/sable.sh panther R9 build --tmux
+```
+
+The Mac visual-review harness is retained as non-blocking design tooling. It
+does not emulate the production Settings-hosted appearance provider and is not
+an R9 release gate.
+
 ## Other stable Panther entry points
 
 ```text
@@ -97,7 +127,6 @@ build/panther/bootstrap.sh
 build/panther/capture-sablestart.sh
 build/panther/verify-sablestart-snapshot.sh
 build/panther/sync-sablestart.sh
-build/panther/build-sablestart.sh
 build/panther/build-target-files.sh
 ```
 
