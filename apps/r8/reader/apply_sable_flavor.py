@@ -100,12 +100,14 @@ def main() -> None:
         fail(f"missing {gradle_file}")
 
     gradle_text = gradle_file.read_text(encoding="utf-8")
-    if 'compileSdk = libs.versions.android.compileSdk.get().toInt()' not in gradle_text:
+    compile_sdk_anchor = (
+        "    compileSdk = libs.versions.android.compileSdk.get().toInt()\n"
+    )
+    if compile_sdk_anchor not in gradle_text:
         fail("Vaachak compileSdk anchor changed; inspect upstream")
     gradle_text = gradle_text.replace(
-        'compileSdk = libs.versions.android.compileSdk.get().toInt()',
-        '    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    ndkVersion = "30.0.16248370"',
+        compile_sdk_anchor,
+        compile_sdk_anchor + '    ndkVersion = "30.0.16248370"\n',
         1,
     )
     anchor = "    val releaseSigningConfig = if (isReleaseLikeTaskRequested) {\n"
