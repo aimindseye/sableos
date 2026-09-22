@@ -173,6 +173,48 @@ The gate is also required by
 `build/panther/qualify-r9-physical-ux.sh` and checked by the canonical
 pipeline contract.
 
+## Kotlin quality closure
+
+The first canonical focused build completed successfully and produced a valid
+Media APK, but its quality tasks exposed substantial pre-existing and new
+Kotlin debt: oversized lifecycle/UI functions, long parameter lists, parser
+complexity, loop jump density, magic numbers, line-length/formatting issues,
+and five compiler warnings in the initial podcast parser.
+
+Those findings are treated as product-quality defects rather than accepted
+warnings. The Media Flow implementation now:
+
+- moves Compose state/event orchestration out of `MainActivity` into
+  `MediaApp`, leaving the Activity as a lifecycle/service host;
+- uses immutable `MediaScreenState` / `MediaScreenActions` and
+  `PodcastScreenState` / `PodcastScreenActions` contracts instead of
+  dozens of individual composable parameters;
+- extracts RSS/Atom parsing into `PodcastFeedParser` with bounded event
+  handlers and a separate HTTPS URL policy;
+- decomposes playback-state assembly, local metadata inspection, folder
+  traversal, playlist decoding, snapshot formatting, and persistence helpers;
+- replaces anonymous timing/size values with named constants where they carry
+  domain meaning;
+- uses Compose-aware detekt and ktlint naming policy rather than renaming
+  PascalCase composables or creating a lint baseline;
+- enables Kotlin compiler `allWarningsAsErrors` for the Media module;
+- makes Media detekt and ktlint tasks fail the build on findings.
+
+The focused qualifier must therefore be warning-clean. A valid result contains
+no Kotlin compiler `w:` diagnostics, no detekt finding list, and no ktlint
+violation list, and ends with:
+
+```text
+R9_MEDIA_FLOW_KOTLIN_WARNINGS_AS_ERRORS=PASS
+R9_MEDIA_FLOW_DETEKT_FAIL_CLOSED=PASS
+R9_MEDIA_FLOW_KTLINT_FAIL_CLOSED=PASS
+R9_MEDIA_FLOW_COMPOSE_NAMING_POLICY=PASS
+BUILD SUCCESSFUL
+R9_MEDIA_FLOW_APK=PASS
+R9_MEDIA_FLOW_KOTLIN_QUALITY=PASS_WARNINGS_DETEKT_KTLINT
+R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS
+```
+
 ## Module qualification
 
 The first manual focused-build attempt proved the static Media Flow and pipeline
@@ -202,9 +244,14 @@ Before a fresh Panther image, this branch must pass at minimum:
 
 ```text
 R9_MEDIA_FLOW_ANDROID_SDK=PASS
+R9_MEDIA_FLOW_KOTLIN_WARNINGS_AS_ERRORS=PASS
+R9_MEDIA_FLOW_DETEKT_FAIL_CLOSED=PASS
+R9_MEDIA_FLOW_KTLINT_FAIL_CLOSED=PASS
+R9_MEDIA_FLOW_COMPOSE_NAMING_POLICY=PASS
 R9_MEDIA_FLOW_CONTRACT=PASS
 BUILD SUCCESSFUL
 R9_MEDIA_FLOW_APK=PASS
+R9_MEDIA_FLOW_KOTLIN_QUALITY=PASS_WARNINGS_DETEKT_KTLINT
 R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS
 R9_MEDIA_FLOW_STATIC_CONTRACT=PASS
 R9_LAUNCHER3_HOME_PREFLIGHT=PASS
