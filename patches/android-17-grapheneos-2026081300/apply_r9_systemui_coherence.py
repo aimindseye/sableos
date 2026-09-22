@@ -207,6 +207,11 @@ fun rememberSableSystemAccent(
 }
 """
 
+LEGACY_BRIDGE_SOURCE = BRIDGE_SOURCE.replace(
+    "content://org.sableos.appearance/appearance",
+    "content://org.sableos.start.appearance/appearance",
+)
+
 
 class CoherenceError(RuntimeError):
     pass
@@ -352,12 +357,18 @@ def apply(source: Path, root: Path) -> None:
     framework = source / FRAMEWORK_REPO
     bridge = framework / BRIDGE
 
+    upgrade_legacy_bridge = False
     if bridge.exists():
-        if bridge.read_text(encoding="utf-8") != BRIDGE_SOURCE:
+        bridge_text = bridge.read_text(encoding="utf-8")
+        if bridge_text == BRIDGE_SOURCE:
+            print("R9_SYSTEMUI_EXISTING_OVERLAY_UPGRADE=YES_CURRENT")
+        elif bridge_text == LEGACY_BRIDGE_SOURCE:
+            upgrade_legacy_bridge = True
+            print("R9_SYSTEMUI_EXISTING_OVERLAY_UPGRADE=YES_LEGACY_AUTHORITY")
+        else:
             raise CoherenceError(
                 f"R9_SYSTEMUI_BRIDGE_PREEXISTS_MISMATCH={bridge}"
             )
-        print("R9_SYSTEMUI_EXISTING_OVERLAY_UPGRADE=YES")
     else:
         assert_legacy_cumulative_state(source, root)
 
@@ -368,6 +379,7 @@ def apply(source: Path, root: Path) -> None:
     )
     if not bridge.exists():
         bridge.parent.mkdir(parents=True, exist_ok=True)
+    if not bridge.exists() or upgrade_legacy_bridge:
         bridge.write_text(BRIDGE_SOURCE, encoding="utf-8")
 
     verify(source, root)
@@ -406,6 +418,10 @@ def self_test(root: Path) -> None:
         raise CoherenceError("R9_SYSTEMUI_SELF_TEST_PROVIDER_URI_MISSING")
     if "registerContentObserver" not in BRIDGE_SOURCE:
         raise CoherenceError("R9_SYSTEMUI_SELF_TEST_OBSERVER_MISSING")
+    if "content://org.sableos.start.appearance/appearance" not in LEGACY_BRIDGE_SOURCE:
+        raise CoherenceError("R9_SYSTEMUI_SELF_TEST_LEGACY_PROVIDER_URI_MISSING")
+    if LEGACY_BRIDGE_SOURCE == BRIDGE_SOURCE:
+        raise CoherenceError("R9_SYSTEMUI_SELF_TEST_LEGACY_BRIDGE_NOT_DISTINCT")
 
     # Prove that the overlay computes at least one valid cumulative scope from
     # the sealed UI4/UI5C/UI6 contracts without touching a real workspace.
@@ -414,6 +430,7 @@ def self_test(root: Path) -> None:
 
     print("R9_SYSTEMUI_COHERENCE_REPLACEMENT_SELF_TEST=PASS")
     print("R9_SYSTEMUI_COHERENCE_PROVIDER_SELF_TEST=PASS")
+    print("R9_SYSTEMUI_LEGACY_AUTHORITY_UPGRADE_SELF_TEST=PASS")
     print("R9_SYSTEMUI_COHERENCE_SCOPE_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
