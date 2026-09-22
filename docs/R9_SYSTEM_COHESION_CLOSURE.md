@@ -240,6 +240,17 @@ Current 2026-09-22 checkpoint:
 Full target-files build remains blocked until the remainder of WS7 module
 qualification passes on one immutable source commit.
 
+The 2026-09-22 warning-cleanup experiment after the Start-sync fix intentionally
+tried to eliminate five Thunderbird/Gradle build-tool deprecation warnings.
+Changing `build-plugin/` invalidated Thunderbird's previously proven offline
+build-logic cache and caused Gradle 9.6.1 to request uncached
+`org.jetbrains.kotlin:kotlin-stdlib-common:2.3.21`. The experiment was
+reverted without changing any Sable Mail runtime/product patch. The Mail flavor
+is byte-identical to the prior successful variant, and the verifier now rejects
+any future mutation of Thunderbird's root `build.gradle.kts` or
+`build-plugin/` tree. The upstream deprecation lines remain diagnostic and
+nonblocking.
+
 
 No full image yet.
 
