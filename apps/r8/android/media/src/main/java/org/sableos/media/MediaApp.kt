@@ -350,8 +350,8 @@ internal fun MediaApp(
                     },
                     onPlayLocal = { selectedIndex ->
                         playLocalQueue(
-                            items = localItems,
-                            startIndex = selectedIndex,
+                            localItems,
+                            selectedIndex,
                         )
                         destination = MediaDestination.NowPlaying
                     },
@@ -483,9 +483,9 @@ internal fun MediaApp(
                                 episodeId = episode.id,
                             )
                         playUri(
-                            uri = Uri.parse(episode.mediaUrl),
-                            title = episode.title,
-                            source = episode.podcastTitle,
+                            Uri.parse(episode.mediaUrl),
+                            episode.title,
+                            episode.podcastTitle,
                         )
                         destination = MediaDestination.NowPlaying
                     },
@@ -512,9 +512,9 @@ internal fun MediaApp(
                     },
                     onPlayStation = { station ->
                         playUri(
-                            uri = Uri.parse(station.url),
-                            title = station.name,
-                            source = "live radio",
+                            Uri.parse(station.url),
+                            station.name,
+                            "live radio",
                         )
                         destination = MediaDestination.NowPlaying
                     },
@@ -660,8 +660,8 @@ internal fun MediaApp(
                             message = "This playlist has no available tracks."
                         } else {
                             playLocalQueue(
-                                items = queue,
-                                startIndex = 0,
+                                queue,
+                                0,
                             )
                             destination = MediaDestination.NowPlaying
                         }
@@ -713,8 +713,12 @@ internal fun MediaApp(
                             playbackController.play()
                         }
                     },
-                    onPrevious = playbackController::previous,
-                    onNext = playbackController::next,
+                    onPrevious = {
+                        playbackController.skip(PlaybackSkip.Previous)
+                    },
+                    onNext = {
+                        playbackController.skip(PlaybackSkip.Next)
+                    },
                     onStop = playbackController::stop,
                     onSeek = playbackController::seekTo,
                 ),
