@@ -167,8 +167,18 @@ require(
     "NoButtonNavbarToOverviewTouchController.java",
     "isSableSurfaceActive()",
     "!mDidTouchStartInNavBar",
+    "PREVIOUS_CANONICAL_HOST_BLOBS",
+    "a3bf622a048d399cf4a9ffa89e3cbbdb58f1ac97",
+    "refresh-canonical-host",
+    "R9_LAUNCHER_COHESION_CANONICAL_HOST_REFRESH=PASS",
     "R9_SABLE_NATIVE_ALL_APPS_TOUCH_ESCAPE=PASS_BLOCKED",
     "R9_QUICKSTEP_NAVBAR_OVERVIEW_PATH=PASS_PRESERVED",
+)
+require(
+    "build/panther/prepare-r8-final-ui.sh",
+    "refresh-canonical-host",
+    "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING_REFRESHED",
+    "R9_LAUNCHER_COHESION=ALREADY_APPLIED_HOST_REFRESHED",
 )
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
