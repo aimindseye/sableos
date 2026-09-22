@@ -184,9 +184,20 @@ internal class PodcastRepository(
     ): PodcastSubscription {
         val parser = Xml.newPullParser()
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+        val prolog =
+            String(
+                bytes,
+                0,
+                minOf(bytes.size, 4_096),
+                StandardCharsets.ISO_8859_1,
+            )
+        require(!prolog.contains("<!DOCTYPE", ignoreCase = true)) {
+            "Podcast feed document types are not accepted."
+        }
+
         parser.setInput(
             ByteArrayInputStream(bytes),
-            StandardCharsets.UTF_8.name(),
+            null,
         )
 
         val podcastId = stableId(feedUrl)
@@ -457,7 +468,7 @@ internal class PodcastRepository(
             podcastTitle: String,
         ): PodcastEpisode? {
             val playableUrl = mediaUrl.trim()
-            if (playableUrl.isBlank()) return null
+            if (!isSupportedMediaUrl(playableUrl)) return null
 
             val normalizedTitle =
                 cleanText(title)
@@ -494,6 +505,14 @@ internal class PodcastRepository(
             val protocol =
                 runCatching {
                     URL(normalized).protocol.lowercase(Locale.US)
+                }.getOrNull()
+            return protocol == "http" || protocol == "https"
+        }
+
+        private fun isSupportedMediaUrl(value: String): Boolean {
+            val protocol =
+                runCatching {
+                    URL(value.trim()).protocol.lowercase(Locale.US)
                 }.getOrNull()
             return protocol == "http" || protocol == "https"
         }
