@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+failures: list[str] = []
+
+
+def read(rel: str) -> str:
+    path = ROOT / rel
+    if not path.is_file():
+        failures.append(f"missing_file={rel}")
+        return ""
+    return path.read_text(encoding="utf-8")
+
+
+def require(rel: str, *needles: str) -> None:
+    text = read(rel)
+    for needle in needles:
+        if needle not in text:
+            failures.append(f"missing_token={rel}:{needle}")
+
+
+def forbid(rel: str, *needles: str) -> None:
+    text = read(rel)
+    for needle in needles:
+        if needle in text:
+            failures.append(f"forbidden_token={rel}:{needle}")
+
+
+MEDIA = "apps/r8/android/media/src/main"
+MEDIA_KT = f"{MEDIA}/java/org/sableos/media"
+
+require(
+    f"{MEDIA_KT}/MediaScreen.kt",
+    'Podcasts("podcasts")',
+    "MediaDestination.Podcasts",
+    "PodcastScreen(",
+    "MediaDestination.Collection,",
+    "MediaDestination.Radio,",
+    "MediaDestination.NowPlaying,",
+    "MaterialTheme.typography.headlineSmall",
+    "Music, podcasts, and radio in one private playback flow.",
+)
+
+require(
+    f"{MEDIA_KT}/PodcastScreen.kt",
+    'Latest("latest")',
+    'Shows("shows")',
+    'Saved("saved")',
+    "PodcastStatusDeck(",
+    "PodcastEpisodeRow(",
+    "PodcastFeedEntry(",
+    "No podcast account, analytics SDK, recommendation profile, or automatic directory query",
+    "Saved does not imply downloaded.",
+)
+
+require(
+    f"{MEDIA_KT}/PodcastRepository.kt",
+    "HttpURLConnection",
+    "application/rss+xml",
+    "application/atom+xml",
+    "MAX_FEED_BYTES",
+    "MAX_EPISODES_PER_FEED",
+    "Podcast feed document types are not accepted.",
+    "isSupportedFeedUrl(",
+    "isSupportedMediaUrl(",
+    "PodcastStateRepository",
+    "loadSavedEpisodeIds",
+    "loadPlayedEpisodeIds",
+)
+
+require(
+    f"{MEDIA_KT}/MainActivity.kt",
+    "PodcastRepository(applicationContext)",
+    "PodcastStateRepository(applicationContext)",
+    "onAddPodcastFeed",
+    "onRefreshPodcasts",
+    "withContext(Dispatchers.IO)",
+    "podcastRepository.subscribe(",
+    "podcastRepository.refreshAll(",
+    "podcastStateRepository.toggleSaved(",
+    "podcastStateRepository.markPlayed(",
+    "playUri(",
+    "destination = MediaDestination.NowPlaying",
+)
+
+require(
+    f"{MEDIA_KT}/PlaybackService.kt",
+    "class PlaybackService : MediaSessionService()",
+    "ExoPlayer.Builder(this)",
+    "ACTION_PLAY_URI",
+    "ACTION_PLAY_QUEUE",
+)
+
+require(
+    f"{MEDIA}/AndroidManifest.xml",
+    'android.permission.INTERNET',
+    'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
+    'android:name=".PlaybackService"',
+)
+
+forbid(
+    f"{MEDIA}/AndroidManifest.xml",
+    "READ_EXTERNAL_STORAGE",
+    "WRITE_EXTERNAL_STORAGE",
+    "MANAGE_EXTERNAL_STORAGE",
+    "READ_MEDIA_AUDIO",
+)
+
+for rel in (
+    f"{MEDIA_KT}/PodcastRepository.kt",
+    f"{MEDIA_KT}/PodcastScreen.kt",
+    f"{MEDIA_KT}/MainActivity.kt",
+):
+    forbid(
+        rel,
+        "WorkManager",
+        "PeriodicWorkRequest",
+        "AlarmManager",
+        "FirebaseAnalytics",
+        "GoogleAnalytics",
+        "WebView",
+    )
+
+forbid(
+    "apps/r8/android/media/build.gradle.kts",
+    "coil",
+    "glide",
+    "picasso",
+    "firebase-analytics",
+    "work-runtime",
+)
+
+if failures:
+    print("R9_MEDIA_FLOW_CONTRACT=FAIL")
+    for failure in failures:
+        print(f"FAILURE={failure}")
+    raise SystemExit(1)
+
+print("R9_MEDIA_FLOW_PANORAMA_NAVIGATION=PASS")
+print("R9_MEDIA_FLOW_SINGLE_MEDIA3_SESSION=PASS")
+print("R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS")
+print("R9_PODCAST_MANUAL_REFRESH=PASS")
+print("R9_PODCAST_FEED_SIZE_BOUND=PASS")
+print("R9_PODCAST_XML_DOCTYPE_REJECTED=PASS")
+print("R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS")
+print("R9_PODCAST_NO_BACKGROUND_POLLING=PASS")
+print("R9_PODCAST_NO_ANALYTICS_SDK=PASS")
+print("R9_PODCAST_STORAGE_PERMISSION_EXPANSION=PASS_ABSENT")
+print("R9_MEDIA_FLOW_CONTRACT=PASS")
