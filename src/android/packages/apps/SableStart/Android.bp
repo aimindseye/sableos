@@ -1,14 +1,14 @@
-// R9L7 phase 2: Sable Start is presentation-only.
-// Launcher3QuickStep owns HOME, app inventory, launch/details, widgets, shortcuts,
-// Recents/Overview, task animations, and the org.sableos.start.appearance provider.
-// No standalone SableStart APK or JNI runtime exists after the HOME cutover.
+// R9 system-cohesion: Sable Start is presentation-only.
+// Launcher3QuickStep owns the Android HOME/Recents host and app model.
+// Sable presentation owns Start, All Apps, Search and Peek.
+// Global appearance is owned by privileged Settings via org.sableos.appearance.
+// No standalone SableStart APK/JNI runtime or Launcher-hosted appearance provider exists.
 filegroup {
     name: "sable_start_presentation_srcs",
     srcs: [
         "src/com/sable/start/live/LiveSurfaceModels.kt",
         "src/com/sable/start/model/AppEntry.kt",
         "src/com/sable/start/platform/LiveSurfaceRepository.kt",
-        "src/com/sable/start/platform/SableAppearanceProvider.kt",
         "src/com/sable/start/platform/StartStateRepository.kt",
         "src/com/sable/start/ui/SableStartScreen.kt",
         "src/com/sable/start/ui/SableGlyphIcon.kt",
