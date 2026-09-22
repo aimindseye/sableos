@@ -295,415 +295,421 @@ internal fun MediaApp(
     
     SableGlobalTheme(window = window) {
         MediaScreen(
-            destination = destination,
-            libraryPivot = libraryPivot,
-            localItems = localItems,
-            podcastSubscriptions = podcastSubscriptions,
-            savedPodcastEpisodeIds = savedPodcastEpisodeIds,
-            playedPodcastEpisodeIds = playedPodcastEpisodeIds,
-            podcastFeedUrl = podcastFeedUrl,
-            podcastBusy = podcastBusy,
-            podcastMessage = podcastMessage,
-            stations = stations,
-            playback = playbackState,
-            favoriteAudioUris = favoriteAudioUris,
-            favoriteStationIds = favoriteStationIds,
-            playlists = playlists,
-            settings = settings,
-            playlistName = playlistName,
-            selectedPlaylistUris = selectedPlaylistUris,
-            editingPlaylist = editingPlaylist,
-            showFavoriteStationsOnly = showFavoriteStationsOnly,
-            stationName = stationName,
-            stationUrl = stationUrl,
-            editingStation = editingStation,
-            message = message,
-            onDestinationChange = { next ->
-                destination = next
-                message = null
-    
-                if (
+            state =
+                MediaScreenState(
+                    destination = destination,
+                    libraryPivot = libraryPivot,
+                    localItems = localItems,
+                    podcastSubscriptions = podcastSubscriptions,
+                    savedPodcastEpisodeIds = savedPodcastEpisodeIds,
+                    playedPodcastEpisodeIds = playedPodcastEpisodeIds,
+                    podcastFeedUrl = podcastFeedUrl,
+                    podcastBusy = podcastBusy,
+                    podcastMessage = podcastMessage,
+                    stations = stations,
+                    playback = playbackState,
+                    favoriteAudioUris = favoriteAudioUris,
+                    favoriteStationIds = favoriteStationIds,
+                    playlists = playlists,
+                    settings = settings,
+                    playlistName = playlistName,
+                    selectedPlaylistUris = selectedPlaylistUris,
+                    editingPlaylist = editingPlaylist,
+                    showFavoriteStationsOnly = showFavoriteStationsOnly,
+                    stationName = stationName,
+                    stationUrl = stationUrl,
+                    editingStation = editingStation,
+                    message = message,
+                ),
+            actions =
+                MediaScreenActions(
+                    onDestinationChange = { next ->
+                    destination = next
+                    message = null
+                    
+                    if (
                     next != MediaDestination.ManageStations &&
                     next != MediaDestination.AddStation
-                ) {
+                    ) {
                     clearStationForm()
-                }
-    
-                if (next != MediaDestination.PlaylistEditor) {
+                    }
+                    
+                    if (next != MediaDestination.PlaylistEditor) {
                     clearPlaylistForm()
-                }
-            },
-            onLibraryPivotChange = {
-                libraryPivot = it
-            },
-            onAddLocalAudio = {
-                localAudioPicker.launch(arrayOf("audio/*"))
-            },
-            onAddLocalFolder = {
-                localAudioFolderPicker.launch(null)
-            },
-            onPlayLocal = { selectedIndex ->
-                playLocalQueue(
+                    }
+                    },
+                    onLibraryPivotChange = {
+                    libraryPivot = it
+                    },
+                    onAddLocalAudio = {
+                    localAudioPicker.launch(arrayOf("audio/*"))
+                    },
+                    onAddLocalFolder = {
+                    localAudioFolderPicker.launch(null)
+                    },
+                    onPlayLocal = { selectedIndex ->
+                    playLocalQueue(
                     items = localItems,
                     startIndex = selectedIndex,
-                )
-                destination = MediaDestination.NowPlaying
-            },
-            onRemoveLocal = { item ->
-                localItems =
+                    )
+                    destination = MediaDestination.NowPlaying
+                    },
+                    onRemoveLocal = { item ->
+                    localItems =
                     localAudioRepository.remove(
-                        current = localItems,
-                        uri = item.uri,
+                    current = localItems,
+                    uri = item.uri,
                     )
-    
-                if (item.uri in favoriteAudioUris) {
+                    
+                    if (item.uri in favoriteAudioUris) {
                     favoriteAudioUris =
-                        libraryStateRepository.toggleFavoriteAudio(
-                            current = favoriteAudioUris,
-                            uri = item.uri,
-                        )
-                }
-    
-                playlists =
-                    libraryStateRepository.pruneMissingAudio(
-                        current = playlists,
-                        validUris = localItems.map { it.uri }.toSet(),
-                    )
-    
-                message = "Removed from the Sable Media collection."
-            },
-            onToggleFavoriteAudio = { item ->
-                favoriteAudioUris =
                     libraryStateRepository.toggleFavoriteAudio(
-                        current = favoriteAudioUris,
-                        uri = item.uri,
+                    current = favoriteAudioUris,
+                    uri = item.uri,
                     )
-            },
-            onPodcastFeedUrlChange = { value ->
-                podcastFeedUrl = value
-                podcastMessage = null
-            },
-            onAddPodcastFeed = {
-                val candidate = podcastFeedUrl.trim()
-                when {
-                    podcastBusy -> Unit
-    
-                    !PodcastRepository.isSupportedFeedUrl(candidate) ->
-                        podcastMessage = "Podcast feed must use HTTPS."
-    
-                    else -> {
-                        val currentSubscriptions = podcastSubscriptions
-                        podcastBusy = true
-                        podcastMessage = "Contacting podcast feed…"
-    
-                        uiScope.launch {
-                            val result =
-                                runCatching {
-                                    withContext(Dispatchers.IO) {
-                                        podcastRepository.subscribe(
-                                            current = currentSubscriptions,
-                                            feedUrl = candidate,
-                                        )
-                                    }
-                                }
-    
-                            result.onSuccess { updated ->
-                                podcastSubscriptions = updated
-                                podcastFeedUrl = ""
-                                podcastMessage =
-                                    "Podcast subscribed. Refresh remains manual."
-                            }.onFailure { error ->
-                                podcastMessage =
-                                    error.message
-                                        ?.takeIf { it.isNotBlank() }
-                                        ?: "Podcast feed could not be added."
-                            }
-                            podcastBusy = false
-                        }
                     }
-                }
-            },
-            onRefreshPodcasts = {
-                if (!podcastBusy && podcastSubscriptions.isNotEmpty()) {
+                    
+                    playlists =
+                    libraryStateRepository.pruneMissingAudio(
+                    current = playlists,
+                    validUris = localItems.map { it.uri }.toSet(),
+                    )
+                    
+                    message = "Removed from the Sable Media collection."
+                    },
+                    onToggleFavoriteAudio = { item ->
+                    favoriteAudioUris =
+                    libraryStateRepository.toggleFavoriteAudio(
+                    current = favoriteAudioUris,
+                    uri = item.uri,
+                    )
+                    },
+                    onPodcastFeedUrlChange = { value ->
+                    podcastFeedUrl = value
+                    podcastMessage = null
+                    },
+                    onAddPodcastFeed = {
+                    val candidate = podcastFeedUrl.trim()
+                    when {
+                    podcastBusy -> Unit
+                    
+                    !PodcastRepository.isSupportedFeedUrl(candidate) ->
+                    podcastMessage = "Podcast feed must use HTTPS."
+                    
+                    else -> {
+                    val currentSubscriptions = podcastSubscriptions
+                    podcastBusy = true
+                    podcastMessage = "Contacting podcast feed…"
+                    
+                    uiScope.launch {
+                    val result =
+                    runCatching {
+                    withContext(Dispatchers.IO) {
+                    podcastRepository.subscribe(
+                    current = currentSubscriptions,
+                    feedUrl = candidate,
+                    )
+                    }
+                    }
+                    
+                    result.onSuccess { updated ->
+                    podcastSubscriptions = updated
+                    podcastFeedUrl = ""
+                    podcastMessage =
+                    "Podcast subscribed. Refresh remains manual."
+                    }.onFailure { error ->
+                    podcastMessage =
+                    error.message
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Podcast feed could not be added."
+                    }
+                    podcastBusy = false
+                    }
+                    }
+                    }
+                    },
+                    onRefreshPodcasts = {
+                    if (!podcastBusy && podcastSubscriptions.isNotEmpty()) {
                     val currentSubscriptions = podcastSubscriptions
                     podcastBusy = true
                     podcastMessage = "Refreshing subscribed feeds…"
-    
+                    
                     uiScope.launch {
-                        val result =
-                            runCatching {
-                                withContext(Dispatchers.IO) {
-                                    podcastRepository.refreshAll(
-                                        current = currentSubscriptions,
-                                    )
-                                }
-                            }
-    
-                        result.onSuccess { refresh ->
-                            podcastSubscriptions = refresh.subscriptions
-                            podcastMessage =
-                                if (refresh.failedFeeds == 0) {
-                                    "Podcasts refreshed."
-                                } else {
-                                    "Podcasts refreshed with ${refresh.failedFeeds} feed failure(s); cached episodes were kept."
-                                }
-                        }.onFailure { error ->
-                            podcastMessage =
-                                error.message
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: "Podcast refresh failed; cached episodes were kept."
-                        }
-                        podcastBusy = false
+                    val result =
+                    runCatching {
+                    withContext(Dispatchers.IO) {
+                    podcastRepository.refreshAll(
+                    current = currentSubscriptions,
+                    )
                     }
-                }
-            },
-            onRemovePodcastSubscription = { subscription ->
-                podcastSubscriptions =
+                    }
+                    
+                    result.onSuccess { refresh ->
+                    podcastSubscriptions = refresh.subscriptions
+                    podcastMessage =
+                    if (refresh.failedFeeds == 0) {
+                    "Podcasts refreshed."
+                    } else {
+                    "Podcasts refreshed with ${refresh.failedFeeds} feed failure(s); cached episodes were kept."
+                    }
+                    }.onFailure { error ->
+                    podcastMessage =
+                    error.message
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Podcast refresh failed; cached episodes were kept."
+                    }
+                    podcastBusy = false
+                    }
+                    }
+                    },
+                    onRemovePodcastSubscription = { subscription ->
+                    podcastSubscriptions =
                     podcastRepository.remove(
-                        current = podcastSubscriptions,
-                        podcastId = subscription.id,
+                    current = podcastSubscriptions,
+                    podcastId = subscription.id,
                     )
-                podcastMessage = "Podcast removed from this device."
-            },
-            onPlayPodcastEpisode = { episode ->
-                playedPodcastEpisodeIds =
+                    podcastMessage = "Podcast removed from this device."
+                    },
+                    onPlayPodcastEpisode = { episode ->
+                    playedPodcastEpisodeIds =
                     podcastStateRepository.markPlayed(
-                        current = playedPodcastEpisodeIds,
-                        episodeId = episode.id,
+                    current = playedPodcastEpisodeIds,
+                    episodeId = episode.id,
                     )
-                playUri(
+                    playUri(
                     uri = Uri.parse(episode.mediaUrl),
                     title = episode.title,
                     source = episode.podcastTitle,
-                )
-                destination = MediaDestination.NowPlaying
-            },
-            onQueuePodcastEpisode = { episode ->
-                val queued =
+                    )
+                    destination = MediaDestination.NowPlaying
+                    },
+                    onQueuePodcastEpisode = { episode ->
+                    val queued =
                     playbackController.addToQueue(
-                        uri = episode.mediaUrl,
-                        title = episode.title,
-                        source = episode.podcastTitle,
+                    uri = episode.mediaUrl,
+                    title = episode.title,
+                    source = episode.podcastTitle,
                     )
-                podcastMessage =
+                    podcastMessage =
                     if (queued) {
-                        "Added to Up Next."
+                    "Added to Up Next."
                     } else {
-                        "Player is still connecting. Try again."
+                    "Player is still connecting. Try again."
                     }
-            },
-            onToggleSavedPodcastEpisode = { episode ->
-                savedPodcastEpisodeIds =
+                    },
+                    onToggleSavedPodcastEpisode = { episode ->
+                    savedPodcastEpisodeIds =
                     podcastStateRepository.toggleSaved(
-                        current = savedPodcastEpisodeIds,
-                        episodeId = episode.id,
+                    current = savedPodcastEpisodeIds,
+                    episodeId = episode.id,
                     )
-            },
-            onPlayStation = { station ->
-                playUri(
+                    },
+                    onPlayStation = { station ->
+                    playUri(
                     uri = Uri.parse(station.url),
                     title = station.name,
                     source = "live radio",
-                )
-                destination = MediaDestination.NowPlaying
-            },
-            onToggleFavoriteStation = { station ->
-                favoriteStationIds =
-                    libraryStateRepository.toggleFavoriteStation(
-                        current = favoriteStationIds,
-                        stationId = station.id,
                     )
-            },
-            onRadioFavoritesOnlyChange = {
-                showFavoriteStationsOnly = it
-            },
-            onAddStation = {
-                clearStationForm()
-                message = null
-                destination = MediaDestination.AddStation
-            },
-            onManageStations = {
-                clearStationForm()
-                message = null
-                destination = MediaDestination.ManageStations
-            },
-            onEditStation = { station ->
-                editingStation = station
-                stationName = station.name
-                stationUrl = station.url
-                message = null
-            },
-            onDeleteStation = { station ->
-                stations =
-                    stationRepository.deleteStation(
-                        current = stations,
-                        id = station.id,
-                    )
-    
-                if (station.id in favoriteStationIds) {
+                    destination = MediaDestination.NowPlaying
+                    },
+                    onToggleFavoriteStation = { station ->
                     favoriteStationIds =
-                        libraryStateRepository.toggleFavoriteStation(
-                            current = favoriteStationIds,
-                            stationId = station.id,
-                        )
-                }
-    
-                if (editingStation?.id == station.id) {
+                    libraryStateRepository.toggleFavoriteStation(
+                    current = favoriteStationIds,
+                    stationId = station.id,
+                    )
+                    },
+                    onRadioFavoritesOnlyChange = {
+                    showFavoriteStationsOnly = it
+                    },
+                    onAddStation = {
                     clearStationForm()
-                }
-    
-                message = "Station removed."
-            },
-            onStationNameChange = {
-                stationName = it
-                message = null
-            },
-            onStationUrlChange = {
-                stationUrl = it
-                message = null
-            },
-            onSaveNewStation = {
-                val candidate = stationUrl.trim()
-    
-                if (!RadioStationRepository.isSupportedUrl(candidate)) {
-                    message = "Station URL must use HTTP or HTTPS."
-                } else {
+                    message = null
+                    destination = MediaDestination.AddStation
+                    },
+                    onManageStations = {
+                    clearStationForm()
+                    message = null
+                    destination = MediaDestination.ManageStations
+                    },
+                    onEditStation = { station ->
+                    editingStation = station
+                    stationName = station.name
+                    stationUrl = station.url
+                    message = null
+                    },
+                    onDeleteStation = { station ->
                     stations =
-                        stationRepository.saveStation(
-                            current = stations,
-                            name = stationName,
-                            url = candidate,
-                        )
+                    stationRepository.deleteStation(
+                    current = stations,
+                    id = station.id,
+                    )
+                    
+                    if (station.id in favoriteStationIds) {
+                    favoriteStationIds =
+                    libraryStateRepository.toggleFavoriteStation(
+                    current = favoriteStationIds,
+                    stationId = station.id,
+                    )
+                    }
+                    
+                    if (editingStation?.id == station.id) {
+                    clearStationForm()
+                    }
+                    
+                    message = "Station removed."
+                    },
+                    onStationNameChange = {
+                    stationName = it
+                    message = null
+                    },
+                    onStationUrlChange = {
+                    stationUrl = it
+                    message = null
+                    },
+                    onSaveNewStation = {
+                    val candidate = stationUrl.trim()
+                    
+                    if (!RadioStationRepository.isSupportedUrl(candidate)) {
+                    message = "Station URL must use HTTP or HTTPS."
+                    } else {
+                    stations =
+                    stationRepository.saveStation(
+                    current = stations,
+                    name = stationName,
+                    url = candidate,
+                    )
                     clearStationForm()
                     message = "Station saved locally."
                     destination = MediaDestination.Radio
-                }
-            },
-            onSaveEditedStation = {
-                val editing = editingStation
-                val candidate = stationUrl.trim()
-    
-                when {
-                    editing == null ->
-                        message = "Choose a station to edit."
-    
-                    !RadioStationRepository.isSupportedUrl(candidate) ->
-                        message = "Station URL must use HTTP or HTTPS."
-    
-                    else -> {
-                        stations =
-                            stationRepository.updateStation(
-                                current = stations,
-                                id = editing.id,
-                                name = stationName,
-                                url = candidate,
-                            )
-                        clearStationForm()
-                        message = "Station updated."
                     }
-                }
-            },
-            onCancelStationFlow = {
-                if (destination == MediaDestination.AddStation) {
+                    },
+                    onSaveEditedStation = {
+                    val editing = editingStation
+                    val candidate = stationUrl.trim()
+                    
+                    when {
+                    editing == null ->
+                    message = "Choose a station to edit."
+                    
+                    !RadioStationRepository.isSupportedUrl(candidate) ->
+                    message = "Station URL must use HTTP or HTTPS."
+                    
+                    else -> {
+                    stations =
+                    stationRepository.updateStation(
+                    current = stations,
+                    id = editing.id,
+                    name = stationName,
+                    url = candidate,
+                    )
+                    clearStationForm()
+                    message = "Station updated."
+                    }
+                    }
+                    },
+                    onCancelStationFlow = {
+                    if (destination == MediaDestination.AddStation) {
                     clearStationForm()
                     message = null
                     destination = MediaDestination.Radio
-                } else {
+                    } else {
                     clearStationForm()
                     message = null
-                }
-            },
-            onCreatePlaylist = {
-                clearPlaylistForm()
-                message = null
-                destination = MediaDestination.PlaylistEditor
-            },
-            onEditPlaylist = { playlist ->
-                editingPlaylist = playlist
-                playlistName = playlist.name
-                selectedPlaylistUris = playlist.itemUris.toSet()
-                message = null
-                destination = MediaDestination.PlaylistEditor
-            },
-            onDeletePlaylist = { playlist ->
-                playlists =
+                    }
+                    },
+                    onCreatePlaylist = {
+                    clearPlaylistForm()
+                    message = null
+                    destination = MediaDestination.PlaylistEditor
+                    },
+                    onEditPlaylist = { playlist ->
+                    editingPlaylist = playlist
+                    playlistName = playlist.name
+                    selectedPlaylistUris = playlist.itemUris.toSet()
+                    message = null
+                    destination = MediaDestination.PlaylistEditor
+                    },
+                    onDeletePlaylist = { playlist ->
+                    playlists =
                     libraryStateRepository.deletePlaylist(
-                        current = playlists,
-                        playlistId = playlist.id,
+                    current = playlists,
+                    playlistId = playlist.id,
                     )
-                message = "Playlist removed."
-            },
-            onPlayPlaylist = { playlist ->
-                val byUri =
+                    message = "Playlist removed."
+                    },
+                    onPlayPlaylist = { playlist ->
+                    val byUri =
                     localItems.associateBy { item ->
-                        item.uri
+                    item.uri
                     }
-                val queue =
+                    val queue =
                     playlist.itemUris.mapNotNull { uri ->
-                        byUri[uri]
+                    byUri[uri]
                     }
-    
-                if (queue.isEmpty()) {
+                    
+                    if (queue.isEmpty()) {
                     message = "This playlist has no available tracks."
-                } else {
+                    } else {
                     playLocalQueue(
-                        items = queue,
-                        startIndex = 0,
+                    items = queue,
+                    startIndex = 0,
                     )
                     destination = MediaDestination.NowPlaying
-                }
-            },
-            onPlaylistNameChange = {
-                playlistName = it
-            },
-            onTogglePlaylistItem = { uri ->
-                selectedPlaylistUris =
+                    }
+                    },
+                    onPlaylistNameChange = {
+                    playlistName = it
+                    },
+                    onTogglePlaylistItem = { uri ->
+                    selectedPlaylistUris =
                     selectedPlaylistUris
-                        .toMutableSet()
-                        .apply {
-                            if (!add(uri)) {
-                                remove(uri)
-                            }
-                        }
-                        .toSet()
-            },
-            onSavePlaylist = {
-                playlists =
+                    .toMutableSet()
+                    .apply {
+                    if (!add(uri)) {
+                    remove(uri)
+                    }
+                    }
+                    .toSet()
+                    },
+                    onSavePlaylist = {
+                    playlists =
                     libraryStateRepository.savePlaylist(
-                        current = playlists,
-                        editingId = editingPlaylist?.id,
-                        name = playlistName,
-                        itemUris = selectedPlaylistUris,
+                    current = playlists,
+                    editingId = editingPlaylist?.id,
+                    name = playlistName,
+                    itemUris = selectedPlaylistUris,
                     )
-                clearPlaylistForm()
-                libraryPivot = LibraryPivot.Playlists
-                destination = MediaDestination.Collection
-                message = "Playlist saved locally."
-            },
-            onCancelPlaylistEditor = {
-                clearPlaylistForm()
-                libraryPivot = LibraryPivot.Playlists
-                destination = MediaDestination.Collection
-                message = null
-            },
-            onSettingsChange = { updated ->
-                settings = updated
-                settingsRepository.save(updated)
-            },
-            onPlayQueueIndex = playbackController::playQueueIndex,
-            onMoveQueueItem = playbackController::moveQueueItem,
-            onRemoveQueueItem = playbackController::removeQueueItem,
-            onPlayPause = {
-                if (playbackState.isPlaying) {
+                    clearPlaylistForm()
+                    libraryPivot = LibraryPivot.Playlists
+                    destination = MediaDestination.Collection
+                    message = "Playlist saved locally."
+                    },
+                    onCancelPlaylistEditor = {
+                    clearPlaylistForm()
+                    libraryPivot = LibraryPivot.Playlists
+                    destination = MediaDestination.Collection
+                    message = null
+                    },
+                    onSettingsChange = { updated ->
+                    settings = updated
+                    settingsRepository.save(updated)
+                    },
+                    onPlayQueueIndex = playbackController::playQueueIndex,
+                    onMoveQueueItem = playbackController::moveQueueItem,
+                    onRemoveQueueItem = playbackController::removeQueueItem,
+                    onPlayPause = {
+                    if (playbackState.isPlaying) {
                     playbackController.pause()
-                } else {
+                    } else {
                     playbackController.play()
-                }
-            },
-            onPrevious = playbackController::previous,
-            onNext = playbackController::next,
-            onStop = playbackController::stop,
-            onSeek = playbackController::seekTo,
+                    }
+                    },
+                    onPrevious = playbackController::previous,
+                    onNext = playbackController::next,
+                    onStop = playbackController::stop,
+                    onSeek = playbackController::seekTo,
+                ),
         )
     }
     
