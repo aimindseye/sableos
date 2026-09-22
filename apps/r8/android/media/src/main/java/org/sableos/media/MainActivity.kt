@@ -372,7 +372,7 @@ class MainActivity : ComponentActivity() {
                             podcastBusy -> Unit
 
                             !PodcastRepository.isSupportedFeedUrl(candidate) ->
-                                podcastMessage = "Podcast feed must use HTTP or HTTPS."
+                                podcastMessage = "Podcast feed must use HTTPS."
 
                             else -> {
                                 val currentSubscriptions = podcastSubscriptions
