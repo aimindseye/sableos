@@ -105,23 +105,20 @@ do
     grep -Fq "$needle" "$GLOBAL_APPEARANCE" || fail R8_GLOBAL_APPEARANCE_SOURCE
 done
 
-# Scan production/runtime inputs for the retired Launcher-owned authority.
-# Unit tests intentionally retain the literal as a negative regression assertion.
-# Generated Gradle/build output may contain compiled copies of that assertion and
-# must never participate in a source-composition gate.
-if grep -R -Fq \
-    --exclude-dir=test \
-    --exclude-dir=androidTest \
-    --exclude-dir=build \
-    --exclude-dir=.gradle \
-    --exclude-dir=out \
-    --exclude-dir=target \
-    --exclude='*.md' \
-    'org.sableos.start.appearance' \
-    "$ROOT/src/android/packages/apps/SableStart" \
-    "$ROOT/apps/r8/android" \
-    "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
-    "$ROOT/apps/r8/reader/apply_sable_flavor.py"
+# Scan tracked production/runtime source for the retired Launcher-owned
+# authority. Unit tests intentionally retain the literal as a negative
+# regression assertion. git grep ignores untracked Gradle/build artifacts by
+# construction, so compiled test output can never trip this source gate.
+if git -C "$ROOT" grep -Fq \
+    'org.sableos.start.appearance' -- \
+    src/android/packages/apps/SableStart \
+    apps/r8/android \
+    apps/r8/mail/apply_sable_flavor.py \
+    apps/r8/reader/apply_sable_flavor.py \
+    ':(exclude)src/android/packages/apps/SableStart/*.md' \
+    ':(exclude)apps/r8/android/**/src/test/**' \
+    ':(exclude)apps/r8/android/**/src/androidTest/**' \
+    ':(exclude)apps/r8/android/**/*.md'
 then
     fail R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY
 fi
