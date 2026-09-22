@@ -218,6 +218,10 @@ READER_SDK_XML_WARNING_COUNT="$(
 echo "R9_READER_KOTLIN_WARNING_COUNT=$READER_KOTLIN_WARNING_COUNT"
 echo "R9_READER_NATIVE_STRIP_WARNING_COUNT=$READER_NATIVE_STRIP_WARNING_COUNT"
 echo "R9_READER_SDK_XML_WARNING_COUNT=$READER_SDK_XML_WARNING_COUNT"
+if [[ "$READER_KOTLIN_WARNING_COUNT" -gt 0 ]]; then
+    echo "===== R9 READER REMAINING KOTLIN WARNINGS ====="
+    grep -E '^w: file://' "$EVIDENCE/reader-build.log" || true
+fi
 echo "R8_SABLE_READER_BUILD=PASS"
 
 echo
@@ -245,6 +249,11 @@ SABLE_MAIL_APK="${mail_apks[0]}"
 
 python3 "$REPO/apps/r8/mail/verify_sable_mail.py"     "$WORK/mail"     "$SABLE_MAIL_APK"
 sha256sum "$SABLE_MAIL_APK"
+
+MAIL_GRADLE_DEPRECATION_SUMMARY_COUNT="$(
+    grep -Fc 'Deprecated Gradle features were used in this build'         "$EVIDENCE/mail-build.log" || true
+)"
+echo "R9_MAIL_GRADLE_DEPRECATION_SUMMARY_COUNT=$MAIL_GRADLE_DEPRECATION_SUMMARY_COUNT"
 echo "R8_SABLE_MAIL_BUILD=PASS"
 
 echo
