@@ -750,6 +750,28 @@ require(
 # Canonical pre-full qualification + runtime identity audit.
 # ---------------------------------------------------------------------------
 require(
+    "build/gates/r9-system-cohesion-contract.py",
+    "R9_PLATFORM_SURFACE_CLASSIFICATION=PASS",
+    "R9_SABLE_OWNED_BRANDING_CONTRACT=PASS",
+    "R9_INTENTIONAL_UPSTREAM_BOUNDARY=PASS",
+    "R9_WS6_SOURCE_AUDIT=PASS",
+    "R9_WS7_INTEGRATION_CONTRACT=PASS",
+    "R9_SYSTEM_COHESION_CONTRACT=PASS",
+)
+require(
+    "docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md",
+    "SABLE_OWNED",
+    "SABLE_PRESENTED_ANDROID",
+    "INTENTIONALLY_UPSTREAM",
+    "R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS",
+)
+require(
+    "build/panther/qualify-r9-physical-ux.sh",
+    "r9-system-cohesion-contract.py",
+    "R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS",
+)
+
+require(
     "build/sable.sh",
     "qualify [suite]",
     "SABLE_DEVICE_QUALIFY_SUPPORTED",
@@ -1015,5 +1037,7 @@ print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
 print("R9_RUNTIME_SYSTEM_IDENTITY_AUDIT_CONTRACT=PASS")
 print("R9_FINAL_UI_RUNTIME_ACCEPTANCE_CONTRACT=PASS")
 print("R9_SABLE_MESSAGES_PROVIDER_CAPSULES=PASS_4")
+print("R9_PLATFORM_SURFACE_CLASSIFICATION_CONTRACT=PASS")
+print("R9_SYSTEM_COHESION_INTEGRATION_GATE=PASS")
 print("R9_ACTIVE_DEVICE_SET_CONTRACT=PASS")
 print("R9_PHYSICAL_UX_CLOSURE_CONTRACT=PASS")
