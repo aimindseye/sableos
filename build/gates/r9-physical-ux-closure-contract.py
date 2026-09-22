@@ -762,6 +762,7 @@ require(
     "R9_MEDIA_FLOW_KTLINT_FAIL_CLOSED=PASS",
     "R9_MEDIA_FLOW_COMPOSE_NAMING_POLICY=PASS",
     "R9_MEDIA_FLOW_CANONICAL_SDK_QUALIFIER=PASS",
+    "R9_MEDIA_FLOW_KOTLIN_QUALITY=PASS_WARNINGS_DETEKT_KTLINT",
     "R9_MEDIA_FLOW_CONTRACT=PASS",
 )
 require(
@@ -773,6 +774,12 @@ require(
     "fail-closed driver",
     "ANDROID_HOME",
 )
+require(
+    "build/panther/qualify-r9-media-flow.sh",
+    "R9_MEDIA_FLOW_KOTLIN_QUALITY=PASS_WARNINGS_DETEKT_KTLINT",
+    "R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS",
+)
+
 require(
     "build/panther/qualify-r9-physical-ux.sh",
     "r9-media-flow-contract.py",
