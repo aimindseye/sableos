@@ -29,9 +29,18 @@ R9_WS7_FIRST_PARTY_ANDROID_BUILD=PASS
 R9_WS7_READER_BUILD=PASS
 R9_WS7_MAIL_BUILD=PASS
 R9_WS7_TEN_APK_BUNDLE=PASS
-R9_WS7_ANDROID_PREPARATION=RETRY_REQUIRED_AFTER_CUMULATIVE_STAGE_RECOGNITION_FIX
+R9_WS7_FIRST_PARTY_ANDROID_BUILD=PASS
+R9_WS7_READER_BUILD=PASS
+R9_WS7_MAIL_BUILD=PASS
+R9_WS7_TEN_APK_BUNDLE=PASS
+R9_WS7_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED
+R9_WS7_SYSTEMUI_COHESION=PASS_APPLIED_SETTINGS_AUTHORITY
+R9_WS7_SETTINGS_COHESION=PASS_APPLIED
+R9_WS7_SHARED_SABLE_DESIGN_SYNC=PASS
+R9_WS7_SABLESTART_SYNC=RETRY_REQUIRED_AFTER_RETIRED_PROVIDER_CONTRACT_FIX
 R9_READER_NATIVE_STRIP_WARNING_COUNT=0
-R9_READER_KOTLIN_WARNING_COUNT=13_DIAGNOSTIC_LINES_ADDED_NEXT_RUN
+R9_READER_KOTLIN_WARNING_COUNT=0
+R9_MAIL_GRADLE_DEPRECATION_CLEANUP=SOURCE_APPLIED_PENDING_RERUN
 R9_SDK_XML_WARNING=KNOWN_NONBLOCKING_CMDLINE_TOOLS_22_0
 R9_WS8_FRESH_IMAGE_PHYSICAL_ACCEPTANCE=BLOCKED_ON_WS7
 R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
@@ -58,11 +67,18 @@ The source/classification contracts are
 `build/gates/r9-system-cohesion-contract.py`.
 
 The latest WS7 attempt passed the first-party Android build, Sable Reader,
-Sable Mail and the source-bound ten-APK bundle. It then stopped during Android
-workspace preparation because the cumulative-state detector fed a valid
-UI5C+later-R9 workspace back through obsolete exact-scope UI5A/UI5B/UI4 checks.
-The preparation driver now recognizes exact later SystemUI/Settings dirt over
-the sealed UI5C/UI6 base and keeps unknown dirt fail-closed.
+Sable Mail, the source-bound ten-APK bundle, cumulative UI5C/UI6 recognition,
+the SystemUI legacy-authority upgrade, Settings-hosted appearance/Network
+Manager application and shared Sable Design synchronization. It then stopped
+because `sync-sablestart.sh` still classified the intentionally retired
+`SableAppearanceProvider.kt` as required presentation source. That duplicated
+contract is now corrected: the provider is explicitly retired from both the
+repository and workspace sync while Settings remains the global appearance
+owner.
+
+The tracked Reader Kotlin/native-strip warning counts are both zero. Mail
+Gradle deprecation cleanup is now composed into the ephemeral Thunderbird
+checkout and awaits qualification confirmation.
 
 The next authoritative action is to rerun local Panther module qualification on
 `ai-g732`. Only after that passes is one fresh target-files build authorized.
