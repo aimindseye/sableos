@@ -35,8 +35,12 @@ class SableDesignContractTest {
     @Test
     fun globalAppearanceContractIsStableAndNarrow() {
         assertEquals(
-            "org.sableos.start.appearance",
+            "org.sableos.appearance",
             SableGlobalAppearanceContract.AUTHORITY,
+        )
+        assertTrue(
+            SableGlobalAppearanceContract.AUTHORITY !=
+                "org.sableos.start.appearance",
         )
         assertEquals(
             "appearance",
