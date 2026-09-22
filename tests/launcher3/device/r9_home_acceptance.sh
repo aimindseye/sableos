@@ -171,6 +171,50 @@ case "$permission_summary_ok" in
     *) rec ALL_APPS_PERMISSION_SUMMARIES FAIL ;;
 esac
 
+echo
+echo "R9 physical gesture regression checks:"
+echo "  1. Open Live, All Apps, Search, Peek and Appearance."
+echo "  2. On each, use the left-edge Back gesture and confirm it returns to the"
+echo "     previous Sable surface instead of doing nothing or exposing Launcher3."
+printf 'Do left-edge Back gestures work on every Sable sub-surface tested? [y/N]: '
+read -r sable_back_ok
+case "$sable_back_ok" in
+    y|Y|yes|YES|Yes) rec SABLE_SUBSURFACE_BACK_GESTURES PASS ;;
+    *) rec SABLE_SUBSURFACE_BACK_GESTURES FAIL ;;
+esac
+
+echo
+echo "On Start, repeat at least five SHORT/ABORTED bottom-edge swipe-ups."
+echo "They must return to Sable Start without revealing native Launcher3 icons,"
+echo "workspace, All Apps, or the old launcher presentation underneath."
+printf 'Did every aborted swipe-up remain visually contained by Sable? [y/N]: '
+read -r aborted_swipe_ok
+case "$aborted_swipe_ok" in
+    y|Y|yes|YES|Yes) rec SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE PASS ;;
+    *) rec SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE FAIL ;;
+esac
+
+echo
+echo "Now perform at least three deliberate swipe-up-and-hold gestures from the"
+echo "navigation edge. Native Quickstep Recents may appear only after the gesture"
+echo "commits to Overview; returning HOME must restore Sable Start cleanly."
+printf 'Did deliberate Recents work without intermediate native workspace exposure? [y/N]: '
+read -r committed_recents_ok
+case "$committed_recents_ok" in
+    y|Y|yes|YES|Yes) rec SABLE_COMMITTED_RECENTS_GESTURE PASS ;;
+    *) rec SABLE_COMMITTED_RECENTS_GESTURE FAIL ;;
+esac
+
+echo
+echo "Finally, from Start repeat at least five top-edge swipe-down gestures."
+echo "The notification shade must open consistently and return to intact Sable Start."
+printf 'Did repeated swipe-down shade gestures behave consistently? [y/N]: '
+read -r shade_gesture_ok
+case "$shade_gesture_ok" in
+    y|Y|yes|YES|Yes) rec SABLE_STATUS_SHADE_GESTURE_STABILITY PASS ;;
+    *) rec SABLE_STATUS_SHADE_GESTURE_STABILITY FAIL ;;
+esac
+
 if [[ "$R9_HOME_INCLUDE_THEME_REVIEW" == YES ]]; then
     printf 'Does Sable appearance/theme propagation still work across first-party apps? [y/N]: '
     read -r theme_ok
@@ -194,7 +238,11 @@ for key in \
     ALL_APPS_TOUCH_NAVIGATION \
     SEARCH_LOCAL_RESULTS \
     SABLE_PEEK \
-    ALL_APPS_PERMISSION_SUMMARIES
+    ALL_APPS_PERMISSION_SUMMARIES \
+    SABLE_SUBSURFACE_BACK_GESTURES \
+    SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE \
+    SABLE_COMMITTED_RECENTS_GESTURE \
+    SABLE_STATUS_SHADE_GESTURE_STABILITY
 do
     grep -Fxq "$key=PASS" "$REPORT" || FINAL=FAIL
 done
