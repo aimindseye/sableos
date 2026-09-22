@@ -25,6 +25,7 @@ required=(
   build/gates/r9-system-cohesion-contract.py
   docs/R9_SYSTEM_COHESION_CLOSURE.md
   docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md
+  tests/systemui/device/r9_branding_surface_audit.sh
   src/android/packages/apps/SableStart/Android.bp
   src/android/packages/apps/SableStart/src/com/sable/start/live/LiveSurfaceModels.kt
   src/android/packages/apps/SableStart/src/com/sable/start/model/AppEntry.kt
