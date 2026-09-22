@@ -19,12 +19,16 @@ required=(
   build/macos/audit-r9-launcher-review-fidelity.sh
   build/macos/capture-r9-theme-fidelity-review.sh
   patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py
+  patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py
+  patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py
   patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt
+  build/gates/r9-system-cohesion-contract.py
+  docs/R9_SYSTEM_COHESION_CLOSURE.md
+  docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md
   src/android/packages/apps/SableStart/Android.bp
   src/android/packages/apps/SableStart/src/com/sable/start/live/LiveSurfaceModels.kt
   src/android/packages/apps/SableStart/src/com/sable/start/model/AppEntry.kt
   src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt
-  src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt
   src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt
   src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt
 )
@@ -41,6 +45,7 @@ retired_sablestart=(
   src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt
   src/android/packages/apps/SableStart/src/com/sable/start/bridge/SableStartNative.kt
   src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt
+  src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt
 )
 
 for rel in "${retired_sablestart[@]}"; do
@@ -64,6 +69,8 @@ echo "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT"
 echo "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT"
 echo "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS"
 echo "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS"
+echo "R9_LAUNCHER_APPEARANCE_PROVIDER=PASS_RETIRED"
+echo "R9_SYSTEM_COHESION_LAYOUT=PASS"
 echo "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_RETAINED_NONBLOCKING_TOOLING"
 
 for sh in "$ROOT"/build/*.sh "$ROOT"/build/panther/*.sh "$ROOT"/build/gates/*.sh "$ROOT"/build/macos/*.sh "$ROOT"/tests/sablestart/host/*.sh "$ROOT"/tests/sablestart/device/*.sh; do
