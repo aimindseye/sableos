@@ -124,14 +124,18 @@ run_self_test R9_PHONE_CONTACTS_PRESENTATION "$PHONE_CONTACTS"
 echo
 echo "===== CUMULATIVE SYSTEM-SURFACE STATE ====="
 
-if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify; then
+if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
     echo "R9_SYSTEMUI_COHERENCE=ALREADY_APPLIED"
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
-elif verify_ui5c_with_full_r9_later; then
+elif verify_ui5c_with_full_r9_later >/dev/null 2>&1; then
+    verify_ui5c_with_full_r9_later
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_LATER_DIRT_RECOGNIZED"
-elif verify_ui5c_with_systemui_later; then
+elif verify_ui5c_with_systemui_later >/dev/null 2>&1; then
+    verify_ui5c_with_systemui_later
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED"
-elif python3 "$UI5C_UI6" --source "$WS" verify; then
+elif python3 "$UI5C_UI6" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$UI5C_UI6" --source "$WS" verify
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=ALREADY_APPLIED"
 else
     # A previously observed UI5C resource-alias failure has a dedicated
@@ -190,7 +194,8 @@ echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
 echo
 echo "===== R9 SYSTEMUI COHERENCE OVERLAY ====="
 
-if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify; then
+if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
     echo "R9_SYSTEMUI_COHERENCE=ALREADY_APPLIED"
 else
     python3 "$SYSTEMUI_COHERENCE" --source "$WS" apply
@@ -202,7 +207,8 @@ echo "R9_SYSTEMUI_COHERENCE=PASS"
 echo
 echo "===== R9 SETTINGS / APPEARANCE COHESION ====="
 
-if python3 "$SETTINGS_COHERENCE" --source "$WS" verify; then
+if python3 "$SETTINGS_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$SETTINGS_COHERENCE" --source "$WS" verify
     echo "R9_SETTINGS_COHERENCE=ALREADY_APPLIED"
 else
     python3 "$SETTINGS_COHERENCE" --source "$WS" apply
