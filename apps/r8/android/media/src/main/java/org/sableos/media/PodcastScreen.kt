@@ -41,25 +41,49 @@ private enum class PodcastPivot(
     Saved("saved"),
 }
 
+internal data class PodcastScreenState(
+    val subscriptions: List<PodcastSubscription>,
+    val savedEpisodeIds: Set<String>,
+    val playedEpisodeIds: Set<String>,
+    val feedUrl: String,
+    val busy: Boolean,
+    val message: String?,
+    val playback: PlaybackUiState,
+    val showMiniPlayer: Boolean,
+)
+
+internal data class PodcastScreenActions(
+    val onFeedUrlChange: (String) -> Unit,
+    val onAddFeed: () -> Unit,
+    val onRefresh: () -> Unit,
+    val onRemoveSubscription: (PodcastSubscription) -> Unit,
+    val onPlayEpisode: (PodcastEpisode) -> Unit,
+    val onQueueEpisode: (PodcastEpisode) -> Unit,
+    val onToggleSavedEpisode: (PodcastEpisode) -> Unit,
+    val onOpenNowPlaying: () -> Unit,
+)
+
 @Composable
 internal fun PodcastScreen(
-    subscriptions: List<PodcastSubscription>,
-    savedEpisodeIds: Set<String>,
-    playedEpisodeIds: Set<String>,
-    feedUrl: String,
-    busy: Boolean,
-    message: String?,
-    playback: PlaybackUiState,
-    showMiniPlayer: Boolean,
-    onFeedUrlChange: (String) -> Unit,
-    onAddFeed: () -> Unit,
-    onRefresh: () -> Unit,
-    onRemoveSubscription: (PodcastSubscription) -> Unit,
-    onPlayEpisode: (PodcastEpisode) -> Unit,
-    onQueueEpisode: (PodcastEpisode) -> Unit,
-    onToggleSavedEpisode: (PodcastEpisode) -> Unit,
-    onOpenNowPlaying: () -> Unit,
+    state: PodcastScreenState,
+    actions: PodcastScreenActions,
 ) {
+    val subscriptions = state.subscriptions
+    val savedEpisodeIds = state.savedEpisodeIds
+    val playedEpisodeIds = state.playedEpisodeIds
+    val feedUrl = state.feedUrl
+    val busy = state.busy
+    val message = state.message
+    val playback = state.playback
+    val showMiniPlayer = state.showMiniPlayer
+    val onFeedUrlChange = actions.onFeedUrlChange
+    val onAddFeed = actions.onAddFeed
+    val onRefresh = actions.onRefresh
+    val onRemoveSubscription = actions.onRemoveSubscription
+    val onPlayEpisode = actions.onPlayEpisode
+    val onQueueEpisode = actions.onQueueEpisode
+    val onToggleSavedEpisode = actions.onToggleSavedEpisode
+    val onOpenNowPlaying = actions.onOpenNowPlaying
     var pivot by remember { mutableStateOf(PodcastPivot.Latest) }
 
     val latest =
