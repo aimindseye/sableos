@@ -29,6 +29,8 @@ class MainActivity : ComponentActivity() {
         val audioFolderScanner = AudioFolderScanner(applicationContext)
         val stationRepository = RadioStationRepository(applicationContext)
         val libraryStateRepository = MediaLibraryStateRepository(applicationContext)
+        val podcastRepository = PodcastRepository(applicationContext)
+        val podcastStateRepository = PodcastStateRepository(applicationContext)
         val settingsRepository = MediaSettingsRepository(applicationContext)
         val initialSettings = settingsRepository.load()
 
@@ -56,6 +58,24 @@ class MainActivity : ComponentActivity() {
             }
             var localItems by remember {
                 mutableStateOf(localAudioRepository.loadItems())
+            }
+            var podcastSubscriptions by remember {
+                mutableStateOf(podcastRepository.loadSubscriptions())
+            }
+            var savedPodcastEpisodeIds by remember {
+                mutableStateOf(podcastStateRepository.loadSavedEpisodeIds())
+            }
+            var playedPodcastEpisodeIds by remember {
+                mutableStateOf(podcastStateRepository.loadPlayedEpisodeIds())
+            }
+            var podcastFeedUrl by remember {
+                mutableStateOf("")
+            }
+            var podcastBusy by remember {
+                mutableStateOf(false)
+            }
+            var podcastMessage by remember {
+                mutableStateOf<String?>(null)
             }
             var stations by remember {
                 mutableStateOf(stationRepository.loadStations())
@@ -261,6 +281,12 @@ class MainActivity : ComponentActivity() {
                     destination = destination,
                     libraryPivot = libraryPivot,
                     localItems = localItems,
+                    podcastSubscriptions = podcastSubscriptions,
+                    savedPodcastEpisodeIds = savedPodcastEpisodeIds,
+                    playedPodcastEpisodeIds = playedPodcastEpisodeIds,
+                    podcastFeedUrl = podcastFeedUrl,
+                    podcastBusy = podcastBusy,
+                    podcastMessage = podcastMessage,
                     stations = stations,
                     playback = playbackState,
                     favoriteAudioUris = favoriteAudioUris,
@@ -334,6 +360,112 @@ class MainActivity : ComponentActivity() {
                             libraryStateRepository.toggleFavoriteAudio(
                                 current = favoriteAudioUris,
                                 uri = item.uri,
+                            )
+                    },
+                    onPodcastFeedUrlChange = { value ->
+                        podcastFeedUrl = value
+                        podcastMessage = null
+                    },
+                    onAddPodcastFeed = {
+                        val candidate = podcastFeedUrl.trim()
+                        when {
+                            podcastBusy -> Unit
+
+                            !PodcastRepository.isSupportedFeedUrl(candidate) ->
+                                podcastMessage = "Podcast feed must use HTTP or HTTPS."
+
+                            else -> {
+                                val currentSubscriptions = podcastSubscriptions
+                                podcastBusy = true
+                                podcastMessage = "Contacting podcast feed…"
+
+                                uiScope.launch {
+                                    val result =
+                                        runCatching {
+                                            withContext(Dispatchers.IO) {
+                                                podcastRepository.subscribe(
+                                                    current = currentSubscriptions,
+                                                    feedUrl = candidate,
+                                                )
+                                            }
+                                        }
+
+                                    result.onSuccess { updated ->
+                                        podcastSubscriptions = updated
+                                        podcastFeedUrl = ""
+                                        podcastMessage =
+                                            "Podcast subscribed. Refresh remains manual."
+                                    }.onFailure { error ->
+                                        podcastMessage =
+                                            error.message
+                                                ?.takeIf { it.isNotBlank() }
+                                                ?: "Podcast feed could not be added."
+                                    }
+                                    podcastBusy = false
+                                }
+                            }
+                        }
+                    },
+                    onRefreshPodcasts = {
+                        if (!podcastBusy && podcastSubscriptions.isNotEmpty()) {
+                            val currentSubscriptions = podcastSubscriptions
+                            podcastBusy = true
+                            podcastMessage = "Refreshing subscribed feeds…"
+
+                            uiScope.launch {
+                                val result =
+                                    runCatching {
+                                        withContext(Dispatchers.IO) {
+                                            podcastRepository.refreshAll(
+                                                current = currentSubscriptions,
+                                            )
+                                        }
+                                    }
+
+                                result.onSuccess { refresh ->
+                                    podcastSubscriptions = refresh.subscriptions
+                                    podcastMessage =
+                                        if (refresh.failedFeeds == 0) {
+                                            "Podcasts refreshed."
+                                        } else {
+                                            "Podcasts refreshed with ${refresh.failedFeeds} feed failure(s); cached episodes were kept."
+                                        }
+                                }.onFailure { error ->
+                                    podcastMessage =
+                                        error.message
+                                            ?.takeIf { it.isNotBlank() }
+                                            ?: "Podcast refresh failed; cached episodes were kept."
+                                }
+                                podcastBusy = false
+                            }
+                        }
+                    },
+                    onRemovePodcastSubscription = { subscription ->
+                        podcastSubscriptions =
+                            podcastRepository.remove(
+                                current = podcastSubscriptions,
+                                podcastId = subscription.id,
+                            )
+                        podcastMessage = "Podcast removed from this device."
+                    },
+                    onPlayPodcastEpisode = { episode ->
+                        playedPodcastEpisodeIds =
+                            podcastStateRepository.markPlayed(
+                                current = playedPodcastEpisodeIds,
+                                episodeId = episode.id,
+                            )
+                        playUri(
+                            uri = Uri.parse(episode.mediaUrl),
+                            title = episode.title,
+                            source = episode.podcastTitle,
+                        )
+                        destination = MediaDestination.NowPlaying
+                    },
+                    onToggleSavedPodcastEpisode = { episode ->
+                        savedPodcastEpisodeIds =
+                            podcastStateRepository.toggleSaved(
+                                current = savedPodcastEpisodeIds,
+                                episodeId = episode.id,
                             )
                     },
                     onPlayStation = { station ->
