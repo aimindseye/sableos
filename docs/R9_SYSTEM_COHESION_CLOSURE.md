@@ -236,6 +236,10 @@ Current 2026-09-22 checkpoint:
 - SableStart sync contract: corrected after detecting the retired
   `SableAppearanceProvider.kt` was still listed as required by the sync
   script.
+- Launcher foundation resume: the driver now verifies an existing foundation
+  before replaying it; a valid foundation is reused and only the cohesion
+  layer is applied. This avoids re-running the large Launcher warning-cleanup
+  patch set on an already-patched workspace.
 
 Full target-files build remains blocked until the remainder of WS7 module
 qualification passes on one immutable source commit.
