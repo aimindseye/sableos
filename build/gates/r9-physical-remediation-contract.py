@@ -69,19 +69,39 @@ require(
 )
 
 require(
-    "if (!BuildConfig.SABLE_PRODUCT)",
+    "if (!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK)",
     reader_patch,
-    "Sable Reader global theme branch",
-)
-forbid(
-    "!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK",
-    reader_patch,
-    "Reader E-ink bypass of Sable theme",
+    "Sable Reader explicit E-ink override",
 )
 require(
     "appearance = rememberGlobalSableAppearance()",
     reader_patch,
     "Reader global appearance consumer",
+)
+require(
+    "val effectiveEpubPreferences =",
+    reader_patch,
+    "Reader effective Readium preferences",
+)
+require(
+    "epubPreferences.theme == Theme.SEPIA",
+    reader_patch,
+    "Reader explicit sepia override",
+)
+require(
+    "isEink -> epubPreferences.copy(theme = Theme.LIGHT)",
+    reader_patch,
+    "Reader E-ink white-page override",
+)
+require(
+    "theme = if (sableDark) Theme.DARK else Theme.LIGHT",
+    reader_patch,
+    "Reader Sable light-dark page bridge",
+)
+require(
+    "submitPreferences(effectiveEpubPreferences)",
+    reader_patch,
+    "Reader effective preferences submission",
 )
 
 if failures:
@@ -94,4 +114,6 @@ print("R9_MEDIA_LARGE_LIBRARY_LAZY_RENDERING=PASS")
 print("R9_MEDIA_QUEUE_TICKER_BOUNDED=PASS")
 print("R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS")
 print("R9_READER_GLOBAL_THEME_CONTRACT=PASS")
+print("R9_READER_READIUM_APPEARANCE_BRIDGE=PASS")
+print("R9_READER_EXPLICIT_SEPIA_EINK_OVERRIDES=PASS")
 print("R9_PHYSICAL_REMEDIATION_CONTRACT=PASS")
