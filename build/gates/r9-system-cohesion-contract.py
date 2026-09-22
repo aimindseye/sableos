@@ -94,6 +94,7 @@ require(
     "apps/r8/mail/verify_sable_mail.py",
     "org.sableos.appearance",
     "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY=PASS_ABSENT",
+    "SABLE_MAIL_UPSTREAM_BUILD_LOGIC_MUTATION=PASS_ABSENT",
 )
 forbid(
     "apps/r8/mail/verify_sable_mail.py",
