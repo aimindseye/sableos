@@ -121,27 +121,27 @@ internal class MediaLibraryStateRepository(
         return updated
     }
 
-    private fun decodePlaylist(item: JSONObject?): MediaPlaylist? {
-        item ?: return null
+    private fun decodePlaylist(item: JSONObject?): MediaPlaylist? =
+        item?.let { json ->
+            val id = json.optString("id")
+            val name = json.optString("name")
 
-        val id = item.optString("id")
-        val name = item.optString("name")
-        if (id.isBlank() || name.isBlank()) {
-            return null
+            if (id.isBlank() || name.isBlank()) {
+                null
+            } else {
+                val urisArray = json.optJSONArray("itemUris") ?: JSONArray()
+                val uris =
+                    List(urisArray.length()) { index ->
+                        urisArray.optString(index)
+                    }.filter(String::isNotBlank)
+
+                MediaPlaylist(
+                    id = id,
+                    name = name,
+                    itemUris = uris,
+                )
+            }
         }
-
-        val urisArray = item.optJSONArray("itemUris") ?: JSONArray()
-        val uris =
-            List(urisArray.length()) { index ->
-                urisArray.optString(index)
-            }.filter(String::isNotBlank)
-
-        return MediaPlaylist(
-            id = id,
-            name = name,
-            itemUris = uris,
-        )
-    }
 
     private fun toggled(
         current: Set<String>,
