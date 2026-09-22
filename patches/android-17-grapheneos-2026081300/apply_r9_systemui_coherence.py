@@ -7,7 +7,7 @@ already-qualified cumulative state and adds only:
   * Sable global-accent observation inside SystemUI
   * active Quick Settings tile colors sourced from that Sable accent
 
-Light/dark propagation is owned by the privileged Launcher3 HOME host through
+Light/dark propagation is owned by the privileged Settings-hosted Sable appearance authority through
 UiModeManager; this overlay does not change SystemUI behavior/state models.
 """
 
@@ -119,7 +119,7 @@ data class SableSystemAccent(
 )
 
 private val appearanceUri =
-    Uri.parse("content://org.sableos.start.appearance/appearance")
+    Uri.parse("content://org.sableos.appearance/appearance")
 
 private fun defaultAccent() =
     SableSystemAccent(
@@ -402,7 +402,7 @@ def self_test(root: Path) -> None:
                 f"R9_SYSTEMUI_SELF_TEST_LEGACY_TOKEN_PRESENT={token[:60]!r}"
             )
 
-    if "content://org.sableos.start.appearance/appearance" not in BRIDGE_SOURCE:
+    if "content://org.sableos.appearance/appearance" not in BRIDGE_SOURCE:
         raise CoherenceError("R9_SYSTEMUI_SELF_TEST_PROVIDER_URI_MISSING")
     if "registerContentObserver" not in BRIDGE_SOURCE:
         raise CoherenceError("R9_SYSTEMUI_SELF_TEST_OBSERVER_MISSING")
