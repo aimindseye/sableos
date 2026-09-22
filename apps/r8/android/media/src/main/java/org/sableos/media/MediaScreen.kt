@@ -267,14 +267,18 @@ internal fun MediaScreen(
                         title =
                             when (destination) {
                                 MediaDestination.Podcasts -> "podcasts"
+
                                 MediaDestination.Radio,
                                 MediaDestination.ManageStations,
                                 MediaDestination.AddStation,
                                 -> "radio"
+
                                 MediaDestination.NowPlaying,
                                 MediaDestination.Queue,
                                 -> "playing"
+
                                 MediaDestination.Settings -> "settings"
+
                                 else -> "media"
                             },
                         subtitle = "Music, podcasts, and radio in one private playback flow.",
@@ -318,7 +322,6 @@ internal fun MediaScreen(
                             PodcastScreen(
                                 state =
                                     PodcastScreenState(
-
                                         subscriptions = podcastSubscriptions,
                                         savedEpisodeIds = savedPodcastEpisodeIds,
                                         playedEpisodeIds = playedPodcastEpisodeIds,
@@ -454,8 +457,11 @@ private fun PrimaryPivot(
             -> MediaDestination.Radio
 
             MediaDestination.Queue -> MediaDestination.NowPlaying
+
             MediaDestination.PlaylistEditor -> MediaDestination.Collection
+
             MediaDestination.Settings -> null
+
             else -> destination
         }
 
@@ -715,7 +721,7 @@ private fun CollectionScreen(
             }
         } else {
             when (pivot) {
-                LibraryPivot.Songs ->
+                LibraryPivot.Songs -> {
                     items(
                         count = localItems.size,
                         key = { index -> localItems[index].uri },
@@ -730,8 +736,9 @@ private fun CollectionScreen(
                             onRemove = { onRemove(item) },
                         )
                     }
+                }
 
-                LibraryPivot.Artists ->
+                LibraryPivot.Artists -> {
                     items(
                         count = artistGroups.size,
                         key = { index -> artistGroups[index].first },
@@ -746,8 +753,9 @@ private fun CollectionScreen(
                             },
                         )
                     }
+                }
 
-                LibraryPivot.Albums ->
+                LibraryPivot.Albums -> {
                     items(
                         count = albumGroups.size,
                         key = { index -> albumGroups[index].first },
@@ -763,8 +771,9 @@ private fun CollectionScreen(
                             },
                         )
                     }
+                }
 
-                LibraryPivot.Favorites ->
+                LibraryPivot.Favorites -> {
                     if (favorites.isEmpty()) {
                         item {
                             C2InfoPanel(
@@ -789,6 +798,7 @@ private fun CollectionScreen(
                             )
                         }
                     }
+                }
 
                 LibraryPivot.Playlists -> {
                     item {
