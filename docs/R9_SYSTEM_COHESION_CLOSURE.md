@@ -286,6 +286,15 @@ qualification. WS7 now reuses the canonical `SABLE_R8_OUT_DIR` and the inner
 build rejects `modules + REQUIRE_FRESH_OUT=YES`. The fresh source-bound OUT
 policy remains reserved for WS8 full target-files/release-candidate causality.
 
+The warm-graph rerun then reached the focused `Launcher3QuickStepLib` Kotlin
+compile and exposed the real launcher source defect: the two appearance-write
+callbacks inside `ComposeView.apply { setContent { ... } }` passed unqualified
+`this`. At those call sites Kotlin resolves `this` to the enclosing
+`ComposeView`, while `writeGlobalSableAppearance(...)` requires an Android
+`Context`. Both writes now pass `this@SableQuickstepLauncher`, matching the
+explicit receiver style already used by the appearance observer in the same
+class. The Launcher3 foundation contract requires both qualified calls.
+
 
 No full image yet.
 
