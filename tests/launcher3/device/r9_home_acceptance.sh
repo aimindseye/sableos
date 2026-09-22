@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
+# Refuse sourcing before changing shell options. Device-acceptance failures
+# must terminate only this child Bash process, never an interactive SSH shell.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+    echo "R9_HOME_ACCEPTANCE=REFUSED_SOURCED_SCRIPT" >&2
+    echo "Run with: bash ${BASH_SOURCE[0]}" >&2
+    return 64
+fi
+
 set -euo pipefail
 
 SERIAL="${SERIAL:-}"
-ADB=(adb)
-[[ -n "$SERIAL" ]] && ADB=(adb -s "$SERIAL")
+ADB_BIN="${ADB:-adb}"
+ADB=("$ADB_BIN")
+[[ -n "$SERIAL" ]] && ADB=("$ADB_BIN" -s "$SERIAL")
 
 EXPECTED_PACKAGE="com.android.launcher3"
 EXPECTED_ACTIVITY="com.android.launcher3.sable.SableQuickstepLauncher"
@@ -135,6 +144,13 @@ case "$launcher_ok" in
         rec SEARCH_LOCAL_RESULTS FAIL
         rec SABLE_PEEK FAIL
         ;;
+esac
+
+printf 'In All Apps, is the privacy/security-impacting enabled-permission summary shown beneath each applicable app name? [y/N]: '
+read -r permission_summary_ok
+case "$permission_summary_ok" in
+    y|Y|yes|YES|Yes) rec ALL_APPS_PERMISSION_SUMMARIES PASS ;;
+    *) rec ALL_APPS_PERMISSION_SUMMARIES FAIL ;;
 esac
 
 printf 'Does Sable appearance/theme propagation still work across first-party apps? [y/N]: '
