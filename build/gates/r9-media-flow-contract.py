@@ -65,6 +65,8 @@ require(
     "MAX_FEED_BYTES",
     "MAX_EPISODES_PER_FEED",
     "Podcast feed document types are not accepted.",
+    "Podcast feed redirected to an unsupported URL.",
+    "resolvedFeedUrl",
     "isSupportedFeedUrl(",
     "isSupportedMediaUrl(",
     "PodcastStateRepository",
