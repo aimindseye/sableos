@@ -124,34 +124,76 @@ forbid(
 )
 
 # ---------------------------------------------------------------------------
-# Global appearance: Sable Light/Dark -> Android system mode; Sable accent ->
-# Quick Settings active state. GrapheneOS behavior remains in SystemUI.
+# Global appearance + launcher ownership.
+# Settings owns the persisted Sable appearance authority and boot restoration.
+# Launcher is a client/editor. SystemUI observes the same authority.
 # ---------------------------------------------------------------------------
 require(
+    "src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt",
+    'const val AUTHORITY = "org.sableos.appearance"',
+    "writeGlobalSableAppearance(",
+    "contentResolver.update(",
+    "registerContentObserver",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
+    "SableAppearanceProvider.java",
+    "SableAppearanceBootReceiver.java",
+    "SableAppearanceSettings.java",
+    'android.permission.MODIFY_DAY_NIGHT_MODE',
+    'android:authorities="org.sableos.appearance"',
+    "createDeviceProtectedStorageContext()",
+    "MODE_NIGHT_NO",
+    "MODE_NIGHT_YES",
+    "LOCKED_BOOT_COMPLETED",
+    "R9_SYSTEM_APPEARANCE_BOOT_RESTORE_SOURCE=PASS",
+    "R9_SETTINGS_APPEARANCE_ENTRY=PASS",
+)
+require(
     "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
-    "getSystemService(UiModeManager::class.java)",
-    "UiModeManager.MODE_NIGHT_YES",
-    "UiModeManager.MODE_NIGHT_NO",
+    "readGlobalSableAppearance(",
+    "writeGlobalSableAppearance(",
+    "fun isSableSurfaceActive(): Boolean",
+    "LauncherState.ALL_APPS ->",
+    "stateManager.goToState(LauncherState.NORMAL, false)",
+    "onOpenSystemSettings = ::openSystemSettings",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
+    "UiModeManager",
     "rememberSystemNightModeBeforeOverride(",
     "loadSystemNightModeBeforeOverride()",
+    "startStateRepository.saveAppearance(",
 )
-require(
-    "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
-    "android.permission.MODIFY_DAY_NIGHT_MODE",
-    'host.count("private companion object {") != 1',
-    "Sable Quickstep host companion object cardinality mismatch",
-)
-require(
+forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt",
     "KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE",
     "rememberSystemNightModeBeforeOverride",
     "clearSystemNightModeBeforeOverride",
+    "saveAppearance(",
+    "loadAppearance(",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
+    "LEGACY_MANIFEST_HEADER_REPLACEMENT",
+    "LEGACY_PROVIDER_BLOCK",
+    "legacy Launcher appearance ownership remains",
+    "SableAppearanceProvider.kt",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py",
+    "PortraitStatesTouchController.java",
+    "NoButtonNavbarToOverviewTouchController.java",
+    "isSableSurfaceActive()",
+    "!mDidTouchStartInNavBar",
+    "R9_SABLE_NATIVE_ALL_APPS_TOUCH_ESCAPE=PASS_BLOCKED",
+    "R9_QUICKSTEP_NAVBAR_OVERVIEW_PATH=PASS_PRESERVED",
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
     "SableSystemAppearance.kt",
     'print(f"R9_SYSTEMUI_COHERENCE=FAIL {exc}")',
-    "content://org.sableos.start.appearance/appearance",
+    "content://org.sableos.appearance/appearance",
     "registerContentObserver",
     "rememberSableSystemAccent",
     "LEGACY_COLOR_SELECTOR",
@@ -166,7 +208,11 @@ require(
 require(
     "build/panther/prepare-r8-final-ui.sh",
     "R9_SYSTEMUI_COHERENCE",
+    "R9_SETTINGS_COHERENCE",
+    "R9_LAUNCHER_COHESION",
     "apply_r9_systemui_coherence.py",
+    "apply_r9_settings_cohesion.py",
+    "apply_r9_launcher_cohesion.py",
     "R9_GRAPHENE_MESSAGING_SUBSTRATE=PASS_PREBUILT_UNMODIFIED",
     "R9_MESSAGING_LAUNCHER_SUPPRESSION=OWNED_BY_SABLE_LAUNCHER3",
 )
@@ -482,7 +528,7 @@ require(
     "android.permission.READ_CALENDAR",
     "android.permission.WRITE_CALENDAR",
     'android:authorities="org.sableos.calendar.snapshot"',
-    'android:authorities="org.sableos.start.appearance"',
+    'android:authorities="org.sableos.appearance"',
 )
 require(
     "apps/r8/android/calendar/src/main/java/org/sableos/calendar/CalendarRepository.kt",
@@ -696,6 +742,8 @@ require(
     "R9_MEDIA_QUEUE_TICKER_BOUNDED=PASS",
     "R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS",
     "R9_READER_GLOBAL_THEME_CONTRACT=PASS",
+    "R9_READER_READIUM_APPEARANCE_BRIDGE=PASS",
+    "R9_READER_EXPLICIT_SEPIA_EINK_OVERRIDES=PASS",
 )
 
 # ---------------------------------------------------------------------------
@@ -828,7 +876,7 @@ require(
     "LinkedIn",
     "Instagram",
     "Facebook / Messenger",
-    "Sable appearance has two layers",
+    "Sable appearance has one system authority",
     "capture-r9-theme-fidelity-review.sh",
     "Sable Messages as a second-process",
     "R9_THEME_FIDELITY_SABLE_MESSAGES_CAPTURE=PASS",
@@ -888,6 +936,18 @@ self_tests = (
         / "apply_r9_systemui_coherence.py",
     ),
     (
+        "R9_SETTINGS_COHERENCE_SELF_TEST",
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_settings_cohesion.py",
+    ),
+    (
+        "R9_LAUNCHER_COHESION_SELF_TEST",
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_launcher_cohesion.py",
+    ),
+    (
         "R9_LAUNCHER3_FOUNDATION_SELF_TEST",
         ROOT
         / "patches/android-17-grapheneos-2026081300"
@@ -917,7 +977,10 @@ for marker, script in self_tests:
     print(f"{marker}=PASS")
 
 print("R9_ALL_APPS_GRANTED_PRIVACY_SUMMARY=PASS")
+print("R9_SYSTEM_APPEARANCE_AUTHORITY_CONTRACT=PASS_SETTINGS_HOSTED")
 print("R9_GLOBAL_LIGHT_DARK_SYSTEM_MODE_CONTRACT=PASS")
+print("R9_APPEARANCE_BOOT_RESTORE_CONTRACT=PASS")
+print("R9_SABLE_NATIVE_LAUNCHER_ESCAPE_CONTRACT=PASS_BLOCKED")
 print("R9_SYSTEMUI_SABLE_ACCENT_CONTRACT=PASS")
 print("R9_SINGLE_VISIBLE_MESSAGES_CONTRACT=PASS")
 print("R9_MESSAGES_USER_FACING_COPY=PASS_NO_TRANSPORT_IMPLEMENTATION_DETAIL")
@@ -943,6 +1006,7 @@ print("R9_VISUAL_REVIEW_CROSS_APP_THEME_FIDELITY=PASS_SABLE_MESSAGES_PROBE")
 print("R9_VISUAL_REVIEW_HOST_BROWSER_SCOPE=PASS_FILTERED_DEFERRED_PANTHER")
 print("R9_START_PACKAGE_IDENTITY_PREFERENCE=PASS")
 print("R9_MEDIA_READER_REMEDIATION_INCLUDED=PASS")
+print("R9_READER_READIUM_APPEARANCE_CONTRACT=PASS")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
 print("R9_RUNTIME_SYSTEM_IDENTITY_AUDIT_CONTRACT=PASS")
 print("R9_FINAL_UI_RUNTIME_ACCEPTANCE_CONTRACT=PASS")
