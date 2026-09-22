@@ -335,6 +335,10 @@ def verify(source: Path) -> None:
     # AUTHORITY lives in the contract; the provider must reference the contract.
     if "SableAppearanceContract.CONTENT_URI" not in provider:
         raise SystemExit("R9_SETTINGS_APPEARANCE_PROVIDER_CONTRACT_MISSING")
+    if "private Context requireContext()" in provider:
+        raise SystemExit("R9_SETTINGS_PROVIDER_REQUIRE_CONTEXT_COLLISION")
+    if "private Context requireProviderContext()" not in provider:
+        raise SystemExit("R9_SETTINGS_PROVIDER_CONTEXT_HELPER_MISSING")
     for needle in required_provider[1:]:
         if needle not in provider:
             raise SystemExit(f"R9_SETTINGS_APPEARANCE_PROVIDER_MISSING={needle}")
@@ -346,6 +350,7 @@ def verify(source: Path) -> None:
     print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
     print("R9_SYSTEM_APPEARANCE_DEVICE_PROTECTED_STORAGE=PASS")
     print("R9_SYSTEM_APPEARANCE_BOOT_RESTORE_SOURCE=PASS")
+    print("R9_SETTINGS_PROVIDER_CONTENTPROVIDER_API_COMPAT=PASS")
     print("R9_SETTINGS_APPEARANCE_ENTRY=PASS")
     print("R9_SETTINGS_APPEARANCE_GATEWAY=PASS")
     print("R9_SETTINGS_COHESION=PASS")
