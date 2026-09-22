@@ -1150,7 +1150,6 @@ private fun NowPlayingScreen(
                 onClick = onStop,
             )
         }
-
     }
 }
 
@@ -1652,8 +1651,7 @@ private fun ArtworkTile(
                         } else {
                             MaterialTheme.shapes.medium
                         },
-                )
-                .padding(
+                ).padding(
                     if (large) {
                         SableSpacing.Xl
                     } else {
