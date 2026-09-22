@@ -71,7 +71,7 @@ internal class PodcastRepository(
     ): List<PodcastSubscription> {
         val normalized = normalizeFeedUrl(feedUrl)
         require(isSupportedFeedUrl(normalized)) {
-            "Podcast feed must use HTTP or HTTPS."
+            "Podcast feed must use HTTPS."
         }
 
         val fetched = fetch(normalized)
@@ -149,7 +149,7 @@ internal class PodcastRepository(
                     ?.takeIf { it.isNotBlank() }
                     ?: feedUrl
             require(isSupportedFeedUrl(resolvedFeedUrl)) {
-                "Podcast feed redirected to an unsupported URL."
+                "Podcast feed redirected to a non-HTTPS URL."
             }
 
             val bytes =
@@ -515,7 +515,7 @@ internal class PodcastRepository(
                 runCatching {
                     URL(normalized).protocol.lowercase(Locale.US)
                 }.getOrNull()
-            return protocol == "http" || protocol == "https"
+            return protocol == "https"
         }
 
         private fun isSupportedMediaUrl(value: String): Boolean {
@@ -523,7 +523,7 @@ internal class PodcastRepository(
                 runCatching {
                     URL(value.trim()).protocol.lowercase(Locale.US)
                 }.getOrNull()
-            return protocol == "http" || protocol == "https"
+            return protocol == "https"
         }
 
         private fun attribute(
