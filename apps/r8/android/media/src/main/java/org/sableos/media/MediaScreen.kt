@@ -43,6 +43,16 @@ internal val MediaBlue = Color(0xFF4D9CFF)
 internal val MediaGreen = Color(0xFF35C66B)
 internal val MediaOrange = Color(0xFFF28C45)
 
+private val MediaControlSize = 48.dp
+private val MediaArtworkSize = 58.dp
+private val MediaPrimaryTouchHeight = 54.dp
+private val MediaPivotTouchHeight = 48.dp
+private val MediaPivotActiveWidth = 34.dp
+private val MediaPivotInactiveWidth = 12.dp
+private val MediaCompactPadding = 12.dp
+private const val MILLIS_PER_SECOND = 1_000L
+private const val SECONDS_PER_MINUTE = 60L
+
 internal enum class MediaDestination(
     val label: String,
 ) {
@@ -465,7 +475,7 @@ private fun PrimaryPivot(
             val active = current != null && item == current
             Surface(
                 onClick = { onSelect(item) },
-                modifier = Modifier.heightIn(min = 48.dp),
+                modifier = Modifier.heightIn(min = MediaPivotTouchHeight),
                 color = Color.Transparent,
                 contentColor =
                     if (active) {
@@ -490,7 +500,7 @@ private fun PrimaryPivot(
                     Box(
                         modifier =
                             Modifier
-                                .width(if (active) 34.dp else 12.dp)
+                                .width(if (active) MediaPivotActiveWidth else MediaPivotInactiveWidth)
                                 .height(3.dp)
                                 .background(
                                     if (active) {
@@ -526,7 +536,7 @@ private fun MediaUtilityBar(
             ) {
                 Text(
                     text = "up next · $upNextCount",
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(MediaCompactPadding),
                     style = MaterialTheme.typography.labelLarge,
                 )
             }
@@ -538,7 +548,7 @@ private fun MediaUtilityBar(
         ) {
             Text(
                 text = "settings",
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(MediaCompactPadding),
                 style = MaterialTheme.typography.labelLarge,
             )
         }
@@ -699,7 +709,8 @@ private fun CollectionScreen(
                 EmptyPanel(
                     title = "No local audio yet",
                     detail =
-                        "Choose audio with Android's document picker. Sable keeps access only to files you explicitly select.",
+                        "Choose audio with Android's document picker. " +
+                            "Sable keeps access only to files you explicitly select.",
                 )
             }
         } else {
@@ -852,7 +863,7 @@ private fun LocalTrackRow(
         ) {
             ArtworkTile(
                 accent = accent,
-                modifier = Modifier.width(58.dp),
+                modifier = Modifier.width(MediaArtworkSize),
             )
 
             Column(
@@ -980,7 +991,7 @@ private fun LibraryGroupRow(
         ) {
             ArtworkTile(
                 accent = accent,
-                modifier = Modifier.width(58.dp),
+                modifier = Modifier.width(MediaArtworkSize),
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -1273,7 +1284,7 @@ private fun RadioStationRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
-                modifier = Modifier.width(48.dp),
+                modifier = Modifier.width(MediaControlSize),
                 shape = MaterialTheme.shapes.small,
                 color = MediaPink.copy(alpha = 0.18f),
                 border = BorderStroke(1.dp, MediaPink.copy(alpha = 0.7f)),
@@ -1522,7 +1533,7 @@ private fun BackTitle(
     ) {
         Surface(
             onClick = onBack,
-            modifier = Modifier.width(48.dp),
+            modifier = Modifier.width(MediaControlSize),
             color = Color.Transparent,
         ) {
             Box(
@@ -1566,7 +1577,7 @@ private fun MiniPlayer(
         ) {
             ArtworkTile(
                 accent = accentFor(playback.title.hashCode()),
-                modifier = Modifier.width(48.dp),
+                modifier = Modifier.width(MediaControlSize),
             )
             Column(
                 modifier = Modifier.weight(1f),
@@ -1652,7 +1663,7 @@ private fun CompactAction(
 ) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.width(48.dp),
+        modifier = Modifier.width(MediaControlSize),
         shape = MaterialTheme.shapes.small,
         color =
             if (active) {
@@ -1696,7 +1707,7 @@ private fun PlayerButton(
     Surface(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.heightIn(min = 54.dp),
+        modifier = modifier.heightIn(min = MediaPrimaryTouchHeight),
         shape = MaterialTheme.shapes.medium,
         color =
             if (active) {
@@ -1777,8 +1788,8 @@ private fun accentFor(seed: Int): Color {
 }
 
 private fun formatDuration(valueMs: Long): String {
-    val totalSeconds = valueMs.coerceAtLeast(0L) / 1000L
-    val minutes = totalSeconds / 60L
-    val seconds = totalSeconds % 60L
+    val totalSeconds = valueMs.coerceAtLeast(0L) / MILLIS_PER_SECOND
+    val minutes = totalSeconds / SECONDS_PER_MINUTE
+    val seconds = totalSeconds % SECONDS_PER_MINUTE
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
