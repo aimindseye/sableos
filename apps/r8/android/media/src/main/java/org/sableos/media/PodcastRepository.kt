@@ -220,75 +220,73 @@ internal class PodcastRepository(
             .put("publishedAt", episode.publishedAt)
             .put("durationMs", episode.durationMs)
 
-    private fun decodeSubscription(item: JSONObject?): PodcastSubscription? {
-        item ?: return null
+    private fun decodeSubscription(item: JSONObject?): PodcastSubscription? =
+        item?.let { json ->
+            val id = json.optString("id")
+            val feedUrl = json.optString("feedUrl")
+            val title = json.optString("title")
+            val validSubscription =
+                id.isNotBlank() &&
+                    title.isNotBlank() &&
+                    isSupportedFeedUrl(feedUrl)
 
-        val id = item.optString("id")
-        val feedUrl = item.optString("feedUrl")
-        val title = item.optString("title")
+            if (!validSubscription) {
+                null
+            } else {
+                val episodesArray = json.optJSONArray("episodes") ?: JSONArray()
+                val episodes =
+                    List(episodesArray.length()) { index ->
+                        decodeEpisode(
+                            item = episodesArray.optJSONObject(index),
+                            podcastId = id,
+                            podcastTitle = title,
+                        )
+                    }.filterNotNull()
 
-        if (
-            id.isBlank() ||
-            title.isBlank() ||
-            !isSupportedFeedUrl(feedUrl)
-        ) {
-            return null
-        }
-
-        val episodesArray = item.optJSONArray("episodes") ?: JSONArray()
-        val episodes =
-            List(episodesArray.length()) { index ->
-                decodeEpisode(
-                    item = episodesArray.optJSONObject(index),
-                    podcastId = id,
-                    podcastTitle = title,
+                PodcastSubscription(
+                    id = id,
+                    feedUrl = feedUrl,
+                    title = title,
+                    author = json.optString("author"),
+                    description = json.optString("description"),
+                    episodes = episodes,
+                    refreshedAt = json.optLong("refreshedAt", 0L),
                 )
-            }.filterNotNull()
-
-        return PodcastSubscription(
-            id = id,
-            feedUrl = feedUrl,
-            title = title,
-            author = item.optString("author"),
-            description = item.optString("description"),
-            episodes = episodes,
-            refreshedAt = item.optLong("refreshedAt", 0L),
-        )
-    }
+            }
+        }
 
     private fun decodeEpisode(
         item: JSONObject?,
         podcastId: String,
         podcastTitle: String,
-    ): PodcastEpisode? {
-        item ?: return null
+    ): PodcastEpisode? =
+        item?.let { json ->
+            val id = json.optString("id")
+            val mediaUrl = json.optString("mediaUrl")
+            val title = json.optString("title")
+            val validEpisode =
+                id.isNotBlank() &&
+                    title.isNotBlank() &&
+                    PodcastUrlPolicy.isHttpsUrl(mediaUrl)
 
-        val id = item.optString("id")
-        val mediaUrl = item.optString("mediaUrl")
-        val title = item.optString("title")
-
-        if (
-            id.isBlank() ||
-            title.isBlank() ||
-            !PodcastUrlPolicy.isHttpsUrl(mediaUrl)
-        ) {
-            return null
+            if (!validEpisode) {
+                null
+            } else {
+                PodcastEpisode(
+                    id = id,
+                    podcastId = podcastId,
+                    podcastTitle =
+                        json
+                            .optString("podcastTitle")
+                            .ifBlank { podcastTitle },
+                    title = title,
+                    mediaUrl = mediaUrl,
+                    description = json.optString("description"),
+                    publishedAt = json.optLong("publishedAt", 0L),
+                    durationMs = json.optLong("durationMs", 0L),
+                )
+            }
         }
-
-        return PodcastEpisode(
-            id = id,
-            podcastId = podcastId,
-            podcastTitle =
-                item
-                    .optString("podcastTitle")
-                    .ifBlank { podcastTitle },
-            title = title,
-            mediaUrl = mediaUrl,
-            description = item.optString("description"),
-            publishedAt = item.optLong("publishedAt", 0L),
-            durationMs = item.optLong("durationMs", 0L),
-        )
-    }
 
     companion object {
         fun isSupportedFeedUrl(value: String): Boolean =
