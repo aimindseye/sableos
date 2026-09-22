@@ -90,6 +90,10 @@ if layout_gate.is_file():
         '"$ROOT"/build/macos/*.sh',
         "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_RETAINED_NONBLOCKING_TOOLING",
         "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
+        "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py",
+        "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
+        "build/gates/r9-system-cohesion-contract.py",
+        "docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md",
         "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
         "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
         "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT",
@@ -121,6 +125,7 @@ if layout_gate.is_file():
     for obsolete_rel in (
         "build/panther/build-sablestart.sh",
         "src/android/packages/apps/SableStart/AndroidManifest.xml",
+        "src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt",
     ):
         if obsolete_rel in required_body:
             failures.append(
@@ -148,6 +153,7 @@ if local_ci.is_file():
         "SABLE_MOBSFSCAN",
         "r9-sms-mms-blocking-contract.py",
         "r9-first-party-app-icon-contract.py",
+        "r9-system-cohesion-contract.py",
         ":weather:assembleDebug",
         ":weather:lintDebug",
         ":weather:detekt",
