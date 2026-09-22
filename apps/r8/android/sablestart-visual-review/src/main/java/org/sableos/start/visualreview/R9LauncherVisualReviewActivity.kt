@@ -21,7 +21,6 @@ import org.sableos.design.resolveSableDarkAppearance
 import org.sableos.start.model.AppEntry
 import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
-import org.sableos.start.platform.StartStateRepository
 import org.sableos.start.ui.SableStartScreen
 import java.util.Locale
 
@@ -47,7 +46,6 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
 
     private lateinit var launcherApps: LauncherApps
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
-    private lateinit var startStateRepository: StartStateRepository
 
     private var favoriteKeys: Set<String> = emptySet()
     private var startTileKeys: Set<String>? = null
@@ -58,15 +56,13 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         enableEdgeToEdge()
         launcherApps = getSystemService(LauncherApps::class.java)
         liveSurfaceRepository = LiveSurfaceRepository(this)
-        startStateRepository = StartStateRepository(this)
         appearanceState.value =
             when (intent.getStringExtra(EXTRA_APPEARANCE_MODE)?.lowercase(Locale.ROOT)) {
-                "light" -> startStateRepository.loadAppearance().copy(mode = AppearanceMode.Light)
-                "dark" -> startStateRepository.loadAppearance().copy(mode = AppearanceMode.Dark)
-                "system" -> startStateRepository.loadAppearance().copy(mode = AppearanceMode.FollowSystem)
-                else -> startStateRepository.loadAppearance()
+                "light" -> SableAppearance(mode = AppearanceMode.Light)
+                "dark" -> SableAppearance(mode = AppearanceMode.Dark)
+                "system" -> SableAppearance(mode = AppearanceMode.FollowSystem)
+                else -> SableAppearance()
             }
-        startStateRepository.saveAppearance(appearanceState.value)
 
         refreshInventory()
         favoriteKeys = defaultFavoriteKeys(appsState.value)
@@ -96,15 +92,14 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 },
                 onAppearanceChanged = { appearance ->
                     appearanceState.value = appearance
-                    startStateRepository.saveAppearance(appearance)
                     applyCurrentSystemBars()
                 },
                 onResetAppearance = {
-                    appearanceState.value = startStateRepository.resetAppearance()
+                    appearanceState.value = SableAppearance()
                     applyCurrentSystemBars()
                 },
                 onLaunchApp = ::launchApp,
-                onOpenSettings = ::openSettings,
+                onOpenSystemSettings = ::openSettings,
                 onOpenAppInfo = ::openAppInfo,
                 onRequestLivePermissions = ::requestLivePermissions,
             )
@@ -115,9 +110,6 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         super.onResume()
         if (::launcherApps.isInitialized) {
             refreshInventory()
-            if (::startStateRepository.isInitialized) {
-                appearanceState.value = startStateRepository.loadAppearance()
-            }
             applyCurrentSystemBars()
             refreshGeneration.value += 1
         }
