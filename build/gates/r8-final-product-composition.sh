@@ -235,6 +235,8 @@ python3 \
     --allow-settings-untracked \
     res/xml/sable_appearance_settings.xml \
     --allow-settings-untracked \
+    res/xml/sable_network_manager_settings.xml \
+    --allow-settings-untracked \
     res/values/strings_sable_cohesion.xml \
     --allow-settings-untracked \
     src/com/android/settings/sable/SableAppearanceContract.java \
@@ -244,6 +246,8 @@ python3 \
     src/com/android/settings/sable/SableAppearanceBootReceiver.java \
     --allow-settings-untracked \
     src/com/android/settings/sable/SableAppearanceSettings.java \
+    --allow-settings-untracked \
+    src/com/android/settings/sable/SableNetworkManagerSettings.java \
     verify \
     || fail R8_UI4_UI5_UI6_CUMULATIVE_SOURCE
 
