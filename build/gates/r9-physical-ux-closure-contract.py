@@ -143,6 +143,8 @@ require(
     "SettingsGateway.java",
     "SableAppearanceSettings.class.getName(),",
     "R9_SETTINGS_APPEARANCE_GATEWAY=PASS",
+    "R9_SETTINGS_PROVIDER_CONTENTPROVIDER_API_COMPAT=PASS",
+    "R9_SETTINGS_PROVIDER_REQUIRE_CONTEXT_COLLISION",
     'android.permission.MODIFY_DAY_NIGHT_MODE',
     'android:authorities="org.sableos.appearance"',
     "createDeviceProtectedStorageContext()",
