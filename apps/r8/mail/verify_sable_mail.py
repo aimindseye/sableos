@@ -45,6 +45,27 @@ def main() -> None:
         )
     print(f"SABLE_MAIL_UPSTREAM_COMMIT=PASS value={actual}")
 
+    build_logic_diff = subprocess.check_output(
+        [
+            "git",
+            "-C",
+            str(root),
+            "diff",
+            "--name-only",
+            "HEAD",
+            "--",
+            "build.gradle.kts",
+            "build-plugin",
+        ],
+        text=True,
+    ).splitlines()
+    if build_logic_diff:
+        fail(
+            "SABLE_MAIL_UPSTREAM_BUILD_LOGIC_MUTATION",
+            f"paths={build_logic_diff!r}",
+        )
+    print("SABLE_MAIL_UPSTREAM_BUILD_LOGIC_MUTATION=PASS_ABSENT")
+
     build = app / "build.gradle.kts"
     require_text(
         build,
