@@ -43,6 +43,7 @@ dependencies {
 
 
 extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+    config.setFrom(rootProject.file("config/detekt.yml"))
     ignoreFailures = false
 }
 
