@@ -114,9 +114,21 @@ require(
 
 require(
     f"{MEDIA_KT}/PlaybackController.kt",
+    "internal enum class PlaybackSkip",
+    "fun skip(direction: PlaybackSkip)",
     "fun addToQueue(",
     "player.addMediaItem(item)",
     "publishState(refreshQueue = true)",
+)
+forbid(
+    f"{MEDIA_KT}/PlaybackController.kt",
+    "fun previous()",
+    "fun next()",
+)
+require(
+    f"{MEDIA_KT}/MediaApp.kt",
+    "playbackController.skip(PlaybackSkip.Previous)",
+    "playbackController.skip(PlaybackSkip.Next)",
 )
 
 require(
