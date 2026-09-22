@@ -13,7 +13,7 @@ PINNED = {
     "external/vanadium": "57c3996dfd45e8d9b6f0b15b0753c94acb4282ef",
 }
 
-PRESENTATION_FILES = (
+SOURCE_PRESENTATION_FILES = (
     "packages/apps/DeskClock/res/values/colors.xml",
     "packages/apps/DeskClock/res/values/themes.xml",
     "packages/apps/DocumentsUI/res/values/colors.xml",
@@ -22,79 +22,143 @@ PRESENTATION_FILES = (
     "packages/apps/Gallery2/res/values/strings.xml",
 )
 
-REPLACEMENTS = {
+# Each transform accepts either the pristine pinned source token or the exact
+# prior R9 dark-only token. This makes an in-place upgrade deterministic while
+# keeping a fresh baseline equally valid.
+TRANSFORMS = {
     "packages/apps/DeskClock/res/values/colors.xml": (
-        ('<color name="clock_gray">#B3FFFFFF</color>',
-         '<color name="clock_gray">#FFAAB4C0</color>'),
-        ('<color name="default_background">#1A237E</color>',
-         '<color name="default_background">#05070A</color>'),
+        (('<color name="clock_gray">#B3FFFFFF</color>',
+          '<color name="clock_gray">#FFAAB4C0</color>'),
+         '<color name="clock_gray">#FF515B66</color>'),
+        (('<color name="default_background">#1A237E</color>',
+          '<color name="default_background">#05070A</color>'),
+         '<color name="default_background">#F5F7F9</color>\n'
+         '    <color name="sable_accent">#FF4D9CFF</color>\n'
+         '    <color name="sable_clock_floating">#FFE9EDF2</color>'),
     ),
     "packages/apps/DeskClock/res/values/themes.xml": (
-        ('<item name="colorAccent">#DA4336</item>',
-         '<item name="colorAccent">#4D9CFF</item>'),
-        ('<item name="colorBackgroundFloating">#303030</item>',
-         '<item name="colorBackgroundFloating">#161C24</item>'),
-        ('<item name="colorControlActivated">@android:color/white</item>',
-         '<item name="colorControlActivated">#4D9CFF</item>'),
+        (('<item name="colorAccent">#DA4336</item>',
+          '<item name="colorAccent">#4D9CFF</item>'),
+         '<item name="colorAccent">@color/sable_accent</item>'),
+        (('<item name="colorBackgroundFloating">#303030</item>',
+          '<item name="colorBackgroundFloating">#161C24</item>'),
+         '<item name="colorBackgroundFloating">@color/sable_clock_floating</item>'),
+        (('<item name="colorControlActivated">@android:color/white</item>',
+          '<item name="colorControlActivated">#4D9CFF</item>'),
+         '<item name="colorControlActivated">@color/sable_accent</item>'),
     ),
     "packages/apps/DocumentsUI/res/values/colors.xml": (
-        ('<color name="primary">#1E88E5</color>',
+        (('<color name="primary">#1E88E5</color>',),
          '<color name="primary">#4D9CFF</color>'),
-        ('<color name="secondary">#E3F2FD</color>',
+        (('<color name="secondary">#E3F2FD</color>',),
          '<color name="secondary">#E9F2FF</color>'),
     ),
     "packages/apps/DocumentsUI/res/values-night/colors.xml": (
-        ('<color name="app_background_color">#202124</color>',
+        (('<color name="app_background_color">#202124</color>',),
          '<color name="app_background_color">#05070A</color>'),
-        ('<color name="background_floating">#3C4043</color>',
+        (('<color name="background_floating">#3C4043</color>',),
          '<color name="background_floating">#161C24</color>'),
-        ('<color name="primary">#8AB4F8</color>',
+        (('<color name="primary">#8AB4F8</color>',),
          '<color name="primary">#4D9CFF</color>'),
-        ('<color name="secondary">#3D8AB4F8</color>',
+        (('<color name="secondary">#3D8AB4F8</color>',),
          '<color name="secondary">#334D9CFF</color>'),
-        ('<color name="hairline">#5F6368</color>',
+        (('<color name="hairline">#5F6368</color>',),
          '<color name="hairline">#526170</color>'),
-        ('<color name="doc_list_item_subtitle_enabled">#b3ffffff</color>',
+        (('<color name="doc_list_item_subtitle_enabled">#b3ffffff</color>',),
          '<color name="doc_list_item_subtitle_enabled">#FFAAB4C0</color>'),
     ),
     "packages/apps/Gallery2/res/values/colors.xml": (
-        ('<color name="default_background">#000</color>',
-         '<color name="default_background">#05070A</color>'),
-        ('<color name="ic_launcher_gallery_background">#4285f4</color>',
+        (('<color name="default_background">#000</color>',
+          '<color name="default_background">#05070A</color>'),
+         '<color name="default_background">#F5F7F9</color>'),
+        (('<color name="ic_launcher_gallery_background">#4285f4</color>',),
          '<color name="ic_launcher_gallery_background">#7A42E8</color>'),
-        ('<color name="albumset_background">#1A1A1A</color>',
-         '<color name="albumset_background">#0D1117</color>'),
-        ('<color name="albumset_placeholder">#333</color>',
-         '<color name="albumset_placeholder">#161C24</color>'),
-        ('<color name="albumset_label_background">#EE414143</color>',
-         '<color name="albumset_label_background">#EE161C24</color>'),
-        ('<color name="albumset_label_count">#A9ABAD</color>',
-         '<color name="albumset_label_count">#AAB4C0</color>'),
-        ('<color name="album_background">#1A1A1A</color>',
-         '<color name="album_background">#0D1117</color>'),
-        ('<color name="album_placeholder">#333</color>',
-         '<color name="album_placeholder">#161C24</color>'),
-        ('<color name="photo_background">#1A1A1A</color>',
-         '<color name="photo_background">#0D1117</color>'),
-        ('<color name="photo_placeholder">#333</color>',
-         '<color name="photo_placeholder">#161C24</color>'),
-        ('<color name="cache_background">#1A1A1A</color>',
-         '<color name="cache_background">#0D1117</color>'),
-        ('<color name="cache_placeholder">#333</color>',
-         '<color name="cache_placeholder">#161C24</color>'),
-        ('<color name="slideshow_background">#1A1A1A</color>',
-         '<color name="slideshow_background">#05070A</color>'),
-        ('<color name="holo_blue_light">#ff33b5e5</color>',
-         '<color name="holo_blue_light">#FF4D9CFF</color>'),
-        ('<color name="mode_selection_border">#33B5E5</color>',
-         '<color name="mode_selection_border">#4D9CFF</color>'),
-        ('<color name="popup_title_color">#ff33b5e5</color>',
+        (('<color name="albumset_background">#1A1A1A</color>',
+          '<color name="albumset_background">#0D1117</color>'),
+         '<color name="albumset_background">#F5F7F9</color>'),
+        (('<color name="albumset_placeholder">#333</color>',
+          '<color name="albumset_placeholder">#161C24</color>'),
+         '<color name="albumset_placeholder">#E9EDF2</color>'),
+        (('<color name="albumset_label_background">#EE414143</color>',
+          '<color name="albumset_label_background">#EE161C24</color>'),
+         '<color name="albumset_label_background">#EEFFFFFF</color>'),
+        (('<color name="albumset_label_title">#FBFBFB</color>',),
+         '<color name="albumset_label_title">#12171C</color>'),
+        (('<color name="albumset_label_count">#A9ABAD</color>',
+          '<color name="albumset_label_count">#AAB4C0</color>'),
+         '<color name="albumset_label_count">#515B66</color>'),
+        (('<color name="album_background">#1A1A1A</color>',
+          '<color name="album_background">#0D1117</color>'),
+         '<color name="album_background">#F5F7F9</color>'),
+        (('<color name="album_placeholder">#333</color>',
+          '<color name="album_placeholder">#161C24</color>'),
+         '<color name="album_placeholder">#E9EDF2</color>'),
+        (('<color name="photo_background">#1A1A1A</color>',
+          '<color name="photo_background">#0D1117</color>'),
+         '<color name="photo_background">#F5F7F9</color>'),
+        (('<color name="photo_placeholder">#333</color>',
+          '<color name="photo_placeholder">#161C24</color>'),
+         '<color name="photo_placeholder">#E9EDF2</color>'),
+        (('<color name="cache_background">#1A1A1A</color>',
+          '<color name="cache_background">#0D1117</color>'),
+         '<color name="cache_background">#F5F7F9</color>'),
+        (('<color name="cache_placeholder">#333</color>',
+          '<color name="cache_placeholder">#161C24</color>'),
+         '<color name="cache_placeholder">#E9EDF2</color>'),
+        (('<color name="bitmap_screennail_placeholder">#333</color>',),
+         '<color name="bitmap_screennail_placeholder">#E9EDF2</color>'),
+        (('<color name="slideshow_background">#1A1A1A</color>',
+          '<color name="slideshow_background">#05070A</color>'),
+         '<color name="slideshow_background">#F5F7F9</color>'),
+        (('<color name="popup_title_color">#ff33b5e5</color>',
+          '<color name="popup_title_color">#FF4D9CFF</color>'),
          '<color name="popup_title_color">#FF4D9CFF</color>'),
+        (('<color name="popup_background">#ff282828</color>',),
+         '<color name="popup_background">#FFF5F7F9</color>'),
+        (('<color name="mode_selection_border">#33B5E5</color>',
+          '<color name="mode_selection_border">#4D9CFF</color>'),
+         '<color name="mode_selection_border">#4D9CFF</color>'),
+        (('<color name="holo_blue_light">#ff33b5e5</color>',
+          '<color name="holo_blue_light">#FF4D9CFF</color>'),
+         '<color name="holo_blue_light">#FF4D9CFF</color>'),
     ),
     "packages/apps/Gallery2/res/values/strings.xml": (
-        ('<string name="app_name">Gallery</string>',
+        (('<string name="app_name">Gallery</string>',),
          '<string name="app_name">Photos</string>'),
     ),
+}
+
+GENERATED_FILES = {
+    "packages/apps/DeskClock/res/values-night/colors.xml": """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="clock_gray">#FFAAB4C0</color>
+    <color name="default_background">#05070A</color>
+    <color name="sable_accent">#FF4D9CFF</color>
+    <color name="sable_clock_floating">#FF161C24</color>
+</resources>
+""",
+    "packages/apps/Gallery2/res/values-night/colors.xml": """<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="default_background">#05070A</color>
+    <color name="albumset_background">#0D1117</color>
+    <color name="albumset_placeholder">#161C24</color>
+    <color name="albumset_label_background">#EE161C24</color>
+    <color name="albumset_label_title">#F7F9FC</color>
+    <color name="albumset_label_count">#AAB4C0</color>
+    <color name="album_background">#0D1117</color>
+    <color name="album_placeholder">#161C24</color>
+    <color name="photo_background">#0D1117</color>
+    <color name="photo_placeholder">#161C24</color>
+    <color name="cache_background">#0D1117</color>
+    <color name="cache_placeholder">#161C24</color>
+    <color name="bitmap_screennail_placeholder">#161C24</color>
+    <color name="slideshow_background">#05070A</color>
+    <color name="popup_title_color">#FF4D9CFF</color>
+    <color name="popup_background">#FF161C24</color>
+    <color name="mode_selection_border">#4D9CFF</color>
+    <color name="holo_blue_light">#FF4D9CFF</color>
+</resources>
+""",
 }
 
 
@@ -121,31 +185,55 @@ def require_pins(root: Path) -> None:
             )
 
 
-def apply_file(path: Path, replacements: tuple[tuple[str, str], ...]) -> None:
+def apply_file(
+    path: Path,
+    transforms: tuple[tuple[tuple[str, ...], str], ...],
+) -> None:
     text = path.read_text(encoding="utf-8")
-    for old, new in replacements:
+    for old_candidates, new in transforms:
         if new in text:
             continue
-        count = text.count(old)
-        if count != 1:
+        matches = [old for old in old_candidates if text.count(old) == 1]
+        if len(matches) != 1:
             raise PresentationError(
-                f"anchor mismatch: {path} old={old!r} count={count}"
+                f"anchor mismatch: {path} candidates={old_candidates!r} "
+                f"matches={len(matches)}"
             )
-        text = text.replace(old, new, 1)
+        text = text.replace(matches[0], new, 1)
     path.write_text(text, encoding="utf-8")
 
 
-def verify_file(path: Path, replacements: tuple[tuple[str, str], ...]) -> None:
+def verify_file(
+    path: Path,
+    transforms: tuple[tuple[tuple[str, ...], str], ...],
+) -> None:
     text = path.read_text(encoding="utf-8")
-    for old, new in replacements:
+    for old_candidates, new in transforms:
         if new not in text:
             raise PresentationError(
                 f"presentation token missing: {path} token={new!r}"
             )
-        if old in text:
-            raise PresentationError(
-                f"upstream presentation token remains: {path} token={old!r}"
-            )
+        for old in old_candidates:
+            if old != new and old in text:
+                raise PresentationError(
+                    f"stale presentation token remains: {path} token={old!r}"
+                )
+
+
+def apply_generated(root: Path) -> None:
+    for rel, expected in GENERATED_FILES.items():
+        path = root / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(expected, encoding="utf-8")
+
+
+def verify_generated(root: Path) -> None:
+    for rel, expected in GENERATED_FILES.items():
+        path = root / rel
+        if not path.is_file():
+            raise PresentationError(f"night resource missing: {rel}")
+        if path.read_text(encoding="utf-8") != expected:
+            raise PresentationError(f"night resource drift: {rel}")
 
 
 def verify_binary_boundaries(root: Path) -> None:
@@ -155,8 +243,6 @@ def verify_binary_boundaries(root: Path) -> None:
     if "preprocessed: true" not in camera_bp:
         raise PresentationError("Camera preprocessed boundary changed")
 
-    # Vanadium is kept upstream and is not rewritten by this resource-only
-    # applicator. The exact repo pin above is the product boundary.
     print("R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK")
     print("R9_VANADIUM_PRESENTATION_BOUNDARY=PASS_UPSTREAM_SECURITY_BUILD")
 
@@ -170,23 +256,26 @@ def main() -> int:
     root = args.source.resolve()
     require_pins(root)
 
-    for rel in PRESENTATION_FILES:
+    for rel in SOURCE_PRESENTATION_FILES:
         path = root / rel
         if not path.is_file():
             raise PresentationError(f"missing presentation file: {rel}")
 
     if args.mode == "apply":
-        for rel, replacements in REPLACEMENTS.items():
-            apply_file(root / rel, replacements)
+        for rel, transforms in TRANSFORMS.items():
+            apply_file(root / rel, transforms)
+        apply_generated(root)
 
-    for rel, replacements in REPLACEMENTS.items():
-        verify_file(root / rel, replacements)
-
+    for rel, transforms in TRANSFORMS.items():
+        verify_file(root / rel, transforms)
+    verify_generated(root)
     verify_binary_boundaries(root)
 
     print("R9_CLOCK_PRESENTATION=PASS_RESOURCE_ONLY")
+    print("R9_CLOCK_DAY_NIGHT_PRESENTATION=PASS_QUALIFIED")
     print("R9_FILES_PRESENTATION=PASS_RESOURCE_ONLY")
     print("R9_PHOTOS_PRESENTATION=PASS_RESOURCE_ONLY")
+    print("R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_QUALIFIED")
     print("R9_CORE_APP_BEHAVIORAL_MUTATION=PASS_ABSENT")
     print("R9_DAILY_DRIVER_CORE_PRESENTATION=PASS")
     return 0
