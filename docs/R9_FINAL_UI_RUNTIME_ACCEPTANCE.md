@@ -1,5 +1,51 @@
 # R9 final UI runtime acceptance
 
+## Physical candidate rejection — 2026-09-21
+
+The Panther image built from source commit
+`d35a1c9f79da1d7a0d114602f8b41fd4f799df35` passed package/runtime identity
+checks but failed physical daily-driver acceptance.
+
+Physical evidence:
+
+```text
+/srv/data/sable-build/evidence/panther/r9-physical/20260921_221930/home-20260921_224929
+```
+
+Observed release-blocking failures:
+
+```text
+ALL_APPS_TOUCH_NAVIGATION=FAIL
+SEARCH_LOCAL_RESULTS=FAIL
+SABLE_PEEK=FAIL
+R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE=FAIL
+```
+
+The supplied physical video additionally demonstrated native Launcher3
+presentation escaping beneath the Sable Compose surface, inconsistent system
+appearance propagation, the Start Settings shortcut bypassing Sable appearance
+controls, and Reader content/chrome theme divergence.
+
+The rejected image remains useful as evidence but is not an R9 release
+candidate. Remediation is tracked by `docs/R9_SYSTEM_COHESION_CLOSURE.md`.
+
+Final closure now additionally requires:
+
+```text
+R9_SABLE_NATIVE_LAUNCHER_ESCAPE=PASS_ABSENT
+R9_SABLE_HOME_NAVIGATION=PASS
+R9_SABLE_SETTINGS_TOP_LEVEL=PASS
+R9_SABLE_APPEARANCE_CONTROL=PASS
+R9_SABLE_APPEARANCE_BOOT_RESTORE=PASS
+R9_SABLE_SYSTEM_NIGHT_PROPAGATION=PASS
+R9_SABLE_SYSTEMUI_APPEARANCE=PASS
+R9_SABLE_CORE_APPS_APPEARANCE=PASS
+R9_SABLE_READER_APPEARANCE=PASS
+R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS
+R9_PHYSICAL_DAILY_DRIVER_ACCEPTANCE=PASS
+```
+
+
 Status: **required before Panther UI closure**
 
 ## R9 validation authority update — 2026-09-21
