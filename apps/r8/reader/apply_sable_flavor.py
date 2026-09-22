@@ -165,7 +165,7 @@ fun ProductReaderTheme(
     contrast: Float,
     content: @Composable () -> Unit,
 ) {
-    if (!BuildConfig.SABLE_PRODUCT) {
+    if (!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK) {
         VaachakTheme(
             themeMode = themeMode,
             contrast = contrast,
@@ -174,9 +174,8 @@ fun ProductReaderTheme(
         return
     }
 
-    // SableOS owns application chrome appearance globally. Upstream Reader
-    // theme preferences, including E_INK, must not bypass the shared Sable
-    // light/dark/accent contract for the Sable product flavor.
+    // Normal Reader chrome follows the SableOS system appearance. E-ink is an
+    // explicit reading-only override and deliberately remains high-contrast.
     SableTheme(
         appearance = rememberGlobalSableAppearance(),
         content = content,
@@ -213,6 +212,132 @@ fun ProductReaderTheme(
         1,
     )
     main_activity.write_text(main_text, encoding="utf-8")
+
+    # Bind the Readium EPUB canvas to SableOS Light/Dark. Upstream Reader keeps
+    # its own persisted page theme, which caused the physical R9 candidate to
+    # render Sable chrome and book content in conflicting modes. Sepia and E-ink
+    # remain deliberate reading-only overrides.
+    reader_screen = (
+        mobile_root
+        / "leisure"
+        / "src"
+        / "main"
+        / "java"
+        / "org"
+        / "vaachak"
+        / "reader"
+        / "leisure"
+        / "ui"
+        / "reader"
+        / "ReaderScreen.kt"
+    )
+    reader_text = reader_screen.read_text(encoding="utf-8")
+
+    reader_import_anchor = "import androidx.compose.foundation.BorderStroke\n"
+    reader_import_replacement = (
+        reader_import_anchor
+        + "import androidx.compose.foundation.isSystemInDarkTheme\n"
+    )
+    if reader_import_replacement not in reader_text:
+        if reader_import_anchor not in reader_text:
+            fail("ReaderScreen Compose import anchor changed")
+        reader_text = reader_text.replace(
+            reader_import_anchor,
+            reader_import_replacement,
+            1,
+        )
+
+    readium_import_anchor = (
+        "import org.readium.r2.navigator.input.TapEvent\n"
+    )
+    readium_import_replacement = (
+        readium_import_anchor
+        + "import org.readium.r2.navigator.preferences.Theme\n"
+    )
+    if readium_import_replacement not in reader_text:
+        if readium_import_anchor not in reader_text:
+            fail("ReaderScreen Readium import anchor changed")
+        reader_text = reader_text.replace(
+            readium_import_anchor,
+            readium_import_replacement,
+            1,
+        )
+
+    sable_import_anchor = (
+        "import org.vaachak.reader.core.domain.model.HighlightEntity\n"
+    )
+    sable_import_replacement = (
+        "import org.sableos.design.AppearanceMode\n"
+        "import org.sableos.design.rememberGlobalSableAppearance\n"
+        + sable_import_anchor
+    )
+    if "import org.sableos.design.rememberGlobalSableAppearance\n" not in reader_text:
+        if sable_import_anchor not in reader_text:
+            fail("ReaderScreen Sable import anchor changed")
+        reader_text = reader_text.replace(
+            sable_import_anchor,
+            sable_import_replacement,
+            1,
+        )
+
+    prefs_anchor = (
+        "    val epubPreferences by viewModel.epubPreferences.collectAsState()\n"
+    )
+    prefs_replacement = prefs_anchor + r'''
+    val sableAppearance = rememberGlobalSableAppearance()
+    val systemDark = isSystemInDarkTheme()
+    val sableDark =
+        when (sableAppearance.mode) {
+            AppearanceMode.FollowSystem -> systemDark
+            AppearanceMode.Light -> false
+            AppearanceMode.Dark -> true
+        }
+    val effectiveEpubPreferences =
+        remember(epubPreferences, sableAppearance, systemDark, isEink) {
+            when {
+                // E-ink is intentionally a white-page, high-contrast reading mode.
+                isEink -> epubPreferences.copy(theme = Theme.LIGHT)
+
+                // Sepia is the only normal Reader page-color override retained
+                // independently of the operating-system Light/Dark selection.
+                epubPreferences.theme == Theme.SEPIA -> epubPreferences
+
+                else ->
+                    epubPreferences.copy(
+                        theme = if (sableDark) Theme.DARK else Theme.LIGHT,
+                    )
+            }
+        }
+'''
+    if "val effectiveEpubPreferences =" not in reader_text:
+        if prefs_anchor not in reader_text:
+            fail("ReaderScreen EPUB preference anchor changed")
+        reader_text = reader_text.replace(
+            prefs_anchor,
+            prefs_replacement,
+            1,
+        )
+
+    submit_old = (
+        "    LaunchedEffect(epubPreferences, currentNavigatorFragment) {\n"
+        "        if (currentNavigatorFragment?.view != null) {\n"
+        "            currentNavigatorFragment?.submitPreferences(epubPreferences)\n"
+        "        }\n"
+        "    }\n"
+    )
+    submit_new = (
+        "    LaunchedEffect(effectiveEpubPreferences, currentNavigatorFragment) {\n"
+        "        if (currentNavigatorFragment?.view != null) {\n"
+        "            currentNavigatorFragment?.submitPreferences(effectiveEpubPreferences)\n"
+        "        }\n"
+        "    }\n"
+    )
+    if submit_new not in reader_text:
+        if submit_old not in reader_text:
+            fail("ReaderScreen EPUB submit anchor changed")
+        reader_text = reader_text.replace(submit_old, submit_new, 1)
+
+    reader_screen.write_text(reader_text, encoding="utf-8")
 
     # Compose the pinned MIT-licensed text capability into only the Sable product
     # flavor. Translation and the Text Reader launcher/theme remain excluded.
