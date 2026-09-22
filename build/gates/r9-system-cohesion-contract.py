@@ -300,7 +300,10 @@ require(
     'python3 "$SETTINGS_COHERENCE" --source "$WS" verify',
     'python3 "$SETTINGS_COHERENCE" --source "$WS" apply',
     'echo "===== LAUNCHER3 HOME + QUICKSTEP COHESION ====="',
-    'python3 "$LAUNCHER_COHESION" --source "$WS" verify',
+    'python3 "$LAUNCHER_COHESION" --source "$WS" verify >/dev/null 2>&1',
+    'python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify >/dev/null 2>&1',
+    'R9_LAUNCHER3_FOUNDATION=PASS_EXISTING',
+    'R9_LAUNCHER3_FOUNDATION=APPLIED',
     'python3 "$LAUNCHER_COHESION" --source "$WS" apply',
 )
 require(
@@ -342,6 +345,7 @@ print("R9_SABLE_OWNED_BRANDING_CONTRACT=PASS")
 print("R9_INTENTIONAL_UPSTREAM_BOUNDARY=PASS")
 print("R9_WS6_SOURCE_AUDIT=PASS")
 print("R9_WS7_PREPARE_STRUCTURE=PASS")
+print("R9_WS7_LAUNCHER_FOUNDATION_RESUME=PASS_VERIFY_BEFORE_REPLAY")
 print("R9_WS7_INTEGRATION_CONTRACT=PASS")
 print("R9_PHYSICAL_ACCEPTANCE=REQUIRED_FRESH_PANTHER")
 print("R9_SYSTEM_COHESION_CONTRACT=PASS")
