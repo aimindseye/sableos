@@ -218,23 +218,29 @@ def main() -> int:
     for needle in (
         'android:name="org.sableos.start.platform.SableAppearanceProvider"',
         'android:authorities="org.sableos.start.appearance"',
-        'android:exported="true"',
+        'android:authorities="org.sableos.appearance"',
     ):
-        require(
+        forbid(
             manifest,
             needle,
-            "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER_PARITY",
+            "R9_VISUAL_REVIEW_NO_PRODUCTION_APPEARANCE_AUTHORITY",
         )
-    for needle in (
+    forbid(
+        activity,
         "StartStateRepository",
-        "startStateRepository.loadAppearance()",
-        "startStateRepository.saveAppearance(appearance)",
-        "startStateRepository.resetAppearance()",
+        "R9_VISUAL_REVIEW_NO_PRODUCTION_APPEARANCE_PERSISTENCE",
+    )
+    for needle in (
+        "mutableStateOf(SableAppearance())",
+        "AppearanceMode.Light",
+        "AppearanceMode.Dark",
+        "AppearanceMode.FollowSystem",
+        "onOpenSystemSettings = ::openSettings",
     ):
         require(
             activity,
             needle,
-            "R9_VISUAL_REVIEW_APPEARANCE_PERSISTENCE_PARITY",
+            "R9_VISUAL_REVIEW_LOCAL_APPEARANCE_MODE",
         )
     require(
         activity,
@@ -585,8 +591,8 @@ def main() -> int:
     )
     require(
         production_ui,
-        "SettingsShortcut(",
-        "R9_START_APPROVED_SETTINGS_SHORTCUT",
+        "SableControlShortcut(",
+        "R9_START_APPROVED_SABLE_CONTROL_SHORTCUT",
     )
     require(
         production_ui,
@@ -787,14 +793,14 @@ def main() -> int:
         "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS",
         "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS",
         "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES",
-        "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
-        "content://org.sableos.start.appearance/appearance",
+        "R9_VISUAL_REVIEW_APPEARANCE_MODE=LOCAL_DESIGN_ONLY",
+        "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=RETIRED_SYSTEM_AUTHORITY_PHYSICAL_ONLY",
+        "R9_VISUAL_REVIEW_PRODUCTION_APPEARANCE_AUTHORITY=DEFERRED_PHYSICAL_PANTHER",
         "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SOURCE=HOST_AVD_NOT_PRODUCT",
         "R9_VISUAL_REVIEW_HOST_AVD_CHROME=DETECTED_FILTERED_FROM_REVIEW",
         "R9_VISUAL_REVIEW_HOST_AVD_GOOGLE_MESSAGES=DETECTED_FILTERED_FROM_REVIEW",
         "R9_VISUAL_REVIEW_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
         "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
-        "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=PASS",
         "prepare-ready.txt",
         "R9_VISUAL_REVIEW_PREPARE_READY=PASS",
     ):
@@ -804,12 +810,13 @@ def main() -> int:
             "R9_VISUAL_REVIEW_MAC_FIDELITY_SCOPE",
         )
     for needle in (
-        "content://org.sableos.start.appearance/appearance",
-        "R9_VISUAL_FIDELITY_EXPECTED_MODE=PASS",
+        "R9_VISUAL_FIDELITY_APPEARANCE_PROVIDER=RETIRED_SYSTEM_AUTHORITY_PHYSICAL_ONLY",
+        "R9_VISUAL_FIDELITY_REVIEW_MODE=",
+        "R9_VISUAL_FIDELITY_PRODUCTION_APPEARANCE_AUTHORITY=DEFERRED_PHYSICAL_PANTHER",
         "R9_VISUAL_FIDELITY_HOST_CHROME=DETECTED_FILTERED",
         "R9_VISUAL_FIDELITY_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER",
         "R9_VISUAL_FIDELITY_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER",
-        "R9_VISUAL_FIDELITY_AUDIT=PASS",
+        "R9_VISUAL_FIDELITY_AUDIT=PASS_DESIGN_HOST_ONLY",
     ):
         require(
             fidelity_audit,
@@ -821,7 +828,8 @@ def main() -> int:
         "org.sableos.hub/.MainActivity",
         "04-theme-$MODE-start.png",
         "05-theme-$MODE-sable-messages.png",
-        "R9_THEME_FIDELITY_PROVIDER_MODE=PASS",
+        "R9_THEME_FIDELITY_REVIEW_MODE=PASS_LOCAL_DESIGN_HOST",
+        "R9_THEME_FIDELITY_PROVIDER_MODE=RETIRED_SYSTEM_AUTHORITY_PHYSICAL_ONLY",
         "R9_THEME_FIDELITY_CROSS_APP_VISUAL_REVIEW=PENDING_USER_REVIEW",
         "R9_THEME_FIDELITY_PLATFORM_NIGHT_MODE=DEFERRED_PHYSICAL_PANTHER",
         "R9_THEME_FIDELITY_VANADIUM=DEFERRED_PHYSICAL_PANTHER",
