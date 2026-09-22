@@ -52,6 +52,7 @@ private val MediaPivotInactiveWidth = 12.dp
 private val MediaCompactPadding = 12.dp
 private const val MILLIS_PER_SECOND = 1_000L
 private const val SECONDS_PER_MINUTE = 60L
+private const val LARGE_ARTWORK_ASPECT_RATIO = 1.9f
 
 internal enum class MediaDestination(
     val label: String,
@@ -1634,7 +1635,7 @@ private fun ArtworkTile(
     Box(
         modifier =
             modifier
-                .aspectRatio(if (large) 1.9f else 1f)
+                .aspectRatio(if (large) LARGE_ARTWORK_ASPECT_RATIO else 1f)
                 .background(
                     brush =
                         Brush.linearGradient(
