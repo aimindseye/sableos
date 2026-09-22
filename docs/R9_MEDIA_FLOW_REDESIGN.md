@@ -61,7 +61,7 @@ References used for interaction research:
 
 ## Privacy and security boundary
 
-Podcast support is deliberately explicit-network-action only.
+Podcast support is deliberately explicit-network-action only and HTTPS-only.
 
 Current R9 Media Flow behavior:
 
@@ -159,6 +159,7 @@ R9_MEDIA_FLOW_SHARED_UP_NEXT=PASS
 R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS
 R9_PODCAST_MANUAL_REFRESH=PASS
 R9_PODCAST_FEED_SIZE_BOUND=PASS
+R9_PODCAST_HTTPS_ONLY=PASS
 R9_PODCAST_XML_DOCTYPE_REJECTED=PASS
 R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS
 R9_PODCAST_NO_BACKGROUND_POLLING=PASS
