@@ -1,10 +1,25 @@
 #!/usr/bin/env bash
+# Operator safety: never allow this mutating deployment script to be sourced.
+# Returning here occurs before set -euo pipefail, so the parent SSH shell is
+# left untouched on both success and failure.
+if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
+  echo "SABLE_STANDARD_FLASH=REFUSED_SOURCED_SCRIPT" >&2
+  echo "Run with: bash ${BASH_SOURCE[0]} ..." >&2
+  return 64
+fi
+
 set -euo pipefail
 umask 077
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$SCRIPT_DIR/common.sh"
+# Canonical platform-tools live in the pinned Sable host-tool profile.
+# Prefer them over distro adb/fastboot packages.
+if [[ -f "$ROOT/build/config/r8-host-tools.env" ]]; then
+  # shellcheck source=/dev/null
+  source "$ROOT/build/config/r8-host-tools.env"
+fi
 
 DEVICE=""
 RELEASE=""
@@ -92,18 +107,45 @@ ACTUAL_ANDROID_INFO_SHA="$(sable_sha256 "$ANDROID_INFO")"
 
 ADB_BIN=""
 FASTBOOT_BIN=""
-if [[ -n "$OUT_DIR" && -x "$OUT_DIR/host/linux-x86/bin/adb" ]]; then
+
+if [[ -n "${SABLE_ANDROID_SDK:-}" && -x "$SABLE_ANDROID_SDK/platform-tools/adb" ]]; then
+  ADB_BIN="$SABLE_ANDROID_SDK/platform-tools/adb"
+elif [[ -n "$OUT_DIR" && -x "$OUT_DIR/host/linux-x86/bin/adb" ]]; then
   ADB_BIN="$OUT_DIR/host/linux-x86/bin/adb"
 else
   ADB_BIN="$(command -v adb || true)"
 fi
-if [[ -n "$OUT_DIR" && -x "$OUT_DIR/host/linux-x86/bin/fastboot" ]]; then
+
+if [[ -n "${SABLE_ANDROID_SDK:-}" && -x "$SABLE_ANDROID_SDK/platform-tools/fastboot" ]]; then
+  FASTBOOT_BIN="$SABLE_ANDROID_SDK/platform-tools/fastboot"
+elif [[ -n "$OUT_DIR" && -x "$OUT_DIR/host/linux-x86/bin/fastboot" ]]; then
   FASTBOOT_BIN="$OUT_DIR/host/linux-x86/bin/fastboot"
 else
   FASTBOOT_BIN="$(command -v fastboot || true)"
 fi
+
 [[ -x "$ADB_BIN" ]] || sable_die "SABLE_ADB" "adb executable unavailable" 33
 [[ -x "$FASTBOOT_BIN" ]] || sable_die "SABLE_FASTBOOT" "fastboot executable unavailable" 33
+
+FASTBOOT_VERSION="$(
+  "$FASTBOOT_BIN" --version 2>/dev/null |
+    awk '/^fastboot version / {print $3; exit}' |
+    cut -d- -f1
+)"
+MIN_FASTBOOT_VERSION=35.0.1
+[[ -n "$FASTBOOT_VERSION" ]] ||
+  sable_die "SABLE_FASTBOOT_VERSION" "unable to read fastboot version" 33
+[[ "$(
+  printf '%s\n' "$MIN_FASTBOOT_VERSION" "$FASTBOOT_VERSION" |
+    sort -V |
+    head -n1
+)" == "$MIN_FASTBOOT_VERSION" ]] ||
+  sable_die "SABLE_FASTBOOT_VERSION" "minimum=$MIN_FASTBOOT_VERSION actual=$FASTBOOT_VERSION" 33
+
+echo "SABLE_ADB_BIN=$ADB_BIN"
+echo "SABLE_FASTBOOT_BIN=$FASTBOOT_BIN"
+echo "SABLE_FASTBOOT_VERSION=$FASTBOOT_VERSION"
+echo "SABLE_FASTBOOT_VERSION_GATE=PASS"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$EVIDENCE_ROOT/$DEVICE/${RELEASE,,}-physical/${STAMP}_flash"
