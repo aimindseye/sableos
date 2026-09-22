@@ -90,6 +90,16 @@ for rel in (
     require(rel, "org.sableos.appearance")
     forbid(rel, "org.sableos.start.appearance")
 
+require(
+    "apps/r8/mail/verify_sable_mail.py",
+    "org.sableos.appearance",
+    "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY=PASS_ABSENT",
+)
+forbid(
+    "apps/r8/mail/verify_sable_mail.py",
+    '"org.sableos.start.appearance",\n        "SABLE_MAIL_GLOBAL_APPEARANCE_SOURCE"',
+)
+
 require_absent(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/"
     "SableAppearanceProvider.kt"
