@@ -169,14 +169,11 @@ internal object PodcastFeedParser {
         }
     }
 
-    private fun String.isEpisodeContainer(): Boolean =
-        this == "item" || this == "entry"
+    private fun String.isEpisodeContainer(): Boolean = this == "item" || this == "entry"
 
-    private fun String.isMediaContainer(): Boolean =
-        this == "enclosure" || this == "content"
+    private fun String.isMediaContainer(): Boolean = this == "enclosure" || this == "content"
 
-    private fun String.isSupportedAudioType(): Boolean =
-        isBlank() || startsWith(AUDIO_MIME_PREFIX)
+    private fun String.isSupportedAudioType(): Boolean = isBlank() || startsWith(AUDIO_MIME_PREFIX)
 
     private fun attribute(
         parser: XmlPullParser,
@@ -249,7 +246,8 @@ internal object PodcastFeedParser {
             ).apply {
                 isLenient = true
                 timeZone = UTC
-            }.parse(value)?.time
+            }.parse(value)
+                ?.time
         }.getOrNull()
 
     private fun parseDurationMs(value: String): Long {
@@ -272,17 +270,24 @@ internal object PodcastFeedParser {
                 .mapNotNull(String::toLongOrNull)
 
         return when (parts.size) {
-            CLOCK_HOURS_PARTS ->
+            CLOCK_HOURS_PARTS -> {
                 parts[0] * SECONDS_PER_HOUR +
                     parts[1] * SECONDS_PER_MINUTE +
                     parts[2]
+            }
 
-            CLOCK_MINUTES_PARTS ->
+            CLOCK_MINUTES_PARTS -> {
                 parts[0] * SECONDS_PER_MINUTE +
                     parts[1]
+            }
 
-            CLOCK_SECONDS_PARTS -> parts[0]
-            else -> 0L
+            CLOCK_SECONDS_PARTS -> {
+                parts[0]
+            }
+
+            else -> {
+                0L
+            }
         }
     }
 
@@ -383,7 +388,8 @@ internal object PodcastFeedParser {
             val normalizedTitle =
                 cleanText(feedTitle)
                     .ifBlank {
-                        URL(feedUrl).host
+                        URL(feedUrl)
+                            .host
                             .removePrefix("www.")
                             .ifBlank { "Podcast" }
                     }
