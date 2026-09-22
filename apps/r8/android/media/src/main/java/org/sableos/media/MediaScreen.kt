@@ -67,8 +67,7 @@ internal enum class LibraryPivot(
     Playlists("playlists"),
 }
 
-@Composable
-internal fun MediaScreen(
+internal data class MediaScreenState(
     destination: MediaDestination,
     libraryPivot: LibraryPivot,
     localItems: List<LocalAudioItem>,
@@ -92,50 +91,125 @@ internal fun MediaScreen(
     stationUrl: String,
     editingStation: RadioStation?,
     message: String?,
-    onDestinationChange: (MediaDestination) -> Unit,
-    onLibraryPivotChange: (LibraryPivot) -> Unit,
-    onAddLocalAudio: () -> Unit,
-    onAddLocalFolder: () -> Unit,
-    onPlayLocal: (Int) -> Unit,
-    onRemoveLocal: (LocalAudioItem) -> Unit,
-    onToggleFavoriteAudio: (LocalAudioItem) -> Unit,
-    onPodcastFeedUrlChange: (String) -> Unit,
-    onAddPodcastFeed: () -> Unit,
-    onRefreshPodcasts: () -> Unit,
-    onRemovePodcastSubscription: (PodcastSubscription) -> Unit,
-    onPlayPodcastEpisode: (PodcastEpisode) -> Unit,
-    onQueuePodcastEpisode: (PodcastEpisode) -> Unit,
-    onToggleSavedPodcastEpisode: (PodcastEpisode) -> Unit,
-    onPlayStation: (RadioStation) -> Unit,
-    onToggleFavoriteStation: (RadioStation) -> Unit,
-    onRadioFavoritesOnlyChange: (Boolean) -> Unit,
-    onAddStation: () -> Unit,
-    onManageStations: () -> Unit,
-    onEditStation: (RadioStation) -> Unit,
-    onDeleteStation: (RadioStation) -> Unit,
-    onStationNameChange: (String) -> Unit,
-    onStationUrlChange: (String) -> Unit,
-    onSaveNewStation: () -> Unit,
-    onSaveEditedStation: () -> Unit,
-    onCancelStationFlow: () -> Unit,
-    onCreatePlaylist: () -> Unit,
-    onEditPlaylist: (MediaPlaylist) -> Unit,
-    onDeletePlaylist: (MediaPlaylist) -> Unit,
-    onPlayPlaylist: (MediaPlaylist) -> Unit,
-    onPlaylistNameChange: (String) -> Unit,
-    onTogglePlaylistItem: (String) -> Unit,
-    onSavePlaylist: () -> Unit,
-    onCancelPlaylistEditor: () -> Unit,
-    onSettingsChange: (MediaSettings) -> Unit,
-    onPlayQueueIndex: (Int) -> Unit,
-    onMoveQueueItem: (Int, Int) -> Unit,
-    onRemoveQueueItem: (Int) -> Unit,
-    onPlayPause: () -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    onStop: () -> Unit,
-    onSeek: (Long) -> Unit,
+)
+
+internal data class MediaScreenActions(
+    val onDestinationChange: (MediaDestination) -> Unit,
+    val onLibraryPivotChange: (LibraryPivot) -> Unit,
+    val onAddLocalAudio: () -> Unit,
+    val onAddLocalFolder: () -> Unit,
+    val onPlayLocal: (Int) -> Unit,
+    val onRemoveLocal: (LocalAudioItem) -> Unit,
+    val onToggleFavoriteAudio: (LocalAudioItem) -> Unit,
+    val onPodcastFeedUrlChange: (String) -> Unit,
+    val onAddPodcastFeed: () -> Unit,
+    val onRefreshPodcasts: () -> Unit,
+    val onRemovePodcastSubscription: (PodcastSubscription) -> Unit,
+    val onPlayPodcastEpisode: (PodcastEpisode) -> Unit,
+    val onQueuePodcastEpisode: (PodcastEpisode) -> Unit,
+    val onToggleSavedPodcastEpisode: (PodcastEpisode) -> Unit,
+    val onPlayStation: (RadioStation) -> Unit,
+    val onToggleFavoriteStation: (RadioStation) -> Unit,
+    val onRadioFavoritesOnlyChange: (Boolean) -> Unit,
+    val onAddStation: () -> Unit,
+    val onManageStations: () -> Unit,
+    val onEditStation: (RadioStation) -> Unit,
+    val onDeleteStation: (RadioStation) -> Unit,
+    val onStationNameChange: (String) -> Unit,
+    val onStationUrlChange: (String) -> Unit,
+    val onSaveNewStation: () -> Unit,
+    val onSaveEditedStation: () -> Unit,
+    val onCancelStationFlow: () -> Unit,
+    val onCreatePlaylist: () -> Unit,
+    val onEditPlaylist: (MediaPlaylist) -> Unit,
+    val onDeletePlaylist: (MediaPlaylist) -> Unit,
+    val onPlayPlaylist: (MediaPlaylist) -> Unit,
+    val onPlaylistNameChange: (String) -> Unit,
+    val onTogglePlaylistItem: (String) -> Unit,
+    val onSavePlaylist: () -> Unit,
+    val onCancelPlaylistEditor: () -> Unit,
+    val onSettingsChange: (MediaSettings) -> Unit,
+    val onPlayQueueIndex: (Int) -> Unit,
+    val onMoveQueueItem: (Int, Int) -> Unit,
+    val onRemoveQueueItem: (Int) -> Unit,
+    val onPlayPause: () -> Unit,
+    val onPrevious: () -> Unit,
+    val onNext: () -> Unit,
+    val onStop: () -> Unit,
+    val onSeek: (Long) -> Unit,
+)
+
+@Composable
+internal fun MediaScreen(
+    state: MediaScreenState,
+    actions: MediaScreenActions,
 ) {
+    val destination = state.destination
+    val libraryPivot = state.libraryPivot
+    val localItems = state.localItems
+    val podcastSubscriptions = state.podcastSubscriptions
+    val savedPodcastEpisodeIds = state.savedPodcastEpisodeIds
+    val playedPodcastEpisodeIds = state.playedPodcastEpisodeIds
+    val podcastFeedUrl = state.podcastFeedUrl
+    val podcastBusy = state.podcastBusy
+    val podcastMessage = state.podcastMessage
+    val stations = state.stations
+    val playback = state.playback
+    val favoriteAudioUris = state.favoriteAudioUris
+    val favoriteStationIds = state.favoriteStationIds
+    val playlists = state.playlists
+    val settings = state.settings
+    val playlistName = state.playlistName
+    val selectedPlaylistUris = state.selectedPlaylistUris
+    val editingPlaylist = state.editingPlaylist
+    val showFavoriteStationsOnly = state.showFavoriteStationsOnly
+    val stationName = state.stationName
+    val stationUrl = state.stationUrl
+    val editingStation = state.editingStation
+    val message = state.message
+    val onDestinationChange = actions.onDestinationChange
+    val onLibraryPivotChange = actions.onLibraryPivotChange
+    val onAddLocalAudio = actions.onAddLocalAudio
+    val onAddLocalFolder = actions.onAddLocalFolder
+    val onPlayLocal = actions.onPlayLocal
+    val onRemoveLocal = actions.onRemoveLocal
+    val onToggleFavoriteAudio = actions.onToggleFavoriteAudio
+    val onPodcastFeedUrlChange = actions.onPodcastFeedUrlChange
+    val onAddPodcastFeed = actions.onAddPodcastFeed
+    val onRefreshPodcasts = actions.onRefreshPodcasts
+    val onRemovePodcastSubscription = actions.onRemovePodcastSubscription
+    val onPlayPodcastEpisode = actions.onPlayPodcastEpisode
+    val onQueuePodcastEpisode = actions.onQueuePodcastEpisode
+    val onToggleSavedPodcastEpisode = actions.onToggleSavedPodcastEpisode
+    val onPlayStation = actions.onPlayStation
+    val onToggleFavoriteStation = actions.onToggleFavoriteStation
+    val onRadioFavoritesOnlyChange = actions.onRadioFavoritesOnlyChange
+    val onAddStation = actions.onAddStation
+    val onManageStations = actions.onManageStations
+    val onEditStation = actions.onEditStation
+    val onDeleteStation = actions.onDeleteStation
+    val onStationNameChange = actions.onStationNameChange
+    val onStationUrlChange = actions.onStationUrlChange
+    val onSaveNewStation = actions.onSaveNewStation
+    val onSaveEditedStation = actions.onSaveEditedStation
+    val onCancelStationFlow = actions.onCancelStationFlow
+    val onCreatePlaylist = actions.onCreatePlaylist
+    val onEditPlaylist = actions.onEditPlaylist
+    val onDeletePlaylist = actions.onDeletePlaylist
+    val onPlayPlaylist = actions.onPlayPlaylist
+    val onPlaylistNameChange = actions.onPlaylistNameChange
+    val onTogglePlaylistItem = actions.onTogglePlaylistItem
+    val onSavePlaylist = actions.onSavePlaylist
+    val onCancelPlaylistEditor = actions.onCancelPlaylistEditor
+    val onSettingsChange = actions.onSettingsChange
+    val onPlayQueueIndex = actions.onPlayQueueIndex
+    val onMoveQueueItem = actions.onMoveQueueItem
+    val onRemoveQueueItem = actions.onRemoveQueueItem
+    val onPlayPause = actions.onPlayPause
+    val onPrevious = actions.onPrevious
+    val onNext = actions.onNext
+    val onStop = actions.onStop
+    val onSeek = actions.onSeek
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
