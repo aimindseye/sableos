@@ -237,6 +237,12 @@ def verify(source: Path) -> None:
     host_text = host.read_text(encoding="utf-8")
     required_host = (
         "fun isSableSurfaceActive(): Boolean",
+        "private fun isCommittedOverviewState(state: LauncherState): Boolean",
+        "LauncherState.OVERVIEW_MODAL_TASK",
+        "LauncherState.OVERVIEW_SPLIT_SELECT",
+        "protected override fun shouldDisableBackGesture(): Boolean",
+        "isSableSurfaceActive() && canSableNavigateBack",
+        "sableView?.bringToFront()",
         "LauncherState.ALL_APPS ->",
         "stateManager.goToState(LauncherState.NORMAL, false)",
         "readGlobalSableAppearance(",
@@ -270,6 +276,8 @@ def verify(source: Path) -> None:
 
     print("R9_SABLE_NATIVE_ALL_APPS_TOUCH_ESCAPE=PASS_BLOCKED")
     print("R9_SABLE_START_VERTICAL_DRAG_OWNERSHIP=PASS")
+    print("R9_SABLE_HINT_STATE_PRESENTATION=PASS_COVERED_BY_SABLE")
+    print("R9_SABLE_SUBSURFACE_BACK_GESTURE=PASS_ENABLED")
     print("R9_QUICKSTEP_NAVBAR_OVERVIEW_PATH=PASS_PRESERVED")
     print("R9_LAUNCHER_COHESION=PASS")
 
