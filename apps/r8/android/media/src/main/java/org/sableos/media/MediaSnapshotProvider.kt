@@ -39,8 +39,7 @@ class MediaSnapshotProvider : ContentProvider() {
         }
     }
 
-    override fun getType(uri: Uri): String =
-        "vnd.android.cursor.item/vnd.org.sableos.media.snapshot"
+    override fun getType(uri: Uri): String = "vnd.android.cursor.item/vnd.org.sableos.media.snapshot"
 
     override fun insert(
         uri: Uri,
