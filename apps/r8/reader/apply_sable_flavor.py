@@ -201,6 +201,281 @@ def main() -> None:
         encoding="utf-8",
     )
 
+    # Bounded warning cleanup for the pinned Reader checkout. These changes are
+    # compile-time/API maintenance only; they do not alter Sable Reader product
+    # behavior or upstream Vaachak repositories.
+    leisure_sources = mobile_root / "leisure" / "src" / "main" / "java"
+    hilt_migration_count = migrate_hilt_viewmodel_imports(leisure_sources)
+
+    login_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/login/LoginScreen.kt"
+    )
+    replace_exact_text(
+        login_screen,
+        "import androidx.compose.material3.TabRow",
+        "import androidx.compose.material3.PrimaryTabRow",
+        "SABLE_READER_WARNING_LOGIN_TAB_IMPORT",
+    )
+    replace_exact_text(
+        login_screen,
+        "            TabRow(selectedTabIndex = if (isRegisterMode) 1 else 0) {",
+        "            PrimaryTabRow(selectedTabIndex = if (isRegisterMode) 1 else 0) {",
+        "SABLE_READER_WARNING_LOGIN_TAB_API",
+    )
+
+    highlights_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/highlights/AllHighlightsScreen.kt"
+    )
+    replace_exact_text(
+        highlights_screen,
+        "import androidx.compose.material.icons.filled.MenuBook",
+        "import androidx.compose.material.icons.automirrored.filled.MenuBook",
+        "SABLE_READER_WARNING_MENU_BOOK_IMPORT",
+    )
+    replace_exact_text(
+        highlights_screen,
+        "Icons.Default.MenuBook",
+        "Icons.AutoMirrored.Filled.MenuBook",
+        "SABLE_READER_WARNING_MENU_BOOK_USAGE",
+    )
+
+    about_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/settings/AboutScreen.kt"
+    )
+    replace_exact_text(
+        about_screen,
+        "import androidx.compose.material.icons.filled.OpenInNew",
+        "import androidx.compose.material.icons.automirrored.filled.OpenInNew",
+        "SABLE_READER_WARNING_OPEN_IN_NEW_IMPORT",
+    )
+    replace_exact_text(
+        about_screen,
+        "Icons.Filled.OpenInNew",
+        "Icons.AutoMirrored.Filled.OpenInNew",
+        "SABLE_READER_WARNING_OPEN_IN_NEW_USAGE",
+    )
+
+    highlights_view_model = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/highlights/AllHighlightsViewModel.kt"
+    )
+    add_file_opt_in(
+        highlights_view_model,
+        "@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)",
+        "SABLE_READER_WARNING_COROUTINES_OPT_IN",
+    )
+
+    reader_settings_sheet = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/reader/components/ReaderSettingsSheet.kt"
+    )
+    add_file_opt_in(
+        reader_settings_sheet,
+        "@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)",
+        "SABLE_READER_WARNING_READIUM_SETTINGS_OPT_IN",
+    )
+
+    tts_settings_sheet = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/reader/components/TtsSettingsBottomSheet.kt"
+    )
+    add_file_opt_in(
+        tts_settings_sheet,
+        "@file:OptIn(org.readium.r2.shared.ExperimentalReadiumApi::class)",
+        "SABLE_READER_WARNING_READIUM_TTS_OPT_IN",
+    )
+    replace_exact_text(
+        tts_settings_sheet,
+        "import androidx.compose.material3.ExposedDropdownMenuBox",
+        "import androidx.compose.material3.ExposedDropdownMenuAnchorType\n"
+        "import androidx.compose.material3.ExposedDropdownMenuBox",
+        "SABLE_READER_WARNING_MENU_ANCHOR_IMPORT",
+    )
+    replace_exact_text(
+        tts_settings_sheet,
+        "                                    .menuAnchor()",
+        "                                    .menuAnchor(\n"
+        "                                        ExposedDropdownMenuAnchorType.PrimaryNotEditable,\n"
+        "                                        enabled = true,\n"
+        "                                    )",
+        "SABLE_READER_WARNING_MENU_ANCHOR_API",
+    )
+
+    android_tts_manager = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/domain/tts/AndroidTtsManager.kt"
+    )
+    replace_exact_text(
+        android_tts_manager,
+        "            override fun onError(utteranceId: String?) {",
+        "            @Suppress(\"DEPRECATION\")\n"
+        "            override fun onError(utteranceId: String?) {",
+        "SABLE_READER_WARNING_TTS_DEPRECATED_OVERRIDE",
+    )
+
+    bookshelf_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/bookshelf/BookshelfScreen.kt"
+    )
+    replace_exact_text(
+        bookshelf_screen,
+        """    var hasCover by remember(book.coverPath) { mutableStateOf(false) }
+    LaunchedEffect(book.coverPath) {
+        hasCover = if (book.coverPath != null) {
+            withContext(Dispatchers.IO) { File(book.coverPath).exists() }
+        } else {
+            false
+        }
+    }
+""",
+        """    val coverPath = book.coverPath
+    var hasCover by remember(coverPath) { mutableStateOf(false) }
+    LaunchedEffect(coverPath) {
+        hasCover = if (coverPath != null) {
+            withContext(Dispatchers.IO) { File(coverPath).exists() }
+        } else {
+            false
+        }
+    }
+""",
+        "SABLE_READER_WARNING_BOOK_COVER_NULLABILITY",
+    )
+    replace_exact_text(
+        bookshelf_screen,
+        "if (hasCover && book.coverPath != null) {",
+        "if (hasCover && coverPath != null) {",
+        "SABLE_READER_WARNING_BOOK_COVER_CONDITION",
+    )
+    replace_exact_text(
+        bookshelf_screen,
+        "File(book.coverPath)",
+        "File(coverPath)",
+        "SABLE_READER_WARNING_BOOK_COVER_FILE",
+    )
+    replace_exact_text(
+        bookshelf_screen,
+        """    var hasCover by remember(firstBook?.coverPath) { mutableStateOf(false) }
+    LaunchedEffect(firstBook?.coverPath) {
+        hasCover = if (firstBook?.coverPath != null) {
+            withContext(Dispatchers.IO) { File(firstBook.coverPath).exists() }
+        } else {
+            false
+        }
+    }
+""",
+        """    val firstCoverPath = firstBook?.coverPath
+    var hasCover by remember(firstCoverPath) { mutableStateOf(false) }
+    LaunchedEffect(firstCoverPath) {
+        hasCover = if (firstCoverPath != null) {
+            withContext(Dispatchers.IO) { File(firstCoverPath).exists() }
+        } else {
+            false
+        }
+    }
+""",
+        "SABLE_READER_WARNING_STACK_COVER_NULLABILITY",
+    )
+    replace_exact_text(
+        bookshelf_screen,
+        "if (hasCover && firstBook.coverPath != null) {",
+        "if (hasCover && firstCoverPath != null) {",
+        "SABLE_READER_WARNING_STACK_COVER_CONDITION",
+    )
+    replace_exact_text(
+        bookshelf_screen,
+        "File(firstBook.coverPath)",
+        "File(firstCoverPath)",
+        "SABLE_READER_WARNING_STACK_COVER_FILE",
+    )
+
+    catalog_view_model = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/catalog/CatalogViewModel.kt"
+    )
+    replace_exact_text(
+        catalog_view_model,
+        'publication.metadata.authors.firstOrNull()?.name?.toString() ?: "Unknown"',
+        'publication.metadata.authors.firstOrNull()?.name ?: "Unknown"',
+        "SABLE_READER_WARNING_AUTHOR_TO_STRING",
+        expected=2,
+    )
+
+    reader_screen_warning_path = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/reader/ReaderScreen.kt"
+    )
+    replace_exact_text(
+        reader_screen_warning_path,
+        'bookmark.text ?: "Empty"',
+        "bookmark.text",
+        "SABLE_READER_WARNING_BOOKMARK_EMPTY_ELVIS",
+        expected=2,
+    )
+    replace_exact_text(
+        reader_screen_warning_path,
+        'bookmark.text ?: "Bookmark"',
+        "bookmark.text",
+        "SABLE_READER_WARNING_BOOKMARK_TEXT_ELVIS",
+    )
+
+    reader_view_model_warning_path = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/reader/ReaderViewModel.kt"
+    )
+    replace_exact_text(
+        reader_view_model_warning_path,
+        "id = entity.id.toString(),",
+        "id = entity.id,",
+        "SABLE_READER_WARNING_DECORATION_ID_TO_STRING",
+    )
+    replace_exact_text(
+        reader_view_model_warning_path,
+        "if (locator != null && _isTtsActive.value) {",
+        "if (_isTtsActive.value) {",
+        "SABLE_READER_WARNING_TTS_LOCATOR_ALWAYS_NONNULL",
+    )
+    replace_exact_text(
+        reader_view_model_warning_path,
+        "lockedOutUtteranceText = nav.location.value?.utterance",
+        "lockedOutUtteranceText = nav.location.value.utterance",
+        "SABLE_READER_WARNING_TTS_LOCATION_SAFE_CALL",
+    )
+
+    settings_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/settings/SettingsScreen.kt"
+    )
+    replace_exact_text(
+        settings_screen,
+        "state.userProfile?.isAuthenticated == true",
+        "state.userProfile.isAuthenticated",
+        "SABLE_READER_WARNING_SETTINGS_PROFILE_SAFE_CALL",
+    )
+
+    sync_settings_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/settings/SyncSettingsScreen.kt"
+    )
+    replace_exact_text(
+        sync_settings_screen,
+        "state.userProfile?.isAuthenticated == true",
+        "state.userProfile.isAuthenticated",
+        "SABLE_READER_WARNING_SYNC_AUTH_SAFE_CALL",
+    )
+    replace_exact_text(
+        sync_settings_screen,
+        "state.userProfile?.username ?: \"\"",
+        "state.userProfile.username ?: \"\"",
+        "SABLE_READER_WARNING_SYNC_USERNAME_SAFE_CALL",
+    )
+
+    print(f"SABLE_READER_HILT_VIEWMODEL_MIGRATION=PASS count={hilt_migration_count}")
+    print("SABLE_READER_WARNING_CLEANUP=PASS")
+    print("SABLE_READER_NDK_PIN=30.0.16248370")
+
     # Consume the exact same Sable design source used by Start and R8 first-party apps.
     design_source = (
         repo_root()
