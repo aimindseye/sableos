@@ -147,11 +147,12 @@ internal class MediaLibraryStateRepository(
         current: Set<String>,
         value: String,
     ): Set<String> =
-        current.toMutableSet().apply {
-            if (!add(value)) {
-                remove(value)
-            }
-        }.toSet()
+        current.toMutableSet()
+            .apply {
+                if (!add(value)) {
+                    remove(value)
+                }
+            }.toSet()
 
     private fun persistStringSet(
         key: String,
