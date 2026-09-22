@@ -221,7 +221,8 @@ internal fun MediaApp(
                     libraryPivot = LibraryPivot.Songs
                     message =
                         "${uris.size} local audio file${if (uris.size == 1) "" else "s"} added."
-                }.onFailure {
+                }
+                    .onFailure {
                     message = "Audio import failed. Existing collection was not changed."
                 }
             }
@@ -287,7 +288,8 @@ internal fun MediaApp(
                         message =
                             "$importedCount audio file${if (importedCount == 1) "" else "s"} imported from folder."
                     }
-                }.onFailure {
+                }
+                    .onFailure {
                     message = "Folder import failed. Existing collection was not changed."
                 }
             }
@@ -297,7 +299,6 @@ internal fun MediaApp(
         MediaScreen(
             state =
                 MediaScreenState(
-
                     destination = destination,
                     libraryPivot = libraryPivot,
                     localItems = localItems,
@@ -421,7 +422,8 @@ internal fun MediaApp(
                                         podcastFeedUrl = ""
                                         podcastMessage =
                                             "Podcast subscribed. Refresh remains manual."
-                                    }.onFailure { error ->
+                                    }
+                                        .onFailure { error ->
                                         podcastMessage =
                                             error.message
                                                 ?.takeIf { it.isNotBlank() }
@@ -458,7 +460,8 @@ internal fun MediaApp(
                                                 "${refresh.failedFeeds} feed failure(s); " +
                                                 "cached episodes were kept."
                                         }
-                                }.onFailure { error ->
+                                }
+                                    .onFailure { error ->
                                     podcastMessage =
                                         error.message
                                             ?.takeIf { it.isNotBlank() }
@@ -671,8 +674,7 @@ internal fun MediaApp(
                     },
                     onTogglePlaylistItem = { uri ->
                         selectedPlaylistUris =
-                            selectedPlaylistUris
-                                .toMutableSet()
+                            selectedPlaylistUris.toMutableSet()
                                 .apply {
                                     if (!add(uri)) {
                                         remove(uri)
