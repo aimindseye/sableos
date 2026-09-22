@@ -275,6 +275,17 @@ literal. The retirement check now uses `git grep` over tracked production
 source only, with test-source and Markdown exclusions. Untracked/generated
 Gradle output therefore cannot participate in the source-composition decision.
 
+The next WS7 run passed that composition blocker and reached the Android
+Launcher3 module preflight, but the qualification driver had selected a new
+source-specific empty OUT and forced `REQUIRE_FRESH_OUT=YES` even though the
+run was module-only. That turned `m Launcher3QuickStep` into a cold framework
+dependency build and exposed broad Metalava/API-stub diagnostics unrelated to
+the intended focused launcher proof. This contradicted the existing Launcher3
+qualification contract, which requires a warmed Panther graph for module-only
+qualification. WS7 now reuses the canonical `SABLE_R8_OUT_DIR` and the inner
+build rejects `modules + REQUIRE_FRESH_OUT=YES`. The fresh source-bound OUT
+policy remains reserved for WS8 full target-files/release-candidate causality.
+
 
 No full image yet.
 
