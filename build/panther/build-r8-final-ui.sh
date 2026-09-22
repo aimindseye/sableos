@@ -37,6 +37,12 @@ else
     OUT_ABS="$WS/$OUT_DIR"
 fi
 
+if [[ "$SABLE_BUILD_STAGE" == modules && "$REQUIRE_FRESH_OUT" == YES ]]; then
+    echo "R9_MODULE_QUALIFICATION_OUT_POLICY=FAIL_FRESH_OUT_FORBIDDEN"
+    echo "R8_FINAL_BUILD=FAIL_MODULE_QUALIFICATION_OUT_POLICY"
+    exit 3
+fi
+
 if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
     if [[ -e "$OUT_ABS" ]]; then
         echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=FAIL_PRESENT path=$OUT_ABS"
@@ -46,6 +52,29 @@ if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
     echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=PASS_ABSENT path=$OUT_ABS"
 else
     echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=NOT_REQUIRED"
+fi
+
+if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
+    [[ -d "$OUT_ABS/target/product/panther" ]] || {
+        echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_PRODUCT_TREE path=$OUT_ABS"
+        echo "R8_FINAL_BUILD=FAIL_MODULE_QUALIFICATION_WARM_OUT"
+        exit 3
+    }
+
+    warm_graph=NO
+    [[ -f "$OUT_ABS/build.ninja" ]] && warm_graph=YES
+    [[ -f "$OUT_ABS/soong/build.ninja" ]] && warm_graph=YES
+    compgen -G "$OUT_ABS/build-*panther*.ninja" >/dev/null && warm_graph=YES
+    compgen -G "$OUT_ABS/combined-*panther*.ninja" >/dev/null && warm_graph=YES
+
+    [[ "$warm_graph" == YES ]] || {
+        echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_NINJA_GRAPH path=$OUT_ABS"
+        echo "R8_FINAL_BUILD=FAIL_MODULE_QUALIFICATION_WARM_OUT"
+        exit 3
+    }
+
+    echo "R9_MODULE_QUALIFICATION_OUT_POLICY=PASS_WARM_REUSE"
+    echo "R9_MODULE_QUALIFICATION_WARM_OUT=PASS path=$OUT_ABS"
 fi
 
 R9_FULL_BUILD_START_EPOCH="$(date +%s)"
