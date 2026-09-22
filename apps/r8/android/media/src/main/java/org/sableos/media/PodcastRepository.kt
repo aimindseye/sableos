@@ -338,7 +338,8 @@ internal class PodcastStateRepository(
                     if (!add(episodeId)) {
                         remove(episodeId)
                     }
-                }.toSet()
+                }
+            .toSet()
 
         persistSet(
             key = KEY_SAVED,
