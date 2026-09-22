@@ -726,5 +726,4 @@ internal fun MediaApp(
                 ),
         )
     }
-
 }
