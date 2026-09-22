@@ -46,7 +46,8 @@ internal val MediaOrange = Color(0xFFF28C45)
 internal enum class MediaDestination(
     val label: String,
 ) {
-    Collection("collection"),
+    Collection("music"),
+    Podcasts("podcasts"),
     NowPlaying("now playing"),
     Radio("radio"),
     ManageStations("manage"),
@@ -71,6 +72,12 @@ internal fun MediaScreen(
     destination: MediaDestination,
     libraryPivot: LibraryPivot,
     localItems: List<LocalAudioItem>,
+    podcastSubscriptions: List<PodcastSubscription>,
+    savedPodcastEpisodeIds: Set<String>,
+    playedPodcastEpisodeIds: Set<String>,
+    podcastFeedUrl: String,
+    podcastBusy: Boolean,
+    podcastMessage: String?,
     stations: List<RadioStation>,
     playback: PlaybackUiState,
     favoriteAudioUris: Set<String>,
@@ -92,6 +99,12 @@ internal fun MediaScreen(
     onPlayLocal: (Int) -> Unit,
     onRemoveLocal: (LocalAudioItem) -> Unit,
     onToggleFavoriteAudio: (LocalAudioItem) -> Unit,
+    onPodcastFeedUrlChange: (String) -> Unit,
+    onAddPodcastFeed: () -> Unit,
+    onRefreshPodcasts: () -> Unit,
+    onRemovePodcastSubscription: (PodcastSubscription) -> Unit,
+    onPlayPodcastEpisode: (PodcastEpisode) -> Unit,
+    onToggleSavedPodcastEpisode: (PodcastEpisode) -> Unit,
     onPlayStation: (RadioStation) -> Unit,
     onToggleFavoriteStation: (RadioStation) -> Unit,
     onRadioFavoritesOnlyChange: (Boolean) -> Unit,
@@ -166,8 +179,20 @@ internal fun MediaScreen(
                 item {
                     SableHeroHeader(
                         eyebrow = "Sable Media",
-                        title = "music",
-                        subtitle = "Local playback and user-managed live radio.",
+                        title =
+                            when (destination) {
+                                MediaDestination.Podcasts -> "podcasts"
+                                MediaDestination.Radio,
+                                MediaDestination.ManageStations,
+                                MediaDestination.AddStation,
+                                -> "radio"
+                                MediaDestination.NowPlaying,
+                                MediaDestination.Queue,
+                                -> "playing"
+                                MediaDestination.Settings -> "settings"
+                                else -> "media"
+                            },
+                        subtitle = "Music, podcasts, and radio in one private playback flow.",
                     )
                 }
 
@@ -180,6 +205,7 @@ internal fun MediaScreen(
 
                 if (
                     destination == MediaDestination.NowPlaying ||
+                    destination == MediaDestination.Podcasts ||
                     destination == MediaDestination.Radio
                 ) {
                     item {
@@ -202,6 +228,27 @@ internal fun MediaScreen(
                 item {
                     when (destination) {
                         MediaDestination.Collection -> Unit
+
+                        MediaDestination.Podcasts ->
+                            PodcastScreen(
+                                subscriptions = podcastSubscriptions,
+                                savedEpisodeIds = savedPodcastEpisodeIds,
+                                playedEpisodeIds = playedPodcastEpisodeIds,
+                                feedUrl = podcastFeedUrl,
+                                busy = podcastBusy,
+                                message = podcastMessage,
+                                playback = playback,
+                                showMiniPlayer = settings.showMiniPlayer,
+                                onFeedUrlChange = onPodcastFeedUrlChange,
+                                onAddFeed = onAddPodcastFeed,
+                                onRefresh = onRefreshPodcasts,
+                                onRemoveSubscription = onRemovePodcastSubscription,
+                                onPlayEpisode = onPlayPodcastEpisode,
+                                onToggleSavedEpisode = onToggleSavedPodcastEpisode,
+                                onOpenNowPlaying = {
+                                    onDestinationChange(MediaDestination.NowPlaying)
+                                },
+                            )
 
                         MediaDestination.NowPlaying ->
                             NowPlayingScreen(
@@ -320,13 +367,17 @@ private fun PrimaryPivot(
         }
 
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Xl),
     ) {
         listOf(
             MediaDestination.Collection,
-            MediaDestination.NowPlaying,
+            MediaDestination.Podcasts,
             MediaDestination.Radio,
+            MediaDestination.NowPlaying,
         ).forEach { item ->
             val active = current != null && item == current
             Surface(
@@ -345,12 +396,12 @@ private fun PrimaryPivot(
                 ) {
                     Text(
                         text = item.label,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight =
                             if (active) {
                                 FontWeight.Medium
                             } else {
-                                FontWeight.Normal
+                                FontWeight.Light
                             },
                     )
                     Box(
@@ -478,7 +529,7 @@ private fun CollectionScreen(
             SableHeroHeader(
                 eyebrow = "Sable Media",
                 title = "music",
-                subtitle = "Local playback and user-managed live radio.",
+                subtitle = "Your local collection, playlists, and one continuous playback queue.",
             )
         }
 
