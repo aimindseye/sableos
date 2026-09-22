@@ -29,21 +29,11 @@ internal class MediaLibraryStateRepository(
     fun toggleFavoriteAudio(
         current: Set<String>,
         uri: String,
-    ): Set<String> {
-        val updated =
-            current.toMutableSet().apply {
-                if (!add(uri)) {
-                    remove(uri)
-                }
-            }.toSet()
-
-        preferences
-            .edit()
-            .putStringSet(KEY_FAVORITE_AUDIO, updated)
-            .apply()
-
-        return updated
-    }
+    ): Set<String> =
+        persistStringSet(
+            key = KEY_FAVORITE_AUDIO,
+            values = toggled(current, uri),
+        )
 
     fun loadFavoriteStationIds(): Set<String> =
         preferences
@@ -54,54 +44,20 @@ internal class MediaLibraryStateRepository(
     fun toggleFavoriteStation(
         current: Set<String>,
         stationId: String,
-    ): Set<String> {
-        val updated =
-            current.toMutableSet().apply {
-                if (!add(stationId)) {
-                    remove(stationId)
-                }
-            }.toSet()
-
-        preferences
-            .edit()
-            .putStringSet(KEY_FAVORITE_STATIONS, updated)
-            .apply()
-
-        return updated
-    }
+    ): Set<String> =
+        persistStringSet(
+            key = KEY_FAVORITE_STATIONS,
+            values = toggled(current, stationId),
+        )
 
     fun loadPlaylists(): List<MediaPlaylist> {
         val raw = preferences.getString(KEY_PLAYLISTS, null) ?: return emptyList()
 
         return runCatching {
             val array = JSONArray(raw)
-
-            buildList {
-                for (index in 0 until array.length()) {
-                    val item = array.optJSONObject(index) ?: continue
-                    val id = item.optString("id")
-                    val name = item.optString("name")
-                    val urisArray = item.optJSONArray("itemUris") ?: JSONArray()
-
-                    if (id.isBlank() || name.isBlank()) continue
-
-                    val uris =
-                        buildList {
-                            for (uriIndex in 0 until urisArray.length()) {
-                                val uri = urisArray.optString(uriIndex)
-                                if (uri.isNotBlank()) add(uri)
-                            }
-                        }
-
-                    add(
-                        MediaPlaylist(
-                            id = id,
-                            name = name,
-                            itemUris = uris,
-                        ),
-                    )
-                }
-            }
+            List(array.length()) { index ->
+                decodePlaylist(array.optJSONObject(index))
+            }.filterNotNull()
         }.getOrDefault(emptyList())
     }
 
@@ -111,13 +67,10 @@ internal class MediaLibraryStateRepository(
         name: String,
         itemUris: Set<String>,
     ): List<MediaPlaylist> {
-        val normalizedName =
-            name.trim().ifBlank { "Playlist" }
-
         val playlist =
             MediaPlaylist(
                 id = editingId ?: UUID.randomUUID().toString(),
-                name = normalizedName,
+                name = name.trim().ifBlank { "Playlist" },
                 itemUris = itemUris.toList(),
             )
 
@@ -168,6 +121,49 @@ internal class MediaLibraryStateRepository(
         return updated
     }
 
+    private fun decodePlaylist(item: JSONObject?): MediaPlaylist? {
+        item ?: return null
+
+        val id = item.optString("id")
+        val name = item.optString("name")
+        if (id.isBlank() || name.isBlank()) {
+            return null
+        }
+
+        val urisArray = item.optJSONArray("itemUris") ?: JSONArray()
+        val uris =
+            List(urisArray.length()) { index ->
+                urisArray.optString(index)
+            }.filter(String::isNotBlank)
+
+        return MediaPlaylist(
+            id = id,
+            name = name,
+            itemUris = uris,
+        )
+    }
+
+    private fun toggled(
+        current: Set<String>,
+        value: String,
+    ): Set<String> =
+        current.toMutableSet().apply {
+            if (!add(value)) {
+                remove(value)
+            }
+        }.toSet()
+
+    private fun persistStringSet(
+        key: String,
+        values: Set<String>,
+    ): Set<String> {
+        preferences
+            .edit()
+            .putStringSet(key, values)
+            .apply()
+        return values
+    }
+
     private fun persistPlaylists(playlists: List<MediaPlaylist>) {
         val array = JSONArray()
 
@@ -191,9 +187,9 @@ internal class MediaLibraryStateRepository(
             .apply()
     }
 
-    companion object {
-        private const val KEY_FAVORITE_AUDIO = "favorite_audio_uris"
-        private const val KEY_FAVORITE_STATIONS = "favorite_station_ids"
-        private const val KEY_PLAYLISTS = "playlists"
+    private companion object {
+        const val KEY_FAVORITE_AUDIO = "favorite_audio_uris"
+        const val KEY_FAVORITE_STATIONS = "favorite_station_ids"
+        const val KEY_PLAYLISTS = "playlists"
     }
 }
