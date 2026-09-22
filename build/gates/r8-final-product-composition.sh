@@ -70,27 +70,52 @@ if grep -Fq 'Reset to Follow system · Sable Blue' "$START"; then
     fail R8_A_SHARED_DESIGN_STALE_APPEARANCE_COPY
 fi
 
-for needle in     'fun loadAppearance()'     'fun saveAppearance('     'fun resetAppearance()'     '.remove(SableDesignContract.KEY_APPEARANCE_MODE)'     '.remove(SableDesignContract.KEY_ACCENT)'
+for needle in \
+    'fun loadFavoriteKeys()' \
+    'fun saveFavoriteKeys(' \
+    'fun loadStartTileKeys()' \
+    'fun saveStartTileKeys('
 do
     grep -Fq "$needle" "$STATE" || fail R8_A_SHARED_DESIGN
+done
+
+for forbidden in \
+    'fun loadAppearance()' \
+    'fun saveAppearance(' \
+    'KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE'
+do
+    if grep -Fq "$forbidden" "$STATE"; then
+        fail R9_LAUNCHER_GLOBAL_APPEARANCE_OWNERSHIP_RETIRED
+    fi
 done
 
 echo "R8_A_SHARED_DESIGN_SOURCE=PASS"
 
 GLOBAL_APPEARANCE="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
 SYSTEM_BARS="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableSystemBars.kt"
-START_PROVIDER="$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt"
-LAUNCHER3_APPLIER="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
+SETTINGS_COHESION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py"
+LAUNCHER_COHESION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
 
-for needle in     'org.sableos.start.appearance'     'rememberGlobalSableAppearance'     'SableGlobalTheme'
+for needle in \
+    'org.sableos.appearance' \
+    'rememberGlobalSableAppearance' \
+    'writeGlobalSableAppearance(' \
+    'SableGlobalTheme'
 do
     grep -Fq "$needle" "$GLOBAL_APPEARANCE" || fail R8_GLOBAL_APPEARANCE_SOURCE
 done
 
-for needle in     'SableGlobalAppearanceContract.CONTENT_URI'     'SableAppearanceProvider'
-do
-    grep -R -Fq "$needle"         "$ROOT/src/android/packages/apps/SableStart"         || fail R8_GLOBAL_APPEARANCE_PROVIDER
-done
+if grep -R -Fq 'org.sableos.start.appearance' \
+    "$ROOT/src/android/packages/apps/SableStart" \
+    "$ROOT/apps/r8/android" \
+    "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
+    "$ROOT/apps/r8/reader/apply_sable_flavor.py"
+then
+    fail R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY
+fi
+
+[[ ! -e "$ROOT/src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt" ]] \
+    || fail R9_RETIRED_LAUNCHER_APPEARANCE_PROVIDER
 
 for source in     "$ROOT/apps/r8/android/calculator/src/main/java/org/sableos/calculator/MainActivity.kt"     "$ROOT/apps/r8/android/games/src/main/java/org/sableos/games/MainActivity.kt"     "$ROOT/apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt"     "$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt"
 do
@@ -114,11 +139,16 @@ if grep -Fq 'window.insetsController' "$SYSTEM_BARS"; then
     fail R8_SABLESTART_SYSTEM_BARS_DIRECT_PHONEWINDOW_ACCESS
 fi
 
-python3 "$LAUNCHER3_APPLIER" --source "$WS" verify \
-    || fail R9_LAUNCHER3_HOME_OWNERSHIP
+python3 "$LAUNCHER_COHESION" --source "$WS" verify \
+    || fail R9_LAUNCHER_COHESION_SOURCE
+
+python3 "$SETTINGS_COHESION" --source "$WS" verify \
+    || fail R9_SETTINGS_COHESION_SOURCE
 
 echo "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS"
 echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
+echo "R9_LAUNCHER_COHESION_SOURCE=PASS"
+echo "R9_SETTINGS_COHESION_SOURCE=PASS"
 echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
 
 echo
