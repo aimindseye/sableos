@@ -163,8 +163,11 @@ for manifest in \
     "$ROOT/apps/r8/android/weather/src/main/AndroidManifest.xml" \
     "$ROOT/apps/r8/android/calendar/src/main/AndroidManifest.xml"
 do
-    grep -Fq 'android:authorities="org.sableos.start.appearance"' "$manifest" \
+    grep -Fq 'android:authorities="org.sableos.appearance"' "$manifest" \
         || fail R8_GLOBAL_APPEARANCE_VISIBILITY
+    if grep -Fq 'android:authorities="org.sableos.start.appearance"' "$manifest"; then
+        fail R9_RETIRED_LAUNCHER_APPEARANCE_AUTHORITY
+    fi
 done
 
 for source in \
