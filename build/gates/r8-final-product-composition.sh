@@ -106,11 +106,16 @@ do
 done
 
 # Scan production/runtime inputs for the retired Launcher-owned authority.
-# Unit tests intentionally retain the literal as a negative regression assertion,
-# and Markdown may document migration history; neither is runtime composition.
+# Unit tests intentionally retain the literal as a negative regression assertion.
+# Generated Gradle/build output may contain compiled copies of that assertion and
+# must never participate in a source-composition gate.
 if grep -R -Fq \
     --exclude-dir=test \
     --exclude-dir=androidTest \
+    --exclude-dir=build \
+    --exclude-dir=.gradle \
+    --exclude-dir=out \
+    --exclude-dir=target \
     --exclude='*.md' \
     'org.sableos.start.appearance' \
     "$ROOT/src/android/packages/apps/SableStart" \
