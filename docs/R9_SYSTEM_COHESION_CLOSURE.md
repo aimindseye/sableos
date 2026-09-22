@@ -24,6 +24,42 @@ This tranche converts the current Sable presentation overlays into a coherent
 SableOS product shell while retaining Android/GrapheneOS security and service
 implementation underneath.
 
+## Source progress — 2026-09-22
+
+```text
+WS0=PASS_SOURCE
+WS1=PASS_SOURCE_SETTINGS_HOSTED_APPEARANCE
+WS2=PASS_SOURCE_SABLE_HOME_QUICKSTEP_RECENTS
+WS3=PASS_SOURCE_SETTINGS_APPEARANCE_ENTRY
+WS4=PASS_SOURCE_SYSTEMUI_SHARED_AUTHORITY
+WS5=PASS_SOURCE_READER_READIUM_BRIDGE
+WS6=PASS_SOURCE_PLATFORM_CLASSIFICATION
+WS7=READY_AI_G732_MODULE_QUALIFICATION
+WS8=BLOCKED_UNTIL_WS7_PASS
+```
+
+Implemented source boundaries:
+
+- Settings owns global appearance persistence, write authorization and
+  locked-boot/boot/package-replace restoration.
+- Launcher3 no longer requests `MODIFY_DAY_NIGHT_MODE` and no longer hosts the
+  appearance provider.
+- Sable Start writes the Settings authority and prevents native Launcher3
+  All Apps/workspace presentation from becoming a second HOME surface.
+- Quickstep nav-edge Recents/Overview remains preserved.
+- SystemUI observes the same Sable accent authority; the exact old Launcher
+  authority bridge is a recognized one-time migration and arbitrary bridge
+  drift remains fail-closed.
+- Reader maps ordinary Readium page Light/Dark to Sable system appearance while
+  retaining explicit Sepia/E-ink reading overrides.
+- residual platform surfaces are classified in
+  `docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md`.
+- `build/gates/r9-system-cohesion-contract.py` is mandatory in local CI and
+  Panther pre-full qualification.
+
+No new full Panther image has been authorized or built by this source work.
+
+
 ## Serial workstreams
 
 ### WS0 — Baseline and acceptance contract
