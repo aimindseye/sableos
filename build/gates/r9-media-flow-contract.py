@@ -42,6 +42,8 @@ require(
     "MediaDestination.NowPlaying,",
     "MaterialTheme.typography.headlineSmall",
     "Music, podcasts, and radio in one private playback flow.",
+    "MediaScreenState(",
+    "MediaScreenActions(",
 )
 
 require(
@@ -55,6 +57,8 @@ require(
     "onQueueEpisode",
     "No podcast account, analytics SDK, recommendation profile, or automatic directory query",
     "Saved does not imply downloaded.",
+    "PodcastScreenState(",
+    "PodcastScreenActions(",
 )
 
 require(
@@ -63,23 +67,31 @@ require(
     "application/rss+xml",
     "application/atom+xml",
     "MAX_FEED_BYTES",
-    "MAX_EPISODES_PER_FEED",
-    "Podcast feed document types are not accepted.",
+    "PodcastFeedParser.parse(",
     "Podcast feed redirected to a non-HTTPS URL.",
     "resolvedFeedUrl",
     "Podcast feed must use HTTPS.",
-    "return protocol == \"https\"",
-    "isSupportedFeedUrl(",
-    "isSupportedMediaUrl(",
+    "PodcastUrlPolicy.isHttpsUrl",
     "PodcastStateRepository",
     "loadSavedEpisodeIds",
     "loadPlayedEpisodeIds",
 )
-
 require(
-    f"{MEDIA_KT}/MainActivity.kt",
-    "PodcastRepository(applicationContext)",
-    "PodcastStateRepository(applicationContext)",
+    f"{MEDIA_KT}/PodcastFeedParser.kt",
+    "PodcastUrlPolicy",
+    '== HTTPS_SCHEME',
+    "Podcast feed document types are not accepted.",
+    "MAX_EPISODES_PER_FEED",
+    "PROLOG_SCAN_BYTES",
+    "PodcastUrlPolicy::isHttpsUrl",
+    "consumeStartTag(",
+    "consumeText(",
+    "consumeEndTag(",
+)
+require(
+    f"{MEDIA_KT}/MediaApp.kt",
+    "MediaRepositories(",
+    "MediaHostServices(",
     "onAddPodcastFeed",
     "onRefreshPodcasts",
     "withContext(Dispatchers.IO)",
@@ -88,8 +100,15 @@ require(
     "podcastStateRepository.toggleSaved(",
     "podcastStateRepository.markPlayed(",
     "playbackController.addToQueue(",
-    "playUri(",
     "destination = MediaDestination.NowPlaying",
+)
+require(
+    f"{MEDIA_KT}/MainActivity.kt",
+    "MediaRepositories(",
+    "MediaHostServices(",
+    "MediaApp(",
+    "playUri = ::playUri",
+    "playLocalQueue = ::playLocalQueue",
 )
 
 require(
@@ -126,6 +145,8 @@ for rel in (
     f"{MEDIA_KT}/PodcastRepository.kt",
     f"{MEDIA_KT}/PodcastScreen.kt",
     f"{MEDIA_KT}/MainActivity.kt",
+    f"{MEDIA_KT}/MediaApp.kt",
+    f"{MEDIA_KT}/PodcastFeedParser.kt",
 ):
     forbid(
         rel,
@@ -141,6 +162,20 @@ require(
     "apps/r8/android/media/build.gradle.kts",
     "versionCode = 2",
     'versionName = "0.2.0"',
+    "allWarningsAsErrors.set(true)",
+    "ignoreFailures = false",
+    "ignoreFailures.set(false)",
+)
+require(
+    "apps/r8/android/config/detekt.yml",
+    "ignoreAnnotated:",
+    "- Composable",
+    "ignoreAnnotatedFunctions:",
+    "ignorePrivate: true",
+)
+require(
+    "apps/r8/android/media/.editorconfig",
+    "ktlint_function_naming_ignore_when_annotated_with = Composable",
 )
 
 require(
@@ -182,5 +217,9 @@ print("R9_PODCAST_NO_AMBIENT_DIRECTORY=PASS")
 print("R9_PODCAST_NO_BACKGROUND_POLLING=PASS")
 print("R9_PODCAST_NO_ANALYTICS_SDK=PASS")
 print("R9_PODCAST_STORAGE_PERMISSION_EXPANSION=PASS_ABSENT")
+print("R9_MEDIA_FLOW_KOTLIN_WARNINGS_AS_ERRORS=PASS")
+print("R9_MEDIA_FLOW_DETEKT_FAIL_CLOSED=PASS")
+print("R9_MEDIA_FLOW_KTLINT_FAIL_CLOSED=PASS")
+print("R9_MEDIA_FLOW_COMPOSE_NAMING_POLICY=PASS")
 print("R9_MEDIA_FLOW_CANONICAL_SDK_QUALIFIER=PASS")
 print("R9_MEDIA_FLOW_CONTRACT=PASS")
