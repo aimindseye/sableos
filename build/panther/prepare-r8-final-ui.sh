@@ -40,7 +40,9 @@ UI5A="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py"
 UI5B="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py"
 UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
 SYSTEMUI_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py"
+SETTINGS_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py"
 LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
+LAUNCHER_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
 MESSAGING_VISIBILITY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py"
 PHONE_CONTACTS="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
 DAILY_DRIVER_CORE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py"
@@ -61,7 +63,9 @@ run_self_test UI5A_SETTINGS "$UI5A"
 run_self_test UI5B_APP_SECURITY "$UI5B"
 run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
 run_self_test R9_SYSTEMUI_COHERENCE "$SYSTEMUI_COHERENCE"
+run_self_test R9_SETTINGS_COHERENCE "$SETTINGS_COHERENCE"
 run_self_test R9_LAUNCHER3_FOUNDATION "$LAUNCHER3_FOUNDATION"
+run_self_test R9_LAUNCHER_COHERENCE "$LAUNCHER_COHERENCE"
 run_self_test R9_MESSAGING_VISIBILITY "$MESSAGING_VISIBILITY"
 run_self_test R9_PHONE_CONTACTS_PRESENTATION "$PHONE_CONTACTS"
 
@@ -136,6 +140,18 @@ fi
 echo "R9_SYSTEMUI_COHERENCE=PASS"
 
 echo
+echo "===== R9 SETTINGS / APPEARANCE COHESION ====="
+
+if python3 "$SETTINGS_COHERENCE" --source "$WS" verify; then
+    echo "R9_SETTINGS_COHERENCE=ALREADY_APPLIED"
+else
+    python3 "$SETTINGS_COHERENCE" --source "$WS" apply
+    python3 "$SETTINGS_COHERENCE" --source "$WS" verify
+    echo "R9_SETTINGS_COHERENCE=APPLIED"
+fi
+echo "R9_SETTINGS_COHERENCE=PASS"
+
+echo
 echo "===== SHARED SABLE DESIGN ====="
 
 DESIGN_SRC="$ROOT/src/android/shared/sabledesign"
@@ -171,6 +187,18 @@ python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
 
 echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
+
+echo
+echo "===== R9 LAUNCHER / QUICKSTEP COHESION ====="
+
+if python3 "$LAUNCHER_COHERENCE" --source "$WS" verify; then
+    echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED"
+else
+    python3 "$LAUNCHER_COHERENCE" --source "$WS" apply
+    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
+    echo "R9_LAUNCHER_COHESION=APPLIED"
+fi
+echo "R9_LAUNCHER_COHESION=PASS"
 
 echo
 echo "===== SINGLE USER-VISIBLE MESSAGES SURFACE ====="
@@ -213,12 +241,16 @@ echo
 echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 
 python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
+python3 "$SETTINGS_COHERENCE" --source "$WS" verify
+python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
 python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
 python3 "$PHONE_CONTACTS" --source "$WS" verify
 python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
 
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
 echo "R9_SYSTEMUI_COHERENCE=PASS"
+echo "R9_SETTINGS_COHERENCE=PASS"
+echo "R9_LAUNCHER_COHESION=PASS"
 echo "R9_MESSAGING_VISIBILITY=PASS"
 echo "R9_PHONE_CONTACTS_PRESENTATION=PASS"
 echo "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS"
