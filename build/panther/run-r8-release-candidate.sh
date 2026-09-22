@@ -40,9 +40,16 @@ EVIDENCE="$SABLE_R8_EVIDENCE_ROOT/$STAMP"
 BUNDLE="$SABLE_R8_ARTIFACT_ROOT/$STAMP"
 WORK="$SABLE_R8_APP_WORK_ROOT/$STAMP"
 if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
-    R9_FULL_OUT_DIR="${SABLE_R9_FULL_OUT_DIR:-out_sable_r9_qual_${EXPECTED_SOURCE_COMMIT:0:12}}"
+    # Module-only WS7 qualification must reuse the canonical warmed Panther
+    # graph. A fresh source-specific OUT turns a focused Launcher/SystemUI/
+    # Settings compile into a cold framework/API-stub rebuild.
+    R9_FULL_OUT_DIR="${SABLE_R9_QUAL_OUT_DIR:-$SABLE_R8_OUT_DIR}"
+    BUILD_REQUIRE_FRESH_OUT=NO
 else
+    # Full release-candidate builds keep the source-bound fresh-output
+    # causality rule used for WS8 / physical acceptance.
     R9_FULL_OUT_DIR="${SABLE_R9_FULL_OUT_DIR:-out_sable_r9_full_${EXPECTED_SOURCE_COMMIT:0:12}}"
+    BUILD_REQUIRE_FRESH_OUT=YES
 fi
 if [[ "$R9_FULL_OUT_DIR" == /* ]]; then
     R9_FULL_OUT_ABS="$R9_FULL_OUT_DIR"
@@ -72,6 +79,7 @@ echo "BUNDLE=$BUNDLE"
 echo "R9_FULL_OUT_DIR=$R9_FULL_OUT_DIR"
 echo "R9_FULL_OUT_ABS=$R9_FULL_OUT_ABS"
 echo "SABLE_QUALIFICATION_ONLY=$SABLE_QUALIFICATION_ONLY"
+echo "BUILD_REQUIRE_FRESH_OUT=$BUILD_REQUIRE_FRESH_OUT"
 
 [[ -d "$REPO/.git" ]] || {
     echo "R8_REPO=FAIL path=$REPO"
@@ -94,12 +102,35 @@ if ! git -C "$REPO" diff --quiet || ! git -C "$REPO" diff --cached --quiet; then
     exit 8
 fi
 
-if [[ -e "$R9_FULL_OUT_ABS" ]]; then
-    echo "R9_RELEASE_CANDIDATE_FRESH_OUT=FAIL_PRESENT path=$R9_FULL_OUT_ABS"
-    echo "R8_RELEASE_CANDIDATE=FAIL"
-    exit 8
+if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
+    if [[ ! -d "$R9_FULL_OUT_ABS/target/product/panther" ]]; then
+        echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_PRODUCT_TREE path=$R9_FULL_OUT_ABS"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 8
+    fi
+
+    warm_graph=NO
+    [[ -f "$R9_FULL_OUT_ABS/build.ninja" ]] && warm_graph=YES
+    [[ -f "$R9_FULL_OUT_ABS/soong/build.ninja" ]] && warm_graph=YES
+    compgen -G "$R9_FULL_OUT_ABS/build-*panther*.ninja" >/dev/null && warm_graph=YES
+    compgen -G "$R9_FULL_OUT_ABS/combined-*panther*.ninja" >/dev/null && warm_graph=YES
+
+    if [[ "$warm_graph" != YES ]]; then
+        echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_NINJA_GRAPH path=$R9_FULL_OUT_ABS"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 8
+    fi
+
+    echo "R9_MODULE_QUALIFICATION_WARM_OUT=PASS path=$R9_FULL_OUT_ABS"
+    echo "R9_RELEASE_CANDIDATE_FRESH_OUT=NOT_REQUIRED_MODULE_QUALIFICATION"
+else
+    if [[ -e "$R9_FULL_OUT_ABS" ]]; then
+        echo "R9_RELEASE_CANDIDATE_FRESH_OUT=FAIL_PRESENT path=$R9_FULL_OUT_ABS"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 8
+    fi
+    echo "R9_RELEASE_CANDIDATE_FRESH_OUT=PASS_ABSENT path=$R9_FULL_OUT_ABS"
 fi
-echo "R9_RELEASE_CANDIDATE_FRESH_OUT=PASS_ABSENT path=$R9_FULL_OUT_ABS"
 
 echo
 echo "===== RETIRE OBSOLETE GRADLE MODULE RESIDUE ====="
@@ -326,7 +357,7 @@ else
 fi
 
 BUILD_AUTHORIZED=YES \
-REQUIRE_FRESH_OUT=YES \
+REQUIRE_FRESH_OUT="$BUILD_REQUIRE_FRESH_OUT" \
 SABLE_BUILD_STAGE="$BUILD_STAGE" \
 SABLEOS_ROOT="$SABLE_BUILD_ROOT" \
 SABLEOS_REPO="$REPO" \
