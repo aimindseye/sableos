@@ -58,7 +58,7 @@ internal fun MediaApp(
     val playLocalQueue = host.playLocalQueue
 
     val uiScope = rememberCoroutineScope()
-    
+
     var settings by remember {
         mutableStateOf(initialSettings)
     }
@@ -114,7 +114,7 @@ internal fun MediaApp(
     var showFavoriteStationsOnly by remember {
         mutableStateOf(false)
     }
-    
+
     var editingStation by remember {
         mutableStateOf<RadioStation?>(null)
     }
@@ -124,7 +124,7 @@ internal fun MediaApp(
     var stationUrl by remember {
         mutableStateOf("")
     }
-    
+
     var editingPlaylist by remember {
         mutableStateOf<MediaPlaylist?>(null)
     }
@@ -134,11 +134,11 @@ internal fun MediaApp(
     var selectedPlaylistUris by remember {
         mutableStateOf(emptySet<String>())
     }
-    
+
     var message by remember {
         mutableStateOf<String?>(null)
     }
-    
+
     DisposableEffect(
         settings.keepScreenAwakeWhilePlaying,
         playbackState.isPlaying,
@@ -146,7 +146,7 @@ internal fun MediaApp(
         val shouldKeepAwake =
             settings.keepScreenAwakeWhilePlaying &&
                 playbackState.isPlaying
-    
+
         if (shouldKeepAwake) {
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
@@ -156,26 +156,26 @@ internal fun MediaApp(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
             )
         }
-    
+
         onDispose {
             window.clearFlags(
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
             )
         }
     }
-    
+
     fun clearStationForm() {
         editingStation = null
         stationName = ""
         stationUrl = ""
     }
-    
+
     fun clearPlaylistForm() {
         editingPlaylist = null
         playlistName = ""
         selectedPlaylistUris = emptySet()
     }
-    
+
     val localAudioPicker =
         rememberLauncherForActivityResult(
             ActivityResultContracts.OpenMultipleDocuments(),
@@ -183,7 +183,7 @@ internal fun MediaApp(
             if (uris.isEmpty()) {
                 return@rememberLauncherForActivityResult
             }
-    
+
             uris.forEach { uri ->
                 runCatching {
                     contentResolver.takePersistableUriPermission(
@@ -192,11 +192,11 @@ internal fun MediaApp(
                     )
                 }
             }
-    
+
             val currentItems = localItems
             val currentPlaylists = playlists
             message = "Importing ${uris.size} audio file${if (uris.size == 1) "" else "s"}…"
-    
+
             uiScope.launch {
                 val result =
                     runCatching {
@@ -214,7 +214,7 @@ internal fun MediaApp(
                             updatedItems to updatedPlaylists
                         }
                     }
-    
+
                 result.onSuccess { (updatedItems, updatedPlaylists) ->
                     localItems = updatedItems
                     playlists = updatedPlaylists
@@ -226,7 +226,7 @@ internal fun MediaApp(
                 }
             }
         }
-    
+
     val localAudioFolderPicker =
         rememberLauncherForActivityResult(
             ActivityResultContracts.OpenDocumentTree(),
@@ -234,18 +234,18 @@ internal fun MediaApp(
             if (treeUri == null) {
                 return@rememberLauncherForActivityResult
             }
-    
+
             runCatching {
                 contentResolver.takePersistableUriPermission(
                     treeUri,
                     Intent.FLAG_GRANT_READ_URI_PERMISSION,
                 )
             }
-    
+
             val currentItems = localItems
             val currentPlaylists = playlists
             message = "Scanning audio folder…"
-    
+
             uiScope.launch {
                 val result =
                     runCatching {
@@ -258,7 +258,7 @@ internal fun MediaApp(
                                     0,
                                 )
                             }
-    
+
                             val updatedItems =
                                 localAudioRepository.addUris(
                                     current = currentItems,
@@ -276,7 +276,7 @@ internal fun MediaApp(
                             )
                         }
                     }
-    
+
                 result.onSuccess { (updatedItems, updatedPlaylists, importedCount) ->
                     if (importedCount == 0) {
                         message = "No audio files found in that folder."
@@ -292,7 +292,7 @@ internal fun MediaApp(
                 }
             }
         }
-    
+
     SableGlobalTheme(window = window) {
         MediaScreen(
             state =
@@ -327,14 +327,14 @@ internal fun MediaApp(
                     onDestinationChange = { next ->
                         destination = next
                         message = null
-    
+
                         if (
                             next != MediaDestination.ManageStations &&
                             next != MediaDestination.AddStation
                         ) {
                             clearStationForm()
                         }
-    
+
                         if (next != MediaDestination.PlaylistEditor) {
                             clearPlaylistForm()
                         }
@@ -361,7 +361,7 @@ internal fun MediaApp(
                                 current = localItems,
                                 uri = item.uri,
                             )
-    
+
                         if (item.uri in favoriteAudioUris) {
                             favoriteAudioUris =
                                 libraryStateRepository.toggleFavoriteAudio(
@@ -369,13 +369,13 @@ internal fun MediaApp(
                                     uri = item.uri,
                                 )
                         }
-    
+
                         playlists =
                             libraryStateRepository.pruneMissingAudio(
                                 current = playlists,
                                 validUris = localItems.map { it.uri }.toSet(),
                             )
-    
+
                         message = "Removed from the Sable Media collection."
                     },
                     onToggleFavoriteAudio = { item ->
@@ -393,15 +393,15 @@ internal fun MediaApp(
                         val candidate = podcastFeedUrl.trim()
                         when {
                             podcastBusy -> Unit
-    
+
                             !PodcastRepository.isSupportedFeedUrl(candidate) ->
                                 podcastMessage = "Podcast feed must use HTTPS."
-    
+
                             else -> {
                                 val currentSubscriptions = podcastSubscriptions
                                 podcastBusy = true
                                 podcastMessage = "Contacting podcast feed…"
-    
+
                                 uiScope.launch {
                                     val result =
                                         runCatching {
@@ -412,7 +412,7 @@ internal fun MediaApp(
                                                 )
                                             }
                                         }
-    
+
                                     result.onSuccess { updated ->
                                         podcastSubscriptions = updated
                                         podcastFeedUrl = ""
@@ -434,7 +434,7 @@ internal fun MediaApp(
                             val currentSubscriptions = podcastSubscriptions
                             podcastBusy = true
                             podcastMessage = "Refreshing subscribed feeds…"
-    
+
                             uiScope.launch {
                                 val result =
                                     runCatching {
@@ -444,7 +444,7 @@ internal fun MediaApp(
                                             )
                                         }
                                     }
-    
+
                                 result.onSuccess { refresh ->
                                     podcastSubscriptions = refresh.subscriptions
                                     podcastMessage =
@@ -547,7 +547,7 @@ internal fun MediaApp(
                                 current = stations,
                                 id = station.id,
                             )
-    
+
                         if (station.id in favoriteStationIds) {
                             favoriteStationIds =
                                 libraryStateRepository.toggleFavoriteStation(
@@ -555,11 +555,11 @@ internal fun MediaApp(
                                     stationId = station.id,
                                 )
                         }
-    
+
                         if (editingStation?.id == station.id) {
                             clearStationForm()
                         }
-    
+
                         message = "Station removed."
                     },
                     onStationNameChange = {
@@ -572,7 +572,7 @@ internal fun MediaApp(
                     },
                     onSaveNewStation = {
                         val candidate = stationUrl.trim()
-    
+
                         if (!RadioStationRepository.isSupportedUrl(candidate)) {
                             message = "Station URL must use HTTP or HTTPS."
                         } else {
@@ -590,14 +590,14 @@ internal fun MediaApp(
                     onSaveEditedStation = {
                         val editing = editingStation
                         val candidate = stationUrl.trim()
-    
+
                         when {
                             editing == null ->
                                 message = "Choose a station to edit."
-    
+
                             !RadioStationRepository.isSupportedUrl(candidate) ->
                                 message = "Station URL must use HTTP or HTTPS."
-    
+
                             else -> {
                                 stations =
                                     stationRepository.updateStation(
@@ -650,7 +650,7 @@ internal fun MediaApp(
                             playlist.itemUris.mapNotNull { uri ->
                                 byUri[uri]
                             }
-    
+
                         if (queue.isEmpty()) {
                             message = "This playlist has no available tracks."
                         } else {
@@ -715,5 +715,5 @@ internal fun MediaApp(
                 ),
         )
     }
-    
+
 }
