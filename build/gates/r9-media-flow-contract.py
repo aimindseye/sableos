@@ -164,6 +164,7 @@ require(
     "versionCode = 2",
     'versionName = "0.2.0"',
     "allWarningsAsErrors.set(true)",
+    'config.setFrom(rootProject.file("config/detekt.yml"))',
     "ignoreFailures = false",
     "ignoreFailures.set(false)",
 )
