@@ -36,7 +36,7 @@ R9_WS7_SHARED_SABLE_DESIGN_SYNC=PASS
 R9_WS7_SABLESTART_SYNC=RETRY_REQUIRED_AFTER_RETIRED_PROVIDER_CONTRACT_FIX
 R9_READER_NATIVE_STRIP_WARNING_COUNT=0
 R9_READER_KOTLIN_WARNING_COUNT=0
-R9_MAIL_GRADLE_DEPRECATION_CLEANUP=SOURCE_APPLIED_PENDING_RERUN
+R9_MAIL_GRADLE_DEPRECATIONS=DEFERRED_UPSTREAM_BUILD_TOOLING_OFFLINE_CACHE_PRESERVED
 R9_SDK_XML_WARNING=KNOWN_NONBLOCKING_CMDLINE_TOOLS_22_0
 R9_WS8_FRESH_IMAGE_PHYSICAL_ACCEPTANCE=BLOCKED_ON_WS7
 R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
@@ -72,9 +72,13 @@ contract is now corrected: the provider is explicitly retired from both the
 repository and workspace sync while Settings remains the global appearance
 owner.
 
-The tracked Reader Kotlin/native-strip warning counts are both zero. Mail
-Gradle deprecation cleanup is now composed into the ephemeral Thunderbird
-checkout and awaits qualification confirmation.
+The tracked Reader Kotlin/native-strip warning counts are both zero. An
+attempt to rewrite Thunderbird build logic solely to eliminate five Gradle 10
+deprecation warnings invalidated the offline build-logic cache and required
+uncached Kotlin 2.3.21 artifacts. That warning-only rewrite was reverted.
+Sable Mail now explicitly forbids mutations to the upstream root Gradle build
+and `build-plugin/` tree; the five upstream build-tool warnings remain visible
+and nonblocking while the offline dependency closure is preserved.
 
 The next authoritative action is to rerun local Panther module qualification on
 `ai-g732`. Only after that passes is one fresh target-files build authorized.
