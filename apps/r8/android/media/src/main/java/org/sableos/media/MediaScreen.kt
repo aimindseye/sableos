@@ -648,6 +648,7 @@ private fun CollectionScreen(
             ?.sections
             ?.get(pivot)
             .orEmpty()
+    val availableUris = collectionIndex?.availableUris.orEmpty()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var activeSection by remember(sectionTargets) {
@@ -886,7 +887,7 @@ private fun CollectionScreen(
                             val playlist = playlists[index]
                             PlaylistCard(
                                 playlist = playlist,
-                                availableItems = localItems,
+                                availableUris = availableUris,
                                 onPlay = { onPlayPlaylist(playlist) },
                                 onEdit = { onEditPlaylist(playlist) },
                                 onDelete = { onDeletePlaylist(playlist) },
@@ -944,6 +945,7 @@ private data class MediaCollectionIndex(
     val artists: List<MediaGroupSummary>,
     val albums: List<MediaGroupSummary>,
     val favorites: List<MediaIndexedTrack>,
+    val availableUris: Set<String>,
     val sections: Map<LibraryPivot, List<MediaSectionTarget>>,
 ) {
     companion object {
@@ -953,6 +955,7 @@ private data class MediaCollectionIndex(
                 artists = emptyList(),
                 albums = emptyList(),
                 favorites = emptyList(),
+                availableUris = emptySet(),
                 sections = emptyMap(),
             )
     }
@@ -1042,6 +1045,7 @@ private fun buildMediaCollectionIndex(
         artists = artists,
         albums = albums,
         favorites = favorites,
+        availableUris = sourceIndexByUri.keys.toSet(),
         sections = sections,
     )
 }
@@ -1185,14 +1189,14 @@ private fun LocalTrackRow(
 @Composable
 private fun PlaylistCard(
     playlist: MediaPlaylist,
-    availableItems: List<LocalAudioItem>,
+    availableUris: Set<String>,
     onPlay: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val trackCount =
         playlist.itemUris.count { uri ->
-            availableItems.any { it.uri == uri }
+            uri in availableUris
         }
 
     Surface(
