@@ -41,9 +41,11 @@ names are repeated in the final
 `SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=<comma-separated names>` marker
 for concise triage.
 
-`full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
-Text Reader and Mail qualification. It is the pre-image source/build/security
-CI profile and does not authorize a Panther image build by itself.
+`full` adds Rust dependency policy, Gitleaks, MobSFScan and separate pinned
+Reader, Text Reader and Mail qualification. Reader is the publication product;
+Text Reader is independently flavored, tested, linted, assembled and APK-verified
+as `org.sableos.textreader`. It is the pre-image source/build/security CI
+profile and does not authorize a Panther image build by itself.
 
 The source-bound Launcher visual acceptance seal is intentionally not part of
 `full`. Visual acceptance is an image-authorization gate and is required by the
