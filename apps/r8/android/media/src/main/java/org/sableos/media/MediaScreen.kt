@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -45,7 +46,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.sableos.design.SableSpacing
 import java.util.Locale
 
@@ -617,51 +620,34 @@ private fun CollectionScreen(
     onPlayPlaylist: (MediaPlaylist) -> Unit,
     onOpenNowPlaying: () -> Unit,
 ) {
-    val artistGroups =
-        remember(localItems) {
-            localItems
-                .groupBy { it.artist }
-                .toSortedMap(String.CASE_INSENSITIVE_ORDER)
-                .entries
-                .map { it.key to it.value }
-        }
-    val albumGroups =
-        remember(localItems) {
-            localItems
-                .groupBy { it.album }
-                .toSortedMap(String.CASE_INSENSITIVE_ORDER)
-                .entries
-                .map { it.key to it.value }
-        }
-    val locale = Locale.getDefault()
-    val songs =
-        remember(localItems, locale) {
-            localItems.sortedBy { item -> item.title.lowercase(locale) }
-        }
-    val favorites =
-        remember(localItems, favoriteAudioUris, locale) {
-            localItems
-                .filter { item -> item.uri in favoriteAudioUris }
-                .sortedBy { item -> item.title.lowercase(locale) }
-        }
-    val indexByUri =
-        remember(localItems) {
-            localItems
-                .mapIndexed { index, item -> item.uri to index }
-                .toMap()
-        }
-    val sectionTargets =
-        remember(pivot, songs, artistGroups, albumGroups, favorites) {
-            val labels =
-                when (pivot) {
-                    LibraryPivot.Songs -> songs.map { it.title }
-                    LibraryPivot.Artists -> artistGroups.map { it.first }
-                    LibraryPivot.Albums -> albumGroups.map { it.first }
-                    LibraryPivot.Favorites -> favorites.map { it.title }
-                    LibraryPivot.Playlists -> emptyList()
+    val collectionIndex by
+        produceState<MediaCollectionIndex?>(
+            initialValue = null,
+            key1 = localItems,
+            key2 = favoriteAudioUris,
+        ) {
+            value =
+                if (localItems.isEmpty()) {
+                    MediaCollectionIndex.Empty
+                } else {
+                    withContext(Dispatchers.Default) {
+                        buildMediaCollectionIndex(
+                            localItems = localItems,
+                            favoriteAudioUris = favoriteAudioUris,
+                        )
+                    }
                 }
-            buildMediaSectionTargets(labels)
         }
+
+    val songs = collectionIndex?.songs.orEmpty()
+    val artistGroups = collectionIndex?.artists.orEmpty()
+    val albumGroups = collectionIndex?.albums.orEmpty()
+    val favorites = collectionIndex?.favorites.orEmpty()
+    val sectionTargets =
+        collectionIndex
+            ?.sections
+            ?.get(pivot)
+            .orEmpty()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var activeSection by remember(sectionTargets) {
@@ -790,21 +776,28 @@ private fun CollectionScreen(
                             "Sable keeps access only to files you explicitly select.",
                 )
             }
+        } else if (collectionIndex == null) {
+            item {
+                C2InfoPanel(
+                    title = "Indexing collection",
+                    detail = "Preparing songs, artists, albums, favorites, and A–Z navigation.",
+                )
+            }
         } else {
             when (pivot) {
                 LibraryPivot.Songs -> {
                     items(
                         count = songs.size,
-                        key = { index -> songs[index].uri },
+                        key = { index -> songs[index].item.uri },
                     ) { index ->
-                        val item = songs[index]
-                        val sourceIndex = indexByUri.getValue(item.uri)
+                        val indexedTrack = songs[index]
+                        val item = indexedTrack.item
                         LocalTrackRow(
                             item = item,
-                            accent = accentFor(sourceIndex),
+                            accent = accentFor(indexedTrack.sourceIndex),
                             favorite = item.uri in favoriteAudioUris,
                             onToggleFavorite = { onToggleFavorite(item) },
-                            onPlay = { onPlay(sourceIndex) },
+                            onPlay = { onPlay(indexedTrack.sourceIndex) },
                         )
                     }
                 }
@@ -812,15 +805,15 @@ private fun CollectionScreen(
                 LibraryPivot.Artists -> {
                     items(
                         count = artistGroups.size,
-                        key = { index -> artistGroups[index].first },
+                        key = { index -> artistGroups[index].name },
                     ) { index ->
-                        val (artist, tracks) = artistGroups[index]
+                        val group = artistGroups[index]
                         LibraryGroupRow(
-                            title = artist,
-                            detail = "${tracks.size} track${if (tracks.size == 1) "" else "s"}",
-                            accent = accentFor(artist.hashCode()),
+                            title = group.name,
+                            detail = group.detail,
+                            accent = accentFor(group.name.hashCode()),
                             onClick = {
-                                indexByUri[tracks.first().uri]?.let(onPlay)
+                                onPlay(group.sourceIndex)
                             },
                         )
                     }
@@ -829,16 +822,15 @@ private fun CollectionScreen(
                 LibraryPivot.Albums -> {
                     items(
                         count = albumGroups.size,
-                        key = { index -> albumGroups[index].first },
+                        key = { index -> albumGroups[index].name },
                     ) { index ->
-                        val (album, tracks) = albumGroups[index]
+                        val group = albumGroups[index]
                         LibraryGroupRow(
-                            title = album,
-                            detail = tracks.first().artist,
-                            accent = accentFor(album.hashCode()),
+                            title = group.name,
+                            detail = group.detail,
+                            accent = accentFor(group.name.hashCode()),
                             onClick = {
-                                val firstIndex = indexByUri[tracks.first().uri] ?: return@LibraryGroupRow
-                                onPlay(firstIndex)
+                                onPlay(group.sourceIndex)
                             },
                         )
                     }
@@ -855,16 +847,16 @@ private fun CollectionScreen(
                     } else {
                         items(
                             count = favorites.size,
-                            key = { index -> favorites[index].uri },
+                            key = { index -> favorites[index].item.uri },
                         ) { favoriteIndex ->
-                            val item = favorites[favoriteIndex]
-                            val sourceIndex = indexByUri.getValue(item.uri)
+                            val indexedTrack = favorites[favoriteIndex]
+                            val item = indexedTrack.item
                             LocalTrackRow(
                                 item = item,
-                                accent = accentFor(sourceIndex),
+                                accent = accentFor(indexedTrack.sourceIndex),
                                 favorite = true,
                                 onToggleFavorite = { onToggleFavorite(item) },
-                                onPlay = { onPlay(sourceIndex) },
+                                onPlay = { onPlay(indexedTrack.sourceIndex) },
                             )
                         }
                     }
@@ -934,6 +926,124 @@ private fun CollectionScreen(
             )
         }
     }
+}
+
+private data class MediaIndexedTrack(
+    val item: LocalAudioItem,
+    val sourceIndex: Int,
+)
+
+private data class MediaGroupSummary(
+    val name: String,
+    val detail: String,
+    val sourceIndex: Int,
+)
+
+private data class MediaCollectionIndex(
+    val songs: List<MediaIndexedTrack>,
+    val artists: List<MediaGroupSummary>,
+    val albums: List<MediaGroupSummary>,
+    val favorites: List<MediaIndexedTrack>,
+    val sections: Map<LibraryPivot, List<MediaSectionTarget>>,
+) {
+    companion object {
+        val Empty =
+            MediaCollectionIndex(
+                songs = emptyList(),
+                artists = emptyList(),
+                albums = emptyList(),
+                favorites = emptyList(),
+                sections = emptyMap(),
+            )
+    }
+}
+
+private fun buildMediaCollectionIndex(
+    localItems: List<LocalAudioItem>,
+    favoriteAudioUris: Set<String>,
+): MediaCollectionIndex {
+    val locale = Locale.ROOT
+    val sourceIndexByUri =
+        HashMap<String, Int>(localItems.size * 2).apply {
+            localItems.forEachIndexed { index, item ->
+                put(item.uri, index)
+            }
+        }
+
+    val songs =
+        localItems
+            .asSequence()
+            .sortedBy { item -> item.title.lowercase(locale) }
+            .map { item ->
+                MediaIndexedTrack(
+                    item = item,
+                    sourceIndex = sourceIndexByUri.getValue(item.uri),
+                )
+            }.toList()
+
+    val favorites =
+        songs.filter { indexed ->
+            indexed.item.uri in favoriteAudioUris
+        }
+
+    val artists =
+        localItems
+            .groupBy { item -> item.artist }
+            .entries
+            .sortedWith(
+                compareBy(String.CASE_INSENSITIVE_ORDER) { entry -> entry.key },
+            ).map { entry ->
+                val tracks = entry.value
+                MediaGroupSummary(
+                    name = entry.key,
+                    detail = "${tracks.size} track${if (tracks.size == 1) "" else "s"}",
+                    sourceIndex = sourceIndexByUri.getValue(tracks.first().uri),
+                )
+            }
+
+    val albums =
+        localItems
+            .groupBy { item -> item.album }
+            .entries
+            .sortedWith(
+                compareBy(String.CASE_INSENSITIVE_ORDER) { entry -> entry.key },
+            ).map { entry ->
+                val tracks = entry.value
+                MediaGroupSummary(
+                    name = entry.key,
+                    detail = tracks.first().artist,
+                    sourceIndex = sourceIndexByUri.getValue(tracks.first().uri),
+                )
+            }
+
+    val sections =
+        mapOf(
+            LibraryPivot.Songs to
+                buildMediaSectionTargets(
+                    songs.map { indexed -> indexed.item.title },
+                ),
+            LibraryPivot.Artists to
+                buildMediaSectionTargets(
+                    artists.map { group -> group.name },
+                ),
+            LibraryPivot.Albums to
+                buildMediaSectionTargets(
+                    albums.map { group -> group.name },
+                ),
+            LibraryPivot.Favorites to
+                buildMediaSectionTargets(
+                    favorites.map { indexed -> indexed.item.title },
+                ),
+            LibraryPivot.Playlists to emptyList(),
+        )
+
+    return MediaCollectionIndex(
+        songs = songs,
+        artists = artists,
+        albums = albums,
+        favorites = favorites,
+        sections = sections,
+    )
 }
 
 private data class MediaSectionTarget(
