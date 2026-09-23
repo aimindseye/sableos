@@ -50,18 +50,22 @@ SableLauncher owns:
 - launcher-only favorites/start-tile state
 - privacy/security permission summaries shown in All Apps
 
-The host-side Gradle `sablestart-presentation-check` compiles only the six
-canonical files in the Soong `sable_start_presentation_srcs` filegroup. It
-must not compile `SableStartActivity.kt` or `LauncherAppsRepository.kt`;
-those are standalone runtime sources and are qualified by the Soong/module
-path.
+The host-side Gradle `sablestart-presentation-check` compiles and lints only
+the six canonical files in the Soong `sable_start_presentation_srcs`
+filegroup. A Gradle `Sync` task mirrors those six files into the module build
+directory before Kotlin compile and every lint task, so Android Lint cannot
+walk the broader canonical source root. It must not compile or lint
+`SableStartActivity.kt` or `LauncherAppsRepository.kt`; those are standalone
+runtime sources and are qualified by the Soong/module path.
 
 SableLauncher uses `sdk_version: "system_current"`, not unrestricted
 `platform_apis`. The system SDK is required for Android's
 `Context.createContextAsUser(...)` API used to read per-profile permission
-state. If a profile context cannot be obtained, the launcher reports the
-permission summary as unavailable rather than falling back to another user's
-package state.
+state. The package query uses the public legacy
+`getPackageInfo(String, int)` overload with `GET_PERMISSIONS` instead of the
+API-33-only `PackageInfoFlags.of(...)` wrapper. If a profile context cannot be
+obtained, the launcher reports the permission summary as unavailable rather
+than falling back to another user's package state.
 
 Settings remains the only persisted global appearance authority at
 `content://org.sableos.appearance/appearance`.
