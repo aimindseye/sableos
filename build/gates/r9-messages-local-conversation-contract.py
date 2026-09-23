@@ -248,12 +248,21 @@ forbid(
     "apps/r8/android/config/detekt.yml",
     '"**/hub/HubModels.kt"',
 )
+require(
+    "build/gates/r9-messages-source-style.py",
+    "MAX_LINE_LENGTH = 120",
+    "R9_MESSAGES_SOURCE_STYLE_PREFLIGHT=PASS",
+    "R9_MESSAGES_SOURCE_MAX_LINE_LENGTH=PASS",
+    "R9_MESSAGES_SOURCE_WHITESPACE=PASS",
+)
 
 QUALIFIER = "build/panther/qualify-r9-messages.sh"
 require(
     QUALIFIER,
     'git -C "$ROOT" diff --check "$QUALIFIED_BASE...$ACTUAL_SOURCE"',
     "R9_MESSAGES_SOURCE_DIFF_CHECK=PASS",
+    "===== R9 MESSAGES SOURCE STYLE PREFLIGHT =====",
+    'python3 "$ROOT/build/gates/r9-messages-source-style.py"',
     "===== R9 MESSAGES STATIC QUALITY PREFLIGHT =====",
     ":hub:detekt",
     ":hub:ktlintCheck",
@@ -267,14 +276,16 @@ require(
     ":hub:assembleDebug",
 )
 qualifier = read(QUALIFIER)
+source_style_index = qualifier.find("===== R9 MESSAGES SOURCE STYLE PREFLIGHT =====")
 preflight_index = qualifier.find("===== R9 MESSAGES STATIC QUALITY PREFLIGHT =====")
 compile_index = qualifier.find("===== R9 MESSAGES COMPILE TEST LINT =====")
 assemble_index = qualifier.find("===== R9 MESSAGES APK ASSEMBLY =====")
 if not (
-    0 <= preflight_index < compile_index < assemble_index
+    0 <= source_style_index < preflight_index < compile_index < assemble_index
 ):
     failures.append(
-        "messages_qualification_order=quality_preflight_before_compile_before_assemble"
+        "messages_qualification_order="
+        "source_style_before_quality_before_compile_before_assemble"
     )
 
 hub_source_root = ROOT / HUB / "src/main/java"
@@ -314,7 +325,8 @@ print("R9_MESSAGES_LAUNCHER_INVENTORY_REFRESH=PASS_OFF_MAIN")
 print("R9_MESSAGES_SETTINGS_ENTRY=PASS_CONNECTED_APPS")
 print("R9_MESSAGES_REDUCER_STRUCTURE=PASS_DECOMPOSED")
 print("R9_MESSAGES_SOURCE_DIFF_CHECK=PASS_REQUIRED")
+print("R9_MESSAGES_SOURCE_STYLE_PREFLIGHT=PASS_REQUIRED")
 print("R9_MESSAGES_COMPOSE_KTLINT_POLICY=PASS_MEDIA_ALIGNED")
 print("R9_MESSAGES_QUALITY_CONFIG=PASS_FAIL_CLOSED")
-print("R9_MESSAGES_QUALIFICATION_ORDER=PASS_PREFLIGHT_BEFORE_BUILD")
+print("R9_MESSAGES_QUALIFICATION_ORDER=PASS_SOURCE_STYLE_BEFORE_GRADLE")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
