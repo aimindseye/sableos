@@ -64,6 +64,26 @@ Implemented source boundaries:
 
 No new full Panther image has been authorized or built by this source work.
 
+### Long-lived Settings workspace convergence
+
+Panther preparation may encounter either the exact pre-cohesion Settings dirty
+scope or the exact already-applied final cohesion dirty scope. The Settings
+cohesion applicator accepts only those two states.
+
+When the final cohesion scope is already present, the applicator may refresh
+only the bounded cohesion files/entries and then must pass the same final
+verifier. Any additional unexpected dirty path remains a hard failure. This
+makes repeated release-candidate/module qualification idempotent without
+turning Settings preparation into a broad workspace reset or best-effort patch.
+
+Expected self-test markers:
+
+```text
+R9_SETTINGS_COHESION_SELF_TEST_PRE_SCOPE=PASS
+R9_SETTINGS_COHESION_SELF_TEST_FINAL_SCOPE=PASS
+R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS
+```
+
 
 ## Serial workstreams
 
