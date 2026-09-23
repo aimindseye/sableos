@@ -116,12 +116,20 @@ with zipfile.ZipFile(tf) as z:
     (tmp / "Launcher3QuickStep.apk").write_bytes(z.read(launcher[0]))
     print(f"R9_LAUNCHER3_TARGET=PASS member={launcher[0]}")
 
-    start = matches("SableStart.apk")
-    if start:
+    legacy_start = matches("SableStart.apk")
+    if legacy_start:
         raise SystemExit(
-            f"R9_SABLESTART_TARGET=FAIL_PRESENT matches={start!r}"
+            f"R9_LEGACY_SABLESTART_TARGET=FAIL_PRESENT matches={legacy_start!r}"
         )
-    print("R9_SABLESTART_TARGET=PASS_ABSENT")
+    print("R9_LEGACY_SABLESTART_TARGET=PASS_ABSENT")
+
+    sable_launcher = matches("SableLauncher.apk")
+    if len(sable_launcher) != 1:
+        raise SystemExit(
+            f"R9_SABLELAUNCHER_TARGET_COUNT=FAIL matches={sable_launcher!r}"
+        )
+    (tmp / "SableLauncher.apk").write_bytes(z.read(sable_launcher[0]))
+    print(f"R9_SABLELAUNCHER_TARGET=PASS member={sable_launcher[0]}")
 
     for basename in ("SystemUI.apk", "Settings.apk", "SetupWizard2.apk"):
         found = matches(basename)
@@ -156,6 +164,7 @@ AAPT2="${AAPT2:-$OUT_ABS/host/linux-x86/bin/aapt2}"
 [[ -x "$AAPT2" ]] || fail R8_AAPT2 4
 
 declare -A expected_package=(
+    [SableLauncher.apk]=org.sableos.launcher
     [Launcher3QuickStep.apk]=com.android.launcher3
     [SableCalculator.apk]=org.sableos.calculator
     [SableSudoku.apk]=org.sableos.sudoku
@@ -169,7 +178,7 @@ declare -A expected_package=(
     [SableCalendar.apk]=org.sableos.calendar
 )
 
-for apk in     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
+for apk in     SableLauncher.apk     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
@@ -180,8 +189,9 @@ do
     echo "R8_TARGET_PACKAGE_IDENTITY=PASS file=$apk package=$pkg"
 done
 
-echo "R9_LAUNCHER3_HOME_TARGET_FILES=PASS"
-echo "R9_SABLESTART_TARGET_FILES=PASS_ABSENT"
+echo "R9_SABLELAUNCHER_HOME_TARGET_FILES=PASS_PRESENT"
+echo "R9_LAUNCHER3_RECENTS_TARGET_FILES=PASS_PRESENT"
+echo "R9_LEGACY_SABLESTART_TARGET_FILES=PASS_ABSENT"
 echo "R8_B_CALCULATOR_CONVERT_TARGET_FILES=PASS"
 echo "R8_C_GAMES_TARGET_FILES=PASS"
 echo "R8_D_READER_TARGET_FILES=PASS"
