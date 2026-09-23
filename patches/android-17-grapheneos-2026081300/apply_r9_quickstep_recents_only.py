@@ -443,6 +443,16 @@ import com.android.launcher3.util.DaggerSingletonTracker;
         else:
             raise RecentsOnlyError("self-test unresolved source did not fail closed")
 
+        expected_final = expected_recents_final_dirty_paths()
+        if "Android.bp" not in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope missing Android.bp")
+        if OVERVIEW_REL.as_posix() not in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope missing observer")
+        if SABLE_HOST.as_posix() in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope retained Sable host")
+        if "quickstep/res/values/strings.xml" in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope retained Sable strings")
+        print("R9_QUICKSTEP_RECENTS_FINAL_SCOPE_SELF_TEST=PASS")
         print("R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS")
         (root / "quickstep/AndroidManifest-launcher.xml").write_text(
             manifest, encoding="utf-8"
