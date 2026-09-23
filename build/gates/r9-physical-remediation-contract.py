@@ -32,9 +32,21 @@ collection = media_screen.split("private fun CollectionScreen(", 1)[1].split(
     "private fun LocalTrackRow(", 1
 )[0]
 require("LazyColumn(", collection, "collection LazyColumn")
-require("count = localItems.size", collection, "lazy song item count")
+require("count = songs.size", collection, "sorted lazy song item count")
 forbid("localItems.forEachIndexed", collection, "eager song composition")
 forbid("items.forEachIndexed", collection, "legacy eager song composition")
+
+require("private fun MediaAlphabetRail(", media_screen, "Media alphabet rail")
+require("buildMediaSectionTargets(", media_screen, "Media alphabet section targets")
+require("LibraryPivot.Songs -> songs.map { it.title }", media_screen, "Songs alphabet rail")
+require("LibraryPivot.Artists -> artistGroups.map { it.first }", media_screen, "Artists alphabet rail")
+require("LibraryPivot.Albums -> albumGroups.map { it.first }", media_screen, "Albums alphabet rail")
+require("LibraryPivot.Favorites -> favorites.map { it.title }", media_screen, "Favorites alphabet rail")
+require("LibraryPivot.Playlists -> emptyList()", media_screen, "Playlists explicit order")
+require("HorizontalDivider(", media_screen, "flat Media rows")
+forbid('text = "×"', media_screen, "destructive inline Media remove")
+require('text = if (favorite) "★" else "☆"', media_screen, "Media favorite action")
+require('text = "▶"', media_screen, "Media play action")
 
 require(
     "publishState(refreshQueue = false)",
@@ -149,6 +161,31 @@ require(
     reader_patch,
     "Reader continuous-library marker",
 )
+require(
+    "R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS",
+    reader_patch,
+    "Reader actual book-count marker",
+)
+require(
+    "distinctBy { it.bookHash }",
+    reader_patch,
+    "Reader physical-book deduplication",
+)
+require(
+    "R9_READER_SETTINGS_GLOBAL_APPEARANCE=PASS_NO_OFFLINE_LIGHT_OVERRIDE",
+    reader_patch,
+    "Reader offline-mode appearance marker",
+)
+require(
+    "R9_READER_LOCAL_LIGHT_DARK_CONTROLS=PASS_RETIRED_FOR_SABLE",
+    reader_patch,
+    "Reader local light-dark retirement marker",
+)
+require(
+    "state.isOfflineMode && !BuildConfig.SABLE_PRODUCT",
+    reader_patch,
+    "Reader offline paper theme excluded from Sable product",
+)
 
 if failures:
     print("R9_PHYSICAL_REMEDIATION_CONTRACT=FAIL")
@@ -159,10 +196,14 @@ if failures:
 print("R9_MEDIA_LARGE_LIBRARY_LAZY_RENDERING=PASS")
 print("R9_MEDIA_QUEUE_TICKER_BOUNDED=PASS")
 print("R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS")
+print("R9_MEDIA_ALPHABET_RAIL=PASS_SONGS_ARTISTS_ALBUMS_FAVORITES")
+print("R9_MEDIA_FLAT_LIBRARY_ROWS=PASS_NO_INLINE_REMOVE")
 print("R9_READER_GLOBAL_THEME_CONTRACT=PASS")
 print("R9_READER_READIUM_APPEARANCE_BRIDGE=PASS")
 print("R9_READER_EXPLICIT_SEPIA_EINK_OVERRIDES=PASS")
 print("R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL")
 print("R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID")
+print("R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS")
+print("R9_READER_SETTINGS_GLOBAL_APPEARANCE=PASS")
 print("R9_READER_WARNING_CLEANUP_CONTRACT=PASS")
 print("R9_PHYSICAL_REMEDIATION_CONTRACT=PASS")
