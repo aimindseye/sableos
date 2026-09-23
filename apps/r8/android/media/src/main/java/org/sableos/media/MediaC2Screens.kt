@@ -4,12 +4,19 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -37,40 +44,63 @@ internal fun QueueScreen(
     onStop: () -> Unit,
     onBack: () -> Unit,
 ) {
-    Column(
+    val queue = playback.queue
+    val firstUpcomingPosition =
+        if (playback.currentIndex >= 0) {
+            queue.indexOfFirst { item -> item.index > playback.currentIndex }
+                .let { position -> if (position < 0) queue.size else position }
+        } else {
+            0
+        }
+    val upcomingCount = queue.size - firstUpcomingPosition
+
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .imePadding(),
+        contentPadding =
+            PaddingValues(
+                horizontal = SableSpacing.ScreenHorizontal,
+                vertical = SableSpacing.ScreenVertical,
+            ),
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        C2BackTitle(
-            title = "up next",
-            onBack = onBack,
-        )
-
-        if (playback.queue.isNotEmpty()) {
-            QueueTransportControls(
-                playback = playback,
-                onPlayPause = onPlayPause,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                onStop = onStop,
+        item(key = "queue-back") {
+            C2BackTitle(
+                title = "up next",
+                onBack = onBack,
             )
         }
 
-        val upcomingItems =
-            if (playback.currentIndex >= 0) {
-                playback.queue.filter { item ->
-                    item.index > playback.currentIndex
-                }
-            } else {
-                playback.queue
+        if (queue.isNotEmpty()) {
+            item(key = "queue-controls") {
+                QueueTransportControls(
+                    playback = playback,
+                    onPlayPause = onPlayPause,
+                    onPrevious = onPrevious,
+                    onNext = onNext,
+                    onStop = onStop,
+                )
             }
+        }
 
-        if (upcomingItems.isEmpty()) {
-            C2InfoPanel(
-                title = "Nothing else queued",
-                detail = "The current track is shown above. Add or play more local audio to build Up Next.",
-            )
+        if (upcomingCount <= 0) {
+            item(key = "queue-empty") {
+                C2InfoPanel(
+                    title = "Nothing else queued",
+                    detail =
+                        "The current track is shown above. Add or play more local audio to build Up Next.",
+                )
+            }
         } else {
-            upcomingItems.forEachIndexed { listIndex, item ->
+            items(
+                count = upcomingCount,
+                key = { offset -> queue[firstUpcomingPosition + offset].index },
+            ) { offset ->
+                val item = queue[firstUpcomingPosition + offset]
+                val listIndex = firstUpcomingPosition + offset
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.medium,
@@ -131,7 +161,7 @@ internal fun QueueScreen(
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     if (
-                                        listIndex > 0 ||
+                                        listIndex > firstUpcomingPosition ||
                                         item.index > playback.currentIndex + 1
                                     ) {
                                         onMove(item.index, item.index - 1)
@@ -143,7 +173,7 @@ internal fun QueueScreen(
                                 primary = false,
                                 modifier = Modifier.weight(1f),
                                 onClick = {
-                                    if (item.index < playback.queue.lastIndex) {
+                                    if (item.index < queue.lastIndex) {
                                         onMove(item.index, item.index + 1)
                                     }
                                 },
@@ -162,13 +192,15 @@ internal fun QueueScreen(
             }
         }
 
-        Text(
-            text =
-                "Queue changes are applied directly to the active Media3 session. " +
-                    "Sable does not persist listening history.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        item(key = "queue-footer") {
+            Text(
+                text =
+                    "Queue changes are applied directly to the active Media3 session. " +
+                        "Sable does not persist listening history.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -252,39 +284,60 @@ internal fun PlaylistEditorScreen(
     onSave: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    Column(
+    LazyColumn(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .safeDrawingPadding()
+                .imePadding(),
+        contentPadding =
+            PaddingValues(
+                horizontal = SableSpacing.ScreenHorizontal,
+                vertical = SableSpacing.ScreenVertical,
+            ),
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
-        C2BackTitle(
-            title =
-                if (editingPlaylist == null) {
-                    "new playlist"
-                } else {
-                    "edit playlist"
-                },
-            onBack = onCancel,
-        )
+        item(key = "playlist-back") {
+            C2BackTitle(
+                title =
+                    if (editingPlaylist == null) {
+                        "new playlist"
+                    } else {
+                        "edit playlist"
+                    },
+                onBack = onCancel,
+            )
+        }
 
-        OutlinedTextField(
-            value = playlistName,
-            onValueChange = onNameChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            label = { Text("Playlist name") },
-        )
+        item(key = "playlist-name") {
+            OutlinedTextField(
+                value = playlistName,
+                onValueChange = onNameChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Playlist name") },
+            )
+        }
 
-        Text(
-            text = "tracks",
-            style = MaterialTheme.typography.titleLarge,
-        )
+        item(key = "playlist-tracks-title") {
+            Text(
+                text = "tracks",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
 
         if (localItems.isEmpty()) {
-            C2InfoPanel(
-                title = "No local tracks",
-                detail = "Add local audio to the Collection before creating a playlist.",
-            )
+            item(key = "playlist-empty") {
+                C2InfoPanel(
+                    title = "No local tracks",
+                    detail = "Add local audio to the Collection before creating a playlist.",
+                )
+            }
         } else {
-            localItems.forEach { item ->
+            items(
+                items = localItems,
+                key = { item -> item.uri },
+            ) { item ->
                 val selected = item.uri in selectedUris
 
                 Surface(
@@ -339,30 +392,34 @@ internal fun PlaylistEditorScreen(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-        ) {
-            SableActionButton(
-                text = "Cancel",
-                primary = false,
-                modifier = Modifier.weight(1f),
-                onClick = onCancel,
-            )
-            SableActionButton(
-                text = "Save playlist",
-                modifier = Modifier.weight(1f),
-                onClick = onSave,
-            )
+        item(key = "playlist-actions") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+            ) {
+                SableActionButton(
+                    text = "Cancel",
+                    primary = false,
+                    modifier = Modifier.weight(1f),
+                    onClick = onCancel,
+                )
+                SableActionButton(
+                    text = "Save playlist",
+                    modifier = Modifier.weight(1f),
+                    onClick = onSave,
+                )
+            }
         }
 
-        Text(
-            text =
-                "Playlists contain references to audio files you explicitly added to Sable Media. " +
-                    "They stay local on this device.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        item(key = "playlist-footer") {
+            Text(
+                text =
+                    "Playlists contain references to audio files you explicitly added to Sable Media. " +
+                        "They stay local on this device.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
