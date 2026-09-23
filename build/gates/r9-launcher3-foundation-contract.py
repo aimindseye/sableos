@@ -244,6 +244,53 @@ def check() -> list[str]:
                 print(proc.stderr, file=sys.stderr, end="")
             failures.append("Launcher3 foundation applicator self-test failed")
 
+    quickstep_recents = (
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_quickstep_recents_only.py"
+    )
+    if not quickstep_recents.is_file():
+        failures.append("Quickstep Recents-only applicator missing")
+    else:
+        recents_text = quickstep_recents.read_text(encoding="utf-8")
+        for token in (
+            "R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS",
+            "R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT",
+            "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
+            "R9_QUICKSTEP_SERVICE=PASS_RETAINED",
+            "R9_FALLBACK_RECENTS=PASS_RETAINED",
+        ):
+            require(
+                recents_text,
+                token,
+                "Quickstep Recents-only applicator",
+                failures,
+            )
+
+    prepare = (
+        ROOT / "build/panther/prepare-r8-final-ui.sh"
+    ).read_text(encoding="utf-8")
+    for token in (
+        'LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"',
+        'QUICKSTEP_RECENTS_ONLY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"',
+        "R9_LAUNCHER3_FOUNDATION=APPLIED_INTERMEDIATE",
+        "R9_QUICKSTEP_RECENTS_ONLY=APPLIED",
+        "R9_SABLELAUNCHER_HOME_OWNERSHIP=PASS_SOURCE",
+        "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
+    ):
+        require(prepare, token, "Launcher3 preparation layering", failures)
+
+    foundation_line = prepare.find(
+        'python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply'
+    )
+    recents_line = prepare.find(
+        'python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" apply'
+    )
+    if foundation_line < 0 or recents_line < 0 or foundation_line >= recents_line:
+        failures.append(
+            "Launcher3 preparation layering: foundation must precede Recents-only cutover"
+        )
+
     warning_gate = ROOT / "build/gates/r9-launcher-warning-gate.py"
     if not warning_gate.is_file():
         failures.append("Launcher3 warning gate missing")
