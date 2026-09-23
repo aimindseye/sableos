@@ -177,20 +177,24 @@ require(
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
 )
 
-# Media uses a discoverable A-Z rail for the four requested library views and
-# flat rows with favorite/play only. Destructive collection removal is not an
-# inline browse action.
+# Media uses lazy large-library surfaces, a background immutable index and a
+# discoverable A-Z rail. Physical ANR remediation also forbids full-library
+# Binder queue payloads and always-on progress recomposition.
 require(
     "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
     "private fun MediaAlphabetRail(",
     "buildMediaSectionTargets(",
-    "LibraryPivot.Songs -> songs.map { it.title }",
-    "LibraryPivot.Artists -> artistGroups.map { it.first }",
-    "LibraryPivot.Albums -> albumGroups.map { it.first }",
-    "LibraryPivot.Favorites -> favorites.map { it.title }",
-    "LibraryPivot.Playlists -> emptyList()",
-    "songs =",
-    "sortedBy { item -> item.title.lowercase(locale) }",
+    "produceState<MediaCollectionIndex?>",
+    "withContext(Dispatchers.Default)",
+    "buildMediaCollectionIndex(",
+    "LibraryPivot.Songs to",
+    "LibraryPivot.Artists to",
+    "LibraryPivot.Albums to",
+    "LibraryPivot.Favorites to",
+    "LibraryPivot.Playlists to emptyList()",
+    "count = songs.size",
+    "count = artistGroups.size",
+    "count = albumGroups.size",
     "HorizontalDivider(",
     'text = if (favorite) "★" else "☆"',
     'text = "▶"',
@@ -198,6 +202,45 @@ require(
 forbid(
     "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
     'text = "×"',
+    "playback.queue.count { item ->",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaC2Screens.kt",
+    "internal fun QueueScreen(",
+    "count = upcomingCount",
+    "internal fun PlaylistEditorScreen(",
+    "items = localItems",
+)
+forbid(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaC2Screens.kt",
+    "upcomingItems.forEachIndexed",
+    "localItems.forEach { item ->",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt",
+    "LaunchedEffect(localAudioRepository, libraryStateRepository)",
+    "playbackController.setProgressUpdatesEnabled(",
+    "destination == MediaDestination.NowPlaying",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackController.kt",
+    "progressUpdatesEnabled",
+    "fun setProgressUpdatesEnabled(enabled: Boolean)",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt",
+    "PlaybackQueueRequestStore.publish(",
+    "PlaybackService.EXTRA_QUEUE_TOKEN",
+)
+forbid(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt",
+    "putStringArrayListExtra",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackService.kt",
+    "PlaybackQueueRequestStore::consume",
+    "serviceScope.launch",
+    "withContext(Dispatchers.Main.immediate)",
 )
 
 # Build/product closure.
@@ -306,5 +349,9 @@ print("R9_READER_ACTUAL_BOOK_COUNT_CONTRACT=PASS")
 print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_FLAT_ROWS_CONTRACT=PASS")
+print("R9_MEDIA_LARGE_LIBRARY_RENDER_CONTRACT=PASS")
+print("R9_MEDIA_LARGE_LIBRARY_INDEX_CONTRACT=PASS_OFF_MAIN")
+print("R9_MEDIA_QUEUE_HANDOFF_CONTRACT=PASS_TOKEN_ONLY")
+print("R9_MEDIA_PROGRESS_RECOMPOSITION_CONTRACT=PASS_NOW_PLAYING_ONLY")
 print("R9_CANONICAL_PRE_FULL_QUALIFICATION=PASS")
 print("R9_PHYSICAL_UX_CLOSURE_CONTRACT=PASS")
