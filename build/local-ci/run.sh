@@ -175,6 +175,8 @@ PY
     python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
   run_static_contract r9-physical-ux-closure \
     python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  run_static_contract r9-textreader-standalone \
+    python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
     python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
   run_static_contract r9-first-party-app-icon \
