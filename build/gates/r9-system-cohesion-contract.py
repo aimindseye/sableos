@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
-"""R9 system-cohesion source contract.
+"""R9 current system-cohesion source contract.
 
-This is a repository-only gate. It does not mutate Android source, build,
-contact a device, or claim physical acceptance. It binds WS0-WS6 architecture
-and ensures WS7 qualification cannot regress to the rejected Launcher-owned
-appearance / native Launcher escape model.
+This gate intentionally describes the *current* Panther architecture after the
+physical rejection of Sable-over-Launcher3. It is repository-only: no Android
+workspace mutation, build, device contact, reboot, flash, or wipe occurs here.
+
+R9 architecture:
+- Settings owns the persisted global Sable appearance authority.
+- org.sableos.launcher / SableLauncher owns user-facing HOME.
+- Launcher3QuickStep is retained only as Android Quickstep/Recents substrate.
+- Sable-owned live snapshot providers admit SableLauncher, not Launcher3.
+- GrapheneOS Messaging remains the SMS/MMS substrate while Sable Messages is the
+  visible communications surface.
 """
 
 from __future__ import annotations
@@ -15,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
 failures: list[str] = []
 
 
-def read(rel: str) -> str:
+def text(rel: str) -> str:
     path = ROOT / rel
     if not path.is_file():
         failures.append(f"missing_file={rel}")
@@ -24,324 +31,310 @@ def read(rel: str) -> str:
 
 
 def require(rel: str, *needles: str) -> None:
-    text = read(rel)
+    value = text(rel)
     for needle in needles:
-        if needle not in text:
+        if needle not in value:
             failures.append(f"missing_token={rel}:{needle}")
 
 
 def forbid(rel: str, *needles: str) -> None:
-    text = read(rel)
+    value = text(rel)
     for needle in needles:
-        if needle in text:
+        if needle in value:
             failures.append(f"forbidden_token={rel}:{needle}")
 
 
-def require_absent(rel: str) -> None:
-    if (ROOT / rel).exists():
-        failures.append(f"must_be_absent={rel}")
-
-
-# WS0: rejected physical candidate + serial closure contract.
+# ---------------------------------------------------------------------------
+# Architecture record.
+# ---------------------------------------------------------------------------
 require(
-    "docs/R9_SYSTEM_COHESION_CLOSURE.md",
-    "physical R9 candidate rejected",
-    "WS1 — System-owned appearance authority",
-    "WS2 — Launcher and Quickstep ownership",
-    "WS3 — Sable Settings control center",
-    "WS4 — SystemUI and key system surfaces",
-    "WS5 — Core apps and Reader",
-    "WS6 — Residual platform and branding audit",
-    "WS7 — Integrated pre-image qualification",
-    "WS8 — Fresh Panther candidate and physical acceptance",
-)
-require(
-    "docs/R9_FINAL_UI_RUNTIME_ACCEPTANCE.md",
-    "R9_SABLE_NATIVE_LAUNCHER_ESCAPE=PASS_ABSENT",
-    "R9_SABLE_APPEARANCE_BOOT_RESTORE=PASS",
-    "R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS",
-    "R9_PHYSICAL_DAILY_DRIVER_ACCEPTANCE=PASS",
+    "docs/R9_SABLE_HOME_REPLACEMENT.md",
+    "SableLauncher",
+    "package: org.sableos.launcher",
+    "Launcher3QuickStep remains installed for R9 only as the Android",
+    "R9_LAUNCHER3_HOME_ROLE=PASS_ABSENT",
+    "Keyboard-first contract",
+    "Contacts alphabet rail",
+    "Media library navigation",
 )
 
-# WS1: one Settings-hosted system appearance authority.
+# ---------------------------------------------------------------------------
+# Global appearance authority: Settings persists and restores it; SableLauncher
+# is a client/editor, never a second authority.
+# ---------------------------------------------------------------------------
 require(
     "src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt",
     'const val AUTHORITY = "org.sableos.appearance"',
+    "rememberGlobalSableAppearance",
     "writeGlobalSableAppearance(",
-    "contentResolver.update(",
     "registerContentObserver",
-)
-require(
-    "apps/r8/android/design/src/test/java/org/sableos/design/SableDesignContractTest.kt",
-    '"org.sableos.appearance"',
-    '"org.sableos.start.appearance"',
-    "SableGlobalAppearanceContract.AUTHORITY !=",
-)
-for rel in (
-    "apps/r8/android/calculator/src/main/AndroidManifest.xml",
-    "apps/r8/android/calendar/src/main/AndroidManifest.xml",
-    "apps/r8/android/games/src/main/AndroidManifest.xml",
-    "apps/r8/android/hub/src/main/AndroidManifest.xml",
-    "apps/r8/android/media/src/main/AndroidManifest.xml",
-    "apps/r8/android/weather/src/main/AndroidManifest.xml",
-    "apps/r8/mail/apply_sable_flavor.py",
-    "apps/r8/reader/apply_sable_flavor.py",
-):
-    require(rel, "org.sableos.appearance")
-    forbid(rel, "org.sableos.start.appearance")
-
-require(
-    "apps/r8/mail/verify_sable_mail.py",
-    "org.sableos.appearance",
-    "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY=PASS_ABSENT",
-    "SABLE_MAIL_UPSTREAM_BUILD_LOGIC_MUTATION=PASS_ABSENT",
-)
-forbid(
-    "apps/r8/mail/verify_sable_mail.py",
-    '"org.sableos.start.appearance",\n        "SABLE_MAIL_GLOBAL_APPEARANCE_SOURCE"',
-)
-
-require_absent(
-    "src/android/packages/apps/SableStart/src/com/sable/start/platform/"
-    "SableAppearanceProvider.kt"
-)
-require(
-    "build/panther/sync-sablestart.sh",
-    "retired=(",
-    "src/com/sable/start/platform/SableAppearanceProvider.kt",
-    "R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED",
-    "R9_SABLESTART_GLOBAL_APPEARANCE_OWNER=SETTINGS",
-    "SABLESTART_SYNC=REFUSED_SOURCED_SCRIPT",
-)
-forbid(
-    "src/android/packages/apps/SableStart/src/com/sable/start/platform/"
-    "StartStateRepository.kt",
-    "loadAppearance(",
-    "saveAppearance(",
-    "KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE",
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
     "SableAppearanceProvider.java",
     "SableAppearanceBootReceiver.java",
     "SableAppearanceSettings.java",
-    "SettingsGateway.java",
-    "SableAppearanceSettings.class.getName(),",
-    "R9_SETTINGS_APPEARANCE_GATEWAY=PASS",
-    "R9_SETTINGS_PROVIDER_CONTENTPROVIDER_API_COMPAT=PASS",
-    "R9_SETTINGS_PROVIDER_REQUIRE_CONTEXT_COLLISION",
-    'android.permission.MODIFY_DAY_NIGHT_MODE',
-    'android:authorities="org.sableos.appearance"',
-    "createDeviceProtectedStorageContext()",
-    "LOCKED_BOOT_COMPLETED",
-    "R9_SYSTEM_APPEARANCE_BOOT_RESTORE_SOURCE=PASS",
     "SableNetworkManagerSettings.java",
-    "sable_network_manager_settings.xml",
-    "android.permission.GRANT_RUNTIME_PERMISSIONS",
-    "android.permission.REVOKE_RUNTIME_PERMISSIONS",
     "R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION",
-    "R9_SETTINGS_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT",
 )
-
-# WS2: Sable owns all HOME-facing presentation; Quickstep only escapes for
-# genuine Recents/Overview.
 require(
-    "patches/android-17-grapheneos-2026081300/r9_launcher3/"
-    "SableQuickstepLauncher.kt",
-    "readGlobalSableAppearance(",
-    "writeGlobalSableAppearance(",
-    "fun isSableSurfaceActive(): Boolean",
-    "private fun isCommittedOverviewState(state: LauncherState): Boolean",
-    "protected override fun shouldDisableBackGesture(): Boolean",
-    "isSableSurfaceActive() && canSableNavigateBack",
-    "sableView?.bringToFront()",
-    "LauncherState.ALL_APPS ->",
-    "stateManager.goToState(LauncherState.NORMAL, false)",
-    "onOpenSystemSettings = ::openSystemSettings",
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    'AUTHORITY = "org.sableos.appearance"',
+    'Arrays.asList(packages).contains("org.sableos.launcher")',
+    "Sable appearance writes are restricted to Settings and SableLauncher",
 )
 forbid(
-    "patches/android-17-grapheneos-2026081300/r9_launcher3/"
-    "SableQuickstepLauncher.kt",
-    "UiModeManager",
-    "startStateRepository.saveAppearance(",
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt",
+    "loadAppearance(",
+    "saveAppearance(",
+    "KEY_SYSTEM_NIGHT_MODE_BEFORE_OVERRIDE",
+)
+if (ROOT / "src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt").exists():
+    failures.append("retired_launcher_local_appearance_provider_present")
+
+# ---------------------------------------------------------------------------
+# Standalone Sable HOME.
+# ---------------------------------------------------------------------------
+require(
+    "src/android/packages/apps/SableStart/Android.bp",
+    'name: "sable_start_presentation_srcs"',
+    'name: "SableLauncher"',
+    'manifest: "AndroidManifest.xml"',
+    'certificate: "platform"',
+    "LauncherAppsRepository.kt",
+    "SableStartActivity.kt",
 )
 require(
-    "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py",
-    "PortraitStatesTouchController.java",
-    "NoButtonNavbarToOverviewTouchController.java",
-    "isSableSurfaceActive()",
-    "!mDidTouchStartInNavBar",
-    "PREVIOUS_CANONICAL_HOST_BLOBS",
-    "a3bf622a048d399cf4a9ffa89e3cbbdb58f1ac97",
-    "b463b823ea075af2d55d5edcc5388057c0faca8c",
-    "refresh-canonical-host",
-    "R9_LAUNCHER_COHESION_CANONICAL_HOST_REFRESH=PASS",
-    "R9_SABLE_NATIVE_ALL_APPS_TOUCH_ESCAPE=PASS_BLOCKED",
-    "R9_SABLE_HINT_STATE_PRESENTATION=PASS_COVERED_BY_SABLE",
-    "R9_SABLE_SUBSURFACE_BACK_GESTURE=PASS_ENABLED",
-    "R9_QUICKSTEP_NAVBAR_OVERVIEW_PATH=PASS_PRESERVED",
+    "src/android/packages/apps/SableStart/AndroidManifest.xml",
+    'package="org.sableos.launcher"',
+    'android:name="org.sableos.start.SableStartActivity"',
+    "android.intent.action.MAIN",
+    "android.intent.category.HOME",
+    "android.intent.category.DEFAULT",
+    'android:excludeFromRecents="true"',
+    'android:launchMode="singleTask"',
+    'android:authorities="org.sableos.appearance"',
+    'android:authorities="org.sableos.weather.snapshot"',
+    'android:authorities="org.sableos.calendar.snapshot"',
+    'android:authorities="org.sableos.hub.snapshot"',
+    'android:authorities="org.sableos.mail.snapshot"',
+    'android:authorities="org.sableos.media.snapshot"',
 )
 require(
-    "build/panther/prepare-r8-final-ui.sh",
-    "refresh-canonical-host",
-    "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING_REFRESHED",
-    "R9_LAUNCHER_COHESION=ALREADY_APPLIED_HOST_REFRESHED",
+    "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt",
+    "class SableStartActivity : ComponentActivity()",
+    "LauncherAppsRepository(this)",
+    "rememberGlobalSableAppearance()",
+    "writeGlobalSableAppearance(",
+    "onBackPressedDispatcher.addCallback(",
+    "homeGeneration.value += 1",
+    "backGeneration.value += 1",
+    "LiveSurfaceRepository.OBSERVED_URIS.forEach",
+    "contentResolver.registerContentObserver(",
+)
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt",
+    "QuickstepLauncher",
+    "LauncherState",
+    "RecentsView",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
+    "LauncherApps::class.java",
+    "getActivityList(null, user)",
+    "startMainActivity(",
+    "startAppDetailsActivity(",
+    "PackageManager.GET_PERMISSIONS",
+    "PackageInfo.REQUESTED_PERMISSION_GRANTED",
+    "createContextAsUser(user, 0)",
+    'GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
+    '"permissions · none sensitive"',
 )
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
-    "SableControlShortcut(",
-    "SableStartDestination.Appearance",
     "private fun AppsScreen(",
     "private fun SearchScreen(",
     "SableStartDestination.Peek",
     "text = app.privacySummary",
+    "rememberLazyListState()",
+    "buildRailRows(apps)",
 )
 
-# WS3/WS4: Settings + SystemUI consume the same system contract while existing
-# Android/GrapheneOS enforcement remains underneath.
+# ---------------------------------------------------------------------------
+# Quickstep is recents-only, not a Sable host and not a HOME candidate.
+# ---------------------------------------------------------------------------
 require(
-    "patches/android-17-grapheneos-2026081300/apply_ui5a_settings.py",
-    "SABLE_UI5A_SENSITIVE_SUMMARY=EFFECTIVE_PERMISSION_GRANTS_ONLY",
+    "patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py",
+    'LAUNCHER3_HEAD = "e5fde8f4368539554b07ee136abd27bc7b4284c1"',
+    "restore_pinned_scope(",
+    "host.unlink()",
+    'android:exported="false"',
+    "new ComponentName(context, QuickstepLauncher.class)",
+    "Private QuickstepLauncher activity missing",
+    "android.intent.action.QUICKSTEP_SERVICE",
+    "com.android.quickstep.TouchInteractionService",
+    "com.android.quickstep.RecentsActivity",
+    "R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT",
+    "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
+    "R9_QUICKSTEP_SERVICE=PASS_RETAINED",
+    "R9_FALLBACK_RECENTS=PASS_RETAINED",
+    "R9_QUICKSTEP_RECENTS_ONLY=PASS",
+    "R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS",
 )
-require(
-    "patches/android-17-grapheneos-2026081300/apply_ui5b_app_security.py",
-    "SABLE_UI5B_MUTATING_CONTROLS=NONE",
-)
-require(
-    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableNetworkManagerSettings.java",
-    "Manifest.permission.INTERNET",
-    "PermissionManager",
-    "grantRuntimePermission(",
-    "revokeRuntimePermission(",
-    "FLAG_PERMISSION_SYSTEM_FIXED",
-    "FLAG_PERMISSION_POLICY_FIXED",
-)
-require(
-    "patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py",
-    "--allow-framework-untracked",
-    "--allow-framework-modified",
-    "--allow-settings-untracked",
-    "--allow-settings-modified",
-    "allowed_later_framework_untracked",
-    "allowed_later_framework_modified",
-    "repair_known_setup_strings_alias(",
-)
-require(
-    "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
-    "content://org.sableos.appearance/appearance",
-    "rememberSableSystemAccent",
-    "R9_SYSTEMUI_SABLE_ACCENT_PROVIDER=PASS",
-    "R9_SYSTEMUI_INTERACTION_SEMANTICS_PRESERVED=PASS",
-)
-
-# WS5: first-party/core appearance, with explicit Reader page bridge.
-require(
-    "apps/r8/reader/apply_sable_flavor.py",
-    "val effectiveEpubPreferences =",
-    "epubPreferences.theme == Theme.SEPIA",
-    "isEink -> epubPreferences.copy(theme = Theme.LIGHT)",
-    "theme = if (sableDark) Theme.DARK else Theme.LIGHT",
-    "submitPreferences(effectiveEpubPreferences)",
-    "R9_READER_READIUM_APPEARANCE_BRIDGE=PASS",
-    "R9_READER_READING_OVERRIDES=SEPIA_EINK_ONLY",
-    "R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL",
-    "R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID",
-    "SABLE_READER_WARNING_CLEANUP=PASS",
-    "SABLE_READER_HILT_VIEWMODEL_MIGRATION=PASS",
-    'ndkVersion = "30.0.16248370"',
-)
-require(
-    "build/gates/r9-physical-remediation-contract.py",
-    "R9_READER_READIUM_APPEARANCE_BRIDGE=PASS",
-    "R9_READER_EXPLICIT_SEPIA_EINK_OVERRIDES=PASS",
-    "R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL",
-    "R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID",
-)
-
-# WS6: product-shell classification is explicit and does not use unsafe global
-# rebranding of truthful upstream implementation identifiers.
-require(
-    "docs/R9_NETWORK_MANAGER.md",
-    "android.permission.INTERNET",
-    "grantRuntimePermission(package, INTERNET, user)",
-    "revokeRuntimePermission(package, INTERNET, user, reason)",
-    "R9_SABLE_NETWORK_MANAGER_UI=PASS",
-    "Transport-specific Mobile/WLAN acceptance is explicitly **not** part of R9.",
-)
-require(
-    "docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md",
-    "SABLE_OWNED",
-    "SABLE_PRESENTED_ANDROID",
-    "INTENTIONALLY_UPSTREAM",
-    "PermissionController",
-    "Package installer / package verifier flows",
-    "Chooser / Sharesheet",
-    "Accounts / credential provider flows",
-    "Accessibility service flows",
-    "R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS",
-)
-require(
-    "patches/android-17-grapheneos-2026081300/apply_sable_branding.py",
-    "Internal GrapheneOS package/API identifiers",
-    "Welcome to SableOS",
-    "SableOS icon",
-    "SableOS will remain installed.",
-)
-require(
-    "tests/systemui/device/r9_identity_audit.sh",
-    "R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY",
-    "android:string/android_system_label",
-    "android:string/adb_active_notification_title",
-)
-require(
-    "tests/systemui/device/r9_branding_surface_audit.sh",
-    "DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY",
-    "SABLE_OWNED",
-    "SABLE_PRESENTED_ANDROID",
-    "R9_VISIBLE_GRAPHENEOS_PRODUCT_COPY",
-    "R9_BRANDING_SURFACE_AUDIT=PASS_CAPTURED",
-)
-
-# WS7: canonical preparation/qualification must carry the cohesion layers.
 require(
     "build/panther/prepare-r8-final-ui.sh",
-    'SETTINGS_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py"',
-    'LAUNCHER_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"',
-    "UI5C_SYSTEMUI_LATER_ARGS=(",
-    "UI5C_SETTINGS_LATER_ARGS=(",
-    "verify_ui5c_with_systemui_later",
-    "verify_ui5c_with_full_r9_later",
-    "repair_ui5c_known_with_systemui_later",
-    "repair_ui5c_known_with_full_r9_later",
-    "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED",
-    "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_SYSTEMUI_LATER_DIRT",
-    "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_R9_LATER_DIRT",
-    "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_LATER_DIRT_RECOGNIZED",
-    'echo "===== R9 SETTINGS / APPEARANCE COHESION ====="',
-    'python3 "$SETTINGS_COHERENCE" --source "$WS" verify',
-    'python3 "$SETTINGS_COHERENCE" --source "$WS" apply',
-    'echo "===== LAUNCHER3 HOME + QUICKSTEP COHESION ====="',
-    'R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING',
-    'R9_LAUNCHER_COHESION=ALREADY_APPLIED',
-    'R9_LAUNCHER3_FOUNDATION=PASS_EXISTING',
-    'R9_LAUNCHER3_FOUNDATION=APPLIED',
-    'R9_LAUNCHER3_HOME_OWNERSHIP=PASS',
-    'R9_LAUNCHER_COHESION=APPLIED',
-    'R9_LAUNCHER_COHESION=PASS',
+    'QUICKSTEP_RECENTS_ONLY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"',
+    "===== STANDALONE SABLE HOME SYNC =====",
+    "R9_SABLELAUNCHER_STANDALONE_SYNC=PASS",
+    "===== QUICKSTEP RECENTS-ONLY SUBSTRATE =====",
+    'python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" apply',
+    'python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify',
+    "R9_SABLELAUNCHER_HOME_OWNERSHIP=PASS_SOURCE",
+    "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
+)
+forbid(
+    "build/panther/prepare-r8-final-ui.sh",
+    "LAUNCHER_COHERENCE=",
+    'python3 "$LAUNCHER_COHERENCE"',
+    "SableQuickstepLauncher",
+)
+
+# ---------------------------------------------------------------------------
+# Product and target-files ownership.
+# ---------------------------------------------------------------------------
+require(
+    "product/r8/panther/r8-product.mk",
+    "SableLauncher",
+    "SableMedia",
+    "SableReader",
+    "SableHub",
+    "SableMail",
+    "SableWeather",
+    "SableCalendar",
 )
 require(
-    "build/gates/r8-final-product-composition.sh",
-    "--allow-settings-untracked",
-    "--allow-settings-modified",
-    "R9_SETTINGS_COHESION_SOURCE=PASS",
-    "R9_LAUNCHER_COHESION_SOURCE=PASS",
+    "build/gates/r8-final-target-files.sh",
+    'matches("SableLauncher.apk")',
+    "[SableLauncher.apk]=org.sableos.launcher",
+    "R9_SABLELAUNCHER_HOME_TARGET_FILES=PASS_PRESENT",
+    "R9_LAUNCHER3_RECENTS_TARGET_FILES=PASS_PRESENT",
+    "R9_LEGACY_SABLESTART_TARGET_FILES=PASS_ABSENT",
 )
 require(
-    "build/check-repo-layout.sh",
-    "R9_LAUNCHER_APPEARANCE_PROVIDER=PASS_RETIRED",
-    "R9_SYSTEM_COHESION_LAYOUT=PASS",
-    "apply_r9_settings_cohesion.py",
-    "apply_r9_launcher_cohesion.py",
+    "build/gates/r8-no-stale-product-code.sh",
+    "R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE=PASS",
+)
+
+# ---------------------------------------------------------------------------
+# Live snapshot privacy boundary moves from Launcher3 to SableLauncher.
+# ---------------------------------------------------------------------------
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
+    'packageName == "org.sableos.launcher"',
+)
+for provider in (
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/CalendarSnapshotProvider.kt",
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubSnapshotProvider.kt",
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaSnapshotProvider.kt",
+):
+    require(
+        provider,
+        "Binder.getCallingUid()",
+        "getPackagesForUid(callingUid)",
+        'if ("org.sableos.launcher" !in packages)',
+        "SecurityException(",
+    )
+require(
+    "apps/r8/mail/apply_sable_flavor.py",
+    "SableMailSnapshotProvider.kt",
+    'if ("org.sableos.launcher" !in packages)',
+    "Sable live snapshot is restricted to SableLauncher.",
+)
+
+# ---------------------------------------------------------------------------
+# User-observed physical regressions: source contracts.
+# ---------------------------------------------------------------------------
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py",
+    "Theme.AppCompat.DayNight.NoActionBar",
+    "?android:attr/textColorPrimary",
+    "?android:attr/textColorSecondary",
+    "R9_CLOCK_DAY_NIGHT_PRESENTATION=PASS_SEMANTIC_TEXT_AND_BACKGROUND",
+    'parent="android:Theme.Holo.Light"',
+    "values-night/styles.xml",
+    "R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME",
+    "R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK",
+)
+require(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL",
+    "R9_READER_SETTINGS_GLOBAL_APPEARANCE=PASS_NO_OFFLINE_LIGHT_OVERRIDE",
+    "R9_READER_LOCAL_LIGHT_DARK_CONTROLS=PASS_RETIRED_FOR_SABLE",
+    "R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID",
+    "R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS",
+    "distinctBy { it.bookHash }",
+    "state.isOfflineMode && !BuildConfig.SABLE_PRODUCT",
+    "Sepia",
+    "ThemeMode.E_INK",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
+    "getListPositionForSection",
+    "installSableAlphabetRail",
+    "scrollToSableSection",
+    "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
+    "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
+    "private fun MediaAlphabetRail(",
+    "buildMediaSectionTargets(",
+    "LibraryPivot.Songs -> songs.map { it.title }",
+    "LibraryPivot.Artists -> artistGroups.map { it.first }",
+    "LibraryPivot.Albums -> albumGroups.map { it.first }",
+    "LibraryPivot.Favorites -> favorites.map { it.title }",
+    "HorizontalDivider(",
+    'text = if (favorite) "★" else "☆"',
+    'text = "▶"',
+)
+forbid(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
+    'text = "×"',
+)
+
+# ---------------------------------------------------------------------------
+# Physical acceptance now proves standalone HOME and fallback Recents.
+# ---------------------------------------------------------------------------
+require(
+    "tests/launcher3/device/r9_home_acceptance.sh",
+    'EXPECTED_PACKAGE="org.sableos.launcher"',
+    'QUICKSTEP_PACKAGE="com.android.launcher3"',
+    "LAUNCHER3_HOME_ROLE_ABSENT",
+    "LAUNCHER3_HOME_ELIGIBILITY_ABSENT",
+    "QUICKSTEP_SERVICE_PRESENT",
+    "QUICKSTEP_FALLBACK_RECENTS_PRESERVED",
+    "SABLE_SUBSURFACE_BACK_GESTURES",
+    "SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE",
+    "SABLE_FALLBACK_RECENTS_GESTURE",
+    "SABLE_STATUS_SHADE_GESTURE_STABILITY",
+    "R9_SABLE_HOME_DEVICE_ACCEPTANCE",
+)
+
+# ---------------------------------------------------------------------------
+# Canonical pre-full qualification must build both Sable HOME and Quickstep.
+# ---------------------------------------------------------------------------
+require(
+    "build/panther/build-r8-final-ui.sh",
+    "SableLauncher Launcher3QuickStep",
+    "R9_SABLELAUNCHER_MODULE_BUILD=PASS",
+    "R9_QUICKSTEP_RECENTS_MODULE_BUILD=PASS",
+    "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS",
+)
+require(
+    "build/panther/qualify-r9-physical-ux.sh",
+    "FULL_TARGET_FILES_BUILD_AUTHORIZED=NO",
+    "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS",
+    "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_MODULE_QUALIFICATION",
 )
 
 if failures:
@@ -350,30 +343,16 @@ if failures:
         print(f"FAILURE={failure}")
     raise SystemExit(1)
 
-print("R9_WS0_REJECTED_CANDIDATE_CONTRACT=PASS")
 print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
-print("R9_DESIGN_APPEARANCE_AUTHORITY_TEST=PASS_CURRENT_AND_LEGACY_REJECTED")
-print("R9_LAUNCHER_GLOBAL_APPEARANCE_OWNERSHIP=PASS_RETIRED")
-print("R9_SABLESTART_SYNC_APPEARANCE_PROVIDER=PASS_RETIRED")
-print("R9_SABLE_NATIVE_LAUNCHER_ESCAPE=PASS_SOURCE_BLOCKED")
-print("R9_SABLE_HINT_STATE_PRESENTATION=PASS_SOURCE_COVERED")
-print("R9_SABLE_SUBSURFACE_BACK_GESTURE=PASS_SOURCE_ENABLED")
-print("R9_SABLE_SETTINGS_TOP_LEVEL=PASS_SOURCE")
-print("R9_SABLE_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION_SOURCE")
-print("R9_SABLE_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT")
-print("R9_SYSTEMUI_APPEARANCE=PASS_SOURCE")
-print("R9_READER_APPEARANCE=PASS_SOURCE")
-print("R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL")
-print("R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID")
-print("R9_READER_WARNING_CLEANUP=PASS_SOURCE")
-print("R9_MAIL_APPEARANCE_VERIFIER=PASS_SETTINGS_AUTHORITY")
-print("R9_PLATFORM_SURFACE_CLASSIFICATION=PASS")
-print("R9_SABLE_OWNED_BRANDING_CONTRACT=PASS")
-print("R9_INTENTIONAL_UPSTREAM_BOUNDARY=PASS")
-print("R9_WS6_SOURCE_AUDIT=PASS")
-print("R9_WS7_PREPARE_STRUCTURE=PASS")
-print("R9_WS7_LAUNCHER_FOUNDATION_RESUME=PASS_VERIFY_BEFORE_REPLAY")
-print("R9_WS7_LAUNCHER_PREPARE_CONTRACT=PASS_SEMANTIC_MARKERS")
-print("R9_WS7_INTEGRATION_CONTRACT=PASS")
-print("R9_PHYSICAL_ACCEPTANCE=REQUIRED_FRESH_PANTHER")
+print("R9_SABLELAUNCHER_HOME_ARCHITECTURE=PASS_STANDALONE")
+print("R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT_SOURCE")
+print("R9_QUICKSTEP_RECENTS_ONLY_ARCHITECTURE=PASS")
+print("R9_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER")
+print("R9_CLOCK_DAY_NIGHT_CONTRACT=PASS_SEMANTIC")
+print("R9_PHOTOS_DAY_NIGHT_CONTRACT=PASS_QUALIFIED")
+print("R9_CAMERA_PRESENTATION_CONTRACT=PASS_EXPLICIT_DARK_UPSTREAM_BOUNDARY")
+print("R9_READER_APPEARANCE_CONTRACT=PASS_SABLEOS_GLOBAL")
+print("R9_READER_LIBRARY_CONTRACT=PASS_ACTUAL_BOOKS_CONTINUOUS")
+print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
+print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_SYSTEM_COHESION_CONTRACT=PASS")
