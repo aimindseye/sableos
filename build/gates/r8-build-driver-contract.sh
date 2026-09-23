@@ -161,13 +161,37 @@ python3 "$inventory" --self-test
 echo "R9_BUILD_DRIVER_TEN_APK_INVENTORY=PASS"
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
 
-grep -Fq 'name: "sable_start_presentation_srcs"' "$start_bp"
-! grep -Fq 'android_app {' "$start_bp"
-! grep -Fq 'rust_ffi_shared {' "$start_bp"
-grep -Fq 'Launcher3QuickStep.apk' "$target_files_gate"
-grep -Fq 'R9_SABLESTART_TARGET=PASS_ABSENT' "$target_files_gate"
+grep -Fq 'name: "sable_start_presentation_srcs"' "$start_bp" || {
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_PRESENTATION_FILEGROUP"
+    exit 1
+}
+grep -Fq 'android_app {' "$start_bp" || {
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_ANDROID_APP_MISSING"
+    exit 1
+}
+grep -Fq 'name: "SableLauncher"' "$start_bp" || {
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_SABLELAUNCHER_MODULE_MISSING"
+    exit 1
+}
+if grep -Fq 'rust_ffi_shared {' "$start_bp"; then
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_STALE_RUST_FFI"
+    exit 1
+fi
+grep -Fq 'Launcher3QuickStep.apk' "$target_files_gate" || {
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_QUICKSTEP_TARGET_POLICY"
+    exit 1
+}
+grep -Fq 'R9_SABLELAUNCHER_TARGET=PASS' "$target_files_gate" || {
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_SABLELAUNCHER_TARGET_POLICY"
+    exit 1
+}
+grep -Fq 'R9_LEGACY_SABLESTART_TARGET=PASS_ABSENT' "$target_files_gate" || {
+    echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_LEGACY_SABLESTART_TARGET_POLICY"
+    exit 1
+}
 
-echo "R9_LAUNCHER3_HOME_TARGET_POLICY_CONTRACT=PASS"
+echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=PASS"
+echo "R9_SABLE_HOME_TARGET_POLICY_CONTRACT=PASS"
 
 
 grep -Fq 'include(":sablestart-presentation-check")' "$android_settings"
@@ -189,17 +213,39 @@ grep -Fq 'hosted GitHub CI remains executable' "$ci_policy"
 echo "R9_SABLESTART_PRESENTATION_GRADLE_COMPILE_CONTRACT=PASS"
 echo "R9_SABLESTART_PRESENTATION_LINT_CONTRACT=PASS"
 
-grep -Fq '===== LAUNCHER3QUICKSTEP HOME PREFLIGHT =====' "$finalbuild"
-grep -Fq 'launcher3-home-preflight.log' "$finalbuild"
-grep -Fq 'R9_LAUNCHER3_HOME_PREFLIGHT=PASS' "$finalbuild"
-grep -Fq 'R8_FINAL_BUILD=FAIL_LAUNCHER3_HOME_PREFLIGHT' "$finalbuild"
-! grep -Fq 'm -j"$JOBS" SableStart' "$finalbuild"
+grep -Fq '===== SABLE HOME + QUICKSTEP RECENTS PREFLIGHT =====' "$finalbuild" || {
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_HEADER"
+    exit 1
+}
+grep -Fq 'sable-home-quickstep-preflight.log' "$finalbuild" || {
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_LOG"
+    exit 1
+}
+grep -Fq 'm -j"$JOBS" SableLauncher Launcher3QuickStep' "$finalbuild" || {
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_MODULE_PAIR"
+    exit 1
+}
+grep -Fq 'R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS' "$finalbuild" || {
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_PASS_MARKER"
+    exit 1
+}
+grep -Fq 'R8_FINAL_BUILD=FAIL_SABLE_HOME_QUICKSTEP_PREFLIGHT' "$finalbuild" || {
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_FAIL_MARKER"
+    exit 1
+}
+if grep -Fq 'm -j"$JOBS" SableStart' "$finalbuild"; then
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_LEGACY_SABLESTART_BUILD"
+    exit 1
+fi
 
-preflight_line="$(grep -nF '===== LAUNCHER3QUICKSTEP HOME PREFLIGHT =====' "$finalbuild" | head -n1 | cut -d: -f1)"
+preflight_line="$(grep -nF '===== SABLE HOME + QUICKSTEP RECENTS PREFLIGHT =====' "$finalbuild" | head -n1 | cut -d: -f1)"
 combined_line="$(grep -nF '===== COMBINED UI MODULE COMPILE GATE =====' "$finalbuild" | head -n1 | cut -d: -f1)"
-[[ -n "$preflight_line" && -n "$combined_line" && "$preflight_line" -lt "$combined_line" ]]
+if [[ -z "$preflight_line" || -z "$combined_line" || "$preflight_line" -ge "$combined_line" ]]; then
+    echo "R9_BUILD_DRIVER_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=FAIL_ORDER"
+    exit 1
+fi
 
-echo "R9_LAUNCHER3_HOME_PREFLIGHT_CONTRACT=PASS"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=PASS"
 
 grep -Fq 'r9-launcher-visual-acceptance.py' "$ROOT/build/gates/r8-final-product-composition.sh"
 grep -Fq 'R9_L6_VISUAL_REVIEW_STATUS=WAIVED_MAC_DEFERRED_PHYSICAL_PANTHER' "$visual_acceptance"
@@ -231,9 +277,20 @@ echo "R9_LAUNCHER_VISUAL_ACCEPTANCE_EXECUTION=DEFERRED_RELEASE_PROFILE"
 grep -Fq 'reset · follow system + Sable Blue' "$ROOT/build/gates/r8-final-product-composition.sh"
 grep -Fq 'R8_A_SHARED_DESIGN_STALE_APPEARANCE_COPY' "$ROOT/build/gates/r8-final-product-composition.sh"
 grep -Fq 'R9-L3  Sable Search / Command' "$ROOT/build/gates/r9-sablestart-design-contract.py"
-grep -Fq 'HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md"
-grep -Fq 'HOME_ROLE_HOLDER=com.android.launcher3' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md"
+grep -Fq 'HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md" || {
+    echo "R9_BUILD_DRIVER_HOME_DOC_CONTRACT=FAIL_RESOLVER"
+    exit 1
+}
+grep -Fq 'HOME_ROLE_HOLDER=org.sableos.launcher' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md" || {
+    echo "R9_BUILD_DRIVER_HOME_DOC_CONTRACT=FAIL_ROLE_HOLDER"
+    exit 1
+}
+grep -Fq 'LAUNCHER3_HOME_ROLE_ABSENT=PASS' "$ROOT/docs/R9_SABLESTART_LAUNCHER_DESIGN.md" || {
+    echo "R9_BUILD_DRIVER_HOME_DOC_CONTRACT=FAIL_LAUNCHER3_HOME_ABSENCE"
+    exit 1
+}
 
+echo "R9_BUILD_DRIVER_HOME_DOC_CONTRACT=PASS"
 echo "R9_SHARED_DESIGN_ACCEPTED_COPY_CONTRACT=PASS"
 
 
