@@ -103,6 +103,37 @@ if ! git -C "$REPO" diff --quiet || ! git -C "$REPO" diff --cached --quiet; then
 fi
 
 if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
+    echo "R9_SOURCE_BOUND_FULL_CI=NOT_REQUIRED_MODULE_QUALIFICATION"
+else
+    git_dir="$(git -C "$REPO" rev-parse --git-dir)"
+    [[ "$git_dir" = /* ]] || git_dir="$REPO/$git_dir"
+    FULL_CI_ATTESTATION="$git_dir/sable-local-ci/$EXPECTED_SOURCE_COMMIT.pass"
+
+    [[ -f "$FULL_CI_ATTESTATION" ]] || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_ATTESTATION_MISSING path=$FULL_CI_ATTESTATION"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    grep -Fxq 'SABLE_LOCAL_CI=PASS' "$FULL_CI_ATTESTATION" || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_PASS_MARKER"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    grep -Fxq 'PROFILE=full' "$FULL_CI_ATTESTATION" || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_PROFILE_REQUIRED_FULL"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    grep -Fxq "SOURCE_COMMIT=$EXPECTED_SOURCE_COMMIT" "$FULL_CI_ATTESTATION" || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_SOURCE_BINDING"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    echo "R9_SOURCE_BOUND_FULL_CI=PASS"
+    echo "R9_SOURCE_BOUND_FULL_CI_ATTESTATION=$FULL_CI_ATTESTATION"
+fi
+
+if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
     if [[ ! -d "$R9_FULL_OUT_ABS/target/product/panther" ]]; then
         echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_PRODUCT_TREE path=$R9_FULL_OUT_ABS"
         echo "R8_RELEASE_CANDIDATE=FAIL"
