@@ -1893,6 +1893,63 @@ def apply_tree(source: pathlib.Path) -> None:
 
 
 def self_test() -> None:
+    with tempfile.TemporaryDirectory(prefix="r9_launcher3_foundation_home_") as raw:
+        source = pathlib.Path(raw)
+        start_root = source / "packages/apps/SableStart"
+        design_root = source / "packages/apps/SableDesign"
+        (start_root / "res/values").mkdir(parents=True)
+        (start_root / "src/com/sable/start/platform").mkdir(parents=True)
+        design_root.mkdir(parents=True)
+
+        (start_root / "Android.bp").write_text(
+            '''filegroup {
+    name: "sable_start_presentation_srcs",
+}
+android_app {
+    name: "SableLauncher",
+    manifest: "AndroidManifest.xml",
+    srcs: [
+        ":sable_start_presentation_srcs",
+        ":sable_design_shared_srcs",
+    ],
+}
+''',
+            encoding="utf-8",
+        )
+        (start_root / "AndroidManifest.xml").write_text(
+            '''<manifest package="org.sableos.launcher">
+    <application>
+        <activity>
+            <intent-filter>
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+''',
+            encoding="utf-8",
+        )
+        (start_root / "res/values/strings.xml").write_text(
+            "<resources />\n",
+            encoding="utf-8",
+        )
+        (start_root / "src/com/sable/start/SableStartActivity.kt").write_text(
+            "package org.sableos.start\n",
+            encoding="utf-8",
+        )
+        (
+            start_root
+            / "src/com/sable/start/platform/LauncherAppsRepository.kt"
+        ).write_text(
+            "package org.sableos.start.platform\n",
+            encoding="utf-8",
+        )
+        (design_root / "Android.bp").write_text(
+            'filegroup {\n    name: "sable_design_shared_srcs",\n}\n',
+            encoding="utf-8",
+        )
+        require_workspace_sources(source)
+
     bp = '''prefix
 android_library {
     name: "Launcher3QuickStepLib",
