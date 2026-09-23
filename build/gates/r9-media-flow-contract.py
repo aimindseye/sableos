@@ -46,6 +46,91 @@ require(
     "MediaScreenActions(",
 )
 
+# Large-library safety: the two physical ANRs were main-thread Compose
+# saturation failures. Queue/playlist rendering must stay lazy, library indexing
+# must stay off main, playback progress ticks must not invalidate browse screens,
+# and full libraries must never be serialized through Binder Intent extras.
+require(
+    f"{MEDIA_KT}/MediaScreen.kt",
+    "produceState<MediaCollectionIndex?>",
+    "withContext(Dispatchers.Default)",
+    "buildMediaCollectionIndex(",
+    "MediaCollectionIndex.Empty",
+    "count = songs.size",
+    "count = artistGroups.size",
+    "count = albumGroups.size",
+    "upNextCount = playback.upNextCount()",
+)
+require(
+    f"{MEDIA_KT}/MediaC2Screens.kt",
+    "internal fun QueueScreen(",
+    "internal fun PlaylistEditorScreen(",
+    "LazyColumn(",
+    "count = upcomingCount",
+    "items = localItems",
+)
+forbid(
+    f"{MEDIA_KT}/MediaC2Screens.kt",
+    "upcomingItems.forEachIndexed",
+    "localItems.forEach { item ->",
+)
+require(
+    f"{MEDIA_KT}/PlaybackController.kt",
+    "progressUpdatesEnabled",
+    "fun setProgressUpdatesEnabled(enabled: Boolean)",
+    "if (closed || !progressUpdatesEnabled)",
+)
+forbid(
+    f"{MEDIA_KT}/PlaybackController.kt",
+    "handler.post(ticker)",
+)
+require(
+    f"{MEDIA_KT}/MediaApp.kt",
+    "LaunchedEffect(localAudioRepository, libraryStateRepository)",
+    "localLibraryLoading",
+    "withContext(Dispatchers.IO)",
+    "playbackController.setProgressUpdatesEnabled(",
+    "destination == MediaDestination.NowPlaying",
+)
+require(
+    f"{MEDIA_KT}/PlaybackQueueRequestStore.kt",
+    "AtomicReference<PlaybackQueueRequest?>",
+    "fun publish(",
+    "fun consume(token: String)",
+    "items = items",
+)
+require(
+    f"{MEDIA_KT}/MainActivity.kt",
+    "PlaybackQueueRequestStore.publish(",
+    "PlaybackService.EXTRA_QUEUE_TOKEN",
+)
+forbid(
+    f"{MEDIA_KT}/MainActivity.kt",
+    "putStringArrayListExtra",
+    "PlaybackService.EXTRA_URIS",
+    "PlaybackService.EXTRA_TITLES",
+    "PlaybackService.EXTRA_ARTISTS",
+)
+require(
+    f"{MEDIA_KT}/PlaybackService.kt",
+    "PlaybackQueueRequestStore::consume",
+    "serviceScope.launch",
+    "Dispatchers.Default",
+    "withContext(Dispatchers.Main.immediate)",
+    "EXTRA_QUEUE_TOKEN",
+)
+forbid(
+    f"{MEDIA_KT}/PlaybackService.kt",
+    "EXTRA_URIS",
+    "EXTRA_TITLES",
+    "EXTRA_ARTISTS",
+    "EXTRA_START_INDEX",
+)
+require(
+    f"{MEDIA_KT}/AudioFolderScanner.kt",
+    "MAX_AUDIO_FILES = 2_000",
+)
+
 require(
     f"{MEDIA_KT}/PodcastScreen.kt",
     'Latest("latest")',
@@ -246,6 +331,13 @@ if failures:
 print("R9_MEDIA_FLOW_PANORAMA_NAVIGATION=PASS")
 print("R9_MEDIA_FLOW_SINGLE_MEDIA3_SESSION=PASS")
 print("R9_MEDIA_FLOW_SHARED_UP_NEXT=PASS")
+print("R9_MEDIA_LARGE_LIBRARY_LAZY_RENDERING=PASS")
+print("R9_MEDIA_LARGE_LIBRARY_INDEX_OFF_MAIN=PASS")
+print("R9_MEDIA_PROGRESS_RECOMPOSITION=PASS_NOW_PLAYING_ONLY")
+print("R9_MEDIA_QUEUE_BINDER_PAYLOAD=PASS_TOKEN_ONLY")
+print("R9_MEDIA_QUEUE_BUILD=PASS_BACKGROUND")
+print("R9_MEDIA_LIBRARY_STARTUP_LOAD=PASS_OFF_MAIN")
+print("R9_MEDIA_FOLDER_IMPORT_BOUND=PASS_2000")
 print("R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS")
 print("R9_PODCAST_MANUAL_REFRESH=PASS")
 print("R9_PODCAST_FEED_SIZE_BOUND=PASS")
