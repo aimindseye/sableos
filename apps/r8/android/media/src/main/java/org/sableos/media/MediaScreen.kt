@@ -776,7 +776,7 @@ private fun CollectionScreen(
                         key = { index -> songs[index].uri },
                     ) { index ->
                         val item = songs[index]
-                        val sourceIndex = indexByUri[item.uri] ?: return@items
+                        val sourceIndex = indexByUri.getValue(item.uri)
                         LocalTrackRow(
                             item = item,
                             accent = accentFor(sourceIndex),
@@ -836,7 +836,7 @@ private fun CollectionScreen(
                             key = { index -> favorites[index].uri },
                         ) { favoriteIndex ->
                             val item = favorites[favoriteIndex]
-                            val sourceIndex = indexByUri[item.uri] ?: 0
+                            val sourceIndex = indexByUri.getValue(item.uri)
                             LocalTrackRow(
                                 item = item,
                                 accent = accentFor(sourceIndex),
@@ -905,8 +905,8 @@ private fun CollectionScreen(
                 onSelect = { target ->
                     activeSection = target.letter
                     scope.launch {
-                        // Seven fixed collection items precede the active library rows.
-                        listState.animateScrollToItem(7 + target.itemIndex)
+                        // Six fixed collection items precede the active library rows.
+                        listState.animateScrollToItem(6 + target.itemIndex)
                     }
                 },
             )
