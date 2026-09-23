@@ -80,8 +80,13 @@ require(
     "R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION",
 )
 require(
-    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
     'AUTHORITY = "org.sableos.appearance"',
+    'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)',
+)
+require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    "SableAppearanceContract.CONTENT_URI",
     'Arrays.asList(packages).contains("org.sableos.launcher")',
     "Sable appearance writes are restricted to Settings and SableLauncher",
 )
