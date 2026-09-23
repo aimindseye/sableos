@@ -47,6 +47,12 @@ Text Reader is independently flavored, tested, linted, assembled and APK-verifie
 as `org.sableos.textreader`. It is the pre-image source/build/security CI
 profile and does not authorize a Panther image build by itself.
 
+STATIC no-stale checks run in pre-staging mode. They still reject retired source,
+product modules and legacy workspace trees, but they do not require the existing
+Android workspace to already contain the APK inventory produced by the source
+being qualified. Exact `vendor/sable` inventory is re-enabled after the
+release-candidate path stages the source-bound bundle.
+
 The source-bound Launcher visual acceptance seal is intentionally not part of
 `full`. Visual acceptance is an image-authorization gate and is required by the
 `release` profile and the full Panther product-composition path. This allows
