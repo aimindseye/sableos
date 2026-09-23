@@ -43,6 +43,7 @@ internal class PlaybackController(
     private var controller: MediaController? = null
     private var cachedQueue: List<QueueItemUiState> = emptyList()
     private var closed = false
+    private var progressUpdatesEnabled = false
 
     private val listener =
         object : Player.Listener {
@@ -61,7 +62,7 @@ internal class PlaybackController(
     private val ticker =
         object : Runnable {
             override fun run() {
-                if (closed) {
+                if (closed || !progressUpdatesEnabled) {
                     return
                 }
 
@@ -178,6 +179,19 @@ internal class PlaybackController(
         player.removeMediaItem(index)
     }
 
+    fun setProgressUpdatesEnabled(enabled: Boolean) {
+        if (closed || progressUpdatesEnabled == enabled) {
+            return
+        }
+
+        progressUpdatesEnabled = enabled
+        handler.removeCallbacks(ticker)
+        if (enabled) {
+            publishState(refreshQueue = false)
+            handler.postDelayed(ticker, TICK_INTERVAL_MS)
+        }
+    }
+
     fun close() {
         closed = true
         handler.removeCallbacksAndMessages(null)
@@ -196,7 +210,9 @@ internal class PlaybackController(
             controller = resolved
             resolved.addListener(listener)
             publishState(refreshQueue = true)
-            handler.post(ticker)
+            if (progressUpdatesEnabled) {
+                handler.postDelayed(ticker, TICK_INTERVAL_MS)
+            }
         }
     }
 
