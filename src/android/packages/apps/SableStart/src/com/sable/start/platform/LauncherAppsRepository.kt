@@ -56,7 +56,7 @@ class LauncherAppsRepository(
                     .filter { it.label.isNotEmpty() }
                     .toList()
             }
-            .distinctBy(AppEntry::stableKey)
+            .distinctBy { entry -> entry.stableKey() }
             .sortedWith(
                 compareBy<AppEntry> {
                     it.label.lowercase(locale)
