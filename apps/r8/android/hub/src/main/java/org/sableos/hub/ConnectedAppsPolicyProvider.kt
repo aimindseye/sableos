@@ -45,8 +45,7 @@ class ConnectedAppsPolicyProvider : ContentProvider() {
         }
     }
 
-    override fun getType(uri: Uri): String =
-        "vnd.android.cursor.dir/vnd.org.sableos.hub.hidden-app"
+    override fun getType(uri: Uri): String = "vnd.android.cursor.dir/vnd.org.sableos.hub.hidden-app"
 
     override fun insert(
         uri: Uri,
