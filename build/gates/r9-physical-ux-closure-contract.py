@@ -189,6 +189,28 @@ require(
     "R9_VANADIUM_PRESENTATION_BOUNDARY=PASS_UPSTREAM_SECURITY_BUILD",
 )
 
+# Sable-owned Network Manager copy must describe the platform capability
+# without presenting the upstream OS as a competing product identity.
+require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "Uses the system Network permission.",
+    "current platform permission",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "GrapheneOS",
+)
+
+# Messages People uses the already sorted local ContactsProvider snapshot and
+# a bounded lazy-list alphabet rail; it does not introduce a second contact DB.
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "PeopleAlphabetRail(",
+    "buildPeopleAlphabetTargets(",
+    "rememberLazyListState()",
+    "listState.scrollToItem(position)",
+)
+
 # Text Reader is a standalone offline-first product surface.
 require(
     "apps/r8/textreader/apply_sable_flavor.py",
