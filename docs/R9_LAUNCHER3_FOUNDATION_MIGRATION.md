@@ -1,334 +1,201 @@
-# R9 Launcher3 / Quickstep Foundation Migration v2
+# R9 Launcher3 / Quickstep foundation migration
 
-Status: **phase 2 HOME ownership cutover implemented in source / focused cutover compile pending**
+Status: **standalone Sable HOME + Quickstep Recents-only architecture**
 
-Date: 2026-09-20
+## Current architecture
 
-## Product decision
+R9 no longer uses Launcher3 as the user-facing HOME implementation.
 
-SableOS will use the pinned Android 17 GrapheneOS Launcher3/Quickstep implementation as the single launcher/HOME foundation.
+The product boundary is:
 
-Pinned source:
+- `SableLauncher` is the standalone HOME application.
+- package: `org.sableos.launcher`
+- activity: `org.sableos.start.SableStartActivity`
+- `Launcher3QuickStep` remains installed only as Android's
+  Quickstep/Recents integration substrate.
+- Launcher3 must not advertise HOME or ALL_APPS eligibility.
+- the legacy `org.sableos.start` standalone package is retired.
+- Sable presentation sources remain shared through
+  `sable_start_presentation_srcs`.
 
-```text
-Repository: GrapheneOS/platform_packages_apps_Launcher3
-Commit: e5fde8f4368539554b07ee136abd27bc7b4284c1
-Product module: Launcher3QuickStep
-Package: com.android.launcher3
-Sable host: com.android.launcher3.sable.SableQuickstepLauncher
-```
-
-SableStart becomes the presentation layer hosted by Quickstep. Launcher3 remains responsible for lifecycle, app model, package/profile updates, launching, shortcuts/widgets, Recents/Overview and Android launcher integration.
-
-## Why v2 is phased
-
-The earlier R9 foundation branch attempted source retirement and product cutover before the focused Launcher3 compile had been proven. That branch also diverged from the pre-INFRA5 main line.
-
-v2 starts from the locally qualified post-INFRA5 main and separates proof from retirement:
+Expected device state:
 
 ```text
-Phase 1: host-compile proof
-    -> expose Sable presentation as a Soong filegroup
-    -> patch pinned Launcher3QuickStep in the workspace
-    -> compile Launcher3QuickStep only
-    -> retain standalone SableStart source/product temporarily
-
-Phase 2: ownership cutover
-    -> remove standalone SableStart app/JNI/activity/app-loading implementation
-    -> remove SableStart from product packages
-    -> move active build/target-files gates to Launcher3QuickStep
-    -> require SableStart.apk absent
-
-Phase 3: visual + physical acceptance
-    -> final Sable presentation review
-    -> full Panther image only after visual approval
-    -> verify HOME/Recents/package refresh/theme behavior on device
+HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity
+HOME_ROLE_HOLDER=org.sableos.launcher
+LAUNCHER3_HOME_ROLE_ABSENT=PASS
+LAUNCHER3_HOME_ELIGIBILITY_ABSENT=PASS
+QUICKSTEP_SERVICE_PRESENT=PASS
+QUICKSTEP_FALLBACK_RECENTS_PRESERVED=PASS
+LEGACY_SABLESTART_PACKAGE_ABSENT=PASS
 ```
 
-A full Panther image remains unauthorized until the Phase 2 focused cutover compile passes and the Sable launcher visual review is accepted.
+## Why the Launcher3 foundation still exists
 
-## Phase 1 ownership
+The pinned Android 17 Launcher3 tree still needs a bounded set of compatibility
+changes before it compiles cleanly in the SableOS product environment. Those
+changes remain in
+`patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py`.
 
-Launcher3/Quickstep supplies:
+That applicator is now an **intermediate compatibility layer only**. It is not
+the final launcher architecture and must never be interpreted as proof that
+Launcher3 owns HOME.
 
-- `QuickstepLauncher` HOME lifecycle and state machine;
-- `AllAppsStore` inventory and package/profile refresh;
-- `AppInfo` launch metadata;
-- `startActivitySafely(...)` app-launch semantics;
-- app-details integration;
-- Recents/Overview and transition machinery;
-- predictive-back authority.
-
-Sable supplies:
-
-- Start presentation;
-- Favorites;
-- session-only recent presentation;
-- All Apps label-first list and alphabet rail;
-- local Search/Command;
-- Sable Peek;
-- local calendar/media context;
-- appearance state and Sable accent selection.
-
-## Host bridge
-
-`SableQuickstepLauncher` subclasses `QuickstepLauncher` and attaches one Compose surface to the Launcher drag layer.
-
-The surface is visible only in `LauncherState.NORMAL`. Native Quickstep surfaces remain visible for non-normal states such as Overview and All Apps transitions.
-
-The app inventory is projected from Launcher3's `AllAppsStore`; Sable does not register a second `LauncherApps.Callback` in the hosted path.
-
-Launch requests resolve back to Launcher3 `AppInfo` and call `startActivitySafely(...)`. App information uses `PackageManagerHelper.startDetailsActivityForInfo(...)`.
-
-## Back and Home ownership
-
-The Compose presentation no longer installs its own Android `BackHandler`.
-
-The host sends two monotonic generations:
+The final preparation sequence is:
 
 ```text
-homeGeneration -> reset Sable presentation to Start
-backGeneration -> perform one Sable nested-navigation back step
+sync standalone SableLauncher
+        ↓
+apply/verify Launcher3 compatibility foundation
+        ↓
+apply/verify Quickstep Recents-only cutover
+        ↓
+compile SableLauncher + Launcher3QuickStep
 ```
 
-The presentation reports whether it can navigate back. Quickstep keeps predictive-back ownership and delegates to Sable only while the Sable surface is visible and nested navigation can consume the event.
+`build/panther/prepare-r8-final-ui.sh` enforces that order. The foundation
+contract also verifies that the Recents-only cutover follows the foundation
+intermediate before product qualification.
 
-## Niagara-inspired interaction rules
+## Standalone SableLauncher boundary
 
-Sable adopts interaction lessons, not Niagara code or branding.
-
-Useful Niagara principles confirmed from its public documentation:
-
-- the app list is a primary navigation surface rather than a secondary grid;
-- alphabet navigation is a first-class fast-access mechanism;
-- one-hand reach is a core interaction constraint;
-- feature/settings growth should be restrained so optional features do not make the default experience complex.
-
-References:
-
-- https://help.niagaralauncher.app/article/8-niagaras-design-principles
-- https://help.niagaralauncher.app/article/171-alphabet-settings
-- https://help.niagaralauncher.app/article/39-left-hand-mode
-- https://help.niagaralauncher.app/article/77-missing-customization-features
-
-Sable deliberately differs in several areas:
-
-- no usage-ranked All Apps ordering by default;
-- no persistent usage-learning requirement;
-- session recents remain memory-only;
-- no ambient network search;
-- privacy/security context remains part of Sable Peek;
-- Metro/Modern typography and Sable identity remain the visual language.
-
-## Audited fallback Quickstep residue
-
-Before the first v2 foundation apply, the canonical Panther workspace contained exactly two pre-existing Launcher3 modifications while the repository HEAD remained pinned at `e5fde8f4368539554b07ee136abd27bc7b4284c1`:
+The canonical Sable HOME source lives under:
 
 ```text
-quickstep/src/com/android/quickstep/FallbackActivityInterface.java
-HEAD blob:     d9f14ac530bc9f81910e305536f1e39a0ef6e564
-worktree blob: 8387af17a577a6720cccbc5ca952aefffafa6157
-change:        interactor == null -> interactor == null || callbacks == null
-
-quickstep/tests/multivalentTests/src/com/android/quickstep/FallbackSwipeHandlerTestCase.java
-HEAD blob:     e68f0d2d9d242104b9ce05685e83708704b6dd5f
-worktree blob: 23239ce5180bee05da6ea52afe889e00523619c4
-change:        local null-callback regression test
+src/android/packages/apps/SableStart/
 ```
 
-Review found that current GrapheneOS Launcher3 already applies the same null-callback guard in the normal `LauncherActivityInterface`, while the pinned/current fallback implementation lacks it. The production fallback guard is therefore retained as an explicit Sable compatibility delta.
+The Soong definition must contain the standalone `SableLauncher`
+`android_app`, including the presentation and shared-design filegroups.
 
-The local regression-test residue is not retained because it constructs the Dagger singleton incorrectly for the pinned API. The applicator recognizes that exact audited test blob only, restores that file to pinned `HEAD`, and then requires it to remain clean. The production fallback file is accepted before apply only at the exact audited `8387af...` blob; any other pre-existing fallback edit fails closed.
-
-After apply, the complete allowed Launcher3 dirty set is exactly five files: the Quickstep library build file, Quickstep launcher manifest, Quickstep label resources, Sable host source, and `FallbackActivityInterface.java`.
-
-## Warning-quality policy
-
-The Launcher3 foundation compile is not considered quality-closed merely because it compiles. The focused build log is parsed by `build/gates/r9-launcher-warning-gate.py`.
-
-The first successful hosted-Launcher build exposed 126 source warnings plus one R8 toolchain warning. The warning cleanup is intentionally split into two classes:
+Required runtime source includes:
 
 ```text
-SAFE MIGRATIONS
-- Kotlin KT-73255 annotation default-target warnings
-- typed Parcelable APIs
-- explicit Handler Looper binding
-- nullable File.listFiles handling
-- deprecated framework overrides marked explicitly
-- legacy preview message IDs retained without deprecated symbols
-- override parameter-name mismatches
-- Sable system-bar deprecated color setters
-
-STRUCTURAL / UPSTREAM DEBT
-- deprecated Launcher3 Executors bridge and call sites
-- deprecated LauncherAppState access paths
-- deprecated ModelDbController.db uses that still require raw SQLiteDatabase
-- DesktopModeStatus APIs marked for removal
-- remaining generic Bundle/value and unchecked-cast warnings
-- R8 prebuilt lacking API-level 37 support
+AndroidManifest.xml
+res/values/strings.xml
+src/com/sable/start/SableStartActivity.kt
+src/com/sable/start/platform/LauncherAppsRepository.kt
 ```
 
-No blanket deprecation suppression is accepted as closure. The migration gate may pass when all Sable-owned and already-migrated warning classes are clean, but it reports `R9_LAUNCHER3_WARNING_DEBT_STATUS=OPEN` while inherited or toolchain debt remains. Final launcher quality closure requires that debt to be either migrated with evidence or resolved at the appropriate upstream/toolchain boundary.
-
-The R8 API-37 warning is tracked separately as `R9_LAUNCHER3_R8_API37_DEBT`; lowering the platform/target API is not an acceptable fix.
-
-## Easy Dagger executor migration before HOME cutover
-
-Before retiring standalone SableStart, R9 migrates the low-risk constructor-injected users of the deprecated static `Executors` bridge. The mapping is limited to bindings that already have an explicit Dagger equivalent in `LauncherExecutorsModule`:
+Retired runtime source remains forbidden:
 
 ```text
-Executors.MAIN_EXECUTOR
-  -> @Ui Executor / LooperExecutor
-
-Executors.UI_HELPER_EXECUTOR
-  -> @LightweightBackground(priority = UI) LooperExecutor
-
-Executors.ORDERED_BG_EXECUTOR
-  -> @Background Executor / LooperExecutor
+rust/src/lib.rs
+src/com/sable/start/bridge/SableStartNative.kt
+src/com/sable/start/platform/SableAppearanceProvider.kt
 ```
 
-The first Dagger tranche covers:
+Settings owns the global appearance authority. SableLauncher is an authorized
+client/editor, not a second appearance authority.
+
+## Quickstep Recents-only boundary
+
+The final Launcher3 state is produced by:
 
 ```text
-WidgetAppIconsRepositoryImpl
-WallpaperColorHints
-FirstScreenBroadcastHelper
-ModelTaskController
-RefreshRateTracker.RefreshRateTrackerImpl
-RemoveAnimationSettingsTracker (obsolete deprecated import)
+patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py
 ```
 
-`FirstScreenBroadcastHelper` retains its one-argument unit-test constructor via a `@VisibleForTesting` main-looper executor while production construction uses injected `@Ui LooperExecutor`. Its nullable-installer-map unchecked cast is also removed.
+That cutover must establish:
 
-This tranche intentionally does **not** replace `MODEL_EXECUTOR` with a generic background executor. The pinned Launcher3 tree does not expose a dedicated Dagger model-thread qualifier, and model ordering semantics must not be changed merely to silence deprecation warnings.
+- Sable Launcher3 host source absent;
+- Launcher3 HOME eligibility absent;
+- QuickstepLauncher private/internal only;
+- TouchInteractionService retained;
+- RecentsActivity retained;
+- fallback Recents preserved.
 
-The 2026-09-20 focused baseline attributes 17 warnings to this tranche: 16 deprecated static-executor warnings and one unchecked cast. Qualification requires those exact warning signatures to stay absent through the path-specific warning regression gate.
+Required source markers include:
 
-## Focused qualification
+```text
+R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT
+R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT
+R9_LAUNCHER3_PRIVATE_ACTIVITY=PASS_INTERNAL_ONLY
+R9_QUICKSTEP_SERVICE=PASS_RETAINED
+R9_FALLBACK_RECENTS=PASS_RETAINED
+R9_QUICKSTEP_RECENTS_ONLY=PASS
+```
 
-Run only after synchronizing this repository branch locally:
+## Focused foundation qualification
+
+The focused qualifier remains:
 
 ```bash
-SOURCE_MUTATION_AUTHORIZED=YES \
-BUILD_AUTHORIZED=YES \
 bash build/panther/qualify-r9-launcher3-foundation.sh
 ```
 
-The qualifier resolves the current build workspace from `build/config/r8-release.env` and then layers Panther device/lunch constants from `build/config/panther-grapheneos-2026081300.env`. This avoids the retired `/srv/data/sableos/upstream/...` layout.
+It is source/build qualification only. It does not authorize a full image,
+flash, or device mutation.
 
-The focused compile also reuses the canonical warmed Panther output (`SABLE_R8_OUT_DIR`, currently `out_sable_r8_final`) by default. It refuses a cold output unless `ALLOW_COLD_OUT=YES` is explicitly supplied. A warm output must already contain a Ninja graph and `target/product/panther`; this prevents a nominally module-only `m Launcher3QuickStep` request from triggering a many-thousand-action cold dependency rebuild.
+The qualifier now:
 
-The qualifier performs:
+1. verifies the repository foundation contract;
+2. syncs shared Sable design;
+3. syncs standalone SableLauncher and requires
+   `SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT`;
+4. applies/verifies the Launcher3 foundation intermediate;
+5. applies/verifies the Quickstep Recents-only cutover;
+6. compiles `SableLauncher Launcher3QuickStep`;
+7. verifies the post-build Recents-only state;
+8. runs the Launcher3 warning gate.
 
-1. repository Phase 2 foundation contract;
-2. shared Sable design sync;
-3. presentation-only Sable Start sync, which deletes retired standalone runtime files from the workspace;
-4. pinned Launcher3 applicator self-test;
-5. pinned Launcher3 HOME ownership apply + verify;
-6. Panther lunch;
-7. `m Launcher3QuickStep` only;
-8. post-build foundation verification;
-9. path-specific warning/deprecation regression gate.
-
-It does not clean, clobber, fetch network content, contact a device, flash, or build a full Panther image.
-
-Before mutation, the applicator inspects the Launcher3 Git worktree and refuses any dirty path outside the reviewed `FOUNDATION_DIRTY_PATHS` set. After apply, it requires exactly that bounded set. The set now includes the Sable host integration plus the explicitly reviewed warning/Dagger migration files; unknown Launcher3 dirt still fails closed.
-
-Required Phase 2 success markers:
+Expected result markers include:
 
 ```text
-R9_SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT
-R9_LAUNCHER3_HOME_OWNERSHIP=PASS
-R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS
-R9_L8_HOME_CUTOVER_COMPILE=PASS
+R9_SABLELAUNCHER_WORKSPACE=PASS_PRESENT
+R9_SABLELAUNCHER_PRODUCT=PASS_PRESENT
+R9_LAUNCHER3_HOME_OWNERSHIP=PASS_ABSENT
+R9_QUICKSTEP_RECENTS_ONLY=PASS
+R9_SABLE_HOME_QUICKSTEP_FOUNDATION_COMPILE=PASS
+FULL_PANTHER_BUILD_PERFORMED=NO
+DEVICE_CONTACTED=NO
 ```
 
-A full Panther image remains blocked after these markers until the launcher visual review is accepted.
+## Product qualification
 
-## Phase 2 acceptance target
+The canonical pre-image sequence is still:
 
-After retirement, repository/product gates must prove:
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 qualify physical-ux
+```
+
+The second command is module-only and must retain:
 
 ```text
-Launcher3QuickStep.apk = exactly one
-package = com.android.launcher3
-HOME activity = com.android.launcher3.sable.SableQuickstepLauncher
-SableStart.apk = absent
-org.sableos.start standalone HOME package = absent
+BUILD_AUTHORIZED=YES_MODULES_ONLY
+FULL_TARGET_FILES_BUILD_AUTHORIZED=NO
 ```
 
-Global Sable appearance is owned by Settings at `content://org.sableos.appearance/appearance`. Launcher3-hosted Sable Start consumes that authority; the retired `org.sableos.start.appearance` provider must not reappear in production source.
+Only after both source-bound gates pass for the same commit may a fresh
+target-files/image build be authorized.
 
-## Panther physical acceptance
+## Device acceptance
 
-After visual approval and a full Panther image, run:
+Physical HOME/Recents acceptance uses:
 
 ```bash
 bash tests/launcher3/device/r9_home_acceptance.sh
 ```
 
-The gate is non-destructive: it does not flash, reboot, wipe, change slots, install, or uninstall packages. It performs resolver/role/package/process/crash checks plus HOME/Recents navigation, then records bounded manual confirmations for the presentation interactions that cannot be proven from shell state alone.
+The gate is non-destructive. It does not flash, reboot, wipe, change slots,
+install, or uninstall packages.
 
-The eventual full-image/device gate must prove:
+It validates the standalone SableLauncher resolver/role/process state, absence
+of Launcher3 HOME eligibility, presence of the Quickstep service, fallback
+Recents behavior, HOME return behavior, launcher interaction regressions and
+the bounded manual UX checks.
 
-```text
-HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher
-HOME_ROLE_HOLDER=com.android.launcher3
-COLD_HOME_LAUNCH_CRASHES=0
-HOME_KEY_RETURNS_TO_START=PASS
-QUICKSTEP_RECENTS_PRESERVED=PASS
-PACKAGE_INSTALL_REMOVE_REFRESH=PASS
-MULTI_USER_PROFILE_LAUNCH=PASS_WHERE_AVAILABLE
-ALL_APPS_TOUCH_NAVIGATION=PASS
-SEARCH_LOCAL_RESULTS=PASS
-SABLE_PEEK=PASS
-THEME_PROPAGATION=PASS
-```
-
-## Titan 2 consequence
-
-Titan 2 inherits the same launcher foundation. Its later acceptance can focus on keyboard and square-display behavior rather than duplicating launcher model/lifecycle work:
-
-- first-character-preserving type-to-search;
-- hardware focus traversal;
-- Enter/Back/navigation keys;
-- square geometry;
-- pointer/trackpad behavior when exposed.
-
-## Full Panther build freshness policy
-
-A successful `m target-files-package otatools-package` against a warmed output
-directory proves that the requested product targets are currently satisfiable,
-but it does not by itself prove a fresh full Panther rebuild.
-
-The 2026-09-20 release-candidate attempt that completed the Android build phase
-in 53 seconds used the stable warmed `out_sable_r8_final` directory. Its
-target-files composition was valid, but the run is classified as an
-**incremental product-build/composition pass**, not the fresh full-build proof
-required before physical-device qualification.
-
-The output policy is split by purpose:
-
-- WS7 module-only/pre-image qualification reuses the canonical warmed
-  `SABLE_R8_OUT_DIR` (currently `out_sable_r8_final`) and refuses a cold
-  output. Source identity is carried by the repository commit, generated
-  ten-APK bundle, and evidence rather than by a fresh OUT name.
-- WS8 full release-candidate qualification uses a source-bound fresh output:
+The authoritative final marker is:
 
 ```text
-out_sable_r9_full_<source-sha12>
+R9_SABLE_HOME_DEVICE_ACCEPTANCE=PASS
 ```
 
-Required causality rules:
+## Cross-device rule
 
-- the source-bound OUT path must not exist before the release candidate starts;
-- no clean or clobber of the warmed development OUT is required;
-- the inner Panther build independently refuses a pre-existing OUT when
-  `REQUIRE_FRESH_OUT=YES`;
-- target-files must have an mtime at or after the recorded fresh-build start;
-- final acceptance requires
-  `R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES`.
-
-This reuses source/upstream/Gradle caches where safe, but not prior Soong/Ninja
-product outputs.
-
+Future device ports such as Titan 2 may reuse the same product boundary:
+standalone SableLauncher for HOME and the platform's qualified
+Quickstep/Recents substrate where applicable. Device-specific work should focus
+on hardware, display, keyboard and input differences rather than recreating a
+second launcher ownership model.
