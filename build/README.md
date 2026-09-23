@@ -73,8 +73,8 @@ Host tools live outside the build farm under:
 
 The R8 profile pins Android SDK 36, build-tools 36.0.0, NDK
 30.0.16248370, Rust 1.98.1 with the aarch64-linux-android target, JDK 17
-for first-party Android applications, JDK 21 for Reader/Mail, and a central
-Gradle user home.
+for first-party Android applications and Text Reader, JDK 21 for Reader/Mail,
+and a central Gradle user home.
 
 PR #57 originally used a CI-rendered source-bound driver. After the
 repository moved to local direct CI/execution, the permanent
@@ -83,19 +83,22 @@ without generating a milestone-specific /tmp script.
 
 The entry point verifies the repository source identity and passes the release
 version into the repository-owned release-candidate runner.
-The runner performs the host-tool gate, application builds, Reader/Mail
-composition, exact eight-APK freeze, workspace/product preparation, exact
-`vendor/sable` inventory validation, a focused production `SableStart` Soong
-preflight, the combined Settings/SystemUI module gate, and the final Panther
-target-files build. Device contact and flashing remain separate operations.
+The runner performs the host-tool gate, application builds, independent
+Text Reader/Reader/Mail composition, exact eleven-APK freeze, workspace/product
+preparation, exact `vendor/sable` inventory validation, the standalone
+SableLauncher + Quickstep preflight, the combined module gate, and the final
+Panther target-files build. Device contact and flashing remain separate
+operations.
 
 ## R9 system-cohesion pre-image qualification
 
 Before the next full Panther image, run the source-bound R9 module
 qualification. This executes the integrated system-cohesion source contract,
-rebuilds the ten first-party APKs plus Reader/Mail, upgrades the recognized
-long-lived Android workspace deltas, stages the source-bound bundle, and
-compiles Launcher3QuickStep, Settings, SystemUI and the daily-driver module set.
+rebuilds the eleven source-bound prebuilt application APKs, including separate
+Sable Text Reader, Reader and Mail products, upgrades the recognized long-lived
+Android workspace deltas, stages the source-bound bundle, and compiles
+SableLauncher, Launcher3QuickStep, Settings, SystemUI and the daily-driver
+module set.
 It does **not** build target-files, contact a device, flash, clean or clobber.
 
 ```bash
@@ -153,7 +156,7 @@ combined module gate, `build-r8-final-ui.sh` runs a focused
 
 The R8 no-stale gate also requires the workspace `vendor/sable` tree to match
 the exact canonical R8 inventory: one Android.bp, one product makefile, three
-source/seal control files, and exactly eight canonical APKs.
+source/seal control files, and exactly eleven canonical APKs.
 
 
 ## SableStart signing/package-scan policy
@@ -244,13 +247,13 @@ After successful retirement, `vendor/sable_devices` must be absent.
 
 ## Presigned R8 APK preservation
 
-The eight standalone R8 application APKs are already signed before they enter the
-Panther product graph. Their `android_app_import` definitions therefore set both
+The eleven staged Sable application APKs are already signed before they enter
+the Panther product graph. Their `android_app_import` definitions therefore set both
 `presigned: true` and `preprocessed: true`, with dex preopt disabled.
 
 For targetSdkVersion 30 and newer, Soong requires presigned imports to be marked
 preprocessed so the product build does not rewrite the APK and invalidate its
 APK Signature Scheme v2+ signature.
 
-The final product-composition gate validates this contract for all eight
+The final product-composition gate validates this contract for all eleven
 canonical APK imports before Soong module compilation begins.
