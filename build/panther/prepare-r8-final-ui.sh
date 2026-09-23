@@ -251,6 +251,12 @@ echo "===== QUICKSTEP RECENTS-ONLY SUBSTRATE ====="
 if python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify >/dev/null 2>&1; then
     python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify
     echo "R9_QUICKSTEP_RECENTS_ONLY=ALREADY_APPLIED"
+elif QUICKSTEP_UPGRADE_OUTPUT="$(
+    python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" upgrade-final 2>&1
+)"; then
+    printf '%s\n' "$QUICKSTEP_UPGRADE_OUTPUT"
+    python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify
+    echo "R9_QUICKSTEP_RECENTS_ONLY=UPGRADED_FINAL"
 else
     # The pinned Android 17 Launcher3 tree needs the already-qualified
     # compatibility/foundation patch set before it can compile in this branch.
