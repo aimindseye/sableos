@@ -201,8 +201,40 @@ grep -Fq 'include(":sablestart-presentation-check")' "$android_settings"
 ! grep -Fq 'include(":start-preview")' "$android_settings"
 ! grep -Fq 'include(":system-preview")' "$android_settings"
 grep -Fq '../../../../src/android/packages/apps/SableStart/src' "$start_check"
+for presentation_source in \
+    'com/sable/start/live/LiveSurfaceModels.kt' \
+    'com/sable/start/model/AppEntry.kt' \
+    'com/sable/start/platform/LiveSurfaceRepository.kt' \
+    'com/sable/start/platform/StartStateRepository.kt' \
+    'com/sable/start/ui/SableStartScreen.kt' \
+    'com/sable/start/ui/SableGlyphIcon.kt'
+do
+    grep -Fq "$presentation_source" "$start_check" || {
+        echo "R9_SABLESTART_PRESENTATION_GRADLE_SCOPE=FAIL_MISSING source=$presentation_source"
+        exit 1
+    }
+done
+for runtime_source in \
+    'SableStartActivity.kt' \
+    'LauncherAppsRepository.kt'
+do
+    if grep -Fq "$runtime_source" "$start_check"; then
+        echo "R9_SABLESTART_PRESENTATION_GRADLE_SCOPE=FAIL_RUNTIME_LEAK source=$runtime_source"
+        exit 1
+    fi
+done
 ! grep -Fq 'AndroidManifest.xml' "$start_check"
 ! grep -Fq 'src/android/packages/apps/SableStart/res' "$start_check"
+grep -Fq 'sdk_version: "system_current"' "$start_bp" || {
+    echo "R9_SABLELAUNCHER_SDK_BOUNDARY=FAIL_SYSTEM_SDK_MISSING"
+    exit 1
+}
+if grep -Fq 'platform_apis: true' "$start_bp"; then
+    echo "R9_SABLELAUNCHER_SDK_BOUNDARY=FAIL_PLATFORM_APIS_TOO_BROAD"
+    exit 1
+fi
+echo "R9_SABLESTART_PRESENTATION_GRADLE_SCOPE=PASS_EXACT_PRESENTATION_FILEGROUP"
+echo "R9_SABLELAUNCHER_SDK_BOUNDARY=PASS_SYSTEM_CURRENT"
 grep -Fq ':sablestart-presentation-check:compileDebugKotlin' "$local_ci"
 grep -Fq ':sablestart-presentation-check:lintDebug' "$local_ci"
 ! grep -Fq ':sablestart-production-check:' "$local_ci"
