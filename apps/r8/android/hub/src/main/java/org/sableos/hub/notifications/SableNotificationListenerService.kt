@@ -83,9 +83,7 @@ class SableNotificationListenerService : NotificationListenerService() {
         }
     }
 
-    private fun eligibleEnvelope(
-        sbn: StatusBarNotification,
-    ): ConnectedNotificationEnvelope? {
+    private fun eligibleEnvelope(sbn: StatusBarNotification): ConnectedNotificationEnvelope? {
         val userSerial = userManager.getSerialNumberForUser(sbn.user)
         val key =
             userSerial
@@ -180,8 +178,7 @@ class SableNotificationListenerService : NotificationListenerService() {
             notification.extras
                 .getParcelableArray(
                     Notification.EXTRA_MESSAGES,
-                )
-                ?.takeLast(MAX_NOTIFICATION_MESSAGES)
+                )?.takeLast(MAX_NOTIFICATION_MESSAGES)
                 ?.toTypedArray()
         return Notification.MessagingStyle.Message
             .getMessagesFromBundleArray(bundles)
@@ -209,9 +206,7 @@ class SableNotificationListenerService : NotificationListenerService() {
             }
     }
 
-    private fun captureReplyCandidate(
-        notification: Notification,
-    ): ConnectedNotificationReplyCandidate? {
+    private fun captureReplyCandidate(notification: Notification): ConnectedNotificationReplyCandidate? {
         val candidates =
             notification.actions
                 .orEmpty()
