@@ -141,6 +141,22 @@ def main() -> None:
                 f"expected={EXPECTED_PACKAGE} actual={package}",
             )
         print(f"SABLE_TEXT_READER_APK_PACKAGE=PASS value={package}")
+
+        apk_manifest = subprocess.check_output(
+            [apkanalyzer, "manifest", "print", str(apk)],
+            text=True,
+        )
+        if "android.permission.INTERNET" in apk_manifest:
+            fail("SABLE_TEXT_READER_APK_INTERNET_PERMISSION")
+        if "android.permission.CAMERA" not in apk_manifest:
+            fail("SABLE_TEXT_READER_APK_CAMERA_PERMISSION")
+        if "android.intent.action.PROCESS_TEXT" not in apk_manifest:
+            fail("SABLE_TEXT_READER_APK_PROCESS_TEXT")
+        if "android.intent.action.SEND" not in apk_manifest:
+            fail("SABLE_TEXT_READER_APK_SEND")
+        print("SABLE_TEXT_READER_APK_INTERNET_PERMISSION=PASS_ABSENT")
+        print("SABLE_TEXT_READER_APK_CAMERA_PERMISSION=PASS_PRESENT")
+        print("SABLE_TEXT_READER_APK_SEND_PROCESS_TEXT=PASS")
         print(
             "SABLE_TEXT_READER_APK_SHA256="
             + subprocess.check_output(
