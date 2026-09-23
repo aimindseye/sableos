@@ -187,8 +187,16 @@ def patch_overview_observer(root: pathlib.Path) -> None:
             raise RecentsOnlyError("Overview own-HOME resolution anchor changed")
         text = text.replace(old, new, 1)
 
-    # ResolveInfo is no longer needed by this constructor path.
-    text = text.replace("import android.content.pm.ResolveInfo;\n", "")
+    # ResolveInfo remains required by the secondary-home path below this
+    # constructor. Only the primary-home ResolveInfo use is retired.
+    if "import android.content.pm.ResolveInfo;\n" not in text:
+        raise RecentsOnlyError(
+            "Overview ResolveInfo import missing for retained secondary-home path"
+        )
+    if "ResolveInfo secondaryInfo =" not in text:
+        raise RecentsOnlyError(
+            "Overview retained secondary-home ResolveInfo path missing"
+        )
     path.write_text(text, encoding="utf-8")
 
 
@@ -255,6 +263,8 @@ def verify(root: pathlib.Path) -> None:
         "new ComponentName(context, QuickstepLauncher.class)",
         "getActivityInfo(",
         "Private QuickstepLauncher activity missing",
+        "import android.content.pm.ResolveInfo;",
+        "ResolveInfo secondaryInfo =",
     ):
         if token not in observer:
             raise RecentsOnlyError(f"recents-only observer contract missing: {token}")
@@ -299,7 +309,8 @@ def self_test() -> None:
     </application>
 </manifest>
 """
-        observer = """import com.android.launcher3.util.DaggerSingletonTracker;
+        observer = """import android.content.pm.ResolveInfo;
+import com.android.launcher3.util.DaggerSingletonTracker;
         mMyPrimaryHomeIntent = new Intent(mCurrentPrimaryHomeIntent).setPackage(
                 context.getPackageName());
         ResolveInfo info = context.getPackageManager().resolveActivity(mMyPrimaryHomeIntent, 0);
@@ -308,6 +319,9 @@ def self_test() -> None:
         mMyPrimaryHomeIntent.setComponent(myHomeComponent);
 
         mConfigChangesMap.append(myHomeComponent.hashCode(), info.activityInfo.configChanges);
+
+        ResolveInfo secondaryInfo = mContext.getPackageManager().resolveActivity(
+                mLazySecondaryHomeIntent, 0);
 """
         (root / "Android.bp").write_text(bp, encoding="utf-8")
         if resolve_launcher_root(root) != root:
@@ -363,6 +377,14 @@ def self_test() -> None:
             raise RecentsOnlyError("self-test explicit Quickstep component missing")
         if "resolveActivity(mMyPrimaryHomeIntent" in patched_observer:
             raise RecentsOnlyError("self-test old own-HOME resolution survived")
+        if "import android.content.pm.ResolveInfo;" not in patched_observer:
+            raise RecentsOnlyError("self-test retained ResolveInfo import missing")
+        if "ResolveInfo secondaryInfo =" not in patched_observer:
+            raise RecentsOnlyError(
+                "self-test retained secondary-home ResolveInfo use missing"
+            )
+
+        print("R9_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME_SELF_TEST=PASS")
 
     print("R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS")
 
