@@ -112,9 +112,15 @@ require(
     'name: "SableLauncher"',
     'manifest: "AndroidManifest.xml"',
     'certificate: "platform"',
+    'sdk_version: "system_current"',
     "LauncherAppsRepository.kt",
     "SableStartActivity.kt",
 )
+forbid(
+    "src/android/packages/apps/SableStart/Android.bp",
+    "platform_apis: true",
+)
+
 require(
     "src/android/packages/apps/SableStart/AndroidManifest.xml",
     'package="org.sableos.launcher"',
@@ -158,6 +164,7 @@ require(
     "PackageManager.GET_PERMISSIONS",
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
+    'getOrNull() ?: return "permissions · unavailable"',
     'GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
     '"permissions · none sensitive"',
 )
