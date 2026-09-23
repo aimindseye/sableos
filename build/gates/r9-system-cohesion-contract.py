@@ -162,12 +162,18 @@ require(
     "startMainActivity(",
     "startAppDetailsActivity(",
     "PackageManager.GET_PERMISSIONS",
+    'Suppress("DEPRECATION")',
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
     'getOrNull() ?: return "permissions · unavailable"',
     'GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
     '"permissions · none sensitive"',
 )
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
+    "PackageInfoFlags.of(",
+)
+
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "private fun AppsScreen(",
