@@ -69,7 +69,14 @@ grep -Fq 'R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS' \
 echo "SABLE_PIPELINE_QUICKSTEP_SOURCE_RESOLUTION=PASS"
 grep -Fq 'R9_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME_SELF_TEST=PASS' \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
+grep -Fq 'R9_QUICKSTEP_RECENTS_FINAL_SCOPE_SELF_TEST=PASS' \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
+grep -Fq 'R9_QUICKSTEP_STALE_FINAL_IMPORT_REPAIR_SELF_TEST=PASS' \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
+grep -Fq 'upgrade-final' "$ROOT/build/panther/prepare-r8-final-ui.sh"
+grep -Fq 'upgrade-final' "$ROOT/build/panther/qualify-r9-launcher3-foundation.sh"
 echo "SABLE_PIPELINE_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME=PASS"
+echo "SABLE_PIPELINE_QUICKSTEP_STALE_FINAL_UPGRADE=PASS"
 echo "SABLE_PIPELINE_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS"
 grep -Fq 'R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS' \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
