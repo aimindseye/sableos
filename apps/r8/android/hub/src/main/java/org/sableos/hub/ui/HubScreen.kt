@@ -145,7 +145,7 @@ fun HubScreen(
                 }
 
                 when (current.pivot) {
-                    HubPivot.Messages ->
+                    HubPivot.Messages -> {
                         MessagesPivot(
                             modifier = Modifier.weight(1f),
                             snapshot = snapshot,
@@ -162,8 +162,9 @@ fun HubScreen(
                             },
                             onRequestAccess = onRequestAccess,
                         )
+                    }
 
-                    HubPivot.People ->
+                    HubPivot.People -> {
                         PeoplePivot(
                             modifier = Modifier.weight(1f),
                             snapshot = snapshot,
@@ -174,6 +175,7 @@ fun HubScreen(
                             },
                             onRequestAccess = onRequestAccess,
                         )
+                    }
                 }
             }
         }
@@ -230,7 +232,9 @@ fun HubScreen(
                                     }
                                 }
 
-                                else -> null
+                                else -> {
+                                    null
+                                }
                             },
                         onOpenSource =
                             if (
@@ -356,9 +360,7 @@ fun HubScreen(
 }
 
 @Composable
-private fun MissingConversationView(
-    onBack: () -> Unit,
-) {
+private fun MissingConversationView(onBack: () -> Unit) {
     SableScreen {
         SablePageHeader(
             title = "conversation unavailable",
@@ -448,12 +450,17 @@ private fun ColumnScope.MessagesPivot(
         Text(
             text =
                 when {
-                    !snapshot.capabilities.canReadSms ->
+                    !snapshot.capabilities.canReadSms -> {
                         "Grant Messages access to show SMS conversations."
-                    query.isNotBlank() ->
+                    }
+
+                    query.isNotBlank() -> {
                         "No matching conversations."
-                    else ->
+                    }
+
+                    else -> {
                         "No conversations yet."
+                    }
                 },
             modifier = Modifier.padding(vertical = SableSpacing.Lg),
             style = MaterialTheme.typography.bodyLarge,
@@ -486,10 +493,13 @@ private fun MessagesAccessPrompt(
 ) {
     val detail =
         when {
-            snapshot.capabilities.canReadSms ->
+            snapshot.capabilities.canReadSms -> {
                 "Allow sending access to send SMS from Sable Messages."
-            else ->
+            }
+
+            else -> {
                 "Allow SMS access to read conversations and send messages."
+            }
         }
 
     SablePanel {
@@ -570,13 +580,18 @@ private fun ConversationRow(
             Text(
                 text =
                     when {
-                        conversation.source != HubConversationSource.ConnectedApp ->
+                        conversation.source != HubConversationSource.ConnectedApp -> {
                             conversation.lastBody.take(SMS_PREVIEW_LENGTH)
-                        conversation.lastBody.isBlank() ->
+                        }
+
+                        conversation.lastBody.isBlank() -> {
                             "${conversation.sourceLabel ?: "connected app"} · content hidden"
-                        else ->
+                        }
+
+                        else -> {
                             "${conversation.sourceLabel ?: "connected app"} · " +
                                 conversation.lastBody.take(CONNECTED_PREVIEW_LENGTH)
+                        }
                     },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -611,8 +626,7 @@ private fun ConversationRow(
     )
 }
 
-private fun clockTime(epochMillis: Long): String =
-    DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epochMillis))
+private fun clockTime(epochMillis: Long): String = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epochMillis))
 
 @Composable
 private fun ColumnScope.PeoplePivot(
@@ -780,10 +794,17 @@ private fun MessageBubble(message: HubMessage) {
                 Text(
                     text =
                         when {
-                            message.body.isNotBlank() -> message.body
-                            message.source == HubConversationSource.ConnectedApp ->
+                            message.body.isNotBlank() -> {
+                                message.body
+                            }
+
+                            message.source == HubConversationSource.ConnectedApp -> {
                                 "Content hidden by source app"
-                            else -> "Empty SMS body"
+                            }
+
+                            else -> {
+                                "Empty SMS body"
+                            }
                         },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -959,11 +980,12 @@ private fun ComposeView(
 }
 
 private fun relativeTime(timestamp: Long): String =
-    DateUtils.getRelativeTimeSpanString(
-        timestamp,
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
+    DateUtils
+        .getRelativeTimeSpanString(
+            timestamp,
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS,
+        ).toString()
 
 private val HubTouchTarget = 48.dp
 private val HubAvatarSize = 48.dp
