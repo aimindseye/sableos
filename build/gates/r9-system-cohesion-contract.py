@@ -103,6 +103,12 @@ require(
     "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY_SELF_TEST=PASS",
 )
 require(
+    "tests/systemui/device/r9_identity_audit.sh",
+    "R9_PERMISSION_ALLOWLIST_RUNTIME=FAIL_NOTIFICATION_PRESENT",
+    "R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION",
+)
+
+require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
     'AUTHORITY = "org.sableos.appearance"',
     'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)',
