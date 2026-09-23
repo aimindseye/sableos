@@ -167,11 +167,10 @@ class HubRepository(
         }
     }
 
-    private fun smsManagerForSubscription(
-        subscriptionId: Int,
-    ): SmsManager =
+    private fun smsManagerForSubscription(subscriptionId: Int): SmsManager =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(SmsManager::class.java)
+            context
+                .getSystemService(SmsManager::class.java)
                 .createForSubscriptionId(subscriptionId)
         } else {
             @Suppress("DEPRECATION")
@@ -215,9 +214,7 @@ class HubRepository(
         }.getOrDefault(false)
     }
 
-    private fun loadMessages(
-        maxMessages: Int = MAX_SMS_MESSAGES,
-    ): List<HubMessage> {
+    private fun loadMessages(maxMessages: Int = MAX_SMS_MESSAGES): List<HubMessage> {
         val projection =
             arrayOf(
                 Telephony.Sms._ID,
@@ -232,7 +229,9 @@ class HubRepository(
         val result = mutableListOf<HubMessage>()
 
         runCatching {
-            context.contentResolver.query(
+            context
+                .contentResolver
+                .query(
                 Telephony.Sms.CONTENT_URI,
                 projection,
                 null,
@@ -266,9 +265,7 @@ class HubRepository(
         return result
     }
 
-    private fun loadPeople(
-        maxPeople: Int = MAX_CONTACT_PEOPLE,
-    ): List<HubPerson> {
+    private fun loadPeople(maxPeople: Int = MAX_CONTACT_PEOPLE): List<HubPerson> {
         val projection =
             arrayOf(
                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
@@ -278,7 +275,9 @@ class HubRepository(
         val result = linkedMapOf<String, HubPerson>()
 
         runCatching {
-            context.contentResolver.query(
+            context
+                .contentResolver
+                .query(
                 ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
                 projection,
                 null,
@@ -309,7 +308,8 @@ class HubRepository(
                         HubPerson(
                             id = cursor.getLong(idIndex),
                             displayName =
-                                cursor.getString(nameIndex)
+                                cursor
+                                    .getString(nameIndex)
                                     ?.takeIf { it.isNotBlank() }
                                     ?: number,
                             phoneNumber = number,
@@ -321,9 +321,7 @@ class HubRepository(
         return result.values.toList()
     }
 
-    private fun lookupContactName(
-        address: String,
-    ): String? {
+    private fun lookupContactName(address: String): String? {
         if (!hasPermission(Manifest.permission.READ_CONTACTS)) {
             return null
         }
@@ -335,7 +333,9 @@ class HubRepository(
             )
 
         return runCatching {
-            context.contentResolver.query(
+            context
+                .contentResolver
+                .query(
                 uri,
                 arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
                 null,
@@ -360,7 +360,8 @@ class HubRepository(
             PackageManager.PERMISSION_GRANTED
 
     private fun normalizeAddress(value: String): String =
-        PhoneNumberUtils.normalizeNumber(value)
+        PhoneNumberUtils
+            .normalizeNumber(value)
             .ifBlank { value.trim() }
 
     private companion object {
