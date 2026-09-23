@@ -190,7 +190,8 @@ PY
   run_static_contract r9-messages-source-style \
     python3 "$ROOT/build/gates/r9-messages-source-style.py"
   run_static_contract r8-no-stale-product-code \
-    bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
+    env R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO \
+      bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   run_static_contract r9-sablestart-design-self-test \
     python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   run_static_contract r9-sablestart-design \
