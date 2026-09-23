@@ -94,7 +94,7 @@ echo "R8_A_SHARED_DESIGN_SOURCE=PASS"
 GLOBAL_APPEARANCE="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
 SYSTEM_BARS="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableSystemBars.kt"
 SETTINGS_COHESION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py"
-LAUNCHER_COHESION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
+QUICKSTEP_RECENTS_ONLY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
 
 for needle in \
     'org.sableos.appearance' \
@@ -150,18 +150,19 @@ if grep -Fq 'window.insetsController' "$SYSTEM_BARS"; then
     fail R8_SABLESTART_SYSTEM_BARS_DIRECT_PHONEWINDOW_ACCESS
 fi
 
-python3 "$LAUNCHER_COHESION" --source "$WS" verify \
-    || fail R9_LAUNCHER_COHESION_SOURCE
+python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify \
+    || fail R9_QUICKSTEP_RECENTS_ONLY_SOURCE
 
 python3 "$SETTINGS_COHESION" --source "$WS" verify \
     || fail R9_SETTINGS_COHESION_SOURCE
 
 echo "R8_SABLESTART_SYSTEM_BARS_LIFECYCLE=PASS"
-echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
-echo "R9_LAUNCHER_COHESION_SOURCE=PASS"
+echo "R9_SABLELAUNCHER_HOME_OWNERSHIP=PASS_SOURCE"
+echo "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT"
+echo "R9_QUICKSTEP_RECENTS_ONLY_SOURCE=PASS"
 echo "R9_SETTINGS_COHESION_SOURCE=PASS"
 echo "R9_SETTINGS_NETWORK_MANAGER_SOURCE=PASS_GRAPHENE_NETWORK_PERMISSION"
-echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
+echo "R9_STANDALONE_SABLELAUNCHER_PRODUCT=PASS_PRESENT"
 
 echo
 echo "===== SHARED DESIGN WORKSPACE FIDELITY ====="
@@ -223,13 +224,15 @@ fi
 
 grep -Fq 'src/com/sable/start/ui/SableStartScreen.kt'     "$ROOT/build/panther/sync-sablestart.sh"     || fail R8_SABLESTART_SYNC_CONTRACT
 
-grep -Fq 'R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED'     "$ROOT/build/panther/sync-sablestart.sh"     || fail R9_SABLESTART_SYNC_APPEARANCE_PROVIDER
+grep -Fq 'R9_SABLESTART_LOCAL_APPEARANCE_PROVIDER=PASS_RETIRED'     "$ROOT/build/panther/sync-sablestart.sh"     || fail R9_SABLESTART_SYNC_APPEARANCE_PROVIDER
 if grep -Fq 'SableStartRoot.kt' "$ROOT/build/panther/sync-sablestart.sh"; then
     fail R8_SABLESTART_STALE_ROOT_REFERENCE
 fi
 
+grep -Fq 'SableLauncher' "$ROOT/product/r8/panther/r8-product.mk" \
+    || fail R9_SABLELAUNCHER_PRODUCT_INTEGRATION
 echo "R8_SABLESTART_SYNC_CONTRACT=PASS"
-echo "R9_LAUNCHER3_HOME_PRODUCT_INTEGRATION=PASS"
+echo "R9_SABLELAUNCHER_PRODUCT_INTEGRATION=PASS"
 
 echo
 echo "===== CUMULATIVE SYSTEM SURFACE SOURCE GATE ====="
@@ -272,13 +275,13 @@ python3 \
 python3 "$SETTINGS_COHESION" --source "$WS" verify \
     || fail R9_SETTINGS_COHESION_SOURCE
 
-python3 "$LAUNCHER_COHESION" --source "$WS" verify \
-    || fail R9_LAUNCHER_COHESION_SOURCE
+python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify \
+    || fail R9_QUICKSTEP_RECENTS_ONLY_SOURCE
 
 echo "R8_UI4_UI5_UI6_CUMULATIVE_SOURCE=PASS"
 echo "R9_SYSTEMUI_COHERENCE_SOURCE=PASS"
 echo "R9_SETTINGS_COHESION_SOURCE=PASS"
-echo "R9_LAUNCHER_COHESION_SOURCE=PASS"
+echo "R9_QUICKSTEP_RECENTS_ONLY_SOURCE=PASS"
 
 echo
 echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
@@ -531,7 +534,7 @@ echo "R8_UI4_SYSTEMUI=PASS_SOURCE"
 echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
-echo "R9_LAUNCHER3_HOME_CUTOVER_SOURCE_COMPOSITION=PASS"
+echo "R9_SABLE_HOME_REPLACEMENT_SOURCE_COMPOSITION=PASS"
 
 echo
 echo "===== R9 LAUNCHER VISUAL ACCEPTANCE SEAL ====="
