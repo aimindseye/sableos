@@ -55,6 +55,17 @@ android_app_import {
 }
 
 android_app_import {
+    name: "SableTextReader",
+    apk: "prebuilt/SableTextReader.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
     name: "SableReader",
     apk: "prebuilt/SableReader.apk",
     presigned: true,
