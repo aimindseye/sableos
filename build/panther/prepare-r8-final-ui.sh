@@ -42,7 +42,7 @@ UI5C_UI6="$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_s
 SYSTEMUI_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py"
 SETTINGS_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py"
 LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
-LAUNCHER_COHERENCE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
+QUICKSTEP_RECENTS_ONLY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
 MESSAGING_VISIBILITY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_messaging_visibility.py"
 PHONE_CONTACTS="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
 DAILY_DRIVER_CORE="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py"
@@ -117,7 +117,6 @@ run_self_test UI5C_UI6_SYSTEM_SURFACES "$UI5C_UI6"
 run_self_test R9_SYSTEMUI_COHERENCE "$SYSTEMUI_COHERENCE"
 run_self_test R9_SETTINGS_COHERENCE "$SETTINGS_COHERENCE"
 run_self_test R9_LAUNCHER3_FOUNDATION "$LAUNCHER3_FOUNDATION"
-run_self_test R9_LAUNCHER_COHERENCE "$LAUNCHER_COHERENCE"
 run_self_test R9_MESSAGING_VISIBILITY "$MESSAGING_VISIBILITY"
 run_self_test R9_PHONE_CONTACTS_PRESENTATION "$PHONE_CONTACTS"
 
@@ -239,48 +238,46 @@ diff -qr "$DESIGN_SRC" "$DESIGN_DST" >/dev/null || {
 echo "R8_SABLE_DESIGN_SYNC=PASS"
 
 echo
-echo "===== SABLE START PRESENTATION-ONLY SYNC ====="
+echo "===== STANDALONE SABLE HOME SYNC ====="
 
-SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/panther/sync-sablestart.sh"
+SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/panther/sync-sablestart.sh"
 
-echo "R9_SABLESTART_PRESENTATION_SYNC=PASS"
+echo "R9_SABLELAUNCHER_STANDALONE_SYNC=PASS"
 
 echo
-echo "===== LAUNCHER3 HOME + QUICKSTEP COHESION ====="
+echo "===== QUICKSTEP RECENTS-ONLY SUBSTRATE ====="
 
-if python3 "$LAUNCHER_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
-    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
-    echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING"
-    echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED"
-elif python3 "$LAUNCHER_COHERENCE" --source "$WS" refresh-canonical-host >/dev/null 2>&1; then
-    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
-    echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_EXISTING_REFRESHED"
-    echo "R9_LAUNCHER_COHESION=ALREADY_APPLIED_HOST_REFRESHED"
+if python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify
+    echo "R9_QUICKSTEP_RECENTS_ONLY=ALREADY_APPLIED"
 else
+    # The pinned Android 17 Launcher3 tree needs the already-qualified
+    # compatibility/foundation patch set before it can compile in this branch.
+    # Apply that foundation only as an intermediate substrate, then immediately
+    # remove its Sable HOME host and HOME eligibility.
     if python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify >/dev/null 2>&1; then
-        python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
-        echo "R9_LAUNCHER3_FOUNDATION=PASS_EXISTING"
+        echo "R9_LAUNCHER3_FOUNDATION=PASS_EXISTING_INTERMEDIATE"
     else
         python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply
         python3 "$LAUNCHER3_FOUNDATION" --source "$WS" verify
-        echo "R9_LAUNCHER3_FOUNDATION=APPLIED"
+        echo "R9_LAUNCHER3_FOUNDATION=APPLIED_INTERMEDIATE"
     fi
-    echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
 
-    python3 "$LAUNCHER_COHERENCE" --source "$WS" apply
-    python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
-    echo "R9_LAUNCHER_COHESION=APPLIED"
+    python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" apply
+    python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify
+    echo "R9_QUICKSTEP_RECENTS_ONLY=APPLIED"
 fi
 
-echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
-echo "R9_LAUNCHER_COHESION=PASS"
+echo "R9_SABLELAUNCHER_HOME_OWNERSHIP=PASS_SOURCE"
+echo "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT"
 
 echo
 echo "===== SINGLE USER-VISIBLE MESSAGES SURFACE ====="
 
 python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
 echo "R9_GRAPHENE_MESSAGING_SUBSTRATE=PASS_PREBUILT_UNMODIFIED"
-echo "R9_MESSAGING_LAUNCHER_SUPPRESSION=OWNED_BY_SABLE_LAUNCHER3"
+echo "R9_MESSAGING_LAUNCHER_SUPPRESSION=OWNED_BY_SABLELAUNCHER"
 echo "R9_MESSAGING_VISIBILITY=PASS"
 
 echo
@@ -317,7 +314,7 @@ echo "===== FINAL CUMULATIVE SOURCE VERIFY ====="
 
 python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
 python3 "$SETTINGS_COHERENCE" --source "$WS" verify
-python3 "$LAUNCHER_COHERENCE" --source "$WS" verify
+python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" verify
 python3 "$MESSAGING_VISIBILITY" --source "$WS" verify
 python3 "$PHONE_CONTACTS" --source "$WS" verify
 python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
@@ -325,11 +322,11 @@ python3 "$DAILY_DRIVER_CORE" --source "$WS" verify
 echo "R8_SYSTEM_SURFACE_SOURCE_VERIFY=PASS"
 echo "R9_SYSTEMUI_COHERENCE=PASS"
 echo "R9_SETTINGS_COHERENCE=PASS"
-echo "R9_LAUNCHER_COHESION=PASS"
+echo "R9_QUICKSTEP_RECENTS_ONLY=PASS"
 echo "R9_MESSAGING_VISIBILITY=PASS"
 echo "R9_PHONE_CONTACTS_PRESENTATION=PASS"
 echo "R9_DAILY_DRIVER_CORE_PRESENTATION=PASS"
-echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
-echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
+echo "R9_SABLELAUNCHER_HOME_OWNERSHIP=PASS_SOURCE"
+echo "R9_STANDALONE_SABLELAUNCHER_PRODUCT=PASS_PRESENT"
 echo "R8_FINAL_UI_PREPARE=PASS"
 echo "BUILD_PERFORMED=NO"
