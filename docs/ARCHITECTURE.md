@@ -50,7 +50,8 @@ bramble service baseline above. Current R9 source/module closure establishes:
 - standalone Sable Text Reader (`org.sableos.textreader`) owning plain-text
   VIEW/SEND/PROCESS_TEXT, text TTS/audio export and user-directed
   camera/gallery OCR; its Sable flavor is offline-first with no INTERNET
-  permission, translation dependency/UI or model-download path;
+  permission, translation dependency/UI or model-download path, bounds each
+  text ingestion to 2 MiB, and permits only local TTS voices;
 - Clock/Photos using qualified Day/Night presentation while Camera remains an
   intentionally upstream, security-sensitive dark-presentation boundary;
 - Sable Messages as a native-first SMS/People surface while the pinned
