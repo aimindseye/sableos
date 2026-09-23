@@ -628,11 +628,10 @@ def repair_known_setup_strings_alias(
     # in the inherited UI4 dirty scope. A newly introduced later-layer path
     # (AdbNotifications.java) is outside UI4 and is subtracted here, then
     # independently verified by the R9 SystemUI coherence layer.
-    later_new_modified_dirt = {
-        f" M {path.as_posix()}"
-        for path in allowed_later_framework_modified
-        if path not in set(ui4.PATCHES)
-    }
+    later_new_modified_dirt = later_new_framework_modified_dirt(
+        allowed_later_framework_modified,
+        set(ui4.PATCHES),
+    )
     framework_for_ui6 = (
         actual_framework
         - allowed_framework_untracked_dirt
@@ -692,6 +691,18 @@ def repair_known_setup_strings_alias(
     )
     print("SABLE_UI5C_SETUP_STRINGS_RESOURCE=REPAIRED_KNOWN_TEMPLATE_ALIAS")
     print("SABLE_UI5C_UI6_RESOURCE_REPAIR=PASS")
+
+
+def later_new_framework_modified_dirt(
+    allowed_later_framework_modified: tuple[Path, ...],
+    ui4_paths: set[Path],
+) -> set[str]:
+    """Return only later modified paths which are new beyond inherited UI4 dirt."""
+    return {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
+        if path not in ui4_paths
+    }
 
 
 def verify_ui4_tokens(
@@ -801,11 +812,10 @@ def verify(
             f"{sorted(missing_allowed_later)!r}"
         )
 
-    later_new_modified_dirt = {
-        f" M {path.as_posix()}"
-        for path in allowed_later_framework_modified
-        if path not in set(ui4.PATCHES)
-    }
+    later_new_modified_dirt = later_new_framework_modified_dirt(
+        allowed_later_framework_modified,
+        set(ui4.PATCHES),
+    )
     framework_for_ui6 = (
         actual_framework
         - allowed_later_untracked_dirt
@@ -980,19 +990,19 @@ def self_test() -> None:
     if KNOWN_LATER_FRAMEWORK_MODIFIED != required_later_paths:
         raise SystemExit("UI5C_UI6_SELF_TEST_KNOWN_LATER_FRAMEWORK_SCOPE_FAIL")
 
-    # Prove the mixed later-layer rule: an inherited UI4 path remains part of
-    # UI4 scope, while a genuinely new later path is the only modified path
-    # removed before UI5C/UI6 scope comparison.
+    # Prove the mixed later-layer rule through the same helper used by verify:
+    # inherited Tile.kt stays in UI4 scope; only the new ADB source is removed.
     fake_ui4_paths = {
         Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt")
     }
-    later_new = {
-        path
-        for path in required_later_paths
-        if path not in fake_ui4_paths
-    }
-    if later_new != {Path("core/java/android/debug/AdbNotifications.java")}:
-        raise SystemExit("UI5C_UI6_SELF_TEST_MIXED_LATER_SCOPE_FAIL")
+    later_new = later_new_framework_modified_dirt(
+        tuple(required_later_paths),
+        fake_ui4_paths,
+    )
+    if later_new != {" M core/java/android/debug/AdbNotifications.java"}:
+        raise SystemExit(
+            f"UI5C_UI6_SELF_TEST_MIXED_LATER_SCOPE_FAIL={sorted(later_new)!r}"
+        )
 
     print("SABLE_UI5C_UI6_MIXED_LATER_SCOPE_SELF_TEST=PASS")
     print("SABLE_UI5C_UI6_KNOWN_LATER_FRAMEWORK_SCOPE_SELF_TEST=PASS")
