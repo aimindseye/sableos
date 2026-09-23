@@ -201,6 +201,17 @@ forbid(
     "GrapheneOS",
 )
 
+# Framework-owned developer notifications are user-visible product shell.
+# Keep the underlying android package identity, but substitute the visible
+# notification app name with SableOS rather than leaking the upstream OS brand.
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
+    "core/java/android/debug/AdbNotifications.java",
+    "Notification.EXTRA_SUBSTITUTE_APP_NAME",
+    '"SableOS"',
+    "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS",
+)
+
 # Messages People uses the already sorted local ContactsProvider snapshot and
 # a bounded lazy-list alphabet rail; it does not introduce a second contact DB.
 require(
