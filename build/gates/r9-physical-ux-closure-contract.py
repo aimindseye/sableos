@@ -318,6 +318,15 @@ require(
     "SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT",
 )
 require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
+    "classify_dirty_scope_from_expected",
+    '"PRE_COHESION"',
+    '"FINAL_COHESION"',
+    "R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=AUTHORIZED_BOUNDED_FINAL_SCOPE",
+    "R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS",
+)
+
+require(
     "build/panther/prepare-r8-final-ui.sh",
     "R9_SABLELAUNCHER_STANDALONE_SYNC=PASS",
     "R9_QUICKSTEP_RECENTS_ONLY=APPLIED",
