@@ -205,11 +205,11 @@ public final class SableAppearanceProvider extends ContentProvider {
 
         PackageManager pm = requireProviderContext().getPackageManager();
         String[] packages = pm.getPackagesForUid(callingUid);
-        if (packages != null && Arrays.asList(packages).contains("com.android.launcher3")) {
+        if (packages != null && Arrays.asList(packages).contains("org.sableos.launcher")) {
             return;
         }
 
         throw new SecurityException(
-                "Sable appearance writes are restricted to Settings and Launcher3");
+                "Sable appearance writes are restricted to Settings and SableLauncher");
     }
 }
