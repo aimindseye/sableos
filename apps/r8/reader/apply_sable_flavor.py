@@ -1320,6 +1320,45 @@ fun ProductReaderTheme(
     )
     print("SABLE_READER_IN_APP_PRODUCT_IDENTITY=PASS_SABLE_READER")
 
+    about_screen = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/ui/settings/AboutScreen.kt"
+    )
+    for old, new, marker in (
+        (
+            '                title = { Text("About Leisure Vaachak") },',
+            '                title = { Text(if (BuildConfig.SABLE_PRODUCT) "About Sable Reader" else "About Leisure Vaachak") },',
+            "SABLE_READER_ABOUT_TITLE_IDENTITY",
+        ),
+        (
+            '                        text = "Leisure Vaachak",',
+            '                        text = if (BuildConfig.SABLE_PRODUCT) "Sable Reader" else "Leisure Vaachak",',
+            "SABLE_READER_ABOUT_PRODUCT_IDENTITY",
+        ),
+        (
+            '                        text = "Part of Vaachak Platform",',
+            '                        text = if (BuildConfig.SABLE_PRODUCT) "Based on Vaachak Platform" else "Part of Vaachak Platform",',
+            "SABLE_READER_ABOUT_UPSTREAM_ATTRIBUTION",
+        ),
+        (
+            '                        text = "Leisure Vaachak separates leisure reading from study/work reading so users can stay immersed and undistracted.",',
+            '                        text = if (BuildConfig.SABLE_PRODUCT) "Sable Reader separates leisure reading from study/work reading so users can stay immersed and undistracted." else "Leisure Vaachak separates leisure reading from study/work reading so users can stay immersed and undistracted.",',
+            "SABLE_READER_ABOUT_DESCRIPTION_IDENTITY",
+        ),
+        (
+            '                        subtitle = "Source code for Leisure Vaachak",',
+            '                        subtitle = if (BuildConfig.SABLE_PRODUCT) "Upstream Vaachak source used by Sable Reader" else "Source code for Leisure Vaachak",',
+            "SABLE_READER_ABOUT_SOURCE_ATTRIBUTION",
+        ),
+        (
+            '                        library = "Leisure Vaachak",',
+            '                        library = if (BuildConfig.SABLE_PRODUCT) "Sable Reader / Vaachak upstream" else "Leisure Vaachak",',
+            "SABLE_READER_ABOUT_LICENSE_ATTRIBUTION",
+        ),
+    ):
+        replace_exact_text(about_screen, old, new, marker)
+    print("SABLE_READER_ABOUT_IDENTITY=PASS_SABLE_READER_WITH_UPSTREAM_ATTRIBUTION")
+
     # Plain-text, share/process-text, OCR and text-specific TTS are intentionally
     # owned by the standalone Sable Text Reader product.
     print("SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT")
