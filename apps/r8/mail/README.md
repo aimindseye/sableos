@@ -46,7 +46,10 @@ product-policy change is explicitly listed below.
   Slate are read from the read-only SableStart appearance provider;
 - upstream received-message remote network content remains blocked until the
   message-view flow explicitly enables it; this privacy behavior is a source
-  qualification anchor and must not be weakened by Sable branding work.
+  qualification anchor and must not be weakened by Sable branding work;
+- the launcher live-snapshot provider exposes notification-count state only and
+  admits `org.sableos.launcher`; the retired Launcher3 HOME package is not an
+  authorized snapshot caller.
 
 The global appearance provider carries presentation state only. It does not
 expose account, mail, contacts, device or security-sensitive data.
@@ -58,26 +61,31 @@ python3 apps/r8/mail/apply_sable_flavor.py /path/to/thunderbird-android
 python3 apps/r8/mail/verify_sable_mail.py /path/to/thunderbird-android
 ```
 
-Sable Mail uses two CI tiers:
+Sable Mail is qualified by the repository's local-direct CI path; GitHub
+Actions and self-hosted GitHub runners are not part of the SableOS qualification
+boundary.
 
-1. **Product gate — `.github/workflows/r8-mail.yml`**
-   - runs only when the Mail adaptation, Mail verifier, or pinned upstream identity changes;
-   - does not run for unrelated SableStart/shared-design changes or for workflow-only edits; those are covered by repository CI policy and the fast final-UI closure static workflow;
-   - verifies the composed Sable Mail source policy;
-   - lints the shipped `fossRelease` variant;
-   - proves the exact FOSS release runtime dependency policy;
-   - builds `:app-thunderbird:assembleFossRelease -Pci=true`;
-   - verifies the APK identity/policy and records its SHA-256.
-2. **Manual upstream qualification — `.github/workflows/r8-mail-upstream.yml`**
-   - runs only by explicit manual dispatch;
-   - applies the Sable adaptation and source-policy verifier first;
-   - runs Thunderbird's repository-wide `testsOnCi --parallel` suite, including
-     upstream unit tests that may require Sable-specific expectation updates.
+For a `full` local CI run, the Mail stage:
 
-Unit tests are intentionally not a blocking ordinary PR gate while the
-Thunderbird adaptation stabilizes. Run the manual upstream qualification after
-changing the Thunderbird pin, adaptation-sensitive dependency wiring, or
-upstream-derived test expectations.
+1. checks out the pinned Thunderbird commit into the local CI cache;
+2. applies the Sable flavor;
+3. verifies the composed source policy, including the SableLauncher-only
+   snapshot-provider caller boundary;
+4. compiles the account-setup, onboarding and launcher navigation modules;
+5. lints the shipped `fossRelease` variant;
+6. verifies the exact FOSS release runtime dependency policy;
+7. builds `:app-thunderbird:assembleFossRelease -Pci=true`;
+8. re-verifies the built APK identity/policy and records its SHA-256.
+
+The canonical repository entry point is:
+
+```bash
+bash build/sable.sh panther R9 ci full
+```
+
+A Mail-specific source check may be run against a pinned Thunderbird checkout
+with the two Python commands above, but successful standalone Mail validation
+does not replace the source-bound full local-CI attestation.
 
 A successful standalone build does not authorize Panther inclusion. The APK
 must enter the source-bound R8 app bundle and pass the Panther product and
