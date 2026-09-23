@@ -464,6 +464,8 @@ Activation is last.
 
 For a dedicated development device, direct controlled flashing may be used when the device-specific gate explicitly authorizes it, but the script must first verify expected product identity, bootloader state, image hashes and flash target.
 
+When more than one Android device is attached to the build host, deployment must be bound to an explicit operator-selected serial. Additional ADB or fastboot transports may remain attached only when every mutating device command is serial-scoped and the selected serial is proven present exactly once in the relevant transport before mutation. The presence of unrelated attached devices must not cause an implicit target selection, and a missing or ambiguous selected serial remains a hard failure.
+
 For a production kernel security update, root/unlocked flashing is not the delivery model. Use the Sable-signed supported A/B OTA/update path to the inactive slot, updating the exact affected kernel/module partitions and preserving the prior successful slot through closure.
 
 ## Runtime Security Proof
