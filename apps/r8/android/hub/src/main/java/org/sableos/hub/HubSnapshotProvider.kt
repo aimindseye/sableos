@@ -33,12 +33,12 @@ class HubSnapshotProvider : ContentProvider() {
                     appContext
                         .contentResolver
                         .query(
-                        Telephony.Sms.Inbox.CONTENT_URI,
-                        arrayOf(Telephony.Sms._ID),
-                        Telephony.Sms.READ + "=0",
-                        null,
-                        null,
-                    )?.use { it.count } ?: 0
+                            Telephony.Sms.Inbox.CONTENT_URI,
+                            arrayOf(Telephony.Sms._ID),
+                            Telephony.Sms.READ + "=0",
+                            null,
+                            null,
+                        )?.use { it.count } ?: 0
                 }.getOrDefault(0)
             } else {
                 null
