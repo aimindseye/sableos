@@ -96,8 +96,6 @@ def main() -> None:
     require(design, 'AUTHORITY = "org.sableos.appearance"', "SABLE_TEXT_READER_APPEARANCE_AUTHORITY")
 
     manifest_text = manifest_path.read_text(encoding="utf-8")
-    if "android.permission.INTERNET" in manifest_text:
-        fail("SABLE_TEXT_READER_INTERNET_PERMISSION")
     for token in (
         "android.permission.CAMERA",
         'android.hardware.camera" android:required="false"',
@@ -114,6 +112,21 @@ def main() -> None:
 
     root_xml = ET.fromstring(manifest_text)
     android = "{http://schemas.android.com/apk/res/android}"
+    tools = "{http://schemas.android.com/tools}"
+
+    internet_rules = [
+        node
+        for node in root_xml.findall("uses-permission")
+        if node.attrib.get(android + "name") == "android.permission.INTERNET"
+    ]
+    if len(internet_rules) != 1:
+        fail(
+            "SABLE_TEXT_READER_INTERNET_MERGE_RULE",
+            f"count={len(internet_rules)}",
+        )
+    if internet_rules[0].attrib.get(tools + "node") != "remove":
+        fail("SABLE_TEXT_READER_INTERNET_MERGE_RULE", "tools:node!=remove")
+
     app = root_xml.find("application")
     if app is None:
         fail("SABLE_TEXT_READER_MANIFEST_APPLICATION")
@@ -141,7 +154,8 @@ def main() -> None:
         fail("SABLE_TEXT_READER_LAUNCHER_COUNT", f"count={launcher_count}")
 
     print("SABLE_TEXT_READER_MIN_SDK=PASS_30")
-    print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
+    print("SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE")
+    print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_FINAL_APK_ABSENT_REQUIRED")
     print("SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED")
     print("SABLE_TEXT_READER_CAMERA_PERMISSION=PASS_OPTIONAL_RUNTIME_ONLY")
     print("SABLE_TEXT_READER_VIEW=PASS")
