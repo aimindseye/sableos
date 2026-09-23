@@ -213,9 +213,11 @@ NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 Reader/Text Reader requirement: Sable Reader is publication-only and must not
 compose the TextReader/OCR runtime or request camera permission. Standalone
 Sable Text Reader owns bounded TXT/VIEW/SEND/PROCESS_TEXT, local-only TTS/audio
-export and optional camera/gallery OCR. Its Sable APK must have no INTERNET
-permission, no translation/model-download path, a 2 MiB text-ingestion bound,
-and no network-required TTS voice fallback. Camera hardware remains optional
+export and optional camera/gallery OCR. Its source manifest must actively remove
+inherited INTERNET via the Android manifest merger, and its final Sable APK must
+contain no INTERNET permission. It must also have no translation/model-download
+path, a 2 MiB text-ingestion bound, and no network-required TTS voice fallback.
+Camera hardware remains optional
 and camera permission is scoped to the camera-OCR flow.
 
 ## Kernel Baseline and Independent Security Update Gate
