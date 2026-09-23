@@ -45,14 +45,10 @@ require(
     "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
     "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
 )
-forbid(
-    "apps/r8/textreader/apply_sable_flavor.py",
-    'implementation("com.google.mlkit:translate:17.0.3")',
-)
-
 require(
     "apps/r8/textreader/verify_sable_textreader.py",
     'EXPECTED_PACKAGE = "org.sableos.textreader"',
+    'forbid(build, "com.google.mlkit:translate", "SABLE_TEXT_READER_TRANSLATION_DEPENDENCY")',
     "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT",
     "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
     "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
