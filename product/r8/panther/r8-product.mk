@@ -14,6 +14,7 @@ PRODUCT_PACKAGES += \
     SableMinesweeper \
     Sable2048 \
     SableMedia \
+    SableTextReader \
     SableReader \
     SableHub \
     SableMail \
