@@ -248,6 +248,8 @@ python3 \
     packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt \
     --allow-framework-modified \
     packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt \
+    --allow-framework-modified \
+    core/java/android/debug/AdbNotifications.java \
     --allow-settings-modified \
     AndroidManifest.xml \
     --allow-settings-modified \
