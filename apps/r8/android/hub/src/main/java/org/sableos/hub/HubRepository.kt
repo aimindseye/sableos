@@ -336,22 +336,22 @@ class HubRepository(
             context
                 .contentResolver
                 .query(
-                uri,
-                arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    cursor.getString(
-                        cursor.getColumnIndexOrThrow(
-                            ContactsContract.PhoneLookup.DISPLAY_NAME,
-                        ),
-                    )
-                } else {
-                    null
+                    uri,
+                    arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        cursor.getString(
+                            cursor.getColumnIndexOrThrow(
+                                ContactsContract.PhoneLookup.DISPLAY_NAME,
+                            ),
+                        )
+                    } else {
+                        null
+                    }
                 }
-            }
         }.getOrNull()
     }
 
