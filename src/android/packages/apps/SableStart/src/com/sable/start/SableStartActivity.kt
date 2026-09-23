@@ -16,7 +16,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
 import org.sableos.design.applySableSystemBars
-import org.sableos.design.readGlobalSableAppearance
 import org.sableos.design.rememberGlobalSableAppearance
 import org.sableos.design.resolveSableDarkAppearance
 import org.sableos.design.writeGlobalSableAppearance
@@ -57,7 +56,7 @@ class SableStartActivity : ComponentActivity() {
                 scheduleInventoryRefresh()
 
             override fun onPackagesAvailable(
-                packageNames: Array<out String>,
+                vararg packageNames: String,
                 user: UserHandle,
                 replacing: Boolean,
             ) = scheduleInventoryRefresh()
@@ -69,12 +68,12 @@ class SableStartActivity : ComponentActivity() {
             ) = scheduleInventoryRefresh()
 
             override fun onPackagesSuspended(
-                packageNames: Array<out String>,
+                vararg packageNames: String,
                 user: UserHandle,
             ) = scheduleInventoryRefresh()
 
             override fun onPackagesUnsuspended(
-                packageNames: Array<out String>,
+                vararg packageNames: String,
                 user: UserHandle,
             ) = scheduleInventoryRefresh()
         }
