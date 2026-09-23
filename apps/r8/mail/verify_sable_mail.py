@@ -407,7 +407,8 @@ def main() -> None:
         '"no mail alerts"',
         '" mail alerts"',
         "content://org.sableos.mail.snapshot/current",
-        'if ("com.android.launcher3" !in packages)',
+        'if ("org.sableos.launcher" !in packages)',
+        "Sable live snapshot is restricted to SableLauncher.",
         "SecurityException(",
         "Binder.getCallingUid()",
         "UnsupportedOperationException",
@@ -417,6 +418,12 @@ def main() -> None:
             needle,
             "SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT",
         )
+    reject_text(
+        snapshot_provider,
+        'if ("com.android.launcher3" !in packages)',
+        "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER",
+    )
+    print("SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT")
     print("SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT=PASS_NOTIFICATION_COUNT_ONLY")
     app_source = (
         app
