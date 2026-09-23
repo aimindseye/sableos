@@ -131,8 +131,6 @@ TRANSFORMS = {
          '<style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">'),
         (('<style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Dialog"/>',),
          '<style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Light.Dialog"/>'),
-        (('<item name="android:windowBackground">@android:color/black</item>',),
-         '<item name="android:windowBackground">@color/default_background</item>'),
         (('<style name="Holo.ActionBar" parent="android:Widget.Holo.ActionBar">',),
          '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">'),
     ),
@@ -284,6 +282,46 @@ def verify_deskclock_semantic_text(root: Path) -> None:
             raise PresentationError(f"DeskClock stale light-invisible token: {stale}")
 
 
+def apply_gallery_light_window(root: Path) -> None:
+    path = root / "packages/apps/Gallery2/res/values/styles.xml"
+    text = path.read_text(encoding="utf-8")
+    gallery_anchor = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+        <item name="android:displayOptions"></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
+        <item name="android:windowBackground">@android:color/black</item>
+"""
+    gallery_replacement = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+        <item name="android:displayOptions"></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
+        <item name="android:windowBackground">@color/default_background</item>
+"""
+    if gallery_replacement in text:
+        return
+    if text.count(gallery_anchor) != 1:
+        raise PresentationError("Gallery light window style anchor mismatch")
+    path.write_text(
+        text.replace(gallery_anchor, gallery_replacement, 1),
+        encoding="utf-8",
+    )
+
+
+def verify_gallery_light_window(root: Path) -> None:
+    text = (
+        root / "packages/apps/Gallery2/res/values/styles.xml"
+    ).read_text(encoding="utf-8")
+    if (
+        '<style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">'
+        not in text
+        or '<item name="android:windowBackground">@color/default_background</item>'
+        not in text
+        or '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">'
+        not in text
+    ):
+        raise PresentationError("Gallery light base theme incomplete")
+
+
 def gallery_night_styles(root: Path) -> str:
     text = (
         root / "packages/apps/Gallery2/res/values/styles.xml"
@@ -371,11 +409,13 @@ def main() -> int:
         for rel, transforms in TRANSFORMS.items():
             apply_file(root / rel, transforms)
         apply_deskclock_semantic_text(root)
+        apply_gallery_light_window(root)
         apply_generated(root)
 
     for rel, transforms in TRANSFORMS.items():
         verify_file(root / rel, transforms)
     verify_deskclock_semantic_text(root)
+    verify_gallery_light_window(root)
     verify_generated(root)
     verify_binary_boundaries(root)
 
