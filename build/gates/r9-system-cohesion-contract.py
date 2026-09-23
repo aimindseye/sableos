@@ -289,10 +289,12 @@ require(
     "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
     "private fun MediaAlphabetRail(",
     "buildMediaSectionTargets(",
-    "LibraryPivot.Songs -> songs.map { it.title }",
-    "LibraryPivot.Artists -> artistGroups.map { it.first }",
-    "LibraryPivot.Albums -> albumGroups.map { it.first }",
-    "LibraryPivot.Favorites -> favorites.map { it.title }",
+    "produceState<MediaCollectionIndex?>",
+    "withContext(Dispatchers.Default)",
+    "LibraryPivot.Songs to",
+    "LibraryPivot.Artists to",
+    "LibraryPivot.Albums to",
+    "LibraryPivot.Favorites to",
     "HorizontalDivider(",
     'text = if (favorite) "★" else "☆"',
     'text = "▶"',
@@ -300,6 +302,25 @@ require(
 forbid(
     "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
     'text = "×"',
+    "playback.queue.count { item ->",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaC2Screens.kt",
+    "count = upcomingCount",
+    "items = localItems",
+)
+forbid(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaC2Screens.kt",
+    "upcomingItems.forEachIndexed",
+    "localItems.forEach { item ->",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackController.kt",
+    "fun setProgressUpdatesEnabled(enabled: Boolean)",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackQueueRequestStore.kt",
+    "AtomicReference<PlaybackQueueRequest?>",
 )
 
 # ---------------------------------------------------------------------------
@@ -355,4 +376,5 @@ print("R9_READER_APPEARANCE_CONTRACT=PASS_SABLEOS_GLOBAL")
 print("R9_READER_LIBRARY_CONTRACT=PASS_ACTUAL_BOOKS_CONTINUOUS")
 print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
+print("R9_MEDIA_LARGE_LIBRARY_ANR_CONTRACT=PASS")
 print("R9_SYSTEM_COHESION_CONTRACT=PASS")
