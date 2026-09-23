@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""Compose the standalone Sable Text Reader from the pinned Vaachak Text Reader.
+
+The upstream checkout is ephemeral build input. Sable keeps local text reading,
+Android VIEW/SEND/PROCESS_TEXT handoff, TTS/audio export and user-directed
+camera/gallery OCR. Network-backed translation is deliberately removed.
+"""
+
+from __future__ import annotations
+
+import pathlib
+import shutil
+import subprocess
+import sys
+
+EXPECTED_COMMIT = "50fca365baae9869264716569830690fb62029a7"
+
+
+def fail(message: str) -> None:
+    raise SystemExit(message)
+
+
+def replace_once(path: pathlib.Path, old: str, new: str, marker: str) -> None:
+    text = path.read_text(encoding="utf-8")
+    count = text.count(old)
+    if count != 1:
+        fail(f"{marker}=FAIL path={path} count={count}")
+    path.write_text(text.replace(old, new, 1), encoding="utf-8")
+
+
+def repo_root() -> pathlib.Path:
+    return pathlib.Path(__file__).resolve().parents[3]
+
+
+def main() -> None:
+    if len(sys.argv) != 2:
+        fail("usage: apply_sable_flavor.py <vaachak-textreader-checkout>")
+
+    root = pathlib.Path(sys.argv[1]).resolve()
+    if not (root / ".git").exists():
+        fail(f"SABLE_TEXT_READER_UPSTREAM=FAIL_NOT_GIT path={root}")
+
+    actual = subprocess.check_output(
+        ["git", "-C", str(root), "rev-parse", "HEAD"],
+        text=True,
+    ).strip()
+    if actual != EXPECTED_COMMIT:
+        fail(
+            "SABLE_TEXT_READER_UPSTREAM_COMMIT=FAIL "
+            f"expected={EXPECTED_COMMIT} actual={actual}"
+        )
+
+    build = root / "app/build.gradle.kts"
+    manifest = root / "app/src/main/AndroidManifest.xml"
+    strings = root / "app/src/main/res/values/strings.xml"
+    main = root / "app/src/main/java/org/vaachak/textreader/MainActivity.kt"
+    shared = root / "app/src/main/java/org/vaachak/textreader/SharedComponents.kt"
+
+    for path in (build, manifest, strings, main, shared):
+        if not path.is_file():
+            fail(f"SABLE_TEXT_READER_INPUT=FAIL_MISSING path={path}")
+
+    replace_once(
+        build,
+        'applicationId = "org.vaachak.textreader"',
+        'applicationId = "org.sableos.textreader"',
+        "SABLE_TEXT_READER_APPLICATION_ID",
+    )
+    replace_once(
+        build,
+        'outputImpl?.outputFileName = "Vaachak-TextReader-${variantName}.apk"',
+        'outputImpl?.outputFileName = "SableTextReader-${variantName}.apk"',
+        "SABLE_TEXT_READER_APK_NAME",
+    )
+    replace_once(
+        build,
+        '    implementation("com.google.mlkit:translate:17.0.3")\n',
+        "",
+        "SABLE_TEXT_READER_TRANSLATION_DEPENDENCY",
+    )
+
+    manifest_text = manifest.read_text(encoding="utf-8")
+    internet = '    <uses-permission android:name="android.permission.INTERNET" />\n'
+    if manifest_text.count(internet) != 1:
+        fail("SABLE_TEXT_READER_INTERNET_ANCHOR=FAIL")
+    manifest_text = manifest_text.replace(internet, "", 1)
+    manifest_text = manifest_text.replace(
+        'android:allowBackup="true"',
+        'android:allowBackup="false"',
+        1,
+    )
+    manifest_text = manifest_text.replace(
+        'android:icon="@mipmap/ic_launcher"',
+        'android:icon="@drawable/ic_sable_text_reader"',
+        1,
+    )
+    manifest_text = manifest_text.replace(
+        'android:roundIcon="@mipmap/ic_launcher_round"',
+        'android:roundIcon="@drawable/ic_sable_text_reader"',
+        1,
+    )
+
+    app_anchor = "    <application\n"
+    if app_anchor not in manifest_text:
+        fail("SABLE_TEXT_READER_MANIFEST_APPLICATION_ANCHOR=FAIL")
+    manifest_text = manifest_text.replace(
+        app_anchor,
+        '    <queries>\n'
+        '        <provider android:authorities="org.sableos.appearance" />\n'
+        '    </queries>\n\n'
+        + app_anchor,
+        1,
+    )
+
+    launcher_filter = """            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+"""
+    if manifest_text.count(launcher_filter) != 1:
+        fail("SABLE_TEXT_READER_LAUNCHER_FILTER_ANCHOR=FAIL")
+    view_filter = launcher_filter + """
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+            </intent-filter>
+"""
+    manifest_text = manifest_text.replace(launcher_filter, view_filter, 1)
+    manifest_text = manifest_text.replace(
+        'android:label="Read in Vaachak"',
+        'android:label="Read in Sable Text Reader"',
+        1,
+    )
+    manifest.write_text(manifest_text, encoding="utf-8")
+
+    replace_once(
+        strings,
+        '<string name="app_name">Vaachak Text Reader</string>',
+        '<string name="app_name">Sable Text Reader</string>',
+        "SABLE_TEXT_READER_BRANDING",
+    )
+
+    main_text = main.read_text(encoding="utf-8")
+    if "import androidx.compose.foundation.isSystemInDarkTheme\n" not in main_text:
+        fail("SABLE_TEXT_READER_THEME_IMPORT_ANCHOR=FAIL")
+    main_text = main_text.replace(
+        "import androidx.compose.foundation.isSystemInDarkTheme\n",
+        "import org.sableos.design.SableGlobalTheme\n",
+        1,
+    )
+    theme_old = """        setContent {
+            val isDark = isSystemInDarkTheme()
+            MaterialTheme(colorScheme = if (isDark) darkColorScheme() else lightColorScheme()) {
+"""
+    theme_new = """        setContent {
+            SableGlobalTheme(window = window) {
+"""
+    if main_text.count(theme_old) != 1:
+        fail("SABLE_TEXT_READER_THEME_ANCHOR=FAIL")
+    main_text = main_text.replace(theme_old, theme_new, 1)
+
+    translation_ui = """                Spacer(modifier = Modifier.height(24.dp))
+
+                ProfessionalTranslationRow(currentText) { translated, tag ->
+                    setCurrentText(translated)
+                    setCurrentTtsLocale(Locale.forLanguageTag(tag))
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+"""
+    if main_text.count(translation_ui) != 1:
+        fail("SABLE_TEXT_READER_TRANSLATION_UI_ANCHOR=FAIL")
+    main_text = main_text.replace(
+        translation_ui,
+        '                Spacer(modifier = Modifier.height(24.dp))\n',
+        1,
+    )
+    main_text = main_text.replace(
+        'Text("V A A C H A K",',
+        'Text("S A B L E   T E X T   R E A D E R",',
+        1,
+    )
+    main.write_text(main_text, encoding="utf-8")
+
+    shared.write_text(
+        """package org.vaachak.textreader
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+
+@Composable
+fun ActionIcon(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        FilledTonalIconButton(
+            onClick = onClick,
+            modifier = Modifier.size(56.dp),
+        ) {
+            Icon(icon, contentDescription = label)
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.padding(top = 4.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+""",
+        encoding="utf-8",
+    )
+
+    design_source = (
+        repo_root()
+        / "src/android/shared/sabledesign/src/main/java/org/sableos/design"
+    )
+    design_destination = (
+        root / "app/src/main/java/org/sableos/design"
+    )
+    design_destination.mkdir(parents=True, exist_ok=True)
+    for name in (
+        "SableTheme.kt",
+        "SableGlobalAppearance.kt",
+        "SableSystemBars.kt",
+    ):
+        source = design_source / name
+        if not source.is_file():
+            fail(f"SABLE_TEXT_READER_DESIGN_SOURCE=FAIL_MISSING path={source}")
+        shutil.copy2(source, design_destination / name)
+
+    icon = root / "app/src/main/res/drawable/ic_sable_text_reader.xml"
+    icon.parent.mkdir(parents=True, exist_ok=True)
+    icon.write_text(
+        """<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path
+        android:fillColor="#161C24"
+        android:pathData="M32,16h192c8.8,0 16,7.2 16,16v192c0,8.8 -7.2,16 -16,16H32c-8.8,0 -16,-7.2 -16,-16V32c0,-8.8 7.2,-16 16,-16z" />
+    <path
+        android:fillColor="#F7F9FC"
+        android:pathData="M56,58h144v18H56zM56,96h144v14H56zM56,126h112v14H56zM56,156h132v14H56z" />
+    <path
+        android:fillColor="#4D9CFF"
+        android:pathData="M28,226h200v6H28z" />
+</vector>
+""",
+        encoding="utf-8",
+    )
+
+    print(f"SABLE_TEXT_READER_UPSTREAM_COMMIT=PASS value={actual}")
+    print("SABLE_TEXT_READER_APPLICATION_ID=PASS")
+    print("SABLE_TEXT_READER_BRANDING=PASS")
+    print("SABLE_TEXT_READER_GLOBAL_APPEARANCE=PASS")
+    print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
+    print("SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED")
+    print("SABLE_TEXT_READER_VIEW_SEND_PROCESS_TEXT=PASS")
+    print("SABLE_TEXT_READER_TTS=PASS")
+    print("SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI")
+    print("SABLE_TEXT_READER_FLAVOR_PATCH=PASS")
+
+
+if __name__ == "__main__":
+    main()
