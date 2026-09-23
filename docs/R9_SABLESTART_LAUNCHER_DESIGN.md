@@ -362,8 +362,8 @@ nothing
 The user may disable this block.
 
 Weather remains visually identified as provider data. Production Live uses bounded app-owned
-snapshot providers for Weather, Calendar, Messages, Mail and Media. Launcher3 does not
-read those applications' sensitive databases directly. Photos remain local MediaStore data
+snapshot providers for Weather, Calendar, Messages, Mail and Media. SableLauncher reads
+only those bounded snapshots and does not read the applications' sensitive databases directly. Photos remain local MediaStore data
 behind explicit photo permission. Refresh is driven by provider changes and HOME lifecycle;
 there is no ambient one-minute launcher polling loop. Message bodies and mail subjects are
 not rendered on Home.
@@ -406,26 +406,39 @@ The existing StartStateRepository rule remains: launcher presentation state may 
 
 ## Quickstep boundary
 
-Quickstep remains installed in R9.
+Quickstep remains installed in R9, but Launcher3 is no longer the user-facing
+HOME implementation.
 
-Launcher3/Quickstep owns:
+SableLauncher owns:
 
-- the Android HOME activity and role;
-- Recents/Overview implementation;
-- mature gesture-navigation integration;
-- task animations/services that Sable has not separately replaced.
-
-SableStart owns the presentation rendered inside the Launcher3 host:
-
+- the Android HOME activity and HOME role;
 - Start;
 - All Apps;
 - Search/Command;
 - Sable Peek;
-- launcher appearance and local live context.
+- launcher appearance editing and local live context;
+- touch and keyboard navigation inside HOME.
 
-R9 must prove Launcher3 HOME ownership through
-`com.android.launcher3.sable.SableQuickstepLauncher` while preserving
-Quickstep's Recents path.
+Launcher3QuickStep owns only the Android Recents/Overview integration,
+TouchInteractionService and task-animation plumbing that Sable has not
+separately replaced. Its `QuickstepLauncher` activity remains private for
+upstream Quickstep bookkeeping and does not advertise HOME, ALL_APPS or other
+launcher entry intents.
+
+When another package is HOME, upstream Quickstep already provides the fallback
+`RecentsActivity` path. R9 uses that supported separation rather than
+rendering Sable as a full-screen layer over native Launcher3 workspace.
+
+R9 must therefore prove:
+
+```
+HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity
+HOME_ROLE_HOLDER=org.sableos.launcher
+LAUNCHER3_HOME_ROLE_ABSENT=PASS
+LAUNCHER3_HOME_ELIGIBILITY_ABSENT=PASS
+QUICKSTEP_SERVICE_PRESENT=PASS
+QUICKSTEP_FALLBACK_RECENTS_PRESERVED=PASS
+```
 
 ## Visual direction
 
@@ -455,9 +468,9 @@ R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
 ~~~
 
 Production SableStart must still compile and lint through the Linux
-`sablestart-presentation-check`, pass the source/design contracts, compile
-inside Launcher3QuickStep during module qualification, and pass final physical
-Panther acceptance after flash.
+source/design checks, build as the standalone `SableLauncher` module alongside
+the recents-only `Launcher3QuickStep` substrate during module qualification,
+and pass final physical Panther acceptance after flash.
 
 A review harness may remain in the repository as non-product tooling, but it is
 not executed by the R9 release-blocking Linux CI path.
@@ -469,15 +482,22 @@ A visual approval does not replace runtime qualification.
 R9 physical acceptance must additionally prove:
 
 ~~~
-HOME_RESOLVER=com.android.launcher3/.sable.SableQuickstepLauncher
-HOME_ROLE_HOLDER=com.android.launcher3
-RETIRED_SABLESTART_PACKAGE_ABSENT=PASS
+HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity
+HOME_ROLE_HOLDER=org.sableos.launcher
+LAUNCHER3_HOME_ROLE_ABSENT=PASS
+LAUNCHER3_HOME_ELIGIBILITY_ABSENT=PASS
+QUICKSTEP_SERVICE_PRESENT=PASS
+LEGACY_SABLESTART_PACKAGE_ABSENT=PASS
 COLD_HOME_LAUNCH_CRASHES=0
 HOME_KEY_RETURNS_TO_START=PASS
-QUICKSTEP_RECENTS_PRESERVED=PASS
+QUICKSTEP_FALLBACK_RECENTS_PRESERVED=PASS
 ALL_APPS_TOUCH_NAVIGATION=PASS
 SEARCH_LOCAL_RESULTS=PASS
 SABLE_PEEK=PASS
+SABLE_SUBSURFACE_BACK_GESTURES=PASS
+SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE=PASS
+SABLE_FALLBACK_RECENTS_GESTURE=PASS
+SABLE_STATUS_SHADE_GESTURE_STABILITY=PASS
 THEME_PROPAGATION=PASS
 ~~~
 
