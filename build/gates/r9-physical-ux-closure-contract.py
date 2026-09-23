@@ -43,7 +43,13 @@ require(
     'name: "SableLauncher"',
     ":sable_start_presentation_srcs",
     ":sable_design_shared_srcs",
+    'sdk_version: "system_current"',
 )
+forbid(
+    "src/android/packages/apps/SableStart/Android.bp",
+    "platform_apis: true",
+)
+
 require(
     "src/android/packages/apps/SableStart/AndroidManifest.xml",
     'package="org.sableos.launcher"',
@@ -54,6 +60,7 @@ require(
     "PackageManager.GET_PERMISSIONS",
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
+    'getOrNull() ?: return "permissions · unavailable"',
     "buildPrivacyPermissionSummary(",
     "packageInfo.requestedPermissionsFlags ?: IntArray(0)",
     '"permissions · none sensitive"',
