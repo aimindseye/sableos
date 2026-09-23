@@ -95,6 +95,14 @@ forbid(
     "GrapheneOS",
 )
 require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
+    "core/java/android/debug/AdbNotifications.java",
+    "Notification.EXTRA_SUBSTITUTE_APP_NAME",
+    '"SableOS"',
+    "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS",
+    "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY_SELF_TEST=PASS",
+)
+require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
     'AUTHORITY = "org.sableos.appearance"',
     'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)',
