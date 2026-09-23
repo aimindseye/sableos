@@ -106,9 +106,7 @@ object HubConnectedConversationReducer {
         )
     }
 
-    private fun conversationKeyFor(
-        record: ConnectedNotificationRecord,
-    ): ConnectedConversationKey =
+    private fun conversationKeyFor(record: ConnectedNotificationRecord): ConnectedConversationKey =
         ConnectedConversationKey(
             key = record.key,
             conversationId = record.conversationId,
@@ -121,9 +119,7 @@ object HubConnectedConversationReducer {
             conversationId,
         ).joinToString(":")
 
-    private fun ConnectedNotificationRecord.toHubMessage(
-        threadId: Long,
-    ): HubMessage =
+    private fun ConnectedNotificationRecord.toHubMessage(threadId: Long): HubMessage =
         HubMessage(
             id = stableNegativeId(id),
             threadId = threadId,
