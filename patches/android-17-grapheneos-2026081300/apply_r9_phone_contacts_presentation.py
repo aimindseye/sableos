@@ -403,6 +403,30 @@ def status(repo: Path) -> set[str]:
     return {line for line in out.splitlines() if line}
 
 
+def head_text(repo: Path, rel: Path) -> str:
+    return subprocess.check_output(
+        ["git", "-C", str(repo), "show", f"HEAD:{rel.as_posix()}"],
+        text=True,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def classify_text_state(
+    actual: str,
+    pinned: str,
+    canonical: str,
+    label: str,
+) -> str:
+    if actual == pinned:
+        return "PINNED"
+    if actual == canonical:
+        return "CANONICAL"
+    raise SystemExit(
+        f"R9_{label}_CONTENT_STATE=FAIL "
+        "expected=PINNED_OR_CANONICAL"
+    )
+
+
 def assert_head(source: Path, repo: Path, expected: str) -> None:
     actual = git(source / repo, "rev-parse", "HEAD")
     if actual != expected:
@@ -442,35 +466,90 @@ def transform_text(
     return text
 
 
+def inspect_repo_state(
+    root: Path,
+    transforms: dict[Path, tuple[tuple[str, str], ...]],
+    expected_dirt: set[str],
+    label: str,
+) -> tuple[set[str], dict[Path, tuple[str, str]]]:
+    current = status(root)
+    unexpected = current - expected_dirt
+    if unexpected:
+        raise SystemExit(
+            f"R9_{label}_DIRTY_SCOPE_UNEXPECTED=FAIL "
+            f"paths={sorted(unexpected)!r}"
+        )
+
+    states: dict[Path, tuple[str, str]] = {}
+    for rel, replacements in transforms.items():
+        pinned = head_text(root, rel)
+        canonical = transform_text(pinned, replacements, rel.as_posix())
+        actual = (root / rel).read_text(encoding="utf-8")
+        state = classify_text_state(
+            actual,
+            pinned,
+            canonical,
+            label,
+        )
+        marker = f" M {rel.as_posix()}"
+        if state == "PINNED" and marker in current:
+            raise SystemExit(
+                f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
+                f"file={rel} state=PINNED status=DIRTY"
+            )
+        if state == "CANONICAL" and marker not in current:
+            raise SystemExit(
+                f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
+                f"file={rel} state=CANONICAL status=CLEAN"
+            )
+        states[rel] = (state, canonical)
+
+    return current, states
+
+
 def apply_repo(
     root: Path,
     transforms: dict[Path, tuple[tuple[str, str], ...]],
     expected_dirt: set[str],
     label: str,
 ) -> None:
-    current = status(root)
+    current, states = inspect_repo_state(
+        root,
+        transforms,
+        expected_dirt,
+        label,
+    )
     if current == expected_dirt:
         print(f"R9_{label}_PRESENTATION=ALREADY_APPLIED")
         return
+
     if current:
-        raise SystemExit(
-            f"R9_{label}_PRE_DIRTY_SCOPE=FAIL actual={sorted(current)!r}"
+        print(
+            f"R9_{label}_PRESENTATION_PARTIAL_SCOPE="
+            f"{sorted(current)!r}"
         )
 
-    for rel, replacements in transforms.items():
-        path = root / rel
-        text = path.read_text(encoding="utf-8")
-        updated = transform_text(text, replacements, rel.as_posix())
-        path.write_text(updated, encoding="utf-8")
+    for rel, (state, canonical) in states.items():
+        if state == "PINNED":
+            (root / rel).write_text(canonical, encoding="utf-8")
 
-    current = status(root)
-    if current != expected_dirt:
+    final, final_states = inspect_repo_state(
+        root,
+        transforms,
+        expected_dirt,
+        label,
+    )
+    if final != expected_dirt:
         raise SystemExit(
             f"R9_{label}_DIRTY_SCOPE=FAIL "
-            f"expected={sorted(expected_dirt)!r} actual={sorted(current)!r}"
+            f"expected={sorted(expected_dirt)!r} actual={sorted(final)!r}"
         )
-    print(f"R9_{label}_PRESENTATION=APPLIED")
+    if any(state != "CANONICAL" for state, _ in final_states.values()):
+        raise SystemExit(f"R9_{label}_CANONICAL_CONVERGENCE=FAIL")
 
+    if current:
+        print(f"R9_{label}_PRESENTATION_PARTIAL_CONVERGENCE=PASS")
+    print(f"R9_{label}_PRESENTATION=APPLIED")
 
 def verify_repo(
     root: Path,
@@ -478,12 +557,19 @@ def verify_repo(
     expected_dirt: set[str],
     label: str,
 ) -> None:
-    current = status(root)
+    current, states = inspect_repo_state(
+        root,
+        transforms,
+        expected_dirt,
+        label,
+    )
     if current != expected_dirt:
         raise SystemExit(
             f"R9_{label}_VERIFY_DIRTY_SCOPE=FAIL "
             f"expected={sorted(expected_dirt)!r} actual={sorted(current)!r}"
         )
+    if any(state != "CANONICAL" for state, _ in states.values()):
+        raise SystemExit(f"R9_{label}_VERIFY_CANONICAL_STATE=FAIL")
 
     for rel, replacements in transforms.items():
         text = (root / rel).read_text(encoding="utf-8")
@@ -639,6 +725,35 @@ def self_test() -> None:
                 raise SystemExit(
                     f"R9_{label}_SELF_TEST=FAIL_IDEMPOTENCE file={path}"
                 )
+
+    if classify_text_state(
+        "pinned",
+        "pinned",
+        "canonical",
+        "SELF_TEST",
+    ) != "PINNED":
+        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_PINNED_STATE")
+    if classify_text_state(
+        "canonical",
+        "pinned",
+        "canonical",
+        "SELF_TEST",
+    ) != "CANONICAL":
+        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_CANONICAL_STATE")
+    try:
+        classify_text_state(
+            "unexpected",
+            "pinned",
+            "canonical",
+            "SELF_TEST",
+        )
+    except SystemExit:
+        pass
+    else:
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_CONTENT_DRIFT_REJECTION"
+        )
+    print("R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS")
 
     required_blocking_tokens = (
         "BlockedNumberContract",
