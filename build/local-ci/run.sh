@@ -152,22 +152,55 @@ PY
   fi
   echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS"
 
-  bash "$ROOT/build/gates/r8-build-driver-contract.sh"
-  bash "$ROOT/build/gates/sable-pipeline-contract.sh"
-  python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
-  python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
-  python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
-  python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
-  python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
-  python3 "$ROOT/build/gates/r9-media-flow-contract.py"
-  python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
-  python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
-  python3 "$ROOT/build/gates/r9-messages-source-style.py"
-  bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
-  python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
-  python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
-  python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
-  python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+  local static_contract_failures=0
+
+  run_static_contract() {
+    local name="$1"
+    shift
+    if ! "$@"; then
+      echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE=$name"
+      static_contract_failures=$((static_contract_failures + 1))
+    fi
+  }
+
+  run_static_contract r8-build-driver \
+    bash "$ROOT/build/gates/r8-build-driver-contract.sh"
+  run_static_contract sable-pipeline \
+    bash "$ROOT/build/gates/sable-pipeline-contract.sh"
+  run_static_contract r9-physical-remediation \
+    python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
+  run_static_contract r9-system-cohesion \
+    python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
+  run_static_contract r9-physical-ux-closure \
+    python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  run_static_contract r9-sms-mms-blocking \
+    python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
+  run_static_contract r9-first-party-app-icon \
+    python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  run_static_contract r9-media-flow \
+    python3 "$ROOT/build/gates/r9-media-flow-contract.py"
+  run_static_contract r9-messages-native-first \
+    python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+  run_static_contract r9-messages-local-conversation \
+    python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  run_static_contract r9-messages-source-style \
+    python3 "$ROOT/build/gates/r9-messages-source-style.py"
+  run_static_contract r8-no-stale-product-code \
+    bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
+  run_static_contract r9-sablestart-design-self-test \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
+  run_static_contract r9-sablestart-design \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  run_static_contract r9-launcher3-foundation-self-test \
+    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
+  run_static_contract r9-launcher3-foundation \
+    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+
+  if [[ "$static_contract_failures" -ne 0 ]]; then
+    echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=FAIL count=$static_contract_failures"
+    return 1
+  fi
+  echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=PASS"
 }
 
 run_rust() {
