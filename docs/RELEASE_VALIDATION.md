@@ -161,20 +161,25 @@ Before the revised core product is release-qualified:
 
 ## R8 Final UI Product-Composition Gate
 
-For the current Panther R8 UI milestone, the generic product-integration gate is specialized by `R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+For the current Panther R9 UI/product milestone, the generic product-integration gate is specialized by the R9 architecture and source contracts. `R8_PIXEL_UI_PRODUCT_CLOSURE.md` remains historical R8 evidence.
 
-A full Panther build must not be described as the final R8 UI build merely because `target-files-package` succeeds. Before starting that build, generated product/build evidence must prove the intended source/package set.
+A full Panther build must not be described as the final R9 product build merely because `target-files-package` succeeds. Before starting that build, generated product/build evidence must prove the intended source/package set.
 
 Required application identities include:
 
 ```text
-org.sableos.start
+org.sableos.launcher
 org.sableos.calculator
 org.sableos.sudoku
 org.sableos.minesweeper
 org.sableos.game2048
 org.sableos.media
+org.sableos.textreader
 org.sableos.reader
+org.sableos.hub
+org.sableos.mail
+org.sableos.weather
+org.sableos.calendar
 ```
 
 The gate must also prove the current UI4/UI5/UI6 source/applicator identities for SystemUI, Settings, SetupWizard2 and Keyguard/frameworks/base.
@@ -205,7 +210,13 @@ Until that marker exists:
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
-Reader-specific requirement: R8-D2 closure includes TXT/share/process-text/TTS plus OCR. Translation/model-download support remains separate and is not required for the current UI milestone. OCR must have an explicit model/offline/network policy and camera permission must remain optional to the camera-OCR flow.
+Reader/Text Reader requirement: Sable Reader is publication-only and must not
+compose the TextReader/OCR runtime or request camera permission. Standalone
+Sable Text Reader owns bounded TXT/VIEW/SEND/PROCESS_TEXT, local-only TTS/audio
+export and optional camera/gallery OCR. Its Sable APK must have no INTERNET
+permission, no translation/model-download path, a 2 MiB text-ingestion bound,
+and no network-required TTS voice fallback. Camera hardware remains optional
+and camera permission is scoped to the camera-OCR flow.
 
 ## Kernel Baseline and Independent Security Update Gate
 
