@@ -116,7 +116,7 @@ require(
     "PlaybackQueueRequestStore::consume",
     "serviceScope.launch",
     "Dispatchers.Default",
-    "withContext(Dispatchers.Main.immediate)",
+    "mainHandler.post",
     "EXTRA_QUEUE_TOKEN",
 )
 forbid(
