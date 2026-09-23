@@ -40,7 +40,11 @@ fail() {
 echo
 echo "===== NO-STALE PRODUCT CODE / PACKAGE GATE ====="
 
-WS="$WS" SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/gates/r8-no-stale-product-code.sh"     || fail R8_NO_STALE_PRODUCT_CODE
+R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=YES \
+WS="$WS" \
+SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/gates/r8-no-stale-product-code.sh" \
+    || fail R8_NO_STALE_PRODUCT_CODE
 
 echo
 echo "===== R8-A SHARED DESIGN ====="
