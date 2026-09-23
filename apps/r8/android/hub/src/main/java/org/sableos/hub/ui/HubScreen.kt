@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -39,6 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.text.DateFormat
+import java.util.Date
+import kotlinx.coroutines.launch
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableListRow
 import org.sableos.design.SablePageHeader
@@ -52,9 +55,6 @@ import org.sableos.hub.HubMessage
 import org.sableos.hub.HubPerson
 import org.sableos.hub.HubSendResult
 import org.sableos.hub.HubSnapshot
-import java.text.DateFormat
-import java.util.Date
-import kotlinx.coroutines.launch
 
 private enum class HubPivot {
     Messages,
