@@ -22,6 +22,10 @@ DST="$SABLEOS_UPSTREAM/$SABLEOS_SABLESTART_REL"
 
 required=(
   Android.bp
+  AndroidManifest.xml
+  res/values/strings.xml
+  src/com/sable/start/SableStartActivity.kt
+  src/com/sable/start/platform/LauncherAppsRepository.kt
   src/com/sable/start/live/LiveSurfaceModels.kt
   src/com/sable/start/model/AppEntry.kt
   src/com/sable/start/platform/LiveSurfaceRepository.kt
@@ -31,12 +35,8 @@ required=(
 )
 
 retired=(
-  AndroidManifest.xml
-  res/values/strings.xml
   rust/src/lib.rs
-  src/com/sable/start/SableStartActivity.kt
   src/com/sable/start/bridge/SableStartNative.kt
-  src/com/sable/start/platform/LauncherAppsRepository.kt
   src/com/sable/start/platform/SableAppearanceProvider.kt
 )
 
@@ -49,7 +49,7 @@ for rel in "${required[@]}"; do
 done
 
 if [[ $missing -ne 0 ]]; then
-    echo "SABLESTART_PRESENTATION_SNAPSHOT=INCOMPLETE"
+    echo "SABLESTART_STANDALONE_SNAPSHOT=INCOMPLETE"
     exit 3
 fi
 
@@ -70,9 +70,9 @@ for rel in "${retired[@]}"; do
     fi
 done
 
-echo "SABLESTART_PRESENTATION_SYNC=PASS"
-echo "R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED"
+echo "SABLESTART_STANDALONE_SYNC=PASS"
+echo "R9_SABLESTART_LOCAL_APPEARANCE_PROVIDER=PASS_RETIRED"
 echo "R9_SABLESTART_GLOBAL_APPEARANCE_OWNER=SETTINGS"
-echo "SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT"
+echo "SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT"
 echo "SOURCE=$SRC"
 echo "DESTINATION=$DST"
