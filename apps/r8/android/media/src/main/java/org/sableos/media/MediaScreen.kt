@@ -998,8 +998,7 @@ private fun buildMediaCollectionIndex(
                     item = item,
                     sourceIndex = sourceIndexByUri.getValue(item.uri),
                 )
-            }
-            .toList()
+            }.toList()
 
     val favorites =
         songs.filter { indexed ->
@@ -1012,8 +1011,7 @@ private fun buildMediaCollectionIndex(
             .entries
             .sortedWith(
                 compareBy(String.CASE_INSENSITIVE_ORDER) { entry -> entry.key },
-            )
-            .map { entry ->
+            ).map { entry ->
                 val tracks = entry.value
                 MediaGroupSummary(
                     name = entry.key,
@@ -1028,8 +1026,7 @@ private fun buildMediaCollectionIndex(
             .entries
             .sortedWith(
                 compareBy(String.CASE_INSENSITIVE_ORDER) { entry -> entry.key },
-            )
-            .map { entry ->
+            ).map { entry ->
                 val tracks = entry.value
                 MediaGroupSummary(
                     name = entry.key,
@@ -1079,7 +1076,8 @@ private fun buildMediaSectionTargets(labels: List<String>): List<MediaSectionTar
     return labels.mapIndexedNotNull { index, label ->
         val trimmed = label.trim()
         val letter =
-            trimmed.firstOrNull()
+            trimmed
+                .firstOrNull()
                 ?.takeIf { it.isLetter() }
                 ?.uppercaseChar()
                 ?.toString()
@@ -1103,7 +1101,10 @@ private fun MediaAlphabetRail(
     modifier: Modifier = Modifier,
     onSelect: (MediaSectionTarget) -> Unit,
 ) {
-    fun targetAt(y: Float, height: Int): MediaSectionTarget? {
+    fun targetAt(
+        y: Float,
+        height: Int,
+    ): MediaSectionTarget? {
         if (targets.isEmpty() || height <= 0) return null
         val slot =
             ((y / height) * targets.size)
