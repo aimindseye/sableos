@@ -358,6 +358,16 @@ unexpected extra dirt, or content mismatch remains fail-closed. The retired
 `apply_r9_launcher_cohesion.py` applicator is removed and the no-stale gate
 requires it to remain absent.
 
+The following preparation pass proved that normalization, then exposed an
+interface inconsistency in the Recents-only applicator: production callers pass
+the Android workspace root as `--source`, while the script attempted
+`git -C <source>` as though it had received the Launcher3 repository itself.
+The applicator now resolves
+`<workspace>/packages/apps/Launcher3` internally. A direct Launcher3 root is
+accepted only for isolated self-tests/developer probes when canonical
+`Android.bp` and `quickstep/` markers are present; unresolved roots fail
+closed.
+
 
 No full image yet.
 
