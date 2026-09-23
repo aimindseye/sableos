@@ -606,20 +606,38 @@ def repair_known_setup_strings_alias(
             "UI5C_REPAIR_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
             f"{sorted(path.as_posix() for path in unknown_modified)!r}"
         )
-    allowed_framework_dirt = {
+    allowed_framework_untracked_dirt = {
         f"?? {path.as_posix()}"
         for path in allowed_later_framework_untracked
-    } | {
+    }
+    allowed_framework_modified_dirt = {
         f" M {path.as_posix()}"
         for path in allowed_later_framework_modified
     }
-    missing_allowed_framework = allowed_framework_dirt - actual_framework
+    missing_allowed_framework = (
+        allowed_framework_untracked_dirt
+        | allowed_framework_modified_dirt
+    ) - actual_framework
     if missing_allowed_framework:
         raise SystemExit(
             "UI5C_REPAIR_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
             f"{sorted(missing_allowed_framework)!r}"
         )
-    framework_for_ui6 = actual_framework - allowed_framework_dirt
+
+    # A later modification which already belongs to UI4 (Tile.kt) must remain
+    # in the inherited UI4 dirty scope. A newly introduced later-layer path
+    # (AdbNotifications.java) is outside UI4 and is subtracted here, then
+    # independently verified by the R9 SystemUI coherence layer.
+    later_new_modified_dirt = {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
+        if path not in set(ui4.PATCHES)
+    }
+    framework_for_ui6 = (
+        actual_framework
+        - allowed_framework_untracked_dirt
+        - later_new_modified_dirt
+    )
     framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
@@ -765,20 +783,34 @@ def verify(
             "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
             f"{sorted(path.as_posix() for path in unknown_modified)!r}"
         )
-    allowed_later_dirt = {
+    allowed_later_untracked_dirt = {
         f"?? {path.as_posix()}"
         for path in allowed_later_framework_untracked
-    } | {
+    }
+    allowed_later_modified_dirt = {
         f" M {path.as_posix()}"
         for path in allowed_later_framework_modified
     }
-    missing_allowed_later = allowed_later_dirt - actual_framework
+    missing_allowed_later = (
+        allowed_later_untracked_dirt
+        | allowed_later_modified_dirt
+    ) - actual_framework
     if missing_allowed_later:
         raise SystemExit(
             "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
             f"{sorted(missing_allowed_later)!r}"
         )
-    framework_for_ui6 = actual_framework - allowed_later_dirt
+
+    later_new_modified_dirt = {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
+        if path not in set(ui4.PATCHES)
+    }
+    framework_for_ui6 = (
+        actual_framework
+        - allowed_later_untracked_dirt
+        - later_new_modified_dirt
+    )
     framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
@@ -948,6 +980,21 @@ def self_test() -> None:
     if KNOWN_LATER_FRAMEWORK_MODIFIED != required_later_paths:
         raise SystemExit("UI5C_UI6_SELF_TEST_KNOWN_LATER_FRAMEWORK_SCOPE_FAIL")
 
+    # Prove the mixed later-layer rule: an inherited UI4 path remains part of
+    # UI4 scope, while a genuinely new later path is the only modified path
+    # removed before UI5C/UI6 scope comparison.
+    fake_ui4_paths = {
+        Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt")
+    }
+    later_new = {
+        path
+        for path in required_later_paths
+        if path not in fake_ui4_paths
+    }
+    if later_new != {Path("core/java/android/debug/AdbNotifications.java")}:
+        raise SystemExit("UI5C_UI6_SELF_TEST_MIXED_LATER_SCOPE_FAIL")
+
+    print("SABLE_UI5C_UI6_MIXED_LATER_SCOPE_SELF_TEST=PASS")
     print("SABLE_UI5C_UI6_KNOWN_LATER_FRAMEWORK_SCOPE_SELF_TEST=PASS")
     print("SABLE_UI5C_UI6_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
