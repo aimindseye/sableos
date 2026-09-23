@@ -75,7 +75,10 @@ internal fun MediaApp(
         mutableStateOf(LibraryPivot.Songs)
     }
     var localItems by remember {
-        mutableStateOf(localAudioRepository.loadItems())
+        mutableStateOf(emptyList<LocalAudioItem>())
+    }
+    var localLibraryLoading by remember {
+        mutableStateOf(true)
     }
     var podcastSubscriptions by remember {
         mutableStateOf(podcastRepository.loadSubscriptions())
@@ -105,12 +108,7 @@ internal fun MediaApp(
         mutableStateOf(libraryStateRepository.loadFavoriteStationIds())
     }
     var playlists by remember {
-        mutableStateOf(
-            libraryStateRepository.pruneMissingAudio(
-                current = libraryStateRepository.loadPlaylists(),
-                validUris = localItems.map { it.uri }.toSet(),
-            ),
-        )
+        mutableStateOf(emptyList<MediaPlaylist>())
     }
     var showFavoriteStationsOnly by remember {
         mutableStateOf(false)
@@ -138,6 +136,30 @@ internal fun MediaApp(
 
     var message by remember {
         mutableStateOf<String?>(null)
+    }
+
+    LaunchedEffect(localAudioRepository, libraryStateRepository) {
+        val loadResult =
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val loadedItems = localAudioRepository.loadItems()
+                    val loadedPlaylists =
+                        libraryStateRepository.pruneMissingAudio(
+                            current = libraryStateRepository.loadPlaylists(),
+                            validUris = loadedItems.mapTo(mutableSetOf()) { it.uri },
+                        )
+                    loadedItems to loadedPlaylists
+                }
+            }
+
+        loadResult
+            .onSuccess { (loadedItems, loadedPlaylists) ->
+                localItems = loadedItems
+                playlists = loadedPlaylists
+            }.onFailure {
+                message = "Local collection could not be loaded."
+            }
+        localLibraryLoading = false
     }
 
     LaunchedEffect(destination, playbackController) {
@@ -309,6 +331,7 @@ internal fun MediaApp(
                     destination = destination,
                     libraryPivot = libraryPivot,
                     localItems = localItems,
+                    localLibraryLoading = localLibraryLoading,
                     podcastSubscriptions = podcastSubscriptions,
                     savedPodcastEpisodeIds = savedPodcastEpisodeIds,
                     playedPodcastEpisodeIds = playedPodcastEpisodeIds,
@@ -351,10 +374,18 @@ internal fun MediaApp(
                         libraryPivot = it
                     },
                     onAddLocalAudio = {
-                        localAudioPicker.launch(arrayOf("audio/*"))
+                        if (localLibraryLoading) {
+                            message = "Local collection is still loading."
+                        } else {
+                            localAudioPicker.launch(arrayOf("audio/*"))
+                        }
                     },
                     onAddLocalFolder = {
-                        localAudioFolderPicker.launch(null)
+                        if (localLibraryLoading) {
+                            message = "Local collection is still loading."
+                        } else {
+                            localAudioFolderPicker.launch(null)
+                        }
                     },
                     onPlayLocal = { selectedIndex ->
                         playLocalQueue(
@@ -637,9 +668,13 @@ internal fun MediaApp(
                         }
                     },
                     onCreatePlaylist = {
-                        clearPlaylistForm()
-                        message = null
-                        destination = MediaDestination.PlaylistEditor
+                        if (localLibraryLoading) {
+                            message = "Local collection is still loading."
+                        } else {
+                            clearPlaylistForm()
+                            message = null
+                            destination = MediaDestination.PlaylistEditor
+                        }
                     },
                     onEditPlaylist = { playlist ->
                         editingPlaylist = playlist
