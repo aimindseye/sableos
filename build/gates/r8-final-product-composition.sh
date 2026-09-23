@@ -469,8 +469,10 @@ for needle in \
     'SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB' \
     'SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED'
 do
-    grep -Fq "$needle" "$TEXTREADER_APPLIER" \
-        || fail R9_SABLE_TEXT_READER_SOURCE
+    if ! grep -Fq "$needle" "$TEXTREADER_APPLIER"; then
+        echo "R9_SABLE_TEXT_READER_SOURCE=FAIL_MISSING path=$TEXTREADER_APPLIER token=$needle"
+        fail R9_SABLE_TEXT_READER_SOURCE
+    fi
 done
 
 for needle in \
@@ -480,8 +482,10 @@ for needle in \
     'SABLE_TEXT_READER_APK_OFFLINE_BOUNDARY=PASS' \
     'SABLE_TEXT_READER_POLICY=PASS'
 do
-    grep -Fq "$needle" "$TEXTREADER_VERIFY" \
-        || fail R9_SABLE_TEXT_READER_VERIFY
+    if ! grep -Fq "$needle" "$TEXTREADER_VERIFY"; then
+        echo "R9_SABLE_TEXT_READER_VERIFY=FAIL_MISSING path=$TEXTREADER_VERIFY token=$needle"
+        fail R9_SABLE_TEXT_READER_VERIFY
+    fi
 done
 grep -Fq 'SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT' "$READER_APPLIER" \
     || fail R9_READER_TEXTREADER_DECOMPOSITION
