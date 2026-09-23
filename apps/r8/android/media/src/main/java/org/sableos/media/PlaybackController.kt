@@ -97,12 +97,12 @@ internal class PlaybackController(
         )
     }
 
-    fun play() {
-        controller?.play()
-    }
-
-    fun pause() {
-        controller?.pause()
+    fun setPlaying(playing: Boolean) {
+        if (playing) {
+            controller?.play()
+        } else {
+            controller?.pause()
+        }
     }
 
     fun stop() {
