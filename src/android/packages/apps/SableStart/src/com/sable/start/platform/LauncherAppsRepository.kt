@@ -157,11 +157,10 @@ class LauncherAppsRepository(
 
         val packageInfo =
             runCatching {
+                @Suppress("DEPRECATION")
                 profileContext.packageManager.getPackageInfo(
                     packageName,
-                    PackageManager.PackageInfoFlags.of(
-                        PackageManager.GET_PERMISSIONS.toLong(),
-                    ),
+                    PackageManager.GET_PERMISSIONS,
                 )
             }.getOrNull() ?: return "permissions · unavailable"
 
