@@ -407,6 +407,10 @@ forbid(
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
     "getListPositionForSection",
+    "classify_text_state",
+    "inspect_repo_state",
+    "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS",
+    "R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
     "installSableAlphabetRail",
     "scrollToSableSection",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
