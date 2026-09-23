@@ -219,7 +219,6 @@ CONTACTS_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     </style>''',
         ),
     ),
-,
     CONTACTS_INDEXER_ADAPTER: (
         (
             '''    public int getPositionForSection(int sectionIndex) {
