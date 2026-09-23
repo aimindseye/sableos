@@ -209,17 +209,52 @@ echo "R8_FIRST_PARTY_ANDROID_BUILD=PASS"
 echo "R9_SABLE_WEATHER_ANDROID_BUILD=PASS"
 
 echo
+echo "===== SABLE TEXT READER ====="
+
+git clone --no-hardlinks "$SABLE_R8_TEXTREADER_CACHE" "$WORK/textreader"
+git -C "$WORK/textreader" checkout --detach "$VAACHAK_TEXTREADER_COMMIT"
+
+python3 "$REPO/apps/r8/textreader/apply_sable_flavor.py" "$WORK/textreader"
+python3 "$REPO/apps/r8/textreader/verify_sable_textreader.py" "$WORK/textreader"
+
+(
+    cd "$WORK/textreader"
+    ./gradlew \
+        --offline \
+        testDebugUnitTest \
+        lintDebug \
+        assembleDebug \
+        --stacktrace \
+        --console=plain \
+        --no-daemon \
+        --no-configuration-cache
+) 2>&1 | tee "$EVIDENCE/textreader-build.log"
+
+mapfile -t textreader_apks < <(
+    find "$WORK/textreader/app/build/outputs/apk/debug" \
+        -maxdepth 1 -type f -name 'SableTextReader-*.apk' -print | sort
+)
+[[ "${#textreader_apks[@]}" -eq 1 ]] || {
+    echo "R9_SABLE_TEXT_READER_APK=FAIL_COUNT count=${#textreader_apks[@]}"
+    exit 11
+}
+SABLE_TEXTREADER_APK="${textreader_apks[0]}"
+APKANALYZER="$SABLE_APKANALYZER" \
+    python3 "$REPO/apps/r8/textreader/verify_sable_textreader.py" \
+        "$WORK/textreader" "$SABLE_TEXTREADER_APK"
+sha256sum "$SABLE_TEXTREADER_APK"
+echo "R9_SABLE_TEXT_READER_BUILD=PASS"
+
+echo
 echo "===== SABLE READER ====="
 
 export JAVA_HOME="$SABLE_JDK21"
 export PATH="$JAVA_HOME/bin:$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_ANDROID_SDK/platform-tools:$SABLE_ANDROID_SDK/cmdline-tools/latest/bin:$BASE_PATH"
 
 git clone --no-hardlinks "$SABLE_R8_READER_CACHE" "$WORK/reader"
-git clone --no-hardlinks "$SABLE_R8_TEXTREADER_CACHE" "$WORK/textreader"
 git -C "$WORK/reader" checkout --detach "$VAACHAK_COMMIT"
-git -C "$WORK/textreader" checkout --detach "$VAACHAK_TEXTREADER_COMMIT"
 
-python3 "$REPO/apps/r8/reader/apply_sable_flavor.py"     "$WORK/reader"     "$WORK/textreader"
+python3 "$REPO/apps/r8/reader/apply_sable_flavor.py" "$WORK/reader"
 
 (
     cd "$WORK/reader"
@@ -301,16 +336,16 @@ fi
 echo "R8_SABLE_MAIL_BUILD=PASS"
 
 echo
-echo "===== SOURCE-BOUND TEN-APK BUNDLE ====="
+echo "===== SOURCE-BOUND ELEVEN-APK BUNDLE ====="
 
 cd "$REPO"
-SABLE_READER_APK="$SABLE_READER_APK" SABLE_MAIL_APK="$SABLE_MAIL_APK" APKANALYZER="$SABLE_APKANALYZER"     bash "$REPO/apps/r8/export-panther-app-bundle.sh" "$BUNDLE"
+SABLE_TEXTREADER_APK="$SABLE_TEXTREADER_APK" SABLE_READER_APK="$SABLE_READER_APK" SABLE_MAIL_APK="$SABLE_MAIL_APK" APKANALYZER="$SABLE_APKANALYZER"     bash "$REPO/apps/r8/export-panther-app-bundle.sh" "$BUNDLE"
 
 [[ "$(tr -d '[:space:]' < "$BUNDLE/SABLEOS_SOURCE_COMMIT.txt")" == "$EXPECTED_SOURCE_COMMIT" ]] || {
     echo "R8_APP_BUNDLE_SOURCE=FAIL"
     exit 13
 }
-echo "R9_SOURCE_BOUND_TEN_APK_FREEZE=PASS"
+echo "R9_SOURCE_BOUND_ELEVEN_APK_FREEZE=PASS"
 
 echo
 echo "===== R8 WORKSPACE / PRODUCT PREPARATION ====="
