@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-host-tools.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 PROFILE="${1:-core}"
 SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"
@@ -33,6 +35,7 @@ mkdir -p "$EVIDENCE_DIR"
 
 exec > >(tee "$EVIDENCE_DIR/local-ci.log") 2>&1
 
+sable_checkpoint_info "Local CI profile=$PROFILE source=$SOURCE_COMMIT"
 echo "===== SABLE LOCAL CI ====="
 echo "PROFILE=$PROFILE"
 echo "SABLEOS_DEVICE=$SABLEOS_DEVICE"
@@ -60,6 +63,7 @@ stage() {
   echo "===== $name ====="
   "$@"
   echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+  sable_checkpoint_pass "CI stage $name"
 }
 
 run_policy() {
@@ -627,3 +631,4 @@ echo "SABLE_LOCAL_CI=PASS"
 echo "PROFILE=$PROFILE"
 echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+sable_checkpoint_pass "Local CI $PROFILE complete for $SOURCE_COMMIT"
