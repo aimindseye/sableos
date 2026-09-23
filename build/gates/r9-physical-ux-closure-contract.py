@@ -110,6 +110,10 @@ forbid(
 # Quickstep/Recents is retained, but native Launcher3 HOME is removed.
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py",
+    "resolve_launcher_root",
+    '"packages/apps/Launcher3"',
+    "R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS",
+    "R9_QUICKSTEP_RECENTS_ONLY_LAUNCHER_ROOT=",
     "R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS",
     "host.unlink()",
     'android:exported="false"',
