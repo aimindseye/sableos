@@ -80,6 +80,7 @@ python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_found
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py" --self-test
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" --self-test
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py" --self-test
+python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" --self-test
 python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
 echo "SABLE_PIPELINE_FASTBOOT_PLAN_SELF_TEST=PASS"
 echo "SABLE_PIPELINE_ARTIFACT_REGISTRY_SELF_TEST=PASS"
@@ -108,6 +109,9 @@ echo "SABLE_PIPELINE_PHONE_CONTACTS_CONTAINMENT_VERIFY_SELF_TEST=PASS"
 grep -Fq 'R9_DAILY_DRIVER_PARTIAL_CONVERGENCE_SELF_TEST=PASS' \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py"
 echo "SABLE_PIPELINE_DAILY_DRIVER_PARTIAL_CONVERGENCE_SELF_TEST=PASS"
+grep -Fq 'SABLE_UI5C_UI6_MIXED_LATER_SCOPE_SELF_TEST=PASS' \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+echo "SABLE_PIPELINE_UI5C_MIXED_LATER_SCOPE_SELF_TEST=PASS"
 echo "SABLE_PIPELINE_LAUNCHER3_FOUNDATION_CONTRACT_SELF_TEST=PASS"
 
 grep -Fq 'usage:' "$ROOT/build/sable.sh"
