@@ -296,6 +296,11 @@ def apply_gallery_light_window(root: Path) -> None:
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
         <item name="android:windowBackground">@color/default_background</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@color/default_background</item>
+        <item name="android:navigationBarColor">@color/default_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
 """
     if gallery_replacement in text:
         return
@@ -315,6 +320,14 @@ def verify_gallery_light_window(root: Path) -> None:
         '<style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">'
         not in text
         or '<item name="android:windowBackground">@color/default_background</item>'
+        not in text
+        or '<item name="android:statusBarColor">@color/default_background</item>'
+        not in text
+        or '<item name="android:navigationBarColor">@color/default_background</item>'
+        not in text
+        or '<item name="android:windowLightStatusBar">true</item>'
+        not in text
+        or '<item name="android:windowLightNavigationBar">true</item>'
         not in text
         or '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">'
         not in text
@@ -338,6 +351,14 @@ def gallery_night_styles(root: Path) -> str:
         (
             '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">',
             '<style name="Holo.ActionBar" parent="android:Widget.Holo.ActionBar">',
+        ),
+        (
+            '<item name="android:windowLightStatusBar">true</item>',
+            '<item name="android:windowLightStatusBar">false</item>',
+        ),
+        (
+            '<item name="android:windowLightNavigationBar">true</item>',
+            '<item name="android:windowLightNavigationBar">false</item>',
         ),
     )
     for old, new in replacements:
@@ -424,6 +445,7 @@ def main() -> int:
     print("R9_FILES_PRESENTATION=PASS_RESOURCE_ONLY")
     print("R9_PHOTOS_PRESENTATION=PASS_RESOURCE_ONLY")
     print("R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME")
+    print("R9_PHOTOS_SYSTEM_BARS=PASS_DAY_NIGHT_MATCH_WINDOW")
     print("R9_CORE_APP_BEHAVIORAL_MUTATION=PASS_ABSENT")
     print("R9_DAILY_DRIVER_CORE_PRESENTATION=PASS")
     return 0
