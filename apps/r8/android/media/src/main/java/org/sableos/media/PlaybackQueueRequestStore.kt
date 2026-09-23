@@ -30,7 +30,9 @@ internal object PlaybackQueueRequestStore {
         pending.set(
             PlaybackQueueRequest(
                 token = token,
-                items = items.toList(),
+                // Media library lists are immutable snapshots; retain one reference
+                // instead of copying thousands of entries on the UI thread.
+                items = items,
                 startIndex = startIndex.coerceIn(0, items.lastIndex),
             ),
         )
