@@ -89,11 +89,15 @@ if grep -Eq '^[[:space:]]*SableStart([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK
     fail R9_LEGACY_SABLESTART_PRODUCT_MODULE
 fi
 
-grep -Eq '^[[:space:]]*SableLauncher([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK" \
+grep -Eq '^[[:space:]]*SableLauncher([[:space:]]*\\\\)?[[:space:]]*$' "$PRODUCT_MK" \
     || fail R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE
 echo "R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE=PASS"
 
-grep -Eq '^[[:space:]]*SableTextReader([[:space:]]*\\\\)?[[:space:]]*
+grep -Eq '^[[:space:]]*SableTextReader([[:space:]]*\\\\)?[[:space:]]*$' "$PRODUCT_MK" \
+    || fail R9_SABLE_TEXT_READER_PRODUCT_MODULE
+echo "R9_SABLE_TEXT_READER_PRODUCT_MODULE=PASS"
+
+for forbidden in \
     start-preview \
     system-preview \
     ExactCalculator \
