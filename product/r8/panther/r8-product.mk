@@ -1,13 +1,14 @@
-# SableOS R8 first-party application product integration.
+# SableOS R9 first-party application product integration.
 #
-# Launcher3QuickStep is supplied by the GrapheneOS platform product and patched
-# in-place to host the Sable Start presentation. The standalone SableStart APK
-# was retired in R9L8 so exactly one HOME implementation remains.
+# SableLauncher is the user-facing HOME application. Launcher3QuickStep remains
+# installed only as the Android Quickstep/Recents substrate and must not be the
+# HOME role holder.
 #
-# The modules below are standalone qualified APKs staged into
+# The prebuilt modules below are standalone qualified APKs staged into
 # vendor/sable/r8/prebuilt by the fail-closed Panther integration script.
 
 PRODUCT_PACKAGES += \
+    SableLauncher \
     SableCalculator \
     SableSudoku \
     SableMinesweeper \
