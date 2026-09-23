@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Apply/verify the approved Sable Phone + Contacts presentation.
+"""Apply/verify the approved Sable Phone + Contacts UX.
 
-This applicator is intentionally presentation-only. It is pinned to the exact
-GrapheneOS 2026081300 Dialer and Contacts revisions and may mutate only the
-listed resource/layout files. Telecom, call-log, ContactsProvider, accounts,
-permissions, intents and Java/Kotlin behavioral source remain untouched.
+The Dialer portion remains presentation-only. Contacts additionally receives a
+bounded right-edge alphabet rail backed by its existing SectionIndexer. No
+second contact index/database is introduced. ContactsProvider, accounts, sync,
+permissions and contact-data semantics remain untouched.
 """
 
 from __future__ import annotations
@@ -40,6 +40,12 @@ CONTACTS_LIGHT = Path("res/values/colors.xml")
 CONTACTS_DARK = Path("res/values-night/colors.xml")
 CONTACTS_TOOLBAR = Path("res/layout/people_activity_toolbar.xml")
 CONTACTS_STYLES = Path("res/values/styles.xml")
+CONTACTS_INDEXER_ADAPTER = Path(
+    "src/com/android/contacts/list/IndexerListAdapter.java"
+)
+CONTACTS_BROWSE_FRAGMENT = Path(
+    "src/com/android/contacts/list/DefaultContactBrowseListFragment.java"
+)
 
 DIALER_BLOCKING = Path("java/com/android/dialer/blocking/Blocking.java")
 DIALER_SETTINGS = Path(
@@ -60,6 +66,8 @@ CONTACTS_DIRT = {
     f" M {CONTACTS_DARK.as_posix()}",
     f" M {CONTACTS_TOOLBAR.as_posix()}",
     f" M {CONTACTS_STYLES.as_posix()}",
+    f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
+    f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
 }
 
 DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
@@ -211,6 +219,175 @@ CONTACTS_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     </style>''',
         ),
     ),
+,
+    CONTACTS_INDEXER_ADAPTER: (
+        (
+            '''    public int getPositionForSection(int sectionIndex) {
+        if (mIndexer == null) {
+            return -1;
+        }
+
+        return mIndexer.getPositionForSection(sectionIndex);
+    }
+''',
+            '''    public int getPositionForSection(int sectionIndex) {
+        if (mIndexer == null) {
+            return -1;
+        }
+
+        return mIndexer.getPositionForSection(sectionIndex);
+    }
+
+    /**
+     * Returns the absolute ListView position for a section. Sable's alphabet
+     * rail deliberately delegates to the existing Contacts section index.
+     */
+    public int getListPositionForSection(int sectionIndex) {
+        int offset = getPositionForSection(sectionIndex);
+        if (offset < 0) {
+            return -1;
+        }
+
+        int partitionStart = getPositionForPartition(mIndexedPartition);
+        if (hasHeader(mIndexedPartition)) {
+            partitionStart++;
+        }
+        return partitionStart + offset;
+    }
+''',
+        ),
+    ),
+    CONTACTS_BROWSE_FRAGMENT: (
+        (
+            '''import android.widget.ImageView;
+import android.widget.LinearLayout.LayoutParams;
+''',
+            '''import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
+''',
+        ),
+        (
+            '''    private TextView mSearchProgressText;
+
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+''',
+            '''    private TextView mSearchProgressText;
+    private View mSableAlphabetRail;
+
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+''',
+        ),
+        (
+            '''                private void setQueryTextToFragment(String query) {
+                    setQueryString(query, true);
+                    setVisibleScrollbarEnabled(!isSearchMode());
+                }
+''',
+            '''                private void setQueryTextToFragment(String query) {
+                    setQueryString(query, true);
+                    setVisibleScrollbarEnabled(!isSearchMode());
+                    updateSableAlphabetRailVisibility();
+                }
+''',
+        ),
+        (
+            '''        super.onLoadFinished(loader, data);
+        if (!isSearchMode()) {
+''',
+            '''        super.onLoadFinished(loader, data);
+        updateSableAlphabetRailVisibility();
+        if (!isSearchMode()) {
+''',
+        ),
+        (
+            '''        contactListLayout.addView(mEmptyAccountView);
+        contactListLayout.addView(mEmptyHomeView);
+
+        return view;
+    }
+
+    private View getEmptyHomeView(LayoutInflater inflater) {
+''',
+            '''        contactListLayout.addView(mEmptyAccountView);
+        contactListLayout.addView(mEmptyHomeView);
+        installSableAlphabetRail(contactListLayout);
+
+        return view;
+    }
+
+    private void installSableAlphabetRail(FrameLayout container) {
+        final LinearLayout rail = new LinearLayout(getContext());
+        rail.setOrientation(LinearLayout.VERTICAL);
+        rail.setGravity(Gravity.CENTER);
+        rail.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+
+        final float density = getResources().getDisplayMetrics().density;
+        final int width = (int) (28 * density + 0.5f);
+        final FrameLayout.LayoutParams railParams =
+                new FrameLayout.LayoutParams(
+                        width,
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        Gravity.END);
+        rail.setLayoutParams(railParams);
+
+        for (char letter = 'A'; letter <= 'Z'; letter++) {
+            final String section = String.valueOf(letter);
+            final TextView shortcut = new TextView(getContext());
+            shortcut.setText(section);
+            shortcut.setTextSize(10);
+            shortcut.setGravity(Gravity.CENTER);
+            shortcut.setTextColor(
+                    ContextCompat.getColor(getContext(), R.color.primary_color));
+            shortcut.setContentDescription("Jump to " + section);
+            shortcut.setFocusable(true);
+            shortcut.setClickable(true);
+            shortcut.setOnClickListener(v -> scrollToSableSection(section));
+            shortcut.setLayoutParams(
+                    new LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            0,
+                            1f));
+            rail.addView(shortcut);
+        }
+
+        mSableAlphabetRail = rail;
+        container.addView(rail);
+        updateSableAlphabetRailVisibility();
+    }
+
+    private void updateSableAlphabetRailVisibility() {
+        if (mSableAlphabetRail != null) {
+            mSableAlphabetRail.setVisibility(isSearchMode() ? View.GONE : View.VISIBLE);
+        }
+    }
+
+    private void scrollToSableSection(String target) {
+        final ContactListAdapter adapter = getAdapter();
+        if (adapter == null) {
+            return;
+        }
+
+        final Object[] sections = adapter.getSections();
+        for (int index = 0; index < sections.length; index++) {
+            final String section = String.valueOf(sections[index]).trim();
+            if (section.isEmpty()) {
+                continue;
+            }
+            if (section.substring(0, 1).equalsIgnoreCase(target)) {
+                final int position = adapter.getListPositionForSection(index);
+                if (position >= 0) {
+                    getListView().setSelection(position);
+                }
+                return;
+            }
+        }
+    }
+
+    private View getEmptyHomeView(LayoutInflater inflater) {
+''',
+        ),
+    ),
 }
 
 
@@ -309,18 +486,29 @@ def verify_repo(
                     f"R9_{label}_VERIFY=FAIL file={rel} stale={old!r}"
                 )
 
-    behavioral = [
+    behavioral = {
         line for line in current
         if line[3:].endswith((".java", ".kt"))
-    ]
-    if behavioral:
-        raise SystemExit(
-            f"R9_{label}_BEHAVIORAL_SOURCE_MUTATION=FAIL "
-            f"paths={behavioral!r}"
-        )
+    }
+    if label == "PHONE":
+        if behavioral:
+            raise SystemExit(
+                f"R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=FAIL paths={sorted(behavioral)!r}"
+            )
+        print("R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=NONE")
+    else:
+        allowed_behavioral = {
+            f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
+            f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
+        }
+        if behavioral != allowed_behavioral:
+            raise SystemExit(
+                "R9_CONTACTS_BEHAVIORAL_SCOPE=FAIL "
+                f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
+            )
+        print("R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY")
 
     print(f"R9_{label}_PRESENTATION=PASS")
-    print(f"R9_{label}_BEHAVIORAL_SOURCE_MUTATION=NONE")
 
 
 def apply(source: Path) -> None:
@@ -410,7 +598,8 @@ def verify(source: Path) -> None:
 
     print("R9_PHONE_CONTACTS_PINNED_BASELINES=PASS")
     print("R9_PHONE_CONTACTS_PRESENTATION=PASS")
-    print("R9_PHONE_CONTACTS_BEHAVIORAL_SOURCE_MUTATION=NONE")
+    print("R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER")
+    print("R9_CONTACTS_DATA_MODEL_MUTATION=NONE")
 
 
 def self_test() -> None:
@@ -426,12 +615,6 @@ def self_test() -> None:
                     raise SystemExit(
                         f"R9_{label}_SELF_TEST=FAIL file={path}"
                     )
-
-    if any(
-        path.suffix in {".java", ".kt"}
-        for path in (*DIALER_TRANSFORMS, *CONTACTS_TRANSFORMS)
-    ):
-        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_BEHAVIOR_SCOPE")
 
     required_blocking_tokens = (
         "BlockedNumberContract",
@@ -452,7 +635,8 @@ def self_test() -> None:
     print("R9_PHONE_CONTACTS_PINNED_BASELINES=PASS_SELF_TEST")
     print("R9_PHONE_PRESENTATION=PASS_SELF_TEST")
     print("R9_CONTACTS_PRESENTATION=PASS_SELF_TEST")
-    print("R9_PHONE_CONTACTS_BEHAVIORAL_SOURCE_MUTATION=NONE_SELF_TEST")
+    print("R9_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
+    print("R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=NONE_SELF_TEST")
     print("R9_PHONE_CONTACTS_PRESENTATION_SELF_TEST=PASS")
 
 
