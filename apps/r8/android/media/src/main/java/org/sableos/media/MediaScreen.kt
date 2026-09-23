@@ -65,6 +65,7 @@ private val MediaPivotActiveWidth = 34.dp
 private val MediaPivotInactiveWidth = 12.dp
 private val MediaAlphabetRailWidth = 36.dp
 private val MediaCompactPadding = 12.dp
+private const val COLLECTION_FIXED_ITEM_COUNT = 6
 private const val MILLIS_PER_SECOND = 1_000L
 private const val SECONDS_PER_MINUTE = 60L
 private const val LARGE_ARTWORK_ASPECT_RATIO = 1.9f
@@ -921,8 +922,10 @@ private fun CollectionScreen(
                 onSelect = { target ->
                     activeSection = target.letter
                     scope.launch {
-                        // Six fixed collection items precede the active library rows.
-                        listState.animateScrollToItem(6 + target.itemIndex)
+                        // Fixed collection chrome precedes the active library rows.
+                        listState.animateScrollToItem(
+                            COLLECTION_FIXED_ITEM_COUNT + target.itemIndex,
+                        )
                     }
                 },
             )
