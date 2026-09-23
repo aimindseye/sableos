@@ -381,6 +381,11 @@ require(
     "SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT",
 )
 require(
+    "build/panther/build-r8-final-ui.sh",
+    "framework-minus-apex",
+    "R9_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS",
+)
+require(
     "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
     "classify_dirty_scope_from_expected",
     '"PRE_COHESION"',
