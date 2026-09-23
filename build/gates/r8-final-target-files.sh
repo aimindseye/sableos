@@ -62,6 +62,7 @@ expected_packages = {
     "SableMinesweeper.apk": "org.sableos.minesweeper",
     "Sable2048.apk": "org.sableos.game2048",
     "SableMedia.apk": "org.sableos.media",
+    "SableTextReader.apk": "org.sableos.textreader",
     "SableReader.apk": "org.sableos.reader",
     "SableHub.apk": "org.sableos.hub",
     "SableMail.apk": "org.sableos.mail",
@@ -171,6 +172,7 @@ declare -A expected_package=(
     [SableMinesweeper.apk]=org.sableos.minesweeper
     [Sable2048.apk]=org.sableos.game2048
     [SableMedia.apk]=org.sableos.media
+    [SableTextReader.apk]=org.sableos.textreader
     [SableReader.apk]=org.sableos.reader
     [SableHub.apk]=org.sableos.hub
     [SableMail.apk]=org.sableos.mail
@@ -178,7 +180,7 @@ declare -A expected_package=(
     [SableCalendar.apk]=org.sableos.calendar
 )
 
-for apk in     SableLauncher.apk     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
+for apk in     SableLauncher.apk     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableTextReader.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
@@ -195,7 +197,8 @@ echo "R9_LEGACY_SABLESTART_TARGET_FILES=PASS_ABSENT"
 echo "R8_B_CALCULATOR_CONVERT_TARGET_FILES=PASS"
 echo "R8_C_GAMES_TARGET_FILES=PASS"
 echo "R8_D_READER_TARGET_FILES=PASS"
-echo "R8_D2_READER_OCR_TARGET_FILES=PASS"
+echo "R9_SABLE_TEXT_READER_TARGET_FILES=PASS_PRESENT"
+echo "R9_SABLE_TEXT_READER_OCR_TARGET_FILES=PASS"
 echo "R8_E_MEDIA_TARGET_FILES=PASS"
 echo "R8_F_SABLE_HUB_MESSAGES_TARGET_FILES=PASS"
 echo "R8_G_SABLE_MAIL_TARGET_FILES=PASS"
