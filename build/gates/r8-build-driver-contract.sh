@@ -154,13 +154,13 @@ grep -Fq 'R8_STALE_WORKSPACE_PRODUCT_TREE' "$nostale"
 grep -Fq 'verify-r8-vendor-sable-inventory.py' "$nostale"
 grep -Fq 'R8_DUPLICATE_PRODUCT_BLUEPRINT' "$nostale"
 grep -Fq 'R8_VENDOR_SABLE_EXACT_INVENTORY=PASS' "$inventory"
-if ! grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=10' "$inventory"; then
-    echo "R9_BUILD_DRIVER_TEN_APK_INVENTORY=FAIL"
+if ! grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=11' "$inventory"; then
+    echo "R9_BUILD_DRIVER_ELEVEN_APK_INVENTORY=FAIL"
     exit 1
 fi
 python3 "$inventory" --self-test
 
-echo "R9_BUILD_DRIVER_TEN_APK_INVENTORY=PASS"
+echo "R9_BUILD_DRIVER_ELEVEN_APK_INVENTORY=PASS"
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
 
 grep -Fq 'name: "sable_start_presentation_srcs"' "$start_bp" || {
