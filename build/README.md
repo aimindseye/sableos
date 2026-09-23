@@ -141,28 +141,28 @@ See `docs/BUILD_LAYOUT.md`, `docs/PORTABLE_DEVELOPMENT.md`, and
 `docs/BUILD_PANTHER_GRAPHENE_2026081300.md`.
 
 
-## R8 production-source qualification
+## R9 standalone HOME source qualification
 
-The historical `start-preview` and `system-preview` Gradle applications and
-the Panther UI-preview build/flash/validation scripts are retired. GitHub Android
-CI now compiles the complete production SableStart Kotlin source tree through
-`:sablestart-production-check:compileDebugKotlin`, using the production
-manifest and resources.
+The historical `start-preview`, `system-preview` and
+`sablestart-production-check` Gradle paths are retired. Current host-side
+presentation qualification mirrors only the canonical
+`sable_start_presentation_srcs` filegroup, while the Android product builds
+the real source module `SableLauncher`.
 
-The local Panther build remains authoritative: after lunch and before the
-combined module gate, `build-r8-final-ui.sh` runs a focused
-`m SableStart` Soong preflight and stores
-`sablestart-soong-preflight.log`.
+The local Panther build remains authoritative: before the combined module gate,
+`build-r8-final-ui.sh` runs the Sable HOME + Quickstep Recents preflight with
+`m SableLauncher Launcher3QuickStep` and records
+`sable-home-quickstep-preflight.log`.
 
 The R8 no-stale gate also requires the workspace `vendor/sable` tree to match
 the exact canonical R8 inventory: one Android.bp, one product makefile, three
 source/seal control files, and exactly eleven canonical APKs.
 
 
-## SableStart signing/package-scan policy
+## SableLauncher signing/package-scan policy
 
-SableStart is source-built as a normal system application and must explicitly
-disable APK Signature Scheme v4 sidecar generation in its Soong module:
+The current `SableLauncher` module is source-built as a normal system
+application and explicitly disables APK Signature Scheme v4 sidecar generation:
 
 ```bp
 v4_signature: false,
@@ -173,17 +173,10 @@ The R8 physical validation on 2026-09-19 proved that packaging
 attempt fs-verity measurement of the `/system` APK, hit the current Panther
 SELinux denial, and reject the package during boot.
 
-The reusable gate
-`build/gates/r8-sablestart-signing-policy.py` enforces both sides of the
-contract:
-
-- canonical/workspace Android.bp must explicitly disable v4 signing;
-- final target-files must contain SableStart.apk and must not contain
-  SableStart.apk.idsig.
-
-`build-r8-final-ui.sh` records a source-policy check before compilation and a
-target-files-policy check after the final target-files build. The authoritative
-target-files composition gate independently reruns the policy.
+That incident remains historical evidence. Current R9 enforcement is carried by
+the active build-driver/no-stale/target-files contracts: the source module must
+be `SableLauncher` with `v4_signature: false`, target-files must contain
+exactly one `SableLauncher.apk`, and legacy `SableStart.apk` must be absent.
 
 Do not replace this with an `unzip -l | grep -q` check under `pipefail`.
 An early successful `grep -q` can SIGPIPE `unzip`, making the pipeline
