@@ -240,6 +240,10 @@ require(
     "ignoreFailures = false",
     "ignoreFailures.set(false)",
 )
+require(
+    f"{HUB}/.editorconfig",
+    "ktlint_function_naming_ignore_when_annotated_with = Composable",
+)
 forbid(
     "apps/r8/android/config/detekt.yml",
     '"**/hub/HubModels.kt"',
@@ -310,6 +314,7 @@ print("R9_MESSAGES_LAUNCHER_INVENTORY_REFRESH=PASS_OFF_MAIN")
 print("R9_MESSAGES_SETTINGS_ENTRY=PASS_CONNECTED_APPS")
 print("R9_MESSAGES_REDUCER_STRUCTURE=PASS_DECOMPOSED")
 print("R9_MESSAGES_SOURCE_DIFF_CHECK=PASS_REQUIRED")
+print("R9_MESSAGES_COMPOSE_KTLINT_POLICY=PASS_MEDIA_ALIGNED")
 print("R9_MESSAGES_QUALITY_CONFIG=PASS_FAIL_CLOSED")
 print("R9_MESSAGES_QUALIFICATION_ORDER=PASS_PREFLIGHT_BEFORE_BUILD")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
