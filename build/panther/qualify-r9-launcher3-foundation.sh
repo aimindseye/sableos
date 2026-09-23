@@ -82,7 +82,7 @@ echo "CLOBBER_AUTHORIZED=NO"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FULL_IMAGE_BUILD_AUTHORIZED=NO"
-echo "STANDALONE_SABLESTART_RETIREMENT_AUTHORIZED=YES"
+echo "SABLELAUNCHER_STANDALONE_RUNTIME_REQUIRED=YES"
 echo "COLD_OUT_BUILD_AUTHORIZED=$ALLOW_COLD_OUT"
 echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
@@ -114,22 +114,32 @@ SOURCE_MUTATION_AUTHORIZED=YES SABLEOS_UPSTREAM="$WS" \
     bash "$ROOT/build/panther/sync-sablestart.sh" \
     | tee "$EVIDENCE_DIR/sable-presentation-sync.log"
 
-grep -Fxq 'SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT' \
+grep -Fxq 'SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT' \
     "$EVIDENCE_DIR/sable-presentation-sync.log" || {
-        echo "R9_STANDALONE_SABLESTART_WORKSPACE=FAIL"
+        echo "R9_SABLELAUNCHER_WORKSPACE=FAIL"
         exit 5
     }
-echo "R9_STANDALONE_SABLESTART_WORKSPACE=PASS_ABSENT"
+echo "R9_SABLELAUNCHER_WORKSPACE=PASS_PRESENT"
 
 echo
-echo "===== PINNED LAUNCHER3 FOUNDATION APPLY ====="
+echo "===== PINNED LAUNCHER3 FOUNDATION INTERMEDIATE ====="
 APPLIER="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
+RECENTS_APPLIER="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
 python3 "$APPLIER" --self-test \
     | tee "$EVIDENCE_DIR/foundation-self-test.log"
 python3 "$APPLIER" --source "$WS" apply \
     | tee "$EVIDENCE_DIR/foundation-apply.log"
 python3 "$APPLIER" --source "$WS" verify \
     | tee "$EVIDENCE_DIR/foundation-verify.log"
+
+echo
+echo "===== QUICKSTEP RECENTS-ONLY CUTOVER ====="
+python3 "$RECENTS_APPLIER" --self-test \
+    | tee "$EVIDENCE_DIR/quickstep-recents-self-test.log"
+python3 "$RECENTS_APPLIER" --source "$WS" apply \
+    | tee "$EVIDENCE_DIR/quickstep-recents-apply.log"
+python3 "$RECENTS_APPLIER" --source "$WS" verify \
+    | tee "$EVIDENCE_DIR/quickstep-recents-verify.log"
 
 echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="
@@ -169,10 +179,10 @@ echo "R9_LAUNCHER3_FOUNDATION_LUNCH_RC=$LUNCH_RC"
 echo "R9_LAUNCHER3_FOUNDATION_LUNCH=PASS"
 
 echo
-echo "===== LAUNCHER3QUICKSTEP FOCUSED SOONG COMPILE ====="
+echo "===== SABLE HOME + QUICKSTEP FOCUSED SOONG COMPILE ====="
 set +e
-m -j"$JOBS" Launcher3QuickStep 2>&1 \
-    | tee "$EVIDENCE_DIR/launcher3-quickstep-build.log"
+m -j"$JOBS" SableLauncher Launcher3QuickStep 2>&1 \
+    | tee "$EVIDENCE_DIR/sable-home-quickstep-build.log"
 BUILD_RC=${PIPESTATUS[0]}
 set -e
 
@@ -182,13 +192,13 @@ if [[ "$BUILD_RC" -ne 0 ]]; then
     exit 6
 fi
 
-python3 "$APPLIER" --source "$WS" verify \
-    | tee "$EVIDENCE_DIR/postbuild-foundation-verify.log"
+python3 "$RECENTS_APPLIER" --source "$WS" verify \
+    | tee "$EVIDENCE_DIR/postbuild-quickstep-recents-verify.log"
 
 echo
 echo "===== LAUNCHER3 WARNING QUALITY GATE ====="
 python3 "$ROOT/build/gates/r9-launcher-warning-gate.py" \
-    "$EVIDENCE_DIR/launcher3-quickstep-build.log" \
+    "$EVIDENCE_DIR/sable-home-quickstep-build.log" \
     | tee "$EVIDENCE_DIR/launcher3-warning-gate.log"
 echo "R9_LAUNCHER3_WARNING_MIGRATIONS=PASS"
 
@@ -201,11 +211,11 @@ echo "R9_LAUNCHER3_FOUNDATION_RECENTS=QUICKSTEP_PRESERVED"
 echo "R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS"
 echo "R9_LAUNCHER3_WARNING_QUALITY=OPEN_DEBT_REMAINS"
 echo "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS"
-echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
-echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS"
-echo "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS"
-echo "R9_L8_HOME_CUTOVER_COMPILE=PASS"
-echo "NEXT_STEP=VISUAL_REVIEW_THEN_FULL_PANTHER_IMAGE"
+echo "R9_SABLELAUNCHER_PRODUCT=PASS_PRESENT"
+echo "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_ABSENT"
+echo "R9_QUICKSTEP_RECENTS_ONLY=PASS"
+echo "R9_SABLE_HOME_QUICKSTEP_FOUNDATION_COMPILE=PASS"
+echo "NEXT_STEP=FULL_CI_THEN_PHYSICAL_UX_MODULE_QUALIFICATION"
 echo "FULL_PANTHER_BUILD_PERFORMED=NO"
 echo "DEVICE_CONTACTED=NO"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
