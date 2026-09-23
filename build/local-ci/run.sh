@@ -444,6 +444,9 @@ run_textreader() {
   mkdir -p "$CACHE_ROOT"
   clone_pinned "$VAACHAK_TEXTREADER_REPOSITORY" "$VAACHAK_TEXTREADER_COMMIT" "$work"
 
+  python3 "$ROOT/apps/r8/textreader/apply_sable_flavor.py" "$work"
+  python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" "$work"
+
   export JAVA_HOME="$SABLE_JDK17"
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
   export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
@@ -451,40 +454,36 @@ run_textreader() {
   (
     cd "$work"
     chmod +x gradlew
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       testDebugUnitTest lintDebug assembleDebug       --stacktrace --console=plain --no-daemon --no-configuration-cache
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
+      testDebugUnitTest \
+      lintDebug \
+      assembleDebug \
+      --stacktrace --console=plain --no-daemon --no-configuration-cache
 
-    manifest=app/src/main/AndroidManifest.xml
-    main=app/src/main/java/org/vaachak/textreader/MainActivity.kt
-    shared=app/src/main/java/org/vaachak/textreader/SharedComponents.kt
-    util=app/src/main/java/org/vaachak/textreader/TextReaderUtil.kt
+    mapfile -t apks < <(
+      find app/build/outputs/apk/debug \
+        -maxdepth 1 -type f -name 'SableTextReader-*.apk' -print | sort
+    )
+    [[ "${#apks[@]}" -eq 1 ]] || {
+      echo "SABLE_TEXT_READER_APK=FAIL_COUNT count=${#apks[@]}"
+      return 1
+    }
 
-    grep -q 'android.permission.CAMERA' "$manifest"
-    grep -q 'android.hardware.camera.*required="false"' "$manifest"
-    grep -q 'android.permission.INTERNET' "$manifest"
-    grep -q 'android.intent.action.SEND' "$manifest"
-    grep -q 'android.intent.action.PROCESS_TEXT' "$manifest"
-    grep -q 'ActivityResultContracts.OpenDocument' "$main"
-    grep -q 'TextToSpeech' "$main"
-    grep -q 'CreateDocument("audio/wav")' "$main"
-    grep -q 'TextRecognition.getClient' "$main"
-    grep -q 'downloadModelIfNeeded' "$shared"
-    ! grep -q '^import android\.' "$util"
-
-    find app/build/outputs/apk/debug -type f -name '*.apk'       -print -exec sha256sum {} \; > "$EVIDENCE_DIR/textreader-apk-seal.txt"
+    APKANALYZER="$SABLE_APKANALYZER" \
+      python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" \
+        "$work" "${apks[0]}"
+    sha256sum "${apks[0]}" > "$EVIDENCE_DIR/textreader-apk-seal.txt"
   )
 }
 
 run_reader() {
   source "$ROOT/apps/r8/reader/upstream.env"
-  source "$ROOT/apps/r8/textreader/upstream.env"
   local reader="$CACHE_ROOT/vaachak-reader"
-  local text="$CACHE_ROOT/vaachak-textreader-reader"
   mkdir -p "$CACHE_ROOT"
 
   clone_pinned "$VAACHAK_REPOSITORY" "$VAACHAK_COMMIT" "$reader"
-  clone_pinned "$VAACHAK_TEXTREADER_REPOSITORY" "$VAACHAK_TEXTREADER_COMMIT" "$text"
 
-  python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader" "$text"
+  python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader"
 
   export JAVA_HOME="$SABLE_JDK21"
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
