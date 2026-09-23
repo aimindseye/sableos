@@ -93,7 +93,8 @@ Required behavior:
 - observers update without app-specific duplicated preference stores.
 
 Exit gate:
-- one authority;
+- one authority, with the literal owned by `SableAppearanceContract` and
+  provider code consuming `SableAppearanceContract.CONTENT_URI`;
 - no Launcher3-only global preference ownership;
 - Settings and Launcher read/write through the same contract;
 - boot/user-unlock restoration path covered by tests.
