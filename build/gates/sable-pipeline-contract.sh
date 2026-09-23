@@ -40,6 +40,7 @@ python3 -m py_compile \
   "$ROOT/build/gates/r9-media-flow-contract.py" \
   "$ROOT/build/gates/r9-messages-native-first-contract.py" \
   "$ROOT/build/gates/r9-messages-local-conversation-contract.py" \
+  "$ROOT/build/gates/r9-messages-source-style.py" \
   "$ROOT/build/gates/r9-system-cohesion-contract.py"
 echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
@@ -137,6 +138,18 @@ grep -Fq ':hub:ktlintCheck' "$MESSAGES_QUAL"
 grep -Fq 'R9_MESSAGES_WARNINGS_AS_ERRORS=PASS' "$MESSAGES_QUAL"
 grep -Fq 'R9_MESSAGES_LOCAL_CONVERSATION_QUALIFICATION=PASS' "$MESSAGES_QUAL"
 grep -Fq 'R9_MESSAGES_FOCUSED_QUALIFICATION=PASS' "$MESSAGES_QUAL"
+
+LOCAL_CI="$ROOT/build/local-ci/run.sh"
+for gate in \
+  'r9-media-flow-contract.py' \
+  'r9-messages-native-first-contract.py' \
+  'r9-messages-local-conversation-contract.py' \
+  'r9-messages-source-style.py'
+do
+  grep -Fq "$gate" "$LOCAL_CI"
+done
+echo "SABLE_PIPELINE_LOCAL_CI_MEDIA_MESSAGES_SOURCE_GATES=PASS"
+
 grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
 grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
 grep -Fq 'R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS' "$FINAL_BUILD"
