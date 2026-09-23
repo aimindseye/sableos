@@ -36,8 +36,7 @@ internal object ConnectedReplyRegistry {
         }
     }
 
-    fun canReply(notificationKey: String): Boolean =
-        handles.containsKey(notificationKey)
+    fun canReply(notificationKey: String): Boolean = handles.containsKey(notificationKey)
 
     fun send(
         context: Context,
@@ -48,25 +47,28 @@ internal object ConnectedReplyRegistry {
         val handle = handles[notificationKey]
 
         return when {
-            text.isEmpty() ->
+            text.isEmpty() -> {
                 HubSendResult(
                     success = false,
                     message = "Reply is empty.",
                 )
+            }
 
-            handle == null ->
+            handle == null -> {
                 HubSendResult(
                     success = false,
                     message = "Quick reply is no longer available. Open the source app instead.",
                 )
+            }
 
-            else ->
+            else -> {
                 sendReply(
                     context = context,
                     notificationKey = notificationKey,
                     handle = handle,
                     text = text,
                 )
+            }
         }
     }
 
