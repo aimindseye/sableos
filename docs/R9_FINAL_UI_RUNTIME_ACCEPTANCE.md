@@ -187,27 +187,46 @@ Sable Messages does not request the default SMS role during this tranche.
 GrapheneOS Messaging remains the default Android messaging transport while
 Sable Messages organizes SMS/people/providers above it.
 
-## Sable Messages provider surface
+## Sable Messages local conversation boundary
 
-Sable Messages currently carries four isolated WEB provider capsules:
+Sable Messages is a native-first SMS/People surface. The four embedded
+WhatsApp/Instagram/Messenger/LinkedIn WebView capsules are retired and Sable
+Messages does not request `android.permission.INTERNET` solely to host
+third-party sessions.
 
-- WhatsApp -> `https://web.whatsapp.com/`
-- Instagram -> `https://www.instagram.com/direct/inbox/`
-- Facebook / Messenger -> `https://www.messenger.com/`
-- LinkedIn -> `https://www.linkedin.com/messaging/`
+The retained `com.android.messaging` package remains the default SMS/MMS
+transport substrate for this tranche. Sable Messages does not claim ownership
+of SMS/MMS delivery broadcasts or RCS transport.
 
-Each provider uses an isolated WebView data-directory suffix and a separate
-Android process. Provider navigation is HTTPS-only inside the allowed provider
-host set, mixed content is disabled and third-party cookies are disabled.
+The next third-party integration layer is local and configurable:
 
-These are provider capsules, not native unified-inbox APIs. A user can open and
-authenticate to the provider messaging surface from Sable Messages when the
-provider supports its web experience. Sable does not scrape private app
-databases or claim direct native send/read capability that the provider has not
-authorized.
+- the user explicitly enables installed messaging apps under Sable Messages
+  settings;
+- configuration is keyed by package + Android user/profile;
+- Sable consumes Android notification/conversation metadata through a
+  NotificationListenerService only after notification access is granted;
+- structured MessagingStyle/Person/conversation data is preferred; generic
+  title/text is a bounded fallback;
+- reply uses the source notification's RemoteInput/PendingIntent only when such
+  an action exists;
+- the source app remains authoritative for account state, transport,
+  cryptography, complete history, attachments and voice/video;
+- Sable does not scrape private app databases, capture provider credentials,
+  reverse-engineer provider protocols or embed provider WebViews;
+- notification callback work must be copied/bounded and dispatched off the
+  listener callback thread before persistence/identity work;
+- the first tranche does not cancel source notifications, preserving their
+  PendingIntent/RemoteInput validity.
 
-Future installed-app or Android-notification integration may complement these
-capsules, but must preserve the same explicit authorization boundary.
+Required installed-manifest/runtime markers evolve to:
+
+```text
+R9_FINAL_UI_PROVIDER_CAPSULES=PASS_RETIRED
+R9_FINAL_UI_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT
+R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING
+R9_SABLE_MESSAGES_NOTIFICATION_ACCESS=PASS_USER_AUTHORIZED
+R9_SABLE_MESSAGES_CONNECTED_APPS=PASS_CONFIGURABLE
+```
 
 ## Calendar and launcher Live privacy boundary
 
@@ -225,8 +244,9 @@ applications expose bounded read-only snapshot providers for Start/Live:
 - Mail -> `org.sableos.mail.snapshot`
 - Media -> `org.sableos.media.snapshot`
 
-The sensitive app-owned providers accept the product Launcher3 caller and reject
-unrelated callers. Sable Start requests local photo access only for the Photos
+The sensitive app-owned providers accept `org.sableos.launcher` as the product
+launcher caller and reject unrelated callers. Launcher3 is not a live-snapshot
+consumer in the standalone-HOME architecture. Sable Start requests local photo access only for the Photos
 summary. Live refresh is provider/lifecycle driven rather than a permanent
 one-minute polling loop. Home must not expose message bodies or mail subjects.
 
@@ -266,7 +286,7 @@ R9_FINAL_UI_GRAPHENE_MESSAGING_PACKAGE=PASS
 R9_FINAL_UI_GOOGLE_MESSAGES_PRELOAD=PASS_ABSENT
 R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING
 R9_FINAL_UI_SABLE_MESSAGES_PACKAGE=PASS
-R9_FINAL_UI_PROVIDER_CAPSULES=PASS_4
+R9_FINAL_UI_PROVIDER_CAPSULES=PASS_RETIRED
 R9_FINAL_UI_SABLE_CALENDAR_PACKAGE=PASS
 R9_FINAL_UI_PLATFORM_CALENDAR_PRELOAD=PASS_ABSENT
 R9_FINAL_UI_LIVE_PROVIDER_CALLER_BOUNDARY=PASS

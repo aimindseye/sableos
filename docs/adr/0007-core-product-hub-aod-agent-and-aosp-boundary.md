@@ -85,6 +85,35 @@ Embedded WhatsApp/Instagram/Messenger/LinkedIn WebViews are retired from Sable M
 
 Reference: GrapheneOS FAQ, “Do notifications work properly on GrapheneOS?” — https://grapheneos.org/faq#notifications
 
+### Local third-party conversation adapters
+
+For R9, third-party messaging integration uses Android's application-authored
+notification/conversation surface rather than a Sable cloud relay, embedded
+provider WebView or provider protocol implementation.
+
+The user explicitly enables installed apps. Configuration is package +
+Android-user/profile based, so new compatible apps do not require recompilation.
+A NotificationListenerService normalizes structured MessagingStyle/Person data
+where available and may invoke only a source-authored RemoteInput/PendingIntent
+reply action. Generic notification text is a bounded fallback, not proof of
+complete provider history.
+
+The source application remains authoritative for networking, account state,
+cryptography, complete history and rich-provider actions. Sable does not obtain
+provider credentials or inspect private application databases.
+
+Notification-listener callbacks perform only bounded extraction/enqueue work;
+persistence, person linking and expensive normalization run off the callback
+thread. Notification-derived history is credential-encrypted and retention is
+user-configurable.
+
+The first tranche keeps source notifications alive rather than canceling them,
+because their PendingIntent/RemoteInput objects are part of the authorized
+reply path.
+
+This architecture is detailed in ADR-0008 and
+`../R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md`.
+
 ### AOD
 
 AOD is Sable presentation layered over supported Android/device doze/display capability. Lock-screen privacy remains authoritative. AOD does not gain unrestricted microphone, Hub or Agent privilege.

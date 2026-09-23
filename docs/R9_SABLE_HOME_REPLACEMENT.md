@@ -104,13 +104,12 @@ No wipe, clean, clobber or bootloader-state change is part of this migration.
 
 ## Live-snapshot privacy boundary
 
-Weather, Calendar, Messages, Mail and Media snapshot providers currently admit
-the Launcher3 package as the launcher caller. During migration they must admit
-the new Sable launcher package and reject unrelated callers. Launcher3 access
-is removed once the standalone HOME cutover is qualified.
+Weather, Calendar, Messages, Mail and Media snapshot providers admit
+`org.sableos.launcher` as the product launcher caller and reject unrelated
+callers. Launcher3 access is not part of the standalone HOME architecture.
 
-The appearance provider writer policy likewise moves from Launcher3 to
-SableLauncher while retaining Settings as owner.
+The appearance provider writer policy likewise admits SableLauncher while
+retaining Settings as the persisted authority owner.
 
 ## Keyboard-first contract
 
@@ -160,6 +159,13 @@ Track rows become flat list rows:
   harder.
 
 Artists and Albums use equivalent flat rows and alphabet section navigation.
+
+Large-library behavior is part of the launcher-adjacent acceptance contract:
+Media collection sorting/grouping/section-index construction runs off the UI
+thread; Songs/Artists/Albums/Favorites render lazily; Up Next and playlist
+editing render lazily; playback-position ticks are active only on Now Playing;
+and queue launch uses a bounded process-local token rather than serializing the
+full library through Binder.
 
 ## Qualification sequence
 

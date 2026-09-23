@@ -25,6 +25,41 @@ Current proven baseline:
 
 Exact S1.7 source, AIDL, image, device-binary and runtime seals are recorded in `S1_7_VALIDATION.md`.
 
+### Current Panther / R9 product architecture
+
+The active Android 17 / Panther product architecture is newer than the S1.7
+bramble service baseline above. Current R9 source/module closure establishes:
+
+- standalone `org.sableos.launcher` / `SableLauncher` as the intended HOME
+  product; Launcher3 no longer hosts Sable UI or advertises HOME;
+- `Launcher3QuickStep` retained only for Android Quickstep/Recents task and
+  gesture integration;
+- Settings as the persisted global appearance authority at
+  `content://org.sableos.appearance/appearance`, with Sable apps as clients;
+- Contacts using the existing Android section indexer plus a Sable right-edge
+  alphabet rail rather than a second contact data model;
+- Media using lazy large-library rendering, background collection indexing,
+  bounded queue handoff and A-Z navigation for Songs/Artists/Albums/Favorites;
+- Reader ordinary Light/Dark following SableOS global appearance, with Sepia
+  and E-ink remaining explicit reading modes, and a continuous actual-book
+  library rather than a six-stack presentation;
+- Clock/Photos using qualified Day/Night presentation while Camera remains an
+  intentionally upstream, security-sensitive dark-presentation boundary;
+- Sable Messages as a native-first SMS/People surface while the pinned
+  GrapheneOS Messaging package remains the default SMS/MMS transport substrate;
+- embedded social-provider WebViews retired. Third-party messaging integration
+  proceeds through user-authorized Android notification/conversation adapters
+  and supported installed-app actions rather than private-database or protocol
+  impersonation.
+
+These R9 source/module decisions still require final fresh-image Panther
+physical acceptance. They must not be described as completed physical release
+closure until the source-bound image and device gates pass.
+
+See `R9_SABLE_HOME_REPLACEMENT.md`,
+`R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md`,
+`R9_MEDIA_FLOW_REDESIGN.md`, and ADR-0008.
+
 ## Architectural rules
 
 > One SableOS core, multiple hardware adapters, multiple interaction profiles.

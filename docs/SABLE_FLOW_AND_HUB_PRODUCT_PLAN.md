@@ -223,6 +223,98 @@ provider app -> provider account/session/data
 
 Removing embedded capsules also removes the need for Sable Messages to request network access solely to host proprietary provider sessions.
 
+## Local conversation adapters
+
+The accepted R9 no-server integration architecture is a configurable local
+Android conversation adapter layer. It is not a provider-specific protocol
+client.
+
+### Connected apps
+
+Settings exposes installed messaging-capable applications under:
+
+```text
+Settings
+  -> Messages
+      -> Connected apps
+```
+
+Configuration is keyed by:
+
+```text
+(packageName, Android user/profile)
+```
+
+rather than compile-time provider enums. A compatible future app such as
+Signal, Telegram, Session, Threema, Element or another messaging application
+can therefore be enabled/disabled without recompiling SableOS.
+
+Per-app policy includes at minimum:
+
+```text
+Include in Sable Messages
+Allow quick reply when source exposes RemoteInput
+Hide from SableLauncher
+Retention policy for notification-derived history
+```
+
+### Android integration boundary
+
+The generic adapter consumes:
+
+- NotificationListenerService posted/removed notification events;
+- MessagingStyle messages when present;
+- Person / conversation metadata when present;
+- source package, user/profile, notification key and shortcut/conversation id;
+- RemoteInput + source PendingIntent for quick reply when the notification
+  explicitly exposes a valid reply action.
+
+The adapter does not require provider credentials or provider-private APIs.
+The official installed application remains responsible for push/networking,
+end-to-end cryptography, account/session state, attachments, complete history
+and protocol compatibility.
+
+### Capability levels
+
+```text
+CONVERSATION_REPLY
+    structured conversation metadata + source-authorized RemoteInput reply
+
+NOTIFICATION_ONLY
+    bounded title/text timeline + Open in app
+
+LAUNCH_ONLY
+    insufficient usable notification content; launch provider app only
+```
+
+Sable must not claim complete history merely because it has a notification
+timeline.
+
+### Privacy and lifecycle rules
+
+- notification access is explicit user authorization;
+- only enabled package/profile pairs are retained;
+- callback work is copied/bounded and moved off the notification callback
+  thread before Room/identity/contact work;
+- no private-database scraping, accessibility scraping or provider credential
+  capture;
+- no embedded provider WebViews;
+- source notification privacy/redaction is respected; Sable does not reconstruct
+  content the source app intentionally withheld;
+- source notifications are not canceled in the first tranche so reply
+  PendingIntents remain valid;
+- notification-derived history is CE-only and bounded by explicit retention
+  policy;
+- identity linking is evidence-based and ambiguous cross-provider person merges
+  require user confirmation.
+
+### Launcher integration
+
+SableLauncher hiding becomes dynamic rather than package-coded. Connected-app
+settings may hide an enabled provider from the Sable app list, but the package
+remains installed/enabled and can always be surfaced again through Settings.
+Graphene Messaging remains a separately documented product transport exception.
+
 ## People-centric model
 
 People should become a first-class organizational object shared by Start and Hub.
