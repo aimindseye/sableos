@@ -284,6 +284,7 @@ require(
     "product/r8/panther/r8-product.mk",
     "SableLauncher",
     "SableMedia",
+    "SableTextReader",
     "SableReader",
     "SableHub",
     "SableMail",
@@ -297,10 +298,13 @@ require(
     "R9_SABLELAUNCHER_HOME_TARGET_FILES=PASS_PRESENT",
     "R9_LAUNCHER3_RECENTS_TARGET_FILES=PASS_PRESENT",
     "R9_LEGACY_SABLESTART_TARGET_FILES=PASS_ABSENT",
+    "[SableTextReader.apk]=org.sableos.textreader",
+    "R9_SABLE_TEXT_READER_TARGET_FILES=PASS_PRESENT",
 )
 require(
     "build/gates/r8-no-stale-product-code.sh",
     "R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE=PASS",
+    "R9_SABLE_TEXT_READER_PRODUCT_MODULE=PASS",
 )
 
 # ---------------------------------------------------------------------------
