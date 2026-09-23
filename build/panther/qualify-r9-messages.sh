@@ -78,6 +78,10 @@ python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
 bash "$ROOT/build/gates/sable-pipeline-contract.sh"
 
 echo
+echo "===== R9 MESSAGES SOURCE STYLE PREFLIGHT ====="
+python3 "$ROOT/build/gates/r9-messages-source-style.py"
+
+echo
 echo "===== R9 MESSAGES STATIC QUALITY PREFLIGHT ====="
 
 cd "$ROOT/apps/r8/android"
