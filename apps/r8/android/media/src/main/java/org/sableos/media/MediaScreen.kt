@@ -94,6 +94,7 @@ internal data class MediaScreenState(
     val destination: MediaDestination,
     val libraryPivot: LibraryPivot,
     val localItems: List<LocalAudioItem>,
+    val localLibraryLoading: Boolean,
     val podcastSubscriptions: List<PodcastSubscription>,
     val savedPodcastEpisodeIds: Set<String>,
     val playedPodcastEpisodeIds: Set<String>,
@@ -170,6 +171,7 @@ internal fun MediaScreen(
     val destination = state.destination
     val libraryPivot = state.libraryPivot
     val localItems = state.localItems
+    val localLibraryLoading = state.localLibraryLoading
     val podcastSubscriptions = state.podcastSubscriptions
     val savedPodcastEpisodeIds = state.savedPodcastEpisodeIds
     val playedPodcastEpisodeIds = state.playedPodcastEpisodeIds
@@ -241,6 +243,7 @@ internal fun MediaScreen(
                 CollectionScreen(
                 pivot = libraryPivot,
                 localItems = localItems,
+                localLibraryLoading = localLibraryLoading,
                 playback = playback,
                 favoriteAudioUris = favoriteAudioUris,
                 playlists = playlists,
@@ -597,6 +600,7 @@ private fun MediaUtilityBar(
 private fun CollectionScreen(
     pivot: LibraryPivot,
     localItems: List<LocalAudioItem>,
+    localLibraryLoading: Boolean,
     playback: PlaybackUiState,
     favoriteAudioUris: Set<String>,
     playlists: List<MediaPlaylist>,
@@ -770,7 +774,14 @@ private fun CollectionScreen(
             }
         }
 
-        if (localItems.isEmpty()) {
+        if (localLibraryLoading) {
+            item {
+                C2InfoPanel(
+                    title = "Loading local collection",
+                    detail = "Indexing saved songs, artists, and albums off the UI thread.",
+                )
+            }
+        } else if (localItems.isEmpty()) {
             item {
                 EmptyPanel(
                     title = "No local audio yet",
