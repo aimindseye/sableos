@@ -91,9 +91,26 @@ class HubModelsTest {
 
         assertEquals(1, reduced.conversations.size)
         assertEquals(2, reduced.messages.size)
-        assertEquals(HubConversationSource.ConnectedApp, reduced.conversations[0].source)
-        assertEquals(true, reduced.conversations[0].canQuickReply)
-        assertEquals(0, reduced.conversations[0].unreadCount)
-        assertEquals(true, reduced.conversations[0].threadId < 0L)
+
+        val conversation = reduced.conversations.single()
+        assertEquals(HubConversationSource.ConnectedApp, conversation.source)
+        assertEquals("org.example.messaging", conversation.sourcePackage)
+        assertEquals(10L, conversation.sourceUserSerial)
+        assertEquals("notification-2", conversation.sourceNotificationKey)
+        assertEquals("reply", conversation.lastBody)
+        assertEquals(200L, conversation.lastDateMillis)
+        assertEquals(true, conversation.canQuickReply)
+        assertEquals(0, conversation.unreadCount)
+        assertEquals(true, conversation.threadId < 0L)
+
+        assertEquals(listOf("reply", "hello"), reduced.messages.map(HubMessage::body))
+        assertEquals(
+            listOf(200L, 100L),
+            reduced.messages.map(HubMessage::dateMillis),
+        )
+        assertEquals(
+            listOf(conversation.threadId, conversation.threadId),
+            reduced.messages.map(HubMessage::threadId),
+        )
     }
 }
