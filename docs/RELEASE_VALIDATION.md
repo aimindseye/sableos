@@ -183,6 +183,13 @@ PROFILE=full
 SOURCE_COMMIT=<exact build source commit>
 ```
 
+Human-facing terminal output uses separate color checkpoints for major stages:
+green for completed gates, red for top-level failures, yellow for warnings or
+remaining manual acceptance, and cyan for informational phase checkpoints.
+Canonical machine-readable markers remain uncolored and unchanged so exact
+grep/attestation contracts are stable. Color is disabled automatically for
+non-interactive output and can be disabled explicitly with `NO_COLOR=1`.
+
 Module-only physical-UX qualification is intentionally exempt because it runs
 before the full-CI gate. A branch advance after CI invalidates the authorization
 naturally: the new source commit has no matching attestation and the image build
