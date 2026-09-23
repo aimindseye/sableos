@@ -89,7 +89,13 @@ def main() -> None:
     internet = '    <uses-permission android:name="android.permission.INTERNET" />\n'
     if manifest_text.count(internet) != 1:
         fail("SABLE_TEXT_READER_INTERNET_ANCHOR=FAIL")
-    manifest_text = manifest_text.replace(internet, "", 1)
+    manifest_text = manifest_text.replace(
+        internet,
+        '    <uses-permission\n'
+        '        android:name="android.permission.INTERNET"\n'
+        '        tools:node="remove" />\n',
+        1,
+    )
     manifest_text = manifest_text.replace(
         'android:allowBackup="true"',
         'android:allowBackup="false"',
@@ -512,7 +518,8 @@ object TextReaderUtil {
     print("SABLE_TEXT_READER_MIN_SDK=PASS_30")
     print("SABLE_TEXT_READER_BRANDING=PASS")
     print("SABLE_TEXT_READER_GLOBAL_APPEARANCE=PASS")
-    print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
+    print("SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE")
+    print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_FINAL_APK_ABSENT_REQUIRED")
     print("SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED")
     print("SABLE_TEXT_READER_VIEW_SEND_PROCESS_TEXT=PASS")
     print("SABLE_TEXT_READER_VIEW_HANDLER=PASS_BOUNDED_LOCAL_TEXT")
