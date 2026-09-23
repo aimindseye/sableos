@@ -91,7 +91,7 @@ forbid("localItems.forEach { item ->", media_c2, "eager playlist composition")
 require("PlaybackQueueRequestStore.publish(", media_main, "token queue handoff")
 forbid("putStringArrayListExtra", media_main, "full library Binder payload")
 require("PlaybackQueueRequestStore::consume", media_service, "service token consumption")
-require("withContext(Dispatchers.Main.immediate)", media_service, "main-only Media3 mutation")
+require("mainHandler.post", media_service, "main-thread Media3 mutation handoff")
 require("serviceScope.launch", media_service, "background queue construction")
 require("AtomicReference<PlaybackQueueRequest?>", media_queue_store, "bounded pending queue")
 
