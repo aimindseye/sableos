@@ -6,6 +6,10 @@ ROOT = Path(__file__).resolve().parents[2]
 media_screen = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt").read_text()
 media_app = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MediaApp.kt").read_text()
 playback = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackController.kt").read_text()
+media_c2 = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MediaC2Screens.kt").read_text()
+media_main = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/MainActivity.kt").read_text()
+media_service = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackService.kt").read_text()
+media_queue_store = (ROOT / "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackQueueRequestStore.kt").read_text()
 reader_patch = (ROOT / "apps/r8/reader/apply_sable_flavor.py").read_text()
 
 failures = []
@@ -19,7 +23,7 @@ def forbid(marker: str, text: str, name: str) -> None:
         failures.append(f"forbidden {name}: {marker!r}")
 
 require(
-    "if (destination == MediaDestination.Collection)",
+    "MediaDestination.Collection -> {",
     media_screen,
     "collection full-screen lazy branch",
 )
@@ -38,11 +42,14 @@ forbid("items.forEachIndexed", collection, "legacy eager song composition")
 
 require("private fun MediaAlphabetRail(", media_screen, "Media alphabet rail")
 require("buildMediaSectionTargets(", media_screen, "Media alphabet section targets")
-require("LibraryPivot.Songs -> songs.map { it.title }", media_screen, "Songs alphabet rail")
-require("LibraryPivot.Artists -> artistGroups.map { it.first }", media_screen, "Artists alphabet rail")
-require("LibraryPivot.Albums -> albumGroups.map { it.first }", media_screen, "Albums alphabet rail")
-require("LibraryPivot.Favorites -> favorites.map { it.title }", media_screen, "Favorites alphabet rail")
-require("LibraryPivot.Playlists -> emptyList()", media_screen, "Playlists explicit order")
+require("LibraryPivot.Songs to", media_screen, "Songs alphabet rail")
+require("LibraryPivot.Artists to", media_screen, "Artists alphabet rail")
+require("LibraryPivot.Albums to", media_screen, "Albums alphabet rail")
+require("LibraryPivot.Favorites to", media_screen, "Favorites alphabet rail")
+require("LibraryPivot.Playlists to emptyList()", media_screen, "Playlists explicit order")
+require("produceState<MediaCollectionIndex?>", media_screen, "background collection index")
+require("withContext(Dispatchers.Default)", media_screen, "collection index worker dispatcher")
+require("buildMediaCollectionIndex(", media_screen, "collection index builder")
 require("HorizontalDivider(", media_screen, "flat Media rows")
 forbid('text = "×"', media_screen, "destructive inline Media remove")
 require('text = if (favorite) "★" else "☆"', media_screen, "Media favorite action")
@@ -63,6 +70,30 @@ require(
     playback,
     "cached playback queue",
 )
+
+require("progressUpdatesEnabled", playback, "bounded progress ticker switch")
+require(
+    "fun setProgressUpdatesEnabled(enabled: Boolean)",
+    playback,
+    "progress ticker visibility control",
+)
+require(
+    "destination == MediaDestination.NowPlaying",
+    media_app,
+    "Now Playing only progress updates",
+)
+require("internal fun QueueScreen(", media_c2, "Queue screen")
+require("count = upcomingCount", media_c2, "lazy Up Next item count")
+require("internal fun PlaylistEditorScreen(", media_c2, "Playlist editor")
+require("items = localItems", media_c2, "lazy playlist item rendering")
+forbid("upcomingItems.forEachIndexed", media_c2, "eager Up Next composition")
+forbid("localItems.forEach { item ->", media_c2, "eager playlist composition")
+require("PlaybackQueueRequestStore.publish(", media_main, "token queue handoff")
+forbid("putStringArrayListExtra", media_main, "full library Binder payload")
+require("PlaybackQueueRequestStore::consume", media_service, "service token consumption")
+require("withContext(Dispatchers.Main.immediate)", media_service, "main-only Media3 mutation")
+require("serviceScope.launch", media_service, "background queue construction")
+require("AtomicReference<PlaybackQueueRequest?>", media_queue_store, "bounded pending queue")
 
 require(
     "withContext(Dispatchers.IO)",
@@ -194,7 +225,12 @@ if failures:
     raise SystemExit(1)
 
 print("R9_MEDIA_LARGE_LIBRARY_LAZY_RENDERING=PASS")
-print("R9_MEDIA_QUEUE_TICKER_BOUNDED=PASS")
+print("R9_MEDIA_QUEUE_TICKER_BOUNDED=PASS_NOW_PLAYING_ONLY")
+print("R9_MEDIA_UP_NEXT_LAZY_RENDERING=PASS")
+print("R9_MEDIA_PLAYLIST_EDITOR_LAZY_RENDERING=PASS")
+print("R9_MEDIA_COLLECTION_INDEX_OFF_MAIN=PASS")
+print("R9_MEDIA_QUEUE_BINDER_PAYLOAD=PASS_TOKEN_ONLY")
+print("R9_MEDIA_QUEUE_BUILD_OFF_MAIN=PASS")
 print("R9_MEDIA_IMPORT_OFF_MAIN_THREAD=PASS")
 print("R9_MEDIA_ALPHABET_RAIL=PASS_SONGS_ARTISTS_ALBUMS_FAVORITES")
 print("R9_MEDIA_FLAT_LIBRARY_ROWS=PASS_NO_INLINE_REMOVE")
