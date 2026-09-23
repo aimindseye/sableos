@@ -124,6 +124,7 @@ require(
 )
 require(
     "build/local-ci/run.sh",
+    "R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO",
     'python3 "$ROOT/apps/r8/textreader/apply_sable_flavor.py" "$work"',
     'python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" "$work"',
     "SableTextReader-*.apk",
@@ -133,6 +134,16 @@ forbid(
     'python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader" "$text"',
     "vaachak-textreader-reader",
 )
+require(
+    "build/panther/qualify-r9-textreader.sh",
+    "R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO",
+    "WORKSPACE_PRODUCT_INVENTORY_REQUIRED=NO_PRESTAGING",
+)
+require(
+    "build/gates/r8-final-product-composition.sh",
+    "R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=YES",
+)
+
 require(
     "build/panther/run-r8-release-candidate.sh",
     "===== SABLE TEXT READER =====",
