@@ -2,6 +2,8 @@ package org.sableos.media
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -14,13 +16,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class PlaybackService : MediaSessionService() {
     private var player: ExoPlayer? = null
     private var session: MediaSession? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var queueBuildJob: Job? = null
+    private var queueGeneration = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -92,6 +95,7 @@ class PlaybackService : MediaSessionService() {
             }
 
             ACTION_STOP -> {
+                cancelPendingQueueBuild()
                 player?.stop()
                 MediaSnapshotStore.clear(this)
             }
@@ -113,7 +117,7 @@ class PlaybackService : MediaSessionService() {
         title: String?,
         source: String?,
     ) {
-        queueBuildJob?.cancel()
+        cancelPendingQueueBuild()
         val metadata =
             MediaMetadata
                 .Builder()
@@ -136,7 +140,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     private fun playQueue(request: PlaybackQueueRequest) {
-        queueBuildJob?.cancel()
+        cancelPendingQueueBuild()
+        val generation = ++queueGeneration
         queueBuildJob =
             serviceScope.launch {
                 val mediaItems =
@@ -152,7 +157,10 @@ class PlaybackService : MediaSessionService() {
                     return@launch
                 }
 
-                withContext(Dispatchers.Main.immediate) {
+                mainHandler.post {
+                    if (generation != queueGeneration) {
+                        return@post
+                    }
                     player?.apply {
                         setMediaItems(
                             mediaItems,
@@ -164,6 +172,12 @@ class PlaybackService : MediaSessionService() {
                     }
                 }
             }
+    }
+
+    private fun cancelPendingQueueBuild() {
+        queueGeneration++
+        queueBuildJob?.cancel()
+        queueBuildJob = null
     }
 
     private fun mediaItem(
@@ -186,7 +200,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        queueBuildJob?.cancel()
+        cancelPendingQueueBuild()
+        mainHandler.removeCallbacksAndMessages(null)
         serviceScope.cancel()
         session?.release()
         session = null
