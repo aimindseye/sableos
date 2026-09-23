@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-$(git -C "$ROOT" rev-parse HEAD)}"
 
@@ -48,6 +50,7 @@ echo "R9_MESSAGES_LOCAL_CONVERSATION_STATIC_CONTRACT=PASS"
 echo "R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS"
 echo "R9_TEXT_READER_STANDALONE_STATIC_CONTRACT=PASS"
 echo "R9_PHYSICAL_UX_STATIC_CONTRACTS=PASS"
+sable_checkpoint_pass "R9 physical UX static contracts"
 
 SOURCE_MUTATION_AUTHORIZED=YES \
 BUILD_AUTHORIZED=YES \
@@ -57,6 +60,8 @@ SABLE_AUTO_REGISTER_ARTIFACT=NO \
   bash "$ROOT/build/panther/run-r8-release-candidate.sh"
 
 echo "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS"
+sable_checkpoint_pass "R9 Panther module qualification"
 echo "R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9"
 echo "R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED"
+sable_checkpoint_warn "Physical Panther visual acceptance still required"
 echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_MODULE_QUALIFICATION"
