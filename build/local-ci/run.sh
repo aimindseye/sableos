@@ -128,6 +128,10 @@ run_static() {
   python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
   python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
   python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  python3 "$ROOT/build/gates/r9-media-flow-contract.py"
+  python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+  python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  python3 "$ROOT/build/gates/r9-messages-source-style.py"
   bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
