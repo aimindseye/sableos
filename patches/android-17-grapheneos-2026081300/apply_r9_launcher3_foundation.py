@@ -1301,33 +1301,61 @@ def require_workspace_sources(source: pathlib.Path) -> None:
     start_text = start_bp.read_text(encoding="utf-8")
     design_text = design_bp.read_text(encoding="utf-8")
 
-    if 'name: "sable_start_presentation_srcs"' not in start_text:
-        raise FoundationError("sable_start_presentation_srcs filegroup missing")
-    for forbidden in (
+    for required in (
+        'name: "sable_start_presentation_srcs"',
         "android_app {",
+        'name: "SableLauncher"',
+        'manifest: "AndroidManifest.xml"',
+        '":sable_start_presentation_srcs"',
+        '":sable_design_shared_srcs"',
+    ):
+        if required not in start_text:
+            raise FoundationError(
+                f"standalone SableLauncher workspace token missing: {required}"
+            )
+
+    for forbidden in (
         "rust_ffi_shared {",
         'name: "SableStart"',
         'name: "libsable_start_core_jni"',
     ):
         if forbidden in start_text:
             raise FoundationError(
-                f"standalone SableStart Soong runtime remains: {forbidden}"
+                f"retired SableStart runtime token remains: {forbidden}"
+            )
+
+    start_root = source / "packages/apps/SableStart"
+    required_paths = (
+        "AndroidManifest.xml",
+        "res/values/strings.xml",
+        "src/com/sable/start/SableStartActivity.kt",
+        "src/com/sable/start/platform/LauncherAppsRepository.kt",
+    )
+    for rel in required_paths:
+        if not (start_root / rel).is_file():
+            raise FoundationError(
+                f"standalone SableLauncher runtime source missing: {rel}"
             )
 
     retired_paths = (
-        "AndroidManifest.xml",
-        "res/values/strings.xml",
         "rust/src/lib.rs",
-        "src/com/sable/start/SableStartActivity.kt",
         "src/com/sable/start/bridge/SableStartNative.kt",
-        "src/com/sable/start/platform/LauncherAppsRepository.kt",
         "src/com/sable/start/platform/SableAppearanceProvider.kt",
     )
-    start_root = source / "packages/apps/SableStart"
     for rel in retired_paths:
         if (start_root / rel).exists():
             raise FoundationError(
-                f"standalone SableStart runtime source remains: {rel}"
+                f"retired SableStart runtime source remains: {rel}"
+            )
+
+    manifest_text = (start_root / "AndroidManifest.xml").read_text(encoding="utf-8")
+    for required in (
+        'package="org.sableos.launcher"',
+        "android.intent.category.HOME",
+    ):
+        if required not in manifest_text:
+            raise FoundationError(
+                f"standalone SableLauncher manifest token missing: {required}"
             )
 
     if 'name: "sable_design_shared_srcs"' not in design_text:
@@ -2337,15 +2365,15 @@ def main() -> int:
         if args.action == "apply":
             apply_tree(source)
             print("R9_LAUNCHER3_FOUNDATION_APPLY=PASS")
-            print("R9_LAUNCHER3_PHASE=HOME_OWNERSHIP_CUTOVER")
+            print("R9_LAUNCHER3_PHASE=COMPATIBILITY_INTERMEDIATE")
         else:
             verify_tree(source)
             print("R9_LAUNCHER3_DIRTY_PATHS=PASS")
             print("R9_LAUNCHER3_FALLBACK_NULL_CALLBACK_COMPAT=PASS")
             print("R9_LAUNCHER3_WARNING_CLEANUP_SAFE_MIGRATIONS=PASS")
             print("R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS")
-            print("R9_SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT")
-            print("R9_LAUNCHER3_HOME_OWNERSHIP=PASS")
+            print("R9_SABLELAUNCHER_STANDALONE_RUNTIME=PASS_PRESENT")
+            print("R9_LAUNCHER3_FOUNDATION_ROLE=PASS_COMPATIBILITY_INTERMEDIATE")
             print("R9_LAUNCHER3_FOUNDATION_VERIFY=PASS")
     except FoundationError as exc:
         print(f"R9_LAUNCHER3_FOUNDATION=FAIL {exc}", file=sys.stderr)
