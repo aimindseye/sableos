@@ -387,7 +387,6 @@ object TextReaderUtil {
     val preferred =
         localVoices.firstOrNull { it.locale == locale }
             ?: localVoices.firstOrNull { it.locale.language == locale.language }
-            ?: localVoices.firstOrNull()
     if (preferred == null) return false
     ttsEngine.voice = preferred
     return true
@@ -420,8 +419,9 @@ object TextReaderUtil {
 """
     selected_new = """            setVoices(filtered)
             val localSelection =
-                ttsEngine.voice?.takeUnless { it.isNetworkConnectionRequired }
-                    ?: filtered.firstOrNull()
+                ttsEngine.voice?.takeUnless {
+                    it.isNetworkConnectionRequired || it !in filtered
+                } ?: filtered.firstOrNull()
             setSelected(localSelection)
             localSelection?.let { ttsEngine.voice = it }
 """
