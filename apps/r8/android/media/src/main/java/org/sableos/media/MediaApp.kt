@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -137,6 +138,12 @@ internal fun MediaApp(
 
     var message by remember {
         mutableStateOf<String?>(null)
+    }
+
+    LaunchedEffect(destination, playbackController) {
+        playbackController.setProgressUpdatesEnabled(
+            destination == MediaDestination.NowPlaying,
+        )
     }
 
     DisposableEffect(
