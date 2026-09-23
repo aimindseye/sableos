@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
-# Refuse sourcing before changing shell options. Device-acceptance failures
-# must terminate only this child Bash process, never an interactive SSH shell.
+# Physical acceptance for the standalone R9 Sable HOME plus Quickstep fallback Recents.
 if [[ "${BASH_SOURCE[0]}" != "$0" ]]; then
     echo "R9_HOME_ACCEPTANCE=REFUSED_SOURCED_SCRIPT" >&2
     echo "Run with: bash ${BASH_SOURCE[0]}" >&2
@@ -33,10 +32,11 @@ package_path() {
     ' <<<"$raw"
 }
 
-EXPECTED_PACKAGE="com.android.launcher3"
-EXPECTED_ACTIVITY="com.android.launcher3.sable.SableQuickstepLauncher"
+EXPECTED_PACKAGE="org.sableos.launcher"
+EXPECTED_ACTIVITY="org.sableos.start.SableStartActivity"
 EXPECTED_COMPONENT="$EXPECTED_PACKAGE/$EXPECTED_ACTIVITY"
-RETIRED_PACKAGE="org.sableos.start"
+QUICKSTEP_PACKAGE="com.android.launcher3"
+LEGACY_PACKAGE="org.sableos.start"
 
 STAMP="$(date +%Y%m%d_%H%M%S)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-/tmp/SABLE_R9_HOME_ACCEPTANCE_$STAMP}"
@@ -50,11 +50,11 @@ rec() {
 
 fail() {
     rec "$1" FAIL
-    rec R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE FAIL
+    rec R9_SABLE_HOME_DEVICE_ACCEPTANCE FAIL
     exit "${2:-1}"
 }
 
-echo "===== R9 LAUNCHER3 HOME DEVICE ACCEPTANCE ====="
+echo "===== R9 STANDALONE SABLE HOME DEVICE ACCEPTANCE ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
 echo "BUILD_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
@@ -72,12 +72,15 @@ adb_cmd get-state >/dev/null || fail R9_DEVICE_REACHABLE 2
 rec R9_DEVICE_REACHABLE PASS
 
 resolver="$(
-    adb_cmd shell cmd package resolve-activity --brief         -a android.intent.action.MAIN         -c android.intent.category.HOME         2>/dev/null | tr -d '\r' | tail -n1
+    adb_cmd shell cmd package resolve-activity --brief \
+        -a android.intent.action.MAIN \
+        -c android.intent.category.HOME \
+        2>/dev/null | tr -d '\r' | tail -n1
 )"
 printf '%s\n' "$resolver" > "$EVIDENCE_DIR/home-resolver.txt"
 
 case "$resolver" in
-    "$EXPECTED_COMPONENT"|"$EXPECTED_PACKAGE/.sable.SableQuickstepLauncher")
+    "$EXPECTED_COMPONENT"|"$EXPECTED_PACKAGE/.SableStartActivity")
         rec HOME_RESOLVER "$EXPECTED_COMPONENT"
         ;;
     *)
@@ -87,66 +90,106 @@ case "$resolver" in
 esac
 
 role_holders="$(
-    adb_cmd shell cmd role get-role-holders --user 0 android.app.role.HOME         2>/dev/null | tr -d '\r'
+    adb_cmd shell cmd role get-role-holders --user 0 android.app.role.HOME \
+        2>/dev/null | tr -d '\r'
 )"
 printf '%s\n' "$role_holders" > "$EVIDENCE_DIR/home-role-holders.txt"
 grep -Fxq "$EXPECTED_PACKAGE" <<<"$role_holders" || fail HOME_ROLE_HOLDER
+grep -Fxq "$QUICKSTEP_PACKAGE" <<<"$role_holders" && fail LAUNCHER3_HOME_ROLE_ABSENT
 rec HOME_ROLE_HOLDER "$EXPECTED_PACKAGE"
-
-retired_path="$(package_path "$RETIRED_PACKAGE")"
-[[ -z "$retired_path" ]] || fail RETIRED_SABLESTART_PACKAGE_ABSENT
-rec RETIRED_SABLESTART_PACKAGE_ABSENT PASS
+rec LAUNCHER3_HOME_ROLE_ABSENT PASS
 
 launcher_path="$(package_path "$EXPECTED_PACKAGE")"
-[[ -n "$launcher_path" ]] || fail LAUNCHER3_PACKAGE_PRESENT
-printf '%s\n' "$launcher_path" > "$EVIDENCE_DIR/launcher-package-path.txt"
-rec LAUNCHER3_PACKAGE_PRESENT PASS
+[[ -n "$launcher_path" ]] || fail SABLELAUNCHER_PACKAGE_PRESENT
+printf '%s\n' "$launcher_path" > "$EVIDENCE_DIR/sablelauncher-package-path.txt"
+rec SABLELAUNCHER_PACKAGE_PRESENT PASS
+
+quickstep_path="$(package_path "$QUICKSTEP_PACKAGE")"
+[[ -n "$quickstep_path" ]] || fail QUICKSTEP_PACKAGE_PRESENT
+printf '%s\n' "$quickstep_path" > "$EVIDENCE_DIR/quickstep-package-path.txt"
+rec QUICKSTEP_PACKAGE_PRESENT PASS
+
+legacy_path="$(package_path "$LEGACY_PACKAGE")"
+[[ -z "$legacy_path" ]] || fail LEGACY_SABLESTART_PACKAGE_ABSENT
+rec LEGACY_SABLESTART_PACKAGE_ABSENT PASS
+
+home_candidates="$(
+    adb_cmd shell cmd package query-activities --brief --components \
+        -a android.intent.action.MAIN \
+        -c android.intent.category.HOME \
+        2>/dev/null | tr -d '\r' || true
+)"
+printf '%s\n' "$home_candidates" > "$EVIDENCE_DIR/home-candidates.txt"
+grep -Fq "$EXPECTED_PACKAGE/" <<<"$home_candidates" || fail SABLELAUNCHER_HOME_CANDIDATE
+if grep -Fq "$QUICKSTEP_PACKAGE/" <<<"$home_candidates"; then
+    fail LAUNCHER3_HOME_ELIGIBILITY_ABSENT
+fi
+rec SABLELAUNCHER_HOME_CANDIDATE PASS
+rec LAUNCHER3_HOME_ELIGIBILITY_ABSENT PASS
+
+quickstep_services="$(
+    adb_cmd shell cmd package query-services --brief --components \
+        -a android.intent.action.QUICKSTEP_SERVICE \
+        2>/dev/null | tr -d '\r' || true
+)"
+printf '%s\n' "$quickstep_services" > "$EVIDENCE_DIR/quickstep-services.txt"
+grep -Fq "$QUICKSTEP_PACKAGE/com.android.quickstep.TouchInteractionService" \
+    <<<"$quickstep_services" || fail QUICKSTEP_SERVICE_PRESENT
+rec QUICKSTEP_SERVICE_PRESENT PASS
 
 adb_cmd logcat -c
-
 for _ in 1 2 3; do
     adb_cmd shell input keyevent KEYCODE_HOME
     sleep 2
 done
 
-adb_cmd shell dumpsys activity activities     > "$EVIDENCE_DIR/activities-after-home.txt" 2>&1 || true
-adb_cmd shell dumpsys window     > "$EVIDENCE_DIR/window-after-home.txt" 2>&1 || true
-adb_cmd shell pidof "$EXPECTED_PACKAGE"     > "$EVIDENCE_DIR/launcher-pid.txt" 2>&1 || true
+adb_cmd shell dumpsys activity activities \
+    > "$EVIDENCE_DIR/activities-after-home.txt" 2>&1 || true
+adb_cmd shell dumpsys window \
+    > "$EVIDENCE_DIR/window-after-home.txt" 2>&1 || true
+adb_cmd shell pidof "$EXPECTED_PACKAGE" \
+    > "$EVIDENCE_DIR/sablelauncher-pid.txt" 2>&1 || true
 
-[[ -s "$EVIDENCE_DIR/launcher-pid.txt" ]] || fail HOME_PROCESS_SURVIVES
+[[ -s "$EVIDENCE_DIR/sablelauncher-pid.txt" ]] || fail HOME_PROCESS_SURVIVES
 rec HOME_PROCESS_SURVIVES PASS
 
 adb_cmd logcat -d -v epoch > "$EVIDENCE_DIR/logcat-after-home.txt" 2>&1 || true
-if grep -E     "ANR in $EXPECTED_PACKAGE|Process: $EXPECTED_PACKAGE|FATAL EXCEPTION.*launcher3"     "$EVIDENCE_DIR/logcat-after-home.txt"     > "$EVIDENCE_DIR/crash-candidates.txt"
+if grep -E \
+    "ANR in $EXPECTED_PACKAGE|Process: $EXPECTED_PACKAGE|FATAL EXCEPTION.*sable" \
+    "$EVIDENCE_DIR/logcat-after-home.txt" \
+    > "$EVIDENCE_DIR/crash-candidates.txt"
 then
     fail COLD_HOME_LAUNCH_CRASHES
 fi
 : > "$EVIDENCE_DIR/crash-candidates.txt"
 rec COLD_HOME_LAUNCH_CRASHES 0
 
-# Recents must remain Quickstep-owned after the Sable presentation is hosted.
+# Exercise the system app-switch path. With SableLauncher as default HOME,
+# Launcher3 Quickstep must use its fallback Recents path rather than workspace.
 adb_cmd shell input keyevent KEYCODE_APP_SWITCH
 sleep 2
-adb_cmd shell dumpsys activity activities     > "$EVIDENCE_DIR/activities-after-recents.txt" 2>&1 || true
+adb_cmd shell dumpsys activity activities \
+    > "$EVIDENCE_DIR/activities-after-recents.txt" 2>&1 || true
 adb_cmd shell input keyevent KEYCODE_HOME
 sleep 1
-rec QUICKSTEP_RECENTS_NAVIGATION_EXECUTED PASS
+rec QUICKSTEP_FALLBACK_RECENTS_NAVIGATION_EXECUTED PASS
 
 echo
 echo "Manual visual/interaction confirmations are intentionally separated"
-echo "from the objective resolver/package/crash proof above."
-printf 'Does HOME show the Sable Start presentation and return to Start after HOME? [y/N]: '
+echo "from the objective HOME-role/package/service proof above."
+
+printf 'Does HOME show Sable Start and return to Start after repeated HOME presses? [y/N]: '
 read -r home_ok
 case "$home_ok" in
     y|Y|yes|YES|Yes) rec HOME_KEY_RETURNS_TO_START PASS ;;
     *) rec HOME_KEY_RETURNS_TO_START FAIL ;;
 esac
 
-printf 'Does app switching show native Quickstep Recents and return without corruption? [y/N]: '
+printf 'Does app switching show Quickstep Recents and return to Sable HOME without native workspace? [y/N]: '
 read -r recents_ok
 case "$recents_ok" in
-    y|Y|yes|YES|Yes) rec QUICKSTEP_RECENTS_PRESERVED PASS ;;
-    *) rec QUICKSTEP_RECENTS_PRESERVED FAIL ;;
+    y|Y|yes|YES|Yes) rec QUICKSTEP_FALLBACK_RECENTS_PRESERVED PASS ;;
+    *) rec QUICKSTEP_FALLBACK_RECENTS_PRESERVED FAIL ;;
 esac
 
 printf 'Do All Apps, local Search, Sable Peek, and app launch/details work? [y/N]: '
@@ -164,7 +207,7 @@ case "$launcher_ok" in
         ;;
 esac
 
-printf 'In All Apps, is the privacy/security-impacting enabled-permission summary shown beneath each applicable app name? [y/N]: '
+printf 'In All Apps, are enabled privacy/security permission summaries shown under applicable apps? [y/N]: '
 read -r permission_summary_ok
 case "$permission_summary_ok" in
     y|Y|yes|YES|Yes) rec ALL_APPS_PERMISSION_SUMMARIES PASS ;;
@@ -172,11 +215,8 @@ case "$permission_summary_ok" in
 esac
 
 echo
-echo "R9 physical gesture regression checks:"
-echo "  1. Open Live, All Apps, Search, Peek and Appearance."
-echo "  2. On each, use the left-edge Back gesture and confirm it returns to the"
-echo "     previous Sable surface instead of doing nothing or exposing Launcher3."
-printf 'Do left-edge Back gestures work on every Sable sub-surface tested? [y/N]: '
+echo "Open Live, All Apps, Search, Peek and Appearance."
+printf 'Does left-edge Back return from every Sable sub-surface? [y/N]: '
 read -r sable_back_ok
 case "$sable_back_ok" in
     y|Y|yes|YES|Yes) rec SABLE_SUBSURFACE_BACK_GESTURES PASS ;;
@@ -184,10 +224,9 @@ case "$sable_back_ok" in
 esac
 
 echo
-echo "On Start, repeat at least five SHORT/ABORTED bottom-edge swipe-ups."
-echo "They must return to Sable Start without revealing native Launcher3 icons,"
-echo "workspace, All Apps, or the old launcher presentation underneath."
-printf 'Did every aborted swipe-up remain visually contained by Sable? [y/N]: '
+echo "Repeat at least five SHORT/ABORTED bottom-edge swipe-ups from Sable HOME."
+echo "Native Launcher3 workspace/icons must never appear."
+printf 'Did every aborted swipe remain contained by Sable HOME/system gesture animation? [y/N]: '
 read -r aborted_swipe_ok
 case "$aborted_swipe_ok" in
     y|Y|yes|YES|Yes) rec SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE PASS ;;
@@ -195,20 +234,17 @@ case "$aborted_swipe_ok" in
 esac
 
 echo
-echo "Now perform at least three deliberate swipe-up-and-hold gestures from the"
-echo "navigation edge. Native Quickstep Recents may appear only after the gesture"
-echo "commits to Overview; returning HOME must restore Sable Start cleanly."
-printf 'Did deliberate Recents work without intermediate native workspace exposure? [y/N]: '
+echo "Perform at least three deliberate swipe-up-and-hold Recents gestures."
+printf 'Did fallback Recents work without native Launcher3 workspace exposure? [y/N]: '
 read -r committed_recents_ok
 case "$committed_recents_ok" in
-    y|Y|yes|YES|Yes) rec SABLE_COMMITTED_RECENTS_GESTURE PASS ;;
-    *) rec SABLE_COMMITTED_RECENTS_GESTURE FAIL ;;
+    y|Y|yes|YES|Yes) rec SABLE_FALLBACK_RECENTS_GESTURE PASS ;;
+    *) rec SABLE_FALLBACK_RECENTS_GESTURE FAIL ;;
 esac
 
 echo
-echo "Finally, from Start repeat at least five top-edge swipe-down gestures."
-echo "The notification shade must open consistently and return to intact Sable Start."
-printf 'Did repeated swipe-down shade gestures behave consistently? [y/N]: '
+echo "From Sable HOME repeat at least five notification-shade swipe-down gestures."
+printf 'Did the shade open/close consistently and return to intact Sable HOME? [y/N]: '
 read -r shade_gesture_ok
 case "$shade_gesture_ok" in
     y|Y|yes|YES|Yes) rec SABLE_STATUS_SHADE_GESTURE_STABILITY PASS ;;
@@ -227,39 +263,43 @@ else
 fi
 
 FINAL=PASS
-
 for key in \
     R9_DEVICE_REACHABLE \
-    RETIRED_SABLESTART_PACKAGE_ABSENT \
-    LAUNCHER3_PACKAGE_PRESENT \
+    SABLELAUNCHER_PACKAGE_PRESENT \
+    QUICKSTEP_PACKAGE_PRESENT \
+    LEGACY_SABLESTART_PACKAGE_ABSENT \
+    SABLELAUNCHER_HOME_CANDIDATE \
+    LAUNCHER3_HOME_ELIGIBILITY_ABSENT \
+    LAUNCHER3_HOME_ROLE_ABSENT \
+    QUICKSTEP_SERVICE_PRESENT \
     HOME_PROCESS_SURVIVES \
     HOME_KEY_RETURNS_TO_START \
-    QUICKSTEP_RECENTS_PRESERVED \
+    QUICKSTEP_FALLBACK_RECENTS_PRESERVED \
     ALL_APPS_TOUCH_NAVIGATION \
     SEARCH_LOCAL_RESULTS \
     SABLE_PEEK \
     ALL_APPS_PERMISSION_SUMMARIES \
     SABLE_SUBSURFACE_BACK_GESTURES \
     SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE \
-    SABLE_COMMITTED_RECENTS_GESTURE \
+    SABLE_FALLBACK_RECENTS_GESTURE \
     SABLE_STATUS_SHADE_GESTURE_STABILITY
 do
     grep -Fxq "$key=PASS" "$REPORT" || FINAL=FAIL
 done
 
+grep -Fxq "HOME_RESOLVER=$EXPECTED_COMPONENT" "$REPORT" || FINAL=FAIL
+grep -Fxq "HOME_ROLE_HOLDER=$EXPECTED_PACKAGE" "$REPORT" || FINAL=FAIL
+grep -Fxq 'COLD_HOME_LAUNCH_CRASHES=0' "$REPORT" || FINAL=FAIL
+
 if [[ "$R9_HOME_INCLUDE_THEME_REVIEW" == YES ]]; then
     grep -Fxq 'THEME_PROPAGATION=PASS' "$REPORT" || FINAL=FAIL
 else
-    grep -Fxq         'THEME_PROPAGATION=DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_GATE'         "$REPORT" || FINAL=FAIL
+    grep -Fxq \
+        'THEME_PROPAGATION=DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_GATE' \
+        "$REPORT" || FINAL=FAIL
 fi
 
-grep -Fxq     'HOME_RESOLVER=com.android.launcher3/com.android.launcher3.sable.SableQuickstepLauncher'     "$REPORT" || FINAL=FAIL
-
-grep -Fxq     'HOME_ROLE_HOLDER=com.android.launcher3'     "$REPORT" || FINAL=FAIL
-
-grep -Fxq     'COLD_HOME_LAUNCH_CRASHES=0'     "$REPORT" || FINAL=FAIL
-
-rec R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE "$FINAL"
+rec R9_SABLE_HOME_DEVICE_ACCEPTANCE "$FINAL"
 
 (
     cd "$EVIDENCE_DIR"
@@ -271,8 +311,5 @@ rec R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE "$FINAL"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "RESULT=$FINAL"
 
-if [[ "$FINAL" != PASS ]]; then
-    exit 1
-fi
-
+[[ "$FINAL" == PASS ]] || exit 1
 exit 0
