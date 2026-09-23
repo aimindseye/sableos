@@ -425,6 +425,12 @@ def verify(source: Path) -> None:
         if sha256(installed) != sha256(template_for(dest)):
             raise SystemExit(f"R9_SETTINGS_COHESION_TEMPLATE_COPY_FAIL={dest}")
 
+    contract = (settings / CONTRACT).read_text(encoding="utf-8")
+    if 'AUTHORITY = "org.sableos.appearance"' not in contract:
+        raise SystemExit("R9_SETTINGS_APPEARANCE_AUTHORITY_CONTRACT_MISSING")
+    if 'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)' not in contract:
+        raise SystemExit("R9_SETTINGS_APPEARANCE_CONTENT_URI_CONTRACT_MISSING")
+
     provider = (settings / PROVIDER).read_text(encoding="utf-8")
     required_provider = (
         'AUTHORITY = "org.sableos.appearance"',
@@ -432,7 +438,7 @@ def verify(source: Path) -> None:
         "MODE_NIGHT_NO",
         "MODE_NIGHT_YES",
         "KEY_NIGHT_MODE_BEFORE_OVERRIDE",
-        'contains("com.android.launcher3")',
+        'contains("org.sableos.launcher")',
         "notifyChange(",
     )
     # AUTHORITY lives in the contract; the provider must reference the contract.
