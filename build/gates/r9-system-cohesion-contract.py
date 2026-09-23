@@ -328,6 +328,21 @@ require(
     'if ("org.sableos.launcher" !in packages)',
     "Sable live snapshot is restricted to SableLauncher.",
 )
+forbid(
+    "apps/r8/mail/apply_sable_flavor.py",
+    'if ("com.android.launcher3" !in packages)',
+)
+require(
+    "apps/r8/mail/verify_sable_mail.py",
+    'if ("org.sableos.launcher" !in packages)',
+    "Sable live snapshot is restricted to SableLauncher.",
+    "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT",
+)
+forbid(
+    "apps/r8/mail/verify_sable_mail.py",
+    """        'if ("com.android.launcher3" !in packages)',
+        "SecurityException(",""",
+)
 
 # ---------------------------------------------------------------------------
 # User-observed physical regressions: source contracts.
