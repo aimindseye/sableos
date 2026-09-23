@@ -13,10 +13,15 @@ import android.provider.Telephony
 import android.telephony.PhoneNumberUtils
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
+import org.sableos.hub.notifications.ConnectedReplyRegistry
 
 class HubRepository(
     private val context: Context,
 ) {
+    private val connectedApps = ConnectedAppsRepository(context)
+    private val connectedHistory = ConnectedNotificationHistoryStore(context)
+    private val connectedInventory = ConnectedAppsInventory(context)
+
     fun snapshot(): HubSnapshot {
         val capabilities = capabilities()
         val messages =
@@ -37,20 +42,65 @@ class HubRepository(
                 normalizeAddress(person.phoneNumber) to person.displayName
             }
 
-        val conversations =
+        val smsConversations =
             HubConversationReducer.reduce(messages) { address ->
                 namesByNumber[normalizeAddress(address)]
                     ?: lookupContactName(address)
                     ?: address
             }
 
+        val connectedPolicies =
+            connectedApps
+                .loadPolicies()
+                .associateBy { policy ->
+                    policy.key
+                }
+        val connectedRecords =
+            connectedHistory.load(
+                policies = connectedPolicies,
+            )
+        val connected =
+            HubConnectedConversationReducer.reduce(
+                records = connectedRecords,
+                canReply = ConnectedReplyRegistry::canReply,
+            )
+
         return HubSnapshot(
             capabilities = capabilities,
-            conversations = conversations,
-            messages = messages,
+            conversations =
+                (smsConversations + connected.conversations)
+                    .sortedByDescending { conversation ->
+                        conversation.lastDateMillis
+                    },
+            messages =
+                (messages + connected.messages)
+                    .sortedByDescending { message ->
+                        message.dateMillis
+                    },
             people = people,
         )
     }
+
+    fun replyToConnected(
+        notificationKey: String,
+        body: String,
+    ): HubSendResult =
+        ConnectedReplyRegistry.send(
+            context = context,
+            notificationKey = notificationKey,
+            body = body,
+        )
+
+    fun openConnectedApp(
+        packageName: String,
+        userSerial: Long,
+    ): Boolean =
+        connectedInventory.open(
+            ConnectedAppKey(
+                packageName = packageName,
+                userSerial = userSerial,
+            ),
+        )
 
     fun capabilities(): HubCapabilities {
         val roleManager =
@@ -166,7 +216,7 @@ class HubRepository(
     }
 
     private fun loadMessages(
-        maxMessages: Int = 1200,
+        maxMessages: Int = MAX_SMS_MESSAGES,
     ): List<HubMessage> {
         val projection =
             arrayOf(
@@ -217,7 +267,7 @@ class HubRepository(
     }
 
     private fun loadPeople(
-        maxPeople: Int = 300,
+        maxPeople: Int = MAX_CONTACT_PEOPLE,
     ): List<HubPerson> {
         val projection =
             arrayOf(
@@ -312,4 +362,9 @@ class HubRepository(
     private fun normalizeAddress(value: String): String =
         PhoneNumberUtils.normalizeNumber(value)
             .ifBlank { value.trim() }
+
+    private companion object {
+        const val MAX_SMS_MESSAGES = 1200
+        const val MAX_CONTACT_PEOPLE = 300
+    }
 }

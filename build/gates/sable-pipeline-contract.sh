@@ -17,6 +17,7 @@ for f in \
   "$ROOT/build/host/verify-r8-host-tools.sh" \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
   "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh" \
+  "$ROOT/tests/systemui/device/r9_final_ui_runtime_audit.sh" \
   "$ROOT/build/check-repo-layout.sh" \
   "$ROOT/build/devices/panther.sh" \
   "$ROOT/build/devices/titan2.sh" \
@@ -38,6 +39,7 @@ python3 -m py_compile \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" \
   "$ROOT/build/gates/r9-media-flow-contract.py" \
   "$ROOT/build/gates/r9-messages-native-first-contract.py" \
+  "$ROOT/build/gates/r9-messages-local-conversation-contract.py" \
   "$ROOT/build/gates/r9-system-cohesion-contract.py"
 echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
@@ -118,6 +120,7 @@ grep -Fq 'r9-sms-mms-blocking-contract.py' "$QUAL"
 grep -Fq 'r9-first-party-app-icon-contract.py' "$QUAL"
 grep -Fq 'r9-media-flow-contract.py' "$QUAL"
 grep -Fq 'r9-messages-native-first-contract.py' "$QUAL"
+grep -Fq 'r9-messages-local-conversation-contract.py' "$QUAL"
 grep -Fq 'r9-system-cohesion-contract.py' "$QUAL"
 MEDIA_QUAL="$ROOT/build/panther/qualify-r9-media-flow.sh"
 grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MEDIA_QUAL"
@@ -128,6 +131,11 @@ MESSAGES_QUAL="$ROOT/build/panther/qualify-r9-messages.sh"
 grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MESSAGES_QUAL"
 grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MESSAGES_QUAL"
 grep -Fq 'set -euo pipefail' "$MESSAGES_QUAL"
+grep -Fq 'r9-messages-local-conversation-contract.py' "$MESSAGES_QUAL"
+grep -Fq ':hub:detekt' "$MESSAGES_QUAL"
+grep -Fq ':hub:ktlintCheck' "$MESSAGES_QUAL"
+grep -Fq 'R9_MESSAGES_WARNINGS_AS_ERRORS=PASS' "$MESSAGES_QUAL"
+grep -Fq 'R9_MESSAGES_LOCAL_CONVERSATION_QUALIFICATION=PASS' "$MESSAGES_QUAL"
 grep -Fq 'R9_MESSAGES_FOCUSED_QUALIFICATION=PASS' "$MESSAGES_QUAL"
 grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
 grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
@@ -141,6 +149,8 @@ echo "SABLE_PIPELINE_FIRST_PARTY_ICON_GATE=PASS"
 echo "SABLE_PIPELINE_MEDIA_FLOW_GATE=PASS"
 echo "SABLE_PIPELINE_MEDIA_FLOW_FOCUSED_QUALIFIER=PASS"
 echo "SABLE_PIPELINE_MESSAGES_NATIVE_FIRST_GATE=PASS"
+echo "SABLE_PIPELINE_MESSAGES_LOCAL_CONVERSATION_GATE=PASS"
+echo "SABLE_PIPELINE_MESSAGES_STRICT_QUALITY_GATE=PASS"
 echo "SABLE_PIPELINE_MESSAGES_FOCUSED_QUALIFIER=PASS"
 echo "SABLE_PIPELINE_SYSTEM_COHESION_GATE=PASS"
 

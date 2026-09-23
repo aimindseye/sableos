@@ -16,6 +16,9 @@
     <string name="sable_network_manager_app_summary">Network permission</string>
     <string name="sable_network_manager_fixed_summary">Network permission is fixed by system or device policy</string>
 
+    <string name="sable_messages_settings_title">Messages</string>
+    <string name="sable_messages_settings_summary">Connected apps, notification access and local conversation privacy</string>
+
     <string-array name="sable_appearance_mode_entries">
         <item>Follow system</item>
         <item>Light</item>
