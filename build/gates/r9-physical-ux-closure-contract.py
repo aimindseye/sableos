@@ -182,6 +182,8 @@ require(
 )
 require(
     "apps/r8/textreader/verify_sable_textreader.py",
+    'forbid(build, "com.google.mlkit:translate", "SABLE_TEXT_READER_TRANSLATION_DEPENDENCY")',
+    'forbid(shared, "downloadModelIfNeeded", "SABLE_TEXT_READER_MODEL_FETCH")',
     "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
     "SABLE_TEXT_READER_POLICY=PASS",
 )
