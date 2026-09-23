@@ -91,6 +91,10 @@ require(
     "Sable appearance writes are restricted to Settings and SableLauncher",
 )
 forbid(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    'Arrays.asList(packages).contains("com.android.launcher3")',
+)
+forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt",
     "loadAppearance(",
     "saveAppearance(",
