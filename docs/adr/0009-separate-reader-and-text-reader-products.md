@@ -42,7 +42,8 @@ It owns:
 - local plain-text file opening;
 - `ACTION_VIEW`, `ACTION_SEND` and `ACTION_PROCESS_TEXT`;
 - paste/edit workflows;
-- text TTS and audio export;
+- bounded plain-text ingestion (2 MiB);
+- text TTS and audio export using local-only voices;
 - user-directed camera/gallery OCR;
 - Latin and Devanagari OCR;
 - global SableOS appearance.
