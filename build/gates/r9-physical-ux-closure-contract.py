@@ -113,6 +113,10 @@ require(
     "resolve_launcher_root",
     '"packages/apps/Launcher3"',
     "R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS",
+    "R9_QUICKSTEP_RECENTS_FINAL_SCOPE_SELF_TEST=PASS",
+    "R9_QUICKSTEP_STALE_FINAL_IMPORT_REPAIR_SELF_TEST=PASS",
+    "R9_QUICKSTEP_RECENTS_STALE_FINAL_UPGRADE=PASS_RESOLVEINFO_IMPORT",
+    "upgrade-final",
     "R9_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME_SELF_TEST=PASS",
     "import android.content.pm.ResolveInfo;",
     "ResolveInfo secondaryInfo =",
@@ -347,6 +351,8 @@ require(
 require(
     "build/panther/prepare-r8-final-ui.sh",
     "R9_SABLELAUNCHER_STANDALONE_SYNC=PASS",
+    'upgrade-final',
+    "R9_QUICKSTEP_RECENTS_ONLY=UPGRADED_FINAL",
     "R9_QUICKSTEP_RECENTS_ONLY=APPLIED",
     "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
 )
