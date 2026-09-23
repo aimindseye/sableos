@@ -86,6 +86,15 @@ require(
     "R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS",
 )
 require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "Uses the system Network permission.",
+    "current platform permission",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "GrapheneOS",
+)
+require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
     'AUTHORITY = "org.sableos.appearance"',
     'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)',
@@ -366,6 +375,9 @@ require(
     'parent="android:Theme.Holo.Light"',
     "values-night/styles.xml",
     "R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME",
+    "R9_PHOTOS_SYSTEM_BARS=PASS_DAY_NIGHT_MATCH_WINDOW",
+    'android:windowLightStatusBar">true',
+    'android:windowLightNavigationBar">true',
     "R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK",
 )
 require(
@@ -392,6 +404,8 @@ require(
     "R9_READER_LOCAL_LIGHT_DARK_CONTROLS=PASS_RETIRED_FOR_SABLE",
     "R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID",
     "R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS",
+    "SABLE_READER_IN_APP_PRODUCT_IDENTITY=PASS_SABLE_READER",
+    'if (BuildConfig.SABLE_PRODUCT) "Sable Reader" else "Vaachak"',
     "distinctBy { it.bookHash }",
     "state.isOfflineMode && !BuildConfig.SABLE_PRODUCT",
     "Sepia",
@@ -415,7 +429,17 @@ require(
     "installSableAlphabetRail",
     "scrollToSableSection",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
+    "R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX",
+    "getPositionForHeader",
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "PeopleAlphabetRail(",
+    "buildPeopleAlphabetTargets(",
+    "rememberLazyListState()",
+    "listState.scrollToItem(position)",
 )
 require(
     "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
