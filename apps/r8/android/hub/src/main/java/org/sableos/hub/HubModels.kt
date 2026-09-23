@@ -68,69 +68,92 @@ object HubConnectedConversationReducer {
         records: List<ConnectedNotificationRecord>,
         canReply: (String) -> Boolean = { false },
     ): ConnectedConversationReduction {
-        val grouped =
-            records.groupBy { record ->
-                ConnectedConversationKey(
-                    key = record.key,
-                    conversationId = record.conversationId,
-                )
-            }
-
-        val messages = mutableListOf<HubMessage>()
-        val conversations =
-            grouped.map { (key, group) ->
-                val ordered = group.sortedBy { it.timestampMillis }
-                val latest = ordered.last()
-                val threadId =
-                    stableNegativeId(
-                        key.key.packageName +
-                            ":" +
-                            key.key.userSerial +
-                            ":" +
-                            key.conversationId,
+        val reductions =
+            records
+                .groupBy(::conversationKeyFor)
+                .map { (key, group) ->
+                    reduceConversation(
+                        key = key,
+                        records = group,
+                        canReply = canReply,
                     )
-
-                ordered.forEach { record ->
-                    messages +=
-                        HubMessage(
-                            id = stableNegativeId(record.id),
-                            threadId = threadId,
-                            address = record.conversationTitle,
-                            body = record.body.orEmpty(),
-                            dateMillis = record.timestampMillis,
-                            incoming = record.incoming,
-                            read = true,
-                            source = HubConversationSource.ConnectedApp,
-                            senderLabel = record.senderLabel,
-                        )
                 }
 
-                HubConversation(
-                    threadId = threadId,
-                    address = latest.conversationId,
-                    displayName = latest.conversationTitle,
-                    lastBody = latest.body.orEmpty(),
-                    lastDateMillis = latest.timestampMillis,
-                    unreadCount = 0,
-                    source = HubConversationSource.ConnectedApp,
-                    sourcePackage = latest.key.packageName,
-                    sourceUserSerial = latest.key.userSerial,
-                    sourceNotificationKey = latest.notificationKey,
-                    sourceLabel = latest.sourceLabel,
-                    canQuickReply = canReply(latest.notificationKey),
-                )
-            }.sortedByDescending { conversation ->
-                conversation.lastDateMillis
-            }
-
         return ConnectedConversationReduction(
-            conversations = conversations,
+            conversations =
+                reductions
+                    .map(ConnectedConversationSlice::conversation)
+                    .sortedByDescending(HubConversation::lastDateMillis),
             messages =
-                messages.sortedByDescending { message ->
-                    message.dateMillis
-                },
+                reductions
+                    .flatMap(ConnectedConversationSlice::messages)
+                    .sortedByDescending(HubMessage::dateMillis),
         )
     }
+
+    private fun reduceConversation(
+        key: ConnectedConversationKey,
+        records: List<ConnectedNotificationRecord>,
+        canReply: (String) -> Boolean,
+    ): ConnectedConversationSlice {
+        val ordered = records.sortedBy(ConnectedNotificationRecord::timestampMillis)
+        val latest = ordered.last()
+        val threadId = stableNegativeId(key.stableKey())
+
+        return ConnectedConversationSlice(
+            conversation = latest.toHubConversation(threadId, canReply),
+            messages = ordered.map { record -> record.toHubMessage(threadId) },
+        )
+    }
+
+    private fun conversationKeyFor(
+        record: ConnectedNotificationRecord,
+    ): ConnectedConversationKey =
+        ConnectedConversationKey(
+            key = record.key,
+            conversationId = record.conversationId,
+        )
+
+    private fun ConnectedConversationKey.stableKey(): String =
+        listOf(
+            key.packageName,
+            key.userSerial,
+            conversationId,
+        ).joinToString(":")
+
+    private fun ConnectedNotificationRecord.toHubMessage(
+        threadId: Long,
+    ): HubMessage =
+        HubMessage(
+            id = stableNegativeId(id),
+            threadId = threadId,
+            address = conversationTitle,
+            body = body.orEmpty(),
+            dateMillis = timestampMillis,
+            incoming = incoming,
+            read = true,
+            source = HubConversationSource.ConnectedApp,
+            senderLabel = senderLabel,
+        )
+
+    private fun ConnectedNotificationRecord.toHubConversation(
+        threadId: Long,
+        canReply: (String) -> Boolean,
+    ): HubConversation =
+        HubConversation(
+            threadId = threadId,
+            address = conversationId,
+            displayName = conversationTitle,
+            lastBody = body.orEmpty(),
+            lastDateMillis = timestampMillis,
+            unreadCount = 0,
+            source = HubConversationSource.ConnectedApp,
+            sourcePackage = key.packageName,
+            sourceUserSerial = key.userSerial,
+            sourceNotificationKey = notificationKey,
+            sourceLabel = sourceLabel,
+            canQuickReply = canReply(notificationKey),
+        )
 
     private fun stableNegativeId(value: String): Long {
         var hash = FNV_OFFSET_BASIS
@@ -146,6 +169,11 @@ object HubConnectedConversationReducer {
             else -> hash
         }
     }
+
+    private data class ConnectedConversationSlice(
+        val conversation: HubConversation,
+        val messages: List<HubMessage>,
+    )
 
     private data class ConnectedConversationKey(
         val key: ConnectedAppKey,
