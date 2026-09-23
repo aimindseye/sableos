@@ -91,7 +91,13 @@ Focused qualification:
 bash build/sable.sh panther R9 qualify textreader
 ```
 
-The focused gate is source-bound, offline, non-device and non-image. It:
+The focused gate is source-bound, offline, non-device and non-image. It runs
+before the new eleven-APK product bundle is staged, so it validates repository
+no-stale/product policy but deliberately skips the exact current-workspace
+`vendor/sable` APK inventory. That exact inventory is mandatory again after
+release-candidate staging and before module/full product qualification.
+
+It:
 
 1. verifies the standalone Text Reader architecture contract;
 2. verifies system-cohesion and physical-UX source contracts;
