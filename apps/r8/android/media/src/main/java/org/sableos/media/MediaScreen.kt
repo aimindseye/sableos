@@ -59,11 +59,11 @@ internal val MediaGreen = Color(0xFF35C66B)
 internal val MediaOrange = Color(0xFFF28C45)
 
 private val MediaControlSize = 48.dp
-private val MediaArtworkSize = 58.dp
 private val MediaPrimaryTouchHeight = 54.dp
 private val MediaPivotTouchHeight = 48.dp
 private val MediaPivotActiveWidth = 34.dp
 private val MediaPivotInactiveWidth = 12.dp
+private val MediaAlphabetRailWidth = 36.dp
 private val MediaCompactPadding = 12.dp
 private const val MILLIS_PER_SECOND = 1_000L
 private const val SECONDS_PER_MINUTE = 60L
@@ -328,7 +328,9 @@ internal fun MediaScreen(
 
                                 MediaDestination.Settings -> "settings"
 
-                                else -> "media"
+                                MediaDestination.Collection,
+                                MediaDestination.PlaylistEditor,
+                                -> "media"
                             },
                         subtitle = "Music, podcasts, and radio in one private playback flow.",
                     )
@@ -915,7 +917,7 @@ private fun CollectionScreen(
                     Modifier
                         .align(Alignment.CenterEnd)
                         .fillMaxHeight()
-                        .width(36.dp),
+                        .width(MediaAlphabetRailWidth),
                 onSelect = { target ->
                     activeSection = target.letter
                     scope.launch {
