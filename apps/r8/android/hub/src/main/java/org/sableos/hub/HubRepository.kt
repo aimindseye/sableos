@@ -278,44 +278,44 @@ class HubRepository(
             context
                 .contentResolver
                 .query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                projection,
-                null,
-                null,
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE LOCALIZED ASC",
-            )?.use { cursor ->
-                val idIndex =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
-                    )
-                val nameIndex =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                    )
-                val numberIndex =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.NUMBER,
-                    )
-
-                while (cursor.moveToNext() && result.size < maxPeople) {
-                    val number = cursor.getString(numberIndex).orEmpty()
-                    val normalized = normalizeAddress(number)
-                    if (normalized.isBlank() || result.containsKey(normalized)) {
-                        continue
-                    }
-
-                    result[normalized] =
-                        HubPerson(
-                            id = cursor.getLong(idIndex),
-                            displayName =
-                                cursor
-                                    .getString(nameIndex)
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: number,
-                            phoneNumber = number,
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE LOCALIZED ASC",
+                )?.use { cursor ->
+                    val idIndex =
+                        cursor.getColumnIndexOrThrow(
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
                         )
+                    val nameIndex =
+                        cursor.getColumnIndexOrThrow(
+                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                        )
+                    val numberIndex =
+                        cursor.getColumnIndexOrThrow(
+                            ContactsContract.CommonDataKinds.Phone.NUMBER,
+                        )
+
+                    while (cursor.moveToNext() && result.size < maxPeople) {
+                        val number = cursor.getString(numberIndex).orEmpty()
+                        val normalized = normalizeAddress(number)
+                        if (normalized.isBlank() || result.containsKey(normalized)) {
+                            continue
+                        }
+
+                        result[normalized] =
+                            HubPerson(
+                                id = cursor.getLong(idIndex),
+                                displayName =
+                                    cursor
+                                        .getString(nameIndex)
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?: number,
+                                phoneNumber = number,
+                            )
+                    }
                 }
-            }
         }
 
         return result.values.toList()
