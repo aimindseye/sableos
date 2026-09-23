@@ -39,8 +39,6 @@ require(
     "Sable Text Reader",
     "SableGlobalTheme(window = window)",
     "android.intent.action.VIEW",
-    "android.intent.action.SEND",
-    "android.intent.action.PROCESS_TEXT",
     "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT",
     "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
     "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
@@ -54,6 +52,8 @@ require(
     "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
     "SABLE_TEXT_READER_GLOBAL_APPEARANCE=PASS",
     "SABLE_TEXT_READER_APK_PACKAGE=PASS",
+    "android.intent.action.SEND",
+    "android.intent.action.PROCESS_TEXT",
     "downloadModelIfNeeded",
     "ProfessionalTranslationRow(",
 )
