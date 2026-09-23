@@ -193,6 +193,10 @@ The rejected physical candidates exposed defects that are now source-gated:
   ownership is retired for the Sable flavor while Sepia/E-ink remain explicit;
 - Reader library renders actual distinct books continuously rather than exposing
   only a six-item stack/page count;
+- Reader no longer hosts the hidden plain-text/OCR runtime; standalone
+  `org.sableos.textreader` owns text/plain, share/process-text, text TTS/audio
+  export and camera/gallery OCR with no INTERNET permission or translation
+  model-download path;
 - Contacts uses the existing section indexer plus a right-edge alphabet rail;
 - Media uses lazy large-library surfaces, background indexing and bounded queue
   handoff;
@@ -212,6 +216,8 @@ Audit base-product apps in both light and dark:
 
 Reader additionally bridges global Sable light/dark to default Readium page
 theme while retaining explicit reading-only overrides such as Sepia/E-ink.
+Sable Text Reader is reviewed separately as the plain-text/accessibility/OCR
+surface and follows the same global Sable appearance authority.
 
 Exit gate:
 - light -> dark -> light state works;
