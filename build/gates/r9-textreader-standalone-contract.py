@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""R9 standalone Sable Text Reader source/product contract."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+failures: list[str] = []
+
+
+def text(rel: str) -> str:
+    path = ROOT / rel
+    if not path.is_file():
+        failures.append(f"missing_file={rel}")
+        return ""
+    return path.read_text(encoding="utf-8")
+
+
+def require(rel: str, *needles: str) -> None:
+    value = text(rel)
+    for needle in needles:
+        if needle not in value:
+            failures.append(f"missing_token={rel}:{needle}")
+
+
+def forbid(rel: str, *needles: str) -> None:
+    value = text(rel)
+    for needle in needles:
+        if needle in value:
+            failures.append(f"forbidden_token={rel}:{needle}")
+
+
+require(
+    "apps/r8/textreader/apply_sable_flavor.py",
+    'EXPECTED_COMMIT = "50fca365baae9869264716569830690fb62029a7"',
+    'applicationId = "org.sableos.textreader"',
+    "SableTextReader-",
+    "Sable Text Reader",
+    "SableGlobalTheme(window = window)",
+    "android.intent.action.VIEW",
+    "android.intent.action.SEND",
+    "android.intent.action.PROCESS_TEXT",
+    "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT",
+    "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
+    "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
+)
+forbid(
+    "apps/r8/textreader/apply_sable_flavor.py",
+    'implementation("com.google.mlkit:translate:17.0.3")',
+)
+
+require(
+    "apps/r8/textreader/verify_sable_textreader.py",
+    'EXPECTED_PACKAGE = "org.sableos.textreader"',
+    "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT",
+    "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
+    "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
+    "SABLE_TEXT_READER_GLOBAL_APPEARANCE=PASS",
+    "SABLE_TEXT_READER_APK_PACKAGE=PASS",
+    "downloadModelIfNeeded",
+    "ProfessionalTranslationRow(",
+)
+
+require(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT",
+    "SABLE_READER_PUBLICATION_FOCUS=PASS",
+    "SABLE_READER_TEXTREADER_RUNTIME=PASS_ABSENT",
+)
+forbid(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "SableTextActivity",
+    "SableOcrActivity",
+    "<vaachak-textreader-checkout>",
+)
+
+require(
+    "build/verify-reader-manifest.py",
+    "SABLE_READER_CAMERA_PERMISSION=PASS_ABSENT",
+    "SABLE_READER_TEXTREADER_COMPONENTS=PASS_ABSENT",
+    "SABLE_READER_PUBLICATION_FOCUS=PASS",
+)
+
+require(
+    "product/r8/panther/Android.bp",
+    'name: "SableTextReader"',
+    'apk: "prebuilt/SableTextReader.apk"',
+)
+require(
+    "product/r8/panther/r8-product.mk",
+    "SableTextReader",
+)
+require(
+    "build/gates/verify-r8-vendor-sable-inventory.py",
+    '"r8/prebuilt/SableTextReader.apk"',
+    "R8_VENDOR_SABLE_CANONICAL_APK_COUNT=11",
+)
+require(
+    "apps/r8/export-panther-app-bundle.sh",
+    "SABLE_TEXTREADER_APK",
+    "[org.sableos.textreader]=SableTextReader.apk",
+    "org.sableos.textreader",
+)
+require(
+    "build/panther/stage-r8-product-apps.sh",
+    '"org.sableos.textreader": "SableTextReader.apk"',
+    "SableTextReader.apk",
+)
+require(
+    "build/gates/r8-final-target-files.sh",
+    '"SableTextReader.apk": "org.sableos.textreader"',
+    "[SableTextReader.apk]=org.sableos.textreader",
+    "R9_SABLE_TEXT_READER_TARGET_FILES=PASS_PRESENT",
+    "R9_SABLE_TEXT_READER_OCR_TARGET_FILES=PASS",
+)
+require(
+    "build/panther/build-r8-final-ui.sh",
+    "SableTextReader",
+    "R9_SABLE_TEXT_READER_MODULE_BUILD=PASS",
+)
+require(
+    "build/local-ci/run.sh",
+    'python3 "$ROOT/apps/r8/textreader/apply_sable_flavor.py" "$work"',
+    'python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" "$work"',
+    "SableTextReader-*.apk",
+)
+forbid(
+    "build/local-ci/run.sh",
+    'python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader" "$text"',
+    "vaachak-textreader-reader",
+)
+require(
+    "build/panther/run-r8-release-candidate.sh",
+    "===== SABLE TEXT READER =====",
+    "SABLE_TEXTREADER_APK",
+    "R9_SABLE_TEXT_READER_BUILD=PASS",
+    "SOURCE-BOUND ELEVEN-APK BUNDLE",
+    "R9_SOURCE_BOUND_ELEVEN_APK_FREEZE=PASS",
+)
+forbid(
+    "build/panther/run-r8-release-candidate.sh",
+    'apply_sable_flavor.py"     "$WORK/reader"     "$WORK/textreader"',
+)
+
+if failures:
+    print("R9_TEXT_READER_STANDALONE_CONTRACT=FAIL")
+    for failure in failures:
+        print(f"FAILURE={failure}")
+    raise SystemExit(1)
+
+print("R9_SABLE_TEXT_READER_PRODUCT=PASS_STANDALONE")
+print("R9_SABLE_READER_PRODUCT=PASS_PUBLICATION_ONLY")
+print("R9_READER_TEXTREADER_DUPLICATION=PASS_ABSENT")
+print("R9_TEXT_READER_STANDALONE_CONTRACT=PASS")
