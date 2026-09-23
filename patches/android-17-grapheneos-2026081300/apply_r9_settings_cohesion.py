@@ -136,6 +136,21 @@ NETWORK_MANAGER_BLOCK = '''        <com.android.settings.widget.HomepagePreferen
 
 '''
 
+MESSAGES_BLOCK = '''        <com.android.settings.widget.HomepagePreference
+            android:icon="@drawable/ic_settings_privacy_filled"
+            android:key="top_level_sable_messages"
+            android:order="-24"
+            android:title="@string/sable_messages_settings_title"
+            android:summary="@string/sable_messages_settings_summary"
+            settings:highlightableMenuKey="@string/menu_key_privacy">
+            <intent
+                android:action="org.sableos.hub.action.CONNECTED_APPS"
+                android:targetPackage="org.sableos.hub"
+                android:targetClass="org.sableos.hub.ConnectedAppsActivity" />
+        </com.android.settings.widget.HomepagePreference>
+
+'''
+
 
 def run_git(repo: Path, *args: str) -> str:
     return subprocess.check_output(
@@ -247,6 +262,13 @@ def transform_top_level(text: str, label: str) -> str:
         'android:key="top_level_security_privacy_category"',
         'android:key="top_level_sable_network_manager"',
         NETWORK_MANAGER_BLOCK,
+        label,
+    )
+    text = insert_into_category(
+        text,
+        'android:key="top_level_security_privacy_category"',
+        'android:key="top_level_sable_messages"',
+        MESSAGES_BLOCK,
         label,
     )
     return text
@@ -388,30 +410,46 @@ def verify(source: Path) -> None:
             raise SystemExit(f"R9_SETTINGS_NETWORK_MANAGER_ENTRY_FAIL={rel}")
         if "com.android.settings.sable.SableNetworkManagerSettings" not in text:
             raise SystemExit(f"R9_SETTINGS_NETWORK_MANAGER_FRAGMENT_FAIL={rel}")
+        if text.count('android:key="top_level_sable_messages"') != 1:
+            raise SystemExit(f"R9_SETTINGS_MESSAGES_ENTRY_FAIL={rel}")
+        for needle in (
+            'android:action="org.sableos.hub.action.CONNECTED_APPS"',
+            'android:targetPackage="org.sableos.hub"',
+            'android:targetClass="org.sableos.hub.ConnectedAppsActivity"',
+        ):
+            if needle not in text:
+                raise SystemExit(f"R9_SETTINGS_MESSAGES_INTENT_FAIL={rel}:{needle}")
 
     for dest in NEW_FILES:
         installed = settings / dest
         if sha256(installed) != sha256(template_for(dest)):
             raise SystemExit(f"R9_SETTINGS_COHESION_TEMPLATE_COPY_FAIL={dest}")
 
+    contract = (settings / CONTRACT).read_text(encoding="utf-8")
+    if 'AUTHORITY = "org.sableos.appearance"' not in contract:
+        raise SystemExit("R9_SETTINGS_APPEARANCE_AUTHORITY_CONTRACT_MISSING")
+    if 'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)' not in contract:
+        raise SystemExit("R9_SETTINGS_APPEARANCE_CONTENT_URI_CONTRACT_MISSING")
+
     provider = (settings / PROVIDER).read_text(encoding="utf-8")
     required_provider = (
-        'AUTHORITY = "org.sableos.appearance"',
         "createDeviceProtectedStorageContext()",
         "MODE_NIGHT_NO",
         "MODE_NIGHT_YES",
         "KEY_NIGHT_MODE_BEFORE_OVERRIDE",
-        'contains("com.android.launcher3")',
+        'contains("org.sableos.launcher")',
         "notifyChange(",
     )
     # AUTHORITY lives in the contract; the provider must reference the contract.
     if "SableAppearanceContract.CONTENT_URI" not in provider:
         raise SystemExit("R9_SETTINGS_APPEARANCE_PROVIDER_CONTRACT_MISSING")
+    if 'contains("com.android.launcher3")' in provider:
+        raise SystemExit("R9_SETTINGS_APPEARANCE_PROVIDER_STALE_LAUNCHER3_WRITER")
     if "private Context requireContext()" in provider:
         raise SystemExit("R9_SETTINGS_PROVIDER_REQUIRE_CONTEXT_COLLISION")
     if "private Context requireProviderContext()" not in provider:
         raise SystemExit("R9_SETTINGS_PROVIDER_CONTEXT_HELPER_MISSING")
-    for needle in required_provider[1:]:
+    for needle in required_provider:
         if needle not in provider:
             raise SystemExit(f"R9_SETTINGS_APPEARANCE_PROVIDER_MISSING={needle}")
 
@@ -441,6 +479,7 @@ def verify(source: Path) -> None:
     print("R9_GRAPHENE_NETWORK_PERMISSION_BASE=PASS_DANGEROUS_INSTANT")
     print("R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION")
     print("R9_SETTINGS_NETWORK_MANAGER_TRANSPORT_SCOPE=ALL_NETWORKS_NOT_MOBILE_WIFI_SPLIT")
+    print("R9_SETTINGS_MESSAGES_CONNECTED_APPS_ENTRY=PASS")
     print("R9_SETTINGS_COHESION=PASS")
 
 
@@ -482,6 +521,13 @@ def self_test() -> None:
 </PreferenceScreen>
 """
     transformed = transform_top_level(sample_xml, "self-test")
+    for needle in (
+        "top_level_sable_messages",
+        "org.sableos.hub.action.CONNECTED_APPS",
+        "org.sableos.hub.ConnectedAppsActivity",
+    ):
+        if needle not in transformed:
+            raise SystemExit(f"R9_SETTINGS_COHESION_SELF_TEST_MESSAGES_FAIL={needle}")
     if transformed.count('android:key="top_level_sable_appearance"') != 1:
         raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_TOP_LEVEL_FAIL")
     if transformed.count('android:key="top_level_sable_network_manager"') != 1:

@@ -50,13 +50,33 @@ SableLauncher owns:
 - launcher-only favorites/start-tile state
 - privacy/security permission summaries shown in All Apps
 
+The host-side Gradle `sablestart-presentation-check` compiles and lints only
+the six canonical files in the Soong `sable_start_presentation_srcs`
+filegroup. A Gradle `Sync` task mirrors those six files into the module build
+directory before Kotlin compile and every lint task, so Android Lint cannot
+walk the broader canonical source root. It must not compile or lint
+`SableStartActivity.kt` or `LauncherAppsRepository.kt`; those are standalone
+runtime sources and are qualified by the Soong/module path.
+
+SableLauncher uses `sdk_version: "system_current"`, not unrestricted
+`platform_apis`. The system SDK is required for Android's
+`Context.createContextAsUser(...)` API used to read per-profile permission
+state. The package query uses the public legacy
+`getPackageInfo(String, int)` overload with `GET_PERMISSIONS` instead of the
+API-33-only `PackageInfoFlags.of(...)` wrapper. If a profile context cannot be
+obtained, the launcher reports the permission summary as unavailable rather
+than falling back to another user's package state.
+
 Settings remains the only persisted global appearance authority at
 `content://org.sableos.appearance/appearance`.
 
 ### Recents / gesture navigation substrate
 
 Launcher3QuickStep remains installed for R9 only as the Android
-Quickstep/Recents integration substrate. It must no longer host Sable UI or be
+Quickstep/Recents integration substrate. The existing Launcher3 foundation
+applicator is a compile-compatibility intermediate only: preparation may apply
+it to the pinned Launcher3 tree, but must immediately apply and verify the
+Recents-only cutover before qualification. It must no longer host Sable UI or be
 the default HOME.
 
 When another package owns HOME, Launcher3's existing Quickstep implementation
@@ -104,13 +124,12 @@ No wipe, clean, clobber or bootloader-state change is part of this migration.
 
 ## Live-snapshot privacy boundary
 
-Weather, Calendar, Messages, Mail and Media snapshot providers currently admit
-the Launcher3 package as the launcher caller. During migration they must admit
-the new Sable launcher package and reject unrelated callers. Launcher3 access
-is removed once the standalone HOME cutover is qualified.
+Weather, Calendar, Messages, Mail and Media snapshot providers admit
+`org.sableos.launcher` as the product launcher caller and reject unrelated
+callers. Launcher3 access is not part of the standalone HOME architecture.
 
-The appearance provider writer policy likewise moves from Launcher3 to
-SableLauncher while retaining Settings as owner.
+The appearance provider writer policy likewise admits SableLauncher while
+retaining Settings as the persisted authority owner.
 
 ## Keyboard-first contract
 
@@ -160,6 +179,13 @@ Track rows become flat list rows:
   harder.
 
 Artists and Albums use equivalent flat rows and alphabet section navigation.
+
+Large-library behavior is part of the launcher-adjacent acceptance contract:
+Media collection sorting/grouping/section-index construction runs off the UI
+thread; Songs/Artists/Albums/Favorites render lazily; Up Next and playlist
+editing render lazily; playback-position ticks are active only on Now Playing;
+and queue launch uses a bounded process-local token rather than serializing the
+full library through Binder.
 
 ## Qualification sequence
 

@@ -44,6 +44,7 @@ import org.sableos.design.SableScreen
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
 import org.sableos.hub.HubConversation
+import org.sableos.hub.HubConversationSource
 import org.sableos.hub.HubMessage
 import org.sableos.hub.HubSendResult
 import org.sableos.hub.HubSnapshot
@@ -61,11 +62,15 @@ private sealed interface HubRoute {
     ) : HubRoute
 
     data class Conversation(
-        val conversation: HubConversation,
+        val threadId: Long,
     ) : HubRoute
 
     data class Compose(
         val recipient: String = "",
+    ) : HubRoute
+
+    data class ConnectedReply(
+        val threadId: Long,
     ) : HubRoute
 }
 
@@ -75,6 +80,9 @@ fun HubScreen(
     onRequestAccess: () -> Unit,
     onSendSms: (String, String) -> HubSendResult,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
+    onOpenConnectedApps: () -> Unit,
+    onReplyConnected: (String, String) -> HubSendResult,
+    onOpenConnectedApp: (String, Long) -> Boolean,
 ) {
     var route by remember {
         mutableStateOf<HubRoute>(HubRoute.Root(HubPivot.Messages))
@@ -108,7 +116,7 @@ fun HubScreen(
             SableScreen {
                 SablePageHeader(
                     title = "messages",
-                    subtitle = "SMS conversations and people, kept local to this device.",
+                    subtitle = "SMS and notification-derived conversations, kept local to this device.",
                 )
 
                 HubPivotRow(
@@ -120,6 +128,14 @@ fun HubScreen(
                     },
                 )
 
+                if (current.pivot == HubPivot.Messages) {
+                    SableActionButton(
+                        text = "connected apps",
+                        primary = false,
+                        onClick = onOpenConnectedApps,
+                    )
+                }
+
                 statusMessage?.let { message ->
                     Text(
                         text = message,
@@ -129,22 +145,26 @@ fun HubScreen(
                 }
 
                 when (current.pivot) {
-                    HubPivot.Messages ->
+                    HubPivot.Messages -> {
                         MessagesPivot(
                             modifier = Modifier.weight(1f),
                             snapshot = snapshot,
                             search = search,
                             onSearchChange = { search = it },
-                            onConversation = {
-                                route = HubRoute.Conversation(it)
+                            onConversation = { conversation ->
+                                route =
+                                    HubRoute.Conversation(
+                                        threadId = conversation.threadId,
+                                    )
                             },
                             onCompose = {
                                 route = HubRoute.Compose()
                             },
                             onRequestAccess = onRequestAccess,
                         )
+                    }
 
-                    HubPivot.People ->
+                    HubPivot.People -> {
                         PeoplePivot(
                             modifier = Modifier.weight(1f),
                             snapshot = snapshot,
@@ -155,33 +175,151 @@ fun HubScreen(
                             },
                             onRequestAccess = onRequestAccess,
                         )
+                    }
                 }
             }
         }
 
         is HubRoute.Conversation -> {
-            val threadMessages =
-                snapshot.messages
-                    .filter {
-                        it.threadId == current.conversation.threadId
-                    }.sortedBy { it.dateMillis }
-                    .takeLast(MAX_VISIBLE_THREAD_MESSAGES)
+            val conversation =
+                snapshot.conversations.firstOrNull { candidate ->
+                    candidate.threadId == current.threadId
+                }
 
-            SableScreen {
-                ConversationView(
-                    modifier = Modifier.weight(1f),
-                    conversation = current.conversation,
-                    messages = threadMessages,
+            if (conversation == null) {
+                MissingConversationView(
                     onBack = {
                         route = HubRoute.Root(HubPivot.Messages)
                     },
-                    onReply = {
-                        route =
-                            HubRoute.Compose(
-                                recipient = current.conversation.address,
-                            )
+                )
+            } else {
+                val threadMessages =
+                    snapshot.messages
+                        .filter { message ->
+                            message.threadId == conversation.threadId
+                        }.sortedBy { message ->
+                            message.dateMillis
+                        }.takeLast(MAX_VISIBLE_THREAD_MESSAGES)
+                val sourcePackage = conversation.sourcePackage
+                val sourceUserSerial = conversation.sourceUserSerial
+
+                SableScreen {
+                    ConversationView(
+                        modifier = Modifier.weight(1f),
+                        conversation = conversation,
+                        messages = threadMessages,
+                        onBack = {
+                            route = HubRoute.Root(HubPivot.Messages)
+                        },
+                        onReply =
+                            when {
+                                conversation.source == HubConversationSource.Sms -> {
+                                    {
+                                        route =
+                                            HubRoute.Compose(
+                                                recipient = conversation.address,
+                                            )
+                                    }
+                                }
+
+                                conversation.canQuickReply &&
+                                    conversation.sourceNotificationKey != null -> {
+                                    {
+                                        route =
+                                            HubRoute.ConnectedReply(
+                                                threadId = conversation.threadId,
+                                            )
+                                    }
+                                }
+
+                                else -> {
+                                    null
+                                }
+                            },
+                        onOpenSource =
+                            if (
+                                conversation.source == HubConversationSource.ConnectedApp &&
+                                sourcePackage != null &&
+                                sourceUserSerial != null
+                            ) {
+                                {
+                                    val opened =
+                                        onOpenConnectedApp(
+                                            sourcePackage,
+                                            sourceUserSerial,
+                                        )
+                                    statusMessage =
+                                        if (opened) {
+                                            "Opened ${conversation.sourceLabel ?: sourcePackage}."
+                                        } else {
+                                            "The source app is unavailable."
+                                        }
+                                }
+                            } else {
+                                null
+                            },
+                    )
+                }
+            }
+        }
+
+        is HubRoute.ConnectedReply -> {
+            val conversation =
+                snapshot.conversations.firstOrNull { candidate ->
+                    candidate.threadId == current.threadId
+                }
+
+            if (conversation == null) {
+                MissingConversationView(
+                    onBack = {
+                        route = HubRoute.Root(HubPivot.Messages)
                     },
                 )
+            } else {
+                val notificationKey = conversation.sourceNotificationKey
+
+                SableScrollableScreen {
+                    ConnectedReplyView(
+                        conversation = conversation,
+                        replyAvailable =
+                            conversation.canQuickReply &&
+                                notificationKey != null,
+                        onBack = {
+                            route =
+                                HubRoute.Conversation(
+                                    threadId = conversation.threadId,
+                                )
+                        },
+                        onSend = { body ->
+                            val result =
+                                if (notificationKey == null) {
+                                    HubSendResult(
+                                        success = false,
+                                        message = "Quick reply is no longer available.",
+                                    )
+                                } else {
+                                    onReplyConnected(notificationKey, body)
+                                }
+                            statusMessage = result.message
+                            if (result.success) {
+                                route =
+                                    HubRoute.Conversation(
+                                        threadId = conversation.threadId,
+                                    )
+                            }
+                            result
+                        },
+                        onOpenSource = {
+                            val packageName = conversation.sourcePackage
+                            val userSerial = conversation.sourceUserSerial
+                            if (packageName == null || userSerial == null) {
+                                false
+                            } else {
+                                onOpenConnectedApp(packageName, userSerial)
+                            }
+                        },
+                    )
+                }
             }
         }
 
@@ -222,6 +360,21 @@ fun HubScreen(
 }
 
 @Composable
+private fun MissingConversationView(onBack: () -> Unit) {
+    SableScreen {
+        SablePageHeader(
+            title = "conversation unavailable",
+            subtitle = "The source conversation is no longer available in local Sable history.",
+        )
+        SableActionButton(
+            text = "Back to messages",
+            primary = false,
+            onClick = onBack,
+        )
+    }
+}
+
+@Composable
 private fun HubPivotRow(
     selected: HubPivot,
     onSelect: (HubPivot) -> Unit,
@@ -233,7 +386,7 @@ private fun HubPivotRow(
         HubPivot.entries.forEach { pivot ->
             TextButton(
                 onClick = { onSelect(pivot) },
-                modifier = Modifier.heightIn(min = 48.dp),
+                modifier = Modifier.heightIn(min = HubTouchTarget),
                 contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 Text(
@@ -297,12 +450,17 @@ private fun ColumnScope.MessagesPivot(
         Text(
             text =
                 when {
-                    !snapshot.capabilities.canReadSms ->
+                    !snapshot.capabilities.canReadSms -> {
                         "Grant Messages access to show SMS conversations."
-                    query.isNotBlank() ->
+                    }
+
+                    query.isNotBlank() -> {
                         "No matching conversations."
-                    else ->
+                    }
+
+                    else -> {
                         "No conversations yet."
+                    }
                 },
             modifier = Modifier.padding(vertical = SableSpacing.Lg),
             style = MaterialTheme.typography.bodyLarge,
@@ -335,10 +493,13 @@ private fun MessagesAccessPrompt(
 ) {
     val detail =
         when {
-            snapshot.capabilities.canReadSms ->
+            snapshot.capabilities.canReadSms -> {
                 "Allow sending access to send SMS from Sable Messages."
-            else ->
+            }
+
+            else -> {
                 "Allow SMS access to read conversations and send messages."
+            }
         }
 
     SablePanel {
@@ -367,7 +528,7 @@ private fun ConversationRow(
     val unread = conversation.unreadCount > 0
     val accent =
         if (unread) {
-            Color(0xFF35C66B)
+            HubUnreadAccent
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         }
@@ -384,16 +545,16 @@ private fun ConversationRow(
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
-                .padding(vertical = 10.dp),
+                .padding(vertical = HubRowVerticalPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
             modifier =
                 Modifier
-                    .size(48.dp)
+                    .size(HubAvatarSize)
                     .background(
                         if (unread) {
-                            Color(0xFF0B3524)
+                            HubUnreadBackground
                         } else {
                             MaterialTheme.colorScheme.surfaceVariant
                         },
@@ -407,7 +568,7 @@ private fun ConversationRow(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
-        Spacer(Modifier.width(14.dp))
+        Spacer(Modifier.width(HubAvatarTextGap))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = conversation.displayName,
@@ -417,14 +578,28 @@ private fun ConversationRow(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = conversation.lastBody.take(120),
+                text =
+                    when {
+                        conversation.source != HubConversationSource.ConnectedApp -> {
+                            conversation.lastBody.take(SMS_PREVIEW_LENGTH)
+                        }
+
+                        conversation.lastBody.isBlank() -> {
+                            "${conversation.sourceLabel ?: "connected app"} · content hidden"
+                        }
+
+                        else -> {
+                            "${conversation.sourceLabel ?: "connected app"} · " +
+                                conversation.lastBody.take(CONNECTED_PREVIEW_LENGTH)
+                        }
+                    },
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(HubTrailingGap))
         Column(
             horizontalAlignment = Alignment.End,
         ) {
@@ -437,7 +612,7 @@ private fun ConversationRow(
                 Text(
                     text = conversation.unreadCount.toString(),
                     style = MaterialTheme.typography.labelLarge,
-                    color = Color(0xFF35C66B),
+                    color = HubUnreadAccent,
                 )
             }
         }
@@ -452,7 +627,9 @@ private fun ConversationRow(
 }
 
 private fun clockTime(epochMillis: Long): String =
-    DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epochMillis))
+    DateFormat
+        .getTimeInstance(DateFormat.SHORT)
+        .format(Date(epochMillis))
 
 @Composable
 private fun ColumnScope.PeoplePivot(
@@ -530,11 +707,15 @@ private fun ColumnScope.ConversationView(
     conversation: HubConversation,
     messages: List<HubMessage>,
     onBack: () -> Unit,
-    onReply: () -> Unit,
+    onReply: (() -> Unit)?,
+    onOpenSource: (() -> Unit)?,
 ) {
     SablePageHeader(
         title = conversation.displayName,
-        subtitle = conversation.address,
+        subtitle =
+            conversation.sourceLabel
+                ?.takeIf { conversation.source == HubConversationSource.ConnectedApp }
+                ?: conversation.address,
     )
 
     Row(
@@ -547,11 +728,21 @@ private fun ColumnScope.ConversationView(
             primary = false,
             onClick = onBack,
         )
-        SableActionButton(
-            text = "Reply",
-            modifier = Modifier.weight(1f),
-            onClick = onReply,
-        )
+        onReply?.let { action ->
+            SableActionButton(
+                text = "Reply",
+                modifier = Modifier.weight(1f),
+                onClick = action,
+            )
+        }
+        onOpenSource?.let { action ->
+            SableActionButton(
+                text = "Open app",
+                modifier = Modifier.weight(1f),
+                primary = false,
+                onClick = action,
+            )
+        }
     }
 
     LazyColumn(
@@ -579,8 +770,8 @@ private fun MessageBubble(message: HubMessage) {
             },
     ) {
         Surface(
-            modifier = Modifier.widthIn(max = 320.dp),
-            shape = RoundedCornerShape(18.dp),
+            modifier = Modifier.widthIn(max = HubBubbleMaxWidth),
+            shape = RoundedCornerShape(HubBubbleCornerRadius),
             color =
                 if (message.incoming) {
                     MaterialTheme.colorScheme.surfaceVariant
@@ -592,8 +783,32 @@ private fun MessageBubble(message: HubMessage) {
                 modifier = Modifier.padding(SableSpacing.Md),
                 verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
             ) {
+                if (
+                    message.source == HubConversationSource.ConnectedApp &&
+                    message.incoming &&
+                    !message.senderLabel.isNullOrBlank()
+                ) {
+                    Text(
+                        text = message.senderLabel.orEmpty(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
-                    text = message.body.ifBlank { "Empty SMS body" },
+                    text =
+                        when {
+                            message.body.isNotBlank() -> {
+                                message.body
+                            }
+
+                            message.source == HubConversationSource.ConnectedApp -> {
+                                "Content hidden by source app"
+                            }
+
+                            else -> {
+                                "Empty SMS body"
+                            }
+                        },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
@@ -605,6 +820,81 @@ private fun MessageBubble(message: HubMessage) {
             }
         }
     }
+}
+
+@Composable
+private fun ConnectedReplyView(
+    conversation: HubConversation,
+    replyAvailable: Boolean,
+    onBack: () -> Unit,
+    onSend: (String) -> HubSendResult,
+    onOpenSource: () -> Boolean,
+) {
+    var body by remember {
+        mutableStateOf("")
+    }
+    var localStatus by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    SablePageHeader(
+        title = "reply",
+        subtitle =
+            "Reply through ${conversation.sourceLabel ?: "the source app"}. " +
+                "Sable does not sign into this service.",
+    )
+
+    OutlinedTextField(
+        value = body,
+        onValueChange = { body = it },
+        modifier = Modifier.fillMaxWidth(),
+        minLines = CONNECTED_REPLY_MIN_LINES,
+        label = { Text("Message") },
+    )
+
+    localStatus?.let { message ->
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
+    if (replyAvailable) {
+        SableActionButton(
+            text = "Send reply",
+            onClick = {
+                val result = onSend(body)
+                localStatus = result.message
+            },
+        )
+    } else {
+        SablePanel {
+            Text(
+                text = "Quick reply is no longer exposed by the source notification.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+    }
+
+    SableActionButton(
+        text = "Open source app",
+        primary = false,
+        onClick = {
+            localStatus =
+                if (onOpenSource()) {
+                    "Opened source app."
+                } else {
+                    "The source app is unavailable."
+                }
+        },
+    )
+
+    SableActionButton(
+        text = "Back",
+        primary = false,
+        onClick = onBack,
+    )
 }
 
 @Composable
@@ -643,7 +933,7 @@ private fun ComposeView(
         value = body,
         onValueChange = { body = it },
         modifier = Modifier.fillMaxWidth(),
-        minLines = 4,
+        minLines = SMS_COMPOSE_MIN_LINES,
         label = { Text("Message") },
     )
 
@@ -693,12 +983,27 @@ private fun ComposeView(
 }
 
 private fun relativeTime(timestamp: Long): String =
-    DateUtils.getRelativeTimeSpanString(
-        timestamp,
-        System.currentTimeMillis(),
-        DateUtils.MINUTE_IN_MILLIS,
-    ).toString()
+    DateUtils
+        .getRelativeTimeSpanString(
+            timestamp,
+            System.currentTimeMillis(),
+            DateUtils.MINUTE_IN_MILLIS,
+        ).toString()
 
+private val HubTouchTarget = 48.dp
+private val HubAvatarSize = 48.dp
+private val HubRowVerticalPadding = 10.dp
+private val HubAvatarTextGap = 14.dp
+private val HubTrailingGap = 10.dp
+private val HubBubbleMaxWidth = 320.dp
+private val HubBubbleCornerRadius = 18.dp
+private val HubUnreadAccent = Color(0xFF35C66B)
+private val HubUnreadBackground = Color(0xFF0B3524)
+
+private const val SMS_PREVIEW_LENGTH = 120
+private const val CONNECTED_PREVIEW_LENGTH = 100
+private const val CONNECTED_REPLY_MIN_LINES = 3
+private const val SMS_COMPOSE_MIN_LINES = 4
 private const val MAX_VISIBLE_CONVERSATIONS = 120
 private const val MAX_VISIBLE_THREAD_MESSAGES = 250
 private const val MAX_VISIBLE_PEOPLE = 300

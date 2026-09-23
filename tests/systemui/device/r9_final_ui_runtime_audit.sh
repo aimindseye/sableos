@@ -230,7 +230,48 @@ if not any(
     print("R9_FINAL_UI_SABLE_MESSAGES_MAIN_ACTIVITY=FAIL_MISSING")
     raise SystemExit(1)
 
+if not any(
+    name in {".ConnectedAppsActivity", "org.sableos.hub.ConnectedAppsActivity"}
+    for name in activities
+):
+    print("R9_FINAL_UI_CONNECTED_APPS_ACTIVITY=FAIL_MISSING")
+    raise SystemExit(1)
+
+providers = root.findall("./application/provider")
+provider_authorities = {
+    node.get(android + "authorities", "")
+    for node in providers
+}
+if "org.sableos.hub.connected_apps" not in provider_authorities:
+    print("R9_FINAL_UI_CONNECTED_APPS_PROVIDER=FAIL_MISSING")
+    raise SystemExit(1)
+
+services = root.findall("./application/service")
+listener = next(
+    (
+        node
+        for node in services
+        if node.get(android + "name", "") in {
+            ".notifications.SableNotificationListenerService",
+            "org.sableos.hub.notifications.SableNotificationListenerService",
+        }
+    ),
+    None,
+)
+if listener is None:
+    print("R9_FINAL_UI_NOTIFICATION_LISTENER=FAIL_MISSING")
+    raise SystemExit(1)
+if (
+    listener.get(android + "permission", "")
+    != "android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+):
+    print("R9_FINAL_UI_NOTIFICATION_LISTENER=FAIL_BIND_PERMISSION")
+    raise SystemExit(1)
+
 print("R9_FINAL_UI_SABLE_MESSAGES_MAIN_ACTIVITY=PASS")
+print("R9_FINAL_UI_CONNECTED_APPS_ACTIVITY=PASS")
+print("R9_FINAL_UI_CONNECTED_APPS_PROVIDER=PASS")
+print("R9_FINAL_UI_NOTIFICATION_LISTENER=PASS_GENERIC")
 print("R9_FINAL_UI_PROVIDER_CAPSULES=PASS_RETIRED")
 print("R9_FINAL_UI_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT")
 PY
@@ -239,7 +280,41 @@ PY
     fail R9_FINAL_UI_SABLE_MESSAGES_MANIFEST_BOUNDARY "installed_apk_manifest_check_rc=$rc"
 }
 
-echo "R9_FINAL_UI_SABLE_MESSAGES_INSTALLED_MANIFEST=PASS_NATIVE_FIRST"
+echo "R9_FINAL_UI_SABLE_MESSAGES_INSTALLED_MANIFEST=PASS_LOCAL_ADAPTER_FOUNDATION"
+
+ENABLED_NOTIFICATION_LISTENERS="$(
+    adb_cmd shell settings get secure enabled_notification_listeners 2>/dev/null |
+        tr -d '\r'
+)"
+if grep -Fq 'org.sableos.hub/org.sableos.hub.notifications.SableNotificationListenerService' \
+    <<<"$ENABLED_NOTIFICATION_LISTENERS"; then
+    echo "R9_SABLE_MESSAGES_NOTIFICATION_ACCESS=PASS_USER_AUTHORIZED"
+else
+    echo "R9_SABLE_MESSAGES_NOTIFICATION_ACCESS=PENDING_USER_AUTHORIZATION"
+fi
+
+echo
+echo "===== CONNECTED APPS POLICY PROVIDER CALLER BOUNDARY ====="
+
+set +e
+CONNECTED_APPS_PROBE="$(
+    adb_cmd shell content query \
+        --uri "content://org.sableos.hub.connected_apps/hidden" \
+        2>&1
+)"
+CONNECTED_APPS_PROBE_RC=$?
+set -e
+
+if grep -Eq 'SecurityException|Permission Denial' <<<"$CONNECTED_APPS_PROBE"; then
+    echo "R9_FINAL_UI_CONNECTED_APPS_PROVIDER_SHELL_REJECT=PASS rc=$CONNECTED_APPS_PROBE_RC"
+else
+    echo "R9_FINAL_UI_CONNECTED_APPS_PROVIDER_SHELL_REJECT=FAIL rc=$CONNECTED_APPS_PROBE_RC"
+    printf '%s\n' "$CONNECTED_APPS_PROBE"
+    fail R9_FINAL_UI_CONNECTED_APPS_PROVIDER_CALLER_BOUNDARY \
+        "unrelated-shell-caller-was-not-rejected"
+fi
+
+echo "R9_FINAL_UI_CONNECTED_APPS_PROVIDER_CALLER_BOUNDARY=PASS"
 
 echo
 echo "===== LIVE PROVIDER UNRELATED-CALLER NEGATIVE PROBE ====="

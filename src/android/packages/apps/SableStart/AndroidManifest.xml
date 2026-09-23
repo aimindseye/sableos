@@ -16,6 +16,7 @@
         <provider android:authorities="org.sableos.weather.snapshot" />
         <provider android:authorities="org.sableos.calendar.snapshot" />
         <provider android:authorities="org.sableos.hub.snapshot" />
+        <provider android:authorities="org.sableos.hub.connected_apps" />
         <provider android:authorities="org.sableos.mail.snapshot" />
         <provider android:authorities="org.sableos.media.snapshot" />
     </queries>

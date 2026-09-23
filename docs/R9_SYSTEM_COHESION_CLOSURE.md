@@ -1,6 +1,6 @@
 # R9 System Cohesion Closure
 
-Status: **active / physical R9 candidate rejected**
+Status: **active / standalone-HOME source and focused app qualification complete; fresh physical candidate pending**
 
 Integration branch:
 
@@ -48,9 +48,10 @@ Implemented source boundaries:
   transport-scoped per-app enforcement.
 - Launcher3 no longer requests `MODIFY_DAY_NIGHT_MODE` and no longer hosts the
   appearance provider.
-- Sable Start writes the Settings authority and prevents native Launcher3
-  All Apps/workspace presentation from becoming a second HOME surface.
-- Quickstep nav-edge Recents/Overview remains preserved.
+- standalone `org.sableos.launcher` owns the intended HOME surface and writes
+  the Settings appearance authority as a client/editor;
+- Launcher3 no longer advertises HOME or hosts Sable UI;
+- Quickstep Recents/Overview services remain preserved as a recents-only substrate.
 - SystemUI observes the same Sable accent authority; the exact old Launcher
   authority bridge is a recognized one-time migration and arbitrary bridge
   drift remains fail-closed.
@@ -92,15 +93,17 @@ Required behavior:
 - observers update without app-specific duplicated preference stores.
 
 Exit gate:
-- one authority;
+- one authority, with the literal owned by `SableAppearanceContract` and
+  provider code consuming `SableAppearanceContract.CONTENT_URI`;
 - no Launcher3-only global preference ownership;
 - Settings and Launcher read/write through the same contract;
 - boot/user-unlock restoration path covered by tests.
 
-### WS2 — Launcher and Quickstep ownership
+### WS2 — Standalone HOME and Quickstep ownership
 
-Keep Launcher3/Quickstep as HOME/Recents infrastructure but prevent its native
-workspace/app drawer from becoming a second user-facing launcher.
+Standalone SableLauncher owns Android HOME. Launcher3QuickStep remains installed
+only for Recents/Overview/task-gesture integration and must not advertise HOME,
+ALL_APPS or expose a native workspace as a fallback.
 
 Sable owns:
 - Start;
@@ -111,7 +114,9 @@ Sable owns:
 
 Quickstep owns:
 - Recents/Overview;
-- task/gesture integration needed by Android.
+- TouchInteractionService/task-animation integration needed by Android.
+
+Launcher3 does **not** own HOME or host the Sable Compose presentation.
 
 Fix:
 - vertical touch/scroll interception;
@@ -175,6 +180,23 @@ Exit gate:
 - system night-mode follows WS1;
 - active Sable accent is observed;
 - physical visual states have dedicated acceptance markers.
+
+### R9 physical-regression correction
+
+The rejected physical candidates exposed defects that are now source-gated:
+
+- Clock/Photos use qualified Day/Night presentation so Light restores visible
+  semantic text/background colors;
+- Camera remains an intentionally upstream preprocessed APK boundary and is not
+  falsely claimed to follow Sable Light/Dark;
+- Reader ordinary Light/Dark follows global Sable appearance; local Light/Dark
+  ownership is retired for the Sable flavor while Sepia/E-ink remain explicit;
+- Reader library renders actual distinct books continuously rather than exposing
+  only a six-item stack/page count;
+- Contacts uses the existing section indexer plus a right-edge alphabet rail;
+- Media uses lazy large-library surfaces, background indexing and bounded queue
+  handoff;
+- Sable Messages is SMS/People-first; embedded provider WebViews are retired.
 
 ### WS5 — Core apps and Reader
 

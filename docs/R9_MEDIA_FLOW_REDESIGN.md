@@ -343,6 +343,46 @@ However, release evidence remains repository-source-bound, so the prior
 head. Focused Media qualification and WS7 must be rerun at the new immutable
 source before a full Panther target-files build is authorized.
 
+## Large-library physical regression hardening
+
+Physical testing with a large local music library exposed ANR-class UI-thread
+saturation rather than a Media3 decoder failure. R9 now treats large-library
+behavior as a source and quality contract:
+
+- Songs, Artists, Albums and Favorites are lazy-rendered;
+- Up Next and playlist editing are lazy-rendered rather than eagerly composing
+  every queue/library row;
+- persisted collection loading runs off the UI thread;
+- song sorting, artist/album grouping, source-index mapping and A-Z section
+  construction run on `Dispatchers.Default` into an immutable collection index;
+- playback-position ticks are enabled only while Now Playing is visible, so
+  browse surfaces do not recompose every 500 ms;
+- local queue launch sends one process-local opaque token rather than three
+  whole-library string arrays through an Intent/Binder transaction;
+- Media3 queue construction occurs off-main and is generation-guarded before
+  main-thread player mutation;
+- playlist membership/count checks use indexed/set lookup rather than nested
+  whole-library scans;
+- folder import remains deliberately bounded to 2,000 audio files until a
+  larger persistence/storage design is separately qualified;
+- A-Z navigation uses named structural constants and the same flat-row model as
+  the R9 HOME/Contacts navigation language.
+
+The fail-closed source contracts require markers including:
+
+```text
+R9_MEDIA_LARGE_LIBRARY_LAZY_RENDERING=PASS
+R9_MEDIA_LARGE_LIBRARY_INDEX_OFF_MAIN=PASS
+R9_MEDIA_PROGRESS_RECOMPOSITION=PASS_NOW_PLAYING_ONLY
+R9_MEDIA_QUEUE_BINDER_PAYLOAD=PASS_TOKEN_ONLY
+R9_MEDIA_QUEUE_BUILD=PASS_BACKGROUND
+R9_MEDIA_LIBRARY_STARTUP_LOAD=PASS_OFF_MAIN
+R9_MEDIA_FOLDER_IMPORT_BOUND=PASS_2000
+```
+
+Kotlin warnings, Detekt and KtLint remain fail-closed. These gates are not
+weakened to make the Media build pass.
+
 ## Physical Panther acceptance
 
 After a fresh image is eventually built and flashed through the standard Sable

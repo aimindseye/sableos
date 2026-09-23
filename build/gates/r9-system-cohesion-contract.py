@@ -80,10 +80,19 @@ require(
     "R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION",
 )
 require(
-    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
     'AUTHORITY = "org.sableos.appearance"',
+    'Uri.parse("content://" + AUTHORITY + "/" + PATH_APPEARANCE)',
+)
+require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    "SableAppearanceContract.CONTENT_URI",
     'Arrays.asList(packages).contains("org.sableos.launcher")',
     "Sable appearance writes are restricted to Settings and SableLauncher",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceProvider.java",
+    'Arrays.asList(packages).contains("com.android.launcher3")',
 )
 forbid(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/StartStateRepository.kt",
@@ -103,9 +112,15 @@ require(
     'name: "SableLauncher"',
     'manifest: "AndroidManifest.xml"',
     'certificate: "platform"',
+    'sdk_version: "system_current"',
     "LauncherAppsRepository.kt",
     "SableStartActivity.kt",
 )
+forbid(
+    "src/android/packages/apps/SableStart/Android.bp",
+    "platform_apis: true",
+)
+
 require(
     "src/android/packages/apps/SableStart/AndroidManifest.xml",
     'package="org.sableos.launcher"',
@@ -147,11 +162,18 @@ require(
     "startMainActivity(",
     "startAppDetailsActivity(",
     "PackageManager.GET_PERMISSIONS",
+    'Suppress("DEPRECATION")',
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
+    'getOrNull() ?: return "permissions · unavailable"',
     'GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"',
     '"permissions · none sensitive"',
 )
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
+    "PackageInfoFlags.of(",
+)
+
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "private fun AppsScreen(",
@@ -305,6 +327,21 @@ require(
     "SableMailSnapshotProvider.kt",
     'if ("org.sableos.launcher" !in packages)',
     "Sable live snapshot is restricted to SableLauncher.",
+)
+forbid(
+    "apps/r8/mail/apply_sable_flavor.py",
+    'if ("com.android.launcher3" !in packages)',
+)
+require(
+    "apps/r8/mail/verify_sable_mail.py",
+    'if ("org.sableos.launcher" !in packages)',
+    "Sable live snapshot is restricted to SableLauncher.",
+    "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT",
+)
+forbid(
+    "apps/r8/mail/verify_sable_mail.py",
+    """        'if ("com.android.launcher3" !in packages)',
+        "SecurityException(",""",
 )
 
 # ---------------------------------------------------------------------------

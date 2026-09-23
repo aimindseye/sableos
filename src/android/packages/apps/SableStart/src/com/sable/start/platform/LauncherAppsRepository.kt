@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.UserHandle
 import android.os.UserManager
 import org.sableos.start.model.AppEntry
@@ -31,17 +32,20 @@ class LauncherAppsRepository(
 
     fun loadApps(): List<AppEntry> {
         val locale = Locale.getDefault()
+        val hiddenApps = loadHiddenApps()
 
         return userManager.userProfiles
             .flatMap { user ->
+                val userSerial = userManager.getSerialNumberForUser(user)
                 launcherApps
                     .getActivityList(null, user)
                     .asSequence()
                     .filter { info ->
-                        info.componentName.packageName != appContext.packageName &&
-                            info.componentName.packageName != GRAPHENE_MESSAGING_PACKAGE
-                    }
-                    .map { info ->
+                        val packageName = info.componentName.packageName
+                        packageName != appContext.packageName &&
+                            packageName != GRAPHENE_MESSAGING_PACKAGE &&
+                            HiddenAppKey(packageName, userSerial) !in hiddenApps
+                    }.map { info ->
                         AppEntry(
                             label = info.label.toString().trim(),
                             component = info.componentName,
@@ -52,11 +56,9 @@ class LauncherAppsRepository(
                                     user = user,
                                 ),
                         )
-                    }
-                    .filter { it.label.isNotEmpty() }
+                    }.filter { it.label.isNotEmpty() }
                     .toList()
-            }
-            .distinctBy { entry -> entry.stableKey() }
+            }.distinctBy { entry -> entry.stableKey() }
             .sortedWith(
                 compareBy<AppEntry> {
                     it.label.lowercase(locale)
@@ -112,6 +114,38 @@ class LauncherAppsRepository(
         launcherApps.unregisterCallback(callback)
     }
 
+    private fun loadHiddenApps(): Set<HiddenAppKey> =
+        runCatching {
+            appContext.contentResolver
+                .query(
+                    HIDDEN_APPS_URI,
+                    HIDDEN_APP_COLUMNS,
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    val packageIndex =
+                        cursor.getColumnIndexOrThrow(HIDDEN_PACKAGE_COLUMN)
+                    val userIndex =
+                        cursor.getColumnIndexOrThrow(HIDDEN_USER_COLUMN)
+                    buildSet {
+                        while (cursor.moveToNext()) {
+                            add(
+                                HiddenAppKey(
+                                    packageName = cursor.getString(packageIndex),
+                                    userSerial = cursor.getLong(userIndex),
+                                ),
+                            )
+                        }
+                    }
+                }.orEmpty()
+        }.getOrDefault(emptySet())
+
+    private data class HiddenAppKey(
+        val packageName: String,
+        val userSerial: Long,
+    )
+
     private fun buildPrivacyPermissionSummary(
         packageName: String,
         user: UserHandle,
@@ -119,17 +153,14 @@ class LauncherAppsRepository(
         val profileContext =
             runCatching {
                 appContext.createContextAsUser(user, 0)
-            }.getOrElse {
-                appContext
-            }
+            }.getOrNull() ?: return "permissions · unavailable"
 
         val packageInfo =
             runCatching {
+                @Suppress("DEPRECATION")
                 profileContext.packageManager.getPackageInfo(
                     packageName,
-                    PackageManager.PackageInfoFlags.of(
-                        PackageManager.GET_PERMISSIONS.toLong(),
-                    ),
+                    PackageManager.GET_PERMISSIONS,
                 )
             }.getOrNull() ?: return "permissions · unavailable"
 
@@ -168,10 +199,20 @@ class LauncherAppsRepository(
         val permissions: Set<String>,
     )
 
-    private companion object {
-        const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+    companion object {
+        val HIDDEN_APPS_URI: Uri =
+            Uri.parse("content://org.sableos.hub.connected_apps/hidden")
 
-        val PRIVACY_PERMISSION_GROUPS =
+        private const val GRAPHENE_MESSAGING_PACKAGE = "com.android.messaging"
+        private const val HIDDEN_PACKAGE_COLUMN = "package_name"
+        private const val HIDDEN_USER_COLUMN = "user_serial"
+        private val HIDDEN_APP_COLUMNS =
+            arrayOf(
+                HIDDEN_PACKAGE_COLUMN,
+                HIDDEN_USER_COLUMN,
+            )
+
+        private val PRIVACY_PERMISSION_GROUPS =
             listOf(
                 PrivacyPermissionGroup(
                     "location",

@@ -6,7 +6,7 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-host-tools.env"
 
 EXPECTED_SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-$(git -C "$ROOT" rev-parse HEAD)}"
-QUALIFIED_BASE="2cb505c6df521e446e9dcdb863f7de02ebea387c"
+QUALIFIED_BASE="bf86db4bcf66507f566c64d5673a0e27369102e2"
 
 [[ "$EXPECTED_SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || {
   echo "R9_MESSAGES_FOCUSED_QUALIFICATION=FAIL_SOURCE_FORMAT"
@@ -30,7 +30,13 @@ git -C "$ROOT" merge-base --is-ancestor "$QUALIFIED_BASE" "$ACTUAL_SOURCE" || {
   exit 67
 }
 
-echo "===== R9 MESSAGES NATIVE-FIRST FOCUSED QUALIFICATION ====="
+git -C "$ROOT" diff --check "$QUALIFIED_BASE...$ACTUAL_SOURCE" || {
+  echo "R9_MESSAGES_SOURCE_DIFF_CHECK=FAIL"
+  exit 71
+}
+echo "R9_MESSAGES_SOURCE_DIFF_CHECK=PASS"
+
+echo "===== R9 MESSAGES LOCAL-CONVERSATION FOCUSED QUALIFICATION ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
 echo "WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=YES_GRADLE_OUTPUT_ONLY"
 echo "BUILD_AUTHORIZED=YES_HUB_MODULE_ONLY"
@@ -67,19 +73,51 @@ test -d "$ANDROID_HOME/build-tools/$SABLE_ANDROID_BUILD_TOOLS_VERSION" || {
 echo "R9_MESSAGES_ANDROID_SDK=PASS"
 
 python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
 python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
 bash "$ROOT/build/gates/sable-pipeline-contract.sh"
 
 echo
-echo "===== R9 MESSAGES GRADLE ====="
+echo "===== R9 MESSAGES SOURCE STYLE PREFLIGHT ====="
+python3 "$ROOT/build/gates/r9-messages-source-style.py"
+
+echo
+echo "===== R9 MESSAGES STATIC QUALITY PREFLIGHT ====="
 
 cd "$ROOT/apps/r8/android"
 
 ./gradlew \
   --offline \
-  :hub:assembleDebug \
-  :hub:lintDebug \
+  :hub:detekt \
+  :hub:ktlintCheck \
+  --stacktrace \
+  --console=plain \
+  --no-daemon
+
+echo "R9_MESSAGES_STATIC_QUALITY_PREFLIGHT=PASS"
+
+echo
+echo "===== R9 MESSAGES COMPILE TEST LINT ====="
+
+./gradlew \
+  --offline \
+  :hub:compileDebugKotlin \
   :hub:testDebugUnitTest \
+  :hub:lintDebug \
+  --stacktrace \
+  --console=plain \
+  --no-daemon
+
+echo "R9_MESSAGES_COMPILE=PASS"
+echo "R9_MESSAGES_UNIT_TESTS=PASS"
+echo "R9_MESSAGES_LINT=PASS"
+
+echo
+echo "===== R9 MESSAGES APK ASSEMBLY ====="
+
+./gradlew \
+  --offline \
+  :hub:assembleDebug \
   --stacktrace \
   --console=plain \
   --no-daemon
@@ -92,6 +130,8 @@ test -f "$APK" || {
 
 sha256sum "$APK"
 echo "R9_MESSAGES_APK=PASS path=$APK"
-echo "R9_MESSAGES_UNIT_TESTS=PASS"
-echo "R9_MESSAGES_LINT=PASS"
+echo "R9_MESSAGES_DETEKT=PASS"
+echo "R9_MESSAGES_KTLINT=PASS"
+echo "R9_MESSAGES_WARNINGS_AS_ERRORS=PASS"
+echo "R9_MESSAGES_LOCAL_CONVERSATION_QUALIFICATION=PASS"
 echo "R9_MESSAGES_FOCUSED_QUALIFICATION=PASS"

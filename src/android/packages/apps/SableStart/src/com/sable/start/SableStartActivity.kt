@@ -24,6 +24,8 @@ import org.sableos.start.platform.LauncherAppsRepository
 import org.sableos.start.platform.LiveSurfaceRepository
 import org.sableos.start.platform.StartStateRepository
 import org.sableos.start.ui.SableStartScreen
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Standalone SableOS HOME.
@@ -43,6 +45,8 @@ class SableStartActivity : ComponentActivity() {
 
     private var callbackRegistered = false
     private var canNavigateBack = false
+    private val inventoryGeneration = AtomicLong(0L)
+    private val inventoryExecutor = Executors.newSingleThreadExecutor()
 
     private val launcherCallback =
         object : LauncherApps.Callback() {
@@ -85,6 +89,13 @@ class SableStartActivity : ComponentActivity() {
             }
         }
 
+    private val appInventoryObserver =
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                scheduleInventoryRefresh()
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -113,8 +124,15 @@ class SableStartActivity : ComponentActivity() {
                 )
             }
         }
+        runCatching {
+            contentResolver.registerContentObserver(
+                LauncherAppsRepository.HIDDEN_APPS_URI,
+                false,
+                appInventoryObserver,
+            )
+        }
 
-        refreshInventory()
+        scheduleInventoryRefresh()
 
         setContent {
             val appearance = rememberGlobalSableAppearance()
@@ -171,12 +189,12 @@ class SableStartActivity : ComponentActivity() {
             launcherAppsRepository.registerCallback(launcherCallback)
             callbackRegistered = true
         }
-        refreshInventory()
+        scheduleInventoryRefresh()
     }
 
     override fun onResume() {
         super.onResume()
-        refreshInventory()
+        scheduleInventoryRefresh()
         liveRefreshGeneration.value += 1
     }
 
@@ -204,6 +222,11 @@ class SableStartActivity : ComponentActivity() {
         runCatching {
             contentResolver.unregisterContentObserver(liveContentObserver)
         }
+        runCatching {
+            contentResolver.unregisterContentObserver(appInventoryObserver)
+        }
+        inventoryGeneration.incrementAndGet()
+        inventoryExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -219,11 +242,20 @@ class SableStartActivity : ComponentActivity() {
     }
 
     private fun scheduleInventoryRefresh() {
-        runOnUiThread(::refreshInventory)
-    }
-
-    private fun refreshInventory() {
-        appsState.value = launcherAppsRepository.loadApps()
+        val generation = inventoryGeneration.incrementAndGet()
+        runCatching {
+            inventoryExecutor.execute {
+                val apps = launcherAppsRepository.loadApps()
+                runOnUiThread {
+                    if (
+                        !isDestroyed &&
+                        inventoryGeneration.get() == generation
+                    ) {
+                        appsState.value = apps
+                    }
+                }
+            }
+        }
     }
 
     private fun openSystemSettings() {

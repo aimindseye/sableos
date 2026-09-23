@@ -30,13 +30,15 @@ class HubSnapshotProvider : ContentProvider() {
         val unread =
             if (canReadSms) {
                 runCatching {
-                    appContext.contentResolver.query(
-                        Telephony.Sms.Inbox.CONTENT_URI,
-                        arrayOf(Telephony.Sms._ID),
-                        Telephony.Sms.READ + "=0",
-                        null,
-                        null,
-                    )?.use { it.count } ?: 0
+                    appContext
+                        .contentResolver
+                        .query(
+                            Telephony.Sms.Inbox.CONTENT_URI,
+                            arrayOf(Telephony.Sms._ID),
+                            Telephony.Sms.READ + "=0",
+                            null,
+                            null,
+                        )?.use { it.count } ?: 0
                 }.getOrDefault(0)
             } else {
                 null
@@ -69,11 +71,12 @@ class HubSnapshotProvider : ContentProvider() {
         }
     }
 
-    override fun getType(uri: Uri): String =
-        "vnd.android.cursor.item/vnd.org.sableos.hub.snapshot"
+    override fun getType(uri: Uri): String = "vnd.android.cursor.item/vnd.org.sableos.hub.snapshot"
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw UnsupportedOperationException("Read-only provider")
+    override fun insert(
+        uri: Uri,
+        values: ContentValues?,
+    ): Uri? = throw UnsupportedOperationException("Read-only provider")
 
     override fun delete(
         uri: Uri,
@@ -92,7 +95,9 @@ class HubSnapshotProvider : ContentProvider() {
         val callingUid = Binder.getCallingUid()
         if (callingUid == Process.myUid()) return
         val packages =
-            context.packageManager.getPackagesForUid(callingUid)
+            context
+                .packageManager
+                .getPackagesForUid(callingUid)
                 ?.toSet()
                 .orEmpty()
         if ("org.sableos.launcher" !in packages) {

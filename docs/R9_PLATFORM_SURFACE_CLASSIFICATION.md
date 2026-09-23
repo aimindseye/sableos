@@ -22,9 +22,10 @@ Classification values:
 
 | Surface | Classification | R9 ownership rule |
 | --- | --- | --- |
-| HOME / Start | SABLE_OWNED | Sable Start owns Start, All Apps, Search, Peek and Appearance navigation. Native Launcher3 workspace/app drawer must not escape. |
+| HOME / Start | SABLE_OWNED | Standalone `org.sableos.launcher` owns Start, All Apps, Search, Peek and Appearance navigation. Launcher3 does not advertise HOME; Quickstep remains Recents-only. |
 | Recents / Overview | SABLE_PRESENTED_ANDROID | Quickstep retains task/gesture implementation. It may become visible only for Recents/Overview, not as an alternate launcher. |
 | Sable first-party apps | SABLE_OWNED | Sable labels/icons/theme contract; one system appearance authority. |
+| Sable Messages | SABLE_OWNED | Native-first SMS/People presentation. Embedded provider WebViews are retired; future third-party integration uses user-authorized local notification/conversation adapters while source apps retain transport/account authority. |
 | Settings home header | SABLE_OWNED | SableOS presentation with real Android Settings fragments underneath. |
 | Settings Appearance | SABLE_OWNED | Backed by `content://org.sableos.appearance/appearance`; Settings owns persistence and boot restoration. |
 | Settings Applications | SABLE_OWNED | App name plus effective sensitive-permission summary; package details remain in deeper evidence surfaces. |
@@ -34,12 +35,12 @@ Classification values:
 | SetupWizard welcome/finish | SABLE_OWNED | SableOS name/icon/presentation. Backup compatibility copy must not falsely claim GrapheneOS-only ownership. |
 | Quick Settings / notification shade | SABLE_PRESENTED_ANDROID | SystemUI behavior, ranking, tile state and privacy semantics remain Android/GrapheneOS; appearance follows Sable system mode/accent. |
 | Lockscreen / keyguard | SABLE_PRESENTED_ANDROID | Upstream authentication, falsing, emergency and security logic retained; bounded presentation may be Sable. |
-| Phone / Contacts | SABLE_PRESENTED_ANDROID | Upstream telephony/contact behavior retained; bounded presentation and system night mode. |
+| Phone / Contacts | SABLE_PRESENTED_ANDROID | Upstream telephony/contact behavior retained; Contacts adds a bounded right-edge alphabet rail backed by the existing section indexer; system night mode retained. |
 | Files / DocumentsUI | SABLE_PRESENTED_ANDROID | Upstream document/provider behavior retained; bounded presentation and system night mode. |
 | Clock | SABLE_PRESENTED_ANDROID | Upstream alarm/timer behavior retained; bounded presentation and system night mode. |
 | Photos / Gallery | SABLE_PRESENTED_ANDROID | Upstream media behavior retained; bounded presentation and system night mode. |
 | Vanadium | SABLE_PRESENTED_ANDROID | Vanadium identity is retained. SableOS does not rename it to Chrome or to a fake Sable browser. |
-| Camera | INTENTIONALLY_UPSTREAM | Security-sensitive/preprocessed upstream pipeline remains intact; no binary patching for cosmetic parity. |
+| Camera | INTENTIONALLY_UPSTREAM | Security-sensitive/preprocessed upstream pipeline remains intact; no binary patching for cosmetic parity. Current upstream Camera presentation is intentionally allowed to remain dark rather than being falsely reported as a Sable Day/Night consumer. |
 | PermissionController | INTENTIONALLY_UPSTREAM | Android permission semantics and security wording remain authoritative; generic Android wording is acceptable. |
 | Package installer / package verifier flows | INTENTIONALLY_UPSTREAM | Installation/security semantics remain upstream. No cosmetic rewrite that could misrepresent enforcement. |
 | Chooser / Sharesheet | INTENTIONALLY_UPSTREAM | Platform behavior and accessibility semantics retained. |

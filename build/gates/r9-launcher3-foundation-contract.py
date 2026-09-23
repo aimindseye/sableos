@@ -42,29 +42,58 @@ def check() -> list[str]:
         failures,
     )
 
-    # Phase 2: SableStart is presentation-only. Launcher3QuickStep is the sole
-    # HOME implementation; standalone app/JNI/runtime sources must be absent.
+    # Current R9 architecture: standalone SableLauncher owns HOME. Launcher3
+    # remains only as the Quickstep/Recents substrate after the final cutover.
     for token in (
         "android_app {",
+        'name: "SableLauncher"',
+        'manifest: "AndroidManifest.xml"',
+        '":sable_start_presentation_srcs"',
+        '":sable_design_shared_srcs"',
+    ):
+        require(start_bp, token, "standalone SableLauncher Soong runtime", failures)
+
+    for token in (
         "rust_ffi_shared {",
         'name: "SableStart"',
         'name: "libsable_start_core_jni"',
     ):
-        forbid(start_bp, token, "standalone SableStart Soong runtime", failures)
+        forbid(start_bp, token, "retired SableStart runtime", failures)
 
     for rel in (
         "AndroidManifest.xml",
         "res/values/strings.xml",
-        "rust/src/lib.rs",
         "src/com/sable/start/SableStartActivity.kt",
-        "src/com/sable/start/bridge/SableStartNative.kt",
         "src/com/sable/start/platform/LauncherAppsRepository.kt",
     ):
+        if not (start_root / rel).is_file():
+            failures.append(f"standalone SableLauncher runtime source missing: {rel}")
+
+    for rel in (
+        "rust/src/lib.rs",
+        "src/com/sable/start/bridge/SableStartNative.kt",
+        "src/com/sable/start/platform/SableAppearanceProvider.kt",
+    ):
         if (start_root / rel).exists():
-            failures.append(f"standalone SableStart runtime source remains: {rel}")
+            failures.append(f"retired SableStart runtime source remains: {rel}")
+
+    start_manifest = (start_root / "AndroidManifest.xml").read_text(encoding="utf-8")
+    require(
+        start_manifest,
+        'package="org.sableos.launcher"',
+        "standalone SableLauncher package",
+        failures,
+    )
+    require(
+        start_manifest,
+        "android.intent.category.HOME",
+        "standalone SableLauncher HOME intent",
+        failures,
+    )
 
     product_mk = (ROOT / "product/r8/panther/r8-product.mk").read_text(encoding="utf-8")
-    forbid(product_mk, "    SableStart \\", "standalone SableStart product module", failures)
+    require(product_mk, "    SableLauncher \\", "standalone SableLauncher product module", failures)
+    forbid(product_mk, "    SableStart \\", "legacy SableStart product module", failures)
 
     screen = (
         start_root / "src/com/sable/start/ui/SableStartScreen.kt"
@@ -194,9 +223,9 @@ def check() -> list[str]:
             "patch_remove_animation_settings_tracker",
             "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS",
             "R9_LAUNCHER3_FOUNDATION_VERIFY=PASS",
-            "HOME_OWNERSHIP_CUTOVER",
-            "R9_SABLESTART_STANDALONE_RUNTIME=PASS_ABSENT",
-            "R9_LAUNCHER3_HOME_OWNERSHIP=PASS",
+            "COMPATIBILITY_INTERMEDIATE",
+            "R9_SABLELAUNCHER_STANDALONE_RUNTIME=PASS_PRESENT",
+            "R9_LAUNCHER3_FOUNDATION_ROLE=PASS_COMPATIBILITY_INTERMEDIATE",
         ):
             require(text, token, "Launcher3 foundation applicator", failures)
 
@@ -214,6 +243,53 @@ def check() -> list[str]:
             if proc.stderr:
                 print(proc.stderr, file=sys.stderr, end="")
             failures.append("Launcher3 foundation applicator self-test failed")
+
+    quickstep_recents = (
+        ROOT
+        / "patches/android-17-grapheneos-2026081300"
+        / "apply_r9_quickstep_recents_only.py"
+    )
+    if not quickstep_recents.is_file():
+        failures.append("Quickstep Recents-only applicator missing")
+    else:
+        recents_text = quickstep_recents.read_text(encoding="utf-8")
+        for token in (
+            "R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS",
+            "R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT",
+            "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
+            "R9_QUICKSTEP_SERVICE=PASS_RETAINED",
+            "R9_FALLBACK_RECENTS=PASS_RETAINED",
+        ):
+            require(
+                recents_text,
+                token,
+                "Quickstep Recents-only applicator",
+                failures,
+            )
+
+    prepare = (
+        ROOT / "build/panther/prepare-r8-final-ui.sh"
+    ).read_text(encoding="utf-8")
+    for token in (
+        'LAUNCHER3_FOUNDATION="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"',
+        'QUICKSTEP_RECENTS_ONLY="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"',
+        "R9_LAUNCHER3_FOUNDATION=APPLIED_INTERMEDIATE",
+        "R9_QUICKSTEP_RECENTS_ONLY=APPLIED",
+        "R9_SABLELAUNCHER_HOME_OWNERSHIP=PASS_SOURCE",
+        "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
+    ):
+        require(prepare, token, "Launcher3 preparation layering", failures)
+
+    foundation_line = prepare.find(
+        'python3 "$LAUNCHER3_FOUNDATION" --source "$WS" apply'
+    )
+    recents_line = prepare.find(
+        'python3 "$QUICKSTEP_RECENTS_ONLY" --source "$WS" apply'
+    )
+    if foundation_line < 0 or recents_line < 0 or foundation_line >= recents_line:
+        failures.append(
+            "Launcher3 preparation layering: foundation must precede Recents-only cutover"
+        )
 
     warning_gate = ROOT / "build/gates/r9-launcher-warning-gate.py"
     if not warning_gate.is_file():
@@ -268,14 +344,19 @@ def check() -> list[str]:
             "R9_LAUNCHER3_FOUNDATION_WARM_OUT=PASS",
             "FULL_IMAGE_BUILD_AUTHORIZED=NO",
             "DEVICE_CONTACT_AUTHORIZED=NO",
-            'm -j"$JOBS" Launcher3QuickStep',
+            "SABLELAUNCHER_STANDALONE_RUNTIME_REQUIRED=YES",
+            "SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT",
+            "R9_SABLELAUNCHER_WORKSPACE=PASS_PRESENT",
+            "apply_r9_quickstep_recents_only.py",
+            'm -j"$JOBS" SableLauncher Launcher3QuickStep',
             "r9-launcher-warning-gate.py",
             "R9_LAUNCHER3_WARNING_MIGRATIONS=PASS",
             "R9_LAUNCHER3_WARNING_QUALITY=OPEN_DEBT_REMAINS",
             "R9_LAUNCHER3_DAGGER_EASY_EXECUTOR_MIGRATION=PASS",
-            "R9_L7_LAUNCHER3_FOUNDATION_COMPILE=PASS",
-            "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT",
-            "STANDALONE_SABLESTART_RETIREMENT_AUTHORIZED=YES",
+            "R9_SABLELAUNCHER_PRODUCT=PASS_PRESENT",
+            "R9_LAUNCHER3_HOME_OWNERSHIP=PASS_ABSENT",
+            "R9_QUICKSTEP_RECENTS_ONLY=PASS",
+            "R9_SABLE_HOME_QUICKSTEP_FOUNDATION_COMPILE=PASS",
         ):
             require(q, token, "focused Launcher3 qualifier", failures)
 
@@ -285,16 +366,19 @@ def check() -> list[str]:
     else:
         device_text = device_gate.read_text(encoding="utf-8")
         for token in (
-            "EXPECTED_PACKAGE=\"com.android.launcher3\"",
-            "EXPECTED_ACTIVITY=\"com.android.launcher3.sable.SableQuickstepLauncher\"",
-            "RETIRED_PACKAGE=\"org.sableos.start\"",
+            "EXPECTED_PACKAGE=\"org.sableos.launcher\"",
+            "EXPECTED_ACTIVITY=\"org.sableos.start.SableStartActivity\"",
+            "QUICKSTEP_PACKAGE=\"com.android.launcher3\"",
+            "LEGACY_PACKAGE=\"org.sableos.start\"",
             "HOME_RESOLVER",
             "HOME_ROLE_HOLDER",
-            "RETIRED_SABLESTART_PACKAGE_ABSENT",
+            "LEGACY_SABLESTART_PACKAGE_ABSENT",
+            "LAUNCHER3_HOME_ROLE_ABSENT",
+            "LAUNCHER3_HOME_ELIGIBILITY_ABSENT",
             "COLD_HOME_LAUNCH_CRASHES",
-            "QUICKSTEP_RECENTS_PRESERVED",
+            "QUICKSTEP_FALLBACK_RECENTS_PRESERVED",
             "HOME_KEY_RETURNS_TO_START",
-            "R9_LAUNCHER3_HOME_DEVICE_ACCEPTANCE",
+            "R9_SABLE_HOME_DEVICE_ACCEPTANCE",
             "PACKAGE_INSTALL_REMOVE_AUTHORIZED=NO",
             "WIPE_AUTHORIZED=NO",
             "SLOT_CHANGE_AUTHORIZED=NO",
@@ -342,7 +426,7 @@ def main() -> int:
         print("R9_LAUNCHER3_FOUNDATION_CONTRACT=FAIL", file=sys.stderr)
         return 1
 
-    print("R9_LAUNCHER3_PHASE=HOME_OWNERSHIP_CUTOVER")
+    print("R9_LAUNCHER3_PHASE=COMPATIBILITY_INTERMEDIATE_PLUS_RECENTS_ONLY")
     print("R9_LAUNCHER3_FOUNDATION_CONTRACT=PASS")
     return 0
 

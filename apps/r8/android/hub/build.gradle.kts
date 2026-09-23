@@ -28,6 +28,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            allWarningsAsErrors.set(true)
         }
     }
 
@@ -52,7 +53,17 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     testImplementation("junit:junit:4.13.2")
+}
+
+extensions.configure<io.gitlab.arturbosch.detekt.extensions.DetektExtension> {
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    ignoreFailures = false
+}
+
+extensions.configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {
+    ignoreFailures.set(false)
 }

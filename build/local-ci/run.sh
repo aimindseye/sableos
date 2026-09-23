@@ -94,12 +94,7 @@ run_static() {
   )
   echo "SABLE_LOCAL_CI_ACTIVE_SHELL_SYNTAX_COUNT=$shell_count"
 
-  local python_count=0
-  while IFS= read -r py; do
-    [[ -n "$py" ]] || continue
-    python3 -m py_compile "$ROOT/$py"
-    python_count=$((python_count + 1))
-  done < <(
+  mapfile -t python_files < <(
     git -C "$ROOT" ls-files -- \
       'apps/r8/*.py' \
       'apps/r8/**/*.py' \
@@ -108,31 +103,109 @@ run_static() {
       'build/gates/*.py' \
       'patches/android-17-grapheneos-2026081300/*.py'
   )
+  local python_count="${#python_files[@]}"
+
+  python3 - "$ROOT" "${python_files[@]}" <<'PY'
+import pathlib
+import sys
+import tokenize
+
+root = pathlib.Path(sys.argv[1])
+failures: list[str] = []
+
+for rel in sys.argv[2:]:
+    path = root / rel
+    try:
+        with tokenize.open(path) as source_file:
+            source = source_file.read()
+        compile(source, str(path), "exec", dont_inherit=True)
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        failures.append(f"{rel}: {exc}")
+
+if failures:
+    print("SABLE_LOCAL_CI_PYTHON_SYNTAX=FAIL")
+    for failure in failures:
+        print(f"PYTHON_SYNTAX_FAILURE={failure}")
+    raise SystemExit(1)
+
+print("SABLE_LOCAL_CI_PYTHON_SYNTAX=PASS")
+PY
   echo "SABLE_LOCAL_CI_ACTIVE_PYTHON_SYNTAX_COUNT=$python_count"
 
   # tools/validation/** is a byte-preserved historical evidence archive, not
   # the maintained CI execution surface. Its SHA-bound artifacts are not
   # rewritten or syntax-qualified as current tooling.
 
+  local applicator_self_test_failures=0
   for applicator in "$ROOT"/patches/android-17-grapheneos-2026081300/apply_*.py; do
     [[ -f "$applicator" ]] || continue
     if grep -Fq -- '--self-test' "$applicator"; then
-      python3 "$applicator" --self-test
+      if ! python3 "$applicator" --self-test; then
+        echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TEST_FAILURE=$applicator"
+        applicator_self_test_failures=$((applicator_self_test_failures + 1))
+      fi
     fi
   done
+  if [[ "$applicator_self_test_failures" -ne 0 ]]; then
+    echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=FAIL count=$applicator_self_test_failures"
+    return 1
+  fi
+  echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS"
 
-  bash "$ROOT/build/gates/r8-build-driver-contract.sh"
-  bash "$ROOT/build/gates/sable-pipeline-contract.sh"
-  python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
-  python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
-  python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
-  python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
-  python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
-  bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
-  python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
-  python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
-  python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
-  python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+  local static_contract_failures=0
+  local -a static_contract_failure_names=()
+
+  run_static_contract() {
+    local name="$1"
+    shift
+    if ! "$@"; then
+      echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE=$name"
+      static_contract_failure_names+=("$name")
+      static_contract_failures=$((static_contract_failures + 1))
+    fi
+  }
+
+  run_static_contract r8-build-driver \
+    bash "$ROOT/build/gates/r8-build-driver-contract.sh"
+  run_static_contract sable-pipeline \
+    bash "$ROOT/build/gates/sable-pipeline-contract.sh"
+  run_static_contract r9-physical-remediation \
+    python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
+  run_static_contract r9-system-cohesion \
+    python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
+  run_static_contract r9-physical-ux-closure \
+    python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  run_static_contract r9-sms-mms-blocking \
+    python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
+  run_static_contract r9-first-party-app-icon \
+    python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  run_static_contract r9-media-flow \
+    python3 "$ROOT/build/gates/r9-media-flow-contract.py"
+  run_static_contract r9-messages-native-first \
+    python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+  run_static_contract r9-messages-local-conversation \
+    python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  run_static_contract r9-messages-source-style \
+    python3 "$ROOT/build/gates/r9-messages-source-style.py"
+  run_static_contract r8-no-stale-product-code \
+    bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
+  run_static_contract r9-sablestart-design-self-test \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
+  run_static_contract r9-sablestart-design \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  run_static_contract r9-launcher3-foundation-self-test \
+    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
+  run_static_contract r9-launcher3-foundation \
+    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+
+  if [[ "$static_contract_failures" -ne 0 ]]; then
+    local failure_csv
+    failure_csv="$(IFS=,; printf '%s' "${static_contract_failure_names[*]}")"
+    echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=$failure_csv"
+    echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=FAIL count=$static_contract_failures"
+    return 1
+  fi
+  echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=PASS"
 }
 
 run_rust() {

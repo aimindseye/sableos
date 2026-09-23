@@ -219,7 +219,6 @@ CONTACTS_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     </style>''',
         ),
     ),
-,
     CONTACTS_INDEXER_ADAPTER: (
         (
             '''    public int getPositionForSection(int sectionIndex) {
@@ -413,20 +412,32 @@ def assert_head(source: Path, repo: Path, expected: str) -> None:
         )
 
 
+def replacement_state(text: str, old: str, new: str) -> tuple[int, int]:
+    new_count = text.count(new)
+    residual = text.replace(new, "", new_count)
+    old_outside_new_count = residual.count(old)
+    return new_count, old_outside_new_count
+
+
 def transform_text(
     text: str,
     replacements: tuple[tuple[str, str], ...],
     label: str,
 ) -> str:
     for old, new in replacements:
-        if new in text and old not in text:
+        new_count, old_outside_new_count = replacement_state(text, old, new)
+
+        if new_count == 1 and old_outside_new_count == 0:
             continue
-        count = text.count(old)
-        if count != 1:
+
+        if new_count != 0 or old_outside_new_count != 1:
             raise SystemExit(
                 f"R9_PHONE_CONTACTS_TRANSFORM=FAIL file={label} "
-                f"old_count={count} old={old!r}"
+                f"new_count={new_count} "
+                f"old_outside_new_count={old_outside_new_count} "
+                f"old={old!r}"
             )
+
         text = text.replace(old, new, 1)
     return text
 
@@ -611,10 +622,23 @@ def self_test() -> None:
             fixture = "\n".join(old for old, _ in replacements)
             updated = transform_text(fixture, replacements, path.as_posix())
             for old, new in replacements:
-                if old in updated or new not in updated:
+                new_count, old_outside_new_count = replacement_state(
+                    updated,
+                    old,
+                    new,
+                )
+                if new_count != 1 or old_outside_new_count != 0:
                     raise SystemExit(
-                        f"R9_{label}_SELF_TEST=FAIL file={path}"
+                        f"R9_{label}_SELF_TEST=FAIL file={path} "
+                        f"new_count={new_count} "
+                        f"old_outside_new_count={old_outside_new_count}"
                     )
+
+            repeated = transform_text(updated, replacements, path.as_posix())
+            if repeated != updated:
+                raise SystemExit(
+                    f"R9_{label}_SELF_TEST=FAIL_IDEMPOTENCE file={path}"
+                )
 
     required_blocking_tokens = (
         "BlockedNumberContract",
