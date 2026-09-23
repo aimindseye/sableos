@@ -40,14 +40,15 @@ internal object PlaybackQueueRequestStore {
     }
 
     fun consume(token: String): PlaybackQueueRequest? {
-        while (true) {
-            val current = pending.get() ?: return null
-            if (current.token != token) {
-                return null
-            }
-            if (pending.compareAndSet(current, null)) {
-                return current
-            }
+        val current = pending.get()
+        return if (
+            current != null &&
+            current.token == token &&
+            pending.compareAndSet(current, null)
+        ) {
+            current
+        } else {
+            null
         }
     }
 }
