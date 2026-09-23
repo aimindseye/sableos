@@ -12,6 +12,7 @@ for f in \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
   "$ROOT/build/panther/qualify-r9-media-flow.sh" \
   "$ROOT/build/panther/qualify-r9-messages.sh" \
+  "$ROOT/build/panther/qualify-r9-textreader.sh" \
   "$ROOT/build/panther/prepare-r8-final-ui.sh" \
   "$ROOT/build/panther/run-r8-release-candidate.sh" \
   "$ROOT/build/gates/r8-build-driver-contract.sh" \
@@ -132,6 +133,17 @@ grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MEDIA_QUAL"
 grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MEDIA_QUAL"
 grep -Fq 'set -euo pipefail' "$MEDIA_QUAL"
 grep -Fq 'R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS' "$MEDIA_QUAL"
+TEXTREADER_QUAL="$ROOT/build/panther/qualify-r9-textreader.sh"
+grep -Fq 'set -euo pipefail' "$TEXTREADER_QUAL"
+grep -Fq 'NETWORK_FETCH_AUTHORIZED=NO' "$TEXTREADER_QUAL"
+grep -Fq 'r9-textreader-standalone-contract.py' "$TEXTREADER_QUAL"
+grep -Fq 'testDebugUnitTest' "$TEXTREADER_QUAL"
+grep -Fq 'lintDebug' "$TEXTREADER_QUAL"
+grep -Fq 'assembleDebug' "$TEXTREADER_QUAL"
+grep -Fq 'R9_TEXT_READER_FOCUSED_QUALIFICATION=PASS' "$TEXTREADER_QUAL"
+grep -Fq 'R9:textreader|r9:textreader' "$ROOT/build/devices/panther.sh"
+echo "SABLE_PIPELINE_TEXT_READER_FOCUSED_QUALIFIER=PASS"
+
 MESSAGES_QUAL="$ROOT/build/panther/qualify-r9-messages.sh"
 grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MESSAGES_QUAL"
 grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MESSAGES_QUAL"
@@ -203,6 +215,7 @@ echo "SABLE_PIPELINE_SMS_MMS_BLOCKING_GATE=PASS"
 echo "SABLE_PIPELINE_FIRST_PARTY_ICON_GATE=PASS"
 echo "SABLE_PIPELINE_MEDIA_FLOW_GATE=PASS"
 echo "SABLE_PIPELINE_MEDIA_FLOW_FOCUSED_QUALIFIER=PASS"
+echo "SABLE_PIPELINE_TEXT_READER_GATE=PASS"
 echo "SABLE_PIPELINE_MESSAGES_NATIVE_FIRST_GATE=PASS"
 echo "SABLE_PIPELINE_MESSAGES_LOCAL_CONVERSATION_GATE=PASS"
 echo "SABLE_PIPELINE_MESSAGES_STRICT_QUALITY_GATE=PASS"
