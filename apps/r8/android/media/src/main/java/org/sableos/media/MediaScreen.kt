@@ -626,6 +626,7 @@ private fun CollectionScreen(
             key1 = localItems,
             key2 = favoriteAudioUris,
         ) {
+            value = null
             value =
                 if (localItems.isEmpty()) {
                     MediaCollectionIndex.Empty
@@ -693,10 +694,7 @@ private fun CollectionScreen(
         item {
             MediaUtilityBar(
                 queueCount = playback.queue.size,
-                upNextCount =
-                    playback.queue.count { item ->
-                        item.index > playback.currentIndex
-                    },
+                upNextCount = playback.upNextCount(),
                 onQueue = {
                     onDestinationChange(MediaDestination.Queue)
                 },
