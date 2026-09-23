@@ -39,12 +39,14 @@ python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
 python3 "$ROOT/build/gates/r9-media-flow-contract.py"
 python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
 python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
 bash "$ROOT/build/gates/sable-pipeline-contract.sh"
 
 echo "R9_MEDIA_FLOW_STATIC_CONTRACT=PASS"
 echo "R9_MESSAGES_NATIVE_FIRST_STATIC_CONTRACT=PASS"
 echo "R9_MESSAGES_LOCAL_CONVERSATION_STATIC_CONTRACT=PASS"
 echo "R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS"
+echo "R9_TEXT_READER_STANDALONE_STATIC_CONTRACT=PASS"
 echo "R9_PHYSICAL_UX_STATIC_CONTRACTS=PASS"
 
 SOURCE_MUTATION_AUTHORIZED=YES \
