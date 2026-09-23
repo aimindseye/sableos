@@ -91,18 +91,20 @@ if layout_gate.is_file():
         '"$ROOT"/build/macos/*.sh',
         "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_RETAINED_NONBLOCKING_TOOLING",
         "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
-        "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py",
+        "patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py",
         "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
         "build/gates/r9-system-cohesion-contract.py",
         "docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md",
         "docs/R9_NETWORK_MANAGER.md",
         "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableNetworkManagerSettings.java",
         "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/sable_network_manager_settings.xml",
-        "patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt",
-        "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT",
-        "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT",
+        "src/android/packages/apps/SableStart/AndroidManifest.xml",
+        "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt",
+        "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
+        "R9_STANDALONE_SABLELAUNCHER_MODULE=PASS_PRESENT",
+        "R9_STANDALONE_SABLELAUNCHER_MANIFEST=PASS_PRESENT",
         "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS",
-        "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS",
+        "R9_QUICKSTEP_RECENTS_ONLY_LAYOUT=PASS",
     ):
         if token not in layout_text:
             failures.append(f"repo layout contract token missing: {token}")
@@ -128,12 +130,13 @@ if layout_gate.is_file():
 
     for obsolete_rel in (
         "build/panther/build-sablestart.sh",
-        "src/android/packages/apps/SableStart/AndroidManifest.xml",
+        "src/android/packages/apps/SableStart/rust/src/lib.rs",
+        "src/android/packages/apps/SableStart/src/com/sable/start/bridge/SableStartNative.kt",
         "src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt",
     ):
         if obsolete_rel in required_body:
             failures.append(
-                "obsolete standalone SableStart artifact remains in required layout: "
+                "retired SableStart artifact remains in required layout: "
                 + obsolete_rel
             )
         if obsolete_rel not in retired_body:
