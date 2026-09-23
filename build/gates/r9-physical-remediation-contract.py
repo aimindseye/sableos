@@ -178,6 +178,11 @@ require(
     "Reader global light-dark ownership marker",
 )
 require(
+    "SABLE_READER_IN_APP_PRODUCT_IDENTITY=PASS_SABLE_READER",
+    reader_patch,
+    "Reader in-app Sable product identity",
+)
+require(
     "SableContinuousLibraryGrid(",
     reader_patch,
     "Reader continuous Sable bookshelf",
