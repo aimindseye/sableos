@@ -141,9 +141,7 @@ private fun ConnectedAppRow(
                 checked = policy.includeInMessages,
                 onCheckedChange = { enabled ->
                     onPolicyChanged(
-                        policy.copy(
-                            includeInMessages = enabled,
-                        ).normalized(),
+                        policy.copy(includeInMessages = enabled).normalized(),
                     )
                 },
             )
