@@ -401,6 +401,46 @@ def main() -> None:
     # Keep upstream paging for the upstream flavor, but render the Sable flavor
     # as one continuous vertical library with an explicit total count.
     bookshelf_text = bookshelf_screen.read_text(encoding="utf-8")
+
+    shelf_items_old = """    val shelfItems = remember(state.groupedLibrary, state.bookshelfPrefs.groupBySeries) {
+        if (state.bookshelfPrefs.groupBySeries) {
+            state.groupedLibrary.map { (author, books) ->
+                if (books.size > 1) LibraryItem.Stack(author, books)
+                else LibraryItem.Book(books.first())
+            }
+        } else {
+            state.groupedLibrary.values.flatten().map { LibraryItem.Book(it) }
+        }
+    }
+"""
+    shelf_items_new = """    val shelfItems = remember(state.groupedLibrary, state.bookshelfPrefs.groupBySeries) {
+        if (BuildConfig.SABLE_PRODUCT) {
+            // Sable always presents the physical library count. Upstream Smart
+            // Stacks can collapse many imported books into a handful of grouped
+            // items, which made the Panther UI report six when more books were
+            // actually present.
+            state.groupedLibrary.values
+                .flatten()
+                .distinctBy { it.bookHash }
+                .map { LibraryItem.Book(it) }
+        } else if (state.bookshelfPrefs.groupBySeries) {
+            state.groupedLibrary.map { (author, books) ->
+                if (books.size > 1) LibraryItem.Stack(author, books)
+                else LibraryItem.Book(books.first())
+            }
+        } else {
+            state.groupedLibrary.values.flatten().map { LibraryItem.Book(it) }
+        }
+    }
+"""
+    if bookshelf_text.count(shelf_items_old) != 1:
+        fail("SABLE_READER_LIBRARY_ACTUAL_BOOK_COUNT_ANCHOR_CHANGED")
+    bookshelf_text = bookshelf_text.replace(
+        shelf_items_old,
+        shelf_items_new,
+        1,
+    )
+
     bookshelf_import_anchor = (
         "import androidx.compose.foundation.lazy.LazyRow\n"
         "import androidx.compose.foundation.lazy.items\n"
@@ -560,6 +600,7 @@ private fun SableContinuousLibraryGrid(
 
     bookshelf_screen.write_text(bookshelf_text, encoding="utf-8")
     print("R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID")
+    print("R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS")
 
     catalog_view_model = (
         leisure_sources
@@ -746,6 +787,266 @@ fun ProductReaderTheme(
         1,
     )
     main_activity.write_text(main_text, encoding="utf-8")
+
+    # Sable-specific settings must not reintroduce Reader-owned Light/Dark
+    # surfaces. Upstream Offline Mode forces Library Settings to a paper-white
+    # E-ink presentation; for Sable that is independent from connectivity and
+    # was the source of the physically observed light settings screen.
+    app_appearance = (
+        mobile_root
+        / "leisure/src/main/java/org/vaachak/reader/leisure/ui/settings/AppAppearanceScreen.kt"
+    )
+    app_appearance_text = app_appearance.read_text(encoding="utf-8")
+    app_build_anchor = "import org.vaachak.reader.core.domain.model.ThemeMode\n"
+    if "import org.vaachak.reader.leisure.BuildConfig\n" not in app_appearance_text:
+        if app_build_anchor not in app_appearance_text:
+            fail("SABLE_READER_APP_APPEARANCE_BUILD_CONFIG_ANCHOR_CHANGED")
+        app_appearance_text = app_appearance_text.replace(
+            app_build_anchor,
+            app_build_anchor + "import org.vaachak.reader.leisure.BuildConfig\n",
+            1,
+        )
+    app_theme_row_old = """            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                ThemeOption(
+                    name = "Light",
+                    bg = Color(0xFFF0F0F0),
+                    fg = Color.Black,
+                    selected = uiState.themeMode == ThemeMode.LIGHT,
+                    enabled = true,
+                    modifier = Modifier.tid("app_appearance_theme_light")
+                ) {
+                    viewModel.setAppTheme(ThemeMode.LIGHT)
+                }
+                ThemeOption(
+                    name = "Dark",
+                    bg = Color(0xFF1E1E1E),
+                    fg = Color.White,
+                    selected = uiState.themeMode == ThemeMode.DARK,
+                    enabled = true,
+                    modifier = Modifier.tid("app_appearance_theme_dark")
+                ) {
+                    viewModel.setAppTheme(ThemeMode.DARK)
+                }
+                ThemeOption(
+                    name = "E-Ink",
+                    bg = Color.White,
+                    fg = Color.Black,
+                    selected = uiState.themeMode == ThemeMode.E_INK,
+                    enabled = true,
+                    modifier = Modifier.tid("app_appearance_theme_eink")
+                ) {
+                    viewModel.setAppTheme(ThemeMode.E_INK)
+                }
+            }
+"""
+    app_theme_row_new = """            if (BuildConfig.SABLE_PRODUCT) {
+                Text(
+                    "Light and Dark follow SableOS. E-Ink remains an explicit reader override.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ThemeOption(
+                        name = "SableOS",
+                        bg = MaterialTheme.colorScheme.surface,
+                        fg = MaterialTheme.colorScheme.onSurface,
+                        selected = uiState.themeMode != ThemeMode.E_INK,
+                        enabled = true,
+                        modifier = Modifier.tid("app_appearance_theme_system")
+                    ) {
+                        // LIGHT is only a non-E-ink sentinel for the upstream
+                        // preference model; ProductReaderTheme ignores it and
+                        // reads the SableOS appearance authority.
+                        viewModel.setAppTheme(ThemeMode.LIGHT)
+                    }
+                    ThemeOption(
+                        name = "E-Ink",
+                        bg = Color.White,
+                        fg = Color.Black,
+                        selected = uiState.themeMode == ThemeMode.E_INK,
+                        enabled = true,
+                        modifier = Modifier.tid("app_appearance_theme_eink")
+                    ) {
+                        viewModel.setAppTheme(ThemeMode.E_INK)
+                    }
+                }
+            } else {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ThemeOption(
+                        name = "Light",
+                        bg = Color(0xFFF0F0F0),
+                        fg = Color.Black,
+                        selected = uiState.themeMode == ThemeMode.LIGHT,
+                        enabled = true,
+                        modifier = Modifier.tid("app_appearance_theme_light")
+                    ) {
+                        viewModel.setAppTheme(ThemeMode.LIGHT)
+                    }
+                    ThemeOption(
+                        name = "Dark",
+                        bg = Color(0xFF1E1E1E),
+                        fg = Color.White,
+                        selected = uiState.themeMode == ThemeMode.DARK,
+                        enabled = true,
+                        modifier = Modifier.tid("app_appearance_theme_dark")
+                    ) {
+                        viewModel.setAppTheme(ThemeMode.DARK)
+                    }
+                    ThemeOption(
+                        name = "E-Ink",
+                        bg = Color.White,
+                        fg = Color.Black,
+                        selected = uiState.themeMode == ThemeMode.E_INK,
+                        enabled = true,
+                        modifier = Modifier.tid("app_appearance_theme_eink")
+                    ) {
+                        viewModel.setAppTheme(ThemeMode.E_INK)
+                    }
+                }
+            }
+"""
+    if app_appearance_text.count(app_theme_row_old) != 1:
+        fail("SABLE_READER_APP_APPEARANCE_THEME_ROW_CHANGED")
+    app_appearance.write_text(
+        app_appearance_text.replace(app_theme_row_old, app_theme_row_new, 1),
+        encoding="utf-8",
+    )
+
+    default_appearance = (
+        mobile_root
+        / "leisure/src/main/java/org/vaachak/reader/leisure/ui/settings/DefaultAppearanceScreen.kt"
+    )
+    default_text = default_appearance.read_text(encoding="utf-8")
+    default_import_anchor = "import org.readium.r2.navigator.preferences.FontFamily\n"
+    if "import org.vaachak.reader.leisure.BuildConfig\n" not in default_text:
+        if default_import_anchor not in default_text:
+            fail("SABLE_READER_DEFAULT_APPEARANCE_BUILD_CONFIG_ANCHOR_CHANGED")
+        default_text = default_text.replace(
+            default_import_anchor,
+            default_import_anchor + "import org.vaachak.reader.leisure.BuildConfig\n",
+            1,
+        )
+    default_page_old = """                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    ThemeOption(
+                        name = "Light",
+                        bg = Color.White,
+                        fg = Color.Black,
+                        selected = readerPrefs.theme == "light",
+                        enabled = true,
+                        modifier = Modifier.tid(Tid.ReaderSettings.themeLight)
+                    ) {
+                        viewModel.updateReaderPreferences(readerPrefs.copy(theme = "light"))
+                    }
+                    ThemeOption(
+                        name = "Dark",
+                        bg = Color(0xFF121212),
+                        fg = Color.White,
+                        selected = readerPrefs.theme == "dark",
+                        enabled = true,
+                        modifier = Modifier.tid(Tid.ReaderSettings.themeDark)
+                    ) {
+                        viewModel.updateReaderPreferences(readerPrefs.copy(theme = "dark"))
+                    }
+                    ThemeOption(
+                        name = "Sepia",
+                        bg = Color(0xFFF5E6D3),
+                        fg = Color(0xFF5F4B32),
+                        selected = readerPrefs.theme == "sepia",
+                        enabled = true,
+                        modifier = Modifier.tid(Tid.ReaderSettings.themeSepia)
+                    ) {
+                        viewModel.updateReaderPreferences(readerPrefs.copy(theme = "sepia"))
+                    }
+                }
+"""
+    default_page_new = """                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (BuildConfig.SABLE_PRODUCT) {
+                        ThemeOption(
+                            name = "SableOS",
+                            bg = MaterialTheme.colorScheme.surface,
+                            fg = MaterialTheme.colorScheme.onSurface,
+                            selected = readerPrefs.theme != "sepia",
+                            enabled = true,
+                            modifier = Modifier.tid(Tid.ReaderSettings.themeLight)
+                        ) {
+                            viewModel.updateReaderPreferences(readerPrefs.copy(theme = "light"))
+                        }
+                    } else {
+                        ThemeOption(
+                            name = "Light",
+                            bg = Color.White,
+                            fg = Color.Black,
+                            selected = readerPrefs.theme == "light",
+                            enabled = true,
+                            modifier = Modifier.tid(Tid.ReaderSettings.themeLight)
+                        ) {
+                            viewModel.updateReaderPreferences(readerPrefs.copy(theme = "light"))
+                        }
+                        ThemeOption(
+                            name = "Dark",
+                            bg = Color(0xFF121212),
+                            fg = Color.White,
+                            selected = readerPrefs.theme == "dark",
+                            enabled = true,
+                            modifier = Modifier.tid(Tid.ReaderSettings.themeDark)
+                        ) {
+                            viewModel.updateReaderPreferences(readerPrefs.copy(theme = "dark"))
+                        }
+                    }
+                    ThemeOption(
+                        name = "Sepia",
+                        bg = Color(0xFFF5E6D3),
+                        fg = Color(0xFF5F4B32),
+                        selected = readerPrefs.theme == "sepia",
+                        enabled = true,
+                        modifier = Modifier.tid(Tid.ReaderSettings.themeSepia)
+                    ) {
+                        viewModel.updateReaderPreferences(readerPrefs.copy(theme = "sepia"))
+                    }
+                }
+"""
+    if default_text.count(default_page_old) != 1:
+        fail("SABLE_READER_DEFAULT_APPEARANCE_PAGE_COLOR_CHANGED")
+    default_appearance.write_text(
+        default_text.replace(default_page_old, default_page_new, 1),
+        encoding="utf-8",
+    )
+
+    library_settings = (
+        mobile_root
+        / "leisure/src/main/java/org/vaachak/reader/leisure/ui/settings/LibrarySettingsScreen.kt"
+    )
+    library_text = library_settings.read_text(encoding="utf-8")
+    library_import_anchor = "import org.vaachak.reader.core.domain.model.DitheringMode\n"
+    if "import org.vaachak.reader.leisure.BuildConfig\n" not in library_text:
+        if library_import_anchor not in library_text:
+            fail("SABLE_READER_LIBRARY_SETTINGS_BUILD_CONFIG_ANCHOR_CHANGED")
+        library_text = library_text.replace(
+            library_import_anchor,
+            library_import_anchor + "import org.vaachak.reader.leisure.BuildConfig\n",
+            1,
+        )
+    offline_old = """    val containerColor = if (state.isOfflineMode) Color.White else MaterialTheme.colorScheme.background
+    val contentColor = if (state.isOfflineMode) Color.Black else MaterialTheme.colorScheme.onBackground
+"""
+    offline_new = """    val useOfflinePaperTheme = state.isOfflineMode && !BuildConfig.SABLE_PRODUCT
+    val containerColor = if (useOfflinePaperTheme) Color.White else MaterialTheme.colorScheme.background
+    val contentColor = if (useOfflinePaperTheme) Color.Black else MaterialTheme.colorScheme.onBackground
+"""
+    if library_text.count(offline_old) != 1:
+        fail("SABLE_READER_LIBRARY_SETTINGS_OFFLINE_THEME_ANCHOR_CHANGED")
+    library_text = library_text.replace(offline_old, offline_new, 1)
+    library_text = library_text.replace(
+        "isEink = state.isOfflineMode",
+        "isEink = useOfflinePaperTheme",
+    )
+    library_text = library_text.replace(
+        "if (state.isOfflineMode) Color.LightGray.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant",
+        "if (useOfflinePaperTheme) Color.LightGray.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceVariant",
+    )
+    library_settings.write_text(library_text, encoding="utf-8")
+    print("R9_READER_SETTINGS_GLOBAL_APPEARANCE=PASS_NO_OFFLINE_LIGHT_OVERRIDE")
+    print("R9_READER_LOCAL_LIGHT_DARK_CONTROLS=PASS_RETIRED_FOR_SABLE")
 
     # Bind the Readium EPUB canvas to SableOS Light/Dark. Upstream Reader keeps
     # its own persisted page theme, which caused the physical R9 candidate to
