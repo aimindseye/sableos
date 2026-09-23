@@ -153,9 +153,7 @@ class LauncherAppsRepository(
         val profileContext =
             runCatching {
                 appContext.createContextAsUser(user, 0)
-            }.getOrElse {
-                appContext
-            }
+            }.getOrNull() ?: return "permissions · unavailable"
 
         val packageInfo =
             runCatching {
