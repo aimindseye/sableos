@@ -32,6 +32,9 @@ bramble service baseline above. Current R9 source/module closure establishes:
 
 - standalone `org.sableos.launcher` / `SableLauncher` as the intended HOME
   product; Launcher3 no longer hosts Sable UI or advertises HOME;
+- SableLauncher compiled against the narrow Android `system_current` SDK for
+  cross-profile permission-summary access, while host Gradle presentation
+  qualification is limited to the canonical presentation filegroup;
 - `Launcher3QuickStep` retained only for Android Quickstep/Recents task and
   gesture integration;
 - Settings as the persisted global appearance authority at
