@@ -189,6 +189,19 @@ def main() -> None:
             text=True,
         )
         if "android.permission.INTERNET" in apk_manifest:
+            merge_report = (
+                root
+                / "app/build/outputs/logs/manifest-merger-debug-report.txt"
+            )
+            if merge_report.is_file():
+                print("SABLE_TEXT_READER_MANIFEST_MERGER_INTERNET_EVIDENCE=BEGIN")
+                for line in merge_report.read_text(
+                    encoding="utf-8",
+                    errors="replace",
+                ).splitlines():
+                    if "INTERNET" in line or "uses-permission" in line:
+                        print(line)
+                print("SABLE_TEXT_READER_MANIFEST_MERGER_INTERNET_EVIDENCE=END")
             fail("SABLE_TEXT_READER_APK_INTERNET_PERMISSION")
         if "android.permission.CAMERA" not in apk_manifest:
             fail("SABLE_TEXT_READER_APK_CAMERA_PERMISSION")
