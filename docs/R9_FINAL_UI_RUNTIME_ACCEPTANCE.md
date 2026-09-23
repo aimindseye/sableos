@@ -45,7 +45,7 @@ R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS
 R9_SABLE_NETWORK_MANAGER_UI=PASS
 R9_SABLE_NETWORK_PERMISSION_REVOKE=PASS
 R9_SABLE_NETWORK_PERMISSION_RESTORE=PASS
-R9_SABLE_NETWORK_FIXED_POLICY=PASS
+R9_SABLE_NETWORK_FIXED_POLICY=PASS|NOT_APPLICABLE_NO_FIXED_ROWS
 ```
 
 Use `tests/systemui/device/r9_branding_surface_audit.sh` for read-only scene capture; the complete required scene set is defined in `docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md`.
@@ -160,7 +160,9 @@ The physical test must use a noncritical app which requests
 `android.permission.INTERNET`, toggle it OFF in Sable Network Manager, verify
 the runtime permission becomes denied and network access stops, then toggle it
 back ON and verify access returns. System-fixed and policy-fixed rows must be
-nonmutable.
+nonmutable when such rows exist on the candidate. If none exist, record
+`R9_SABLE_NETWORK_FIXED_POLICY=NOT_APPLICABLE_NO_FIXED_ROWS`; do not synthesize
+a fixed-policy pass from a mutable row.
 
 Detailed contract: `docs/R9_NETWORK_MANAGER.md`.
 
