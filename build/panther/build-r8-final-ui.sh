@@ -180,28 +180,31 @@ echo "R8_TARGET_BUILD_VARIANT=PASS value=$TARGET_BUILD_VARIANT"
 echo "R8_LUNCH=PASS"
 
 echo
-echo "===== LAUNCHER3QUICKSTEP HOME PREFLIGHT ====="
+echo "===== SABLE HOME + QUICKSTEP RECENTS PREFLIGHT ====="
 
 set +e
-m -j"$JOBS" Launcher3QuickStep 2>&1 | tee "$EVIDENCE_DIR/launcher3-home-preflight.log"
-LAUNCHER3_RC=${PIPESTATUS[0]}
+m -j"$JOBS" SableLauncher Launcher3QuickStep \
+    2>&1 | tee "$EVIDENCE_DIR/sable-home-quickstep-preflight.log"
+HOME_RC=${PIPESTATUS[0]}
 set -e
 
-echo "R9_LAUNCHER3_HOME_PREFLIGHT_RC=$LAUNCHER3_RC"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT_RC=$HOME_RC"
 
-if [[ "$LAUNCHER3_RC" -ne 0 ]]; then
-    echo "R9_LAUNCHER3_HOME_PREFLIGHT=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_LAUNCHER3_HOME_PREFLIGHT"
+if [[ "$HOME_RC" -ne 0 ]]; then
+    echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_SABLE_HOME_QUICKSTEP_PREFLIGHT"
     exit 5
 fi
 
-echo "R9_LAUNCHER3_HOME_PREFLIGHT=PASS"
+echo "R9_SABLELAUNCHER_MODULE_BUILD=PASS"
+echo "R9_QUICKSTEP_RECENTS_MODULE_BUILD=PASS"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS"
 
 echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
-m -j"$JOBS"     Launcher3QuickStep     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
+m -j"$JOBS"     SableLauncher     Launcher3QuickStep     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
 MODULE_RC=${PIPESTATUS[0]}
 set -e
 
@@ -221,11 +224,13 @@ echo "R9_FILES_MODULE_BUILD=PASS"
 echo "R9_PHOTOS_MODULE_BUILD=PASS"
 echo "R9_SABLE_WEATHER_MODULE_BUILD=PASS"
 echo "R9_SABLE_CALENDAR_MODULE_BUILD=PASS"
+echo "R9_SABLELAUNCHER_MODULE_BUILD=PASS"
+echo "R9_QUICKSTEP_RECENTS_MODULE_BUILD=PASS"
 
 if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
     echo
     echo "===== MODULE-ONLY QUALIFICATION RESULT ====="
-    echo "R9_LAUNCHER3_HOME_PREFLIGHT=PASS"
+    echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS"
     echo "R8_UI_MODULE_BUILD=PASS"
     echo "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS"
     echo "FULL_TARGET_FILES_BUILD_PERFORMED=NO"
@@ -299,8 +304,9 @@ grep -Fxq 'R8_FINAL_TARGET_FILES=PASS'     "$EVIDENCE_DIR/target-files-compositi
 echo
 echo "===== R8 FINAL BUILD RESULT ====="
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
-echo "R9_LAUNCHER3_HOME_PREFLIGHT=PASS"
-echo "R9_STANDALONE_SABLESTART_PRODUCT=PASS_ABSENT"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS"
+echo "R9_STANDALONE_SABLELAUNCHER_PRODUCT=PASS_PRESENT"
+echo "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT"
 echo "R8_UI_MODULE_BUILD=PASS"
 echo "R8_FULL_BUILD=PASS"
 echo "R8_BUILD_SANDBOX=PASS"
