@@ -74,6 +74,14 @@ UI6_NEW_DIRT = {
     f" M {SYSTEMUI_STRINGS.as_posix()}",
 }
 
+# Exact later-layer framework paths which UI5C/UI6 may subtract from its own
+# dirty-scope proof. Each path is independently verified by the later R9
+# SystemUI coherence layer; arbitrary caller-supplied paths remain rejected.
+KNOWN_LATER_FRAMEWORK_MODIFIED = {
+    Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt"),
+    Path("core/java/android/debug/AdbNotifications.java"),
+}
+
 WELCOME_ROOT_OLD = """    android:id="@+id/glif_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -590,17 +598,28 @@ def repair_known_setup_strings_alias(
         )
 
     actual_framework = status_set(framework)
-    allowed_framework_untracked_dirt = {
+    unknown_modified = (
+        set(allowed_later_framework_modified) - KNOWN_LATER_FRAMEWORK_MODIFIED
+    )
+    if unknown_modified:
+        raise SystemExit(
+            "UI5C_REPAIR_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
+            f"{sorted(path.as_posix() for path in unknown_modified)!r}"
+        )
+    allowed_framework_dirt = {
         f"?? {path.as_posix()}"
         for path in allowed_later_framework_untracked
+    } | {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
     }
-    missing_allowed_framework = allowed_framework_untracked_dirt - actual_framework
+    missing_allowed_framework = allowed_framework_dirt - actual_framework
     if missing_allowed_framework:
         raise SystemExit(
             "UI5C_REPAIR_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
             f"{sorted(missing_allowed_framework)!r}"
         )
-    framework_for_ui6 = actual_framework - allowed_framework_untracked_dirt
+    framework_for_ui6 = actual_framework - allowed_framework_dirt
     framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
@@ -663,15 +682,19 @@ def verify_ui4_tokens(
     allowed_later_framework_modified: tuple[Path, ...] = (),
 ) -> None:
     allowed = set(allowed_later_framework_modified)
-    unknown = allowed - set(ui4.PATCHES)
+    unknown = allowed - KNOWN_LATER_FRAMEWORK_MODIFIED
     if unknown:
         raise SystemExit(
             "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
             f"{sorted(path.as_posix() for path in unknown)!r}"
         )
 
+    # Only an allowed path that is itself part of UI4 can supersede UI4 token
+    # verification. New later-layer paths such as AdbNotifications.java are
+    # simply outside UI4's token set and are verified by their owning layer.
+    superseded_ui4 = allowed & set(ui4.PATCHES)
     for rel, replacements in ui4.PATCHES.items():
-        if rel in allowed:
+        if rel in superseded_ui4:
             continue
         text = (framework / rel).read_text(encoding="utf-8")
         for old, new in replacements:
@@ -734,9 +757,20 @@ def verify(
         )
 
     actual_framework = status_set(framework)
+    unknown_modified = (
+        set(allowed_later_framework_modified) - KNOWN_LATER_FRAMEWORK_MODIFIED
+    )
+    if unknown_modified:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
+            f"{sorted(path.as_posix() for path in unknown_modified)!r}"
+        )
     allowed_later_dirt = {
         f"?? {path.as_posix()}"
         for path in allowed_later_framework_untracked
+    } | {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
     }
     missing_allowed_later = allowed_later_dirt - actual_framework
     if missing_allowed_later:
@@ -907,6 +941,14 @@ def self_test() -> None:
             if sha256(out) != sha256(settings_template_for(dest)):
                 raise SystemExit(f"UI5C_UI6_SELF_TEST_SETTINGS_TEMPLATE_FAIL={dest}")
 
+    required_later_paths = {
+        Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt"),
+        Path("core/java/android/debug/AdbNotifications.java"),
+    }
+    if KNOWN_LATER_FRAMEWORK_MODIFIED != required_later_paths:
+        raise SystemExit("UI5C_UI6_SELF_TEST_KNOWN_LATER_FRAMEWORK_SCOPE_FAIL")
+
+    print("SABLE_UI5C_UI6_KNOWN_LATER_FRAMEWORK_SCOPE_SELF_TEST=PASS")
     print("SABLE_UI5C_UI6_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
@@ -933,9 +975,9 @@ def main() -> int:
         action="append",
         default=[],
         help=(
-            "Exact UI4 frameworks/base path whose original UI4 replacement "
-            "tokens are intentionally superseded by a separately verified "
-            "later layer."
+            "Exact known later-layer modified frameworks/base path to subtract "
+            "from UI5C/UI6 dirty-scope validation. UI4 paths may supersede "
+            "their UI4 token checks; new paths are verified by their owning layer."
         ),
     )
     parser.add_argument(
