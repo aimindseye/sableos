@@ -207,6 +207,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
+data class Lang(
+    val name: String,
+    val code: String,
+    val ttsTag: String,
+)
+
 @Composable
 fun ActionIcon(
     icon: ImageVector,
@@ -231,6 +237,98 @@ fun ActionIcon(
 """,
         encoding="utf-8",
     )
+
+    text_util = (
+        root
+        / "app/src/main/java/org/vaachak/textreader/TextReaderUtil.kt"
+    )
+    text_util.write_text(
+        """package org.vaachak.textreader
+
+import java.io.FilterInputStream
+import java.io.InputStream
+
+object TextReaderUtil {
+    private const val MAX_TEXT_BYTES = 2 * 1024 * 1024L
+
+    fun readTextFromStream(inputStream: InputStream?): String {
+        if (inputStream == null) return "Error: File stream is null."
+
+        return try {
+            BoundedInputStream(inputStream, MAX_TEXT_BYTES)
+                .bufferedReader()
+                .use { it.readText() }
+                .trim()
+        } catch (e: Exception) {
+            "Error reading file: ${e.message}"
+        }
+    }
+
+    private class BoundedInputStream(
+        input: InputStream,
+        private var remaining: Long,
+    ) : FilterInputStream(input) {
+        override fun read(): Int {
+            if (remaining <= 0) return -1
+            val value = super.read()
+            if (value >= 0) remaining -= 1
+            return value
+        }
+
+        override fun read(
+            buffer: ByteArray,
+            offset: Int,
+            length: Int,
+        ): Int {
+            if (remaining <= 0) return -1
+            val allowed = minOf(length.toLong(), remaining).toInt()
+            val count = super.read(buffer, offset, allowed)
+            if (count > 0) remaining -= count.toLong()
+            return count
+        }
+    }
+}
+""",
+        encoding="utf-8",
+    )
+
+    tts_settings = (
+        root
+        / "app/src/main/java/org/vaachak/textreader/TtsSettingsView.kt"
+    )
+    tts_text = tts_settings.read_text(encoding="utf-8")
+    voice_filter_old = """            val filtered = ttsEngine.voices?.filter { v ->
+                if (v.locale.language == "en") v.locale.country in listOf("US", "GB")
+                else v.locale.language == currentLocale.language
+            }?.sortedBy { it.name } ?: emptyList()
+"""
+    voice_filter_new = """            val filtered = ttsEngine.voices?.filter { v ->
+                !v.isNetworkConnectionRequired &&
+                    if (v.locale.language == "en") {
+                        v.locale.country in listOf("US", "GB")
+                    } else {
+                        v.locale.language == currentLocale.language
+                    }
+            }?.sortedBy { it.name } ?: emptyList()
+"""
+    if tts_text.count(voice_filter_old) != 1:
+        fail("SABLE_TEXT_READER_TTS_FILTER_ANCHOR=FAIL")
+    tts_settings.write_text(
+        tts_text.replace(voice_filter_old, voice_filter_new, 1),
+        encoding="utf-8",
+    )
+
+    android_ui_test = (
+        root
+        / "app/src/androidTest/java/org/vaachak/textreader/MainScreenTest.kt"
+    )
+    if android_ui_test.is_file():
+        ui_test_text = android_ui_test.read_text(encoding="utf-8")
+        ui_test_text = ui_test_text.replace(
+            'onNodeWithText("V A A C H A K")',
+            'onNodeWithText("S A B L E   T E X T   R E A D E R")',
+        )
+        android_ui_test.write_text(ui_test_text, encoding="utf-8")
 
     design_source = (
         repo_root()
@@ -280,7 +378,9 @@ fun ActionIcon(
     print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
     print("SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED")
     print("SABLE_TEXT_READER_VIEW_SEND_PROCESS_TEXT=PASS")
+    print("SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB")
     print("SABLE_TEXT_READER_TTS=PASS")
+    print("SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED")
     print("SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI")
     print("SABLE_TEXT_READER_FLAVOR_PATCH=PASS")
 
