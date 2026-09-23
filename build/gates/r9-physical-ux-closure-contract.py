@@ -240,7 +240,7 @@ require(
     "apps/r8/android/media/src/main/java/org/sableos/media/PlaybackService.kt",
     "PlaybackQueueRequestStore::consume",
     "serviceScope.launch",
-    "withContext(Dispatchers.Main.immediate)",
+    "mainHandler.post",
 )
 
 # Build/product closure.
