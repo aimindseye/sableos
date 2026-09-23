@@ -33,6 +33,9 @@ python3 -m py_compile \
   "$ROOT/build/deploy/target_files_plan.py" \
   "$ROOT/build/deploy/artifact_registry.py" \
   "$ROOT/apps/r8/reader/apply_sable_flavor.py" \
+  "$ROOT/apps/r8/textreader/apply_sable_flavor.py" \
+  "$ROOT/apps/r8/textreader/verify_sable_textreader.py" \
+  "$ROOT/build/gates/r9-textreader-standalone-contract.py" \
   "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
   "$ROOT/apps/r8/mail/verify_sable_mail.py" \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" \
@@ -145,11 +148,13 @@ for gate in \
   'r9-media-flow-contract.py' \
   'r9-messages-native-first-contract.py' \
   'r9-messages-local-conversation-contract.py' \
-  'r9-messages-source-style.py'
+  'r9-messages-source-style.py' \
+  'r9-textreader-standalone-contract.py'
 do
   grep -Fq "$gate" "$LOCAL_CI"
 done
 echo "SABLE_PIPELINE_LOCAL_CI_MEDIA_MESSAGES_SOURCE_GATES=PASS"
+echo "SABLE_PIPELINE_LOCAL_CI_TEXT_READER_SOURCE_GATE=PASS"
 
 grep -Fq 'SABLE_LOCAL_CI_PYTHON_SYNTAX=PASS' "$LOCAL_CI"
 grep -Fq 'PYTHON_SYNTAX_FAILURE=' "$LOCAL_CI"
@@ -172,7 +177,9 @@ echo "SABLE_PIPELINE_LOCAL_CI_STATIC_CONTRACT_AGGREGATION=PASS"
 
 BUILD_DRIVER_CONTRACT="$ROOT/build/gates/r8-build-driver-contract.sh"
 for marker in \
+  'R9_BUILD_DRIVER_ELEVEN_APK_INVENTORY=PASS' \
   'R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=PASS' \
+  'R9_SABLE_TEXT_READER_TARGET_POLICY_CONTRACT=PASS' \
   'R9_SABLE_HOME_TARGET_POLICY_CONTRACT=PASS' \
   'R9_SABLE_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=PASS' \
   'R9_BUILD_DRIVER_HOME_DOC_CONTRACT=PASS' \
