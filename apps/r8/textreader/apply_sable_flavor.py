@@ -68,6 +68,12 @@ def main() -> None:
     )
     replace_once(
         build,
+        "        minSdk = 24",
+        "        minSdk = 30",
+        "SABLE_TEXT_READER_MIN_SDK",
+    )
+    replace_once(
+        build,
         'outputImpl?.outputFileName = "Vaachak-TextReader-${variantName}.apk"',
         'outputImpl?.outputFileName = "SableTextReader-${variantName}.apk"',
         "SABLE_TEXT_READER_APK_NAME",
@@ -268,6 +274,7 @@ fun ActionIcon(
 
     print(f"SABLE_TEXT_READER_UPSTREAM_COMMIT=PASS value={actual}")
     print("SABLE_TEXT_READER_APPLICATION_ID=PASS")
+    print("SABLE_TEXT_READER_MIN_SDK=PASS_30")
     print("SABLE_TEXT_READER_BRANDING=PASS")
     print("SABLE_TEXT_READER_GLOBAL_APPEARANCE=PASS")
     print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
