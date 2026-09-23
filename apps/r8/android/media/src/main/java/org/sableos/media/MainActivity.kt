@@ -79,21 +79,18 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        val requestToken =
+            PlaybackQueueRequestStore.publish(
+                items = items,
+                startIndex = startIndex,
+            )
+
         startService(
             Intent(this, PlaybackService::class.java)
                 .setAction(PlaybackService.ACTION_PLAY_QUEUE)
-                .putStringArrayListExtra(
-                    PlaybackService.EXTRA_URIS,
-                    ArrayList(items.map { it.uri }),
-                ).putStringArrayListExtra(
-                    PlaybackService.EXTRA_TITLES,
-                    ArrayList(items.map { it.title }),
-                ).putStringArrayListExtra(
-                    PlaybackService.EXTRA_ARTISTS,
-                    ArrayList(items.map { it.artist }),
-                ).putExtra(
-                    PlaybackService.EXTRA_START_INDEX,
-                    startIndex.coerceIn(0, items.lastIndex),
+                .putExtra(
+                    PlaybackService.EXTRA_QUEUE_TOKEN,
+                    requestToken,
                 ),
         )
     }
