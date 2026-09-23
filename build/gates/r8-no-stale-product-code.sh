@@ -97,6 +97,11 @@ grep -Eq '^[[:space:]]*SableTextReader([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_
     || fail R9_SABLE_TEXT_READER_PRODUCT_MODULE
 echo "R9_SABLE_TEXT_READER_PRODUCT_MODULE=PASS"
 
+if grep -Eq '^[[:space:]]*(TextReader|VaachakTextReader)([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK"; then
+    fail R9_LEGACY_TEXT_READER_PRODUCT_MODULE
+fi
+echo "R9_LEGACY_TEXT_READER_PRODUCT_MODULE=PASS_ABSENT"
+
 for forbidden in \
     start-preview \
     system-preview \
