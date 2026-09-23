@@ -692,23 +692,28 @@ internal fun MediaApp(
                         message = "Playlist removed."
                     },
                     onPlayPlaylist = { playlist ->
-                        val byUri =
-                            localItems.associateBy { item ->
-                                item.uri
-                            }
-                        val queue =
-                            playlist.itemUris.mapNotNull { uri ->
-                                byUri[uri]
-                            }
+                        val itemsSnapshot = localItems
+                        uiScope.launch {
+                            val queue =
+                                withContext(Dispatchers.Default) {
+                                    val byUri =
+                                        itemsSnapshot.associateBy { item ->
+                                            item.uri
+                                        }
+                                    playlist.itemUris.mapNotNull { uri ->
+                                        byUri[uri]
+                                    }
+                                }
 
-                        if (queue.isEmpty()) {
-                            message = "This playlist has no available tracks."
-                        } else {
-                            playLocalQueue(
-                                queue,
-                                0,
-                            )
-                            destination = MediaDestination.NowPlaying
+                            if (queue.isEmpty()) {
+                                message = "This playlist has no available tracks."
+                            } else {
+                                playLocalQueue(
+                                    queue,
+                                    0,
+                                )
+                                destination = MediaDestination.NowPlaying
+                            }
                         }
                     },
                     onPlaylistNameChange = {
