@@ -229,10 +229,17 @@ echo "R9_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT"
 READER_APPLIER="$ROOT/apps/r8/reader/apply_sable_flavor.py"
 grep -Fq 'SableGlobalAppearance.kt' "$READER_APPLIER" \
     || fail R8_GLOBAL_APPEARANCE_READER
+grep -Fq 'ProductReaderTheme.kt' "$READER_APPLIER" \
+    || fail R8_GLOBAL_APPEARANCE_READER
+grep -Fq 'import org.sableos.design.SableTheme' "$READER_APPLIER" \
+    || fail R8_GLOBAL_APPEARANCE_READER
 grep -Fq 'rememberGlobalSableAppearance()' "$READER_APPLIER" \
     || fail R8_GLOBAL_APPEARANCE_READER
-grep -Fq 'SableGlobalTheme(window = window)' "$READER_APPLIER" \
+grep -Fq 'appearance = rememberGlobalSableAppearance(),' "$READER_APPLIER" \
     || fail R8_GLOBAL_APPEARANCE_READER
+grep -Fq 'if (!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK)' "$READER_APPLIER" \
+    || fail R8_GLOBAL_APPEARANCE_READER
+echo "R8_GLOBAL_APPEARANCE_READER=PASS_PRODUCT_THEME_BRIDGE"
 grep -Fq 'SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT' "$READER_APPLIER" || fail R9_READER_TEXTREADER_DECOMPOSITION
 if grep -Fq 'SableTextActivity' "$READER_APPLIER" || grep -Fq 'SableOcrActivity' "$READER_APPLIER"; then
     fail R9_READER_TEXTREADER_RUNTIME
