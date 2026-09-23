@@ -180,9 +180,10 @@ Focused module qualification is staged so source-quality failures are rejected
 before compilation or APK packaging:
 
 1. source contracts and pipeline contract;
-2. Detekt + KtLint static-quality preflight;
-3. Kotlin compilation + unit tests + Android lint;
-4. APK assembly only after the earlier stages pass.
+2. non-Gradle source-style preflight for Hub Kotlin/Kotlin scripts;
+3. Detekt + KtLint static-quality preflight;
+4. Kotlin compilation + unit tests + Android lint;
+5. APK assembly only after the earlier stages pass.
 
 Warnings remain errors, Detekt/KtLint remain fail-closed, and product/model code
 must be refactored rather than added to quality-rule exclusion lists merely to
