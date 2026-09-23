@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
 
 PINNED = {
@@ -432,6 +433,73 @@ def verify_generated(root: Path) -> None:
     verify_gallery_night_styles(root)
 
 
+def self_test() -> None:
+    with tempfile.TemporaryDirectory(prefix="r9-daily-driver-selftest-") as td:
+        root = Path(td)
+
+        deskclock = root / "packages/apps/DeskClock/res/values/styles.xml"
+        deskclock.parent.mkdir(parents=True, exist_ok=True)
+        deskclock.write_text(
+            "\n".join(
+                [
+                    '<item name="android:textColor">?android:attr/textColorPrimary</item>',
+                    '<item name="android:textColor">@color/white_63p</item>',
+                    '<item name="android:textColor">@color/white_63p</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        apply_deskclock_semantic_text(root)
+        apply_deskclock_semantic_text(root)
+        deskclock_text = deskclock.read_text(encoding="utf-8")
+        if deskclock_text.count(
+            '<item name="android:textColor">?android:attr/textColorPrimary</item>'
+        ) != 5:
+            raise PresentationError("DeskClock semantic convergence self-test failed")
+        if deskclock_text.count(
+            '<item name="android:textColor">?android:attr/textColorSecondary</item>'
+        ) != 2:
+            raise PresentationError("DeskClock secondary convergence self-test failed")
+
+        gallery = root / "packages/apps/Gallery2/res/values/styles.xml"
+        gallery.parent.mkdir(parents=True, exist_ok=True)
+        gallery.write_text(
+            """    <style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">
+    </style>
+    <style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Light.Dialog"/>
+    <style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">
+    </style>
+    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+        <item name="android:displayOptions"></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
+        <item name="android:windowBackground">@color/default_background</item>
+    </style>
+""",
+            encoding="utf-8",
+        )
+        apply_gallery_light_window(root)
+        apply_gallery_light_window(root)
+        gallery_text = gallery.read_text(encoding="utf-8")
+        for token in (
+            '<item name="android:statusBarColor">@color/default_background</item>',
+            '<item name="android:navigationBarColor">@color/default_background</item>',
+            '<item name="android:windowLightStatusBar">true</item>',
+            '<item name="android:windowLightNavigationBar">true</item>',
+        ):
+            if gallery_text.count(token) != 1:
+                raise PresentationError(
+                    f"Gallery predecessor convergence self-test failed: {token}"
+                )
+
+    print("R9_DAILY_DRIVER_PARTIAL_CONVERGENCE_SELF_TEST=PASS")
+
+
 def verify_binary_boundaries(root: Path) -> None:
     camera_bp = (root / "external/Camera/Android.bp").read_text(encoding="utf-8")
     if 'apk: "prebuilt/app-release.apk"' not in camera_bp:
@@ -445,9 +513,19 @@ def verify_binary_boundaries(root: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", required=True, type=Path)
-    parser.add_argument("mode", choices=("apply", "verify"))
+    parser.add_argument("--source", type=Path)
+    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+
+    if args.self_test:
+        if args.source is not None or args.mode is not None:
+            parser.error("--self-test does not accept --source or mode")
+        self_test()
+        return 0
+
+    if args.source is None or args.mode is None:
+        parser.error("--source and mode are required unless --self-test is used")
 
     root = args.source.resolve()
     require_pins(root)
