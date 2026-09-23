@@ -368,6 +368,23 @@ accepted only for isolated self-tests/developer probes when canonical
 `Android.bp` and `quickstep/` markers are present; unresolved roots fail
 closed.
 
+A subsequent focused Launcher3 rerun exposed one more long-lived-workspace
+state: the tree was already at the Recents-only final dirty scope from the
+prior run, but carried the older observer transform that had dropped the
+`ResolveInfo` import. Re-entering the foundation intermediate is incorrect for
+that state because `OverviewComponentObserver.java` is intentionally dirty
+only in the final Recents-only layer.
+
+The Recents-only applicator therefore has a narrow `upgrade-final` path. It is
+eligible only when the Launcher3 dirty set exactly equals the expected final
+Recents-only set derived from the foundation dirty-set contract, all final
+Recents-only semantics pass except for the missing `ResolveInfo` import, and
+the retained `ResolveInfo secondaryInfo` use is present. It then restores only
+that missing import and re-runs the full final verifier. Production preparation
+and the focused Launcher3 qualifier now use the order: final verify, exact
+stale-final upgrade, then foundation intermediate + final cutover only when
+neither final state applies.
+
 The next preparation pass proved the Quickstep source-root fix and advanced to
 Contacts. The long-lived Contacts tree was in a bounded partial presentation
 state: the four color/layout/style files were already canonical Sable
