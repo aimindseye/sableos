@@ -1,38 +1,9 @@
 package org.sableos.hub
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HubModelsTest {
-    @Test
-    fun providerCatalogUsesExplicitWebCapabilityAndUniqueIds() {
-        val providers = HubProviderCatalog.providers
-
-        assertEquals(4, providers.size)
-        assertEquals(
-            providers.size,
-            providers.map { it.id }.toSet().size,
-        )
-        assertTrue(
-            providers.all {
-                it.capabilityClass == ProviderCapabilityClass.Web
-            },
-        )
-    }
-
-    @Test
-    fun providerHostAllowlistAcceptsSubdomainsButRejectsLookalikes() {
-        val provider =
-            requireNotNull(HubProviderCatalog.byId("linkedin"))
-
-        assertTrue(provider.allowsHost("www.linkedin.com"))
-        assertTrue(provider.allowsHost("linkedin.com"))
-        assertFalse(provider.allowsHost("linkedin.com.example.org"))
-        assertFalse(provider.allowsHost("example.org"))
-    }
-
     @Test
     fun reducerKeepsNewestMessageAndCountsUnreadIncoming() {
         val messages =

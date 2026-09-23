@@ -7,7 +7,6 @@
         android:name="android.hardware.telephony.messaging"
         android:required="false" />
 
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
@@ -40,21 +39,5 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".web.WhatsAppCapsuleActivity"
-            android:exported="false"
-            android:process=":whatsapp" />
-        <activity
-            android:name=".web.InstagramCapsuleActivity"
-            android:exported="false"
-            android:process=":instagram" />
-        <activity
-            android:name=".web.MessengerCapsuleActivity"
-            android:exported="false"
-            android:process=":messenger" />
-        <activity
-            android:name=".web.LinkedInCapsuleActivity"
-            android:exported="false"
-            android:process=":linkedin" />
     </application>
 </manifest>

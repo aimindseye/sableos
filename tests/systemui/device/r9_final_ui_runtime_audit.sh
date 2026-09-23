@@ -172,15 +172,15 @@ grep -Fxq 'com.android.messaging' <<<"$SMS_ROLE" ||
 echo "R9_FINAL_UI_SMS_ROLE=PASS_GRAPHENE_MESSAGING"
 
 echo
-echo "===== INSTALLED SABLE MESSAGES CAPSULE MANIFEST ====="
+echo "===== INSTALLED SABLE MESSAGES MANIFEST BOUNDARY ====="
 
 [[ -x "$APKANALYZER" ]] ||
     fail R9_FINAL_UI_APKANALYZER "missing=$APKANALYZER"
 
-CAPSULE_TMP="$(mktemp -d)"
-trap 'rm -rf "$CAPSULE_TMP"' EXIT
-HUB_APK="$CAPSULE_TMP/SableHub.apk"
-HUB_MANIFEST="$CAPSULE_TMP/AndroidManifest.xml"
+MESSAGES_TMP="$(mktemp -d)"
+trap 'rm -rf "$MESSAGES_TMP"' EXIT
+HUB_APK="$MESSAGES_TMP/SableHub.apk"
+HUB_MANIFEST="$MESSAGES_TMP/AndroidManifest.xml"
 
 adb_cmd pull "$SABLE_MESSAGES_PATH" "$HUB_APK" >/dev/null 2>&1 ||
     fail R9_FINAL_UI_SABLE_MESSAGES_APK_PULL "path=$SABLE_MESSAGES_PATH"
@@ -199,67 +199,47 @@ manifest_path = sys.argv[1]
 android = "{http://schemas.android.com/apk/res/android}"
 root = ET.parse(manifest_path).getroot()
 
-expected = {
-    "org.sableos.hub.web.WhatsAppCapsuleActivity": ":whatsapp",
-    "org.sableos.hub.web.InstagramCapsuleActivity": ":instagram",
-    "org.sableos.hub.web.MessengerCapsuleActivity": ":messenger",
-    "org.sableos.hub.web.LinkedInCapsuleActivity": ":linkedin",
+permissions = {
+    node.get(android + "name", "")
+    for node in root.findall("./uses-permission")
 }
-
-activities = {}
-for activity in root.findall("./application/activity"):
-    name = activity.get(android + "name", "")
-    process = activity.get(android + "process", "")
-    exported = activity.get(android + "exported", "")
-    activities[name] = (process, exported)
-
-failed = False
-for name, expected_process in expected.items():
-    actual = activities.get(name)
-    if actual is None:
-        # Some decoders preserve the source-relative class name.
-        short = name.removeprefix("org.sableos.hub")
-        actual = activities.get(short)
-    if actual is None:
-        print(f"R9_FINAL_UI_PROVIDER_CAPSULE=FAIL missing={name}")
-        failed = True
-        continue
-
-    process, exported = actual
-    if process != expected_process:
-        print(
-            "R9_FINAL_UI_PROVIDER_CAPSULE=FAIL "
-            f"component={name} process={process!r} "
-            f"expected_process={expected_process!r}"
-        )
-        failed = True
-        continue
-
-    if exported.lower() != "false":
-        print(
-            "R9_FINAL_UI_PROVIDER_CAPSULE=FAIL "
-            f"component={name} exported={exported!r} "
-            "expected_exported=false"
-        )
-        failed = True
-        continue
-
-    print(
-        "R9_FINAL_UI_PROVIDER_CAPSULE=PASS "
-        f"component={name} process={process} exported=false"
-    )
-
-if failed:
+if "android.permission.INTERNET" in permissions:
+    print("R9_FINAL_UI_SABLE_MESSAGES_INTERNET_PERMISSION=FAIL_PRESENT")
     raise SystemExit(1)
 
-print("R9_FINAL_UI_PROVIDER_CAPSULES=PASS_4")
+activities = [
+    node.get(android + "name", "")
+    for node in root.findall("./application/activity")
+]
+capsules = [
+    name
+    for name in activities
+    if ".web." in name or "CapsuleActivity" in name
+]
+if capsules:
+    print(
+        "R9_FINAL_UI_PROVIDER_CAPSULES=FAIL_PRESENT "
+        + ",".join(capsules)
+    )
+    raise SystemExit(1)
+
+if not any(
+    name in {".MainActivity", "org.sableos.hub.MainActivity"}
+    for name in activities
+):
+    print("R9_FINAL_UI_SABLE_MESSAGES_MAIN_ACTIVITY=FAIL_MISSING")
+    raise SystemExit(1)
+
+print("R9_FINAL_UI_SABLE_MESSAGES_MAIN_ACTIVITY=PASS")
+print("R9_FINAL_UI_PROVIDER_CAPSULES=PASS_RETIRED")
+print("R9_FINAL_UI_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT")
 PY
 {
     rc=$?
-    fail R9_FINAL_UI_PROVIDER_CAPSULES "installed_apk_manifest_check_rc=$rc"
+    fail R9_FINAL_UI_SABLE_MESSAGES_MANIFEST_BOUNDARY "installed_apk_manifest_check_rc=$rc"
 }
 
-echo "R9_FINAL_UI_SABLE_MESSAGES_INSTALLED_MANIFEST=PASS"
+echo "R9_FINAL_UI_SABLE_MESSAGES_INSTALLED_MANIFEST=PASS_NATIVE_FIRST"
 
 echo
 echo "===== LIVE PROVIDER UNRELATED-CALLER NEGATIVE PROBE ====="

@@ -11,6 +11,7 @@ for f in \
   "$ROOT/build/deploy/flash.sh" \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
   "$ROOT/build/panther/qualify-r9-media-flow.sh" \
+  "$ROOT/build/panther/qualify-r9-messages.sh" \
   "$ROOT/build/panther/prepare-r8-final-ui.sh" \
   "$ROOT/build/panther/run-r8-release-candidate.sh" \
   "$ROOT/build/host/verify-r8-host-tools.sh" \
@@ -36,6 +37,7 @@ python3 -m py_compile \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py" \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" \
   "$ROOT/build/gates/r9-media-flow-contract.py" \
+  "$ROOT/build/gates/r9-messages-native-first-contract.py" \
   "$ROOT/build/gates/r9-system-cohesion-contract.py"
 echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
@@ -115,12 +117,18 @@ grep -Fq 'SABLE_QUALIFICATION_ONLY=YES' "$QUAL"
 grep -Fq 'r9-sms-mms-blocking-contract.py' "$QUAL"
 grep -Fq 'r9-first-party-app-icon-contract.py' "$QUAL"
 grep -Fq 'r9-media-flow-contract.py' "$QUAL"
+grep -Fq 'r9-messages-native-first-contract.py' "$QUAL"
 grep -Fq 'r9-system-cohesion-contract.py' "$QUAL"
 MEDIA_QUAL="$ROOT/build/panther/qualify-r9-media-flow.sh"
 grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MEDIA_QUAL"
 grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MEDIA_QUAL"
 grep -Fq 'set -euo pipefail' "$MEDIA_QUAL"
 grep -Fq 'R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS' "$MEDIA_QUAL"
+MESSAGES_QUAL="$ROOT/build/panther/qualify-r9-messages.sh"
+grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MESSAGES_QUAL"
+grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MESSAGES_QUAL"
+grep -Fq 'set -euo pipefail' "$MESSAGES_QUAL"
+grep -Fq 'R9_MESSAGES_FOCUSED_QUALIFICATION=PASS' "$MESSAGES_QUAL"
 grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
 grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
 grep -Fq 'R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS' "$FINAL_BUILD"
@@ -132,6 +140,8 @@ echo "SABLE_PIPELINE_SMS_MMS_BLOCKING_GATE=PASS"
 echo "SABLE_PIPELINE_FIRST_PARTY_ICON_GATE=PASS"
 echo "SABLE_PIPELINE_MEDIA_FLOW_GATE=PASS"
 echo "SABLE_PIPELINE_MEDIA_FLOW_FOCUSED_QUALIFIER=PASS"
+echo "SABLE_PIPELINE_MESSAGES_NATIVE_FIRST_GATE=PASS"
+echo "SABLE_PIPELINE_MESSAGES_FOCUSED_QUALIFIER=PASS"
 echo "SABLE_PIPELINE_SYSTEM_COHESION_GATE=PASS"
 
 grep -Fq 'R9:identity|r9:identity' "$ROOT/build/devices/panther.sh"

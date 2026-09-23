@@ -6,13 +6,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.sableos.design.SableGlobalTheme
 import org.sableos.hub.ui.HubScreen
-import org.sableos.hub.web.ProviderCapsuleLauncher
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: HubRepository
@@ -30,18 +33,20 @@ class MainActivity : ComponentActivity() {
                     refreshGeneration += 1
                 }
 
-            val snapshot =
-                remember(refreshGeneration) {
-                    repository.snapshot()
-                }
+            var snapshot by remember {
+                mutableStateOf<HubSnapshot?>(null)
+            }
+
+            LaunchedEffect(refreshGeneration) {
+                snapshot =
+                    withContext(Dispatchers.IO) {
+                        repository.snapshot()
+                    }
+            }
 
             SableGlobalTheme(window = window) {
                 HubScreen(
                     snapshot = snapshot,
-                    providers = HubProviderCatalog.providers,
-                    onRefresh = {
-                        refreshGeneration += 1
-                    },
                     onRequestAccess = {
                         permissionLauncher.launch(
                             arrayOf(
@@ -79,12 +84,6 @@ class MainActivity : ComponentActivity() {
                         repository.openAndroidMessaging(
                             recipient = recipient,
                             body = body,
-                        )
-                    },
-                    onOpenProvider = { providerId ->
-                        ProviderCapsuleLauncher.open(
-                            context = this,
-                            providerId = providerId,
                         )
                     },
                 )

@@ -10,8 +10,10 @@ R9 architecture:
 - org.sableos.launcher / SableLauncher owns user-facing HOME.
 - Launcher3QuickStep is retained only as Android Quickstep/Recents substrate.
 - Sable-owned live snapshot providers admit SableLauncher, not Launcher3.
-- GrapheneOS Messaging remains the SMS/MMS substrate while Sable Messages is the
-  visible communications surface.
+- GrapheneOS Messaging remains the default SMS/MMS transport substrate while
+  Sable Messages is the visible SMS/People surface.
+- Embedded third-party provider WebViews are retired; optional social services
+  are ordinary installed apps / future notification adapters.
 """
 
 from __future__ import annotations
@@ -159,6 +161,60 @@ require(
     "rememberLazyListState()",
     "buildRailRows(apps)",
 )
+
+# ---------------------------------------------------------------------------
+# Messages: native-first Sable presentation over retained mature SMS/MMS
+# transport. No embedded provider web sessions belong in the Messages product.
+# ---------------------------------------------------------------------------
+require(
+    "apps/r8/android/hub/src/main/AndroidManifest.xml",
+    'android.permission.READ_SMS',
+    'android.permission.SEND_SMS',
+    'android.permission.READ_CONTACTS',
+    'android:name=".MainActivity"',
+)
+forbid(
+    "apps/r8/android/hub/src/main/AndroidManifest.xml",
+    'android.permission.INTERNET',
+    '.web.',
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt",
+    "withContext(Dispatchers.IO)",
+    "repository.snapshot()",
+    "SableGlobalTheme(window = window)",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "HubPivot.Messages",
+    "HubPivot.People",
+    'label = { Text("Search conversations") }',
+    'text = "MMS / attachment"',
+    "MessageBubble(",
+)
+forbid(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "HubPivot.Services",
+    "ProviderCapabilityClass",
+    "Private web session",
+    "private, isolated web sessions",
+    "RCS",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubRepository.kt",
+    "RoleManager.ROLE_SMS",
+    "openAndroidMessaging(",
+)
+forbid(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/MainActivity.kt",
+    "createRequestRoleIntent",
+    "ProviderCapsuleLauncher",
+)
+if (
+    ROOT
+    / "apps/r8/android/hub/src/main/java/org/sableos/hub/web/ProviderCapsuleActivity.kt"
+).exists():
+    failures.append("retired_sable_messages_provider_capsule_present")
 
 # ---------------------------------------------------------------------------
 # Quickstep is recents-only, not a Sable host and not a HOME candidate.
@@ -377,4 +433,7 @@ print("R9_READER_LIBRARY_CONTRACT=PASS_ACTUAL_BOOKS_CONTINUOUS")
 print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_LARGE_LIBRARY_ANR_CONTRACT=PASS")
+print("R9_SABLE_MESSAGES_NATIVE_SMS_PEOPLE=PASS")
+print("R9_SABLE_MESSAGES_WEB_CAPSULES=PASS_RETIRED")
+print("R9_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT")
 print("R9_SYSTEM_COHESION_CONTRACT=PASS")

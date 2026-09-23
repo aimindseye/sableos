@@ -185,11 +185,22 @@ do
     fi
 done
 
+HUB_MANIFEST="$ROOT/apps/r8/android/hub/src/main/AndroidManifest.xml"
 HUB_WEB="$ROOT/apps/r8/android/hub/src/main/java/org/sableos/hub/web/ProviderCapsuleActivity.kt"
-grep -Fq 'readGlobalSableAppearance(this)' "$HUB_WEB" \
-    || fail R8_GLOBAL_APPEARANCE_HUB_WEB
-grep -Fq 'applySableSystemBars(' "$HUB_WEB" \
-    || fail R8_GLOBAL_APPEARANCE_HUB_WEB
+[[ ! -e "$HUB_WEB" ]] || fail R9_STALE_SABLE_MESSAGES_WEB_CAPSULE
+grep -Fq 'android.permission.INTERNET' "$HUB_MANIFEST" \
+    && fail R9_STALE_SABLE_MESSAGES_INTERNET_PERMISSION
+grep -Fq '.web.' "$HUB_MANIFEST" \
+    && fail R9_STALE_SABLE_MESSAGES_WEB_ACTIVITY
+
+if git -C "$ROOT" grep -n -E \
+    'ProviderCapsule(Activity|Launcher)|ProviderCapabilityClass|Private web session|private, isolated web sessions|MMS / RCS' \
+    -- apps/r8/android/hub 2>/dev/null
+then
+    fail R9_STALE_SABLE_MESSAGES_PROVIDER_SURFACE
+fi
+echo "R9_SABLE_MESSAGES_WEB_CAPSULES=PASS_RETIRED"
+echo "R9_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT"
 
 READER_APPLIER="$ROOT/apps/r8/reader/apply_sable_flavor.py"
 grep -Fq 'SableGlobalAppearance.kt' "$READER_APPLIER" \

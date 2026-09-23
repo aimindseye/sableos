@@ -458,29 +458,66 @@ HUB_DIR="$ROOT/apps/r8/android/hub"
 HUB_MANIFEST="$HUB_DIR/src/main/AndroidManifest.xml"
 HUB_MODELS="$HUB_DIR/src/main/java/org/sableos/hub/HubModels.kt"
 HUB_REPOSITORY="$HUB_DIR/src/main/java/org/sableos/hub/HubRepository.kt"
+HUB_MAIN="$HUB_DIR/src/main/java/org/sableos/hub/MainActivity.kt"
+HUB_SCREEN="$HUB_DIR/src/main/java/org/sableos/hub/ui/HubScreen.kt"
 HUB_CAPSULE="$HUB_DIR/src/main/java/org/sableos/hub/web/ProviderCapsuleActivity.kt"
 
-for f in "$HUB_MANIFEST" "$HUB_MODELS" "$HUB_REPOSITORY" "$HUB_CAPSULE"; do
+for f in "$HUB_MANIFEST" "$HUB_MODELS" "$HUB_REPOSITORY" "$HUB_MAIN" "$HUB_SCREEN"; do
     [[ -f "$f" ]] || fail R8_F_SABLE_HUB_SOURCE
 done
 
-for permission in     android.permission.INTERNET     android.permission.READ_SMS     android.permission.SEND_SMS     android.permission.READ_CONTACTS
+[[ ! -e "$HUB_CAPSULE" ]] || fail R9_SABLE_MESSAGES_WEB_CAPSULE_RETIRED
+
+for permission in \
+    android.permission.READ_SMS \
+    android.permission.SEND_SMS \
+    android.permission.READ_CONTACTS
 do
     grep -Fq "$permission" "$HUB_MANIFEST" || fail R8_F_SABLE_HUB_PERMISSION_CONTRACT
 done
 
-for provider in whatsapp instagram messenger linkedin; do
-    grep -Fq "id = \"$provider\"" "$HUB_MODELS" || fail R8_F_SABLE_HUB_PROVIDER_CONTRACT
-done
+if grep -Fq 'android.permission.INTERNET' "$HUB_MANIFEST"; then
+    fail R9_SABLE_MESSAGES_INTERNET_PERMISSION
+fi
+if grep -Fq '.web.' "$HUB_MANIFEST"; then
+    fail R9_SABLE_MESSAGES_WEB_ACTIVITY
+fi
 
-grep -Fq 'ProviderCapabilityClass.Web' "$HUB_MODELS"     || fail R8_F_SABLE_HUB_PROVIDER_CONTRACT
-grep -Fq 'RoleManager.ROLE_SMS' "$HUB_REPOSITORY"     || fail R8_F_SABLE_HUB_SMS_ROLE_OBSERVATION
-if grep -Fq 'createRequestRoleIntent' "$HUB_DIR/src/main/java/org/sableos/hub/MainActivity.kt"; then
+grep -Fq 'RoleManager.ROLE_SMS' "$HUB_REPOSITORY" \
+    || fail R8_F_SABLE_HUB_SMS_ROLE_OBSERVATION
+if grep -Fq 'createRequestRoleIntent' "$HUB_MAIN"; then
     fail R8_F_SABLE_HUB_DEFAULT_SMS_ROLE_REQUEST
 fi
-grep -Fq 'WebView.setDataDirectorySuffix(provider.id)' "$HUB_CAPSULE"     || fail R8_F_SABLE_HUB_WEB_ISOLATION
-grep -Fq 'scheme == "https"' "$HUB_CAPSULE"     || fail R8_F_SABLE_HUB_WEB_HTTPS
 
+grep -Fq 'Dispatchers.IO' "$HUB_MAIN" \
+    || fail R9_SABLE_MESSAGES_SNAPSHOT_OFF_MAIN
+grep -Fq 'HubPivot.Messages' "$HUB_SCREEN" \
+    || fail R9_SABLE_MESSAGES_NATIVE_PIVOT
+grep -Fq 'HubPivot.People' "$HUB_SCREEN" \
+    || fail R9_SABLE_MESSAGES_PEOPLE_PIVOT
+grep -Fq 'label = { Text("Search conversations") }' "$HUB_SCREEN" \
+    || fail R9_SABLE_MESSAGES_SEARCH
+grep -Fq 'text = "MMS / attachment"' "$HUB_SCREEN" \
+    || fail R9_SABLE_MESSAGES_CONTEXTUAL_MMS
+
+for forbidden in \
+    'HubPivot.Services' \
+    'ProviderCapabilityClass' \
+    'Private web session' \
+    'private, isolated web sessions' \
+    'MMS / RCS' \
+    'RCS'
+do
+    if grep -Fq "$forbidden" "$HUB_SCREEN" "$HUB_MODELS"; then
+        fail R9_SABLE_MESSAGES_RETIRED_PROVIDER_SURFACE
+    fi
+done
+
+echo "R9_SABLE_MESSAGES_NATIVE_SMS_PEOPLE=PASS"
+echo "R9_SABLE_MESSAGES_SNAPSHOT_OFF_MAIN=PASS"
+echo "R9_SABLE_MESSAGES_CONTEXTUAL_MMS_HANDOFF=PASS"
+echo "R9_SABLE_MESSAGES_WEB_CAPSULES=PASS_RETIRED"
+echo "R9_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT"
 echo "R8_F_SABLE_HUB_SOURCE=PASS"
 
 echo

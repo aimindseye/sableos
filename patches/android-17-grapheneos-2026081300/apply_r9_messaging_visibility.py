@@ -5,8 +5,9 @@ GrapheneOS 2026081300 ships Messaging as an android_app_import containing a
 prebuilt APK. There is no source AndroidManifest.xml in this project to patch.
 
 Sable therefore preserves the GrapheneOS Messaging package exactly as pinned
-for mature SMS/MMS/default-app behavior and owns duplicate-launcher suppression
-in the Sable Launcher3 presentation layer.
+for mature SMS/MMS/default-app behavior. Standalone SableLauncher suppresses
+the duplicate launcher entry while Sable Messages uses explicit Android
+messaging intents only for contextual MMS/attachment handoff.
 """
 
 from __future__ import annotations
@@ -95,8 +96,9 @@ def verify(source: Path) -> None:
     print("R9_GRAPHENE_MESSAGING_SOURCE_MUTATION=NONE")
     print(
         "R9_GRAPHENE_MESSAGING_LAUNCHER_EXPOSURE_OWNER="
-        "SABLE_LAUNCHER_PRESENTATION"
+        "STANDALONE_SABLE_LAUNCHER_PRESENTATION"
     )
+    print("R9_GRAPHENE_MESSAGING_ROLE=RETAINED_SMS_MMS_TRANSPORT")
 
 
 def self_test() -> None:
@@ -141,7 +143,8 @@ def main() -> int:
 
     try:
         # "apply" is intentionally verification-only. The GrapheneOS prebuilt
-        # remains untouched; launcher visibility is owned by Sable Launcher3.
+        # remains untouched; duplicate visibility is owned by standalone
+        # SableLauncher and MMS handoff uses standard Android intents.
         verify(source)
     except (VisibilityError, subprocess.CalledProcessError) as exc:
         print(f"R9_MESSAGING_VISIBILITY=FAIL {exc}")

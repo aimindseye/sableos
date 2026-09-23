@@ -1,70 +1,5 @@
 package org.sableos.hub
 
-enum class ProviderCapabilityClass {
-    NativeData,
-    AndroidNotification,
-    SupportedApi,
-    Web,
-    Unavailable,
-}
-
-data class HubProvider(
-    val id: String,
-    val displayName: String,
-    val capabilityClass: ProviderCapabilityClass,
-    val startUrl: String,
-    val allowedHosts: Set<String>,
-    val note: String,
-) {
-    fun allowsHost(host: String?): Boolean {
-        val normalized = host?.lowercase()?.trimEnd('.') ?: return false
-        return allowedHosts.any { allowed ->
-            normalized == allowed || normalized.endsWith("." + allowed)
-        }
-    }
-}
-
-object HubProviderCatalog {
-    val providers: List<HubProvider> =
-        listOf(
-            HubProvider(
-                id = "whatsapp",
-                displayName = "WhatsApp",
-                capabilityClass = ProviderCapabilityClass.Web,
-                startUrl = "https://web.whatsapp.com/",
-                allowedHosts = setOf("whatsapp.com"),
-                note = "WEB · isolated session · availability depends on provider web support",
-            ),
-            HubProvider(
-                id = "instagram",
-                displayName = "Instagram",
-                capabilityClass = ProviderCapabilityClass.Web,
-                startUrl = "https://www.instagram.com/direct/inbox/",
-                allowedHosts = setOf("instagram.com"),
-                note = "WEB · isolated session",
-            ),
-            HubProvider(
-                id = "messenger",
-                displayName = "Facebook / Messenger",
-                capabilityClass = ProviderCapabilityClass.Web,
-                startUrl = "https://www.messenger.com/",
-                allowedHosts = setOf("messenger.com", "facebook.com"),
-                note = "WEB · isolated session",
-            ),
-            HubProvider(
-                id = "linkedin",
-                displayName = "LinkedIn",
-                capabilityClass = ProviderCapabilityClass.Web,
-                startUrl = "https://www.linkedin.com/messaging/",
-                allowedHosts = setOf("linkedin.com"),
-                note = "WEB · isolated session",
-            ),
-        )
-
-    fun byId(id: String): HubProvider? =
-        providers.firstOrNull { it.id == id }
-}
-
 data class HubMessage(
     val id: Long,
     val threadId: Long,
@@ -121,8 +56,7 @@ object HubConversationReducer {
                     threadId = message.threadId,
                     address = message.address,
                 )
-            }
-            .map { (key, grouped) ->
+            }.map { (key, grouped) ->
                 val ordered = grouped.sortedByDescending { it.dateMillis }
                 val latest = ordered.first()
                 HubConversation(
@@ -133,8 +67,7 @@ object HubConversationReducer {
                     lastDateMillis = latest.dateMillis,
                     unreadCount = ordered.count { it.incoming && !it.read },
                 )
-            }
-            .sortedByDescending { it.lastDateMillis }
+            }.sortedByDescending { it.lastDateMillis }
 
     private data class ConversationKey(
         val threadId: Long,

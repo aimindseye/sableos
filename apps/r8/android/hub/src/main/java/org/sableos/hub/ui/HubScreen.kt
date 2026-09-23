@@ -6,17 +6,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,31 +32,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableListRow
 import org.sableos.design.SablePageHeader
 import org.sableos.design.SablePanel
+import org.sableos.design.SableScreen
 import org.sableos.design.SableScrollableScreen
-import org.sableos.design.SableSectionHeader
 import org.sableos.design.SableSpacing
-import org.sableos.design.SableTile
 import org.sableos.hub.HubConversation
 import org.sableos.hub.HubMessage
-import org.sableos.hub.HubProvider
 import org.sableos.hub.HubSendResult
 import org.sableos.hub.HubSnapshot
-import org.sableos.hub.ProviderCapabilityClass
 import java.text.DateFormat
 import java.util.Date
 
 private enum class HubPivot {
-    All,
     Messages,
     People,
-    Services,
 }
 
 private sealed interface HubRoute {
@@ -68,13 +71,10 @@ private sealed interface HubRoute {
 
 @Composable
 fun HubScreen(
-    snapshot: HubSnapshot,
-    providers: List<HubProvider>,
-    onRefresh: () -> Unit,
+    snapshot: HubSnapshot?,
     onRequestAccess: () -> Unit,
     onSendSms: (String, String) -> HubSendResult,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
-    onOpenProvider: (String) -> Boolean,
 ) {
     var route by remember {
         mutableStateOf<HubRoute>(HubRoute.Root(HubPivot.Messages))
@@ -86,55 +86,52 @@ fun HubScreen(
         mutableStateOf<String?>(null)
     }
 
-    SableScrollableScreen {
-        when (val current = route) {
-            is HubRoute.Root -> {
+    if (snapshot == null) {
+        SableScreen {
+            SablePageHeader(
+                title = "messages",
+                subtitle = "SMS conversations and people, kept local to this device.",
+            )
+            SablePanel {
+                Text(
+                    text = "Loading conversations…",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        return
+    }
+
+    when (val current = route) {
+        is HubRoute.Root -> {
+            SableScreen {
                 SablePageHeader(
                     title = "messages",
-                    subtitle = "One visible Sable communication surface; transport detail stays secondary.",
+                    subtitle = "SMS conversations and people, kept local to this device.",
                 )
 
                 HubPivotRow(
                     selected = current.pivot,
                     onSelect = { pivot ->
                         route = HubRoute.Root(pivot)
+                        search = ""
                         statusMessage = null
                     },
                 )
 
                 statusMessage?.let { message ->
-                    SablePanel {
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
 
                 when (current.pivot) {
-                    HubPivot.All ->
-                        AllPivot(
-                            snapshot = snapshot,
-                            providers = providers,
-                            onConversation = {
-                                route = HubRoute.Conversation(it)
-                            },
-                            onCompose = {
-                                route = HubRoute.Compose()
-                            },
-                            onRequestAccess = onRequestAccess,
-                            onOpenAndroidMessaging = onOpenAndroidMessaging,
-                            onOpenProvider = { provider ->
-                                if (!onOpenProvider(provider.id)) {
-                                    statusMessage =
-                                        "That provider capsule could not be opened."
-                                }
-                            },
-                        )
-
                     HubPivot.Messages ->
                         MessagesPivot(
+                            modifier = Modifier.weight(1f),
                             snapshot = snapshot,
                             search = search,
                             onSearchChange = { search = it },
@@ -144,13 +141,12 @@ fun HubScreen(
                             onCompose = {
                                 route = HubRoute.Compose()
                             },
-                            onRefresh = onRefresh,
                             onRequestAccess = onRequestAccess,
-                            onOpenAndroidMessaging = onOpenAndroidMessaging,
                         )
 
                     HubPivot.People ->
                         PeoplePivot(
+                            modifier = Modifier.weight(1f),
                             snapshot = snapshot,
                             search = search,
                             onSearchChange = { search = it },
@@ -159,29 +155,23 @@ fun HubScreen(
                             },
                             onRequestAccess = onRequestAccess,
                         )
-
-                    HubPivot.Services ->
-                        ServicesPivot(
-                            providers = providers,
-                            onOpenProvider = { provider ->
-                                if (!onOpenProvider(provider.id)) {
-                                    statusMessage =
-                                        "That provider capsule could not be opened."
-                                }
-                            },
-                        )
                 }
             }
+        }
 
-            is HubRoute.Conversation -> {
+        is HubRoute.Conversation -> {
+            val threadMessages =
+                snapshot.messages
+                    .filter {
+                        it.threadId == current.conversation.threadId
+                    }.sortedBy { it.dateMillis }
+                    .takeLast(MAX_VISIBLE_THREAD_MESSAGES)
+
+            SableScreen {
                 ConversationView(
+                    modifier = Modifier.weight(1f),
                     conversation = current.conversation,
-                    messages =
-                        snapshot.messages
-                            .filter {
-                                it.threadId == current.conversation.threadId
-                            }
-                            .sortedBy { it.dateMillis },
+                    messages = threadMessages,
                     onBack = {
                         route = HubRoute.Root(HubPivot.Messages)
                     },
@@ -193,8 +183,10 @@ fun HubScreen(
                     },
                 )
             }
+        }
 
-            is HubRoute.Compose -> {
+        is HubRoute.Compose -> {
+            SableScrollableScreen {
                 ComposeView(
                     initialRecipient = current.recipient,
                     canSendSms = snapshot.capabilities.canSendSms,
@@ -210,7 +202,7 @@ fun HubScreen(
                         }
                         result
                     },
-                    onOpenAndroidMessaging = { recipient, body ->
+                    onOpenMmsComposer = { recipient, body ->
                         val opened =
                             onOpenAndroidMessaging(
                                 recipient.takeIf { it.isNotBlank() },
@@ -218,9 +210,9 @@ fun HubScreen(
                             )
                         statusMessage =
                             if (opened) {
-                                "Opened the proven Android messaging transport."
+                                "Opened the system MMS composer."
                             } else {
-                                "No Android messaging transport is available."
+                                "MMS composer is unavailable."
                             }
                     },
                 )
@@ -236,22 +228,17 @@ private fun HubPivotRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
         HubPivot.entries.forEach { pivot ->
             TextButton(
                 onClick = { onSelect(pivot) },
-                modifier =
-                    Modifier.weight(
-                        if (pivot == HubPivot.Messages) 1.12f else 1f,
-                    ),
-                contentPadding = PaddingValues(horizontal = SableSpacing.Xs),
+                modifier = Modifier.heightIn(min = 48.dp),
+                contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 Text(
-                    text = pivot.name.uppercase(),
-                    maxLines = 1,
-                    softWrap = false,
-                    style = MaterialTheme.typography.labelLarge,
+                    text = pivot.name.lowercase(),
+                    style = MaterialTheme.typography.titleLarge,
                     color =
                         if (pivot == selected) {
                             MaterialTheme.colorScheme.primary
@@ -265,140 +252,110 @@ private fun HubPivotRow(
 }
 
 @Composable
-private fun AllPivot(
-    snapshot: HubSnapshot,
-    providers: List<HubProvider>,
-    onConversation: (HubConversation) -> Unit,
-    onCompose: () -> Unit,
-    onRequestAccess: () -> Unit,
-    onOpenAndroidMessaging: (String?, String?) -> Boolean,
-    onOpenProvider: (HubProvider) -> Unit,
-) {
-    AccessPanel(
-        snapshot = snapshot,
-        onRequestAccess = onRequestAccess,
-        onOpenAndroidMessaging = onOpenAndroidMessaging,
-    )
-
-    SableActionButton(
-        text = "New message",
-        onClick = onCompose,
-    )
-
-    SableSectionHeader("Recent conversations")
-    if (snapshot.conversations.isEmpty()) {
-        SablePanel {
-            Text(
-                text =
-                    if (snapshot.capabilities.canReadSms) {
-                        "No conversations yet."
-                    } else {
-                        "Grant Messages access to show your SMS conversations."
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    } else {
-        snapshot.conversations.take(5).forEach { conversation ->
-            ConversationRow(
-                conversation = conversation,
-                onClick = { onConversation(conversation) },
-            )
-        }
-    }
-
-    SableSectionHeader("Services")
-    providers.forEach { provider ->
-        ProviderTile(
-            provider = provider,
-            onOpen = { onOpenProvider(provider) },
-        )
-    }
-}
-
-@Composable
-private fun MessagesPivot(
+private fun ColumnScope.MessagesPivot(
+    modifier: Modifier,
     snapshot: HubSnapshot,
     search: String,
     onSearchChange: (String) -> Unit,
     onConversation: (HubConversation) -> Unit,
     onCompose: () -> Unit,
-    onRefresh: () -> Unit,
     onRequestAccess: () -> Unit,
-    onOpenAndroidMessaging: (String?, String?) -> Boolean,
 ) {
+    if (!snapshot.capabilities.canReadSms || !snapshot.capabilities.canSendSms) {
+        MessagesAccessPrompt(
+            snapshot = snapshot,
+            onRequestAccess = onRequestAccess,
+        )
+    }
+
     SableActionButton(
-        text = "+  new message",
-        primary = false,
+        text = "new message",
         onClick = onCompose,
     )
 
-    Spacer(Modifier.height(SableSpacing.Sm))
+    OutlinedTextField(
+        value = search,
+        onValueChange = onSearchChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text("Search conversations") },
+    )
 
-    if (snapshot.conversations.isEmpty()) {
-        SablePanel {
-            Text(
-                text =
-                    if (snapshot.capabilities.canReadSms) {
-                        "No conversations yet."
-                    } else {
-                        "Grant Messages access to show your conversations."
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+    val query = search.trim()
+    val conversations =
+        if (query.isBlank()) {
+            snapshot.conversations
+        } else {
+            snapshot.conversations.filter { conversation ->
+                conversation.displayName.contains(query, ignoreCase = true) ||
+                    conversation.address.contains(query, ignoreCase = true) ||
+                    conversation.lastBody.contains(query, ignoreCase = true)
+            }
         }
+
+    if (conversations.isEmpty()) {
+        Text(
+            text =
+                when {
+                    !snapshot.capabilities.canReadSms ->
+                        "Grant Messages access to show SMS conversations."
+                    query.isNotBlank() ->
+                        "No matching conversations."
+                    else ->
+                        "No conversations yet."
+                },
+            modifier = Modifier.padding(vertical = SableSpacing.Lg),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     } else {
-        snapshot.conversations.take(80).forEach { conversation ->
-            ConversationRow(
-                conversation = conversation,
-                onClick = { onConversation(conversation) },
-            )
+        LazyColumn(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+        ) {
+            items(
+                items = conversations.take(MAX_VISIBLE_CONVERSATIONS),
+                key = { conversation ->
+                    conversation.threadId.toString() + ":" + conversation.address
+                },
+            ) { conversation ->
+                ConversationRow(
+                    conversation = conversation,
+                    onClick = { onConversation(conversation) },
+                )
+            }
         }
     }
-
-    Spacer(Modifier.height(SableSpacing.Md))
-    ApprovedMessagingStatusPanel(
-        snapshot = snapshot,
-        onRequestAccess = onRequestAccess,
-        onOpenAndroidMessaging = onOpenAndroidMessaging,
-    )
 }
 
 @Composable
-private fun ApprovedMessagingStatusPanel(
+private fun MessagesAccessPrompt(
     snapshot: HubSnapshot,
     onRequestAccess: () -> Unit,
-    onOpenAndroidMessaging: (String?, String?) -> Boolean,
 ) {
-    val ready =
-        snapshot.capabilities.canReadSms &&
-            snapshot.capabilities.canSendSms
+    val detail =
+        when {
+            snapshot.capabilities.canReadSms ->
+                "Allow sending access to send SMS from Sable Messages."
+            else ->
+                "Allow SMS access to read conversations and send messages."
+        }
 
     SablePanel {
         Text(
-            text = "Messaging status",
+            text = "SMS access needed",
             style = MaterialTheme.typography.titleMedium,
         )
         Text(
-            text =
-                if (ready) {
-                    "SMS ready · MMS/RCS can open the system messaging service when needed."
-                } else {
-                    "Grant Messages access for SMS. MMS/RCS can use the system messaging service when needed."
-                },
+            text = detail,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        if (!ready) {
-            Spacer(Modifier.height(SableSpacing.Sm))
-            SableActionButton(
-                text = "Review access",
-                primary = false,
-                onClick = onRequestAccess,
-            )
-        }
+        SableActionButton(
+            text = "Review access",
+            primary = false,
+            onClick = onRequestAccess,
+        )
     }
 }
 
@@ -456,20 +413,34 @@ private fun ConversationRow(
                 text = conversation.displayName,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = conversation.lastBody.take(80),
+                text = conversation.lastBody.take(120),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
         Spacer(Modifier.width(10.dp))
-        Text(
-            text = clockTime(conversation.lastDateMillis),
-            style = MaterialTheme.typography.titleMedium,
-            color = accent,
-        )
+        Column(
+            horizontalAlignment = Alignment.End,
+        ) {
+            Text(
+                text = clockTime(conversation.lastDateMillis),
+                style = MaterialTheme.typography.bodyMedium,
+                color = accent,
+            )
+            if (unread) {
+                Text(
+                    text = conversation.unreadCount.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color(0xFF35C66B),
+                )
+            }
+        }
     }
     Box(
         modifier =
@@ -484,7 +455,8 @@ private fun clockTime(epochMillis: Long): String =
     DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epochMillis))
 
 @Composable
-private fun PeoplePivot(
+private fun ColumnScope.PeoplePivot(
+    modifier: Modifier,
     snapshot: HubSnapshot,
     search: String,
     onSearchChange: (String) -> Unit,
@@ -494,12 +466,12 @@ private fun PeoplePivot(
     if (!snapshot.capabilities.canReadContacts) {
         SablePanel {
             Text(
-                text =
-                    "People requires user-authorized Contacts access. No separate Sable contact database is created.",
+                text = "Contacts access is optional and only improves people matching.",
                 style = MaterialTheme.typography.bodyMedium,
             )
             SableActionButton(
                 text = "Review access",
+                primary = false,
                 onClick = onRequestAccess,
             )
         }
@@ -525,134 +497,36 @@ private fun PeoplePivot(
         }
 
     if (people.isEmpty()) {
-        SablePanel {
-            Text(
-                text = "No matching people are available.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            text = "No matching people are available.",
+            modifier = Modifier.padding(vertical = SableSpacing.Lg),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     } else {
-        people.take(200).forEach { person ->
-            SableListRow(
-                title = person.displayName,
-                subtitle = person.phoneNumber,
-                onClick = { onCompose(person.phoneNumber) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun ServicesPivot(
-    providers: List<HubProvider>,
-    onOpenProvider: (HubProvider) -> Unit,
-) {
-    SablePanel {
-        Text(
-            text =
-                "Services open in private, isolated web sessions when a native integration is not available.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-
-    providers.forEach { provider ->
-        ProviderTile(
-            provider = provider,
-            onOpen = { onOpenProvider(provider) },
-        )
-    }
-}
-
-@Composable
-private fun ProviderTile(
-    provider: HubProvider,
-    onOpen: () -> Unit,
-) {
-    val subtitle =
-        when (provider.capabilityClass) {
-            ProviderCapabilityClass.NativeData -> "Integrated"
-            ProviderCapabilityClass.AndroidNotification -> "Notification access"
-            ProviderCapabilityClass.SupportedApi -> "Connected service"
-            ProviderCapabilityClass.Web ->
-                if (provider.id == "whatsapp") {
-                    "Private web session · availability depends on provider support"
-                } else {
-                    "Private web session"
-                }
-            ProviderCapabilityClass.Unavailable -> "Unavailable"
-        }
-
-    SableTile(
-        title = provider.displayName,
-        subtitle = subtitle,
-        onClick = onOpen,
-    )
-}
-
-@Composable
-private fun AccessPanel(
-    snapshot: HubSnapshot,
-    onRequestAccess: () -> Unit,
-    onOpenAndroidMessaging: (String?, String?) -> Boolean,
-) {
-    val accessText =
-        when {
-            snapshot.capabilities.canReadSms && snapshot.capabilities.canSendSms ->
-                "SMS access is ready."
-            snapshot.capabilities.canReadSms ->
-                "Conversations are available. Grant send access to send SMS."
-            else ->
-                "Grant Messages access to show conversations and send SMS."
-        }
-
-    val peopleText =
-        if (snapshot.capabilities.canReadContacts) {
-            "People matching is available."
-        } else {
-            "Contacts access is optional and only improves people matching."
-        }
-
-    SablePanel {
-        Text(
-            text = "Messages",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = accessText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = peopleText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+        LazyColumn(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
         ) {
-            SableActionButton(
-                text = "Review access",
-                modifier = Modifier.weight(1f),
-                onClick = onRequestAccess,
-            )
-            SableActionButton(
-                text = "MMS / RCS",
-                modifier = Modifier.weight(1f),
-                primary = false,
-                onClick = {
-                    onOpenAndroidMessaging(null, null)
+            items(
+                items = people.take(MAX_VISIBLE_PEOPLE),
+                key = { person ->
+                    person.id.toString() + ":" + person.phoneNumber
                 },
-            )
+            ) { person ->
+                SableListRow(
+                    title = person.displayName,
+                    subtitle = person.phoneNumber,
+                    onClick = { onCompose(person.phoneNumber) },
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun ConversationView(
+private fun ColumnScope.ConversationView(
+    modifier: Modifier,
     conversation: HubConversation,
     messages: List<HubMessage>,
     onBack: () -> Unit,
@@ -680,23 +554,55 @@ private fun ConversationView(
         )
     }
 
-    messages.forEach { message ->
-        SablePanel {
-            Text(
-                text = if (message.incoming) "INCOMING" else "SENT",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = message.body.ifBlank { "Empty SMS body" },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = relativeTime(message.dateMillis),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
+    ) {
+        items(
+            items = messages,
+            key = HubMessage::id,
+        ) { message ->
+            MessageBubble(message)
+        }
+    }
+}
+
+@Composable
+private fun MessageBubble(message: HubMessage) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement =
+            if (message.incoming) {
+                Arrangement.Start
+            } else {
+                Arrangement.End
+            },
+    ) {
+        Surface(
+            modifier = Modifier.widthIn(max = 320.dp),
+            shape = RoundedCornerShape(18.dp),
+            color =
+                if (message.incoming) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                },
+        ) {
+            Column(
+                modifier = Modifier.padding(SableSpacing.Md),
+                verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+            ) {
+                Text(
+                    text = message.body.ifBlank { "Empty SMS body" },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Text(
+                    text = relativeTime(message.dateMillis),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -708,7 +614,7 @@ private fun ComposeView(
     onBack: () -> Unit,
     onRequestAccess: () -> Unit,
     onSendSms: (String, String) -> HubSendResult,
-    onOpenAndroidMessaging: (String, String) -> Unit,
+    onOpenMmsComposer: (String, String) -> Unit,
 ) {
     var recipient by remember(initialRecipient) {
         mutableStateOf(initialRecipient)
@@ -721,8 +627,8 @@ private fun ComposeView(
     }
 
     SablePageHeader(
-        title = "New message",
-        subtitle = "Write a message.",
+        title = "new message",
+        subtitle = "Send SMS, or hand off to the system MMS composer for attachments.",
     )
 
     OutlinedTextField(
@@ -742,12 +648,11 @@ private fun ComposeView(
     )
 
     localStatus?.let { message ->
-        SablePanel {
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 
     if (canSendSms) {
@@ -761,30 +666,24 @@ private fun ComposeView(
     } else {
         SablePanel {
             Text(
-                text =
-                    "SMS sending needs access. Review permissions here, or continue this draft in the system messaging service.",
+                text = "SMS sending needs permission.",
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
-            ) {
-                SableActionButton(
-                    text = "Review access",
-                    modifier = Modifier.weight(1f),
-                    onClick = onRequestAccess,
-                )
-                SableActionButton(
-                    text = "Open messaging",
-                    modifier = Modifier.weight(1f),
-                    primary = false,
-                    onClick = {
-                        onOpenAndroidMessaging(recipient.trim(), body)
-                    },
-                )
-            }
+            SableActionButton(
+                text = "Review access",
+                primary = false,
+                onClick = onRequestAccess,
+            )
         }
     }
+
+    SableActionButton(
+        text = "MMS / attachment",
+        primary = false,
+        onClick = {
+            onOpenMmsComposer(recipient.trim(), body)
+        },
+    )
 
     SableActionButton(
         text = "Back",
@@ -799,3 +698,7 @@ private fun relativeTime(timestamp: Long): String =
         System.currentTimeMillis(),
         DateUtils.MINUTE_IN_MILLIS,
     ).toString()
+
+private const val MAX_VISIBLE_CONVERSATIONS = 120
+private const val MAX_VISIBLE_THREAD_MESSAGES = 250
+private const val MAX_VISIBLE_PEOPLE = 300
