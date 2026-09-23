@@ -116,7 +116,7 @@ require(
     LISTENER,
     "policies::cachedPolicyFor",
     "captureEnvelope(",
-    "sbn.shortcutId",
+    "notification.shortcutId",
     "captureMessages(",
     "captureReplyCandidate(",
     "MAX_NOTIFICATION_MESSAGES",
