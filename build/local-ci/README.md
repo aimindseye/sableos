@@ -34,7 +34,9 @@ quality/coverage tasks and deterministic supply-chain evidence. The Python
 syntax pass scans the complete maintained Python set in one batch and reports
 all parser failures before failing STATIC, rather than stopping at the first
 file. Applicator `--self-test` executions are also aggregated so STATIC
-reports every failing active applicator before returning failure.
+reports every failing active applicator before returning failure. The remaining
+source/product contract checks use the same aggregation rule, so one STATIC run
+reports all failing maintained contracts before the stage exits.
 
 `full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
 Text Reader and Mail qualification. It is the pre-image source/build/security
