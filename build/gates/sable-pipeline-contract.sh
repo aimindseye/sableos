@@ -7,6 +7,7 @@ echo "===== SABLE STANDARD PIPELINE CONTRACT ====="
 
 for f in \
   "$ROOT/build/sable.sh" \
+  "$ROOT/build/console.sh" \
   "$ROOT/build/deploy/common.sh" \
   "$ROOT/build/deploy/flash.sh" \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
@@ -30,6 +31,23 @@ do
   bash -n "$f"
 done
 echo "SABLE_PIPELINE_SHELL_SYNTAX=PASS"
+
+grep -Fq 'sable_console_capture_color' "$ROOT/build/console.sh"
+grep -Fq 'sable_checkpoint_pass' "$ROOT/build/console.sh"
+grep -Fq 'sable_checkpoint_pass "CI stage $name"' "$ROOT/build/local-ci/run.sh"
+grep -Fq 'sable_checkpoint_pass "R9 physical UX static contracts"' \
+  "$ROOT/build/panther/qualify-r9-physical-ux.sh"
+grep -Fq 'sable_checkpoint_pass "Source-bound full CI attestation"' \
+  "$ROOT/build/panther/run-r8-release-candidate.sh"
+echo "SABLE_PIPELINE_HUMAN_COLOR_CHECKPOINTS=PASS"
+
+grep -Fq 'Path("core/java/android/debug/AdbNotifications.java")' \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
+grep -Fq 'core/java/android/debug/AdbNotifications.java' \
+  "$ROOT/build/panther/prepare-r8-final-ui.sh"
+grep -Fq 'core/java/android/debug/AdbNotifications.java' \
+  "$ROOT/build/gates/r8-final-product-composition.sh"
+echo "SABLE_PIPELINE_UI5C_ADB_LATER_SCOPE=PASS"
 
 python3 -m py_compile \
   "$ROOT/build/deploy/target_files_plan.py" \
