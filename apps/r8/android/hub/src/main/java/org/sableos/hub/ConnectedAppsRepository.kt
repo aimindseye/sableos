@@ -32,11 +32,9 @@ class ConnectedAppsRepository(
             ?: loadPolicies().firstOrNull { it.key == key }
             ?: ConnectedAppPolicy(key = key)
 
-    fun cachedPolicyFor(key: ConnectedAppKey): ConnectedAppPolicy? =
-        cachedPolicies[key]
+    fun cachedPolicyFor(key: ConnectedAppKey): ConnectedAppPolicy? = cachedPolicies[key]
 
-    fun cachedPolicySnapshot(): Map<ConnectedAppKey, ConnectedAppPolicy> =
-        cachedPolicies
+    fun cachedPolicySnapshot(): Map<ConnectedAppKey, ConnectedAppPolicy> = cachedPolicies
 
     @Synchronized
     fun update(policy: ConnectedAppPolicy) {
@@ -66,11 +64,9 @@ class ConnectedAppsRepository(
         appContext.contentResolver.notifyChange(HIDDEN_URI, null)
     }
 
-    fun isIncluded(key: ConnectedAppKey): Boolean =
-        policyFor(key).includeInMessages
+    fun isIncluded(key: ConnectedAppKey): Boolean = policyFor(key).includeInMessages
 
-    fun allowsQuickReply(key: ConnectedAppKey): Boolean =
-        policyFor(key).allowQuickReply
+    fun allowsQuickReply(key: ConnectedAppKey): Boolean = policyFor(key).allowQuickReply
 
     fun hiddenKeys(): Set<ConnectedAppKey> =
         loadPolicies()
