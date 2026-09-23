@@ -16,9 +16,11 @@ PINNED = {
 SOURCE_PRESENTATION_FILES = (
     "packages/apps/DeskClock/res/values/colors.xml",
     "packages/apps/DeskClock/res/values/themes.xml",
+    "packages/apps/DeskClock/res/values/styles.xml",
     "packages/apps/DocumentsUI/res/values/colors.xml",
     "packages/apps/DocumentsUI/res/values-night/colors.xml",
     "packages/apps/Gallery2/res/values/colors.xml",
+    "packages/apps/Gallery2/res/values/styles.xml",
     "packages/apps/Gallery2/res/values/strings.xml",
 )
 
@@ -37,6 +39,8 @@ TRANSFORMS = {
          '    <color name="sable_clock_floating">#FFE9EDF2</color>'),
     ),
     "packages/apps/DeskClock/res/values/themes.xml": (
+        (('<style name="Theme.DeskClock" parent="Theme.AppCompat.NoActionBar">',),
+         '<style name="Theme.DeskClock" parent="Theme.AppCompat.DayNight.NoActionBar">'),
         (('<item name="colorAccent">#DA4336</item>',
           '<item name="colorAccent">#4D9CFF</item>'),
          '<item name="colorAccent">@color/sable_accent</item>'),
@@ -121,6 +125,16 @@ TRANSFORMS = {
         (('<color name="holo_blue_light">#ff33b5e5</color>',
           '<color name="holo_blue_light">#FF4D9CFF</color>'),
          '<color name="holo_blue_light">#FF4D9CFF</color>'),
+    ),
+    "packages/apps/Gallery2/res/values/styles.xml": (
+        (('<style name="Theme.GalleryBase" parent="android:Theme.Holo">',),
+         '<style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">'),
+        (('<style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Dialog"/>',),
+         '<style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Light.Dialog"/>'),
+        (('<item name="android:windowBackground">@android:color/black</item>',),
+         '<item name="android:windowBackground">@color/default_background</item>'),
+        (('<style name="Holo.ActionBar" parent="android:Widget.Holo.ActionBar">',),
+         '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">'),
     ),
     "packages/apps/Gallery2/res/values/strings.xml": (
         (('<string name="app_name">Gallery</string>',),
@@ -220,11 +234,102 @@ def verify_file(
                 )
 
 
+def apply_deskclock_semantic_text(root: Path) -> None:
+    path = root / "packages/apps/DeskClock/res/values/styles.xml"
+    text = path.read_text(encoding="utf-8")
+    replacements = (
+        (
+            '<item name="android:textColor">@color/white_63p</item>',
+            '<item name="android:textColor">?android:attr/textColorSecondary</item>',
+            2,
+        ),
+        (
+            '<item name="android:textColor">@color/white</item>',
+            '<item name="android:textColor">?android:attr/textColorPrimary</item>',
+            4,
+        ),
+    )
+    for old, new, expected in replacements:
+        old_count = text.count(old)
+        new_count = text.count(new)
+        if old_count == 0 and new_count == expected:
+            continue
+        if old_count != expected:
+            raise PresentationError(
+                f"DeskClock semantic text anchor mismatch: {old!r} "
+                f"expected={expected} actual={old_count}"
+            )
+        text = text.replace(old, new)
+    path.write_text(text, encoding="utf-8")
+
+
+def verify_deskclock_semantic_text(root: Path) -> None:
+    text = (
+        root / "packages/apps/DeskClock/res/values/styles.xml"
+    ).read_text(encoding="utf-8")
+    if text.count(
+        '<item name="android:textColor">?android:attr/textColorPrimary</item>'
+    ) < 4:
+        raise PresentationError("DeskClock primary semantic text colors missing")
+    if text.count(
+        '<item name="android:textColor">?android:attr/textColorSecondary</item>'
+    ) < 2:
+        raise PresentationError("DeskClock secondary semantic text colors missing")
+    for stale in (
+        '<style name="Theme.DeskClock" parent="Theme.AppCompat.NoActionBar">',
+        '<item name="android:textColor">@color/white</item>',
+        '<item name="android:textColor">@color/white_63p</item>',
+    ):
+        if stale in text:
+            raise PresentationError(f"DeskClock stale light-invisible token: {stale}")
+
+
+def gallery_night_styles(root: Path) -> str:
+    text = (
+        root / "packages/apps/Gallery2/res/values/styles.xml"
+    ).read_text(encoding="utf-8")
+    replacements = (
+        (
+            '<style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">',
+            '<style name="Theme.GalleryBase" parent="android:Theme.Holo">',
+        ),
+        (
+            '<style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Light.Dialog"/>',
+            '<style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Dialog"/>',
+        ),
+        (
+            '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">',
+            '<style name="Holo.ActionBar" parent="android:Widget.Holo.ActionBar">',
+        ),
+    )
+    for old, new in replacements:
+        if text.count(old) != 1:
+            raise PresentationError(
+                f"Gallery day-night style anchor mismatch: {old!r}"
+            )
+        text = text.replace(old, new, 1)
+    return text
+
+
+def apply_gallery_night_styles(root: Path) -> None:
+    path = root / "packages/apps/Gallery2/res/values-night/styles.xml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(gallery_night_styles(root), encoding="utf-8")
+
+
+def verify_gallery_night_styles(root: Path) -> None:
+    path = root / "packages/apps/Gallery2/res/values-night/styles.xml"
+    expected = gallery_night_styles(root)
+    if not path.is_file() or path.read_text(encoding="utf-8") != expected:
+        raise PresentationError("Gallery night style resource drift")
+
+
 def apply_generated(root: Path) -> None:
     for rel, expected in GENERATED_FILES.items():
         path = root / rel
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(expected, encoding="utf-8")
+    apply_gallery_night_styles(root)
 
 
 def verify_generated(root: Path) -> None:
@@ -234,6 +339,7 @@ def verify_generated(root: Path) -> None:
             raise PresentationError(f"night resource missing: {rel}")
         if path.read_text(encoding="utf-8") != expected:
             raise PresentationError(f"night resource drift: {rel}")
+    verify_gallery_night_styles(root)
 
 
 def verify_binary_boundaries(root: Path) -> None:
@@ -264,18 +370,20 @@ def main() -> int:
     if args.mode == "apply":
         for rel, transforms in TRANSFORMS.items():
             apply_file(root / rel, transforms)
+        apply_deskclock_semantic_text(root)
         apply_generated(root)
 
     for rel, transforms in TRANSFORMS.items():
         verify_file(root / rel, transforms)
+    verify_deskclock_semantic_text(root)
     verify_generated(root)
     verify_binary_boundaries(root)
 
     print("R9_CLOCK_PRESENTATION=PASS_RESOURCE_ONLY")
-    print("R9_CLOCK_DAY_NIGHT_PRESENTATION=PASS_QUALIFIED")
+    print("R9_CLOCK_DAY_NIGHT_PRESENTATION=PASS_SEMANTIC_TEXT_AND_BACKGROUND")
     print("R9_FILES_PRESENTATION=PASS_RESOURCE_ONLY")
     print("R9_PHOTOS_PRESENTATION=PASS_RESOURCE_ONLY")
-    print("R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_QUALIFIED")
+    print("R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME")
     print("R9_CORE_APP_BEHAVIORAL_MUTATION=PASS_ABSENT")
     print("R9_DAILY_DRIVER_CORE_PRESENTATION=PASS")
     return 0
