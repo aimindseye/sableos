@@ -31,8 +31,16 @@ android {
 
     sourceSets {
         getByName("main") {
-            java.srcDirs(
+            java.srcDir(
                 "../../../../src/android/packages/apps/SableStart/src"
+            )
+            java.include(
+                "com/sable/start/live/LiveSurfaceModels.kt",
+                "com/sable/start/model/AppEntry.kt",
+                "com/sable/start/platform/LiveSurfaceRepository.kt",
+                "com/sable/start/platform/StartStateRepository.kt",
+                "com/sable/start/ui/SableStartScreen.kt",
+                "com/sable/start/ui/SableGlyphIcon.kt",
             )
         }
     }
