@@ -181,7 +181,8 @@ before compilation or APK packaging:
 
 1. source contracts and pipeline contract;
 2. non-Gradle source-style preflight for Hub Kotlin/Kotlin scripts
-   (line length, whitespace, and chained-query continuation indentation);
+   (line length, whitespace, chained-query continuation indentation, and
+   forbidden internal Compose extension imports);
 3. Detekt + KtLint static-quality preflight;
 4. Kotlin compilation + unit tests + Android lint;
 5. APK assembly only after the earlier stages pass.
