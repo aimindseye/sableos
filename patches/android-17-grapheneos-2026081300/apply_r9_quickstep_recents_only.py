@@ -38,6 +38,23 @@ class RecentsOnlyError(RuntimeError):
     pass
 
 
+def resolve_launcher_root(source: pathlib.Path) -> pathlib.Path:
+    workspace_launcher = source / "packages/apps/Launcher3"
+    if workspace_launcher.is_dir():
+        return workspace_launcher
+
+    # Isolated self-tests and direct developer probes may pass the Launcher3
+    # repository itself. Require both canonical top-level markers so an
+    # arbitrary non-git directory is not misclassified.
+    if (source / "Android.bp").is_file() and (source / "quickstep").is_dir():
+        return source
+
+    raise RecentsOnlyError(
+        "Launcher3 source root unresolved: "
+        f"source={source} expected={workspace_launcher}"
+    )
+
+
 def git(root: pathlib.Path, *args: str) -> str:
     return subprocess.check_output(
         ["git", "-C", str(root), *args],
@@ -293,6 +310,25 @@ def self_test() -> None:
         mConfigChangesMap.append(myHomeComponent.hashCode(), info.activityInfo.configChanges);
 """
         (root / "Android.bp").write_text(bp, encoding="utf-8")
+        if resolve_launcher_root(root) != root:
+            raise RecentsOnlyError("self-test direct Launcher3 root resolution failed")
+
+        workspace = root / "workspace"
+        nested = workspace / "packages/apps/Launcher3"
+        nested.mkdir(parents=True)
+        (nested / "Android.bp").write_text(bp, encoding="utf-8")
+        (nested / "quickstep").mkdir(exist_ok=True)
+        if resolve_launcher_root(workspace) != nested:
+            raise RecentsOnlyError("self-test workspace Launcher3 root resolution failed")
+
+        try:
+            resolve_launcher_root(root / "missing")
+        except RecentsOnlyError:
+            pass
+        else:
+            raise RecentsOnlyError("self-test unresolved source did not fail closed")
+
+        print("R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS")
         (root / "quickstep/AndroidManifest-launcher.xml").write_text(
             manifest, encoding="utf-8"
         )
@@ -356,7 +392,9 @@ def main() -> int:
     if args.source is None or args.mode is None:
         parser.error("--source and mode are required")
 
-    root = args.source.resolve()
+    source = args.source.resolve()
+    root = resolve_launcher_root(source)
+    print(f"R9_QUICKSTEP_RECENTS_ONLY_LAUNCHER_ROOT={root}")
     if args.mode == "apply":
         apply(root)
     else:
