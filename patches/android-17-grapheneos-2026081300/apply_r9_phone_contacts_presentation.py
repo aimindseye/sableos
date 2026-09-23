@@ -180,6 +180,10 @@ DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     return headers[index];
   }
 
+  boolean hasContacts() {
+    return cursor != null && !cursor.isClosed() && cursor.getCount() > 0;
+  }
+
   /**
    * Returns the RecyclerView position for an alphabet section using the
    * ContactsProvider address-book index already carried by this adapter.
@@ -296,7 +300,7 @@ import android.widget.TextView;
     if (sableAlphabetRail == null) {
       return;
     }
-    boolean hasContacts = adapter != null && adapter.getItemCount() > 0;
+    boolean hasContacts = adapter != null && adapter.hasContacts();
     boolean searching = query != null && !query.isEmpty();
     sableAlphabetRail.setVisibility(hasContacts && !searching ? View.VISIBLE : View.GONE);
   }
