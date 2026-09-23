@@ -259,6 +259,10 @@ def check() -> list[str]:
     else:
         recents_text = quickstep_recents.read_text(encoding="utf-8")
         for token in (
+            "resolve_launcher_root",
+            '"packages/apps/Launcher3"',
+            "R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS",
+            "R9_QUICKSTEP_RECENTS_ONLY_LAUNCHER_ROOT=",
             "R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS",
             "R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT",
             "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
