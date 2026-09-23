@@ -8,10 +8,19 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PlaybackService : MediaSessionService() {
     private var player: ExoPlayer? = null
     private var session: MediaSession? = null
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var queueBuildJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -65,12 +74,13 @@ class PlaybackService : MediaSessionService() {
             }
 
             ACTION_PLAY_QUEUE -> {
-                playQueue(
-                    uris = intent.getStringArrayListExtra(EXTRA_URIS).orEmpty(),
-                    titles = intent.getStringArrayListExtra(EXTRA_TITLES).orEmpty(),
-                    artists = intent.getStringArrayListExtra(EXTRA_ARTISTS).orEmpty(),
-                    startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0),
-                )
+                val request =
+                    intent
+                        .getStringExtra(EXTRA_QUEUE_TOKEN)
+                        ?.let(PlaybackQueueRequestStore::consume)
+                if (request != null) {
+                    playQueue(request)
+                }
             }
 
             ACTION_PAUSE -> {
@@ -103,6 +113,7 @@ class PlaybackService : MediaSessionService() {
         title: String?,
         source: String?,
     ) {
+        queueBuildJob?.cancel()
         val metadata =
             MediaMetadata
                 .Builder()
@@ -124,34 +135,35 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
-    private fun playQueue(
-        uris: List<String>,
-        titles: List<String>,
-        artists: List<String>,
-        startIndex: Int,
-    ) {
-        if (uris.isEmpty()) {
-            return
-        }
+    private fun playQueue(request: PlaybackQueueRequest) {
+        queueBuildJob?.cancel()
+        queueBuildJob =
+            serviceScope.launch {
+                val mediaItems =
+                    request.items.map { item ->
+                        mediaItem(
+                            uri = item.uri,
+                            title = item.title,
+                            artist = item.artist,
+                        )
+                    }
 
-        val items =
-            uris.mapIndexed { index, value ->
-                mediaItem(
-                    uri = value,
-                    title = titles.getOrNull(index),
-                    artist = artists.getOrNull(index),
-                )
+                if (mediaItems.isEmpty()) {
+                    return@launch
+                }
+
+                withContext(Dispatchers.Main.immediate) {
+                    player?.apply {
+                        setMediaItems(
+                            mediaItems,
+                            request.startIndex.coerceIn(0, mediaItems.lastIndex),
+                            0L,
+                        )
+                        prepare()
+                        play()
+                    }
+                }
             }
-
-        player?.apply {
-            setMediaItems(
-                items,
-                startIndex.coerceIn(0, items.lastIndex),
-                0L,
-            )
-            prepare()
-            play()
-        }
     }
 
     private fun mediaItem(
@@ -174,6 +186,8 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
+        queueBuildJob?.cancel()
+        serviceScope.cancel()
         session?.release()
         session = null
         player?.release()
@@ -192,9 +206,6 @@ class PlaybackService : MediaSessionService() {
 
         const val EXTRA_TITLE = "org.sableos.media.TITLE"
         const val EXTRA_SOURCE = "org.sableos.media.SOURCE"
-        const val EXTRA_URIS = "org.sableos.media.URIS"
-        const val EXTRA_TITLES = "org.sableos.media.TITLES"
-        const val EXTRA_ARTISTS = "org.sableos.media.ARTISTS"
-        const val EXTRA_START_INDEX = "org.sableos.media.START_INDEX"
+        const val EXTRA_QUEUE_TOKEN = "org.sableos.media.QUEUE_TOKEN"
     }
 }
