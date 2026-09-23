@@ -52,7 +52,8 @@ application baseline.
 The Sable flavor is offline-first:
 
 ```text
-INTERNET permission       ABSENT
+INTERNET permission       ABSENT IN FINAL APK
+manifest merge policy     tools:node="remove" FOR INTERNET
 translation dependency    ABSENT
 translation UI            ABSENT
 model download path       ABSENT
@@ -68,6 +69,12 @@ The pinned upstream application includes ML Kit translation and calls
 `downloadModelIfNeeded`. Those paths are deliberately removed from the Sable
 product. Translation can only be reconsidered later with an explicit offline
 model-packaging and privacy design.
+
+The source manifest keeps an explicit Android manifest-merger removal rule for
+`android.permission.INTERNET`. This is intentional: deleting only the app's
+own declaration is insufficient because a transitive library manifest can
+reintroduce the permission. Qualification therefore proves both the source
+merge rule and final APK absence.
 
 OCR remains local to the application. The current product uses the pinned Latin
 and Devanagari recognizer dependencies and has no Sable network fallback.
