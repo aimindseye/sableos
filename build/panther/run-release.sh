@@ -47,6 +47,14 @@ actual="$(git -C "$REPO" rev-parse HEAD)"
 
 release_key="$(printf '%s' "$RELEASE_VERSION" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9._-' '-')"
 SESSION="${SABLE_TMUX_SESSION:-sable-${release_key}-panther-${SOURCE_COMMIT:0:12}}"
+AUTO_REGISTER="${SABLE_AUTO_REGISTER_ARTIFACT:-NO}"
+case "$AUTO_REGISTER" in
+    YES|NO) ;;
+    *)
+        echo "SABLE_RELEASE_BUILD=FAIL_AUTO_REGISTER value=$AUTO_REGISTER"
+        exit 64
+        ;;
+esac
 
 run_direct() {
     echo "===== SABLEOS CANONICAL RELEASE BUILD ====="
@@ -75,7 +83,7 @@ fi
 
 self="$ROOT/build/panther/run-release.sh"
 tmux new-session -d -s "$SESSION" \
-    "EXPECTED_SOURCE_COMMIT='$SOURCE_COMMIT' bash '$self' '$RELEASE_VERSION' --direct; rc=\$?; echo; echo SABLE_RELEASE_BUILD_RC=\$rc; echo BUILD_DRIVER_EXITED=YES; exec bash"
+    "SABLE_AUTO_REGISTER_ARTIFACT='$AUTO_REGISTER' EXPECTED_SOURCE_COMMIT='$SOURCE_COMMIT' bash '$self' '$RELEASE_VERSION' --direct; rc=\$?; echo; echo SABLE_RELEASE_BUILD_RC=\$rc; echo BUILD_DRIVER_EXITED=YES; exec bash"
 
 echo "SABLE_RELEASE_BUILD=PASS_STARTED"
 echo "SABLEOS_RELEASE_VERSION=$RELEASE_VERSION"
