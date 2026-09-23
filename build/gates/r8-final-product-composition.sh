@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 WS="${WS:-$SABLEOS_UPSTREAM}"
 DEST="$WS/vendor/sable/r8"
@@ -32,6 +34,7 @@ fail() {
     echo "$1=FAIL"
     echo "R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL"
     echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO"
+    sable_checkpoint_fail "Final product composition: $1"
     exit "${2:-1}"
 }
 
@@ -616,6 +619,7 @@ echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
 echo "R9_SABLE_HOME_REPLACEMENT_SOURCE_COMPOSITION=PASS"
+sable_checkpoint_pass "Final Panther product composition"
 
 echo
 echo "===== R9 LAUNCHER VISUAL ACCEPTANCE SEAL ====="
