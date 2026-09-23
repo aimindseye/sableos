@@ -237,7 +237,7 @@ for ready_serial in "${ADB_READY[@]}"; do
   [[ "$ready_serial" == "$SERIAL" ]] && ADB_TARGET_MATCHES=$((ADB_TARGET_MATCHES + 1))
 done
 [[ "$ADB_TARGET_MATCHES" -eq 1 ]]   || sable_die "SABLE_ADB_TARGET_SERIAL" "requested serial is not exactly once among ready adb devices" 40
-ADB_OTHER_READY_COUNT=$(("${#ADB_READY[@]}" - ADB_TARGET_MATCHES))
+ADB_OTHER_READY_COUNT=$(( ${#ADB_READY[@]} - ADB_TARGET_MATCHES ))
 echo "SABLE_ADB_TARGET_SERIAL=PASS"
 echo "SABLE_ADB_OTHER_READY_COUNT=$ADB_OTHER_READY_COUNT"
 
@@ -305,7 +305,7 @@ for ready_serial in "${FB_READY[@]}"; do
   [[ "$ready_serial" == "$SERIAL" ]] && FB_TARGET_MATCHES=$((FB_TARGET_MATCHES + 1))
 done
 [[ "$FB_TARGET_MATCHES" -eq 1 ]]   || sable_die "SABLE_FASTBOOT_TARGET_SERIAL" "requested serial is not exactly once among fastboot devices" 43
-FB_OTHER_READY_COUNT=$(("${#FB_READY[@]}" - FB_TARGET_MATCHES))
+FB_OTHER_READY_COUNT=$(( ${#FB_READY[@]} - FB_TARGET_MATCHES ))
 echo "SABLE_FASTBOOT_TARGET_SERIAL=PASS"
 echo "SABLE_FASTBOOT_OTHER_READY_COUNT=$FB_OTHER_READY_COUNT"
 
