@@ -136,12 +136,21 @@ PY
   # the maintained CI execution surface. Its SHA-bound artifacts are not
   # rewritten or syntax-qualified as current tooling.
 
+  local applicator_self_test_failures=0
   for applicator in "$ROOT"/patches/android-17-grapheneos-2026081300/apply_*.py; do
     [[ -f "$applicator" ]] || continue
     if grep -Fq -- '--self-test' "$applicator"; then
-      python3 "$applicator" --self-test
+      if ! python3 "$applicator" --self-test; then
+        echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TEST_FAILURE=$applicator"
+        applicator_self_test_failures=$((applicator_self_test_failures + 1))
+      fi
     fi
   done
+  if [[ "$applicator_self_test_failures" -ne 0 ]]; then
+    echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=FAIL count=$applicator_self_test_failures"
+    return 1
+  fi
+  echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS"
 
   bash "$ROOT/build/gates/r8-build-driver-contract.sh"
   bash "$ROOT/build/gates/sable-pipeline-contract.sh"
