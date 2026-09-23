@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+trap 'rc=$?; echo "R8_BUILD_DRIVER_CONTRACT=FAIL_UNEXPECTED line=$LINENO rc=$rc command=$BASH_COMMAND" >&2' ERR
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
