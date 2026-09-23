@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import pathlib
 import subprocess
+import tempfile
 
 LAUNCHER3_HEAD = "e5fde8f4368539554b07ee136abd27bc7b4284c1"
 
@@ -251,6 +252,81 @@ def verify(root: pathlib.Path) -> None:
     print("R9_QUICKSTEP_RECENTS_ONLY=PASS")
 
 
+def self_test() -> None:
+    with tempfile.TemporaryDirectory(prefix="r9_quickstep_recents_") as raw:
+        root = pathlib.Path(raw)
+        (root / "quickstep").mkdir(parents=True)
+        (root / "quickstep/src/com/android/quickstep").mkdir(parents=True)
+        (root / "quickstep/src/com/android/launcher3/uioverrides/touchcontrollers").mkdir(
+            parents=True
+        )
+
+        bp = """android_library {
+    name: "Launcher3QuickStepLib",
+    kotlincflags: [
+        "-Xjvm-default=all",
+    ],
+}
+
+// Build rule for Quickstep app.
+"""
+        manifest = """<manifest>
+    <application>
+        <activity
+            android:name="com.android.launcher3.uioverrides.QuickstepLauncher"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <action android:name="android.intent.action.ALL_APPS" />
+                <category android:name="android.intent.category.HOME" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+"""
+        observer = """import com.android.launcher3.util.DaggerSingletonTracker;
+        mMyPrimaryHomeIntent = new Intent(mCurrentPrimaryHomeIntent).setPackage(
+                context.getPackageName());
+        ResolveInfo info = context.getPackageManager().resolveActivity(mMyPrimaryHomeIntent, 0);
+        ComponentName myHomeComponent =
+                new ComponentName(context.getPackageName(), info.activityInfo.name);
+        mMyPrimaryHomeIntent.setComponent(myHomeComponent);
+
+        mConfigChangesMap.append(myHomeComponent.hashCode(), info.activityInfo.configChanges);
+"""
+        (root / "Android.bp").write_text(bp, encoding="utf-8")
+        (root / "quickstep/AndroidManifest-launcher.xml").write_text(
+            manifest, encoding="utf-8"
+        )
+        observer_path = (
+            root / "quickstep/src/com/android/quickstep/OverviewComponentObserver.java"
+        )
+        observer_path.write_text(observer, encoding="utf-8")
+
+        patch_android_bp(root)
+        patch_launcher_manifest(root)
+        patch_overview_observer(root)
+
+        patched_bp = (root / "Android.bp").read_text(encoding="utf-8")
+        patched_manifest = (
+            root / "quickstep/AndroidManifest-launcher.xml"
+        ).read_text(encoding="utf-8")
+        patched_observer = observer_path.read_text(encoding="utf-8")
+
+        if "-Xannotation-default-target=param-property" not in patched_bp:
+            raise RecentsOnlyError("self-test Kotlin compatibility flag missing")
+        if 'android:exported="false"' not in patched_manifest:
+            raise RecentsOnlyError("self-test private activity marker missing")
+        if "android.intent.category.HOME" in patched_manifest:
+            raise RecentsOnlyError("self-test HOME filter survived")
+        if "new ComponentName(context, QuickstepLauncher.class)" not in patched_observer:
+            raise RecentsOnlyError("self-test explicit Quickstep component missing")
+        if "resolveActivity(mMyPrimaryHomeIntent" in patched_observer:
+            raise RecentsOnlyError("self-test old own-HOME resolution survived")
+
+    print("R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS")
+
+
 def apply(root: pathlib.Path) -> None:
     require_head(root)
     restore_pinned_scope(root)
@@ -262,9 +338,20 @@ def apply(root: pathlib.Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", required=True, type=pathlib.Path)
-    parser.add_argument("mode", choices=("apply", "verify"))
+    parser.add_argument("--source", type=pathlib.Path)
+    parser.add_argument("--self-test", action="store_true")
+    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
     args = parser.parse_args()
+
+    if args.self_test:
+        if args.source is not None or args.mode is not None:
+            parser.error("--self-test cannot be combined with --source or mode")
+        self_test()
+        return 0
+
+    if args.source is None or args.mode is None:
+        parser.error("--source and mode are required")
+
     root = args.source.resolve()
     if args.mode == "apply":
         apply(root)
