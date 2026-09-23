@@ -33,7 +33,8 @@ source/architecture gates, Rust correctness, Android compile/tests/lint,
 quality/coverage tasks and deterministic supply-chain evidence. The Python
 syntax pass scans the complete maintained Python set in one batch and reports
 all parser failures before failing STATIC, rather than stopping at the first
-file.
+file. Applicator `--self-test` executions are also aggregated so STATIC
+reports every failing active applicator before returning failure.
 
 `full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
 Text Reader and Mail qualification. It is the pre-image source/build/security
