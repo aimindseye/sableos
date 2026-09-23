@@ -170,6 +170,22 @@ require(
     "R9_VANADIUM_PRESENTATION_BOUNDARY=PASS_UPSTREAM_SECURITY_BUILD",
 )
 
+# Text Reader is a standalone offline-first product surface.
+require(
+    "apps/r8/textreader/apply_sable_flavor.py",
+    'applicationId = "org.sableos.textreader"',
+    "SableGlobalTheme(window = window)",
+    "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT",
+    "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
+    "SABLE_TEXT_READER_VIEW_SEND_PROCESS_TEXT=PASS",
+    "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
+)
+require(
+    "apps/r8/textreader/verify_sable_textreader.py",
+    "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
+    "SABLE_TEXT_READER_POLICY=PASS",
+)
+
 # Reader: SableOS owns ordinary Light/Dark, Sepia/E-Ink remain explicit reader
 # modes, Offline Mode cannot force a white surface, and all actual books are
 # rendered continuously instead of being collapsed into six visible stacks.
@@ -187,6 +203,13 @@ require(
     "LazyVerticalGrid(",
     "distinctBy { it.bookHash }",
     "R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS",
+    "SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT",
+    "SABLE_READER_PUBLICATION_FOCUS=PASS",
+)
+forbid(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "SableTextActivity",
+    "SableOcrActivity",
 )
 
 # Contacts uses its existing SectionIndexer, not a duplicate data model.
