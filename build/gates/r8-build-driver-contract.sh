@@ -223,6 +223,17 @@ do
         exit 1
     fi
 done
+for mirror_token in \
+    'syncSableStartPresentationSources' \
+    'generated/sablestartPresentation' \
+    'canonicalPresentationSources' \
+    'name.contains("lint", ignoreCase = true)'
+do
+    grep -Fq "$mirror_token" "$start_check" || {
+        echo "R9_SABLESTART_PRESENTATION_GRADLE_SCOPE=FAIL_MIRROR token=$mirror_token"
+        exit 1
+    }
+done
 ! grep -Fq 'AndroidManifest.xml' "$start_check"
 ! grep -Fq 'src/android/packages/apps/SableStart/res' "$start_check"
 grep -Fq 'sdk_version: "system_current"' "$start_bp" || {
@@ -234,6 +245,7 @@ if grep -Fq 'platform_apis: true' "$start_bp"; then
     exit 1
 fi
 echo "R9_SABLESTART_PRESENTATION_GRADLE_SCOPE=PASS_EXACT_PRESENTATION_FILEGROUP"
+echo "R9_SABLESTART_PRESENTATION_LINT_SOURCE_MIRROR=PASS"
 echo "R9_SABLELAUNCHER_SDK_BOUNDARY=PASS_SYSTEM_CURRENT"
 grep -Fq ':sablestart-presentation-check:compileDebugKotlin' "$local_ci"
 grep -Fq ':sablestart-presentation-check:lintDebug' "$local_ci"
