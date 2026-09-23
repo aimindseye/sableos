@@ -210,8 +210,10 @@ def expected_pre_dirt() -> set[str]:
     return set(ui5c.expected_settings_pre_dirt(ui5b)) | set(ui5c.SETTINGS_EXTRA_DIRT)
 
 
-def classify_dirty_scope(actual: set[str]) -> str:
-    pre = expected_pre_dirt()
+def classify_dirty_scope_from_expected(
+    actual: set[str],
+    pre: set[str],
+) -> str:
     final = pre | COHESION_DIRT
     if actual == pre:
         return "PRE_COHESION"
@@ -222,6 +224,10 @@ def classify_dirty_scope(actual: set[str]) -> str:
         f"expected_pre={sorted(pre)!r} expected_final={sorted(final)!r} "
         f"actual={sorted(actual)!r}"
     )
+
+
+def classify_dirty_scope(actual: set[str]) -> str:
+    return classify_dirty_scope_from_expected(actual, expected_pre_dirt())
 
 
 def assert_head(source: Path) -> None:
@@ -568,9 +574,33 @@ def self_test() -> None:
     if "SableNetworkManagerSettings.class.getName()," not in gateway_sample:
         raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_NETWORK_GATEWAY_FAIL")
 
-    if "FINAL_COHESION" not in classify_dirty_scope.__code__.co_consts:
-        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_SCOPE_CLASSIFIER_FAIL")
-    print("R9_SETTINGS_COHESION_SELF_TEST_UPGRADE_SCOPE=PASS")
+    sample_pre = {" M existing.xml", "?? existing-new.xml"}
+    if (
+        classify_dirty_scope_from_expected(sample_pre, sample_pre)
+        != "PRE_COHESION"
+    ):
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_PRE_SCOPE_FAIL")
+    if (
+        classify_dirty_scope_from_expected(
+            sample_pre | COHESION_DIRT,
+            sample_pre,
+        )
+        != "FINAL_COHESION"
+    ):
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_FINAL_SCOPE_FAIL")
+    try:
+        classify_dirty_scope_from_expected(
+            sample_pre | COHESION_DIRT | {" M unexpected.xml"},
+            sample_pre,
+        )
+    except SystemExit:
+        pass
+    else:
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION_FAIL")
+
+    print("R9_SETTINGS_COHESION_SELF_TEST_PRE_SCOPE=PASS")
+    print("R9_SETTINGS_COHESION_SELF_TEST_FINAL_SCOPE=PASS")
+    print("R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS")
     print("R9_SETTINGS_COHESION_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
