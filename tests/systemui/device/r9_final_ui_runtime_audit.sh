@@ -93,6 +93,40 @@ echo "R9_FINAL_UI_BUILD_FINGERPRINT=$FINGERPRINT"
 echo "R9_FINAL_UI_VERIFIED_BOOT_STATE=$VERIFIED_BOOT"
 echo "R9_FINAL_UI_VBMETA_DEVICE_STATE=$VBMETA_STATE"
 
+SABLE_LAUNCHER_PATH="$(package_path org.sableos.launcher)"
+[[ -n "$SABLE_LAUNCHER_PATH" ]] ||
+    fail R9_FINAL_UI_SABLELAUNCHER_PACKAGE "missing=org.sableos.launcher"
+echo "R9_FINAL_UI_SABLELAUNCHER_PACKAGE=PASS path=$SABLE_LAUNCHER_PATH"
+
+QUICKSTEP_PATH="$(package_path com.android.launcher3)"
+[[ -n "$QUICKSTEP_PATH" ]] ||
+    fail R9_FINAL_UI_QUICKSTEP_PACKAGE "missing=com.android.launcher3"
+echo "R9_FINAL_UI_QUICKSTEP_PACKAGE=PASS path=$QUICKSTEP_PATH"
+
+HOME_RAW="$(
+    adb_cmd shell cmd package resolve-activity --brief \
+        -a android.intent.action.MAIN \
+        -c android.intent.category.HOME \
+        2>/dev/null || true
+)"
+HOME_RESOLVED="$(tail -n1 <<<"$HOME_RAW" | tr -d '\r')"
+grep -Fq 'org.sableos.launcher/org.sableos.start.SableStartActivity' \
+    <<<"$HOME_RESOLVED" ||
+    fail R9_FINAL_UI_HOME_RESOLVER "resolved=$HOME_RESOLVED"
+echo "R9_FINAL_UI_HOME_RESOLVER=PASS_SABLELAUNCHER resolved=$HOME_RESOLVED"
+
+HOME_ROLE="$(
+    adb_cmd shell cmd role get-role-holders --user 0 android.app.role.HOME \
+        2>/dev/null | tr -d '\r'
+)"
+grep -Fxq 'org.sableos.launcher' <<<"$HOME_ROLE" ||
+    fail R9_FINAL_UI_HOME_ROLE "holders=$HOME_ROLE"
+if grep -Fxq 'com.android.launcher3' <<<"$HOME_ROLE"; then
+    fail R9_FINAL_UI_LAUNCHER3_HOME_ROLE "holders=$HOME_ROLE"
+fi
+echo "R9_FINAL_UI_HOME_ROLE=PASS_SABLELAUNCHER"
+echo "R9_FINAL_UI_LAUNCHER3_HOME_ROLE=PASS_ABSENT"
+
 VANADIUM_PATH="$(package_path app.vanadium.browser)"
 [[ -n "$VANADIUM_PATH" ]] ||
     fail R9_FINAL_UI_VANADIUM_PACKAGE "missing=app.vanadium.browser"
