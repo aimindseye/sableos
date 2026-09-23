@@ -318,6 +318,7 @@ expected = {
     "org.sableos.minesweeper": "SableMinesweeper.apk",
     "org.sableos.game2048": "Sable2048.apk",
     "org.sableos.media": "SableMedia.apk",
+    "org.sableos.textreader": "SableTextReader.apk",
     "org.sableos.reader": "SableReader.apk",
     "org.sableos.hub": "SableHub.apk",
     "org.sableos.mail": "SableMail.apk",
@@ -381,6 +382,7 @@ expected = {
     "SableMinesweeper",
     "Sable2048",
     "SableMedia",
+    "SableTextReader",
     "SableReader",
     "SableHub",
     "SableMail",
@@ -422,13 +424,13 @@ if seen != expected:
     )
 
 print("R8_PRESIGNED_APK_IMPORT_SET=PASS")
-print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=10")
+print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=11")
 PY
 then
     fail R8_PRESIGNED_APK_PREPROCESSED
 fi
 
-for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar
+for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableTextReader     SableReader     SableHub     SableMail     SableWeather     SableCalendar
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
 done
@@ -440,18 +442,37 @@ echo "R8_EXACT_CALCULATOR_REPLACEMENT=PASS"
 echo "R9_SABLE_CALENDAR_REPLACEMENT=PASS"
 
 echo
-echo "===== READER D2 SOURCE CLOSURE ====="
+echo "===== R9 SABLE TEXT READER SOURCE CLOSURE ====="
 
+TEXTREADER_ENV="$ROOT/apps/r8/textreader/upstream.env"
+TEXTREADER_APPLIER="$ROOT/apps/r8/textreader/apply_sable_flavor.py"
+TEXTREADER_VERIFY="$ROOT/apps/r8/textreader/verify_sable_textreader.py"
 READER_APPLIER="$ROOT/apps/r8/reader/apply_sable_flavor.py"
 
-for needle in     'SABLE_READER_OCR=CAMERA_GALLERY_LATIN_DEVANAGARI_ENABLED'     'SABLE_READER_OCR_CAMERA_PERMISSION=OPTIONAL_RUNTIME_ONLY'     'SABLE_READER_OCR_NETWORK_FALLBACK=DISABLED'     'text-recognition:16.0.1'     'text-recognition-devanagari:16.0.1'     'SableOcrActivity'
-do
-    grep -Fq "$needle" "$READER_APPLIER" || fail R8_D2_READER_OCR_SOURCE
+for f in "$TEXTREADER_ENV" "$TEXTREADER_APPLIER" "$TEXTREADER_VERIFY" "$READER_APPLIER"; do
+    [[ -f "$f" ]] || fail R9_SABLE_TEXT_READER_SOURCE
 done
 
-echo "R8_D2_READER_OCR_SOURCE=PASS"
+grep -Fq 'VAACHAK_TEXTREADER_COMMIT=50fca365baae9869264716569830690fb62029a7' "$TEXTREADER_ENV" \
+    || fail R9_SABLE_TEXT_READER_PIN
 
-echo
+for needle in \
+    'org.sableos.textreader' \
+    'SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT' \
+    'SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED' \
+    'SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI'
+do
+    grep -Fq "$needle" "$TEXTREADER_APPLIER" || fail R9_SABLE_TEXT_READER_SOURCE
+done
+
+grep -Fq 'SABLE_TEXT_READER_POLICY=PASS' "$TEXTREADER_VERIFY" \
+    || fail R9_SABLE_TEXT_READER_VERIFY
+grep -Fq 'SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT' "$READER_APPLIER" \
+    || fail R9_READER_TEXTREADER_DECOMPOSITION
+
+echo "R9_SABLE_TEXT_READER_SOURCE=PASS"
+echo "R9_READER_TEXTREADER_DECOMPOSITION=PASS"
+
 echo "===== R8-F SABLE HUB SOURCE CLOSURE ====="
 
 HUB_DIR="$ROOT/apps/r8/android/hub"
