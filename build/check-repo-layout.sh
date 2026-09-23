@@ -19,9 +19,8 @@ required=(
   build/macos/audit-r9-launcher-review-fidelity.sh
   build/macos/capture-r9-theme-fidelity-review.sh
   patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py
-  patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py
+  patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py
   patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py
-  patches/android-17-grapheneos-2026081300/r9_launcher3/SableQuickstepLauncher.kt
   build/gates/r9-system-cohesion-contract.py
   docs/R9_SYSTEM_COHESION_CLOSURE.md
   docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md
@@ -30,6 +29,10 @@ required=(
   patches/android-17-grapheneos-2026081300/r9_settings_cohesion/sable_network_manager_settings.xml
   tests/systemui/device/r9_branding_surface_audit.sh
   src/android/packages/apps/SableStart/Android.bp
+  src/android/packages/apps/SableStart/AndroidManifest.xml
+  src/android/packages/apps/SableStart/res/values/strings.xml
+  src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt
+  src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt
   src/android/packages/apps/SableStart/src/com/sable/start/live/LiveSurfaceModels.kt
   src/android/packages/apps/SableStart/src/com/sable/start/model/AppEntry.kt
   src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt
@@ -43,12 +46,8 @@ done
 
 retired_sablestart=(
   build/panther/build-sablestart.sh
-  src/android/packages/apps/SableStart/AndroidManifest.xml
-  src/android/packages/apps/SableStart/res/values/strings.xml
   src/android/packages/apps/SableStart/rust/src/lib.rs
-  src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt
   src/android/packages/apps/SableStart/src/com/sable/start/bridge/SableStartNative.kt
-  src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt
   src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt
 )
 
@@ -59,12 +58,14 @@ for rel in "${retired_sablestart[@]}"; do
     fi
 done
 
-grep -Fq 'name: "sable_start_presentation_srcs"'     "$ROOT/src/android/packages/apps/SableStart/Android.bp"
-if grep -Fq 'android_app {'     "$ROOT/src/android/packages/apps/SableStart/Android.bp"
-then
-    echo "SABLEOS_REPO_LAYOUT=FAIL_STANDALONE_SABLESTART_APP_MODULE"
-    exit 1
-fi
+grep -Fq 'name: "sable_start_presentation_srcs"' \
+    "$ROOT/src/android/packages/apps/SableStart/Android.bp"
+grep -Fq 'name: "SableLauncher"' \
+    "$ROOT/src/android/packages/apps/SableStart/Android.bp"
+grep -Fq 'package="org.sableos.launcher"' \
+    "$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
+grep -Fq 'android.intent.category.HOME' \
+    "$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
 
 grep -Fq 'AndroidManifest.xml'     "$ROOT/build/panther/sync-sablestart.sh"
 grep -Fq 'retired=('     "$ROOT/build/panther/sync-sablestart.sh"
@@ -77,12 +78,14 @@ if grep -Fq 'src/com/sable/start/platform/SableAppearanceProvider.kt' <<<"$requi
     exit 1
 fi
 grep -Fq 'src/com/sable/start/platform/SableAppearanceProvider.kt' <<<"$retired_block"
-grep -Fq 'R9_SABLESTART_APPEARANCE_PROVIDER=PASS_RETIRED' "$SYNC_SABLESTART"
+grep -Fq 'R9_SABLESTART_LOCAL_APPEARANCE_PROVIDER=PASS_RETIRED' "$SYNC_SABLESTART"
+grep -Fq 'src/com/sable/start/SableStartActivity.kt' <<<"$required_block"
+grep -Fq 'src/com/sable/start/platform/LauncherAppsRepository.kt' <<<"$required_block"
 
-echo "R9_STANDALONE_SABLESTART_BUILD_ENTRYPOINT=PASS_ABSENT"
-echo "R9_STANDALONE_SABLESTART_MANIFEST=PASS_ABSENT"
+echo "R9_STANDALONE_SABLELAUNCHER_MODULE=PASS_PRESENT"
+echo "R9_STANDALONE_SABLELAUNCHER_MANIFEST=PASS_PRESENT"
 echo "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS"
-echo "R9_LAUNCHER3_HOSTED_SABLESTART_LAYOUT=PASS"
+echo "R9_QUICKSTEP_RECENTS_ONLY_LAYOUT=PASS"
 echo "R9_LAUNCHER_APPEARANCE_PROVIDER=PASS_RETIRED"
 echo "R9_SYSTEM_COHESION_LAYOUT=PASS"
 echo "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_RETAINED_NONBLOCKING_TOOLING"
