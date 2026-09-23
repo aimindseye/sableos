@@ -138,6 +138,62 @@ REMOVE_ANIMATION_SETTINGS_TRACKER_REL = pathlib.Path(
 KNOWN_LEGACY_FALLBACK_BLOB = "8387af17a577a6720cccbc5ca952aefffafa6157"
 KNOWN_LEGACY_FALLBACK_TEST_BLOB = "23239ce5180bee05da6ea52afe889e00523619c4"
 
+LEGACY_LAUNCHER_COHESION_PORTRAIT_REL = pathlib.Path(
+    "quickstep/src/com/android/launcher3/uioverrides/touchcontrollers/"
+    "PortraitStatesTouchController.java"
+)
+LEGACY_LAUNCHER_COHESION_NO_BUTTON_REL = pathlib.Path(
+    "quickstep/src/com/android/launcher3/uioverrides/touchcontrollers/"
+    "NoButtonNavbarToOverviewTouchController.java"
+)
+LEGACY_LAUNCHER_COHESION_PATHS = {
+    LEGACY_LAUNCHER_COHESION_PORTRAIT_REL.as_posix(),
+    LEGACY_LAUNCHER_COHESION_NO_BUTTON_REL.as_posix(),
+}
+
+LEGACY_COHESION_IMPORT_OLD = (
+    "import com.android.launcher3.states.StateAnimationConfig;\n"
+)
+LEGACY_COHESION_IMPORT_NEW = (
+    LEGACY_COHESION_IMPORT_OLD
+    + "import com.android.launcher3.sable.SableQuickstepLauncher;\n"
+)
+LEGACY_COHESION_PORTRAIT_METHOD_OLD = """    @Override
+    protected boolean canInterceptTouch(MotionEvent ev) {
+        // If we are swiping to all apps instead of overview, allow it from anywhere.
+"""
+LEGACY_COHESION_PORTRAIT_METHOD_NEW = """    @Override
+    protected boolean canInterceptTouch(MotionEvent ev) {
+        // Sable owns every HOME-facing surface. Direct PortraitStatesTouchController
+        // instances are the native Launcher3 NORMAL <-> ALL_APPS path, so they must
+        // not steal vertical drags from the full-screen Sable Compose surface.
+        // NoButtonNavbarToOverviewTouchController is exempted here and applies its
+        // own nav-bar-only guard below so Quickstep Recents remains available.
+        if (mLauncher instanceof SableQuickstepLauncher
+                && ((SableQuickstepLauncher) mLauncher).isSableSurfaceActive()
+                && !(this instanceof NoButtonNavbarToOverviewTouchController)) {
+            return false;
+        }
+
+        // If we are swiping to all apps instead of overview, allow it from anywhere.
+"""
+LEGACY_COHESION_NO_BUTTON_OLD = """        mDidTouchStartInNavBar = (ev.getEdgeFlags() & EDGE_NAV_BAR) != 0;
+        boolean isOneHandedModeActive = (SystemUiProxy.INSTANCE.get(mLauncher)
+"""
+LEGACY_COHESION_NO_BUTTON_NEW = """        mDidTouchStartInNavBar = (ev.getEdgeFlags() & EDGE_NAV_BAR) != 0;
+
+        // On Sable HOME, vertical drags above the navigation edge belong to
+        // Start/All Apps/Search. Preserve only the genuine nav-bar gesture path
+        // used for Quickstep Overview/Recents.
+        if (mLauncher instanceof SableQuickstepLauncher
+                && ((SableQuickstepLauncher) mLauncher).isSableSurfaceActive()
+                && !mDidTouchStartInNavBar) {
+            return false;
+        }
+
+        boolean isOneHandedModeActive = (SystemUiProxy.INSTANCE.get(mLauncher)
+"""
+
 FOUNDATION_DIRTY_PATHS = {
     "Android.bp",
     "quickstep/AndroidManifest-launcher.xml",
@@ -1218,6 +1274,89 @@ def restore_head_file(launcher: pathlib.Path, rel: pathlib.Path) -> None:
     (launcher / rel).write_bytes(proc.stdout)
 
 
+def head_file_text(launcher: pathlib.Path, rel: pathlib.Path) -> str:
+    proc = subprocess.run(
+        ["git", "-C", str(launcher), "show", f"HEAD:{rel.as_posix()}"],
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise FoundationError(
+            f"cannot read pinned Launcher3 text {rel}: {proc.stderr.strip()}"
+        )
+    return proc.stdout
+
+
+def expected_legacy_launcher_cohesion(
+    rel: pathlib.Path,
+    pinned: str,
+) -> str:
+    text = replace_once(
+        pinned,
+        LEGACY_COHESION_IMPORT_OLD,
+        LEGACY_COHESION_IMPORT_NEW,
+        f"legacy-launcher-cohesion:{rel}:import",
+    )
+    if rel == LEGACY_LAUNCHER_COHESION_PORTRAIT_REL:
+        return replace_once(
+            text,
+            LEGACY_COHESION_PORTRAIT_METHOD_OLD,
+            LEGACY_COHESION_PORTRAIT_METHOD_NEW,
+            "legacy-launcher-cohesion:portrait-guard",
+        )
+    if rel == LEGACY_LAUNCHER_COHESION_NO_BUTTON_REL:
+        return replace_once(
+            text,
+            LEGACY_COHESION_NO_BUTTON_OLD,
+            LEGACY_COHESION_NO_BUTTON_NEW,
+            "legacy-launcher-cohesion:no-button-guard",
+        )
+    raise FoundationError(f"unexpected legacy launcher cohesion path: {rel}")
+
+
+def normalize_retired_launcher_cohesion(launcher: pathlib.Path) -> None:
+    dirty = launcher_dirty_paths(launcher)
+    extras = dirty - FOUNDATION_DIRTY_PATHS
+    if not extras:
+        return
+    if extras.isdisjoint(LEGACY_LAUNCHER_COHESION_PATHS):
+        return
+    if extras != LEGACY_LAUNCHER_COHESION_PATHS:
+        raise FoundationError(
+            "partial or mixed retired Launcher cohesion residue: "
+            + ", ".join(sorted(extras))
+        )
+
+    for rel in (
+        LEGACY_LAUNCHER_COHESION_PORTRAIT_REL,
+        LEGACY_LAUNCHER_COHESION_NO_BUTTON_REL,
+    ):
+        pinned = head_file_text(launcher, rel)
+        expected = expected_legacy_launcher_cohesion(rel, pinned)
+        actual = (launcher / rel).read_text(encoding="utf-8")
+        if actual != expected:
+            raise FoundationError(
+                f"retired Launcher cohesion content mismatch: {rel}"
+            )
+
+    for rel in (
+        LEGACY_LAUNCHER_COHESION_PORTRAIT_REL,
+        LEGACY_LAUNCHER_COHESION_NO_BUTTON_REL,
+    ):
+        restore_head_file(launcher, rel)
+
+    remaining = launcher_dirty_paths(launcher) - FOUNDATION_DIRTY_PATHS
+    if remaining:
+        raise FoundationError(
+            "retired Launcher cohesion normalization left unexpected dirt: "
+            + ", ".join(sorted(remaining))
+        )
+
+    print("R9_RETIRED_LAUNCHER_COHESION=NORMALIZED_TO_PINNED_HEAD")
+
+
 def normalize_known_legacy_residue(launcher: pathlib.Path) -> None:
     dirty = launcher_dirty_paths(launcher)
     test_path = LEGACY_FALLBACK_TEST_REL.as_posix()
@@ -1650,6 +1789,7 @@ def apply_tree(source: pathlib.Path) -> None:
         )
 
     normalize_known_legacy_residue(launcher)
+    normalize_retired_launcher_cohesion(launcher)
     validate_preexisting_fallback_compat(launcher)
     require_recognized_launcher_dirt(launcher, require_complete=False)
     require_workspace_sources(source)
@@ -2391,6 +2531,40 @@ import java.util.concurrent.ConcurrentHashMap
         patch_remove_animation_settings_tracker(patched_remove_animation)
         == patched_remove_animation
     )
+
+    portrait_legacy = (
+        LEGACY_COHESION_IMPORT_OLD
+        + LEGACY_COHESION_PORTRAIT_METHOD_OLD
+    )
+    portrait_expected = expected_legacy_launcher_cohesion(
+        LEGACY_LAUNCHER_COHESION_PORTRAIT_REL,
+        portrait_legacy,
+    )
+    assert "SableQuickstepLauncher" in portrait_expected
+    assert "!(this instanceof NoButtonNavbarToOverviewTouchController)" in portrait_expected
+
+    no_button_legacy = (
+        LEGACY_COHESION_IMPORT_OLD
+        + LEGACY_COHESION_NO_BUTTON_OLD
+    )
+    no_button_expected = expected_legacy_launcher_cohesion(
+        LEGACY_LAUNCHER_COHESION_NO_BUTTON_REL,
+        no_button_legacy,
+    )
+    assert "SableQuickstepLauncher" in no_button_expected
+    assert "!mDidTouchStartInNavBar" in no_button_expected
+
+    try:
+        expected_legacy_launcher_cohesion(
+            pathlib.Path("unexpected.java"),
+            LEGACY_COHESION_IMPORT_OLD,
+        )
+    except FoundationError:
+        pass
+    else:
+        raise AssertionError("legacy cohesion unexpected path did not fail closed")
+
+    print("R9_LAUNCHER3_RETIRED_COHESION_NORMALIZATION_SELF_TEST=PASS")
 
     try:
         replace_once("x", "missing", "new", "negative")
