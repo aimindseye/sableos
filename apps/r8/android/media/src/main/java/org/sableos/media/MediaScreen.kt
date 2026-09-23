@@ -2,6 +2,7 @@ package org.sableos.media
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,24 +20,33 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
+import kotlinx.coroutines.launch
 import org.sableos.design.SableSpacing
+import java.util.Locale
 
 internal val MediaPink = Color(0xFFFF4F9A)
 internal val MediaPurple = Color(0xFF7A42E8)
@@ -183,7 +194,6 @@ internal fun MediaScreen(
     val onAddLocalAudio = actions.onAddLocalAudio
     val onAddLocalFolder = actions.onAddLocalFolder
     val onPlayLocal = actions.onPlayLocal
-    val onRemoveLocal = actions.onRemoveLocal
     val onToggleFavoriteAudio = actions.onToggleFavoriteAudio
     val onPodcastFeedUrlChange = actions.onPodcastFeedUrlChange
     val onAddPodcastFeed = actions.onAddPodcastFeed
@@ -238,7 +248,6 @@ internal fun MediaScreen(
                 onAddLocalAudio = onAddLocalAudio,
                 onAddLocalFolder = onAddLocalFolder,
                 onPlay = onPlayLocal,
-                onRemove = onRemoveLocal,
                 onToggleFavorite = onToggleFavoriteAudio,
                 onCreatePlaylist = onCreatePlaylist,
                 onEditPlaylist = onEditPlaylist,
@@ -585,7 +594,6 @@ private fun CollectionScreen(
     onAddLocalAudio: () -> Unit,
     onAddLocalFolder: () -> Unit,
     onPlay: (Int) -> Unit,
-    onRemove: (LocalAudioItem) -> Unit,
     onToggleFavorite: (LocalAudioItem) -> Unit,
     onCreatePlaylist: () -> Unit,
     onEditPlaylist: (MediaPlaylist) -> Unit,
@@ -609,11 +617,16 @@ private fun CollectionScreen(
                 .entries
                 .map { it.key to it.value }
         }
+    val locale = Locale.getDefault()
+    val songs =
+        remember(localItems, locale) {
+            localItems.sortedBy { item -> item.title.lowercase(locale) }
+        }
     val favorites =
-        remember(localItems, favoriteAudioUris) {
-            localItems.filter { item ->
-                item.uri in favoriteAudioUris
-            }
+        remember(localItems, favoriteAudioUris, locale) {
+            localItems
+                .filter { item -> item.uri in favoriteAudioUris }
+                .sortedBy { item -> item.title.lowercase(locale) }
         }
     val indexByUri =
         remember(localItems) {
@@ -621,20 +634,44 @@ private fun CollectionScreen(
                 .mapIndexed { index, item -> item.uri to index }
                 .toMap()
         }
+    val sectionTargets =
+        remember(pivot, songs, artistGroups, albumGroups, favorites) {
+            val labels =
+                when (pivot) {
+                    LibraryPivot.Songs -> songs.map { it.title }
+                    LibraryPivot.Artists -> artistGroups.map { it.first }
+                    LibraryPivot.Albums -> albumGroups.map { it.first }
+                    LibraryPivot.Favorites -> favorites.map { it.title }
+                    LibraryPivot.Playlists -> emptyList()
+                }
+            buildMediaSectionTargets(labels)
+        }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var activeSection by remember(sectionTargets) {
+        mutableStateOf(sectionTargets.firstOrNull()?.letter.orEmpty())
+    }
 
-    LazyColumn(
+    Box(
         modifier =
             Modifier
                 .fillMaxSize()
                 .safeDrawingPadding()
                 .imePadding(),
-        contentPadding =
-            PaddingValues(
-                horizontal = SableSpacing.ScreenHorizontal,
-                vertical = SableSpacing.ScreenVertical,
-            ),
-        verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
+        LazyColumn(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(end = if (sectionTargets.isEmpty()) 0.dp else 36.dp),
+            state = listState,
+            contentPadding =
+                PaddingValues(
+                    horizontal = SableSpacing.ScreenHorizontal,
+                    vertical = SableSpacing.ScreenVertical,
+                ),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+        ) {
         item {
             SableHeroHeader(
                 eyebrow = "Sable Media",
@@ -734,17 +771,17 @@ private fun CollectionScreen(
             when (pivot) {
                 LibraryPivot.Songs -> {
                     items(
-                        count = localItems.size,
-                        key = { index -> localItems[index].uri },
+                        count = songs.size,
+                        key = { index -> songs[index].uri },
                     ) { index ->
-                        val item = localItems[index]
+                        val item = songs[index]
+                        val sourceIndex = indexByUri[item.uri] ?: return@items
                         LocalTrackRow(
                             item = item,
-                            accent = accentFor(index),
+                            accent = accentFor(sourceIndex),
                             favorite = item.uri in favoriteAudioUris,
                             onToggleFavorite = { onToggleFavorite(item) },
-                            onPlay = { onPlay(index) },
-                            onRemove = { onRemove(item) },
+                            onPlay = { onPlay(sourceIndex) },
                         )
                     }
                 }
@@ -805,7 +842,6 @@ private fun CollectionScreen(
                                 favorite = true,
                                 onToggleFavorite = { onToggleFavorite(item) },
                                 onPlay = { onPlay(sourceIndex) },
-                                onRemove = { onRemove(item) },
                             )
                         }
                     }
@@ -854,6 +890,104 @@ private fun CollectionScreen(
                 )
             }
         }
+        }
+
+        if (sectionTargets.isNotEmpty()) {
+            MediaAlphabetRail(
+                targets = sectionTargets,
+                active = activeSection,
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .width(36.dp),
+                onSelect = { target ->
+                    activeSection = target.letter
+                    scope.launch {
+                        // Seven fixed collection items precede the active library rows.
+                        listState.animateScrollToItem(7 + target.itemIndex)
+                    }
+                },
+            )
+        }
+    }
+}
+
+private data class MediaSectionTarget(
+    val letter: String,
+    val itemIndex: Int,
+)
+
+private fun buildMediaSectionTargets(labels: List<String>): List<MediaSectionTarget> {
+    val seen = linkedSetOf<String>()
+    return labels.mapIndexedNotNull { index, label ->
+        val trimmed = label.trim()
+        val letter =
+            trimmed.firstOrNull()
+                ?.takeIf { it.isLetter() }
+                ?.uppercaseChar()
+                ?.toString()
+                ?: "#"
+        if (seen.add(letter)) MediaSectionTarget(letter, index) else null
+    }
+}
+
+@Composable
+private fun MediaAlphabetRail(
+    targets: List<MediaSectionTarget>,
+    active: String,
+    modifier: Modifier = Modifier,
+    onSelect: (MediaSectionTarget) -> Unit,
+) {
+    fun targetAt(y: Float, height: Int): MediaSectionTarget? {
+        if (targets.isEmpty() || height <= 0) return null
+        val slot =
+            ((y / height) * targets.size)
+                .toInt()
+                .coerceIn(0, targets.lastIndex)
+        return targets[slot]
+    }
+
+    Column(
+        modifier =
+            modifier.pointerInput(targets) {
+                fun jump(y: Float) {
+                    targetAt(y, size.height)?.let(onSelect)
+                }
+                detectDragGestures(
+                    onDragStart = { offset -> jump(offset.y) },
+                    onDrag = { change, _ ->
+                        jump(change.position.y)
+                        change.consume()
+                    },
+                )
+            },
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        targets.forEach { target ->
+            Text(
+                text = target.letter,
+                modifier =
+                    Modifier
+                        .padding(horizontal = 8.dp, vertical = 1.dp)
+                        .pointerInput(target) {
+                            detectDragGestures(
+                                onDragStart = { onSelect(target) },
+                                onDrag = { _, _ -> Unit },
+                            )
+                        },
+                style = MaterialTheme.typography.labelMedium,
+                color =
+                    if (target.letter == active) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                fontWeight =
+                    if (target.letter == active) FontWeight.Bold else FontWeight.Normal,
+            )
+        }
     }
 }
 
@@ -864,27 +998,19 @@ private fun LocalTrackRow(
     favorite: Boolean,
     onToggleFavorite: () -> Unit,
     onPlay: () -> Unit,
-    onRemove: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
-        border =
-            BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant,
-            ),
-        tonalElevation = 0.dp,
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(SableSpacing.Md),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = SableSpacing.Sm),
             horizontalArrangement = Arrangement.spacedBy(SableSpacing.Md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ArtworkTile(
                 accent = accent,
-                modifier = Modifier.width(MediaArtworkSize),
+                modifier = Modifier.width(46.dp),
             )
 
             Column(
@@ -903,13 +1029,15 @@ private fun LocalTrackRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = item.album,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = accent,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (item.album.isNotBlank()) {
+                    Text(
+                        text = item.album,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = accent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
 
             CompactAction(
@@ -917,15 +1045,12 @@ private fun LocalTrackRow(
                 onClick = onToggleFavorite,
             )
             CompactAction(
-                text = "×",
-                onClick = onRemove,
-            )
-            CompactAction(
                 text = "▶",
                 active = true,
                 onClick = onPlay,
             )
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
@@ -994,45 +1119,45 @@ private fun LibraryGroupRow(
     accent: Color,
     onClick: () -> Unit,
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
-        border =
-            BorderStroke(
-                1.dp,
-                MaterialTheme.colorScheme.outlineVariant,
-            ),
-    ) {
-        Row(
-            modifier = Modifier.padding(SableSpacing.Md),
-            horizontalArrangement = Arrangement.spacedBy(SableSpacing.Md),
-            verticalAlignment = Alignment.CenterVertically,
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            onClick = onClick,
+            modifier = Modifier.fillMaxWidth(),
+            color = Color.Transparent,
         ) {
-            ArtworkTile(
-                accent = accent,
-                modifier = Modifier.width(MediaArtworkSize),
-            )
-            Column(
-                modifier = Modifier.weight(1f),
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = SableSpacing.Sm),
+                horizontalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                ArtworkTile(
+                    accent = accent,
+                    modifier = Modifier.width(46.dp),
                 )
+                Column(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = detail,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
-                    text = detail,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = "▶",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.titleLarge,
                 )
             }
-            Text(
-                text = "▶",
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.titleLarge,
-            )
         }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     }
 }
 
