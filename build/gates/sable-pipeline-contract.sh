@@ -15,6 +15,7 @@ for f in \
   "$ROOT/build/panther/qualify-r9-textreader.sh" \
   "$ROOT/build/panther/prepare-r8-final-ui.sh" \
   "$ROOT/build/panther/run-r8-release-candidate.sh" \
+  "$ROOT/build/panther/run-release.sh" \
   "$ROOT/build/gates/r8-build-driver-contract.sh" \
   "$ROOT/build/host/verify-r8-host-tools.sh" \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
@@ -164,6 +165,7 @@ echo "SABLE_PIPELINE_TARGET_FILES_ONLY_POLICY=PASS"
 QUAL="$ROOT/build/panther/qualify-r9-physical-ux.sh"
 FINAL_BUILD="$ROOT/build/panther/build-r8-final-ui.sh"
 RC_DRIVER="$ROOT/build/panther/run-r8-release-candidate.sh"
+RELEASE_DRIVER="$ROOT/build/panther/run-release.sh"
 grep -Fq 'FULL_TARGET_FILES_BUILD_AUTHORIZED=NO' "$QUAL"
 grep -Fq 'SABLE_QUALIFICATION_ONLY=YES' "$QUAL"
 grep -Fq 'r9-sms-mms-blocking-contract.py' "$QUAL"
@@ -251,6 +253,11 @@ do
   grep -Fq "$marker" "$BUILD_DRIVER_CONTRACT"
 done
 echo "SABLE_PIPELINE_STANDALONE_HOME_BUILD_DRIVER_CONTRACT=PASS"
+
+grep -Fq 'AUTO_REGISTER="${SABLE_AUTO_REGISTER_ARTIFACT:-NO}"' "$RELEASE_DRIVER"
+grep -Fq "SABLE_AUTO_REGISTER_ARTIFACT='\$AUTO_REGISTER'" "$RELEASE_DRIVER"
+grep -Fq 'SABLE_AUTO_REGISTER_ARTIFACT=YES' "$ROOT/build/devices/panther.sh"
+echo "SABLE_PIPELINE_TMUX_ARTIFACT_AUTO_REGISTER=PASS"
 
 grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
 grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
