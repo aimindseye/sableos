@@ -359,6 +359,20 @@ require(
     "R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK",
 )
 require(
+    "apps/r8/textreader/apply_sable_flavor.py",
+    'applicationId = "org.sableos.textreader"',
+    "SableGlobalTheme(window = window)",
+    "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT",
+    "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
+    "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
+)
+require(
+    "apps/r8/textreader/verify_sable_textreader.py",
+    "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
+    "SABLE_TEXT_READER_POLICY=PASS",
+)
+
+require(
     "apps/r8/reader/apply_sable_flavor.py",
     "R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL",
     "R9_READER_SETTINGS_GLOBAL_APPEARANCE=PASS_NO_OFFLINE_LIGHT_OVERRIDE",
@@ -369,6 +383,13 @@ require(
     "state.isOfflineMode && !BuildConfig.SABLE_PRODUCT",
     "Sepia",
     "ThemeMode.E_INK",
+    "SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT",
+    "SABLE_READER_PUBLICATION_FOCUS=PASS",
+)
+forbid(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "SableTextActivity",
+    "SableOcrActivity",
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
