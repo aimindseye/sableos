@@ -95,9 +95,9 @@ class HubSnapshotProvider : ContentProvider() {
             context.packageManager.getPackagesForUid(callingUid)
                 ?.toSet()
                 .orEmpty()
-        if ("com.android.launcher3" !in packages) {
+        if ("org.sableos.launcher" !in packages) {
             throw SecurityException(
-                "Sable live snapshot is restricted to Launcher3.",
+                "Sable live snapshot is restricted to SableLauncher.",
             )
         }
     }
