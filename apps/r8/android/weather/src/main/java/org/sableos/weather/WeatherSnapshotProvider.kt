@@ -104,7 +104,7 @@ class WeatherSnapshotProvider : ContentProvider() {
             .getPackagesForUid(callingUid)
             .orEmpty()
             .any { packageName ->
-                packageName == "com.android.launcher3"
+                packageName == "org.sableos.launcher"
             }
     }
 
