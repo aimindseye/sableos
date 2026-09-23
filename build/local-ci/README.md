@@ -36,7 +36,10 @@ all parser failures before failing STATIC, rather than stopping at the first
 file. Applicator `--self-test` executions are also aggregated so STATIC
 reports every failing active applicator before returning failure. The remaining
 source/product contract checks use the same aggregation rule, so one STATIC run
-reports all failing maintained contracts before the stage exits.
+reports all failing maintained contracts before the stage exits. Failed contract
+names are repeated in the final
+`SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=<comma-separated names>` marker
+for concise triage.
 
 `full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
 Text Reader and Mail qualification. It is the pre-image source/build/security
