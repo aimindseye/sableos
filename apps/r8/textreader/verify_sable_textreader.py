@@ -55,6 +55,7 @@ def main() -> None:
     design = root / "app/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
 
     require(build, 'applicationId = "org.sableos.textreader"', "SABLE_TEXT_READER_APPLICATION_ID")
+    require(build, "minSdk = 30", "SABLE_TEXT_READER_MIN_SDK")
     require(build, 'SableTextReader-${variantName}.apk', "SABLE_TEXT_READER_APK_NAME")
     forbid(build, "com.google.mlkit:translate", "SABLE_TEXT_READER_TRANSLATION_DEPENDENCY")
     require(strings, "Sable Text Reader", "SABLE_TEXT_READER_BRANDING")
@@ -113,6 +114,7 @@ def main() -> None:
     if launcher_count != 1:
         fail("SABLE_TEXT_READER_LAUNCHER_COUNT", f"count={launcher_count}")
 
+    print("SABLE_TEXT_READER_MIN_SDK=PASS_30")
     print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
     print("SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED")
     print("SABLE_TEXT_READER_CAMERA_PERMISSION=PASS_OPTIONAL_RUNTIME_ONLY")
