@@ -122,6 +122,11 @@ forbid(
     "apply_r9_launcher_cohesion.py",
     "SableQuickstepLauncher",
 )
+if (
+    ROOT
+    / "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
+).exists():
+    failures.append("retired_launcher_cohesion_applicator_present")
 
 # Live providers: sensitive data is visible only to SableLauncher.
 require(
