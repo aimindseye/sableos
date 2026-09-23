@@ -72,17 +72,42 @@ python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
 bash "$ROOT/build/gates/sable-pipeline-contract.sh"
 
 echo
-echo "===== R9 MESSAGES GRADLE ====="
+echo "===== R9 MESSAGES STATIC QUALITY PREFLIGHT ====="
 
 cd "$ROOT/apps/r8/android"
 
 ./gradlew \
   --offline \
-  :hub:assembleDebug \
-  :hub:lintDebug \
-  :hub:testDebugUnitTest \
   :hub:detekt \
   :hub:ktlintCheck \
+  --stacktrace \
+  --console=plain \
+  --no-daemon
+
+echo "R9_MESSAGES_STATIC_QUALITY_PREFLIGHT=PASS"
+
+echo
+echo "===== R9 MESSAGES COMPILE TEST LINT ====="
+
+./gradlew \
+  --offline \
+  :hub:compileDebugKotlin \
+  :hub:testDebugUnitTest \
+  :hub:lintDebug \
+  --stacktrace \
+  --console=plain \
+  --no-daemon
+
+echo "R9_MESSAGES_COMPILE=PASS"
+echo "R9_MESSAGES_UNIT_TESTS=PASS"
+echo "R9_MESSAGES_LINT=PASS"
+
+echo
+echo "===== R9 MESSAGES APK ASSEMBLY ====="
+
+./gradlew \
+  --offline \
+  :hub:assembleDebug \
   --stacktrace \
   --console=plain \
   --no-daemon
@@ -95,8 +120,6 @@ test -f "$APK" || {
 
 sha256sum "$APK"
 echo "R9_MESSAGES_APK=PASS path=$APK"
-echo "R9_MESSAGES_UNIT_TESTS=PASS"
-echo "R9_MESSAGES_LINT=PASS"
 echo "R9_MESSAGES_DETEKT=PASS"
 echo "R9_MESSAGES_KTLINT=PASS"
 echo "R9_MESSAGES_WARNINGS_AS_ERRORS=PASS"
