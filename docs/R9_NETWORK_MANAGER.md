@@ -123,8 +123,10 @@ Use a disposable/noncritical application that requests Network permission.
 5. Confirm the app cannot reach the network.
 6. Toggle Network access ON.
 7. Confirm the permission is granted again and network access returns.
-8. Confirm policy/system-fixed applications cannot be changed through the
-   Sable screen.
+8. If the candidate contains policy/system-fixed Network-permission rows,
+   confirm those rows are visible and cannot be changed through the Sable
+   screen. If the candidate contains no such rows, record that state
+   explicitly rather than fabricating a fixed-row pass.
 
 Required physical markers:
 
@@ -133,6 +135,8 @@ R9_SABLE_NETWORK_MANAGER_UI=PASS
 R9_SABLE_NETWORK_PERMISSION_REVOKE=PASS
 R9_SABLE_NETWORK_PERMISSION_RESTORE=PASS
 R9_SABLE_NETWORK_FIXED_POLICY=PASS
+# or, when no installed Network-permission row carries SYSTEM_FIXED/POLICY_FIXED:
+R9_SABLE_NETWORK_FIXED_POLICY=NOT_APPLICABLE_NO_FIXED_ROWS
 ```
 
 Transport-specific Mobile/WLAN acceptance is explicitly **not** part of R9.
