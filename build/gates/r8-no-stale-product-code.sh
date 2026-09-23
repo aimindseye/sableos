@@ -4,6 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 WS="${WS:-${SABLEOS_UPSTREAM:-}}"
+WORKSPACE_INVENTORY_REQUIRED="${R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED:-YES}"
+
+case "$WORKSPACE_INVENTORY_REQUIRED" in
+    YES|NO) ;;
+    *)
+        echo "R8_NO_STALE_PRODUCT_CODE=FAIL_WORKSPACE_INVENTORY_MODE value=$WORKSPACE_INVENTORY_REQUIRED"
+        exit 2
+        ;;
+esac
 
 fail() {
     echo "$1=FAIL"
@@ -15,6 +24,7 @@ echo "===== R8 NO-STALE PRODUCT CODE / PACKAGE GATE ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
 echo "BUILD_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
+echo "WORKSPACE_INVENTORY_REQUIRED=$WORKSPACE_INVENTORY_REQUIRED"
 
 stale_paths=(
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewActivity.kt"
@@ -149,18 +159,24 @@ if [[ -n "$WS" ]]; then
     fi
     echo "R8_STALE_WORKSPACE_PRODUCT_TREE=PASS_ABSENT"
 
-    python3 "$ROOT/build/gates/verify-r8-vendor-sable-inventory.py" \
-        "$WS/vendor/sable"
+    if [[ "$WORKSPACE_INVENTORY_REQUIRED" == YES ]]; then
+        python3 "$ROOT/build/gates/verify-r8-vendor-sable-inventory.py" \
+            "$WS/vendor/sable"
 
-    mapfile -t sable_r8_blueprints < <(
-        find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
-    )
-    [[ "${#sable_r8_blueprints[@]}" -eq 1 ]] || {
-        printf '%s\n' "${sable_r8_blueprints[@]}"
-        fail R8_DUPLICATE_PRODUCT_BLUEPRINT
-    }
-    [[ "${sable_r8_blueprints[0]}" == "$WS/vendor/sable/r8/Android.bp" ]]         || fail R8_DUPLICATE_PRODUCT_BLUEPRINT
-    echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
+        mapfile -t sable_r8_blueprints < <(
+            find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
+        )
+        [[ "${#sable_r8_blueprints[@]}" -eq 1 ]] || {
+            printf '%s\n' "${sable_r8_blueprints[@]}"
+            fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+        }
+        [[ "${sable_r8_blueprints[0]}" == "$WS/vendor/sable/r8/Android.bp" ]] \
+            || fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+        echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
+        echo "R8_WORKSPACE_PRODUCT_INVENTORY=PASS_EXACT"
+    else
+        echo "R8_WORKSPACE_PRODUCT_INVENTORY=SKIP_PRESTAGING"
+    fi
 fi
 
 for manifest in \
@@ -276,7 +292,7 @@ grep -Fq 'SABLE_MAIL_APPLICATION_ID=org.sableos.mail' "$MAIL_ENV" \
 grep -Fq 'SABLE_MAIL_REMOTE_CONTENT_PRIVACY=PASS_UPSTREAM_PRESERVED' "$MAIL_VERIFY" \
     || fail R8_SABLE_MAIL_REMOTE_CONTENT_POLICY
 
-if [[ -n "$WS" && -d "$WS/vendor/sable/r8/prebuilt" ]]; then
+if [[ "$WORKSPACE_INVENTORY_REQUIRED" == YES && -n "$WS" && -d "$WS/vendor/sable/r8/prebuilt" ]]; then
     python3 - "$WS/vendor/sable/r8/prebuilt" <<'PY'
 import pathlib
 import sys
@@ -304,6 +320,8 @@ if actual != expected:
     )
 print("R8_STAGED_APK_SET=PASS")
 PY
+elif [[ "$WORKSPACE_INVENTORY_REQUIRED" == NO ]]; then
+    echo "R8_STAGED_APK_SET=SKIP_PRESTAGING"
 fi
 
 echo "R8_STALE_PRODUCT_SOURCE_TEXT=PASS_ABSENT"
