@@ -176,6 +176,15 @@ require(
 )
 
 require(
+    f"{HUB_KT}/HubModels.kt",
+    "private fun reduceConversation(",
+    "private fun conversationKeyFor(",
+    "private fun ConnectedNotificationRecord.toHubMessage(",
+    "private fun ConnectedNotificationRecord.toHubConversation(",
+    "ConnectedConversationSlice",
+)
+
+require(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
     "HIDDEN_APPS_URI",
     'content://org.sableos.hub.connected_apps/hidden',
@@ -224,6 +233,44 @@ require(
     "R9_MESSAGES_REMOTE_INPUT=PASS_SOURCE_AUTHORIZED_ONLY",
 )
 
+require(
+    f"{HUB}/build.gradle.kts",
+    "allWarningsAsErrors.set(true)",
+    'config.setFrom(rootProject.file("config/detekt.yml"))',
+    "ignoreFailures = false",
+    "ignoreFailures.set(false)",
+)
+forbid(
+    "apps/r8/android/config/detekt.yml",
+    '"**/hub/HubModels.kt"',
+)
+
+QUALIFIER = "build/panther/qualify-r9-messages.sh"
+require(
+    QUALIFIER,
+    "===== R9 MESSAGES STATIC QUALITY PREFLIGHT =====",
+    ":hub:detekt",
+    ":hub:ktlintCheck",
+    "R9_MESSAGES_STATIC_QUALITY_PREFLIGHT=PASS",
+    "===== R9 MESSAGES COMPILE TEST LINT =====",
+    ":hub:compileDebugKotlin",
+    ":hub:testDebugUnitTest",
+    ":hub:lintDebug",
+    "R9_MESSAGES_COMPILE=PASS",
+    "===== R9 MESSAGES APK ASSEMBLY =====",
+    ":hub:assembleDebug",
+)
+qualifier = read(QUALIFIER)
+preflight_index = qualifier.find("===== R9 MESSAGES STATIC QUALITY PREFLIGHT =====")
+compile_index = qualifier.find("===== R9 MESSAGES COMPILE TEST LINT =====")
+assemble_index = qualifier.find("===== R9 MESSAGES APK ASSEMBLY =====")
+if not (
+    0 <= preflight_index < compile_index < assemble_index
+):
+    failures.append(
+        "messages_qualification_order=quality_preflight_before_compile_before_assemble"
+    )
+
 hub_source_root = ROOT / HUB / "src/main/java"
 for path in sorted(hub_source_root.rglob("*.kt")):
     value = path.read_text(encoding="utf-8")
@@ -259,4 +306,7 @@ print("R9_MESSAGES_LAUNCHER_HIDE_POLICY=PASS_DYNAMIC")
 print("R9_MESSAGES_LAUNCHER_POLICY_CALLER_BOUNDARY=PASS_LAUNCHER_ONLY")
 print("R9_MESSAGES_LAUNCHER_INVENTORY_REFRESH=PASS_OFF_MAIN")
 print("R9_MESSAGES_SETTINGS_ENTRY=PASS_CONNECTED_APPS")
+print("R9_MESSAGES_REDUCER_STRUCTURE=PASS_DECOMPOSED")
+print("R9_MESSAGES_QUALITY_CONFIG=PASS_FAIL_CLOSED")
+print("R9_MESSAGES_QUALIFICATION_ORDER=PASS_PREFLIGHT_BEFORE_BUILD")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
