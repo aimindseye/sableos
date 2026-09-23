@@ -58,6 +58,13 @@ UI5C_SYSTEMUI_LATER_ARGS=(
     packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt
     --allow-framework-modified
     packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt
+)
+
+# Current R9 SystemUI coherence additionally brands the framework-owned ADB
+# developer notification. Keep the pre-ADB overlay as an exact known warm
+# predecessor so it can converge in place, while preferring the current state.
+UI5C_SYSTEMUI_CURRENT_LATER_ARGS=(
+    "${UI5C_SYSTEMUI_LATER_ARGS[@]}"
     --allow-framework-modified
     core/java/android/debug/AdbNotifications.java
 )
@@ -85,16 +92,32 @@ UI5C_SETTINGS_LATER_ARGS=(
     src/com/android/settings/sable/SableNetworkManagerSettings.java
 )
 
+verify_ui5c_with_systemui_current_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_CURRENT_LATER_ARGS[@]}"         verify
+}
+
 verify_ui5c_with_systemui_later() {
     python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         verify
+}
+
+verify_ui5c_with_full_r9_current_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_CURRENT_LATER_ARGS[@]}"         "${UI5C_SETTINGS_LATER_ARGS[@]}"         verify
 }
 
 verify_ui5c_with_full_r9_later() {
     python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         "${UI5C_SETTINGS_LATER_ARGS[@]}"         verify
 }
 
+repair_ui5c_known_with_systemui_current_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_CURRENT_LATER_ARGS[@]}"         repair-known-setup-strings
+}
+
 repair_ui5c_known_with_systemui_later() {
     python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_LATER_ARGS[@]}"         repair-known-setup-strings
+}
+
+repair_ui5c_known_with_full_r9_current_later() {
+    python3 "$UI5C_UI6"         --source "$WS"         "${UI5C_SYSTEMUI_CURRENT_LATER_ARGS[@]}"         "${UI5C_SETTINGS_LATER_ARGS[@]}"         repair-known-setup-strings
 }
 
 repair_ui5c_known_with_full_r9_later() {
@@ -129,22 +152,32 @@ if python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify >/dev/null 2>&1; then
     python3 "$SYSTEMUI_COHERENCE" --source "$WS" verify
     echo "R9_SYSTEMUI_COHERENCE=ALREADY_APPLIED"
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS"
+elif verify_ui5c_with_full_r9_current_later >/dev/null 2>&1; then
+    verify_ui5c_with_full_r9_current_later
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_CURRENT_LATER_DIRT_RECOGNIZED"
 elif verify_ui5c_with_full_r9_later >/dev/null 2>&1; then
     verify_ui5c_with_full_r9_later
-    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_LATER_DIRT_RECOGNIZED"
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_R9_PRE_ADB_LATER_DIRT_RECOGNIZED"
+elif verify_ui5c_with_systemui_current_later >/dev/null 2>&1; then
+    verify_ui5c_with_systemui_current_later
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_CURRENT_LATER_DIRT_RECOGNIZED"
 elif verify_ui5c_with_systemui_later >/dev/null 2>&1; then
     verify_ui5c_with_systemui_later
-    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED"
+    echo "R8_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_PRE_ADB_LATER_DIRT_RECOGNIZED"
 elif python3 "$UI5C_UI6" --source "$WS" verify >/dev/null 2>&1; then
     python3 "$UI5C_UI6" --source "$WS" verify
     echo "R8_CUMULATIVE_SYSTEM_SURFACES=ALREADY_APPLIED"
 else
     # A previously observed UI5C resource-alias failure has a dedicated
     # fail-closed repair. It only mutates the exact known wrong file hash.
-    if repair_ui5c_known_with_full_r9_later; then
-        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_R9_LATER_DIRT"
+    if repair_ui5c_known_with_full_r9_current_later; then
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_R9_CURRENT_LATER_DIRT"
+    elif repair_ui5c_known_with_full_r9_later; then
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_R9_PRE_ADB_LATER_DIRT"
+    elif repair_ui5c_known_with_systemui_current_later; then
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_SYSTEMUI_CURRENT_LATER_DIRT"
     elif repair_ui5c_known_with_systemui_later; then
-        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_SYSTEMUI_LATER_DIRT"
+        echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE_WITH_SYSTEMUI_PRE_ADB_LATER_DIRT"
     elif python3 "$UI5C_UI6" --source "$WS" repair-known-setup-strings; then
         echo "R8_CUMULATIVE_SYSTEM_SURFACES=REPAIRED_KNOWN_UI5C_STATE"
     else
