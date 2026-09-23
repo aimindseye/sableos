@@ -70,6 +70,11 @@ CONTACTS_DIRT = {
     f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
 }
 
+CONTACTS_PARTIAL_SCOPE_MARKER = "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE="
+CONTACTS_PARTIAL_CONVERGENCE_MARKER = (
+    "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS"
+)
+
 DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     DIALER_LIGHT: (
         (
@@ -524,10 +529,13 @@ def apply_repo(
         return
 
     if current:
-        print(
-            f"R9_{label}_PRESENTATION_PARTIAL_SCOPE="
-            f"{sorted(current)!r}"
-        )
+        if label == "CONTACTS":
+            print(f"{CONTACTS_PARTIAL_SCOPE_MARKER}{sorted(current)!r}")
+        else:
+            print(
+                f"R9_{label}_PRESENTATION_PARTIAL_SCOPE="
+                f"{sorted(current)!r}"
+            )
 
     for rel, (state, canonical) in states.items():
         if state == "PINNED":
@@ -548,7 +556,10 @@ def apply_repo(
         raise SystemExit(f"R9_{label}_CANONICAL_CONVERGENCE=FAIL")
 
     if current:
-        print(f"R9_{label}_PRESENTATION_PARTIAL_CONVERGENCE=PASS")
+        if label == "CONTACTS":
+            print(CONTACTS_PARTIAL_CONVERGENCE_MARKER)
+        else:
+            print(f"R9_{label}_PRESENTATION_PARTIAL_CONVERGENCE=PASS")
     print(f"R9_{label}_PRESENTATION=APPLIED")
 
 def verify_repo(
@@ -574,13 +585,17 @@ def verify_repo(
     for rel, replacements in transforms.items():
         text = (root / rel).read_text(encoding="utf-8")
         for old, new in replacements:
-            if new not in text:
+            new_count, old_outside_new_count = replacement_state(
+                text,
+                old,
+                new,
+            )
+            if new_count != 1 or old_outside_new_count != 0:
                 raise SystemExit(
-                    f"R9_{label}_VERIFY=FAIL file={rel} missing={new!r}"
-                )
-            if old in text:
-                raise SystemExit(
-                    f"R9_{label}_VERIFY=FAIL file={rel} stale={old!r}"
+                    f"R9_{label}_VERIFY=FAIL file={rel} "
+                    f"new_count={new_count} "
+                    f"old_outside_new_count={old_outside_new_count} "
+                    f"old={old!r}"
                 )
 
     behavioral = {
@@ -725,6 +740,30 @@ def self_test() -> None:
                 raise SystemExit(
                     f"R9_{label}_SELF_TEST=FAIL_IDEMPOTENCE file={path}"
                 )
+
+    nested_old = """    public int getPositionForSection(int sectionIndex) {
+        if (mIndexer == null) {
+            return -1;
+        }
+
+        return mIndexer.getPositionForSection(sectionIndex);
+    }
+"""
+    nested_new = nested_old + """
+    public int getListPositionForSection(int sectionIndex) {
+        return sectionIndex;
+    }
+"""
+    new_count, old_outside_new_count = replacement_state(
+        nested_new,
+        nested_old,
+        nested_new,
+    )
+    if new_count != 1 or old_outside_new_count != 0:
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_NESTED_REPLACEMENT_STATE"
+        )
+    print("R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS")
 
     if classify_text_state(
         "pinned",
