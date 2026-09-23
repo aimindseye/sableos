@@ -52,6 +52,8 @@ def main() -> None:
     strings = root / "app/src/main/res/values/strings.xml"
     main_source = root / "app/src/main/java/org/vaachak/textreader/MainActivity.kt"
     shared = root / "app/src/main/java/org/vaachak/textreader/SharedComponents.kt"
+    text_util = root / "app/src/main/java/org/vaachak/textreader/TextReaderUtil.kt"
+    tts_settings = root / "app/src/main/java/org/vaachak/textreader/TtsSettingsView.kt"
     design = root / "app/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
 
     require(build, 'applicationId = "org.sableos.textreader"', "SABLE_TEXT_READER_APPLICATION_ID")
@@ -64,9 +66,33 @@ def main() -> None:
     require(main_source, "TextToSpeech", "SABLE_TEXT_READER_TTS")
     require(main_source, 'CreateDocument("audio/wav")', "SABLE_TEXT_READER_AUDIO_EXPORT")
     require(main_source, "TextRecognition.getClient", "SABLE_TEXT_READER_GALLERY_OCR")
+    require(main_source, "Intent.ACTION_VIEW", "SABLE_TEXT_READER_VIEW_HANDLER")
+    require(
+        main_source,
+        "TextReaderUtil.readTextFromStream",
+        "SABLE_TEXT_READER_BOUNDED_VIEW_READER",
+    )
+    require(
+        main_source,
+        "selectLocalVoice(tts, locale)",
+        "SABLE_TEXT_READER_LOCAL_TTS_PLAYBACK",
+    )
+    require(
+        main_source,
+        "selectLocalVoice(ttsEngine, currentTtsLocale)",
+        "SABLE_TEXT_READER_LOCAL_TTS_EXPORT",
+    )
     forbid(main_source, "ProfessionalTranslationRow(", "SABLE_TEXT_READER_TRANSLATION_UI")
     forbid(shared, "downloadModelIfNeeded", "SABLE_TEXT_READER_MODEL_FETCH")
     forbid(shared, "TranslateLanguage", "SABLE_TEXT_READER_TRANSLATION_SOURCE")
+    require(text_util, "MAX_TEXT_BYTES = 2 * 1024 * 1024L", "SABLE_TEXT_READER_TEXT_BOUND")
+    require(text_util, "BoundedInputStream", "SABLE_TEXT_READER_BOUNDED_STREAM")
+    require(
+        tts_settings,
+        "filterNot { it.isNetworkConnectionRequired }",
+        "SABLE_TEXT_READER_LOCAL_TTS_FILTER",
+    )
+    require(tts_settings, "fun selectLocalVoice(", "SABLE_TEXT_READER_LOCAL_TTS_SELECTOR")
     require(design, 'AUTHORITY = "org.sableos.appearance"', "SABLE_TEXT_READER_APPEARANCE_AUTHORITY")
 
     manifest_text = manifest_path.read_text(encoding="utf-8")
@@ -123,6 +149,8 @@ def main() -> None:
     print("SABLE_TEXT_READER_PROCESS_TEXT=PASS")
     print("SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS")
     print("SABLE_TEXT_READER_GLOBAL_APPEARANCE=PASS")
+    print("SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB")
+    print("SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED")
 
     if len(sys.argv) == 3:
         apk = pathlib.Path(sys.argv[2]).resolve()
@@ -157,6 +185,7 @@ def main() -> None:
         print("SABLE_TEXT_READER_APK_INTERNET_PERMISSION=PASS_ABSENT")
         print("SABLE_TEXT_READER_APK_CAMERA_PERMISSION=PASS_PRESENT")
         print("SABLE_TEXT_READER_APK_SEND_PROCESS_TEXT=PASS")
+        print("SABLE_TEXT_READER_APK_OFFLINE_BOUNDARY=PASS")
         print(
             "SABLE_TEXT_READER_APK_SHA256="
             + subprocess.check_output(
