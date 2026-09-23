@@ -14,6 +14,7 @@ for f in \
   "$ROOT/build/panther/qualify-r9-messages.sh" \
   "$ROOT/build/panther/prepare-r8-final-ui.sh" \
   "$ROOT/build/panther/run-r8-release-candidate.sh" \
+  "$ROOT/build/gates/r8-build-driver-contract.sh" \
   "$ROOT/build/host/verify-r8-host-tools.sh" \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
   "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh" \
@@ -162,6 +163,18 @@ grep -Fq 'SABLE_LOCAL_CI_APPLICATOR_SELF_TEST_FAILURE=' "$LOCAL_CI"
 grep -Fq 'SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS' "$LOCAL_CI"
 grep -Fq 'SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=FAIL' "$LOCAL_CI"
 echo "SABLE_PIPELINE_LOCAL_CI_APPLICATOR_SELF_TEST_AGGREGATION=PASS"
+
+BUILD_DRIVER_CONTRACT="$ROOT/build/gates/r8-build-driver-contract.sh"
+for marker in \
+  'R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=PASS' \
+  'R9_SABLE_HOME_TARGET_POLICY_CONTRACT=PASS' \
+  'R9_SABLE_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=PASS' \
+  'R9_BUILD_DRIVER_HOME_DOC_CONTRACT=PASS' \
+  'R8_BUILD_DRIVER_CONTRACT=FAIL_UNEXPECTED'
+do
+  grep -Fq "$marker" "$BUILD_DRIVER_CONTRACT"
+done
+echo "SABLE_PIPELINE_STANDALONE_HOME_BUILD_DRIVER_CONTRACT=PASS"
 
 grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
 grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
