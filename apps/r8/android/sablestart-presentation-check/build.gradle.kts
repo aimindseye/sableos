@@ -29,21 +29,52 @@ android {
         }
     }
 
+    sourceSets {
+        getByName("main") {
+            java.srcDir(
+                layout.buildDirectory.dir("generated/sablestartPresentation")
+            )
+        }
+    }
 }
 
-kotlin {
-    sourceSets.getByName("main").kotlin.apply {
-        srcDir(
-            "../../../../src/android/packages/apps/SableStart/src"
+val canonicalPresentationRoot =
+    layout.projectDirectory.dir(
+        "../../../../src/android/packages/apps/SableStart/src"
+    )
+val generatedPresentationDir =
+    layout.buildDirectory.dir("generated/sablestartPresentation")
+val canonicalPresentationSources =
+    listOf(
+        "com/sable/start/live/LiveSurfaceModels.kt",
+        "com/sable/start/model/AppEntry.kt",
+        "com/sable/start/platform/LiveSurfaceRepository.kt",
+        "com/sable/start/platform/StartStateRepository.kt",
+        "com/sable/start/ui/SableStartScreen.kt",
+        "com/sable/start/ui/SableGlyphIcon.kt",
+    )
+
+val syncSableStartPresentationSources =
+    tasks.register<Sync>("syncSableStartPresentationSources") {
+        into(generatedPresentationDir)
+        canonicalPresentationSources.forEach { relativePath ->
+            val parent = relativePath.substringBeforeLast("/")
+            from(canonicalPresentationRoot.file(relativePath)) {
+                into(parent)
+            }
+        }
+    }
+
+tasks.configureEach {
+    if (
+        name != "syncSableStartPresentationSources" &&
+        (
+            name == "preBuild" ||
+                name.contains("Lint") ||
+                name.startsWith("compileDebugKotlin")
         )
-        include(
-            "com/sable/start/live/LiveSurfaceModels.kt",
-            "com/sable/start/model/AppEntry.kt",
-            "com/sable/start/platform/LiveSurfaceRepository.kt",
-            "com/sable/start/platform/StartStateRepository.kt",
-            "com/sable/start/ui/SableStartScreen.kt",
-            "com/sable/start/ui/SableGlyphIcon.kt",
-        )
+    ) {
+        dependsOn(syncSableStartPresentationSources)
     }
 }
 
