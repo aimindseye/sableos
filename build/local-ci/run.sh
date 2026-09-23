@@ -153,12 +153,14 @@ PY
   echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS"
 
   local static_contract_failures=0
+  local -a static_contract_failure_names=()
 
   run_static_contract() {
     local name="$1"
     shift
     if ! "$@"; then
       echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE=$name"
+      static_contract_failure_names+=("$name")
       static_contract_failures=$((static_contract_failures + 1))
     fi
   }
@@ -197,6 +199,9 @@ PY
     python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
 
   if [[ "$static_contract_failures" -ne 0 ]]; then
+    local failure_csv
+    failure_csv="$(IFS=,; printf '%s' "${static_contract_failure_names[*]}")"
+    echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=$failure_csv"
     echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=FAIL count=$static_contract_failures"
     return 1
   fi
