@@ -58,6 +58,7 @@ require(
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
     "PackageManager.GET_PERMISSIONS",
+    'Suppress("DEPRECATION")',
     "PackageInfo.REQUESTED_PERMISSION_GRANTED",
     "createContextAsUser(user, 0)",
     'getOrNull() ?: return "permissions · unavailable"',
@@ -68,6 +69,11 @@ require(
     'PrivacyPermissionGroup("camera"',
     'PrivacyPermissionGroup("microphone"',
 )
+forbid(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
+    "PackageInfoFlags.of(",
+)
+
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "private fun AppsScreen(",
