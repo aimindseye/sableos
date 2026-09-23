@@ -70,7 +70,7 @@ tasks.configureEach {
         name != "syncSableStartPresentationSources" &&
         (
             name == "preBuild" ||
-                name.contains("Lint") ||
+                name.contains("lint", ignoreCase = true) ||
                 name.startsWith("compileDebugKotlin")
         )
     ) {
