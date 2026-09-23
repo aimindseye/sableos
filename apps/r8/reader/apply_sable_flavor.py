@@ -1296,6 +1296,30 @@ fun ProductReaderTheme(
     print("R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL")
     print("R9_READER_SETTINGS_OVERRIDES=PASS_SEPIA_ONLY")
 
+    # Product identity must also be correct inside the composed publication UI.
+    # The manifest/application label alone is insufficient because upstream
+    # Vaachak renders its own title and onboarding copy from Kotlin source.
+    main_activity = (
+        leisure_sources
+        / "org/vaachak/reader/leisure/MainActivity.kt"
+    )
+    replace_exact_text(
+        main_activity,
+        '        Text("Welcome to Vaachak", style = MaterialTheme.typography.headlineLarge)',
+        '        Text(\n'
+        '            if (BuildConfig.SABLE_PRODUCT) "Welcome to Sable Reader" else "Welcome to Vaachak",\n'
+        '            style = MaterialTheme.typography.headlineLarge,\n'
+        '        )',
+        "SABLE_READER_ONBOARDING_PRODUCT_IDENTITY",
+    )
+    replace_exact_text(
+        main_activity,
+        '                        text = "Vaachak",',
+        '                        text = if (BuildConfig.SABLE_PRODUCT) "Sable Reader" else "Vaachak",',
+        "SABLE_READER_LIBRARY_PRODUCT_IDENTITY",
+    )
+    print("SABLE_READER_IN_APP_PRODUCT_IDENTITY=PASS_SABLE_READER")
+
     # Plain-text, share/process-text, OCR and text-specific TTS are intentionally
     # owned by the standalone Sable Text Reader product.
     print("SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT")
