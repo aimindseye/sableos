@@ -100,8 +100,7 @@ class ConnectedAppsInventory(
                     ?.label
                     ?.toString()
                     ?.trim()
-            }
-            ?.takeIf { it.isNotBlank() }
+            }?.takeIf { it.isNotBlank() }
             ?: key.packageName
 
     private fun userForSerial(serial: Long): UserHandle? =
