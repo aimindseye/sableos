@@ -121,8 +121,11 @@ mode. Sepia and E-ink remain explicit reading-only overrides.
 Platform/core surfaces that must follow Android system night mode include
 Settings, SystemUI, Phone, Contacts, Clock, Files, Photos/Gallery, Vanadium and
 other bundled apps that honor Android DayNight/system appearance. Camera
-remains within its upstream preprocessed/security boundary and is accepted
-according to the appearance support of that upstream package.
+remains within its upstream preprocessed/security boundary. Its main capture
+activity is deliberately dark upstream; R9 accepts that capture surface as an
+explicit exception rather than replacing or re-signing the security-sensitive
+prebuilt solely for cosmetic Day/Night parity. Camera settings surfaces may
+still follow their upstream DayNight behavior.
 
 Third-party applications installed later are not forcibly recolored. They
 follow Sable Light/Dark only when they honor Android system night mode or a
