@@ -410,7 +410,8 @@ def self_test() -> None:
     </application>
 </manifest>
 """
-        observer = """import android.content.pm.ResolveInfo;
+        observer = """import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import com.android.launcher3.util.DaggerSingletonTracker;
         mMyPrimaryHomeIntent = new Intent(mCurrentPrimaryHomeIntent).setPackage(
                 context.getPackageName());
