@@ -33,7 +33,7 @@ require(
     "collection screen",
 )
 collection = media_screen.split("private fun CollectionScreen(", 1)[1].split(
-    "private fun LocalTrackRow(", 1
+    "private data class MediaIndexedTrack(", 1
 )[0]
 require("LazyColumn(", collection, "collection LazyColumn")
 require("count = songs.size", collection, "sorted lazy song item count")
