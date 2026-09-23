@@ -235,29 +235,40 @@ def verify_file(
 def apply_deskclock_semantic_text(root: Path) -> None:
     path = root / "packages/apps/DeskClock/res/values/styles.xml"
     text = path.read_text(encoding="utf-8")
+    # The pinned DeskClock source already contains one semantic primary-color
+    # use before Sable replaces four hard-coded white uses. Accept pristine,
+    # partially-applied and exact-final states only; the total cardinality is
+    # fixed so unrelated drift still fails closed.
     replacements = (
         (
             '<item name="android:textColor">@color/white_63p</item>',
             '<item name="android:textColor">?android:attr/textColorSecondary</item>',
+            2,
             2,
         ),
         (
             '<item name="android:textColor">@color/white</item>',
             '<item name="android:textColor">?android:attr/textColorPrimary</item>',
             4,
+            5,
         ),
     )
-    for old, new, expected in replacements:
+    for old, new, max_old, final_new in replacements:
         old_count = text.count(old)
         new_count = text.count(new)
-        if old_count == 0 and new_count == expected:
+        if old_count == 0 and new_count == final_new:
             continue
-        if old_count != expected:
+        if old_count > max_old or old_count + new_count != final_new:
             raise PresentationError(
-                f"DeskClock semantic text anchor mismatch: {old!r} "
-                f"expected={expected} actual={old_count}"
+                f"DeskClock semantic text state mismatch: {old!r} "
+                f"old={old_count}/{max_old} new={new_count}/{final_new}"
             )
         text = text.replace(old, new)
+        if text.count(new) != final_new:
+            raise PresentationError(
+                f"DeskClock semantic text convergence failed: {new!r} "
+                f"expected={final_new} actual={text.count(new)}"
+            )
     path.write_text(text, encoding="utf-8")
 
 
@@ -291,6 +302,15 @@ def apply_gallery_light_window(root: Path) -> None:
         <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
         <item name="android:windowBackground">@android:color/black</item>
 """
+    # Upgrade the immediately previous qualified R9 Photos state in place.
+    # That state already replaced the black window background but predates the
+    # explicit day/night system-bar attributes added after physical review.
+    gallery_previous = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+        <item name="android:displayOptions"></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
+        <item name="android:windowBackground">@color/default_background</item>
+"""
     gallery_replacement = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
         <item name="android:displayOptions"></item>
         <item name="android:windowContentOverlay">@null</item>
@@ -302,12 +322,23 @@ def apply_gallery_light_window(root: Path) -> None:
         <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowLightNavigationBar">true</item>
 """
-    if gallery_replacement in text:
+    if text.count(gallery_replacement) == 1:
         return
-    if text.count(gallery_anchor) != 1:
-        raise PresentationError("Gallery light window style anchor mismatch")
+
+    candidates = [
+        candidate
+        for candidate in (gallery_anchor, gallery_previous)
+        if text.count(candidate) == 1
+    ]
+    if len(candidates) != 1:
+        raise PresentationError(
+            "Gallery light window style state mismatch "
+            f"pristine={text.count(gallery_anchor)} "
+            f"previous={text.count(gallery_previous)} "
+            f"final={text.count(gallery_replacement)}"
+        )
     path.write_text(
-        text.replace(gallery_anchor, gallery_replacement, 1),
+        text.replace(candidates[0], gallery_replacement, 1),
         encoding="utf-8",
     )
 
