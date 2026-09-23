@@ -6,9 +6,30 @@
 # Set NO_COLOR to disable ANSI output explicitly.
 
 sable_console_color_enabled() {
-    [[ -t 1 ]] &&
-    [[ -z "${NO_COLOR:-}" ]] &&
-    [[ "${TERM:-}" != dumb ]]
+    [[ -z "${NO_COLOR:-}" ]] || return 1
+
+    case "${SABLE_CONSOLE_COLOR:-AUTO}" in
+        YES) return 0 ;;
+        NO) return 1 ;;
+        AUTO) ;;
+        *) return 1 ;;
+    esac
+
+    [[ -t 1 ]] && [[ "${TERM:-}" != dumb ]]
+}
+
+# Capture interactive color capability before a driver redirects stdout through
+# tee. Nested scripts inherit the decision, while NO_COLOR always wins.
+sable_console_capture_color() {
+    if [[ -n "${NO_COLOR:-}" ]]; then
+        export SABLE_CONSOLE_COLOR=NO
+    elif [[ "${SABLE_CONSOLE_COLOR:-AUTO}" == YES || "${SABLE_CONSOLE_COLOR:-AUTO}" == NO ]]; then
+        export SABLE_CONSOLE_COLOR
+    elif [[ -t 1 && "${TERM:-}" != dumb ]]; then
+        export SABLE_CONSOLE_COLOR=YES
+    else
+        export SABLE_CONSOLE_COLOR=NO
+    fi
 }
 
 _sable_console_emit() {
