@@ -56,7 +56,10 @@ Settings remains the only persisted global appearance authority at
 ### Recents / gesture navigation substrate
 
 Launcher3QuickStep remains installed for R9 only as the Android
-Quickstep/Recents integration substrate. It must no longer host Sable UI or be
+Quickstep/Recents integration substrate. The existing Launcher3 foundation
+applicator is a compile-compatibility intermediate only: preparation may apply
+it to the pinned Launcher3 tree, but must immediately apply and verify the
+Recents-only cutover before qualification. It must no longer host Sable UI or be
 the default HOME.
 
 When another package owns HOME, Launcher3's existing Quickstep implementation
