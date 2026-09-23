@@ -51,8 +51,10 @@ echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
 
 python3 "$ROOT/build/deploy/target_files_plan.py" --self-test
 python3 "$ROOT/build/deploy/artifact_registry.py" self-test
+python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" --self-test
 echo "SABLE_PIPELINE_FASTBOOT_PLAN_SELF_TEST=PASS"
 echo "SABLE_PIPELINE_ARTIFACT_REGISTRY_SELF_TEST=PASS"
+echo "SABLE_PIPELINE_SETTINGS_COHESION_SELF_TEST=PASS"
 
 grep -Fq 'usage:' "$ROOT/build/sable.sh"
 grep -Fq 'build/sable.sh <device> <release> <function>' "$ROOT/build/sable.sh"
