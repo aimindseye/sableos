@@ -31,6 +31,9 @@ for path in files:
     if not value.endswith("\n"):
         failures.append(f"missing_final_newline={rel}")
 
+    if "import androidx.compose.foundation.layout.weight" in value:
+        failures.append(f"forbidden_compose_weight_import={rel}")
+
     lines = value.splitlines()
     for line_number, line in enumerate(lines, start=1):
         if len(line) > MAX_LINE_LENGTH:
@@ -84,4 +87,5 @@ print(f"R9_MESSAGES_SOURCE_STYLE_FILES=PASS count={len(files)}")
 print(f"R9_MESSAGES_SOURCE_MAX_LINE_LENGTH=PASS value={MAX_LINE_LENGTH}")
 print("R9_MESSAGES_SOURCE_WHITESPACE=PASS")
 print("R9_MESSAGES_SOURCE_CHAIN_INDENTATION=PASS")
+print("R9_MESSAGES_COMPOSE_WEIGHT_IMPORT=PASS_SCOPED")
 print("R9_MESSAGES_SOURCE_STYLE_PREFLIGHT=PASS")
