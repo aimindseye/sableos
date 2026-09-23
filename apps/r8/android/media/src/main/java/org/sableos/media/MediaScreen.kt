@@ -2,6 +2,7 @@ package org.sableos.media
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -970,13 +971,8 @@ private fun MediaAlphabetRail(
                 text = target.letter,
                 modifier =
                     Modifier
-                        .padding(horizontal = 8.dp, vertical = 1.dp)
-                        .pointerInput(target) {
-                            detectDragGestures(
-                                onDragStart = { onSelect(target) },
-                                onDrag = { _, _ -> Unit },
-                            )
-                        },
+                        .clickable { onSelect(target) }
+                        .padding(horizontal = 8.dp, vertical = 1.dp),
                 style = MaterialTheme.typography.labelMedium,
                 color =
                     if (target.letter == active) {
