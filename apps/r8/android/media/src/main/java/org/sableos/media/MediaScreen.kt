@@ -236,8 +236,9 @@ internal fun MediaScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
-        if (destination == MediaDestination.Collection) {
-            CollectionScreen(
+        when (destination) {
+            MediaDestination.Collection -> {
+                CollectionScreen(
                 pivot = libraryPivot,
                 localItems = localItems,
                 playback = playback,
@@ -257,9 +258,40 @@ internal fun MediaScreen(
                 onOpenNowPlaying = {
                     onDestinationChange(MediaDestination.NowPlaying)
                 },
-            )
-        } else {
-            LazyColumn(
+                )
+            }
+
+            MediaDestination.Queue -> {
+                QueueScreen(
+                    playback = playback,
+                    onPlayIndex = onPlayQueueIndex,
+                    onMove = onMoveQueueItem,
+                    onRemove = onRemoveQueueItem,
+                    onPlayPause = onPlayPause,
+                    onPrevious = onPrevious,
+                    onNext = onNext,
+                    onStop = onStop,
+                    onBack = {
+                        onDestinationChange(MediaDestination.NowPlaying)
+                    },
+                )
+            }
+
+            MediaDestination.PlaylistEditor -> {
+                PlaylistEditorScreen(
+                    editingPlaylist = editingPlaylist,
+                    playlistName = playlistName,
+                    selectedUris = selectedPlaylistUris,
+                    localItems = localItems,
+                    onNameChange = onPlaylistNameChange,
+                    onToggleItem = onTogglePlaylistItem,
+                    onSave = onSavePlaylist,
+                    onCancel = onCancelPlaylistEditor,
+                )
+            }
+
+            else -> {
+                LazyColumn(
                 modifier =
                     Modifier
                         .fillMaxSize()
@@ -311,10 +343,7 @@ internal fun MediaScreen(
                     item {
                         MediaUtilityBar(
                             queueCount = playback.queue.size,
-                            upNextCount =
-                                playback.queue.count { item ->
-                                    item.index > playback.currentIndex
-                                },
+                            upNextCount = playback.upNextCount(),
                             onQueue = {
                                 onDestinationChange(MediaDestination.Queue)
                             },
@@ -421,34 +450,9 @@ internal fun MediaScreen(
                             )
                         }
 
-                        MediaDestination.Queue -> {
-                            QueueScreen(
-                                playback = playback,
-                                onPlayIndex = onPlayQueueIndex,
-                                onMove = onMoveQueueItem,
-                                onRemove = onRemoveQueueItem,
-                                onPlayPause = onPlayPause,
-                                onPrevious = onPrevious,
-                                onNext = onNext,
-                                onStop = onStop,
-                                onBack = {
-                                    onDestinationChange(MediaDestination.NowPlaying)
-                                },
-                            )
-                        }
-
-                        MediaDestination.PlaylistEditor -> {
-                            PlaylistEditorScreen(
-                                editingPlaylist = editingPlaylist,
-                                playlistName = playlistName,
-                                selectedUris = selectedPlaylistUris,
-                                localItems = localItems,
-                                onNameChange = onPlaylistNameChange,
-                                onToggleItem = onTogglePlaylistItem,
-                                onSave = onSavePlaylist,
-                                onCancel = onCancelPlaylistEditor,
-                            )
-                        }
+                        MediaDestination.Queue,
+                        MediaDestination.PlaylistEditor,
+                        -> Unit
 
                         MediaDestination.Settings -> {
                             SettingsScreen(
@@ -465,6 +469,13 @@ internal fun MediaScreen(
         }
     }
 }
+
+private fun PlaybackUiState.upNextCount(): Int =
+    if (currentIndex < 0) {
+        queue.size
+    } else {
+        (queue.size - currentIndex - 1).coerceAtLeast(0)
+    }
 
 @Composable
 private fun PrimaryPivot(
