@@ -475,6 +475,7 @@ internal fun MediaScreen(
         }
     }
 }
+}
 
 private fun PlaybackUiState.upNextCount(): Int =
     if (currentIndex < 0) {
