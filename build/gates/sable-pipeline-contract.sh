@@ -143,6 +143,18 @@ grep -Fq '</dev/null' "$ROOT/build/deploy/common.sh"
 grep -Fq '</dev/null' "$FLASH"
 echo "SABLE_PIPELINE_FASTBOOT_READINESS_AND_STDIN_ISOLATION=PASS"
 
+grep -Fq 'SABLE_ADB_TARGET_SERIAL=PASS' "$FLASH"
+grep -Fq 'SABLE_FASTBOOT_TARGET_SERIAL=PASS' "$FLASH"
+grep -Fq 'SABLE_ADB_OTHER_READY_COUNT=' "$FLASH"
+grep -Fq 'SABLE_FASTBOOT_OTHER_READY_COUNT=' "$FLASH"
+grep -Fq '"$ADB_BIN" -s "$SERIAL" reboot bootloader' "$FLASH"
+grep -Fq '"$FASTBOOT_BIN" -s "$SERIAL"' "$FLASH"
+if grep -Fq 'SABLE_ADB_SINGLE_DEVICE' "$FLASH" || grep -Fq 'SABLE_FASTBOOT_SINGLE_DEVICE' "$FLASH"; then
+  echo "SABLE_PIPELINE_MULTI_DEVICE_SERIAL_SCOPE=FAIL_LEGACY_SINGLE_DEVICE_GATE"
+  exit 1
+fi
+echo "SABLE_PIPELINE_MULTI_DEVICE_SERIAL_SCOPE=PASS"
+
 grep -Fq 'IMAGES/' "$ROOT/build/deploy/target_files_plan.py"
 grep -Fq 'unconditional_erase_forbidden' "$ROOT/build/deploy/target_files_plan.py"
 grep -Fq 'inactive_slot_directive_forbidden' "$ROOT/build/deploy/target_files_plan.py"
