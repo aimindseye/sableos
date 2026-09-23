@@ -79,6 +79,13 @@ forbid(
 )
 
 require(
+    "build/gates/r8-no-stale-product-code.sh",
+    "R8_GLOBAL_APPEARANCE_READER=PASS_PRODUCT_THEME_BRIDGE",
+    "ProductReaderTheme.kt",
+    "appearance = rememberGlobalSableAppearance(),",
+)
+
+require(
     "build/verify-reader-manifest.py",
     "SABLE_READER_CAMERA_PERMISSION=PASS_ABSENT",
     "SABLE_READER_TEXTREADER_COMPONENTS=PASS_ABSENT",
