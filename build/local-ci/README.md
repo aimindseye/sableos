@@ -30,7 +30,10 @@ bash build/local-ci/run.sh release
 `core` runs repository policy/layout, host-tool verification, shell/Python
 syntax, product/build-driver static gates, the active Media and Messages
 source/architecture gates, Rust correctness, Android compile/tests/lint,
-quality/coverage tasks and deterministic supply-chain evidence.
+quality/coverage tasks and deterministic supply-chain evidence. The Python
+syntax pass scans the complete maintained Python set in one batch and reports
+all parser failures before failing STATIC, rather than stopping at the first
+file.
 
 `full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
 Text Reader and Mail qualification. It is the pre-image source/build/security
