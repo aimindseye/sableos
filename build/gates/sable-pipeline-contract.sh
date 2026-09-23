@@ -44,6 +44,7 @@ python3 -m py_compile \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py" \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py" \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" \
   "$ROOT/build/gates/r9-launcher3-foundation-contract.py" \
   "$ROOT/build/gates/r9-media-flow-contract.py" \
   "$ROOT/build/gates/r9-messages-native-first-contract.py" \
@@ -57,6 +58,7 @@ python3 "$ROOT/build/deploy/artifact_registry.py" self-test
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" --self-test
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py" --self-test
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py" --self-test
+python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" --self-test
 python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
 echo "SABLE_PIPELINE_FASTBOOT_PLAN_SELF_TEST=PASS"
 echo "SABLE_PIPELINE_ARTIFACT_REGISTRY_SELF_TEST=PASS"
@@ -66,6 +68,9 @@ grep -Fq 'R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS' \
   "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
 echo "SABLE_PIPELINE_QUICKSTEP_SOURCE_RESOLUTION=PASS"
 echo "SABLE_PIPELINE_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS"
+grep -Fq 'R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS' \
+  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
+echo "SABLE_PIPELINE_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS"
 echo "SABLE_PIPELINE_LAUNCHER3_FOUNDATION_CONTRACT_SELF_TEST=PASS"
 
 grep -Fq 'usage:' "$ROOT/build/sable.sh"
