@@ -72,6 +72,7 @@ expected = {
     "org.sableos.minesweeper": "SableMinesweeper.apk",
     "org.sableos.game2048": "Sable2048.apk",
     "org.sableos.media": "SableMedia.apk",
+    "org.sableos.textreader": "SableTextReader.apk",
     "org.sableos.reader": "SableReader.apk",
     "org.sableos.hub": "SableHub.apk",
     "org.sableos.mail": "SableMail.apk",
@@ -241,7 +242,7 @@ install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
 install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
 install -m 0644     "$BUNDLE_SOURCE_IDENTITY"     "$DEST/SABLEOS_SOURCE_COMMIT.txt"
 
-for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
+for apk in     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableTextReader.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
 do
     install -m 0644         "$BUNDLE_PREBUILT/$apk"         "$DEST/prebuilt/$apk"
 done
