@@ -41,9 +41,7 @@ internal data class ConnectedNotificationNormalization(
 internal class ConnectedNotificationNormalizer(
     private val inventory: ConnectedAppsInventory,
 ) {
-    fun normalize(
-        envelope: ConnectedNotificationEnvelope,
-    ): ConnectedNotificationNormalization {
+    fun normalize(envelope: ConnectedNotificationEnvelope): ConnectedNotificationNormalization {
         val sourceLabel =
             inventory
                 .labelFor(envelope.key)
