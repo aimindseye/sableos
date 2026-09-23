@@ -78,6 +78,12 @@ require(
     "SableAppearanceSettings.java",
     "SableNetworkManagerSettings.java",
     "R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION",
+    "classify_dirty_scope_from_expected",
+    '"PRE_COHESION"',
+    '"FINAL_COHESION"',
+    "R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=AUTHORIZED_BOUNDED_FINAL_SCOPE",
+    "R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=PASS",
+    "R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS",
 )
 require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
