@@ -189,6 +189,81 @@ def main() -> None:
         'Text("S A B L E   T E X T   R E A D E R",',
         1,
     )
+    intent_old = """        } else if (intent?.action == Intent.ACTION_PROCESS_TEXT) {
+            sharedText = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString() ?: ""
+        }
+"""
+    intent_new = """        } else if (intent?.action == Intent.ACTION_PROCESS_TEXT) {
+            sharedText = intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString() ?: ""
+        } else if (intent?.action == Intent.ACTION_VIEW) {
+            sharedText = intent.data?.let { uri ->
+                runCatching {
+                    contentResolver.openInputStream(uri)?.use {
+                        TextReaderUtil.readTextFromStream(it)
+                    } ?: ""
+                }.getOrDefault("")
+            } ?: ""
+        }
+"""
+    if main_text.count(intent_old) != 1:
+        fail("SABLE_TEXT_READER_VIEW_HANDLER_ANCHOR=FAIL")
+    main_text = main_text.replace(intent_old, intent_new, 1)
+
+    speak_old = """                        onSpeakText = { text, locale ->
+                            if (isTtsReady && text.isNotBlank()) {
+                                tts.language = locale
+                                // Pass a unique Utterance ID so our listener can track it
+                                tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, "play_text")
+                            }
+                        },
+"""
+    speak_new = """                        onSpeakText = { text, locale ->
+                            if (isTtsReady && text.isNotBlank()) {
+                                tts.language = locale
+                                if (selectLocalVoice(tts, locale)) {
+                                    tts.speak(
+                                        text,
+                                        TextToSpeech.QUEUE_FLUSH,
+                                        null,
+                                        "play_text",
+                                    )
+                                } else {
+                                    Toast.makeText(
+                                        this,
+                                        "No local text-to-speech voice is available.",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            }
+                        },
+"""
+    if main_text.count(speak_old) != 1:
+        fail("SABLE_TEXT_READER_LOCAL_TTS_PLAYBACK_ANCHOR=FAIL")
+    main_text = main_text.replace(speak_old, speak_new, 1)
+
+    export_old = """            ttsEngine.language = currentTtsLocale
+            ttsEngine.synthesizeToFile(currentText, params, tempFile, "export_audio")
+"""
+    export_new = """            ttsEngine.language = currentTtsLocale
+            if (selectLocalVoice(ttsEngine, currentTtsLocale)) {
+                ttsEngine.synthesizeToFile(
+                    currentText,
+                    params,
+                    tempFile,
+                    "export_audio",
+                )
+            } else {
+                Toast.makeText(
+                    context,
+                    "No local text-to-speech voice is available.",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+"""
+    if main_text.count(export_old) != 1:
+        fail("SABLE_TEXT_READER_LOCAL_TTS_EXPORT_ANCHOR=FAIL")
+    main_text = main_text.replace(export_old, export_new, 1)
+
     main.write_text(main_text, encoding="utf-8")
 
     shared.write_text(
@@ -297,6 +372,31 @@ object TextReaderUtil {
         / "app/src/main/java/org/vaachak/textreader/TtsSettingsView.kt"
     )
     tts_text = tts_settings.read_text(encoding="utf-8")
+    settings_marker = """// ---------------------------------------------------------------------------
+// TTS Settings Dialog Composable
+// ---------------------------------------------------------------------------
+"""
+    local_voice_helper = """fun selectLocalVoice(
+    ttsEngine: TextToSpeech,
+    locale: Locale,
+): Boolean {
+    val localVoices =
+        ttsEngine.voices
+            ?.filterNot { it.isNetworkConnectionRequired }
+            .orEmpty()
+    val preferred =
+        localVoices.firstOrNull { it.locale == locale }
+            ?: localVoices.firstOrNull { it.locale.language == locale.language }
+            ?: localVoices.firstOrNull()
+    if (preferred == null) return false
+    ttsEngine.voice = preferred
+    return true
+}
+
+""" + settings_marker
+    if tts_text.count(settings_marker) != 1:
+        fail("SABLE_TEXT_READER_TTS_SETTINGS_MARKER=FAIL")
+    tts_text = tts_text.replace(settings_marker, local_voice_helper, 1)
     voice_filter_old = """            val filtered = ttsEngine.voices?.filter { v ->
                 if (v.locale.language == "en") v.locale.country in listOf("US", "GB")
                 else v.locale.language == currentLocale.language
@@ -313,10 +413,47 @@ object TextReaderUtil {
 """
     if tts_text.count(voice_filter_old) != 1:
         fail("SABLE_TEXT_READER_TTS_FILTER_ANCHOR=FAIL")
-    tts_settings.write_text(
-        tts_text.replace(voice_filter_old, voice_filter_new, 1),
-        encoding="utf-8",
+    tts_text = tts_text.replace(voice_filter_old, voice_filter_new, 1)
+
+    selected_old = """            setVoices(filtered)
+            setSelected(ttsEngine.voice)
+"""
+    selected_new = """            setVoices(filtered)
+            val localSelection =
+                ttsEngine.voice?.takeUnless { it.isNetworkConnectionRequired }
+                    ?: filtered.firstOrNull()
+            setSelected(localSelection)
+            localSelection?.let { ttsEngine.voice = it }
+"""
+    if tts_text.count(selected_old) != 1:
+        fail("SABLE_TEXT_READER_TTS_SELECTION_ANCHOR=FAIL")
+    tts_text = tts_text.replace(selected_old, selected_new, 1)
+    tts_settings.write_text(tts_text, encoding="utf-8")
+
+    unit_test = (
+        root
+        / "app/src/test/java/org/vaachak/textreader/TextReaderUtilTest.kt"
     )
+    if unit_test.is_file():
+        unit_test_text = unit_test.read_text(encoding="utf-8")
+        unit_test_anchor = """    // ---------------------------------------------------------------------------
+    // Language & Locale Tests
+    // ---------------------------------------------------------------------------
+"""
+        bounded_test = """    @Test
+    fun `readTextFromStream bounds oversized input`() {
+        val bytes = ByteArray(2 * 1024 * 1024 + 256) { 'a'.code.toByte() }
+        val result = TextReaderUtil.readTextFromStream(ByteArrayInputStream(bytes))
+        assertEquals(2 * 1024 * 1024, result.length)
+    }
+
+""" + unit_test_anchor
+        if unit_test_text.count(unit_test_anchor) != 1:
+            fail("SABLE_TEXT_READER_BOUNDED_TEST_ANCHOR=FAIL")
+        unit_test.write_text(
+            unit_test_text.replace(unit_test_anchor, bounded_test, 1),
+            encoding="utf-8",
+        )
 
     android_ui_test = (
         root
@@ -378,8 +515,11 @@ object TextReaderUtil {
     print("SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_ABSENT")
     print("SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED")
     print("SABLE_TEXT_READER_VIEW_SEND_PROCESS_TEXT=PASS")
+    print("SABLE_TEXT_READER_VIEW_HANDLER=PASS_BOUNDED_LOCAL_TEXT")
+    print("SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB")
     print("SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB")
     print("SABLE_TEXT_READER_TTS=PASS")
+    print("SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED")
     print("SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED")
     print("SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI")
     print("SABLE_TEXT_READER_FLAVOR_PATCH=PASS")
