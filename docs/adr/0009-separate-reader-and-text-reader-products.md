@@ -48,10 +48,14 @@ It owns:
 - Latin and Devanagari OCR;
 - global SableOS appearance.
 
-The first Sable Text Reader product is offline-first. It removes the upstream
-`INTERNET` permission, ML Kit translation dependency/UI and model-download
-path. Camera hardware remains optional and camera permission is requested only
-for camera OCR.
+The first Sable Text Reader product is offline-first. Its source manifest
+uses an explicit Android manifest-merger `tools:node="remove"` rule for
+`android.permission.INTERNET`, and qualification separately requires the
+final APK to contain no INTERNET permission. It removes the ML Kit translation
+dependency/UI and model-download path. Camera hardware remains optional and
+camera permission is requested only for camera OCR. Text-to-speech rejects
+network-required voices and fails closed when the requested language has no
+local voice.
 
 ## Build and product consequences
 
