@@ -35,6 +35,12 @@ DIALER_BOTTOM_NAV = Path(
 DIALER_DIALPAD = Path(
     "java/com/android/dialer/dialpadview/res/values/styles.xml"
 )
+DIALER_CONTACTS_ADAPTER = Path(
+    "java/com/android/dialer/contactsfragment/ContactsAdapter.java"
+)
+DIALER_CONTACTS_FRAGMENT = Path(
+    "java/com/android/dialer/contactsfragment/ContactsFragment.java"
+)
 
 CONTACTS_LIGHT = Path("res/values/colors.xml")
 CONTACTS_DARK = Path("res/values-night/colors.xml")
@@ -59,6 +65,8 @@ DIALER_DIRT = {
     f" M {DIALER_TOOLBAR.as_posix()}",
     f" M {DIALER_BOTTOM_NAV.as_posix()}",
     f" M {DIALER_DIALPAD.as_posix()}",
+    f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+    f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
 }
 
 CONTACTS_DIRT = {
@@ -136,6 +144,192 @@ DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
         (
             '<item name="android:background">@drawable/btn_dialpad_key</item>',
             '<item name="android:background">@android:color/transparent</item>',
+        ),
+    ),
+    DIALER_CONTACTS_ADAPTER: (
+        (
+            '''  String getHeaderString(int position) {
+    if (header != Header.NONE) {
+      if (position == 0) {
+        return "+";
+      }
+      position--;
+    }
+
+    int index = -1;
+    int sum = 0;
+    while (sum <= position) {
+      sum += counts[++index];
+    }
+    return headers[index];
+  }
+}''',
+            '''  String getHeaderString(int position) {
+    if (header != Header.NONE) {
+      if (position == 0) {
+        return "+";
+      }
+      position--;
+    }
+
+    int index = -1;
+    int sum = 0;
+    while (sum <= position) {
+      sum += counts[++index];
+    }
+    return headers[index];
+  }
+
+  /**
+   * Returns the RecyclerView position for an alphabet section using the
+   * ContactsProvider address-book index already carried by this adapter.
+   */
+  int getPositionForHeader(String target) {
+    if (headers == null || counts == null || target == null) {
+      return -1;
+    }
+
+    int position = header == Header.NONE ? 0 : 1;
+    for (int index = 0; index < headers.length && index < counts.length; index++) {
+      String section = headers[index] == null ? "" : headers[index].trim();
+      if (!section.isEmpty() && section.substring(0, 1).equalsIgnoreCase(target)) {
+        return position;
+      }
+      position += counts[index];
+    }
+    return -1;
+  }
+}''',
+        ),
+    ),
+    DIALER_CONTACTS_FRAGMENT: (
+        (
+            '''import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnScrollChangeListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+''',
+            '''import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnScrollChangeListener;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+''',
+        ),
+        (
+            '''  private FastScroller fastScroller;
+  private TextView anchoredHeader;
+  private RecyclerView recyclerView;
+''',
+            '''  private FastScroller fastScroller;
+  private TextView anchoredHeader;
+  private LinearLayout sableAlphabetRail;
+  private RecyclerView recyclerView;
+''',
+        ),
+        (
+            '''    if (PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      loadContacts();
+    } else {
+''',
+            '''    installSableAlphabetRail((FrameLayout) view);
+
+    if (PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      loadContacts();
+    } else {
+''',
+        ),
+        (
+            '''    return view;
+  }
+
+  @Override
+  public void onResume() {
+''',
+            '''    return view;
+  }
+
+  private void installSableAlphabetRail(FrameLayout container) {
+    sableAlphabetRail = new LinearLayout(getContext());
+    sableAlphabetRail.setOrientation(LinearLayout.VERTICAL);
+    sableAlphabetRail.setGravity(Gravity.CENTER);
+    sableAlphabetRail.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+
+    float density = getResources().getDisplayMetrics().density;
+    int width = (int) (28 * density + 0.5f);
+    FrameLayout.LayoutParams params =
+        new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END);
+    sableAlphabetRail.setLayoutParams(params);
+
+    for (char letter = 'A'; letter <= 'Z'; letter++) {
+      final String section = String.valueOf(letter);
+      TextView shortcut = new TextView(getContext());
+      shortcut.setText(section);
+      shortcut.setTextSize(10);
+      shortcut.setGravity(Gravity.CENTER);
+      shortcut.setContentDescription("Jump to " + section);
+      shortcut.setFocusable(true);
+      shortcut.setClickable(true);
+      shortcut.setOnClickListener(
+          ignored -> {
+            int position = adapter == null ? -1 : adapter.getPositionForHeader(section);
+            if (position >= 0) {
+              manager.scrollToPositionWithOffset(position, 0);
+            }
+          });
+      shortcut.setLayoutParams(
+          new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+      sableAlphabetRail.addView(shortcut);
+    }
+
+    container.addView(sableAlphabetRail);
+    updateSableAlphabetRailVisibility();
+  }
+
+  private void updateSableAlphabetRailVisibility() {
+    if (sableAlphabetRail == null) {
+      return;
+    }
+    boolean hasContacts = adapter != null && adapter.getItemCount() > 0;
+    boolean searching = query != null && !query.isEmpty();
+    sableAlphabetRail.setVisibility(hasContacts && !searching ? View.VISIBLE : View.GONE);
+  }
+
+  @Override
+  public void onResume() {
+''',
+        ),
+        (
+            '''  public void updateQuery(String query) {
+    this.query = query;
+    getLoaderManager().restartLoader(0, null, this);
+  }
+''',
+            '''  public void updateQuery(String query) {
+    this.query = query;
+    updateSableAlphabetRailVisibility();
+    getLoaderManager().restartLoader(0, null, this);
+  }
+''',
+        ),
+        (
+            '''      PerformanceReport.logOnScrollStateChange(recyclerView);
+      fastScroller.setup(adapter, manager);
+    }
+  }
+''',
+            '''      PerformanceReport.logOnScrollStateChange(recyclerView);
+      fastScroller.setup(adapter, manager);
+      updateSableAlphabetRailVisibility();
+    }
+  }
+''',
         ),
     ),
 }
@@ -603,11 +797,16 @@ def verify_repo(
         if line[3:].endswith((".java", ".kt"))
     }
     if label == "PHONE":
-        if behavioral:
+        allowed_behavioral = {
+            f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+            f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
+        }
+        if behavioral != allowed_behavioral:
             raise SystemExit(
-                f"R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=FAIL paths={sorted(behavioral)!r}"
+                "R9_PHONE_BEHAVIORAL_SCOPE=FAIL "
+                f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print("R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=NONE")
+        print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY")
     else:
         allowed_behavioral = {
             f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
@@ -710,6 +909,7 @@ def verify(source: Path) -> None:
 
     print("R9_PHONE_CONTACTS_PINNED_BASELINES=PASS")
     print("R9_PHONE_CONTACTS_PRESENTATION=PASS")
+    print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER")
     print("R9_CONTACTS_DATA_MODEL_MUTATION=NONE")
 
