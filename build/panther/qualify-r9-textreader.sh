@@ -33,12 +33,14 @@ echo "BUILD_AUTHORIZED=YES_TEXT_READER_ONLY"
 echo "FULL_TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
+echo "WORKSPACE_PRODUCT_INVENTORY_REQUIRED=NO_PRESTAGING"
 echo "EXPECTED_SOURCE_COMMIT=$EXPECTED_SOURCE_COMMIT"
 
 python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
 python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
 python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
-bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
+R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO \
+    bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
 
 [[ -d "$SABLE_R8_TEXTREADER_CACHE/.git" ]] || {
     echo "R9_TEXT_READER_CACHE=FAIL_MISSING path=$SABLE_R8_TEXTREADER_CACHE"
