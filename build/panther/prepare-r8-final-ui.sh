@@ -58,6 +58,8 @@ UI5C_SYSTEMUI_LATER_ARGS=(
     packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt
     --allow-framework-modified
     packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt
+    --allow-framework-modified
+    core/java/android/debug/AdbNotifications.java
 )
 
 UI5C_SETTINGS_LATER_ARGS=(
