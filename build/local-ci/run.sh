@@ -94,12 +94,7 @@ run_static() {
   )
   echo "SABLE_LOCAL_CI_ACTIVE_SHELL_SYNTAX_COUNT=$shell_count"
 
-  local python_count=0
-  while IFS= read -r py; do
-    [[ -n "$py" ]] || continue
-    python3 -m py_compile "$ROOT/$py"
-    python_count=$((python_count + 1))
-  done < <(
+  mapfile -t python_files < <(
     git -C "$ROOT" ls-files -- \
       'apps/r8/*.py' \
       'apps/r8/**/*.py' \
@@ -108,6 +103,33 @@ run_static() {
       'build/gates/*.py' \
       'patches/android-17-grapheneos-2026081300/*.py'
   )
+  local python_count="${#python_files[@]}"
+
+  python3 - "$ROOT" "${python_files[@]}" <<'PY'
+import pathlib
+import sys
+import tokenize
+
+root = pathlib.Path(sys.argv[1])
+failures: list[str] = []
+
+for rel in sys.argv[2:]:
+    path = root / rel
+    try:
+        with tokenize.open(path) as source_file:
+            source = source_file.read()
+        compile(source, str(path), "exec", dont_inherit=True)
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        failures.append(f"{rel}: {exc}")
+
+if failures:
+    print("SABLE_LOCAL_CI_PYTHON_SYNTAX=FAIL")
+    for failure in failures:
+        print(f"PYTHON_SYNTAX_FAILURE={failure}")
+    raise SystemExit(1)
+
+print("SABLE_LOCAL_CI_PYTHON_SYNTAX=PASS")
+PY
   echo "SABLE_LOCAL_CI_ACTIVE_PYTHON_SYNTAX_COUNT=$python_count"
 
   # tools/validation/** is a byte-preserved historical evidence archive, not
