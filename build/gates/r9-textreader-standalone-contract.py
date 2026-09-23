@@ -154,6 +154,21 @@ require(
 )
 
 require(
+    "build/gates/r8-final-product-composition.sh",
+    "===== R9 SABLE TEXT READER SOURCE CLOSURE =====",
+    'grep -Fq "$needle" "$TEXTREADER_APPLIER"',
+    'grep -Fq "$needle" "$TEXTREADER_VERIFY"',
+    "SABLE_TEXT_READER_APK_INTERNET_PERMISSION=PASS_ABSENT",
+    "SABLE_TEXT_READER_APK_OFFLINE_BOUNDARY=PASS",
+    "R9_SABLE_TEXT_READER=PASS_SOURCE_POLICY_AND_PRODUCT_STAGED",
+    "R9_READER_TEXTREADER_DECOMPOSITION=PASS",
+)
+forbid(
+    "build/gates/r8-final-product-composition.sh",
+    "R8_D2_READER_TEXT_ACCESSIBILITY_OCR=PASS_SOURCE_AND_PRODUCT_STAGED",
+)
+
+require(
     "build/panther/run-r8-release-candidate.sh",
     "===== SABLE TEXT READER =====",
     "SABLE_TEXTREADER_APK",
