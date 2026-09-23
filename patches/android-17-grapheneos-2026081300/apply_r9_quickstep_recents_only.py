@@ -85,13 +85,11 @@ def patch_android_bp(root: pathlib.Path) -> None:
     module = text[start:end]
     old = '''    kotlincflags: [
         "-Xjvm-default=all",
-    ],
-'''
+    ],'''
     new = '''    kotlincflags: [
         "-Xjvm-default=all",
         "-Xannotation-default-target=param-property",
-    ],
-'''
+    ],'''
     if new not in module:
         if module.count(old) != 1:
             raise RecentsOnlyError("Quickstep Kotlin flags anchor changed")
@@ -307,7 +305,13 @@ def self_test() -> None:
         patch_launcher_manifest(root)
         patch_overview_observer(root)
 
-        patched_bp = (root / "Android.bp").read_text(encoding="utf-8")
+        first_pass_bp = (root / "Android.bp").read_text(encoding="utf-8")
+        patch_android_bp(root)
+        second_pass_bp = (root / "Android.bp").read_text(encoding="utf-8")
+        if second_pass_bp != first_pass_bp:
+            raise RecentsOnlyError("self-test Android.bp patch is not idempotent")
+
+        patched_bp = second_pass_bp
         patched_manifest = (
             root / "quickstep/AndroidManifest-launcher.xml"
         ).read_text(encoding="utf-8")
