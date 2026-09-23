@@ -28,9 +28,9 @@ bash build/local-ci/run.sh release
 ```
 
 `core` runs repository policy/layout, host-tool verification, shell/Python
-syntax, product/build-driver static gates, Rust correctness, Android
-compile/tests/lint, quality/coverage tasks and deterministic supply-chain
-evidence.
+syntax, product/build-driver static gates, the active Media and Messages
+source/architecture gates, Rust correctness, Android compile/tests/lint,
+quality/coverage tasks and deterministic supply-chain evidence.
 
 `full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
 Text Reader and Mail qualification. It is the pre-image source/build/security
@@ -41,6 +41,18 @@ The source-bound Launcher visual acceptance seal is intentionally not part of
 `release` profile and the full Panther product-composition path. This allows
 new source to compile and pass CI before a fresh visual review without weakening
 the rule that no image build proceeds from stale visual acceptance.
+
+For R9 Panther work, the canonical pre-image sequence is:
+
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 qualify physical-ux
+```
+
+The first command proves the full source/build/security CI profile. The second
+proves the source-bound Panther module/product-composition path while keeping
+`FULL_TARGET_FILES_BUILD_AUTHORIZED=NO`. Do not enter the release build /
+target-files path until both pass for the same source commit.
 
 ## One host toolchain
 
