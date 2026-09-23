@@ -176,8 +176,17 @@ R9_MESSAGES_LAUNCHER_POLICY_CALLER_BOUNDARY=PASS_LAUNCHER_ONLY
 R9_MESSAGES_LAUNCHER_INVENTORY_REFRESH=PASS_OFF_MAIN
 ```
 
-Focused module qualification must include assemble, unit tests, lint, Detekt and
-KtLint where configured. No full Panther build is authorized solely by this
+Focused module qualification is staged so source-quality failures are rejected
+before compilation or APK packaging:
+
+1. source contracts and pipeline contract;
+2. Detekt + KtLint static-quality preflight;
+3. Kotlin compilation + unit tests + Android lint;
+4. APK assembly only after the earlier stages pass.
+
+Warnings remain errors, Detekt/KtLint remain fail-closed, and product/model code
+must be refactored rather than added to quality-rule exclusion lists merely to
+make qualification pass. No full Panther build is authorized solely by this
 tranche.
 
 Physical acceptance after a future image:
