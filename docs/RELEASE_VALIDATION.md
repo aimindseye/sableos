@@ -165,6 +165,29 @@ For the current Panther R9 UI/product milestone, the generic product-integration
 
 A full Panther build must not be described as the final R9 product build merely because `target-files-package` succeeds. Before starting that build, generated product/build evidence must prove the intended source/package set.
 
+The exact source commit must also have passed the local CI `full` profile before
+any fresh Panther target-files build begins. The full profile covers policy,
+static contracts, Rust, Android application checks, APK seals, quality,
+supply-chain/security checks, standalone Text Reader, Reader and Mail. It writes
+the source-bound attestation:
+
+```text
+.git/sable-local-ci/<source-commit>.pass
+```
+
+The Panther release-candidate driver requires that attestation to contain:
+
+```text
+SABLE_LOCAL_CI=PASS
+PROFILE=full
+SOURCE_COMMIT=<exact build source commit>
+```
+
+Module-only physical-UX qualification is intentionally exempt because it runs
+before the full-CI gate. A branch advance after CI invalidates the authorization
+naturally: the new source commit has no matching attestation and the image build
+fails closed.
+
 Required application identities include:
 
 ```text
