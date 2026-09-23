@@ -32,12 +32,13 @@ copy-pasted fork into this repository.
 The standalone application provides:
 
 - one launcher-visible Text Reader activity;
-- local text-file opening with `ACTION_VIEW` / `text/plain`;
+- local text-file opening with `ACTION_VIEW` / `text/plain`, bounded to
+  2 MiB per ingestion;
 - Android `ACTION_SEND` text ingestion;
 - Android `ACTION_PROCESS_TEXT` selected-text handoff;
 - paste/edit text;
-- Android text-to-speech playback;
-- WAV audio export through the Android document picker;
+- Android text-to-speech playback using local-only voices;
+- WAV audio export through the Android document picker, also local-voice-only;
 - user-directed live camera OCR;
 - user-directed gallery/image OCR;
 - Latin and Devanagari OCR;
@@ -59,6 +60,8 @@ camera permission          DECLARED; runtime-requested for camera OCR
 camera hardware            OPTIONAL
 gallery OCR                ENABLED without camera permission
 backup                      DISABLED
+text ingestion              BOUNDED TO 2 MiB
+TTS network voices          FILTERED / FAIL CLOSED
 ```
 
 The pinned upstream application includes ML Kit translation and calls
@@ -68,6 +71,10 @@ model-packaging and privacy design.
 
 OCR remains local to the application. The current product uses the pinned Latin
 and Devanagari recognizer dependencies and has no Sable network fallback.
+
+Text-to-speech is also constrained to local voices. If the requested language
+has no local voice installed, playback/export reports that condition instead of
+silently selecting a cloud voice or an unrelated-language local voice.
 
 ## Appearance
 
