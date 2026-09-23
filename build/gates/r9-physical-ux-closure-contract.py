@@ -167,7 +167,9 @@ require(
 # Contacts uses its existing SectionIndexer, not a duplicate data model.
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
-    "ContactsSectionIndexer",
+    'CONTACTS_INDEXER_ADAPTER = Path(',
+    '"src/com/android/contacts/list/IndexerListAdapter.java"',
+    "return mIndexer.getPositionForSection(sectionIndex);",
     "getListPositionForSection",
     "getPositionForSection(sectionIndex)",
     "installSableAlphabetRail",
@@ -175,6 +177,11 @@ require(
     "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
+    "class ContactsSectionIndexer",
+    "new ContactsSectionIndexer",
 )
 
 # Media uses lazy large-library surfaces, a background immutable index and a
