@@ -626,7 +626,11 @@ private fun ConversationRow(
     )
 }
 
-private fun clockTime(epochMillis: Long): String = DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(epochMillis))
+private fun clockTime(epochMillis: Long): String {
+    return DateFormat
+        .getTimeInstance(DateFormat.SHORT)
+        .format(Date(epochMillis))
+}
 
 @Composable
 private fun ColumnScope.PeoplePivot(
