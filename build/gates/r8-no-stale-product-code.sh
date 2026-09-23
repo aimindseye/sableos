@@ -46,6 +46,7 @@ stale_paths=(
     "build/panther/build-ui-preview.sh"
     "build/panther/flash-ui-preview-inactive-slot.sh"
     "build/panther/validate-ui-preview.sh"
+    "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
 )
 
 for rel in "${stale_paths[@]}"; do
