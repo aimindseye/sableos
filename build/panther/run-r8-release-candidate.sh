@@ -6,6 +6,8 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/r8-host-tools.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 SOURCE_MUTATION_AUTHORIZED="${SOURCE_MUTATION_AUTHORIZED:-NO}"
 BUILD_AUTHORIZED="${BUILD_AUTHORIZED:-NO}"
@@ -131,6 +133,7 @@ else
     }
     echo "R9_SOURCE_BOUND_FULL_CI=PASS"
     echo "R9_SOURCE_BOUND_FULL_CI_ATTESTATION=$FULL_CI_ATTESTATION"
+    sable_checkpoint_pass "Source-bound full CI attestation"
 fi
 
 if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
@@ -442,6 +445,7 @@ if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
     echo "EVIDENCE=$EVIDENCE"
     echo "OUT_DIR=$R9_FULL_OUT_ABS"
     echo "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS"
+    sable_checkpoint_pass "Panther module-only qualification"
     echo "R8_RELEASE_CANDIDATE=NOT_RUN"
     echo "R9_FRESH_FULL_BUILD=NOT_PROVEN"
     exit 0
@@ -450,6 +454,7 @@ fi
 echo
 echo "===== R8 RELEASE-CANDIDATE RESULT ====="
 echo "R8_RELEASE_CANDIDATE=PASS"
+sable_checkpoint_pass "Panther release candidate"
 echo "SOURCE=$EXPECTED_SOURCE_COMMIT"
 echo "BUNDLE=$BUNDLE"
 echo "EVIDENCE=$EVIDENCE"
