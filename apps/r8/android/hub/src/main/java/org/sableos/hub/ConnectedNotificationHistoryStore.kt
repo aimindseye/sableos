@@ -126,9 +126,7 @@ class ConnectedNotificationHistoryStore(
             )
     }
 
-    private fun queryRecords(
-        database: SQLiteDatabase,
-    ): List<ConnectedNotificationRecord> =
+    private fun queryRecords(database: SQLiteDatabase): List<ConnectedNotificationRecord> =
         database
             .query(
                 TABLE_HISTORY,
@@ -237,9 +235,7 @@ class ConnectedNotificationHistoryStore(
         }
     }
 
-    private fun android.database.Cursor.getStringOrNull(
-        columnName: String,
-    ): String? {
+    private fun android.database.Cursor.getStringOrNull(columnName: String): String? {
         val index = getColumnIndexOrThrow(columnName)
         return if (isNull(index)) {
             null
