@@ -368,6 +368,17 @@ accepted only for isolated self-tests/developer probes when canonical
 `Android.bp` and `quickstep/` markers are present; unresolved roots fail
 closed.
 
+The next preparation pass proved the Quickstep source-root fix and advanced to
+Contacts. The long-lived Contacts tree was in a bounded partial presentation
+state: the four color/layout/style files were already canonical Sable
+presentation changes, while the two alphabet-rail Java files had returned to
+pinned Contacts HEAD. The Phone/Contacts applicator now permits partial
+convergence only when every approved file is either byte-for-byte pinned HEAD
+or byte-for-byte canonical transformed content, and when no dirty path exists
+outside the approved set. It applies only the missing transformations and then
+requires the exact six-file Contacts final scope. Any mixed/manual content
+inside an approved path still fails closed.
+
 
 No full image yet.
 
