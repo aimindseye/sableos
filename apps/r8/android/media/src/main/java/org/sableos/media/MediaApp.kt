@@ -756,11 +756,7 @@ internal fun MediaApp(
                     onMoveQueueItem = playbackController::moveQueueItem,
                     onRemoveQueueItem = playbackController::removeQueueItem,
                     onPlayPause = {
-                        if (playbackState.isPlaying) {
-                            playbackController.pause()
-                        } else {
-                            playbackController.play()
-                        }
+                        playbackController.setPlaying(!playbackState.isPlaying)
                     },
                     onPrevious = {
                         playbackController.skip(PlaybackSkip.Previous)
