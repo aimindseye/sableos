@@ -232,34 +232,34 @@ class HubRepository(
             context
                 .contentResolver
                 .query(
-                Telephony.Sms.CONTENT_URI,
-                projection,
-                null,
-                null,
-                Telephony.Sms.DATE + " DESC",
-            )?.use { cursor ->
-                val idIndex = cursor.getColumnIndexOrThrow(Telephony.Sms._ID)
-                val threadIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.THREAD_ID)
-                val addressIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
-                val bodyIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
-                val dateIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
-                val typeIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
-                val readIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.READ)
+                    Telephony.Sms.CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    Telephony.Sms.DATE + " DESC",
+                )?.use { cursor ->
+                    val idIndex = cursor.getColumnIndexOrThrow(Telephony.Sms._ID)
+                    val threadIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.THREAD_ID)
+                    val addressIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
+                    val bodyIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
+                    val dateIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
+                    val typeIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
+                    val readIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.READ)
 
-                while (cursor.moveToNext() && result.size < maxMessages) {
-                    val type = cursor.getInt(typeIndex)
-                    result +=
-                        HubMessage(
-                            id = cursor.getLong(idIndex),
-                            threadId = cursor.getLong(threadIndex),
-                            address = cursor.getString(addressIndex).orEmpty(),
-                            body = cursor.getString(bodyIndex).orEmpty(),
-                            dateMillis = cursor.getLong(dateIndex),
-                            incoming = type == Telephony.Sms.MESSAGE_TYPE_INBOX,
-                            read = cursor.getInt(readIndex) != 0,
-                        )
+                    while (cursor.moveToNext() && result.size < maxMessages) {
+                        val type = cursor.getInt(typeIndex)
+                        result +=
+                            HubMessage(
+                                id = cursor.getLong(idIndex),
+                                threadId = cursor.getLong(threadIndex),
+                                address = cursor.getString(addressIndex).orEmpty(),
+                                body = cursor.getString(bodyIndex).orEmpty(),
+                                dateMillis = cursor.getLong(dateIndex),
+                                incoming = type == Telephony.Sms.MESSAGE_TYPE_INBOX,
+                                read = cursor.getInt(readIndex) != 0,
+                            )
+                    }
                 }
-            }
         }
 
         return result
