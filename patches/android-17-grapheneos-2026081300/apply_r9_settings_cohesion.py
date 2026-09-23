@@ -433,7 +433,6 @@ def verify(source: Path) -> None:
 
     provider = (settings / PROVIDER).read_text(encoding="utf-8")
     required_provider = (
-        'AUTHORITY = "org.sableos.appearance"',
         "createDeviceProtectedStorageContext()",
         "MODE_NIGHT_NO",
         "MODE_NIGHT_YES",
@@ -444,11 +443,13 @@ def verify(source: Path) -> None:
     # AUTHORITY lives in the contract; the provider must reference the contract.
     if "SableAppearanceContract.CONTENT_URI" not in provider:
         raise SystemExit("R9_SETTINGS_APPEARANCE_PROVIDER_CONTRACT_MISSING")
+    if 'contains("com.android.launcher3")' in provider:
+        raise SystemExit("R9_SETTINGS_APPEARANCE_PROVIDER_STALE_LAUNCHER3_WRITER")
     if "private Context requireContext()" in provider:
         raise SystemExit("R9_SETTINGS_PROVIDER_REQUIRE_CONTEXT_COLLISION")
     if "private Context requireProviderContext()" not in provider:
         raise SystemExit("R9_SETTINGS_PROVIDER_CONTEXT_HELPER_MISSING")
-    for needle in required_provider[1:]:
+    for needle in required_provider:
         if needle not in provider:
             raise SystemExit(f"R9_SETTINGS_APPEARANCE_PROVIDER_MISSING={needle}")
 
