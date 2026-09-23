@@ -46,8 +46,7 @@ internal fun QueueScreen(
     val queue = playback.queue
     val firstUpcomingPosition =
         if (playback.currentIndex >= 0) {
-            queue.indexOfFirst { item -> item.index > playback.currentIndex }
-                .let { position -> if (position < 0) queue.size else position }
+            (playback.currentIndex + 1).coerceIn(0, queue.size)
         } else {
             0
         }
