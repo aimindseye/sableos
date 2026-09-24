@@ -313,7 +313,7 @@ cmp -s     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"     || f
 cmp -s     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"     || fail R8_PRODUCT_MK
 cmp -s     "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml"     "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE
 
-python3 - "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" <<'PY'
+if ! python3 - "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" <<'PY'
 import pathlib
 import sys
 import xml.etree.ElementTree as ET
@@ -331,6 +331,9 @@ if perms != expected:
     )
 print("R9_SETTINGS_PRIVAPP_ALLOWLIST=PASS_EXACT")
 PY
+then
+    fail R9_SETTINGS_PRIVAPP_ALLOWLIST
+fi
     cd "$DEST/prebuilt"
     sha256sum -c "$DEST/SHA256SUMS.txt"
 ) || fail R8_PRODUCT_PREBUILT_HASHES
