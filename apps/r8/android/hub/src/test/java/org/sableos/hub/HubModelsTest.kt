@@ -50,6 +50,53 @@ class HubModelsTest {
     }
 
     @Test
+    fun connectedReducerUsesNewestActiveReplyHandleEvenWhenLatestRecordCannotReply() {
+        val key =
+            ConnectedAppKey(
+                packageName = "org.example.messaging",
+                userSerial = 10L,
+            )
+        val records =
+            listOf(
+                ConnectedNotificationRecord(
+                    id = "reply-capable",
+                    key = key,
+                    notificationKey = "child-with-reply",
+                    conversationId = "alice",
+                    conversationTitle = "Alice",
+                    sourceLabel = "Example",
+                    senderLabel = "Alice",
+                    body = "hello",
+                    timestampMillis = 100L,
+                    incoming = true,
+                ),
+                ConnectedNotificationRecord(
+                    id = "latest-summary",
+                    key = key,
+                    notificationKey = "summary-without-reply",
+                    conversationId = "alice",
+                    conversationTitle = "Alice",
+                    sourceLabel = "Example",
+                    senderLabel = null,
+                    body = "2 new messages",
+                    timestampMillis = 200L,
+                    incoming = true,
+                ),
+            )
+
+        val reduced =
+            HubConnectedConversationReducer.reduce(records) { notificationKey ->
+                notificationKey == "child-with-reply"
+            }
+
+        val conversation = reduced.conversations.single()
+        assertEquals("2 new messages", conversation.lastBody)
+        assertEquals(200L, conversation.lastDateMillis)
+        assertEquals("child-with-reply", conversation.sourceNotificationKey)
+        assertEquals(true, conversation.canQuickReply)
+    }
+
+    @Test
     fun connectedReducerKeepsSourceBoundaryAndReplyCapability() {
         val key =
             ConnectedAppKey(
