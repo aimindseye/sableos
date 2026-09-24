@@ -97,6 +97,38 @@ class HubModelsTest {
     }
 
     @Test
+    fun connectedReducerMarksLocalReplyEchoAsHandoffOnly() {
+        val key =
+            ConnectedAppKey(
+                packageName = "org.example.messaging",
+                userSerial = 10L,
+            )
+        val record =
+            ConnectedNotificationRecord(
+                id = CONNECTED_LOCAL_REPLY_PREFIX + "notification-1:200:1",
+                key = key,
+                notificationKey = "notification-1",
+                conversationId = "alice",
+                conversationTitle = "Alice",
+                sourceLabel = "Example",
+                senderLabel = null,
+                body = "reply",
+                timestampMillis = 200L,
+                incoming = false,
+            )
+
+        val reduced =
+            HubConnectedConversationReducer.reduce(listOf(record)) {
+                true
+            }
+
+        val message = reduced.messages.single()
+        assertEquals(false, message.incoming)
+        assertEquals(true, message.handoffOnly)
+        assertEquals("reply", message.body)
+    }
+
+    @Test
     fun connectedReducerKeepsSourceBoundaryAndReplyCapability() {
         val key =
             ConnectedAppKey(
