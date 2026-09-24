@@ -94,6 +94,7 @@ require(
     'CONNECTED_LOCAL_REPLY_PREFIX = "local-reply:"',
     "fun appendLocalReply(",
     "incoming = false",
+    "HubSnapshotProvider.SNAPSHOT_URI",
 )
 forbid(
     HISTORY,
@@ -137,8 +138,11 @@ require(
     "Dispatchers.Main.immediate",
     "notificationGenerations",
     "ConnectedReplyRegistry.register",
+    "ConnectedNotificationActivityRegistry.upsert(",
+    "ConnectedNotificationActivityRegistry.remove(",
     "policies.cachedPolicySnapshot()",
     "history.merge(",
+    "HubSnapshotProvider.SNAPSHOT_URI",
 )
 forbid(
     LISTENER,
@@ -169,6 +173,18 @@ require(
     "History retention:",
 )
 require(
+    f"{HUB_KT}/notifications/ConnectedNotificationActivityRegistry.kt",
+    "ConcurrentHashMap",
+    "activeConversationCount()",
+    "toSet()",
+)
+require(
+    f"{HUB_KT}/HubSnapshotProvider.kt",
+    "ConnectedNotificationActivityRegistry.activeConversationCount()",
+    '0 -> "0 active"',
+    '1 -> "1 active"',
+)
+require(
     f"{HUB_KT}/ui/HubScreen.kt",
     "HubPivot.Priority",
     "HubPivot.Messages",
@@ -183,6 +199,9 @@ require(
     'text = "Send reply"',
     '"Handed off · "',
     "onSendConnectedReply",
+    "PullToRefreshBox(",
+    "isRefreshing = isRefreshing",
+    "onRefresh = onRefresh",
 )
 forbid(
     f"{HUB_KT}/ui/HubScreen.kt",
@@ -228,6 +247,9 @@ require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     'title = "Sable Hub"',
     'labels = listOf("Sable Hub", "Hub", "Sable Messages", "Messages")',
+    "PullToRefreshBox(",
+    "onRefresh = onRefreshLive",
+    'ifBlank { "active" }',
 )
 
 require(
@@ -401,4 +423,7 @@ print("R9_HUB_PIVOTS=PASS_PRIORITY_MESSAGES_EMAIL_PEOPLE")
 print("R9_HUB_CONNECTED_APPS=PASS_ENABLED_AVAILABLE")
 print("R9_HUB_REPLY_HISTORY=PASS_TRUTHFUL_HANDOFF_ONLY")
 print("R9_HUB_MAIL_BOUNDARY=PASS_BOUNDED_SNAPSHOT")
+print("R9_HUB_LIVE_ACTIVITY=PASS_CONNECTED_NOTIFICATION_AWARE")
+print("R9_HUB_PULL_TO_REFRESH=PASS")
+print("R9_SABLESTART_PULL_TO_REFRESH=PASS")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
