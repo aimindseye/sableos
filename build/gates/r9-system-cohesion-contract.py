@@ -107,6 +107,21 @@ require(
     "R9_PERMISSION_ALLOWLIST_RUNTIME=FAIL_NOTIFICATION_PRESENT",
     "R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION",
 )
+require(
+    "product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml",
+    '<privapp-permissions package="com.android.settings">',
+    '<permission name="android.permission.MODIFY_DAY_NIGHT_MODE"/>',
+)
+require(
+    "product/r8/panther/Android.bp",
+    'name: "SableSettingsPrivappPermissions"',
+    "system_ext_specific: true",
+    'src: "permissions/sable-privapp-permissions-com.android.settings.xml"',
+)
+require(
+    "product/r8/panther/r8-product.mk",
+    "SableSettingsPrivappPermissions",
+)
 
 require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
@@ -535,6 +550,7 @@ if failures:
         print(f"FAILURE={failure}")
     raise SystemExit(1)
 
+print("R9_SETTINGS_PRIVAPP_ALLOWLIST_CONTRACT=PASS_SYSTEM_EXT_EXACT")
 print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
 print("R9_SABLELAUNCHER_HOME_ARCHITECTURE=PASS_STANDALONE")
 print("R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT_SOURCE")
