@@ -422,6 +422,57 @@ compat.android_runtime
 
 See `INTERACTION_PROFILES.md`.
 
+## Keyboard-first platform architecture
+
+Keyboard-First SableOS Design V1 is normative in
+`docs/adr/0010-keyboard-first-sableos-design-v1.md`.
+
+Keyboard-first behavior is a platform capability rather than an IME-only or
+launcher-only feature. The common architecture now includes:
+
+```text
+Sable Device Profile
+    -> Sable Hardware Input Mapper
+    -> Sable Input Surface API
+    -> Sable Keyboard Policy Service
+    -> Sable Physical IME / application routing
+
+SableStart Command Surface
+Sable Focus & Navigation
+Sable App Display Profiles
+Sable Notification Policy & Profiles
+Sable Hub
+Sable Device Adapter & Security Delta Ledger
+```
+
+The primary input normalization boundary is Android userspace around
+EventHub/InputReader. Kernel changes are a last resort after device evidence
+proves the vendor driver does not expose the required event capability.
+Hardware normalization does not own semantic policy: a raw axis sequence may
+become a normalized swipe or pointer event, while the Keyboard Policy Service,
+IME, launcher or focused application decides what that event means in context.
+
+Physical keyboard matrices and pointer/touch surfaces are modeled separately.
+A Titan keyboard-associated touch surface and a future independent toolbelt or
+trackpad can therefore consume the same common Sable navigation semantics.
+
+App display compatibility is also a common platform capability. Per-app profiles
+may select aspect ratio, logical width/height and optional density/UI scale
+without changing global `wm size`. Overrides belong in Activity/Task
+size-compat/window configuration and are keyed by Android user/profile, package
+and display class.
+
+Notification policy remains separate from Hub aggregation. Sable Settings and
+SystemUI may expose keyboard-operable app/channel/conversation delivery,
+privacy and snooze controls plus capability-gated hardware outputs such as a
+status LED, keyboard backlight or secondary display. Third-party Hub data still
+uses supported Android/public interfaces; first-party apps integrate through
+bounded provider/service APIs rather than a shared unrestricted database.
+
+Non-Pixel compatibility patches are recorded in a security delta ledger. A
+TrebleDroid/RestlessOS compatibility workaround may explain a vendor failure,
+but it is not imported as a blanket Sable security relaxation.
+
 ## UI architecture direction
 
 Sable UI should be mobile-first rather than desktop Linux narrowed to a phone.
