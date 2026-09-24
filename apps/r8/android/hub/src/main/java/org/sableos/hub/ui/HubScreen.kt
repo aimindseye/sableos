@@ -358,17 +358,19 @@ private fun HubPivotRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
     ) {
         HubPivot.entries.forEach { pivot ->
             TextButton(
                 onClick = { onSelect(pivot) },
-                modifier = Modifier.heightIn(min = HubTouchTarget),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .heightIn(min = HubTouchTarget),
                 contentPadding = PaddingValues(horizontal = 0.dp),
             ) {
                 Text(
                     text = pivot.name.lowercase(),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     color =
                         if (pivot == selected) {
                             MaterialTheme.colorScheme.primary
