@@ -40,6 +40,9 @@ require(
     'android:name=".notifications.SableNotificationListenerService"',
     'android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"',
     'android.service.notification.NotificationListenerService',
+    'android:label="Sable Hub"',
+    'android:authorities="org.sableos.mail.snapshot"',
+    'android:name="org.sableos.mail"',
 )
 forbid(
     MANIFEST,
@@ -88,6 +91,9 @@ require(
     "MAX_HISTORY_RECORDS = 1200",
     "ConnectedNotificationRetention.shouldKeep",
     "normalized?.includeInMessages == true",
+    'CONNECTED_LOCAL_REPLY_PREFIX = "local-reply:"',
+    "fun appendLocalReply(",
+    "incoming = false",
 )
 forbid(
     HISTORY,
@@ -155,24 +161,44 @@ require(
 require(
     f"{HUB_KT}/ui/ConnectedAppsScreen.kt",
     'title = "connected apps"',
+    "ConnectedAppsPivot.Enabled",
+    "ConnectedAppsPivot.Available",
+    'label = "Search installed apps"',
     'label = "Allow quick reply"',
     'label = "Hide from SableLauncher"',
     "History retention:",
 )
 require(
     f"{HUB_KT}/ui/HubScreen.kt",
-    "HubRoute.ConnectedReply",
+    "HubPivot.Priority",
+    "HubPivot.Messages",
+    "HubPivot.Email",
+    "HubPivot.People",
+    'title = "hub"',
     'text = "connected apps"',
     "HubConversationSource.ConnectedApp",
     "Content hidden by source app",
     'text = "Open source app"',
+    'label = { Text("Reply") }',
+    'text = "Send reply"',
+    '"Handed off · "',
+    "onSendConnectedReply",
+)
+forbid(
+    f"{HUB_KT}/ui/HubScreen.kt",
+    "HubRoute.ConnectedReply",
+    "private fun ConnectedReplyView(",
 )
 require(
     f"{HUB_KT}/HubRepository.kt",
     "HubConnectedConversationReducer.reduce",
     "ConnectedReplyRegistry::canReply",
     "fun replyToConnected(",
+    "connectedHistory.appendLocalReply(",
     "fun openConnectedApp(",
+    "fun openSableMail(",
+    "private fun loadMailSnapshot(",
+    'content://org.sableos.mail.snapshot/current',
 )
 
 require(
@@ -182,6 +208,9 @@ require(
     "private fun ConnectedNotificationRecord.toHubMessage(",
     "private fun ConnectedNotificationRecord.toHubConversation(",
     "ConnectedConversationSlice",
+    "handoffOnly",
+    "CONNECTED_LOCAL_REPLY_PREFIX",
+    "data class HubMailSnapshot(",
 )
 
 require(
@@ -226,6 +255,26 @@ require(
     "NOTIFICATION_ONLY",
     "LAUNCH_ONLY",
 )
+require(
+    "apps/r8/mail/apply_sable_flavor.py",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
+)
+require(
+    "apps/r8/mail/verify_sable_mail.py",
+    '"org.sableos.hub"',
+    "SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY",
+)
+require(
+    "docs/adr/0011-sable-hub-v1.md",
+    "Priority | Messages | Email | People",
+    "Enabled | Available",
+    "Handed off",
+    "Hub must not read Sable Mail's private database",
+)
+
 require(
     "docs/R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md",
     "R9_MESSAGES_CONNECTED_APPS=PASS_CONFIGURABLE_PACKAGE_USER",
@@ -331,4 +380,9 @@ print("R9_MESSAGES_SOURCE_STYLE_PREFLIGHT=PASS_REQUIRED")
 print("R9_MESSAGES_COMPOSE_KTLINT_POLICY=PASS_MEDIA_ALIGNED")
 print("R9_MESSAGES_QUALITY_CONFIG=PASS_FAIL_CLOSED")
 print("R9_MESSAGES_QUALIFICATION_ORDER=PASS_SOURCE_STYLE_BEFORE_GRADLE")
+print("R9_HUB_PRODUCT_IDENTITY=PASS_SABLE_HUB")
+print("R9_HUB_PIVOTS=PASS_PRIORITY_MESSAGES_EMAIL_PEOPLE")
+print("R9_HUB_CONNECTED_APPS=PASS_ENABLED_AVAILABLE")
+print("R9_HUB_REPLY_HISTORY=PASS_TRUTHFUL_HANDOFF_ONLY")
+print("R9_HUB_MAIL_BOUNDARY=PASS_BOUNDED_SNAPSHOT")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
