@@ -6,6 +6,7 @@ surface work. UI4 remains historical evidence. This overlay consumes the
 already-qualified cumulative state and adds only:
   * Sable global-accent observation inside SystemUI
   * active Quick Settings tile colors sourced from that Sable accent
+  * SableOS product identity for the framework-owned ADB developer notification
 
 Light/dark propagation is owned by the privileged Settings-hosted Sable appearance authority through
 UiModeManager; this overlay does not change SystemUI behavior/state models.
@@ -27,6 +28,22 @@ TILE = Path(
 BRIDGE = Path(
     "packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt"
 )
+ADB_NOTIFICATIONS = Path(
+    "core/java/android/debug/AdbNotifications.java"
+)
+
+ADB_IMPORT_OLD = "import android.os.UserHandle;\n"
+ADB_IMPORT_NEW = "import android.os.Bundle;\nimport android.os.UserHandle;\n"
+ADB_BUILDER_OLD = """        return new Notification.Builder(context, SystemNotificationChannels.DEVELOPER_IMPORTANT)
+                .setSmallIcon(com.android.internal.R.drawable.stat_sys_adb)
+"""
+ADB_BUILDER_NEW = """        Bundle sableIdentity = new Bundle();
+        sableIdentity.putString(Notification.EXTRA_SUBSTITUTE_APP_NAME, "SableOS");
+
+        return new Notification.Builder(context, SystemNotificationChannels.DEVELOPER_IMPORTANT)
+                .addExtras(sableIdentity)
+                .setSmallIcon(com.android.internal.R.drawable.stat_sys_adb)
+"""
 
 TILE_IMPORT_OLD = "import com.android.systemui.res.R\n"
 TILE_IMPORT_NEW = (
@@ -247,6 +264,24 @@ def assert_head(source: Path) -> None:
         )
 
 
+def patch_adb_notification_text(text: str) -> str:
+    replacements = (
+        (ADB_IMPORT_OLD, ADB_IMPORT_NEW, "ADB notification Bundle import"),
+        (ADB_BUILDER_OLD, ADB_BUILDER_NEW, "ADB notification Sable identity"),
+    )
+    for old, new, label in replacements:
+        if new in text:
+            continue
+        count = text.count(old)
+        if count != 1:
+            raise CoherenceError(
+                f"R9_ADB_NOTIFICATION_REPLACEMENT_PRECONDITION_FAIL="
+                f"{label}:count={count}"
+            )
+        text = text.replace(old, new, 1)
+    return text
+
+
 def patch_text(text: str) -> str:
     replacements = (
         (TILE_IMPORT_OLD, TILE_IMPORT_NEW, "SystemUI Sable accent import"),
@@ -304,6 +339,22 @@ def verify(source: Path, root: Path) -> None:
     framework = source / FRAMEWORK_REPO
     tile = (framework / TILE).read_text(encoding="utf-8")
     bridge = framework / BRIDGE
+    adb_notifications = framework / ADB_NOTIFICATIONS
+
+    if not adb_notifications.is_file():
+        raise CoherenceError("R9_ADB_NOTIFICATION_SOURCE_MISSING")
+    adb_text = adb_notifications.read_text(encoding="utf-8")
+    for token in (
+        ADB_IMPORT_NEW,
+        'sableIdentity.putString(Notification.EXTRA_SUBSTITUTE_APP_NAME, "SableOS")',
+        ".addExtras(sableIdentity)",
+    ):
+        if token not in adb_text:
+            raise CoherenceError(
+                f"R9_ADB_NOTIFICATION_SABLE_IDENTITY_TOKEN_MISSING={token!r}"
+            )
+    if ADB_BUILDER_OLD in adb_text:
+        raise CoherenceError("R9_ADB_NOTIFICATION_LEGACY_BUILDER_PRESENT")
 
     required = (
         TILE_IMPORT_NEW,
@@ -334,8 +385,9 @@ def verify(source: Path, root: Path) -> None:
 
     actual = status_set(framework)
     overlay_marker = f"?? {BRIDGE.as_posix()}"
+    adb_marker = f" M {ADB_NOTIFICATIONS.as_posix()}"
     expected = tuple(
-        legacy | {overlay_marker}
+        legacy | {overlay_marker, adb_marker}
         for legacy in expected_legacy_sets(root)
     )
     if actual not in expected:
@@ -347,6 +399,7 @@ def verify(source: Path, root: Path) -> None:
 
     print("R9_SYSTEMUI_SABLE_ACCENT_PROVIDER=PASS")
     print("R9_SYSTEMUI_QS_ACTIVE_ACCENT=PASS")
+    print("R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS")
     print("R9_SYSTEMUI_INTERACTION_SEMANTICS_PRESERVED=PASS")
     print("R9_SYSTEMUI_COHERENCE_SOURCE_SCOPE=PASS")
 
@@ -377,6 +430,13 @@ def apply(source: Path, root: Path) -> None:
         patch_text(tile.read_text(encoding="utf-8")),
         encoding="utf-8",
     )
+    adb_notifications = framework / ADB_NOTIFICATIONS
+    adb_notifications.write_text(
+        patch_adb_notification_text(
+            adb_notifications.read_text(encoding="utf-8")
+        ),
+        encoding="utf-8",
+    )
     if not bridge.exists():
         bridge.parent.mkdir(parents=True, exist_ok=True)
     if not bridge.exists() or upgrade_legacy_bridge:
@@ -398,6 +458,19 @@ def self_test(root: Path) -> None:
         + "onLongClick = onLongClick\n"
     )
     patched = patch_text(sample)
+
+    adb_sample = ADB_IMPORT_OLD + ADB_BUILDER_OLD
+    adb_patched = patch_adb_notification_text(adb_sample)
+    for token in (
+        ADB_IMPORT_NEW,
+        'Notification.EXTRA_SUBSTITUTE_APP_NAME, "SableOS"',
+        ".addExtras(sableIdentity)",
+    ):
+        if token not in adb_patched:
+            raise CoherenceError(
+                f"R9_ADB_NOTIFICATION_SELF_TEST_TOKEN_MISSING={token!r}"
+            )
+
     for token in (
         TILE_IMPORT_NEW,
         SABLE_ACTIVE,
@@ -429,6 +502,7 @@ def self_test(root: Path) -> None:
         raise CoherenceError("R9_SYSTEMUI_SELF_TEST_NO_LEGACY_SCOPE")
 
     print("R9_SYSTEMUI_COHERENCE_REPLACEMENT_SELF_TEST=PASS")
+    print("R9_ADB_NOTIFICATION_PRODUCT_IDENTITY_SELF_TEST=PASS")
     print("R9_SYSTEMUI_COHERENCE_PROVIDER_SELF_TEST=PASS")
     print("R9_SYSTEMUI_LEGACY_AUTHORITY_UPGRADE_SELF_TEST=PASS")
     print("R9_SYSTEMUI_COHERENCE_SCOPE_SELF_TEST=PASS")

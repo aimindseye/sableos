@@ -4,6 +4,15 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 WS="${WS:-${SABLEOS_UPSTREAM:-}}"
+WORKSPACE_INVENTORY_REQUIRED="${R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED:-YES}"
+
+case "$WORKSPACE_INVENTORY_REQUIRED" in
+    YES|NO) ;;
+    *)
+        echo "R8_NO_STALE_PRODUCT_CODE=FAIL_WORKSPACE_INVENTORY_MODE value=$WORKSPACE_INVENTORY_REQUIRED"
+        exit 2
+        ;;
+esac
 
 fail() {
     echo "$1=FAIL"
@@ -15,6 +24,7 @@ echo "===== R8 NO-STALE PRODUCT CODE / PACKAGE GATE ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
 echo "BUILD_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
+echo "WORKSPACE_INVENTORY_REQUIRED=$WORKSPACE_INVENTORY_REQUIRED"
 
 stale_paths=(
     "apps/r8/android/media/src/main/java/org/sableos/media/preview/MediaDesignPreviewActivity.kt"
@@ -36,6 +46,7 @@ stale_paths=(
     "build/panther/build-ui-preview.sh"
     "build/panther/flash-ui-preview-inactive-slot.sh"
     "build/panther/validate-ui-preview.sh"
+    "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
 )
 
 for rel in "${stale_paths[@]}"; do
@@ -93,14 +104,22 @@ grep -Eq '^[[:space:]]*SableLauncher([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK
     || fail R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE
 echo "R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE=PASS"
 
+grep -Eq '^[[:space:]]*SableTextReader([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK" \
+    || fail R9_SABLE_TEXT_READER_PRODUCT_MODULE
+echo "R9_SABLE_TEXT_READER_PRODUCT_MODULE=PASS"
+
+if grep -Eq '^[[:space:]]*(TextReader|VaachakTextReader)([[:space:]]*\\)?[[:space:]]*$' "$PRODUCT_MK"; then
+    fail R9_LEGACY_TEXT_READER_PRODUCT_MODULE
+fi
+echo "R9_LEGACY_TEXT_READER_PRODUCT_MODULE=PASS_ABSENT"
+
 for forbidden in \
     start-preview \
     system-preview \
     ExactCalculator \
     SableConvert \
     SableConverter \
-    SableGames \
-    TextReader
+    SableGames
 do
     if grep -Fq "$forbidden" "$PRODUCT_MK"; then
         echo "R8_STALE_PRODUCT_MODULE=FAIL value=$forbidden"
@@ -141,18 +160,24 @@ if [[ -n "$WS" ]]; then
     fi
     echo "R8_STALE_WORKSPACE_PRODUCT_TREE=PASS_ABSENT"
 
-    python3 "$ROOT/build/gates/verify-r8-vendor-sable-inventory.py" \
-        "$WS/vendor/sable"
+    if [[ "$WORKSPACE_INVENTORY_REQUIRED" == YES ]]; then
+        python3 "$ROOT/build/gates/verify-r8-vendor-sable-inventory.py" \
+            "$WS/vendor/sable"
 
-    mapfile -t sable_r8_blueprints < <(
-        find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
-    )
-    [[ "${#sable_r8_blueprints[@]}" -eq 1 ]] || {
-        printf '%s\n' "${sable_r8_blueprints[@]}"
-        fail R8_DUPLICATE_PRODUCT_BLUEPRINT
-    }
-    [[ "${sable_r8_blueprints[0]}" == "$WS/vendor/sable/r8/Android.bp" ]]         || fail R8_DUPLICATE_PRODUCT_BLUEPRINT
-    echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
+        mapfile -t sable_r8_blueprints < <(
+            find "$WS/vendor/sable" -type f -name Android.bp -print 2>/dev/null | sort || true
+        )
+        [[ "${#sable_r8_blueprints[@]}" -eq 1 ]] || {
+            printf '%s\n' "${sable_r8_blueprints[@]}"
+            fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+        }
+        [[ "${sable_r8_blueprints[0]}" == "$WS/vendor/sable/r8/Android.bp" ]] \
+            || fail R8_DUPLICATE_PRODUCT_BLUEPRINT
+        echo "R8_DUPLICATE_PRODUCT_BLUEPRINT=PASS_ABSENT"
+        echo "R8_WORKSPACE_PRODUCT_INVENTORY=PASS_EXACT"
+    else
+        echo "R8_WORKSPACE_PRODUCT_INVENTORY=SKIP_PRESTAGING"
+    fi
 fi
 
 for manifest in \
@@ -205,10 +230,30 @@ echo "R9_SABLE_MESSAGES_INTERNET_PERMISSION=PASS_ABSENT"
 READER_APPLIER="$ROOT/apps/r8/reader/apply_sable_flavor.py"
 grep -Fq 'SableGlobalAppearance.kt' "$READER_APPLIER" \
     || fail R8_GLOBAL_APPEARANCE_READER
+grep -Fq 'ProductReaderTheme.kt' "$READER_APPLIER" \
+    || fail R8_GLOBAL_APPEARANCE_READER
+grep -Fq 'import org.sableos.design.SableTheme' "$READER_APPLIER" \
+    || fail R8_GLOBAL_APPEARANCE_READER
 grep -Fq 'rememberGlobalSableAppearance()' "$READER_APPLIER" \
     || fail R8_GLOBAL_APPEARANCE_READER
-grep -Fq 'SableGlobalTheme(window = window)' "$READER_APPLIER" \
+grep -Fq 'appearance = rememberGlobalSableAppearance(),' "$READER_APPLIER" \
     || fail R8_GLOBAL_APPEARANCE_READER
+grep -Fq 'if (!BuildConfig.SABLE_PRODUCT || themeMode == ThemeMode.E_INK)' "$READER_APPLIER" \
+    || fail R8_GLOBAL_APPEARANCE_READER
+echo "R8_GLOBAL_APPEARANCE_READER=PASS_PRODUCT_THEME_BRIDGE"
+grep -Fq 'SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT' "$READER_APPLIER" || fail R9_READER_TEXTREADER_DECOMPOSITION
+if grep -Fq 'SableTextActivity' "$READER_APPLIER" || grep -Fq 'SableOcrActivity' "$READER_APPLIER"; then
+    fail R9_READER_TEXTREADER_RUNTIME
+fi
+
+TEXTREADER_APPLIER="$ROOT/apps/r8/textreader/apply_sable_flavor.py"
+TEXTREADER_VERIFY="$ROOT/apps/r8/textreader/verify_sable_textreader.py"
+[[ -f "$TEXTREADER_APPLIER" && -f "$TEXTREADER_VERIFY" ]] || fail R9_SABLE_TEXT_READER_SOURCE
+grep -Fq 'org.sableos.textreader' "$TEXTREADER_APPLIER" || fail R9_SABLE_TEXT_READER_IDENTITY
+grep -Fq 'SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE' "$TEXTREADER_VERIFY" || fail R9_SABLE_TEXT_READER_OFFLINE_POLICY
+grep -Fq 'SABLE_TEXT_READER_APK_INTERNET_PERMISSION=PASS_ABSENT' "$TEXTREADER_VERIFY" || fail R9_SABLE_TEXT_READER_APK_OFFLINE_POLICY
+echo "R9_READER_TEXTREADER_DECOMPOSITION=PASS"
+echo "R9_SABLE_TEXT_READER_SOURCE=PASS"
 
 EXPORTER="$ROOT/apps/r8/export-panther-app-bundle.sh"
 if grep -Fq 'find "$ROOT/apps/r8/android"' "$EXPORTER"; then
@@ -256,7 +301,7 @@ grep -Fq 'SABLE_MAIL_APPLICATION_ID=org.sableos.mail' "$MAIL_ENV" \
 grep -Fq 'SABLE_MAIL_REMOTE_CONTENT_PRIVACY=PASS_UPSTREAM_PRESERVED' "$MAIL_VERIFY" \
     || fail R8_SABLE_MAIL_REMOTE_CONTENT_POLICY
 
-if [[ -n "$WS" && -d "$WS/vendor/sable/r8/prebuilt" ]]; then
+if [[ "$WORKSPACE_INVENTORY_REQUIRED" == YES && -n "$WS" && -d "$WS/vendor/sable/r8/prebuilt" ]]; then
     python3 - "$WS/vendor/sable/r8/prebuilt" <<'PY'
 import pathlib
 import sys
@@ -268,6 +313,7 @@ expected = {
     "SableMinesweeper.apk",
     "Sable2048.apk",
     "SableMedia.apk",
+    "SableTextReader.apk",
     "SableReader.apk",
     "SableHub.apk",
     "SableMail.apk",
@@ -283,6 +329,8 @@ if actual != expected:
     )
 print("R8_STAGED_APK_SET=PASS")
 PY
+elif [[ "$WORKSPACE_INVENTORY_REQUIRED" == NO ]]; then
+    echo "R8_STAGED_APK_SET=SKIP_PRESTAGING"
 fi
 
 echo "R8_STALE_PRODUCT_SOURCE_TEXT=PASS_ABSENT"

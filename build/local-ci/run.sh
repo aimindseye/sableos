@@ -4,6 +4,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-host-tools.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 PROFILE="${1:-core}"
 SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"
@@ -33,6 +35,7 @@ mkdir -p "$EVIDENCE_DIR"
 
 exec > >(tee "$EVIDENCE_DIR/local-ci.log") 2>&1
 
+sable_checkpoint_info "Local CI profile=$PROFILE source=$SOURCE_COMMIT"
 echo "===== SABLE LOCAL CI ====="
 echo "PROFILE=$PROFILE"
 echo "SABLEOS_DEVICE=$SABLEOS_DEVICE"
@@ -58,8 +61,15 @@ stage() {
   shift
   echo
   echo "===== $name ====="
-  "$@"
-  echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+  if "$@"; then
+    echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+    sable_checkpoint_pass "CI stage $name"
+  else
+    local rc=$?
+    echo "SABLE_LOCAL_CI_STAGE_$name=FAIL rc=$rc"
+    sable_checkpoint_fail "CI stage $name"
+    return "$rc"
+  fi
 }
 
 run_policy() {
@@ -175,6 +185,8 @@ PY
     python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
   run_static_contract r9-physical-ux-closure \
     python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  run_static_contract r9-textreader-standalone \
+    python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
     python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
   run_static_contract r9-first-party-app-icon \
@@ -188,7 +200,8 @@ PY
   run_static_contract r9-messages-source-style \
     python3 "$ROOT/build/gates/r9-messages-source-style.py"
   run_static_contract r8-no-stale-product-code \
-    bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
+    env R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO \
+      bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   run_static_contract r9-sablestart-design-self-test \
     python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   run_static_contract r9-sablestart-design \
@@ -444,6 +457,9 @@ run_textreader() {
   mkdir -p "$CACHE_ROOT"
   clone_pinned "$VAACHAK_TEXTREADER_REPOSITORY" "$VAACHAK_TEXTREADER_COMMIT" "$work"
 
+  python3 "$ROOT/apps/r8/textreader/apply_sable_flavor.py" "$work"
+  python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" "$work"
+
   export JAVA_HOME="$SABLE_JDK17"
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
   export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
@@ -451,40 +467,36 @@ run_textreader() {
   (
     cd "$work"
     chmod +x gradlew
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       testDebugUnitTest lintDebug assembleDebug       --stacktrace --console=plain --no-daemon --no-configuration-cache
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
+      testDebugUnitTest \
+      lintDebug \
+      assembleDebug \
+      --stacktrace --console=plain --no-daemon --no-configuration-cache
 
-    manifest=app/src/main/AndroidManifest.xml
-    main=app/src/main/java/org/vaachak/textreader/MainActivity.kt
-    shared=app/src/main/java/org/vaachak/textreader/SharedComponents.kt
-    util=app/src/main/java/org/vaachak/textreader/TextReaderUtil.kt
+    mapfile -t apks < <(
+      find app/build/outputs/apk/debug \
+        -maxdepth 1 -type f -name 'SableTextReader-*.apk' -print | sort
+    )
+    [[ "${#apks[@]}" -eq 1 ]] || {
+      echo "SABLE_TEXT_READER_APK=FAIL_COUNT count=${#apks[@]}"
+      return 1
+    }
 
-    grep -q 'android.permission.CAMERA' "$manifest"
-    grep -q 'android.hardware.camera.*required="false"' "$manifest"
-    grep -q 'android.permission.INTERNET' "$manifest"
-    grep -q 'android.intent.action.SEND' "$manifest"
-    grep -q 'android.intent.action.PROCESS_TEXT' "$manifest"
-    grep -q 'ActivityResultContracts.OpenDocument' "$main"
-    grep -q 'TextToSpeech' "$main"
-    grep -q 'CreateDocument("audio/wav")' "$main"
-    grep -q 'TextRecognition.getClient' "$main"
-    grep -q 'downloadModelIfNeeded' "$shared"
-    ! grep -q '^import android\.' "$util"
-
-    find app/build/outputs/apk/debug -type f -name '*.apk'       -print -exec sha256sum {} \; > "$EVIDENCE_DIR/textreader-apk-seal.txt"
+    APKANALYZER="$SABLE_APKANALYZER" \
+      python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" \
+        "$work" "${apks[0]}"
+    sha256sum "${apks[0]}" > "$EVIDENCE_DIR/textreader-apk-seal.txt"
   )
 }
 
 run_reader() {
   source "$ROOT/apps/r8/reader/upstream.env"
-  source "$ROOT/apps/r8/textreader/upstream.env"
   local reader="$CACHE_ROOT/vaachak-reader"
-  local text="$CACHE_ROOT/vaachak-textreader-reader"
   mkdir -p "$CACHE_ROOT"
 
   clone_pinned "$VAACHAK_REPOSITORY" "$VAACHAK_COMMIT" "$reader"
-  clone_pinned "$VAACHAK_TEXTREADER_REPOSITORY" "$VAACHAK_TEXTREADER_COMMIT" "$text"
 
-  python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader" "$text"
+  python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader"
 
   export JAVA_HOME="$SABLE_JDK21"
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
@@ -625,3 +637,4 @@ echo "SABLE_LOCAL_CI=PASS"
 echo "PROFILE=$PROFILE"
 echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+sable_checkpoint_pass "Local CI $PROFILE complete for $SOURCE_COMMIT"

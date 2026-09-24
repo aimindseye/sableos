@@ -61,6 +61,7 @@ PRODUCT_MODULES = (
     "SableMinesweeper",
     "Sable2048",
     "SableMedia",
+    "SableTextReader",
     "SableReader",
     "SableHub",
     "SableMail",
@@ -170,6 +171,25 @@ def main() -> int:
         "R9_ICON_MAIL_VERIFY",
     )
 
+    textreader_apply = read(
+        ROOT / "apps/r8/textreader/apply_sable_flavor.py",
+        "R9_ICON_TEXT_READER_APPLICATOR",
+    )
+    for token in (
+        'android:icon="@drawable/ic_sable_text_reader"',
+        'android:roundIcon="@drawable/ic_sable_text_reader"',
+        "ic_sable_text_reader.xml",
+        'android:viewportWidth="256"',
+        'android:fillColor="#161C24"',
+        'android:fillColor="#F7F9FC"',
+        'android:fillColor="#4D9CFF"',
+    ):
+        require(
+            textreader_apply,
+            token,
+            "R9_ICON_TEXT_READER_APPROVED_LANGUAGE",
+        )
+
     reader_apply = read(
         ROOT / "apps/r8/reader/apply_sable_flavor.py",
         "R9_ICON_READER_APPLICATOR",
@@ -203,11 +223,12 @@ def main() -> int:
     print("R9_FIRST_PARTY_ICON_MESSAGES=PASS")
     print("R9_FIRST_PARTY_ICON_GAMES=PASS_3")
     print("R9_FIRST_PARTY_ICON_MAIL=PASS")
+    print("R9_FIRST_PARTY_ICON_TEXT_READER=PASS")
     print("R9_FIRST_PARTY_ICON_READER=PASS")
     print("R9_FIRST_PARTY_ICON_WEATHER=PASS")
     print("R9_WEATHER_CONDITION_ICONS=PASS_PHOSPHOR_8")
     print("R9_FIRST_PARTY_ICON_CALENDAR=PASS")
-    print("R9_FIRST_PARTY_ICON_PRODUCT_COVERAGE=PASS_10")
+    print("R9_FIRST_PARTY_ICON_PRODUCT_COVERAGE=PASS_11")
     print("R9_FIRST_PARTY_APP_ICON_CONTRACT=PASS")
     return 0
 

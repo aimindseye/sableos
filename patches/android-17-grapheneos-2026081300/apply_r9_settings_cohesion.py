@@ -210,6 +210,26 @@ def expected_pre_dirt() -> set[str]:
     return set(ui5c.expected_settings_pre_dirt(ui5b)) | set(ui5c.SETTINGS_EXTRA_DIRT)
 
 
+def classify_dirty_scope_from_expected(
+    actual: set[str],
+    pre: set[str],
+) -> str:
+    final = pre | COHESION_DIRT
+    if actual == pre:
+        return "PRE_COHESION"
+    if actual == final:
+        return "FINAL_COHESION"
+    raise SystemExit(
+        "R9_SETTINGS_COHESION_DIRTY_SCOPE_MISMATCH="
+        f"expected_pre={sorted(pre)!r} expected_final={sorted(final)!r} "
+        f"actual={sorted(actual)!r}"
+    )
+
+
+def classify_dirty_scope(actual: set[str]) -> str:
+    return classify_dirty_scope_from_expected(actual, expected_pre_dirt())
+
+
 def assert_head(source: Path) -> None:
     actual = run_git(source / SETTINGS_REPO, "rev-parse", "HEAD")
     if actual != SETTINGS_HEAD:
@@ -287,16 +307,17 @@ def apply(source: Path) -> None:
     settings = source / SETTINGS_REPO
 
     actual = status_set(settings)
-    expected = expected_pre_dirt()
-    if actual != expected:
-        raise SystemExit(
-            "R9_SETTINGS_COHESION_PRE_DIRTY_SCOPE_MISMATCH="
-            f"expected={sorted(expected)!r} actual={sorted(actual)!r}"
-        )
+    scope = classify_dirty_scope(actual)
+    print(f"R9_SETTINGS_COHESION_INPUT_SCOPE={scope}")
 
-    for dest in NEW_FILES:
-        if (settings / dest).exists():
-            raise SystemExit(f"R9_SETTINGS_COHESION_DEST_ALREADY_EXISTS={dest}")
+    if scope == "PRE_COHESION":
+        for dest in NEW_FILES:
+            if (settings / dest).exists():
+                raise SystemExit(
+                    f"R9_SETTINGS_COHESION_DEST_ALREADY_EXISTS={dest}"
+                )
+    else:
+        print("R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=AUTHORIZED_BOUNDED_FINAL_SCOPE")
 
     manifest_path = settings / MANIFEST
     manifest = manifest_path.read_text(encoding="utf-8")
@@ -343,6 +364,8 @@ def apply(source: Path) -> None:
         shutil.copyfile(template_for(dest), dst)
 
     verify(source)
+    if scope == "FINAL_COHESION":
+        print("R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=PASS")
     print("R9_SETTINGS_COHESION_APPLY=PASS")
 
 
@@ -551,6 +574,33 @@ def self_test() -> None:
     if "SableNetworkManagerSettings.class.getName()," not in gateway_sample:
         raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_NETWORK_GATEWAY_FAIL")
 
+    sample_pre = {" M existing.xml", "?? existing-new.xml"}
+    if (
+        classify_dirty_scope_from_expected(sample_pre, sample_pre)
+        != "PRE_COHESION"
+    ):
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_PRE_SCOPE_FAIL")
+    if (
+        classify_dirty_scope_from_expected(
+            sample_pre | COHESION_DIRT,
+            sample_pre,
+        )
+        != "FINAL_COHESION"
+    ):
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_FINAL_SCOPE_FAIL")
+    try:
+        classify_dirty_scope_from_expected(
+            sample_pre | COHESION_DIRT | {" M unexpected.xml"},
+            sample_pre,
+        )
+    except SystemExit:
+        pass
+    else:
+        raise SystemExit("R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION_FAIL")
+
+    print("R9_SETTINGS_COHESION_SELF_TEST_PRE_SCOPE=PASS")
+    print("R9_SETTINGS_COHESION_SELF_TEST_FINAL_SCOPE=PASS")
+    print("R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS")
     print("R9_SETTINGS_COHESION_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")

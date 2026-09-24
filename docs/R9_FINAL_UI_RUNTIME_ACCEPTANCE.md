@@ -45,7 +45,7 @@ R9_SABLE_USER_VISIBLE_BRANDING_AUDIT=PASS
 R9_SABLE_NETWORK_MANAGER_UI=PASS
 R9_SABLE_NETWORK_PERMISSION_REVOKE=PASS
 R9_SABLE_NETWORK_PERMISSION_RESTORE=PASS
-R9_SABLE_NETWORK_FIXED_POLICY=PASS
+R9_SABLE_NETWORK_FIXED_POLICY=PASS|NOT_APPLICABLE_NO_FIXED_ROWS
 ```
 
 Use `tests/systemui/device/r9_branding_surface_audit.sh` for read-only scene capture; the complete required scene set is defined in `docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md`.
@@ -84,6 +84,15 @@ Sable appearance has one system authority:
 
 `content://org.sableos.appearance/appearance`
 
+Settings is installed as a privileged `system_ext` application. The Sable
+appearance authority requests `android.permission.MODIFY_DAY_NIGHT_MODE`, which
+is `signature|privileged|role`; R9 therefore installs the Sable-owned
+`SableSettingsPrivappPermissions` fragment into `system_ext/etc/permissions`.
+The fragment grants exactly that permission to `com.android.settings`. Runtime
+identity acceptance must report
+`R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION`; a live "Permission
+allowlist violation" System journal notification is release-blocking.
+
 The provider is hosted by the privileged Settings package and stores its state
 in device-protected storage. It owns:
 
@@ -121,8 +130,11 @@ mode. Sepia and E-ink remain explicit reading-only overrides.
 Platform/core surfaces that must follow Android system night mode include
 Settings, SystemUI, Phone, Contacts, Clock, Files, Photos/Gallery, Vanadium and
 other bundled apps that honor Android DayNight/system appearance. Camera
-remains within its upstream preprocessed/security boundary and is accepted
-according to the appearance support of that upstream package.
+remains within its upstream preprocessed/security boundary. Its main capture
+activity is deliberately dark upstream; R9 accepts that capture surface as an
+explicit exception rather than replacing or re-signing the security-sensitive
+prebuilt solely for cosmetic Day/Night parity. Camera settings surfaces may
+still follow their upstream DayNight behavior.
 
 Third-party applications installed later are not forcibly recolored. They
 follow Sable Light/Dark only when they honor Android system night mode or a
@@ -160,7 +172,9 @@ The physical test must use a noncritical app which requests
 `android.permission.INTERNET`, toggle it OFF in Sable Network Manager, verify
 the runtime permission becomes denied and network access stops, then toggle it
 back ON and verify access returns. System-fixed and policy-fixed rows must be
-nonmutable.
+nonmutable when such rows exist on the candidate. If none exist, record
+`R9_SABLE_NETWORK_FIXED_POLICY=NOT_APPLICABLE_NO_FIXED_ROWS`; do not synthesize
+a fixed-policy pass from a mutable row.
 
 Detailed contract: `docs/R9_NETWORK_MANAGER.md`.
 

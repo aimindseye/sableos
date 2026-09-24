@@ -11,6 +11,7 @@ exported, so native Launcher3 workspace is not a user-resolvable launcher.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import pathlib
 import subprocess
 import tempfile
@@ -34,8 +35,79 @@ SABLE_HOST = pathlib.Path(
 )
 
 
+OVERVIEW_REL = pathlib.Path(
+    "quickstep/src/com/android/quickstep/OverviewComponentObserver.java"
+)
+RESOLVE_INFO_IMPORT = "import android.content.pm.ResolveInfo;\n"
+RESOLVE_INFO_IMPORT_ANCHOR = "import android.content.pm.PackageManager;\n"
+RESOLVE_INFO_SECONDARY_USE = "ResolveInfo secondaryInfo ="
+
+
 class RecentsOnlyError(RuntimeError):
     pass
+
+
+def resolve_launcher_root(source: pathlib.Path) -> pathlib.Path:
+    workspace_launcher = source / "packages/apps/Launcher3"
+    if workspace_launcher.is_dir():
+        return workspace_launcher
+
+    # Isolated self-tests and direct developer probes may pass the Launcher3
+    # repository itself. Require both canonical top-level markers so an
+    # arbitrary non-git directory is not misclassified.
+    if (source / "Android.bp").is_file() and (source / "quickstep").is_dir():
+        return source
+
+    raise RecentsOnlyError(
+        "Launcher3 source root unresolved: "
+        f"source={source} expected={workspace_launcher}"
+    )
+
+
+def load_foundation_module():
+    path = pathlib.Path(__file__).with_name("apply_r9_launcher3_foundation.py")
+    spec = importlib.util.spec_from_file_location(
+        "sable_r9_launcher3_foundation_for_recents",
+        path,
+    )
+    if spec is None or spec.loader is None:
+        raise RecentsOnlyError("Launcher3 foundation module load failed")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def expected_recents_final_dirty_paths() -> set[str]:
+    foundation = load_foundation_module()
+    expected = set(foundation.FOUNDATION_DIRTY_PATHS)
+    expected.discard("quickstep/res/values/strings.xml")
+    expected.discard(foundation.HOST_REL.as_posix())
+    expected.add(OVERVIEW_REL.as_posix())
+    return expected
+
+
+def launcher_dirty_paths(root: pathlib.Path) -> set[str]:
+    out = git(root, "status", "--porcelain=v1", "--untracked-files=all")
+    paths: set[str] = set()
+    for raw in out.splitlines():
+        if len(raw) < 4:
+            continue
+        rel = raw[3:]
+        if " -> " in rel:
+            rel = rel.split(" -> ", 1)[1]
+        paths.add(rel)
+    return paths
+
+
+def require_recents_final_dirty_scope(root: pathlib.Path) -> None:
+    expected = expected_recents_final_dirty_paths()
+    actual = launcher_dirty_paths(root)
+    if actual != expected:
+        raise RecentsOnlyError(
+            "Recents-only final dirty scope mismatch "
+            f"expected={sorted(expected)!r} actual={sorted(actual)!r}"
+        )
+    print("R9_QUICKSTEP_RECENTS_FINAL_DIRTY_SCOPE=PASS")
 
 
 def git(root: pathlib.Path, *args: str) -> str:
@@ -128,7 +200,7 @@ def patch_launcher_manifest(root: pathlib.Path) -> None:
 
 
 def patch_overview_observer(root: pathlib.Path) -> None:
-    path = root / "quickstep/src/com/android/quickstep/OverviewComponentObserver.java"
+    path = root / OVERVIEW_REL
     text = path.read_text(encoding="utf-8")
 
     import_anchor = "import com.android.launcher3.util.DaggerSingletonTracker;\n"
@@ -170,13 +242,33 @@ def patch_overview_observer(root: pathlib.Path) -> None:
             raise RecentsOnlyError("Overview own-HOME resolution anchor changed")
         text = text.replace(old, new, 1)
 
-    # ResolveInfo is no longer needed by this constructor path.
-    text = text.replace("import android.content.pm.ResolveInfo;\n", "")
+    # ResolveInfo remains required by the secondary-home path below this
+    # constructor. Only the primary-home ResolveInfo use is retired.
+    if RESOLVE_INFO_SECONDARY_USE not in text:
+        raise RecentsOnlyError(
+            "Overview retained secondary-home ResolveInfo path missing"
+        )
+    if RESOLVE_INFO_IMPORT not in text:
+        if text.count(RESOLVE_INFO_IMPORT_ANCHOR) != 1:
+            raise RecentsOnlyError(
+                "Overview ResolveInfo import repair anchor changed"
+            )
+        text = text.replace(
+            RESOLVE_INFO_IMPORT_ANCHOR,
+            RESOLVE_INFO_IMPORT_ANCHOR + RESOLVE_INFO_IMPORT,
+            1,
+        )
     path.write_text(text, encoding="utf-8")
 
 
-def verify(root: pathlib.Path) -> None:
+def verify(
+    root: pathlib.Path,
+    *,
+    require_resolve_info_import: bool = True,
+    emit: bool = True,
+) -> None:
     require_head(root)
+    require_recents_final_dirty_scope(root)
 
     bp = (root / "Android.bp").read_text(encoding="utf-8")
     manifest = (
@@ -185,9 +277,7 @@ def verify(root: pathlib.Path) -> None:
     quickstep_manifest = (
         root / "quickstep/AndroidManifest.xml"
     ).read_text(encoding="utf-8")
-    observer = (
-        root / "quickstep/src/com/android/quickstep/OverviewComponentObserver.java"
-    ).read_text(encoding="utf-8")
+    observer = (root / OVERVIEW_REL).read_text(encoding="utf-8")
 
     forbidden = (
         ":sable_start_presentation_srcs",
@@ -238,16 +328,54 @@ def verify(root: pathlib.Path) -> None:
         "new ComponentName(context, QuickstepLauncher.class)",
         "getActivityInfo(",
         "Private QuickstepLauncher activity missing",
+        RESOLVE_INFO_SECONDARY_USE,
     ):
         if token not in observer:
             raise RecentsOnlyError(f"recents-only observer contract missing: {token}")
+    if require_resolve_info_import:
+        if RESOLVE_INFO_IMPORT not in observer:
+            raise RecentsOnlyError(
+                "recents-only observer contract missing: "
+                "import android.content.pm.ResolveInfo;"
+            )
+    elif RESOLVE_INFO_IMPORT in observer:
+        raise RecentsOnlyError(
+            "stale-final upgrade probe expected missing ResolveInfo import"
+        )
 
-    print("R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT")
-    print("R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT")
-    print("R9_LAUNCHER3_PRIVATE_ACTIVITY=PASS_INTERNAL_ONLY")
-    print("R9_QUICKSTEP_SERVICE=PASS_RETAINED")
-    print("R9_FALLBACK_RECENTS=PASS_RETAINED")
-    print("R9_QUICKSTEP_RECENTS_ONLY=PASS")
+    if emit:
+        print("R9_SABLE_LAUNCHER3_HOST=PASS_ABSENT")
+        print("R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT")
+        print("R9_LAUNCHER3_PRIVATE_ACTIVITY=PASS_INTERNAL_ONLY")
+        print("R9_QUICKSTEP_SERVICE=PASS_RETAINED")
+        print("R9_FALLBACK_RECENTS=PASS_RETAINED")
+        print("R9_QUICKSTEP_RECENTS_ONLY=PASS")
+
+
+def upgrade_stale_final(root: pathlib.Path) -> None:
+    # Prove this is exactly the prior Recents-only final state whose only
+    # semantic defect is the missing ResolveInfo import.
+    verify(
+        root,
+        require_resolve_info_import=False,
+        emit=False,
+    )
+
+    path = root / OVERVIEW_REL
+    text = path.read_text(encoding="utf-8")
+    if text.count(RESOLVE_INFO_IMPORT_ANCHOR) != 1:
+        raise RecentsOnlyError(
+            "stale-final ResolveInfo import anchor changed"
+        )
+    text = text.replace(
+        RESOLVE_INFO_IMPORT_ANCHOR,
+        RESOLVE_INFO_IMPORT_ANCHOR + RESOLVE_INFO_IMPORT,
+        1,
+    )
+    path.write_text(text, encoding="utf-8")
+
+    verify(root)
+    print("R9_QUICKSTEP_RECENTS_STALE_FINAL_UPGRADE=PASS_RESOLVEINFO_IMPORT")
 
 
 def self_test() -> None:
@@ -282,7 +410,9 @@ def self_test() -> None:
     </application>
 </manifest>
 """
-        observer = """import com.android.launcher3.util.DaggerSingletonTracker;
+        observer = """import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import com.android.launcher3.util.DaggerSingletonTracker;
         mMyPrimaryHomeIntent = new Intent(mCurrentPrimaryHomeIntent).setPackage(
                 context.getPackageName());
         ResolveInfo info = context.getPackageManager().resolveActivity(mMyPrimaryHomeIntent, 0);
@@ -291,8 +421,40 @@ def self_test() -> None:
         mMyPrimaryHomeIntent.setComponent(myHomeComponent);
 
         mConfigChangesMap.append(myHomeComponent.hashCode(), info.activityInfo.configChanges);
+
+        ResolveInfo secondaryInfo = mContext.getPackageManager().resolveActivity(
+                mLazySecondaryHomeIntent, 0);
 """
         (root / "Android.bp").write_text(bp, encoding="utf-8")
+        if resolve_launcher_root(root) != root:
+            raise RecentsOnlyError("self-test direct Launcher3 root resolution failed")
+
+        workspace = root / "workspace"
+        nested = workspace / "packages/apps/Launcher3"
+        nested.mkdir(parents=True)
+        (nested / "Android.bp").write_text(bp, encoding="utf-8")
+        (nested / "quickstep").mkdir(exist_ok=True)
+        if resolve_launcher_root(workspace) != nested:
+            raise RecentsOnlyError("self-test workspace Launcher3 root resolution failed")
+
+        try:
+            resolve_launcher_root(root / "missing")
+        except RecentsOnlyError:
+            pass
+        else:
+            raise RecentsOnlyError("self-test unresolved source did not fail closed")
+
+        expected_final = expected_recents_final_dirty_paths()
+        if "Android.bp" not in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope missing Android.bp")
+        if OVERVIEW_REL.as_posix() not in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope missing observer")
+        if SABLE_HOST.as_posix() in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope retained Sable host")
+        if "quickstep/res/values/strings.xml" in expected_final:
+            raise RecentsOnlyError("self-test Recents final scope retained Sable strings")
+        print("R9_QUICKSTEP_RECENTS_FINAL_SCOPE_SELF_TEST=PASS")
+        print("R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS")
         (root / "quickstep/AndroidManifest-launcher.xml").write_text(
             manifest, encoding="utf-8"
         )
@@ -327,6 +489,24 @@ def self_test() -> None:
             raise RecentsOnlyError("self-test explicit Quickstep component missing")
         if "resolveActivity(mMyPrimaryHomeIntent" in patched_observer:
             raise RecentsOnlyError("self-test old own-HOME resolution survived")
+        if "import android.content.pm.ResolveInfo;" not in patched_observer:
+            raise RecentsOnlyError("self-test retained ResolveInfo import missing")
+        if "ResolveInfo secondaryInfo =" not in patched_observer:
+            raise RecentsOnlyError(
+                "self-test retained secondary-home ResolveInfo use missing"
+            )
+
+        print("R9_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME_SELF_TEST=PASS")
+
+        stale_observer = patched_observer.replace(RESOLVE_INFO_IMPORT, "", 1)
+        observer_path.write_text(stale_observer, encoding="utf-8")
+        patch_overview_observer(root)
+        repaired_observer = observer_path.read_text(encoding="utf-8")
+        if repaired_observer.count(RESOLVE_INFO_IMPORT) != 1:
+            raise RecentsOnlyError(
+                "self-test stale-final ResolveInfo import repair failed"
+            )
+        print("R9_QUICKSTEP_STALE_FINAL_IMPORT_REPAIR_SELF_TEST=PASS")
 
     print("R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS")
 
@@ -344,7 +524,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=pathlib.Path)
     parser.add_argument("--self-test", action="store_true")
-    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
+    parser.add_argument(
+        "mode",
+        nargs="?",
+        choices=("apply", "verify", "upgrade-final"),
+    )
     args = parser.parse_args()
 
     if args.self_test:
@@ -356,9 +540,13 @@ def main() -> int:
     if args.source is None or args.mode is None:
         parser.error("--source and mode are required")
 
-    root = args.source.resolve()
+    source = args.source.resolve()
+    root = resolve_launcher_root(source)
+    print(f"R9_QUICKSTEP_RECENTS_ONLY_LAUNCHER_ROOT={root}")
     if args.mode == "apply":
         apply(root)
+    elif args.mode == "upgrade-final":
+        upgrade_stale_final(root)
     else:
         verify(root)
     return 0

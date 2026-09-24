@@ -122,24 +122,43 @@ grep -Fxq 'SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT' \
 echo "R9_SABLELAUNCHER_WORKSPACE=PASS_PRESENT"
 
 echo
-echo "===== PINNED LAUNCHER3 FOUNDATION INTERMEDIATE ====="
+echo "===== LAUNCHER3 / QUICKSTEP SOURCE CONVERGENCE ====="
 APPLIER="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py"
 RECENTS_APPLIER="$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
+
 python3 "$APPLIER" --self-test \
     | tee "$EVIDENCE_DIR/foundation-self-test.log"
-python3 "$APPLIER" --source "$WS" apply \
-    | tee "$EVIDENCE_DIR/foundation-apply.log"
-python3 "$APPLIER" --source "$WS" verify \
-    | tee "$EVIDENCE_DIR/foundation-verify.log"
-
-echo
-echo "===== QUICKSTEP RECENTS-ONLY CUTOVER ====="
 python3 "$RECENTS_APPLIER" --self-test \
     | tee "$EVIDENCE_DIR/quickstep-recents-self-test.log"
-python3 "$RECENTS_APPLIER" --source "$WS" apply \
-    | tee "$EVIDENCE_DIR/quickstep-recents-apply.log"
-python3 "$RECENTS_APPLIER" --source "$WS" verify \
-    | tee "$EVIDENCE_DIR/quickstep-recents-verify.log"
+
+if python3 "$RECENTS_APPLIER" --source "$WS" verify >/dev/null 2>&1; then
+    python3 "$RECENTS_APPLIER" --source "$WS" verify \
+        | tee "$EVIDENCE_DIR/quickstep-recents-verify.log"
+    echo "R9_QUICKSTEP_RECENTS_ONLY=ALREADY_APPLIED"
+elif QUICKSTEP_UPGRADE_OUTPUT="$(
+    python3 "$RECENTS_APPLIER" --source "$WS" upgrade-final 2>&1
+)"; then
+    printf '%s\n' "$QUICKSTEP_UPGRADE_OUTPUT" \
+        | tee "$EVIDENCE_DIR/quickstep-recents-upgrade.log"
+    python3 "$RECENTS_APPLIER" --source "$WS" verify \
+        | tee "$EVIDENCE_DIR/quickstep-recents-verify.log"
+    echo "R9_QUICKSTEP_RECENTS_ONLY=UPGRADED_FINAL"
+else
+    echo
+    echo "===== PINNED LAUNCHER3 FOUNDATION INTERMEDIATE ====="
+    python3 "$APPLIER" --source "$WS" apply \
+        | tee "$EVIDENCE_DIR/foundation-apply.log"
+    python3 "$APPLIER" --source "$WS" verify \
+        | tee "$EVIDENCE_DIR/foundation-verify.log"
+
+    echo
+    echo "===== QUICKSTEP RECENTS-ONLY CUTOVER ====="
+    python3 "$RECENTS_APPLIER" --source "$WS" apply \
+        | tee "$EVIDENCE_DIR/quickstep-recents-apply.log"
+    python3 "$RECENTS_APPLIER" --source "$WS" verify \
+        | tee "$EVIDENCE_DIR/quickstep-recents-verify.log"
+    echo "R9_QUICKSTEP_RECENTS_ONLY=APPLIED"
+fi
 
 echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="

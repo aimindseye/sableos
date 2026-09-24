@@ -154,13 +154,13 @@ grep -Fq 'R8_STALE_WORKSPACE_PRODUCT_TREE' "$nostale"
 grep -Fq 'verify-r8-vendor-sable-inventory.py' "$nostale"
 grep -Fq 'R8_DUPLICATE_PRODUCT_BLUEPRINT' "$nostale"
 grep -Fq 'R8_VENDOR_SABLE_EXACT_INVENTORY=PASS' "$inventory"
-if ! grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=10' "$inventory"; then
-    echo "R9_BUILD_DRIVER_TEN_APK_INVENTORY=FAIL"
+if ! grep -Fq 'R8_VENDOR_SABLE_CANONICAL_APK_COUNT=11' "$inventory"; then
+    echo "R9_BUILD_DRIVER_ELEVEN_APK_INVENTORY=FAIL"
     exit 1
 fi
 python3 "$inventory" --self-test
 
-echo "R9_BUILD_DRIVER_TEN_APK_INVENTORY=PASS"
+echo "R9_BUILD_DRIVER_ELEVEN_APK_INVENTORY=PASS"
 echo "R8_VENDOR_SABLE_EXACT_INVENTORY_CONTRACT=PASS"
 
 grep -Fq 'name: "sable_start_presentation_srcs"' "$start_bp" || {
@@ -191,8 +191,17 @@ grep -Fq 'R9_LEGACY_SABLESTART_TARGET=PASS_ABSENT' "$target_files_gate" || {
     echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=FAIL_LEGACY_SABLESTART_TARGET_POLICY"
     exit 1
 }
+grep -Fq '"SableTextReader.apk": "org.sableos.textreader"' "$target_files_gate" || {
+    echo "R9_SABLE_TEXT_READER_TARGET_POLICY_CONTRACT=FAIL_PACKAGE"
+    exit 1
+}
+grep -Fq 'R9_SABLE_TEXT_READER_TARGET_FILES=PASS_PRESENT' "$target_files_gate" || {
+    echo "R9_SABLE_TEXT_READER_TARGET_POLICY_CONTRACT=FAIL_MARKER"
+    exit 1
+}
 
 echo "R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=PASS"
+echo "R9_SABLE_TEXT_READER_TARGET_POLICY_CONTRACT=PASS"
 echo "R9_SABLE_HOME_TARGET_POLICY_CONTRACT=PASS"
 
 

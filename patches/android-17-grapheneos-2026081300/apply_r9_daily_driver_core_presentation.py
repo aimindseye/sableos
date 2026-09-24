@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import subprocess
+import tempfile
 from pathlib import Path
 
 PINNED = {
@@ -235,29 +236,40 @@ def verify_file(
 def apply_deskclock_semantic_text(root: Path) -> None:
     path = root / "packages/apps/DeskClock/res/values/styles.xml"
     text = path.read_text(encoding="utf-8")
+    # The pinned DeskClock source already contains one semantic primary-color
+    # use before Sable replaces four hard-coded white uses. Accept pristine,
+    # partially-applied and exact-final states only; the total cardinality is
+    # fixed so unrelated drift still fails closed.
     replacements = (
         (
             '<item name="android:textColor">@color/white_63p</item>',
             '<item name="android:textColor">?android:attr/textColorSecondary</item>',
+            2,
             2,
         ),
         (
             '<item name="android:textColor">@color/white</item>',
             '<item name="android:textColor">?android:attr/textColorPrimary</item>',
             4,
+            5,
         ),
     )
-    for old, new, expected in replacements:
+    for old, new, max_old, final_new in replacements:
         old_count = text.count(old)
         new_count = text.count(new)
-        if old_count == 0 and new_count == expected:
+        if old_count == 0 and new_count == final_new:
             continue
-        if old_count != expected:
+        if old_count > max_old or old_count + new_count != final_new:
             raise PresentationError(
-                f"DeskClock semantic text anchor mismatch: {old!r} "
-                f"expected={expected} actual={old_count}"
+                f"DeskClock semantic text state mismatch: {old!r} "
+                f"old={old_count}/{max_old} new={new_count}/{final_new}"
             )
         text = text.replace(old, new)
+        if text.count(new) != final_new:
+            raise PresentationError(
+                f"DeskClock semantic text convergence failed: {new!r} "
+                f"expected={final_new} actual={text.count(new)}"
+            )
     path.write_text(text, encoding="utf-8")
 
 
@@ -291,18 +303,43 @@ def apply_gallery_light_window(root: Path) -> None:
         <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
         <item name="android:windowBackground">@android:color/black</item>
 """
-    gallery_replacement = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+    # Upgrade the immediately previous qualified R9 Photos state in place.
+    # That state already replaced the black window background but predates the
+    # explicit day/night system-bar attributes added after physical review.
+    gallery_previous = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
         <item name="android:displayOptions"></item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
         <item name="android:windowBackground">@color/default_background</item>
 """
-    if gallery_replacement in text:
+    gallery_replacement = """    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+        <item name="android:displayOptions"></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
+        <item name="android:windowBackground">@color/default_background</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@color/default_background</item>
+        <item name="android:navigationBarColor">@color/default_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+"""
+    if text.count(gallery_replacement) == 1:
         return
-    if text.count(gallery_anchor) != 1:
-        raise PresentationError("Gallery light window style anchor mismatch")
+
+    candidates = [
+        candidate
+        for candidate in (gallery_anchor, gallery_previous)
+        if text.count(candidate) == 1
+    ]
+    if len(candidates) != 1:
+        raise PresentationError(
+            "Gallery light window style state mismatch "
+            f"pristine={text.count(gallery_anchor)} "
+            f"previous={text.count(gallery_previous)} "
+            f"final={text.count(gallery_replacement)}"
+        )
     path.write_text(
-        text.replace(gallery_anchor, gallery_replacement, 1),
+        text.replace(candidates[0], gallery_replacement, 1),
         encoding="utf-8",
     )
 
@@ -315,6 +352,14 @@ def verify_gallery_light_window(root: Path) -> None:
         '<style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">'
         not in text
         or '<item name="android:windowBackground">@color/default_background</item>'
+        not in text
+        or '<item name="android:statusBarColor">@color/default_background</item>'
+        not in text
+        or '<item name="android:navigationBarColor">@color/default_background</item>'
+        not in text
+        or '<item name="android:windowLightStatusBar">true</item>'
+        not in text
+        or '<item name="android:windowLightNavigationBar">true</item>'
         not in text
         or '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">'
         not in text
@@ -338,6 +383,14 @@ def gallery_night_styles(root: Path) -> str:
         (
             '<style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">',
             '<style name="Holo.ActionBar" parent="android:Widget.Holo.ActionBar">',
+        ),
+        (
+            '<item name="android:windowLightStatusBar">true</item>',
+            '<item name="android:windowLightStatusBar">false</item>',
+        ),
+        (
+            '<item name="android:windowLightNavigationBar">true</item>',
+            '<item name="android:windowLightNavigationBar">false</item>',
         ),
     )
     for old, new in replacements:
@@ -380,6 +433,73 @@ def verify_generated(root: Path) -> None:
     verify_gallery_night_styles(root)
 
 
+def self_test() -> None:
+    with tempfile.TemporaryDirectory(prefix="r9-daily-driver-selftest-") as td:
+        root = Path(td)
+
+        deskclock = root / "packages/apps/DeskClock/res/values/styles.xml"
+        deskclock.parent.mkdir(parents=True, exist_ok=True)
+        deskclock.write_text(
+            "\n".join(
+                [
+                    '<item name="android:textColor">?android:attr/textColorPrimary</item>',
+                    '<item name="android:textColor">@color/white_63p</item>',
+                    '<item name="android:textColor">@color/white_63p</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                    '<item name="android:textColor">@color/white</item>',
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+        apply_deskclock_semantic_text(root)
+        apply_deskclock_semantic_text(root)
+        deskclock_text = deskclock.read_text(encoding="utf-8")
+        if deskclock_text.count(
+            '<item name="android:textColor">?android:attr/textColorPrimary</item>'
+        ) != 5:
+            raise PresentationError("DeskClock semantic convergence self-test failed")
+        if deskclock_text.count(
+            '<item name="android:textColor">?android:attr/textColorSecondary</item>'
+        ) != 2:
+            raise PresentationError("DeskClock secondary convergence self-test failed")
+
+        gallery = root / "packages/apps/Gallery2/res/values/styles.xml"
+        gallery.parent.mkdir(parents=True, exist_ok=True)
+        gallery.write_text(
+            """    <style name="Theme.GalleryBase" parent="android:Theme.Holo.Light">
+    </style>
+    <style name="Theme.Gallery.Dialog" parent="android:Theme.Holo.Light.Dialog"/>
+    <style name="Holo.ActionBar" parent="android:Widget.Holo.Light.ActionBar">
+    </style>
+    <style name="Theme.Gallery" parent="Theme.GalleryBase">
+        <item name="android:displayOptions"></item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:actionBarStyle">@style/Holo.ActionBar</item>
+        <item name="android:windowBackground">@color/default_background</item>
+    </style>
+""",
+            encoding="utf-8",
+        )
+        apply_gallery_light_window(root)
+        apply_gallery_light_window(root)
+        gallery_text = gallery.read_text(encoding="utf-8")
+        for token in (
+            '<item name="android:statusBarColor">@color/default_background</item>',
+            '<item name="android:navigationBarColor">@color/default_background</item>',
+            '<item name="android:windowLightStatusBar">true</item>',
+            '<item name="android:windowLightNavigationBar">true</item>',
+        ):
+            if gallery_text.count(token) != 1:
+                raise PresentationError(
+                    f"Gallery predecessor convergence self-test failed: {token}"
+                )
+
+    print("R9_DAILY_DRIVER_PARTIAL_CONVERGENCE_SELF_TEST=PASS")
+
+
 def verify_binary_boundaries(root: Path) -> None:
     camera_bp = (root / "external/Camera/Android.bp").read_text(encoding="utf-8")
     if 'apk: "prebuilt/app-release.apk"' not in camera_bp:
@@ -393,9 +513,19 @@ def verify_binary_boundaries(root: Path) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--source", required=True, type=Path)
-    parser.add_argument("mode", choices=("apply", "verify"))
+    parser.add_argument("--source", type=Path)
+    parser.add_argument("mode", nargs="?", choices=("apply", "verify"))
+    parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
+
+    if args.self_test:
+        if args.source is not None or args.mode is not None:
+            parser.error("--self-test does not accept --source or mode")
+        self_test()
+        return 0
+
+    if args.source is None or args.mode is None:
+        parser.error("--source and mode are required unless --self-test is used")
 
     root = args.source.resolve()
     require_pins(root)
@@ -424,6 +554,7 @@ def main() -> int:
     print("R9_FILES_PRESENTATION=PASS_RESOURCE_ONLY")
     print("R9_PHOTOS_PRESENTATION=PASS_RESOURCE_ONLY")
     print("R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME")
+    print("R9_PHOTOS_SYSTEM_BARS=PASS_DAY_NIGHT_MATCH_WINDOW")
     print("R9_CORE_APP_BEHAVIORAL_MUTATION=PASS_ABSENT")
     print("R9_DAILY_DRIVER_CORE_PRESENTATION=PASS")
     return 0

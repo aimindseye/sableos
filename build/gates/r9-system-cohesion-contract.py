@@ -19,6 +19,7 @@ R9 architecture:
 from __future__ import annotations
 
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 failures: list[str] = []
@@ -78,7 +79,82 @@ require(
     "SableAppearanceSettings.java",
     "SableNetworkManagerSettings.java",
     "R9_SETTINGS_NETWORK_MANAGER=PASS_GRAPHENE_NETWORK_PERMISSION",
+    "classify_dirty_scope_from_expected",
+    '"PRE_COHESION"',
+    '"FINAL_COHESION"',
+    "R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=AUTHORIZED_BOUNDED_FINAL_SCOPE",
+    "R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=PASS",
+    "R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS",
 )
+require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "Uses the system Network permission.",
+    "current platform permission",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "GrapheneOS",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
+    "core/java/android/debug/AdbNotifications.java",
+    "Notification.EXTRA_SUBSTITUTE_APP_NAME",
+    '"SableOS"',
+    "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS",
+    "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY_SELF_TEST=PASS",
+)
+require(
+    "tests/systemui/device/r9_identity_audit.sh",
+    "R9_PERMISSION_ALLOWLIST_RUNTIME=FAIL_NOTIFICATION_PRESENT",
+    "R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION",
+)
+require(
+    "product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml",
+    '<privapp-permissions package="com.android.settings">',
+    '<permission name="android.permission.MODIFY_DAY_NIGHT_MODE"/>',
+)
+require(
+    "product/r8/panther/Android.bp",
+    'name: "SableSettingsPrivappPermissions"',
+    "system_ext_specific: true",
+    'src: "permissions/sable-privapp-permissions-com.android.settings.xml"',
+)
+require(
+    "product/r8/panther/r8-product.mk",
+    "SableSettingsPrivappPermissions",
+)
+
+settings_privapp_path = (
+    ROOT
+    / "product/r8/panther/permissions/"
+      "sable-privapp-permissions-com.android.settings.xml"
+)
+if settings_privapp_path.is_file():
+    try:
+        settings_privapp_root = ET.parse(settings_privapp_path).getroot()
+        settings_privapp_nodes = settings_privapp_root.findall("privapp-permissions")
+        settings_privapp_permissions = (
+            [
+                node.attrib.get("name")
+                for node in settings_privapp_nodes[0].findall("permission")
+            ]
+            if len(settings_privapp_nodes) == 1
+            else []
+        )
+        if (
+            len(settings_privapp_nodes) != 1
+            or settings_privapp_nodes[0].attrib.get("package") != "com.android.settings"
+            or settings_privapp_permissions
+            != ["android.permission.MODIFY_DAY_NIGHT_MODE"]
+        ):
+            failures.append(
+                "settings_privapp_allowlist_not_exact="
+                f"nodes={len(settings_privapp_nodes)} "
+                f"permissions={settings_privapp_permissions!r}"
+            )
+    except ET.ParseError as exc:
+        failures.append(f"settings_privapp_allowlist_xml_invalid={exc}")
+
 require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
     'AUTHORITY = "org.sableos.appearance"',
@@ -284,6 +360,7 @@ require(
     "product/r8/panther/r8-product.mk",
     "SableLauncher",
     "SableMedia",
+    "SableTextReader",
     "SableReader",
     "SableHub",
     "SableMail",
@@ -297,10 +374,13 @@ require(
     "R9_SABLELAUNCHER_HOME_TARGET_FILES=PASS_PRESENT",
     "R9_LAUNCHER3_RECENTS_TARGET_FILES=PASS_PRESENT",
     "R9_LEGACY_SABLESTART_TARGET_FILES=PASS_ABSENT",
+    "[SableTextReader.apk]=org.sableos.textreader",
+    "R9_SABLE_TEXT_READER_TARGET_FILES=PASS_PRESENT",
 )
 require(
     "build/gates/r8-no-stale-product-code.sh",
     "R9_STANDALONE_SABLELAUNCHER_PRODUCT_MODULE=PASS",
+    "R9_SABLE_TEXT_READER_PRODUCT_MODULE=PASS",
 )
 
 # ---------------------------------------------------------------------------
@@ -356,8 +436,28 @@ require(
     'parent="android:Theme.Holo.Light"',
     "values-night/styles.xml",
     "R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME",
+    "R9_PHOTOS_SYSTEM_BARS=PASS_DAY_NIGHT_MATCH_WINDOW",
+    'android:windowLightStatusBar">true',
+    'android:windowLightNavigationBar">true',
     "R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK",
 )
+require(
+    "apps/r8/textreader/apply_sable_flavor.py",
+    'applicationId = "org.sableos.textreader"',
+    "SableGlobalTheme(window = window)",
+    "SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE",
+    "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_FINAL_APK_ABSENT_REQUIRED",
+    "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
+    "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
+    "SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB",
+    "SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED",
+)
+require(
+    "apps/r8/textreader/verify_sable_textreader.py",
+    "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
+    "SABLE_TEXT_READER_POLICY=PASS",
+)
+
 require(
     "apps/r8/reader/apply_sable_flavor.py",
     "R9_READER_LIGHT_DARK_OWNERSHIP=PASS_SABLEOS_GLOBAL",
@@ -365,18 +465,43 @@ require(
     "R9_READER_LOCAL_LIGHT_DARK_CONTROLS=PASS_RETIRED_FOR_SABLE",
     "R9_READER_LIBRARY_NAVIGATION=PASS_CONTINUOUS_VERTICAL_GRID",
     "R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS",
+    "SABLE_READER_IN_APP_PRODUCT_IDENTITY=PASS_SABLE_READER",
+    "SABLE_READER_ABOUT_IDENTITY=PASS_SABLE_READER_WITH_UPSTREAM_ATTRIBUTION",
+    'if (BuildConfig.SABLE_PRODUCT) "Sable Reader" else "Vaachak"',
     "distinctBy { it.bookHash }",
     "state.isOfflineMode && !BuildConfig.SABLE_PRODUCT",
     "Sepia",
     "ThemeMode.E_INK",
+    "SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT",
+    "SABLE_READER_PUBLICATION_FOCUS=PASS",
+)
+forbid(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "SableTextActivity",
+    "SableOcrActivity",
 )
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
     "getListPositionForSection",
+    "classify_text_state",
+    "inspect_repo_state",
+    "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS",
+    "R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
+    "R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS",
     "installSableAlphabetRail",
     "scrollToSableSection",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
+    "R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX",
+    "getPositionForHeader",
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "PeopleAlphabetRail(",
+    "buildPeopleAlphabetTargets(",
+    "rememberLazyListState()",
+    "listState.scrollToItem(position)",
 )
 require(
     "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
@@ -457,6 +582,7 @@ if failures:
         print(f"FAILURE={failure}")
     raise SystemExit(1)
 
+print("R9_SETTINGS_PRIVAPP_ALLOWLIST_CONTRACT=PASS_SYSTEM_EXT_EXACT")
 print("R9_SYSTEM_APPEARANCE_AUTHORITY=PASS_SETTINGS_HOSTED")
 print("R9_SABLELAUNCHER_HOME_ARCHITECTURE=PASS_STANDALONE")
 print("R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT_SOURCE")

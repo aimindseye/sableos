@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 WS="${WS:-$SABLEOS_UPSTREAM}"
 DEST="$WS/vendor/sable/r8"
@@ -32,6 +34,7 @@ fail() {
     echo "$1=FAIL"
     echo "R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL"
     echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO"
+    sable_checkpoint_fail "Final product composition: $1"
     exit "${2:-1}"
 }
 
@@ -40,7 +43,11 @@ fail() {
 echo
 echo "===== NO-STALE PRODUCT CODE / PACKAGE GATE ====="
 
-WS="$WS" SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/gates/r8-no-stale-product-code.sh"     || fail R8_NO_STALE_PRODUCT_CODE
+R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=YES \
+WS="$WS" \
+SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/gates/r8-no-stale-product-code.sh" \
+    || fail R8_NO_STALE_PRODUCT_CODE
 
 echo
 echo "===== R8-A SHARED DESIGN ====="
@@ -244,6 +251,8 @@ python3 \
     packages/SystemUI/src/com/android/systemui/sable/SableSystemAppearance.kt \
     --allow-framework-modified \
     packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt \
+    --allow-framework-modified \
+    core/java/android/debug/AdbNotifications.java \
     --allow-settings-modified \
     AndroidManifest.xml \
     --allow-settings-modified \
@@ -292,6 +301,7 @@ echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
 [[ -f "$DEST/manifest.tsv" ]] || fail R8_PRODUCT_MANIFEST
 [[ -f "$DEST/SHA256SUMS.txt" ]] || fail R8_PRODUCT_SHA256SUMS
 [[ -f "$DEST/SABLEOS_SOURCE_COMMIT.txt" ]] || fail R8_PRODUCT_SOURCE_IDENTITY
+[[ -f "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" ]] || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE
 
 CURRENT_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
 STAGED_SOURCE_COMMIT="$(tr -d '[:space:]' < "$DEST/SABLEOS_SOURCE_COMMIT.txt")"
@@ -301,6 +311,29 @@ echo "R8_PRODUCT_SOURCE_COMMIT=PASS value=$STAGED_SOURCE_COMMIT"
 cmp -s     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"     || fail R8_PRODUCT_ANDROID_BP
 
 cmp -s     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"     || fail R8_PRODUCT_MK
+cmp -s     "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml"     "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE
+
+if ! python3 - "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+path = pathlib.Path(sys.argv[1])
+root = ET.parse(path).getroot()
+nodes = root.findall("privapp-permissions")
+if len(nodes) != 1 or nodes[0].attrib.get("package") != "com.android.settings":
+    raise SystemExit("R9_SETTINGS_PRIVAPP_ALLOWLIST=FAIL_PACKAGE")
+perms = [node.attrib.get("name") for node in nodes[0].findall("permission")]
+expected = ["android.permission.MODIFY_DAY_NIGHT_MODE"]
+if perms != expected:
+    raise SystemExit(
+        f"R9_SETTINGS_PRIVAPP_ALLOWLIST=FAIL_PERMISSIONS actual={perms!r}"
+    )
+print("R9_SETTINGS_PRIVAPP_ALLOWLIST=PASS_EXACT")
+PY
+then
+    fail R9_SETTINGS_PRIVAPP_ALLOWLIST
+fi
 
 (
     cd "$DEST/prebuilt"
@@ -318,6 +351,7 @@ expected = {
     "org.sableos.minesweeper": "SableMinesweeper.apk",
     "org.sableos.game2048": "Sable2048.apk",
     "org.sableos.media": "SableMedia.apk",
+    "org.sableos.textreader": "SableTextReader.apk",
     "org.sableos.reader": "SableReader.apk",
     "org.sableos.hub": "SableHub.apk",
     "org.sableos.mail": "SableMail.apk",
@@ -366,6 +400,10 @@ include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT
 grep -Fq 'overrides: ["Calendar"]' "$DEST/Android.bp"     || fail R9_SABLE_CALENDAR_REPLACEMENT
+grep -Fq 'name: "SableSettingsPrivappPermissions"' "$DEST/Android.bp"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_MODULE
+grep -Fq 'system_ext_specific: true' "$DEST/Android.bp"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_PARTITION
+grep -Fq 'src: "permissions/sable-privapp-permissions-com.android.settings.xml"' "$DEST/Android.bp"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_SOURCE
+grep -Fq 'SableSettingsPrivappPermissions' "$DEST/r8-product.mk"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_PRODUCT
 
 if ! python3 - "$DEST/Android.bp" <<'PY'
 import pathlib
@@ -381,6 +419,7 @@ expected = {
     "SableMinesweeper",
     "Sable2048",
     "SableMedia",
+    "SableTextReader",
     "SableReader",
     "SableHub",
     "SableMail",
@@ -422,13 +461,13 @@ if seen != expected:
     )
 
 print("R8_PRESIGNED_APK_IMPORT_SET=PASS")
-print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=10")
+print("R8_PRESIGNED_APK_PREPROCESSED=PASS count=11")
 PY
 then
     fail R8_PRESIGNED_APK_PREPROCESSED
 fi
 
-for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SableWeather     SableCalendar
+for module in     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableTextReader     SableReader     SableHub     SableMail     SableWeather     SableCalendar
 do
     grep -Fq "$module" "$DEST/r8-product.mk"         || fail "R8_PRODUCT_MODULE_${module}"
 done
@@ -438,20 +477,56 @@ echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_PRODUCT_PREBUILT_HASHES=PASS"
 echo "R8_EXACT_CALCULATOR_REPLACEMENT=PASS"
 echo "R9_SABLE_CALENDAR_REPLACEMENT=PASS"
+echo "R9_SETTINGS_PRIVAPP_ALLOWLIST_PRODUCT=PASS_SYSTEM_EXT"
 
 echo
-echo "===== READER D2 SOURCE CLOSURE ====="
+echo "===== R9 SABLE TEXT READER SOURCE CLOSURE ====="
 
+TEXTREADER_ENV="$ROOT/apps/r8/textreader/upstream.env"
+TEXTREADER_APPLIER="$ROOT/apps/r8/textreader/apply_sable_flavor.py"
+TEXTREADER_VERIFY="$ROOT/apps/r8/textreader/verify_sable_textreader.py"
 READER_APPLIER="$ROOT/apps/r8/reader/apply_sable_flavor.py"
 
-for needle in     'SABLE_READER_OCR=CAMERA_GALLERY_LATIN_DEVANAGARI_ENABLED'     'SABLE_READER_OCR_CAMERA_PERMISSION=OPTIONAL_RUNTIME_ONLY'     'SABLE_READER_OCR_NETWORK_FALLBACK=DISABLED'     'text-recognition:16.0.1'     'text-recognition-devanagari:16.0.1'     'SableOcrActivity'
-do
-    grep -Fq "$needle" "$READER_APPLIER" || fail R8_D2_READER_OCR_SOURCE
+for f in "$TEXTREADER_ENV" "$TEXTREADER_APPLIER" "$TEXTREADER_VERIFY" "$READER_APPLIER"; do
+    [[ -f "$f" ]] || fail R9_SABLE_TEXT_READER_SOURCE
 done
 
-echo "R8_D2_READER_OCR_SOURCE=PASS"
+grep -Fq 'VAACHAK_TEXTREADER_COMMIT=50fca365baae9869264716569830690fb62029a7' "$TEXTREADER_ENV" \
+    || fail R9_SABLE_TEXT_READER_PIN
 
-echo
+for needle in \
+    'org.sableos.textreader' \
+    'SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE' \
+    'SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_FINAL_APK_ABSENT_REQUIRED' \
+    'SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED' \
+    'SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI' \
+    'SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB' \
+    'SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED'
+do
+    if ! grep -Fq "$needle" "$TEXTREADER_APPLIER"; then
+        echo "R9_SABLE_TEXT_READER_SOURCE=FAIL_MISSING path=$TEXTREADER_APPLIER token=$needle"
+        fail R9_SABLE_TEXT_READER_SOURCE
+    fi
+done
+
+for needle in \
+    'SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE' \
+    'SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_FINAL_APK_ABSENT_REQUIRED' \
+    'SABLE_TEXT_READER_APK_INTERNET_PERMISSION=PASS_ABSENT' \
+    'SABLE_TEXT_READER_APK_OFFLINE_BOUNDARY=PASS' \
+    'SABLE_TEXT_READER_POLICY=PASS'
+do
+    if ! grep -Fq "$needle" "$TEXTREADER_VERIFY"; then
+        echo "R9_SABLE_TEXT_READER_VERIFY=FAIL_MISSING path=$TEXTREADER_VERIFY token=$needle"
+        fail R9_SABLE_TEXT_READER_VERIFY
+    fi
+done
+grep -Fq 'SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT' "$READER_APPLIER" \
+    || fail R9_READER_TEXTREADER_DECOMPOSITION
+
+echo "R9_SABLE_TEXT_READER_SOURCE=PASS"
+echo "R9_READER_TEXTREADER_DECOMPOSITION=PASS"
+
 echo "===== R8-F SABLE HUB SOURCE CLOSURE ====="
 
 HUB_DIR="$ROOT/apps/r8/android/hub"
@@ -551,7 +626,8 @@ echo "R8_START_PRODUCT_INTEGRATION=PASS"
 echo "R8_B_CALCULATOR_CONVERT=PASS_PRODUCT_STAGED"
 echo "R8_C_GAMES=PASS_PRODUCT_STAGED"
 echo "R8_D_READER_PUBLICATION=PASS_PRODUCT_STAGED"
-echo "R8_D2_READER_TEXT_ACCESSIBILITY_OCR=PASS_SOURCE_AND_PRODUCT_STAGED"
+echo "R9_SABLE_TEXT_READER=PASS_SOURCE_POLICY_AND_PRODUCT_STAGED"
+echo "R9_READER_TEXTREADER_DECOMPOSITION=PASS"
 echo "R8_E_MEDIA=PASS_PRODUCT_STAGED"
 echo "R8_F_SABLE_HUB_MESSAGES=PASS_PRODUCT_STAGED"
 echo "R8_G_GLOBAL_APPEARANCE=PASS_SOURCE_AND_PRODUCT_STAGED"
@@ -572,6 +648,7 @@ echo "R8_UI5_SETTINGS=PASS_SOURCE"
 echo "R8_UI5C_UI6_SYSTEM_SURFACES=PASS_SOURCE"
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
 echo "R9_SABLE_HOME_REPLACEMENT_SOURCE_COMPOSITION=PASS"
+sable_checkpoint_pass "Final Panther product composition"
 
 echo
 echo "===== R9 LAUNCHER VISUAL ACCEPTANCE SEAL ====="

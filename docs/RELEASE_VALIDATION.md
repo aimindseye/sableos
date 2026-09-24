@@ -161,23 +161,66 @@ Before the revised core product is release-qualified:
 
 ## R8 Final UI Product-Composition Gate
 
-For the current Panther R8 UI milestone, the generic product-integration gate is specialized by `R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+For the current Panther R9 UI/product milestone, the generic product-integration gate is specialized by the R9 architecture and source contracts. `R8_PIXEL_UI_PRODUCT_CLOSURE.md` remains historical R8 evidence.
 
-A full Panther build must not be described as the final R8 UI build merely because `target-files-package` succeeds. Before starting that build, generated product/build evidence must prove the intended source/package set.
+A full Panther build must not be described as the final R9 product build merely because `target-files-package` succeeds. Before starting that build, generated product/build evidence must prove the intended source/package set.
+
+The exact source commit must also have passed the local CI `full` profile before
+any fresh Panther target-files build begins. The full profile covers policy,
+static contracts, Rust, Android application checks, APK seals, quality,
+supply-chain/security checks, standalone Text Reader, Reader and Mail. It writes
+the source-bound attestation:
+
+```text
+.git/sable-local-ci/<source-commit>.pass
+```
+
+The Panther release-candidate driver requires that attestation to contain:
+
+```text
+SABLE_LOCAL_CI=PASS
+PROFILE=full
+SOURCE_COMMIT=<exact build source commit>
+```
+
+Human-facing terminal output uses separate color checkpoints for major stages:
+green for completed gates, red for top-level failures, yellow for warnings or
+remaining manual acceptance, and cyan for informational phase checkpoints.
+Canonical machine-readable markers remain uncolored and unchanged so exact
+grep/attestation contracts are stable. Color is disabled automatically for
+non-interactive output and can be disabled explicitly with `NO_COLOR=1`.
+
+Module-only physical-UX qualification is intentionally exempt because it runs
+before the full-CI gate. A branch advance after CI invalidates the authorization
+naturally: the new source commit has no matching attestation and the image build
+fails closed.
 
 Required application identities include:
 
 ```text
-org.sableos.start
+org.sableos.launcher
 org.sableos.calculator
 org.sableos.sudoku
 org.sableos.minesweeper
 org.sableos.game2048
 org.sableos.media
+org.sableos.textreader
 org.sableos.reader
+org.sableos.hub
+org.sableos.mail
+org.sableos.weather
+org.sableos.calendar
 ```
 
 The gate must also prove the current UI4/UI5/UI6 source/applicator identities for SystemUI, Settings, SetupWizard2 and Keyguard/frameworks/base.
+
+Because Sable Settings owns explicit global Light/Dark selection, the final
+product must include a same-partition privileged-permission grant for
+`android.permission.MODIFY_DAY_NIGHT_MODE`. The Sable product fragment is
+installed to `system_ext/etc/permissions`, grants the permission only to
+`com.android.settings`, and is verified both in staged product composition and
+inside final target-files. Physical identity acceptance additionally requires
+the absence of the System journal "Permission allowlist violation" notification.
 
 For each Sable application bind:
 
@@ -205,7 +248,15 @@ Until that marker exists:
 NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
 ```
 
-Reader-specific requirement: R8-D2 closure includes TXT/share/process-text/TTS plus OCR. Translation/model-download support remains separate and is not required for the current UI milestone. OCR must have an explicit model/offline/network policy and camera permission must remain optional to the camera-OCR flow.
+Reader/Text Reader requirement: Sable Reader is publication-only and must not
+compose the TextReader/OCR runtime or request camera permission. Standalone
+Sable Text Reader owns bounded TXT/VIEW/SEND/PROCESS_TEXT, local-only TTS/audio
+export and optional camera/gallery OCR. Its source manifest must actively remove
+inherited INTERNET via the Android manifest merger, and its final Sable APK must
+contain no INTERNET permission. It must also have no translation/model-download
+path, a 2 MiB text-ingestion bound, and no network-required TTS voice fallback.
+Camera hardware remains optional
+and camera permission is scoped to the camera-OCR flow.
 
 ## Kernel Baseline and Independent Security Update Gate
 
@@ -450,6 +501,8 @@ known-good active slot
 Activation is last.
 
 For a dedicated development device, direct controlled flashing may be used when the device-specific gate explicitly authorizes it, but the script must first verify expected product identity, bootloader state, image hashes and flash target.
+
+When more than one Android device is attached to the build host, deployment must be bound to an explicit operator-selected serial. Additional ADB or fastboot transports may remain attached only when every mutating device command is serial-scoped and the selected serial is proven present exactly once in the relevant transport before mutation. The presence of unrelated attached devices must not cause an implicit target selection, and a missing or ambiguous selected serial remains a hard failure.
 
 For a production kernel security update, root/unlocked flashing is not the delivery model. Use the Sable-signed supported A/B OTA/update path to the inactive slot, updating the exact affected kernel/module partitions and preserving the prior successful slot through closure.
 

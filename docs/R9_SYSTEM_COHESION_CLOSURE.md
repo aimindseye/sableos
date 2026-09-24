@@ -64,6 +64,26 @@ Implemented source boundaries:
 
 No new full Panther image has been authorized or built by this source work.
 
+### Long-lived Settings workspace convergence
+
+Panther preparation may encounter either the exact pre-cohesion Settings dirty
+scope or the exact already-applied final cohesion dirty scope. The Settings
+cohesion applicator accepts only those two states.
+
+When the final cohesion scope is already present, the applicator may refresh
+only the bounded cohesion files/entries and then must pass the same final
+verifier. Any additional unexpected dirty path remains a hard failure. This
+makes repeated release-candidate/module qualification idempotent without
+turning Settings preparation into a broad workspace reset or best-effort patch.
+
+Expected self-test markers:
+
+```text
+R9_SETTINGS_COHESION_SELF_TEST_PRE_SCOPE=PASS
+R9_SETTINGS_COHESION_SELF_TEST_FINAL_SCOPE=PASS
+R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS
+```
+
 
 ## Serial workstreams
 
@@ -193,6 +213,10 @@ The rejected physical candidates exposed defects that are now source-gated:
   ownership is retired for the Sable flavor while Sepia/E-ink remain explicit;
 - Reader library renders actual distinct books continuously rather than exposing
   only a six-item stack/page count;
+- Reader no longer hosts the hidden plain-text/OCR runtime; standalone
+  `org.sableos.textreader` owns text/plain, share/process-text, text TTS/audio
+  export and camera/gallery OCR with no INTERNET permission or translation
+  model-download path;
 - Contacts uses the existing section indexer plus a right-edge alphabet rail;
 - Media uses lazy large-library surfaces, background indexing and bounded queue
   handoff;
@@ -212,6 +236,8 @@ Audit base-product apps in both light and dark:
 
 Reader additionally bridges global Sable light/dark to default Readium page
 theme while retaining explicit reading-only overrides such as Sepia/E-ink.
+Sable Text Reader is reviewed separately as the plain-text/accessibility/OCR
+surface and follows the same global Sable appearance authority.
 
 Exit gate:
 - light -> dark -> light state works;
@@ -317,19 +343,58 @@ callbacks inside `ComposeView.apply { setContent { ... } }` passed unqualified
 explicit receiver style already used by the appearance observer in the same
 class. The Launcher3 foundation contract requires both qualified calls.
 
-The following WS7 rerun rebuilt the ten-APK bundle at the corrected source and
-passed all pre-Launcher composition gates, but preparation stopped before the
-compile because the workspace still contained the already-reviewed R9 cohesion
-mutations in `PortraitStatesTouchController.java` and
-`NoButtonNavbarToOverviewTouchController.java`. Cohesion verification failed
-because the host file was the immediately previous canonical blob, then the
-foundation verifier correctly rejected the two cohesion files as foreign to its
-foundation-only dirty set. The fix is a bounded cohesion-owned canonical-host
-refresh: only the exact final dirty set is accepted, the stale host blob must
-equal the pinned prior canonical blob
-`a3bf622a048d399cf4a9ffa89e3cbbdb58f1ac97`, the two cohesion guards are
-verified, then only the host is replaced with the new canonical source and the
-full cohesion verifier is rerun. Unknown dirt remains fail-closed.
+A later long-lived-workspace rerun exposed historical Launcher cohesion residue
+in `PortraitStatesTouchController.java` and
+`NoButtonNavbarToOverviewTouchController.java`. Those mutations belonged to
+the retired SableQuickstepLauncher-based HOME interception layer and are not
+part of the current standalone-SableLauncher / Quickstep-Recents-only
+architecture.
+
+The Launcher3 foundation now recognizes only the exact two-file retired
+cohesion transformation reconstructed from pinned Launcher3 HEAD. If both files
+match that historical transformation byte-for-byte, they are normalized back
+to pinned HEAD before foundation convergence continues. Partial residue,
+unexpected extra dirt, or content mismatch remains fail-closed. The retired
+`apply_r9_launcher_cohesion.py` applicator is removed and the no-stale gate
+requires it to remain absent.
+
+The following preparation pass proved that normalization, then exposed an
+interface inconsistency in the Recents-only applicator: production callers pass
+the Android workspace root as `--source`, while the script attempted
+`git -C <source>` as though it had received the Launcher3 repository itself.
+The applicator now resolves
+`<workspace>/packages/apps/Launcher3` internally. A direct Launcher3 root is
+accepted only for isolated self-tests/developer probes when canonical
+`Android.bp` and `quickstep/` markers are present; unresolved roots fail
+closed.
+
+A subsequent focused Launcher3 rerun exposed one more long-lived-workspace
+state: the tree was already at the Recents-only final dirty scope from the
+prior run, but carried the older observer transform that had dropped the
+`ResolveInfo` import. Re-entering the foundation intermediate is incorrect for
+that state because `OverviewComponentObserver.java` is intentionally dirty
+only in the final Recents-only layer.
+
+The Recents-only applicator therefore has a narrow `upgrade-final` path. It is
+eligible only when the Launcher3 dirty set exactly equals the expected final
+Recents-only set derived from the foundation dirty-set contract, all final
+Recents-only semantics pass except for the missing `ResolveInfo` import, and
+the retained `ResolveInfo secondaryInfo` use is present. It then restores only
+that missing import and re-runs the full final verifier. Production preparation
+and the focused Launcher3 qualifier now use the order: final verify, exact
+stale-final upgrade, then foundation intermediate + final cutover only when
+neither final state applies.
+
+The next preparation pass proved the Quickstep source-root fix and advanced to
+Contacts. The long-lived Contacts tree was in a bounded partial presentation
+state: the four color/layout/style files were already canonical Sable
+presentation changes, while the two alphabet-rail Java files had returned to
+pinned Contacts HEAD. The Phone/Contacts applicator now permits partial
+convergence only when every approved file is either byte-for-byte pinned HEAD
+or byte-for-byte canonical transformed content, and when no dirty path exists
+outside the approved set. It applies only the missing transformations and then
+requires the exact six-file Contacts final scope. Any mixed/manual content
+inside an approved path still fails closed.
 
 
 No full image yet.

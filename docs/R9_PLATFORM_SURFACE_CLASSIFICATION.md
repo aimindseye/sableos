@@ -34,6 +34,7 @@ Classification values:
 | About SableOS | SABLE_OWNED | Sable title/presentation, real device/build properties. |
 | SetupWizard welcome/finish | SABLE_OWNED | SableOS name/icon/presentation. Backup compatibility copy must not falsely claim GrapheneOS-only ownership. |
 | Quick Settings / notification shade | SABLE_PRESENTED_ANDROID | SystemUI behavior, ranking, tile state and privacy semantics remain Android/GrapheneOS; appearance follows Sable system mode/accent. |
+| Framework developer notifications | SABLE_OWNED | Framework behavior remains Android, but user-visible product-shell identity (for example the ADB notification app name) must present SableOS rather than the upstream OS brand. |
 | Lockscreen / keyguard | SABLE_PRESENTED_ANDROID | Upstream authentication, falsing, emergency and security logic retained; bounded presentation may be Sable. |
 | Phone / Contacts | SABLE_PRESENTED_ANDROID | Upstream telephony/contact behavior retained; Contacts adds a bounded right-edge alphabet rail backed by the existing section indexer; system night mode retained. |
 | Files / DocumentsUI | SABLE_PRESENTED_ANDROID | Upstream document/provider behavior retained; bounded presentation and system night mode. |

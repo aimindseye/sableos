@@ -8,12 +8,14 @@
 # vendor/sable/r8/prebuilt by the fail-closed Panther integration script.
 
 PRODUCT_PACKAGES += \
+    SableSettingsPrivappPermissions \
     SableLauncher \
     SableCalculator \
     SableSudoku \
     SableMinesweeper \
     Sable2048 \
     SableMedia \
+    SableTextReader \
     SableReader \
     SableHub \
     SableMail \

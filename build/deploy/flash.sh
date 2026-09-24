@@ -232,8 +232,14 @@ python3 "$PLAN" \
 echo
 echo "===== PRE-MUTATION DEVICE BINDING ====="
 mapfile -t ADB_READY < <("$ADB_BIN" devices </dev/null | awk 'NR>1 && $2=="device" {print $1}')
-[[ "${#ADB_READY[@]}" -eq 1 ]] || sable_die "SABLE_ADB_SINGLE_DEVICE" "expected exactly one authorized adb device" 40
-[[ "${ADB_READY[0]}" == "$SERIAL" ]] || sable_die "SABLE_ADB_SERIAL" "attached adb device does not match requested serial" 40
+ADB_TARGET_MATCHES=0
+for ready_serial in "${ADB_READY[@]}"; do
+  [[ "$ready_serial" == "$SERIAL" ]] && ADB_TARGET_MATCHES=$((ADB_TARGET_MATCHES + 1))
+done
+[[ "$ADB_TARGET_MATCHES" -eq 1 ]]   || sable_die "SABLE_ADB_TARGET_SERIAL" "requested serial is not exactly once among ready adb devices" 40
+ADB_OTHER_READY_COUNT=$(( ${#ADB_READY[@]} - ADB_TARGET_MATCHES ))
+echo "SABLE_ADB_TARGET_SERIAL=PASS"
+echo "SABLE_ADB_OTHER_READY_COUNT=$ADB_OTHER_READY_COUNT"
 
 PRODUCT="$("$ADB_BIN" -s "$SERIAL" shell getprop ro.product.device </dev/null | tr -d '\r')"
 SLOT_SUFFIX="$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.slot_suffix </dev/null | tr -d '\r')"
@@ -294,8 +300,14 @@ sable_wait_fastboot_ready "$FASTBOOT_BIN" "$SERIAL" "$SABLE_DEVICE_EXPECTED_PROD
   || sable_die "SABLE_FASTBOOT_READY" "fastboot getvar product did not become ready" 43
 
 mapfile -t FB_READY < <("$FASTBOOT_BIN" devices </dev/null | awk 'NF>=1 {print $1}')
-[[ "${#FB_READY[@]}" -eq 1 && "${FB_READY[0]}" == "$SERIAL" ]] \
-  || sable_die "SABLE_FASTBOOT_SINGLE_DEVICE" "fastboot transport is ambiguous" 43
+FB_TARGET_MATCHES=0
+for ready_serial in "${FB_READY[@]}"; do
+  [[ "$ready_serial" == "$SERIAL" ]] && FB_TARGET_MATCHES=$((FB_TARGET_MATCHES + 1))
+done
+[[ "$FB_TARGET_MATCHES" -eq 1 ]]   || sable_die "SABLE_FASTBOOT_TARGET_SERIAL" "requested serial is not exactly once among fastboot devices" 43
+FB_OTHER_READY_COUNT=$(( ${#FB_READY[@]} - FB_TARGET_MATCHES ))
+echo "SABLE_FASTBOOT_TARGET_SERIAL=PASS"
+echo "SABLE_FASTBOOT_OTHER_READY_COUNT=$FB_OTHER_READY_COUNT"
 
 FB_SLOT="$(sable_fastboot_getvar "$FASTBOOT_BIN" "$SERIAL" current-slot)"
 FB_UNLOCKED="$(sable_fastboot_getvar "$FASTBOOT_BIN" "$SERIAL" unlocked)"

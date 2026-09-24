@@ -43,9 +43,15 @@ bramble service baseline above. Current R9 source/module closure establishes:
   alphabet rail rather than a second contact data model;
 - Media using lazy large-library rendering, background collection indexing,
   bounded queue handoff and A-Z navigation for Songs/Artists/Albums/Favorites;
-- Reader ordinary Light/Dark following SableOS global appearance, with Sepia
-  and E-ink remaining explicit reading modes, and a continuous actual-book
-  library rather than a six-stack presentation;
+- Sable Reader (`org.sableos.reader`) focused on publication/Readium
+  workflows: ordinary Light/Dark follows SableOS global appearance, Sepia and
+  E-Ink remain explicit reading modes, and the library renders actual books
+  continuously rather than collapsing them into presentation stacks;
+- standalone Sable Text Reader (`org.sableos.textreader`) owning plain-text
+  VIEW/SEND/PROCESS_TEXT, text TTS/audio export and user-directed
+  camera/gallery OCR; its Sable flavor is offline-first with no INTERNET
+  permission, translation dependency/UI or model-download path, bounds each
+  text ingestion to 2 MiB, and permits only local TTS voices;
 - Clock/Photos using qualified Day/Night presentation while Camera remains an
   intentionally upstream, security-sensitive dark-presentation boundary;
 - Sable Messages as a native-first SMS/People surface while the pinned
@@ -61,7 +67,8 @@ closure until the source-bound image and device gates pass.
 
 See `R9_SABLE_HOME_REPLACEMENT.md`,
 `R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md`,
-`R9_MEDIA_FLOW_REDESIGN.md`, and ADR-0008.
+`R9_MEDIA_FLOW_REDESIGN.md`, ADR-0008, and
+`docs/adr/0009-separate-reader-and-text-reader-products.md`.
 
 ## Architectural rules
 

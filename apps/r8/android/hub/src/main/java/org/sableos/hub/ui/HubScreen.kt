@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -30,12 +32,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableListRow
 import org.sableos.design.SablePageHeader
@@ -46,6 +50,7 @@ import org.sableos.design.SableSpacing
 import org.sableos.hub.HubConversation
 import org.sableos.hub.HubConversationSource
 import org.sableos.hub.HubMessage
+import org.sableos.hub.HubPerson
 import org.sableos.hub.HubSendResult
 import org.sableos.hub.HubSnapshot
 import java.text.DateFormat
@@ -681,22 +686,97 @@ private fun ColumnScope.PeoplePivot(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     } else {
-        LazyColumn(
+        val visiblePeople = people.take(MAX_VISIBLE_PEOPLE)
+        val listState = rememberLazyListState()
+        val scope = rememberCoroutineScope()
+        val alphabetTargets =
+            remember(visiblePeople) {
+                buildPeopleAlphabetTargets(visiblePeople)
+            }
+
+        Row(
             modifier = modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
         ) {
-            items(
-                items = people.take(MAX_VISIBLE_PEOPLE),
-                key = { person ->
-                    person.id.toString() + ":" + person.phoneNumber
-                },
-            ) { person ->
-                SableListRow(
-                    title = person.displayName,
-                    subtitle = person.phoneNumber,
-                    onClick = { onCompose(person.phoneNumber) },
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+            ) {
+                items(
+                    items = visiblePeople,
+                    key = { person ->
+                        person.id.toString() + ":" + person.phoneNumber
+                    },
+                ) { person ->
+                    SableListRow(
+                        title = person.displayName,
+                        subtitle = person.phoneNumber,
+                        onClick = { onCompose(person.phoneNumber) },
+                    )
+                }
+            }
+
+            if (query.isBlank()) {
+                PeopleAlphabetRail(
+                    targets = alphabetTargets,
+                    onTarget = { position ->
+                        scope.launch {
+                            listState.scrollToItem(position)
+                        }
+                    },
                 )
             }
+        }
+    }
+}
+
+private fun buildPeopleAlphabetTargets(people: List<HubPerson>): Map<Char, Int> {
+    val targets = linkedMapOf<Char, Int>()
+    people.forEachIndexed { index, person ->
+        val letter =
+            person.displayName
+                .trim()
+                .firstOrNull()
+                ?.uppercaseChar()
+                ?.takeIf { it in 'A'..'Z' }
+                ?: return@forEachIndexed
+        targets.putIfAbsent(letter, index)
+    }
+    return targets
+}
+
+@Composable
+private fun PeopleAlphabetRail(
+    targets: Map<Char, Int>,
+    onTarget: (Int) -> Unit,
+) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxHeight()
+                .width(HubPeopleAlphabetRailWidth),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly,
+    ) {
+        for (letter in 'A'..'Z') {
+            val target = targets[letter]
+            Text(
+                text = letter.toString(),
+                modifier =
+                    Modifier
+                        .width(HubPeopleAlphabetRailWidth)
+                        .clickable(enabled = target != null) {
+                            target?.let(onTarget)
+                        },
+                style = MaterialTheme.typography.labelSmall,
+                color =
+                    if (target != null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.28f)
+                    },
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
         }
     }
 }
@@ -995,6 +1075,7 @@ private val HubAvatarSize = 48.dp
 private val HubRowVerticalPadding = 10.dp
 private val HubAvatarTextGap = 14.dp
 private val HubTrailingGap = 10.dp
+private val HubPeopleAlphabetRailWidth = 28.dp
 private val HubBubbleMaxWidth = 320.dp
 private val HubBubbleCornerRadius = 18.dp
 private val HubUnreadAccent = Color(0xFF35C66B)

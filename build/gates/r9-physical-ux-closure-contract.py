@@ -110,6 +110,17 @@ forbid(
 # Quickstep/Recents is retained, but native Launcher3 HOME is removed.
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py",
+    "resolve_launcher_root",
+    '"packages/apps/Launcher3"',
+    "R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS",
+    "R9_QUICKSTEP_RECENTS_FINAL_SCOPE_SELF_TEST=PASS",
+    "R9_QUICKSTEP_STALE_FINAL_IMPORT_REPAIR_SELF_TEST=PASS",
+    "R9_QUICKSTEP_RECENTS_STALE_FINAL_UPGRADE=PASS_RESOLVEINFO_IMPORT",
+    "upgrade-final",
+    "R9_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME_SELF_TEST=PASS",
+    "import android.content.pm.ResolveInfo;",
+    "ResolveInfo secondaryInfo =",
+    "R9_QUICKSTEP_RECENTS_ONLY_LAUNCHER_ROOT=",
     "R9_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS",
     "host.unlink()",
     'android:exported="false"',
@@ -122,6 +133,11 @@ forbid(
     "apply_r9_launcher_cohesion.py",
     "SableQuickstepLauncher",
 )
+if (
+    ROOT
+    / "patches/android-17-grapheneos-2026081300/apply_r9_launcher_cohesion.py"
+).exists():
+    failures.append("retired_launcher_cohesion_applicator_present")
 
 # Live providers: sensitive data is visible only to SableLauncher.
 require(
@@ -166,8 +182,69 @@ require(
     "apply_gallery_night_styles(",
     "verify_gallery_night_styles(",
     "R9_PHOTOS_DAY_NIGHT_PRESENTATION=PASS_LIGHT_BASE_DARK_NIGHT_THEME",
+    "R9_PHOTOS_SYSTEM_BARS=PASS_DAY_NIGHT_MATCH_WINDOW",
+    'android:windowLightStatusBar">true',
+    'android:windowLightNavigationBar">true',
     "R9_CAMERA_PRESENTATION_BOUNDARY=PASS_UPSTREAM_PREPROCESSED_APK",
     "R9_VANADIUM_PRESENTATION_BOUNDARY=PASS_UPSTREAM_SECURITY_BUILD",
+)
+
+# Sable-owned Network Manager copy must describe the platform capability
+# without presenting the upstream OS as a competing product identity.
+require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "Uses the system Network permission.",
+    "current platform permission",
+)
+forbid(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    "GrapheneOS",
+)
+
+# Framework-owned developer notifications are user-visible product shell.
+# Keep the underlying android package identity, but substitute the visible
+# notification app name with SableOS rather than leaking the upstream OS brand.
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py",
+    "core/java/android/debug/AdbNotifications.java",
+    "Notification.EXTRA_SUBSTITUTE_APP_NAME",
+    '"SableOS"',
+    "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS",
+)
+
+# Messages People uses the already sorted local ContactsProvider snapshot and
+# a bounded lazy-list alphabet rail; it does not introduce a second contact DB.
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "PeopleAlphabetRail(",
+    "buildPeopleAlphabetTargets(",
+    "rememberLazyListState()",
+    "listState.scrollToItem(position)",
+)
+
+# Text Reader is a standalone offline-first product surface.
+require(
+    "apps/r8/textreader/apply_sable_flavor.py",
+    'applicationId = "org.sableos.textreader"',
+    "SableGlobalTheme(window = window)",
+    "SABLE_TEXT_READER_INTERNET_MERGE_RULE=PASS_REMOVE",
+    "SABLE_TEXT_READER_INTERNET_PERMISSION=PASS_FINAL_APK_ABSENT_REQUIRED",
+    "SABLE_TEXT_READER_TRANSLATION=PASS_RETIRED",
+    "SABLE_TEXT_READER_VIEW_SEND_PROCESS_TEXT=PASS",
+    "SABLE_TEXT_READER_OCR=PASS_CAMERA_GALLERY_LATIN_DEVANAGARI",
+    "SABLE_TEXT_READER_VIEW_HANDLER=PASS_BOUNDED_LOCAL_TEXT",
+    "SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB",
+    "SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED",
+)
+require(
+    "apps/r8/textreader/verify_sable_textreader.py",
+    'forbid(build, "com.google.mlkit:translate", "SABLE_TEXT_READER_TRANSLATION_DEPENDENCY")',
+    'forbid(shared, "downloadModelIfNeeded", "SABLE_TEXT_READER_MODEL_FETCH")',
+    "SABLE_TEXT_READER_SINGLE_LAUNCHER=PASS",
+    "SABLE_TEXT_READER_TEXT_INPUT=PASS_BOUNDED_2_MIB",
+    "SABLE_TEXT_READER_TTS_NETWORK_VOICES=PASS_FILTERED",
+    "SABLE_TEXT_READER_APK_OFFLINE_BOUNDARY=PASS",
+    "SABLE_TEXT_READER_POLICY=PASS",
 )
 
 # Reader: SableOS owns ordinary Light/Dark, Sepia/E-Ink remain explicit reader
@@ -187,6 +264,16 @@ require(
     "LazyVerticalGrid(",
     "distinctBy { it.bookHash }",
     "R9_READER_LIBRARY_COUNT=PASS_ACTUAL_BOOKS_NOT_STACKS",
+    "SABLE_READER_IN_APP_PRODUCT_IDENTITY=PASS_SABLE_READER",
+    "SABLE_READER_ABOUT_IDENTITY=PASS_SABLE_READER_WITH_UPSTREAM_ATTRIBUTION",
+    'if (BuildConfig.SABLE_PRODUCT) "Sable Reader" else "Vaachak"',
+    "SABLE_READER_TEXTREADER_COMPOSITION=PASS_ABSENT",
+    "SABLE_READER_PUBLICATION_FOCUS=PASS",
+)
+forbid(
+    "apps/r8/reader/apply_sable_flavor.py",
+    "SableTextActivity",
+    "SableOcrActivity",
 )
 
 # Contacts uses its existing SectionIndexer, not a duplicate data model.
@@ -199,8 +286,17 @@ require(
     "getPositionForSection(sectionIndex)",
     "installSableAlphabetRail",
     "scrollToSableSection",
+    "classify_text_state",
+    "inspect_repo_state",
+    "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE=",
+    "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS",
+    "R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
+    "R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS",
     "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
+    "R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX",
+    "getPositionForHeader",
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
 )
 forbid(
@@ -286,8 +382,24 @@ require(
     "SABLESTART_STANDALONE_RUNTIME=PASS_PRESENT",
 )
 require(
+    "build/panther/build-r8-final-ui.sh",
+    "framework-minus-apex",
+    "R9_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS",
+)
+require(
+    "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
+    "classify_dirty_scope_from_expected",
+    '"PRE_COHESION"',
+    '"FINAL_COHESION"',
+    "R9_SETTINGS_COHESION_UPGRADE_IN_PLACE=AUTHORIZED_BOUNDED_FINAL_SCOPE",
+    "R9_SETTINGS_COHESION_SELF_TEST_DRIFT_REJECTION=PASS",
+)
+
+require(
     "build/panther/prepare-r8-final-ui.sh",
     "R9_SABLELAUNCHER_STANDALONE_SYNC=PASS",
+    'upgrade-final',
+    "R9_QUICKSTEP_RECENTS_ONLY=UPGRADED_FINAL",
     "R9_QUICKSTEP_RECENTS_ONLY=APPLIED",
     "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT",
 )

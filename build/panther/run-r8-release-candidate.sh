@@ -6,6 +6,8 @@ ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/r8-host-tools.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 SOURCE_MUTATION_AUTHORIZED="${SOURCE_MUTATION_AUTHORIZED:-NO}"
 BUILD_AUTHORIZED="${BUILD_AUTHORIZED:-NO}"
@@ -100,6 +102,38 @@ if ! git -C "$REPO" diff --quiet || ! git -C "$REPO" diff --cached --quiet; then
     echo "R8_TRACKED_SOURCE_CLEAN=FAIL"
     git -C "$REPO" status --short
     exit 8
+fi
+
+if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
+    echo "R9_SOURCE_BOUND_FULL_CI=NOT_REQUIRED_MODULE_QUALIFICATION"
+else
+    git_dir="$(git -C "$REPO" rev-parse --git-dir)"
+    [[ "$git_dir" = /* ]] || git_dir="$REPO/$git_dir"
+    FULL_CI_ATTESTATION="$git_dir/sable-local-ci/$EXPECTED_SOURCE_COMMIT.pass"
+
+    [[ -f "$FULL_CI_ATTESTATION" ]] || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_ATTESTATION_MISSING path=$FULL_CI_ATTESTATION"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    grep -Fxq 'SABLE_LOCAL_CI=PASS' "$FULL_CI_ATTESTATION" || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_PASS_MARKER"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    grep -Fxq 'PROFILE=full' "$FULL_CI_ATTESTATION" || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_PROFILE_REQUIRED_FULL"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    grep -Fxq "SOURCE_COMMIT=$EXPECTED_SOURCE_COMMIT" "$FULL_CI_ATTESTATION" || {
+        echo "R9_SOURCE_BOUND_FULL_CI=FAIL_SOURCE_BINDING"
+        echo "R8_RELEASE_CANDIDATE=FAIL"
+        exit 79
+    }
+    echo "R9_SOURCE_BOUND_FULL_CI=PASS"
+    echo "R9_SOURCE_BOUND_FULL_CI_ATTESTATION=$FULL_CI_ATTESTATION"
+    sable_checkpoint_pass "Source-bound full CI attestation"
 fi
 
 if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
@@ -209,17 +243,52 @@ echo "R8_FIRST_PARTY_ANDROID_BUILD=PASS"
 echo "R9_SABLE_WEATHER_ANDROID_BUILD=PASS"
 
 echo
+echo "===== SABLE TEXT READER ====="
+
+git clone --no-hardlinks "$SABLE_R8_TEXTREADER_CACHE" "$WORK/textreader"
+git -C "$WORK/textreader" checkout --detach "$VAACHAK_TEXTREADER_COMMIT"
+
+python3 "$REPO/apps/r8/textreader/apply_sable_flavor.py" "$WORK/textreader"
+python3 "$REPO/apps/r8/textreader/verify_sable_textreader.py" "$WORK/textreader"
+
+(
+    cd "$WORK/textreader"
+    ./gradlew \
+        --offline \
+        testDebugUnitTest \
+        lintDebug \
+        assembleDebug \
+        --stacktrace \
+        --console=plain \
+        --no-daemon \
+        --no-configuration-cache
+) 2>&1 | tee "$EVIDENCE/textreader-build.log"
+
+mapfile -t textreader_apks < <(
+    find "$WORK/textreader/app/build/outputs/apk/debug" \
+        -maxdepth 1 -type f -name 'SableTextReader-*.apk' -print | sort
+)
+[[ "${#textreader_apks[@]}" -eq 1 ]] || {
+    echo "R9_SABLE_TEXT_READER_APK=FAIL_COUNT count=${#textreader_apks[@]}"
+    exit 11
+}
+SABLE_TEXTREADER_APK="${textreader_apks[0]}"
+APKANALYZER="$SABLE_APKANALYZER" \
+    python3 "$REPO/apps/r8/textreader/verify_sable_textreader.py" \
+        "$WORK/textreader" "$SABLE_TEXTREADER_APK"
+sha256sum "$SABLE_TEXTREADER_APK"
+echo "R9_SABLE_TEXT_READER_BUILD=PASS"
+
+echo
 echo "===== SABLE READER ====="
 
 export JAVA_HOME="$SABLE_JDK21"
 export PATH="$JAVA_HOME/bin:$SABLE_CARGO_HOME/bin:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_ANDROID_SDK/platform-tools:$SABLE_ANDROID_SDK/cmdline-tools/latest/bin:$BASE_PATH"
 
 git clone --no-hardlinks "$SABLE_R8_READER_CACHE" "$WORK/reader"
-git clone --no-hardlinks "$SABLE_R8_TEXTREADER_CACHE" "$WORK/textreader"
 git -C "$WORK/reader" checkout --detach "$VAACHAK_COMMIT"
-git -C "$WORK/textreader" checkout --detach "$VAACHAK_TEXTREADER_COMMIT"
 
-python3 "$REPO/apps/r8/reader/apply_sable_flavor.py"     "$WORK/reader"     "$WORK/textreader"
+python3 "$REPO/apps/r8/reader/apply_sable_flavor.py" "$WORK/reader"
 
 (
     cd "$WORK/reader"
@@ -301,16 +370,16 @@ fi
 echo "R8_SABLE_MAIL_BUILD=PASS"
 
 echo
-echo "===== SOURCE-BOUND TEN-APK BUNDLE ====="
+echo "===== SOURCE-BOUND ELEVEN-APK BUNDLE ====="
 
 cd "$REPO"
-SABLE_READER_APK="$SABLE_READER_APK" SABLE_MAIL_APK="$SABLE_MAIL_APK" APKANALYZER="$SABLE_APKANALYZER"     bash "$REPO/apps/r8/export-panther-app-bundle.sh" "$BUNDLE"
+SABLE_TEXTREADER_APK="$SABLE_TEXTREADER_APK" SABLE_READER_APK="$SABLE_READER_APK" SABLE_MAIL_APK="$SABLE_MAIL_APK" APKANALYZER="$SABLE_APKANALYZER"     bash "$REPO/apps/r8/export-panther-app-bundle.sh" "$BUNDLE"
 
 [[ "$(tr -d '[:space:]' < "$BUNDLE/SABLEOS_SOURCE_COMMIT.txt")" == "$EXPECTED_SOURCE_COMMIT" ]] || {
     echo "R8_APP_BUNDLE_SOURCE=FAIL"
     exit 13
 }
-echo "R9_SOURCE_BOUND_TEN_APK_FREEZE=PASS"
+echo "R9_SOURCE_BOUND_ELEVEN_APK_FREEZE=PASS"
 
 echo
 echo "===== R8 WORKSPACE / PRODUCT PREPARATION ====="
@@ -376,6 +445,7 @@ if [[ "$SABLE_QUALIFICATION_ONLY" == YES ]]; then
     echo "EVIDENCE=$EVIDENCE"
     echo "OUT_DIR=$R9_FULL_OUT_ABS"
     echo "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS"
+    sable_checkpoint_pass "Panther module-only qualification"
     echo "R8_RELEASE_CANDIDATE=NOT_RUN"
     echo "R9_FRESH_FULL_BUILD=NOT_PROVEN"
     exit 0
@@ -384,6 +454,7 @@ fi
 echo
 echo "===== R8 RELEASE-CANDIDATE RESULT ====="
 echo "R8_RELEASE_CANDIDATE=PASS"
+sable_checkpoint_pass "Panther release candidate"
 echo "SOURCE=$EXPECTED_SOURCE_COMMIT"
 echo "BUNDLE=$BUNDLE"
 echo "EVIDENCE=$EVIDENCE"

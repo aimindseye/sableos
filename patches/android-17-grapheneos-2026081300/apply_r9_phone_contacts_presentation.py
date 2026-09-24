@@ -35,6 +35,12 @@ DIALER_BOTTOM_NAV = Path(
 DIALER_DIALPAD = Path(
     "java/com/android/dialer/dialpadview/res/values/styles.xml"
 )
+DIALER_CONTACTS_ADAPTER = Path(
+    "java/com/android/dialer/contactsfragment/ContactsAdapter.java"
+)
+DIALER_CONTACTS_FRAGMENT = Path(
+    "java/com/android/dialer/contactsfragment/ContactsFragment.java"
+)
 
 CONTACTS_LIGHT = Path("res/values/colors.xml")
 CONTACTS_DARK = Path("res/values-night/colors.xml")
@@ -59,6 +65,8 @@ DIALER_DIRT = {
     f" M {DIALER_TOOLBAR.as_posix()}",
     f" M {DIALER_BOTTOM_NAV.as_posix()}",
     f" M {DIALER_DIALPAD.as_posix()}",
+    f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+    f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
 }
 
 CONTACTS_DIRT = {
@@ -69,6 +77,11 @@ CONTACTS_DIRT = {
     f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
     f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
 }
+
+CONTACTS_PARTIAL_SCOPE_MARKER = "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE="
+CONTACTS_PARTIAL_CONVERGENCE_MARKER = (
+    "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS"
+)
 
 DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     DIALER_LIGHT: (
@@ -131,6 +144,196 @@ DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
         (
             '<item name="android:background">@drawable/btn_dialpad_key</item>',
             '<item name="android:background">@android:color/transparent</item>',
+        ),
+    ),
+    DIALER_CONTACTS_ADAPTER: (
+        (
+            '''  String getHeaderString(int position) {
+    if (header != Header.NONE) {
+      if (position == 0) {
+        return "+";
+      }
+      position--;
+    }
+
+    int index = -1;
+    int sum = 0;
+    while (sum <= position) {
+      sum += counts[++index];
+    }
+    return headers[index];
+  }
+}''',
+            '''  String getHeaderString(int position) {
+    if (header != Header.NONE) {
+      if (position == 0) {
+        return "+";
+      }
+      position--;
+    }
+
+    int index = -1;
+    int sum = 0;
+    while (sum <= position) {
+      sum += counts[++index];
+    }
+    return headers[index];
+  }
+
+  boolean hasContacts() {
+    return cursor != null && !cursor.isClosed() && cursor.getCount() > 0;
+  }
+
+  /**
+   * Returns the RecyclerView position for an alphabet section using the
+   * ContactsProvider address-book index already carried by this adapter.
+   */
+  int getPositionForHeader(String target) {
+    if (headers == null || counts == null || target == null) {
+      return -1;
+    }
+
+    int position = header == Header.NONE ? 0 : 1;
+    for (int index = 0; index < headers.length && index < counts.length; index++) {
+      String section = headers[index] == null ? "" : headers[index].trim();
+      if (!section.isEmpty() && section.substring(0, 1).equalsIgnoreCase(target)) {
+        return position;
+      }
+      position += counts[index];
+    }
+    return -1;
+  }
+}''',
+        ),
+    ),
+    DIALER_CONTACTS_FRAGMENT: (
+        (
+            '''import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnScrollChangeListener;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+''',
+            '''import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnScrollChangeListener;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+''',
+        ),
+        (
+            '''  private FastScroller fastScroller;
+  private TextView anchoredHeader;
+  private RecyclerView recyclerView;
+''',
+            '''  private FastScroller fastScroller;
+  private TextView anchoredHeader;
+  private LinearLayout sableAlphabetRail;
+  private RecyclerView recyclerView;
+''',
+        ),
+        (
+            '''    if (PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      loadContacts();
+    } else {
+''',
+            '''    installSableAlphabetRail((FrameLayout) view);
+
+    if (PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      loadContacts();
+    } else {
+''',
+        ),
+        (
+            '''    return view;
+  }
+
+  @Override
+  public void onResume() {
+''',
+            '''    return view;
+  }
+
+  private void installSableAlphabetRail(FrameLayout container) {
+    sableAlphabetRail = new LinearLayout(getContext());
+    sableAlphabetRail.setOrientation(LinearLayout.VERTICAL);
+    sableAlphabetRail.setGravity(Gravity.CENTER);
+    sableAlphabetRail.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+
+    float density = getResources().getDisplayMetrics().density;
+    int width = (int) (28 * density + 0.5f);
+    FrameLayout.LayoutParams params =
+        new FrameLayout.LayoutParams(width, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.END);
+    sableAlphabetRail.setLayoutParams(params);
+
+    for (char letter = 'A'; letter <= 'Z'; letter++) {
+      final String section = String.valueOf(letter);
+      TextView shortcut = new TextView(getContext());
+      shortcut.setText(section);
+      shortcut.setTextSize(10);
+      shortcut.setGravity(Gravity.CENTER);
+      shortcut.setContentDescription("Jump to " + section);
+      shortcut.setFocusable(true);
+      shortcut.setClickable(true);
+      shortcut.setOnClickListener(
+          ignored -> {
+            int position = adapter == null ? -1 : adapter.getPositionForHeader(section);
+            if (position >= 0) {
+              manager.scrollToPositionWithOffset(position, 0);
+            }
+          });
+      shortcut.setLayoutParams(
+          new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+      sableAlphabetRail.addView(shortcut);
+    }
+
+    container.addView(sableAlphabetRail);
+    updateSableAlphabetRailVisibility();
+  }
+
+  private void updateSableAlphabetRailVisibility() {
+    if (sableAlphabetRail == null) {
+      return;
+    }
+    boolean hasContacts = adapter != null && adapter.hasContacts();
+    boolean searching = query != null && !query.isEmpty();
+    sableAlphabetRail.setVisibility(hasContacts && !searching ? View.VISIBLE : View.GONE);
+  }
+
+  @Override
+  public void onResume() {
+''',
+        ),
+        (
+            '''  public void updateQuery(String query) {
+    this.query = query;
+    getLoaderManager().restartLoader(0, null, this);
+  }
+''',
+            '''  public void updateQuery(String query) {
+    this.query = query;
+    updateSableAlphabetRailVisibility();
+    getLoaderManager().restartLoader(0, null, this);
+  }
+''',
+        ),
+        (
+            '''      PerformanceReport.logOnScrollStateChange(recyclerView);
+      fastScroller.setup(adapter, manager);
+    }
+  }
+''',
+            '''      PerformanceReport.logOnScrollStateChange(recyclerView);
+      fastScroller.setup(adapter, manager);
+      updateSableAlphabetRailVisibility();
+    }
+  }
+''',
         ),
     ),
 }
@@ -403,6 +606,30 @@ def status(repo: Path) -> set[str]:
     return {line for line in out.splitlines() if line}
 
 
+def head_text(repo: Path, rel: Path) -> str:
+    return subprocess.check_output(
+        ["git", "-C", str(repo), "show", f"HEAD:{rel.as_posix()}"],
+        text=True,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def classify_text_state(
+    actual: str,
+    pinned: str,
+    canonical: str,
+    label: str,
+) -> str:
+    if actual == pinned:
+        return "PINNED"
+    if actual == canonical:
+        return "CANONICAL"
+    raise SystemExit(
+        f"R9_{label}_CONTENT_STATE=FAIL "
+        "expected=PINNED_OR_CANONICAL"
+    )
+
+
 def assert_head(source: Path, repo: Path, expected: str) -> None:
     actual = git(source / repo, "rev-parse", "HEAD")
     if actual != expected:
@@ -442,35 +669,96 @@ def transform_text(
     return text
 
 
+def inspect_repo_state(
+    root: Path,
+    transforms: dict[Path, tuple[tuple[str, str], ...]],
+    expected_dirt: set[str],
+    label: str,
+) -> tuple[set[str], dict[Path, tuple[str, str]]]:
+    current = status(root)
+    unexpected = current - expected_dirt
+    if unexpected:
+        raise SystemExit(
+            f"R9_{label}_DIRTY_SCOPE_UNEXPECTED=FAIL "
+            f"paths={sorted(unexpected)!r}"
+        )
+
+    states: dict[Path, tuple[str, str]] = {}
+    for rel, replacements in transforms.items():
+        pinned = head_text(root, rel)
+        canonical = transform_text(pinned, replacements, rel.as_posix())
+        actual = (root / rel).read_text(encoding="utf-8")
+        state = classify_text_state(
+            actual,
+            pinned,
+            canonical,
+            label,
+        )
+        marker = f" M {rel.as_posix()}"
+        if state == "PINNED" and marker in current:
+            raise SystemExit(
+                f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
+                f"file={rel} state=PINNED status=DIRTY"
+            )
+        if state == "CANONICAL" and marker not in current:
+            raise SystemExit(
+                f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
+                f"file={rel} state=CANONICAL status=CLEAN"
+            )
+        states[rel] = (state, canonical)
+
+    return current, states
+
+
 def apply_repo(
     root: Path,
     transforms: dict[Path, tuple[tuple[str, str], ...]],
     expected_dirt: set[str],
     label: str,
 ) -> None:
-    current = status(root)
+    current, states = inspect_repo_state(
+        root,
+        transforms,
+        expected_dirt,
+        label,
+    )
     if current == expected_dirt:
         print(f"R9_{label}_PRESENTATION=ALREADY_APPLIED")
         return
+
     if current:
-        raise SystemExit(
-            f"R9_{label}_PRE_DIRTY_SCOPE=FAIL actual={sorted(current)!r}"
-        )
+        if label == "CONTACTS":
+            print(f"{CONTACTS_PARTIAL_SCOPE_MARKER}{sorted(current)!r}")
+        else:
+            print(
+                f"R9_{label}_PRESENTATION_PARTIAL_SCOPE="
+                f"{sorted(current)!r}"
+            )
 
-    for rel, replacements in transforms.items():
-        path = root / rel
-        text = path.read_text(encoding="utf-8")
-        updated = transform_text(text, replacements, rel.as_posix())
-        path.write_text(updated, encoding="utf-8")
+    for rel, (state, canonical) in states.items():
+        if state == "PINNED":
+            (root / rel).write_text(canonical, encoding="utf-8")
 
-    current = status(root)
-    if current != expected_dirt:
+    final, final_states = inspect_repo_state(
+        root,
+        transforms,
+        expected_dirt,
+        label,
+    )
+    if final != expected_dirt:
         raise SystemExit(
             f"R9_{label}_DIRTY_SCOPE=FAIL "
-            f"expected={sorted(expected_dirt)!r} actual={sorted(current)!r}"
+            f"expected={sorted(expected_dirt)!r} actual={sorted(final)!r}"
         )
-    print(f"R9_{label}_PRESENTATION=APPLIED")
+    if any(state != "CANONICAL" for state, _ in final_states.values()):
+        raise SystemExit(f"R9_{label}_CANONICAL_CONVERGENCE=FAIL")
 
+    if current:
+        if label == "CONTACTS":
+            print(CONTACTS_PARTIAL_CONVERGENCE_MARKER)
+        else:
+            print(f"R9_{label}_PRESENTATION_PARTIAL_CONVERGENCE=PASS")
+    print(f"R9_{label}_PRESENTATION=APPLIED")
 
 def verify_repo(
     root: Path,
@@ -478,23 +766,34 @@ def verify_repo(
     expected_dirt: set[str],
     label: str,
 ) -> None:
-    current = status(root)
+    current, states = inspect_repo_state(
+        root,
+        transforms,
+        expected_dirt,
+        label,
+    )
     if current != expected_dirt:
         raise SystemExit(
             f"R9_{label}_VERIFY_DIRTY_SCOPE=FAIL "
             f"expected={sorted(expected_dirt)!r} actual={sorted(current)!r}"
         )
+    if any(state != "CANONICAL" for state, _ in states.values()):
+        raise SystemExit(f"R9_{label}_VERIFY_CANONICAL_STATE=FAIL")
 
     for rel, replacements in transforms.items():
         text = (root / rel).read_text(encoding="utf-8")
         for old, new in replacements:
-            if new not in text:
+            new_count, old_outside_new_count = replacement_state(
+                text,
+                old,
+                new,
+            )
+            if new_count != 1 or old_outside_new_count != 0:
                 raise SystemExit(
-                    f"R9_{label}_VERIFY=FAIL file={rel} missing={new!r}"
-                )
-            if old in text:
-                raise SystemExit(
-                    f"R9_{label}_VERIFY=FAIL file={rel} stale={old!r}"
+                    f"R9_{label}_VERIFY=FAIL file={rel} "
+                    f"new_count={new_count} "
+                    f"old_outside_new_count={old_outside_new_count} "
+                    f"old={old!r}"
                 )
 
     behavioral = {
@@ -502,11 +801,16 @@ def verify_repo(
         if line[3:].endswith((".java", ".kt"))
     }
     if label == "PHONE":
-        if behavioral:
+        allowed_behavioral = {
+            f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+            f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
+        }
+        if behavioral != allowed_behavioral:
             raise SystemExit(
-                f"R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=FAIL paths={sorted(behavioral)!r}"
+                "R9_PHONE_BEHAVIORAL_SCOPE=FAIL "
+                f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print("R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=NONE")
+        print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY")
     else:
         allowed_behavioral = {
             f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
@@ -609,6 +913,7 @@ def verify(source: Path) -> None:
 
     print("R9_PHONE_CONTACTS_PINNED_BASELINES=PASS")
     print("R9_PHONE_CONTACTS_PRESENTATION=PASS")
+    print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER")
     print("R9_CONTACTS_DATA_MODEL_MUTATION=NONE")
 
@@ -640,6 +945,59 @@ def self_test() -> None:
                     f"R9_{label}_SELF_TEST=FAIL_IDEMPOTENCE file={path}"
                 )
 
+    nested_old = """    public int getPositionForSection(int sectionIndex) {
+        if (mIndexer == null) {
+            return -1;
+        }
+
+        return mIndexer.getPositionForSection(sectionIndex);
+    }
+"""
+    nested_new = nested_old + """
+    public int getListPositionForSection(int sectionIndex) {
+        return sectionIndex;
+    }
+"""
+    new_count, old_outside_new_count = replacement_state(
+        nested_new,
+        nested_old,
+        nested_new,
+    )
+    if new_count != 1 or old_outside_new_count != 0:
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_NESTED_REPLACEMENT_STATE"
+        )
+    print("R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS")
+
+    if classify_text_state(
+        "pinned",
+        "pinned",
+        "canonical",
+        "SELF_TEST",
+    ) != "PINNED":
+        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_PINNED_STATE")
+    if classify_text_state(
+        "canonical",
+        "pinned",
+        "canonical",
+        "SELF_TEST",
+    ) != "CANONICAL":
+        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_CANONICAL_STATE")
+    try:
+        classify_text_state(
+            "unexpected",
+            "pinned",
+            "canonical",
+            "SELF_TEST",
+        )
+    except SystemExit:
+        pass
+    else:
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_CONTENT_DRIFT_REJECTION"
+        )
+    print("R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS")
+
     required_blocking_tokens = (
         "BlockedNumberContract",
         "BlockedNumbers.COLUMN_ORIGINAL_NUMBER",
@@ -660,7 +1018,8 @@ def self_test() -> None:
     print("R9_PHONE_PRESENTATION=PASS_SELF_TEST")
     print("R9_CONTACTS_PRESENTATION=PASS_SELF_TEST")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
-    print("R9_PHONE_BEHAVIORAL_SOURCE_MUTATION=NONE_SELF_TEST")
+    print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
+    print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY_SELF_TEST")
     print("R9_PHONE_CONTACTS_PRESENTATION_SELF_TEST=PASS")
 
 

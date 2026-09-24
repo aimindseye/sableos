@@ -1,3 +1,12 @@
+
+prebuilt_etc {
+    name: "SableSettingsPrivappPermissions",
+    system_ext_specific: true,
+    sub_dir: "permissions",
+    src: "permissions/sable-privapp-permissions-com.android.settings.xml",
+    filename_from_src: true,
+}
+
 android_app_import {
     name: "SableCalculator",
     apk: "prebuilt/SableCalculator.apk",
@@ -46,6 +55,17 @@ android_app_import {
 android_app_import {
     name: "SableMedia",
     apk: "prebuilt/SableMedia.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableTextReader",
+    apk: "prebuilt/SableTextReader.apk",
     presigned: true,
     preprocessed: true,
     product_specific: true,

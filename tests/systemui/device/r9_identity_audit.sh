@@ -89,6 +89,15 @@ trap 'rm -f "$TMP_NOTIFICATION"' EXIT
 "$ADB" -s "$SERIAL" shell dumpsys notification --noredact \
   > "$TMP_NOTIFICATION" 2>&1 || true
 
+if grep -Fqi 'Permission allowlist violation' "$TMP_NOTIFICATION"; then
+  grep -Fin -B25 -A60 'Permission allowlist violation' "$TMP_NOTIFICATION" \
+    > "$EVIDENCE_DIR/permission-allowlist-violation.txt" 2>&1 || true
+  echo "R9_PERMISSION_ALLOWLIST_RUNTIME=FAIL_NOTIFICATION_PRESENT"
+  cat "$EVIDENCE_DIR/permission-allowlist-violation.txt"
+  exit 12
+fi
+echo "R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION"
+
 python3 - "$TMP_NOTIFICATION" "$EVIDENCE_DIR/adb-notification-snippet.txt" <<'PY'
 from pathlib import Path
 import sys

@@ -27,6 +27,10 @@ sable_device_qualify() {
       EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
         bash "$ROOT/build/panther/qualify-r9-physical-ux.sh"
       ;;
+    R9:textreader|r9:textreader)
+      EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
+        bash "$ROOT/build/panther/qualify-r9-textreader.sh"
+      ;;
     *)
       echo "SABLE_DEVICE_QUALIFY=UNSUPPORTED device=panther release=$release suite=$suite" >&2
       return 64
