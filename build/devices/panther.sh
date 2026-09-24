@@ -188,7 +188,7 @@ sable_device_flash_preflight() {
 
 sable_device_flash_execute() {
   echo "===== ENTER BOOTLOADER ====="
-  "$ADB_BIN" -s "$SERIAL" reboot bootloader </dev/null
+  "$ADB_BIN" -s "$SERIAL" reboot bootloader </dev/null || return 1
   REBOOTED_TO_FLASH_MODE=YES
   REBOOTED_TO_BOOTLOADER=YES
 
@@ -274,7 +274,7 @@ sable_device_flash_execute() {
   echo "SABLE_FLASH_EXECUTION=PASS"
   echo "SABLE_POSTFLASH_SLOT_PRESERVED=PASS"
 
-  "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null
+  "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null || return 1
   POSTFLASH_REBOOT_SENT=YES
   echo "FINAL_FASTBOOT_REBOOT=PASS"
 }
