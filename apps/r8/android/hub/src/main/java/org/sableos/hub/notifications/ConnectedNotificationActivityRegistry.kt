@@ -1,7 +1,7 @@
 package org.sableos.hub.notifications
 
-import java.util.concurrent.ConcurrentHashMap
 import org.sableos.hub.ConnectedAppKey
+import java.util.concurrent.ConcurrentHashMap
 
 internal object ConnectedNotificationActivityRegistry {
     private val activeByNotification =
