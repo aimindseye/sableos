@@ -1,6 +1,6 @@
 # ADR-0009: Separate Sable Reader and Sable Text Reader products
 
-Status: Accepted  
+Status: Accepted
 Date: 2026-09-23
 
 ## Context
