@@ -77,6 +77,8 @@ forbid(
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "private fun AppsScreen(",
+    "PullToRefreshBox(",
+    "onRefresh = onRefreshLive",
     "buildRailRows(apps)",
     "rememberLazyListState()",
     "detectDragGestures(",
@@ -217,6 +219,24 @@ require(
     "Notification.EXTRA_SUBSTITUTE_APP_NAME",
     '"SableOS"',
     "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS",
+)
+
+# Hub live status must include active connected-app conversations and both
+# Hub and Start expose an explicit pull-to-refresh escape hatch.
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubSnapshotProvider.kt",
+    "ConnectedNotificationActivityRegistry.activeConversationCount()",
+    '0 -> "0 active"',
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ConnectedNotificationHistoryStore.kt",
+    "HubSnapshotProvider.SNAPSHOT_URI",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "PullToRefreshBox(",
+    "isRefreshing = isRefreshing",
+    "onRefresh = onRefresh",
 )
 
 # Messages People uses the already sorted local ContactsProvider snapshot and
@@ -493,6 +513,8 @@ print("R9_QUICKSTEP_RECENTS_SOURCE=PASS_NO_HOME")
 print("R9_ALL_APPS_PERMISSION_SUMMARY_CONTRACT=PASS")
 print("R9_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER")
 print("R9_MAIL_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER_AND_SABLEHUB")
+print("R9_HUB_CONNECTED_LIVE_STATUS=PASS_ACTIVE_CONVERSATION_AWARE")
+print("R9_SABLE_REFRESH_GESTURES=PASS_START_AND_HUB")
 print("R9_CLOCK_LIGHT_VISIBILITY_CONTRACT=PASS")
 print("R9_PHOTOS_LIGHT_DARK_CONTRACT=PASS")
 print("R9_CAMERA_APPEARANCE_BOUNDARY=PASS_UPSTREAM_DARK_ONLY")
