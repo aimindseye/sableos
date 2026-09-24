@@ -47,9 +47,10 @@ product-policy change is explicitly listed below.
 - upstream received-message remote network content remains blocked until the
   message-view flow explicitly enables it; this privacy behavior is a source
   qualification anchor and must not be weakened by Sable branding work;
-- the launcher live-snapshot provider exposes notification-count state only and
-  admits `org.sableos.launcher`; the retired Launcher3 HOME package is not an
-  authorized snapshot caller.
+- the bounded live-snapshot provider exposes notification-count state only and
+  admits `org.sableos.launcher` and `org.sableos.hub`; the retired Launcher3
+  HOME package and arbitrary third-party callers are not authorized;
+- Sable Hub does not read Sable Mail private storage or account credentials.
 
 The global appearance provider carries presentation state only. It does not
 expose account, mail, contacts, device or security-sensitive data.
