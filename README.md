@@ -105,29 +105,38 @@ See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`.
 
 ## Current milestone
 
-Panther D4 physical acceptance is closed. The current product phase is:
+Pixel 7 / Panther R9 is **physically accepted and frozen as the touch-first
+reference baseline**. Active feature development is on hold for Panther.
+
+Validated Panther release evidence remains bound to the exact image source, not
+to later documentation-only repository heads:
 
 ```text
-SABLEOS_PRODUCT_DEVELOPMENT=ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE=PRODUCT_INTEGRATION_START
-NEXT_PRODUCT_MILESTONE=SABLE_M1_METRO_SHELL_PROTOTYPE
-TARGET=panther
+R9_PANTHER_SOURCE=6f1d6d2f0f2525067874238c4b797ad58f2bcbc6
+R9_PANTHER_TARGET_FILES_SHA256=08ef429c7f9eef17de7ddad4ce9baa81911950e8d34b6751b6e4588f66821502
+R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS
+R9_PANTHER_DEVELOPMENT=HOLD_REFERENCE_MAINTENANCE_ONLY
 ```
 
-Near-term sequence:
+Active product work now moves to the keyboard-first portability line:
 
 ```text
-Sable Flow shared primitives
-    -> Sable Start M1
-    -> Phone / People / Messages
-    -> Sable Hub provider framework
-    -> social web capsules
-    -> broader native apps and polish
-    -> Q25/Q27 portability when justified
-    -> production signing/OTA closure before release candidate
+Titan 2
+    -> stock/firmware/camera evidence already active
+    -> first keyboard-first N0 SableOS/GSI integration target
+
+Titan 2 Elite
+    -> independent stock/device baseline when hardware arrives
+    -> second keyboard-first N0 target
+
+Q27
+    -> RESEARCH / future product candidate
+    -> no device claims until shipped hardware/firmware qualifies
 ```
 
-See `CURRENT_STATUS.md` and `docs/CORE_PRODUCT_ROADMAP.md`.
+The common rule is unchanged: one Sable product core, multiple hardware
+adapters and interaction profiles. See
+`docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md`.
 
 ## CI execution
 
