@@ -135,14 +135,17 @@ internal fun ConnectedAppsScreen(
                 Text(
                     text =
                         when (pivot) {
-                            ConnectedAppsPivot.Enabled ->
+                            ConnectedAppsPivot.Enabled -> {
                                 "No connected apps are enabled."
-                            ConnectedAppsPivot.Available ->
+                            }
+
+                            ConnectedAppsPivot.Available -> {
                                 if (search.isBlank()) {
                                     "No additional installed apps are available."
                                 } else {
                                     "No installed apps match this search."
                                 }
+                            }
                         },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
