@@ -57,7 +57,9 @@ import java.text.DateFormat
 import java.util.Date
 
 private enum class HubPivot {
+    Priority,
     Messages,
+    Email,
     People,
 }
 
@@ -82,12 +84,13 @@ fun HubScreen(
     onRequestAccess: () -> Unit,
     onSendSms: (String, String) -> HubSendResult,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
+    onOpenSableMail: () -> Boolean,
     onOpenConnectedApps: () -> Unit,
     onReplyConnected: (String, String) -> HubSendResult,
     onOpenConnectedApp: (String, Long) -> Boolean,
 ) {
     var route by remember {
-        mutableStateOf<HubRoute>(HubRoute.Root(HubPivot.Messages))
+        mutableStateOf<HubRoute>(HubRoute.Root(HubPivot.Priority))
     }
     var search by remember {
         mutableStateOf("")
@@ -99,8 +102,8 @@ fun HubScreen(
     if (snapshot == null) {
         SableScreen {
             SablePageHeader(
-                title = "messages",
-                subtitle = "SMS conversations and people, kept local to this device.",
+                title = "hub",
+                subtitle = "Priority, messages, email and people, kept local to this device.",
             )
             SablePanel {
                 Text(
@@ -117,8 +120,8 @@ fun HubScreen(
         is HubRoute.Root -> {
             SableScreen {
                 SablePageHeader(
-                    title = "messages",
-                    subtitle = "SMS and notification-derived conversations, kept local to this device.",
+                    title = "hub",
+                    subtitle = "Local communication across your enabled sources.",
                 )
 
                 HubPivotRow(
@@ -130,7 +133,10 @@ fun HubScreen(
                     },
                 )
 
-                if (current.pivot == HubPivot.Messages) {
+                if (
+                    current.pivot == HubPivot.Messages ||
+                    current.pivot == HubPivot.Email
+                ) {
                     SableActionButton(
                         text = "connected apps",
                         primary = false,
@@ -147,6 +153,20 @@ fun HubScreen(
                 }
 
                 when (current.pivot) {
+                    HubPivot.Priority -> {
+                        PriorityPivot(
+                            modifier = Modifier.weight(1f),
+                            snapshot = snapshot,
+                            onConversation = { conversation ->
+                                route =
+                                    HubRoute.Conversation(
+                                        threadId = conversation.threadId,
+                                    )
+                            },
+                            onOpenSableMail = onOpenSableMail,
+                        )
+                    }
+
                     HubPivot.Messages -> {
                         MessagesPivot(
                             modifier = Modifier.weight(1f),
@@ -163,6 +183,13 @@ fun HubScreen(
                                 route = HubRoute.Compose()
                             },
                             onRequestAccess = onRequestAccess,
+                        )
+                    }
+
+                    HubPivot.Email -> {
+                        EmailPivot(
+                            snapshot = snapshot,
+                            onOpenSableMail = onOpenSableMail,
                         )
                     }
 
@@ -351,6 +378,102 @@ private fun HubPivotRow(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ColumnScope.PriorityPivot(
+    modifier: Modifier,
+    snapshot: HubSnapshot,
+    onConversation: (HubConversation) -> Unit,
+    onOpenSableMail: () -> Boolean,
+) {
+    val conversations =
+        snapshot.conversations.filter { conversation ->
+            conversation.unreadCount > 0 || conversation.canQuickReply
+        }
+    val hasMailAlerts =
+        snapshot.mail.available &&
+            snapshot.mail.detail != "no mail alerts"
+
+    if (conversations.isEmpty() && !hasMailAlerts) {
+        Text(
+            text = "Nothing needs your attention.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+
+    if (hasMailAlerts) {
+        SablePanel {
+            Text(
+                text = "Email",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                text = snapshot.mail.detail,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            SableActionButton(
+                text = "Open Sable Mail",
+                primary = false,
+                onClick = {
+                    onOpenSableMail()
+                },
+            )
+        }
+    }
+
+    if (conversations.isNotEmpty()) {
+        LazyColumn(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+        ) {
+            items(
+                items = conversations.take(MAX_VISIBLE_CONVERSATIONS),
+                key = { conversation ->
+                    conversation.threadId.toString() + ":" + conversation.address
+                },
+            ) { conversation ->
+                ConversationRow(
+                    conversation = conversation,
+                    onClick = { onConversation(conversation) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ColumnScope.EmailPivot(
+    snapshot: HubSnapshot,
+    onOpenSableMail: () -> Boolean,
+) {
+    SablePanel {
+        Text(
+            text = "Sable Mail",
+            style = MaterialTheme.typography.titleMedium,
+        )
+        Text(
+            text = snapshot.mail.detail,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text =
+                "Hub reads only the bounded local mail snapshot. " +
+                    "Accounts, sync and mailbox storage remain in Sable Mail.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SableActionButton(
+            text = "Open Sable Mail",
+            onClick = {
+                onOpenSableMail()
+            },
+        )
     }
 }
 
