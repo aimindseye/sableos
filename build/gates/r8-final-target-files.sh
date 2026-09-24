@@ -140,6 +140,29 @@ with zipfile.ZipFile(tf) as z:
             )
         print(f"R8_SYSTEM_APK=PASS file={basename} member={found[0]}")
 
+    allowlist_name = "sable-privapp-permissions-com.android.settings.xml"
+    allowlist_member = f"SYSTEM_EXT/etc/permissions/{allowlist_name}"
+    if allowlist_member not in names:
+        raise SystemExit(
+            f"R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET=FAIL_MISSING member={allowlist_member}"
+        )
+    target_allowlist = z.read(allowlist_member)
+    staged_allowlist = (staged / "permissions" / allowlist_name).read_bytes()
+    if target_allowlist != staged_allowlist:
+        raise SystemExit(
+            "R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET=FAIL_CONTENT_MISMATCH"
+        )
+    allowlist_text = target_allowlist.decode("utf-8")
+    if (
+        '<privapp-permissions package="com.android.settings">' not in allowlist_text
+        or '<permission name="android.permission.MODIFY_DAY_NIGHT_MODE"/>' not in allowlist_text
+    ):
+        raise SystemExit("R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET=FAIL_SEMANTICS")
+    print(
+        "R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET=PASS_SYSTEM_EXT "
+        f"member={allowlist_member}"
+    )
+
     stale_apks = (
         "ExactCalculator.apk",
         "Calendar.apk",
@@ -204,4 +227,5 @@ echo "R8_F_SABLE_HUB_MESSAGES_TARGET_FILES=PASS"
 echo "R8_G_SABLE_MAIL_TARGET_FILES=PASS"
 echo "R9_SABLE_WEATHER_TARGET_FILES=PASS"
 echo "R8_UI4_UI5_UI6_TARGET_FILES=PASS"
+echo "R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET_FILES=PASS"
 echo "R8_FINAL_TARGET_FILES=PASS"
