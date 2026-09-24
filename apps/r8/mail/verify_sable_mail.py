@@ -407,8 +407,10 @@ def main() -> None:
         '"no mail alerts"',
         '" mail alerts"',
         "content://org.sableos.mail.snapshot/current",
-        'if ("org.sableos.launcher" !in packages)',
-        "Sable live snapshot is restricted to SableLauncher.",
+        '"org.sableos.launcher"',
+        '"org.sableos.hub"',
+        "packages.intersect(authorized).isEmpty()",
+        "Sable mail snapshot is restricted to SableLauncher and SableHub.",
         "SecurityException(",
         "Binder.getCallingUid()",
         "UnsupportedOperationException",
@@ -425,6 +427,7 @@ def main() -> None:
     )
     print("SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT")
     print("SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT=PASS_NOTIFICATION_COUNT_ONLY")
+    print("SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY")
     app_source = (
         app
         / "src/main/kotlin/net/thunderbird/android/ThunderbirdApp.kt"
