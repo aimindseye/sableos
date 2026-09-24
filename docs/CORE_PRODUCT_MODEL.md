@@ -140,25 +140,24 @@ Implementation rules:
 8. keep the provider app authoritative for transport, cryptography, account state and complete history;
 9. never gain broad system privilege merely because a service is surfaced in Hub.
 
-The first Hub may organize bounded state through views such as:
+The accepted Hub V1 top-level pivots are:
 
 ```text
-ALL
+PRIORITY
 MESSAGES
+EMAIL
 PEOPLE
-SERVICES
 ```
 
-The existing attention concepts remain useful:
+Priority is a local, explainable attention view rather than an opaque ranking
+service. Messages combines retained SMS transport with user-enabled Android
+conversation adapters. Email consumes only a bounded local Sable Mail summary
+contract while Sable Mail retains account, protocol, synchronization and
+private-mailbox ownership. People remains contact-backed and does not guess
+cross-provider identity from display names.
 
-```text
-NOW
-PEOPLE
-APPS
-LATER
-```
-
-Exact presentation can evolve during prototyping; the semantic provider/person/action model is the stable part.
+The semantic provider/person/action model remains stable across touch-first and
+keyboard-first presentation.
 
 ### Sable People
 
