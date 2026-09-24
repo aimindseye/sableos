@@ -301,6 +301,7 @@ echo "===== FIRST-PARTY PRODUCT INTEGRATION ====="
 [[ -f "$DEST/manifest.tsv" ]] || fail R8_PRODUCT_MANIFEST
 [[ -f "$DEST/SHA256SUMS.txt" ]] || fail R8_PRODUCT_SHA256SUMS
 [[ -f "$DEST/SABLEOS_SOURCE_COMMIT.txt" ]] || fail R8_PRODUCT_SOURCE_IDENTITY
+[[ -f "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" ]] || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE
 
 CURRENT_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
 STAGED_SOURCE_COMMIT="$(tr -d '[:space:]' < "$DEST/SABLEOS_SOURCE_COMMIT.txt")"
@@ -310,8 +311,26 @@ echo "R8_PRODUCT_SOURCE_COMMIT=PASS value=$STAGED_SOURCE_COMMIT"
 cmp -s     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"     || fail R8_PRODUCT_ANDROID_BP
 
 cmp -s     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"     || fail R8_PRODUCT_MK
+cmp -s     "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml"     "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE
 
-(
+python3 - "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" <<'PY'
+import pathlib
+import sys
+import xml.etree.ElementTree as ET
+
+path = pathlib.Path(sys.argv[1])
+root = ET.parse(path).getroot()
+nodes = root.findall("privapp-permissions")
+if len(nodes) != 1 or nodes[0].attrib.get("package") != "com.android.settings":
+    raise SystemExit("R9_SETTINGS_PRIVAPP_ALLOWLIST=FAIL_PACKAGE")
+perms = [node.attrib.get("name") for node in nodes[0].findall("permission")]
+expected = ["android.permission.MODIFY_DAY_NIGHT_MODE"]
+if perms != expected:
+    raise SystemExit(
+        f"R9_SETTINGS_PRIVAPP_ALLOWLIST=FAIL_PERMISSIONS actual={perms!r}"
+    )
+print("R9_SETTINGS_PRIVAPP_ALLOWLIST=PASS_EXACT")
+PY
     cd "$DEST/prebuilt"
     sha256sum -c "$DEST/SHA256SUMS.txt"
 ) || fail R8_PRODUCT_PREBUILT_HASHES
@@ -376,6 +395,10 @@ include_count="$(grep -Fc "$INHERIT_LINE" "$PRODUCT_MK" || true)"
 
 grep -Fq 'overrides: ["ExactCalculator"]' "$DEST/Android.bp"     || fail R8_EXACT_CALCULATOR_REPLACEMENT
 grep -Fq 'overrides: ["Calendar"]' "$DEST/Android.bp"     || fail R9_SABLE_CALENDAR_REPLACEMENT
+grep -Fq 'name: "SableSettingsPrivappPermissions"' "$DEST/Android.bp"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_MODULE
+grep -Fq 'system_ext_specific: true' "$DEST/Android.bp"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_PARTITION
+grep -Fq 'src: "permissions/sable-privapp-permissions-com.android.settings.xml"' "$DEST/Android.bp"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_SOURCE
+grep -Fq 'SableSettingsPrivappPermissions' "$DEST/r8-product.mk"     || fail R9_SETTINGS_PRIVAPP_ALLOWLIST_PRODUCT
 
 if ! python3 - "$DEST/Android.bp" <<'PY'
 import pathlib
@@ -449,6 +472,7 @@ echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_PRODUCT_PREBUILT_HASHES=PASS"
 echo "R8_EXACT_CALCULATOR_REPLACEMENT=PASS"
 echo "R9_SABLE_CALENDAR_REPLACEMENT=PASS"
+echo "R9_SETTINGS_PRIVAPP_ALLOWLIST_PRODUCT=PASS_SYSTEM_EXT"
 
 echo
 echo "===== R9 SABLE TEXT READER SOURCE CLOSURE ====="
