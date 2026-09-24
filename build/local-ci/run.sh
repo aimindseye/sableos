@@ -61,9 +61,15 @@ stage() {
   shift
   echo
   echo "===== $name ====="
-  "$@"
-  echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
-  sable_checkpoint_pass "CI stage $name"
+  if "$@"; then
+    echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+    sable_checkpoint_pass "CI stage $name"
+  else
+    local rc=$?
+    echo "SABLE_LOCAL_CI_STAGE_$name=FAIL rc=$rc"
+    sable_checkpoint_fail "CI stage $name"
+    return "$rc"
+  fi
 }
 
 run_policy() {
