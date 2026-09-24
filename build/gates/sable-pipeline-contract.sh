@@ -123,6 +123,13 @@ done
 echo "SABLE_PIPELINE_CANONICAL_ENTRYPOINT=PASS"
 
 grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
+grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS="target-files"' "$ROOT/build/devices/panther.sh"
+grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=fastboot-ab-target-files' "$ROOT/build/devices/panther.sh"
+for callback in   sable_device_flash_plan   sable_device_flash_prepare_artifact   sable_device_flash_preflight   sable_device_flash_execute   sable_device_flash_postboot   sable_device_flash_recover_prewrite
+do
+  grep -Fq "$callback()" "$ROOT/build/devices/panther.sh"
+done
 grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
 grep -Fq 'sable_device_qualify' "$ROOT/build/devices/panther.sh"
 grep -Fq 'qualify-r9-physical-ux.sh' "$ROOT/build/devices/panther.sh"
@@ -130,6 +137,9 @@ grep -Fq 'sable_device_artifact_gate' "$ROOT/build/devices/panther.sh"
 for d in titan2 titan2-elite q27; do
   f="$ROOT/build/devices/$d.sh"
   grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$f"
+  grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=NO' "$f"
+  grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS=""' "$f"
+  grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=UNQUALIFIED' "$f"
   grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=NO' "$f"
   grep -Fq 'SABLE_DEVICE_QUALIFY=BLOCKED_UNQUALIFIED' "$f"
   grep -Fq 'BLOCKED_UNQUALIFIED' "$f"
@@ -137,48 +147,76 @@ done
 test ! -e "$ROOT/build/devices/q25.sh"
 echo "SABLE_PIPELINE_DEVICE_ADAPTER_POLICY=PASS"
 
+REGISTRY="$ROOT/build/deploy/artifact_registry.py"
+grep -Fq 'SCHEMA_VERSION = 2' "$REGISTRY"
+grep -Fq '"gsi-system-image"' "$REGISTRY"
+grep -Fq 'SABLE_ARTIFACT_REGISTRY_SCHEMA=PASS_V2_BACKWARD_COMPATIBLE' "$REGISTRY"
+grep -Fq 'SABLE_ARTIFACT_REGISTRY_GENERIC_GSI_SELF_TEST=PASS' "$REGISTRY"
+grep -Fq 'SABLE_ARTIFACT_MANIFEST_VERIFY=PASS' "$REGISTRY"
+grep -Fq -- '--artifact-kind' "$ROOT/build/sable.sh"
+grep -Fq -- '--primary-artifact' "$ROOT/build/sable.sh"
+grep -Fq -- '--expected-sha256' "$ROOT/build/sable.sh"
+echo "SABLE_PIPELINE_MULTI_DEVICE_ARTIFACT_SCHEMA=PASS"
+
 FLASH="$ROOT/build/deploy/flash.sh"
+PANTHER="$ROOT/build/devices/panther.sh"
+COMMON="$ROOT/build/deploy/common.sh"
 grep -Fq -- '--preserve-data' "$FLASH"
 grep -Fq -- '--authorize' "$FLASH"
 grep -Fq 'USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO' "$FLASH"
 grep -Fq 'BOOTLOADER_UNLOCK_AUTHORIZED=NO' "$FLASH"
 grep -Fq 'INACTIVE_SLOT_FLASH_AUTHORIZED=NO' "$FLASH"
 grep -Fq 'FASTBOOT_WIPE_FLAG=ABSENT' "$FLASH"
-grep -Fq -- '--skip-secondary' "$FLASH"
-grep -Fq -- '--skip-reboot' "$FLASH"
 grep -Fq 'SABLE_BLOCKER_ISSUE_REQUIRED=YES' "$FLASH"
 grep -Fq 'PREWRITE_FAILURE_RECOVERY=PASS_ANDROID' "$FLASH"
 grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE' "$FLASH"
-grep -Fq '"has-slot:$part"' "$FLASH"
-if grep -Fq '"partition-size:$part"' "$FLASH"; then
+grep -Fq 'SABLE_DEVICE_FLASH_CALLBACK_CONTRACT=PASS' "$FLASH"
+grep -Fq 'sable_device_flash_prepare_artifact' "$FLASH"
+grep -Fq 'sable_device_flash_preflight' "$FLASH"
+grep -Fq 'sable_device_flash_execute' "$FLASH"
+grep -Fq 'sable_device_flash_postboot' "$FLASH"
+if grep -Fq 'flashall' "$FLASH" || grep -Fq '"has-slot:$part"' "$FLASH"; then
+  echo "SABLE_PIPELINE_COMMON_FLASH_DEVICE_SEMANTICS=FAIL_PANTHER_LEAK"
+  exit 1
+fi
+echo "SABLE_PIPELINE_COMMON_FLASH_DEVICE_SEMANTICS=PASS_ISOLATED"
+
+grep -Fq -- '--skip-secondary' "$PANTHER"
+grep -Fq -- '--skip-reboot' "$PANTHER"
+grep -Fq 'flashall' "$PANTHER"
+grep -Fq '"has-slot:$part"' "$PANTHER"
+grep -Fq 'sable_wait_fastboot_ready' "$PANTHER"
+grep -Fq 'sable_require_fastboot_serial_exact_once' "$PANTHER"
+grep -Fq '"$ADB_BIN" -s "$SERIAL" reboot bootloader' "$PANTHER"
+grep -Fq '"$FASTBOOT_BIN" -s "$SERIAL"' "$PANTHER"
+if grep -Fq '"partition-size:$part"' "$PANTHER"; then
   echo "SABLE_PIPELINE_PARTITION_EXISTS_SEMANTICS=FAIL_PARTITION_SIZE"
   exit 1
 fi
 echo "SABLE_PIPELINE_PARTITION_EXISTS_SEMANTICS=PASS"
 
-if grep -Eq '(^|[[:space:]])-w([[:space:]]|$)' "$FLASH"; then
-  echo "SABLE_PIPELINE_NO_WIPE_FLAG=FAIL"
-  exit 1
-fi
-if grep -Eq '(flashing unlock|flashing lock|erase userdata|erase metadata)' "$FLASH"; then
-  echo "SABLE_PIPELINE_NO_UNLOCK_ERASE=FAIL"
-  exit 1
-fi
+for script in "$FLASH" "$PANTHER"; do
+  if grep -Eq '(^|[[:space:]])-w([[:space:]]|$)' "$script"; then
+    echo "SABLE_PIPELINE_NO_WIPE_FLAG=FAIL path=$script"
+    exit 1
+  fi
+  if grep -Eq '(flashing unlock|flashing lock|erase userdata|erase metadata)' "$script"; then
+    echo "SABLE_PIPELINE_NO_UNLOCK_ERASE=FAIL path=$script"
+    exit 1
+  fi
+done
 echo "SABLE_PIPELINE_MUTATION_POLICY=PASS"
 
-grep -Fq 'sable_wait_fastboot_ready' "$FLASH"
-grep -Fq 'FASTBOOT_GETVAR_READY=PASS' "$ROOT/build/deploy/common.sh"
-grep -Fq '</dev/null' "$ROOT/build/deploy/common.sh"
+grep -Fq 'sable_require_adb_serial_exact_once' "$FLASH"
+grep -Fq 'SABLE_ADB_TARGET_SERIAL=PASS' "$COMMON"
+grep -Fq 'SABLE_FASTBOOT_TARGET_SERIAL=PASS' "$COMMON"
+grep -Fq 'SABLE_ADB_OTHER_READY_COUNT=' "$COMMON"
+grep -Fq 'SABLE_FASTBOOT_OTHER_READY_COUNT=' "$COMMON"
+grep -Fq 'FASTBOOT_GETVAR_READY=PASS' "$COMMON"
+grep -Fq '</dev/null' "$COMMON"
 grep -Fq '</dev/null' "$FLASH"
-echo "SABLE_PIPELINE_FASTBOOT_READINESS_AND_STDIN_ISOLATION=PASS"
-
-grep -Fq 'SABLE_ADB_TARGET_SERIAL=PASS' "$FLASH"
-grep -Fq 'SABLE_FASTBOOT_TARGET_SERIAL=PASS' "$FLASH"
-grep -Fq 'SABLE_ADB_OTHER_READY_COUNT=' "$FLASH"
-grep -Fq 'SABLE_FASTBOOT_OTHER_READY_COUNT=' "$FLASH"
-grep -Fq '"$ADB_BIN" -s "$SERIAL" reboot bootloader' "$FLASH"
-grep -Fq '"$FASTBOOT_BIN" -s "$SERIAL"' "$FLASH"
-if grep -Fq 'SABLE_ADB_SINGLE_DEVICE' "$FLASH" || grep -Fq 'SABLE_FASTBOOT_SINGLE_DEVICE' "$FLASH"; then
+grep -Fq '</dev/null' "$PANTHER"
+if grep -Fq 'SABLE_ADB_SINGLE_DEVICE' "$FLASH" || grep -Fq 'SABLE_FASTBOOT_SINGLE_DEVICE' "$PANTHER"; then
   echo "SABLE_PIPELINE_MULTI_DEVICE_SERIAL_SCOPE=FAIL_LEGACY_SINGLE_DEVICE_GATE"
   exit 1
 fi
@@ -188,7 +226,8 @@ grep -Fq 'IMAGES/' "$ROOT/build/deploy/target_files_plan.py"
 grep -Fq 'unconditional_erase_forbidden' "$ROOT/build/deploy/target_files_plan.py"
 grep -Fq 'inactive_slot_directive_forbidden' "$ROOT/build/deploy/target_files_plan.py"
 grep -Fq 'unsupported_flash_option' "$ROOT/build/deploy/target_files_plan.py"
-echo "SABLE_PIPELINE_TARGET_FILES_ONLY_POLICY=PASS"
+echo "SABLE_PIPELINE_PANTHER_TARGET_FILES_POLICY=PASS"
+echo "SABLE_PIPELINE_DEVICE_DEPLOYMENT_CALLBACK_BOUNDARY=PASS"
 
 QUAL="$ROOT/build/panther/qualify-r9-physical-ux.sh"
 FINAL_BUILD="$ROOT/build/panther/build-r8-final-ui.sh"
