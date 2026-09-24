@@ -24,6 +24,33 @@ WS="$SABLEOS_UPSTREAM"
     exit 4
 }
 
+APPSTORE_BP="$WS/external/AppStore/Android.bp"
+APPSTORE_APK="$WS/external/AppStore/prebuilt/app-release.apk"
+APPSTORE_PERMISSIONS="$WS/external/AppStore/permissions/app.grapheneos.apps.xml"
+
+for f in "$APPSTORE_BP" "$APPSTORE_APK" "$APPSTORE_PERMISSIONS"; do
+    [[ -f "$f" ]] || {
+        echo "R9_APPSTORE_UPSTREAM=FAIL_MISSING path=$f"
+        exit 4
+    }
+done
+
+for needle in     'name: "AppStore"'     'product_specific: true'     'privileged: true'     'apk: "prebuilt/app-release.apk"'     'preprocessed: true'     '"privapp-permissions_app.grapheneos.apps.xml"'
+do
+    grep -Fq "$needle" "$APPSTORE_BP" || {
+        echo "R9_APPSTORE_UPSTREAM=FAIL_ANDROID_BP token=$needle"
+        exit 4
+    }
+done
+
+grep -Fq '<privapp-permissions package="app.grapheneos.apps">' "$APPSTORE_PERMISSIONS" || {
+    echo "R9_APPSTORE_UPSTREAM=FAIL_PERMISSION_PACKAGE"
+    exit 4
+}
+
+echo "R9_APPSTORE_UPSTREAM=PASS_PINNED_GRAPHENE_MODULE"
+echo "R9_GOOGLE_PLAY_PREINSTALLED=NO_USER_OPTIONAL"
+
 BUNDLE_MANIFEST="$R8_APP_BUNDLE/manifest.tsv"
 BUNDLE_SUMS="$R8_APP_BUNDLE/SHA256SUMS.txt"
 BUNDLE_SOURCE_IDENTITY="$R8_APP_BUNDLE/SABLEOS_SOURCE_COMMIT.txt"
@@ -289,6 +316,11 @@ echo "R8_PANTHER_PRODUCT_SHA256_AFTER=$PRODUCT_MK_SHA256_AFTER"
 
 echo "R8_PRODUCT_ANDROID_BP=PASS"
 echo "R8_PRODUCT_MK=PASS"
+grep -Eq '^[[:space:]]*AppStore([[:space:]\\]|$)' "$DEST/r8-product.mk" || {
+    echo "R9_APPSTORE_PRODUCT_MODULE=FAIL"
+    exit 13
+}
+echo "R9_APPSTORE_PRODUCT_MODULE=PASS"
 echo "R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE=PASS_SYSTEM_EXT"
 echo "R8_PRODUCT_MANIFEST=PASS"
 echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
