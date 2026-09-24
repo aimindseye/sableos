@@ -143,7 +143,7 @@ object HubConnectedConversationReducer {
             senderLabel = senderLabel,
             handoffOnly =
                 id.startsWith(
-                    ConnectedNotificationHistoryStore.LOCAL_REPLY_PREFIX,
+                    CONNECTED_LOCAL_REPLY_PREFIX,
                 ),
         )
 
