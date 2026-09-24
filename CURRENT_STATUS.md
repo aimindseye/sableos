@@ -4,8 +4,11 @@ Last updated: 2026-09-24
 
 ## Executive state
 
-Pixel 7 / Panther R9 is closed for active feature development and retained as a
-frozen touch-first reference / regression target.
+Pixel 7 / Panther R9 is temporarily reopened for one **bounded final
+compatibility closure** before returning to frozen touch-first reference status.
+The only approved scope is the pinned GrapheneOS App Store installation surface,
+optional sandboxed Google Play user flow, third-party Android UI/appearance
+interoperability, and physical Sable Messages Connected Apps validation.
 
 ```text
 R9_PANTHER_SOURCE=6f1d6d2f0f2525067874238c4b797ad58f2bcbc6
@@ -19,7 +22,12 @@ R9_POSTFLASH_SMOKE=PASS_19_OF_19
 R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY
 R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION
 R9_LIGHT_DARK_PROPAGATION=PASS_PHYSICAL
-R9_PANTHER_DEVELOPMENT=HOLD_REFERENCE_MAINTENANCE_ONLY
+R9_PANTHER_DEVELOPMENT=BOUNDED_FINAL_APPSTORE_THIRD_PARTY_CLOSURE
+R9_APPSTORE_PRODUCT=SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
+R9_GOOGLE_PLAY_POLICY=OPTIONAL_USER_INSTALLED_NOT_PREINSTALLED
+R9_THIRD_PARTY_UI_INTEROP=PHYSICAL_ACCEPTANCE_PENDING
+R9_MESSAGES_CONNECTED_APPS_PHYSICAL=ACCEPTANCE_PENDING
+R9_PANTHER_FINAL_COMPATIBILITY_FREEZE=PENDING
 ```
 
 The private repository `main` now contains the reconciled R9 lineage and the
@@ -30,11 +38,11 @@ qualification sources.
 ## Active development
 
 ```text
-PRIMARY_ACTIVE_WORK=KEYBOARD_FIRST_COMMON_PRODUCT
+PRIMARY_ACTIVE_WORK=PANTHER_FINAL_COMPATIBILITY_CLOSURE_THEN_KEYBOARD_FIRST
 DEVICE_1=TITAN2
 DEVICE_2=TITAN2_ELITE
 FUTURE_DEVICE=Q27
-PANTHER=FROZEN_REFERENCE
+PANTHER=BOUNDED_REOPEN_THEN_FROZEN_REFERENCE
 BRAMBLE=HISTORICAL_REFERENCE
 ```
 
@@ -94,16 +102,19 @@ See `docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md`.
 ## Next execution order
 
 ```text
-1. Freeze Panther feature development.
-2. Reconcile public sableos-project documentation with accepted R9 architecture.
-3. Keep the canonical multi-device entry point and make artifact/flash strategy
+1. Complete the bounded Panther App Store / sandboxed Play / third-party UI /
+   Sable Messages physical acceptance in
+   docs/R9_PANTHER_APPSTORE_THIRD_PARTY_FREEZE.md.
+2. Record the final Panther source + target-files seal and freeze Panther again.
+3. Reconcile public sableos-project documentation with accepted R9 architecture.
+4. Keep the canonical multi-device entry point and make artifact/flash strategy
    adapter-driven rather than Panther-target-files-specific.
-4. Titan 2: finish T0/T1 read-only platform + camera + keyboard evidence.
-5. Titan 2: qualify the first keyboard-first N0 SableOS image path.
-6. Titan 2 Elite: run the same independent evidence sequence.
-7. Implement common Sable Camera + Sable Keyboard/system input integration.
-8. Q27 remains research until shipped hardware qualifies.
-9. Return to production signing/OTA after repeatable multi-device development
+5. Titan 2: finish T0/T1 read-only platform + camera + keyboard evidence.
+6. Titan 2: qualify the first keyboard-first N0 SableOS image path.
+7. Titan 2 Elite: run the same independent evidence sequence.
+8. Implement common Sable Camera + Sable Keyboard/system input integration.
+9. Q27 remains research until shipped hardware qualifies.
+10. Return to production signing/OTA after repeatable multi-device development
    qualification.
 ```
 
