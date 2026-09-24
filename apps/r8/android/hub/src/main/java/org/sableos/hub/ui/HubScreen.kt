@@ -75,7 +75,6 @@ private sealed interface HubRoute {
     data class Compose(
         val recipient: String = "",
     ) : HubRoute
-
 }
 
 @Composable
