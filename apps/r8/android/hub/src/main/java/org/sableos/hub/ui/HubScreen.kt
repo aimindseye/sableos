@@ -74,9 +74,6 @@ private sealed interface HubRoute {
         val recipient: String = "",
     ) : HubRoute
 
-    data class ConnectedReply(
-        val threadId: Long,
-    ) : HubRoute
 }
 
 @Composable
@@ -227,19 +224,27 @@ fun HubScreen(
                                     }
                                 }
 
-                                conversation.canQuickReply &&
-                                    conversation.sourceNotificationKey != null -> {
-                                    {
-                                        route =
-                                            HubRoute.ConnectedReply(
-                                                threadId = conversation.threadId,
-                                            )
-                                    }
-                                }
-
                                 else -> {
                                     null
                                 }
+                            },
+                        onSendConnectedReply =
+                            if (
+                                conversation.source == HubConversationSource.ConnectedApp &&
+                                conversation.canQuickReply &&
+                                conversation.sourceNotificationKey != null
+                            ) {
+                                { body ->
+                                    val result =
+                                        onReplyConnected(
+                                            conversation.sourceNotificationKey,
+                                            body,
+                                        )
+                                    statusMessage = result.message
+                                    result
+                                }
+                            } else {
+                                null
                             },
                         onOpenSource =
                             if (
@@ -263,66 +268,6 @@ fun HubScreen(
                             } else {
                                 null
                             },
-                    )
-                }
-            }
-        }
-
-        is HubRoute.ConnectedReply -> {
-            val conversation =
-                snapshot.conversations.firstOrNull { candidate ->
-                    candidate.threadId == current.threadId
-                }
-
-            if (conversation == null) {
-                MissingConversationView(
-                    onBack = {
-                        route = HubRoute.Root(HubPivot.Messages)
-                    },
-                )
-            } else {
-                val notificationKey = conversation.sourceNotificationKey
-
-                SableScrollableScreen {
-                    ConnectedReplyView(
-                        conversation = conversation,
-                        replyAvailable =
-                            conversation.canQuickReply &&
-                                notificationKey != null,
-                        onBack = {
-                            route =
-                                HubRoute.Conversation(
-                                    threadId = conversation.threadId,
-                                )
-                        },
-                        onSend = { body ->
-                            val result =
-                                if (notificationKey == null) {
-                                    HubSendResult(
-                                        success = false,
-                                        message = "Quick reply is no longer available.",
-                                    )
-                                } else {
-                                    onReplyConnected(notificationKey, body)
-                                }
-                            statusMessage = result.message
-                            if (result.success) {
-                                route =
-                                    HubRoute.Conversation(
-                                        threadId = conversation.threadId,
-                                    )
-                            }
-                            result
-                        },
-                        onOpenSource = {
-                            val packageName = conversation.sourcePackage
-                            val userSerial = conversation.sourceUserSerial
-                            if (packageName == null || userSerial == null) {
-                                false
-                            } else {
-                                onOpenConnectedApp(packageName, userSerial)
-                            }
-                        },
                     )
                 }
             }
@@ -788,8 +733,16 @@ private fun ColumnScope.ConversationView(
     messages: List<HubMessage>,
     onBack: () -> Unit,
     onReply: (() -> Unit)?,
+    onSendConnectedReply: ((String) -> HubSendResult)?,
     onOpenSource: (() -> Unit)?,
 ) {
+    var connectedReplyBody by remember {
+        mutableStateOf("")
+    }
+    var connectedReplyStatus by remember {
+        mutableStateOf<String?>(null)
+    }
+
     SablePageHeader(
         title = conversation.displayName,
         subtitle =
@@ -835,6 +788,33 @@ private fun ColumnScope.ConversationView(
         ) { message ->
             MessageBubble(message)
         }
+    }
+
+    onSendConnectedReply?.let { sendReply ->
+        OutlinedTextField(
+            value = connectedReplyBody,
+            onValueChange = { connectedReplyBody = it },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = HUB_INLINE_REPLY_MIN_LINES,
+            label = { Text("Reply") },
+        )
+        connectedReplyStatus?.let { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        SableActionButton(
+            text = "Send reply",
+            onClick = {
+                val result = sendReply(connectedReplyBody)
+                connectedReplyStatus = result.message
+                if (result.success) {
+                    connectedReplyBody = ""
+                }
+            },
+        )
     }
 }
 
@@ -893,88 +873,18 @@ private fun MessageBubble(message: HubMessage) {
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text = relativeTime(message.dateMillis),
+                    text =
+                        if (message.handoffOnly) {
+                            "Handed off · " + relativeTime(message.dateMillis)
+                        } else {
+                            relativeTime(message.dateMillis)
+                        },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     }
-}
-
-@Composable
-private fun ConnectedReplyView(
-    conversation: HubConversation,
-    replyAvailable: Boolean,
-    onBack: () -> Unit,
-    onSend: (String) -> HubSendResult,
-    onOpenSource: () -> Boolean,
-) {
-    var body by remember {
-        mutableStateOf("")
-    }
-    var localStatus by remember {
-        mutableStateOf<String?>(null)
-    }
-
-    SablePageHeader(
-        title = "reply",
-        subtitle =
-            "Reply through ${conversation.sourceLabel ?: "the source app"}. " +
-                "Sable does not sign into this service.",
-    )
-
-    OutlinedTextField(
-        value = body,
-        onValueChange = { body = it },
-        modifier = Modifier.fillMaxWidth(),
-        minLines = CONNECTED_REPLY_MIN_LINES,
-        label = { Text("Message") },
-    )
-
-    localStatus?.let { message ->
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-
-    if (replyAvailable) {
-        SableActionButton(
-            text = "Send reply",
-            onClick = {
-                val result = onSend(body)
-                localStatus = result.message
-            },
-        )
-    } else {
-        SablePanel {
-            Text(
-                text = "Quick reply is no longer exposed by the source notification.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
-    }
-
-    SableActionButton(
-        text = "Open source app",
-        primary = false,
-        onClick = {
-            localStatus =
-                if (onOpenSource()) {
-                    "Opened source app."
-                } else {
-                    "The source app is unavailable."
-                }
-        },
-    )
-
-    SableActionButton(
-        text = "Back",
-        primary = false,
-        onClick = onBack,
-    )
 }
 
 @Composable
@@ -1083,7 +993,7 @@ private val HubUnreadBackground = Color(0xFF0B3524)
 
 private const val SMS_PREVIEW_LENGTH = 120
 private const val CONNECTED_PREVIEW_LENGTH = 100
-private const val CONNECTED_REPLY_MIN_LINES = 3
+private const val HUB_INLINE_REPLY_MIN_LINES = 2
 private const val SMS_COMPOSE_MIN_LINES = 4
 private const val MAX_VISIBLE_CONVERSATIONS = 120
 private const val MAX_VISIBLE_THREAD_MESSAGES = 250
