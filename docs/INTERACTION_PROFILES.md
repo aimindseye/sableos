@@ -128,6 +128,28 @@ Required first-class behaviors:
 
 The normative external reference review and licensing/provenance boundary is `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
 
+## Keyboard-first Hub
+
+Sable Hub uses the same Priority / Messages / Email / People semantic model on
+touch-first and keyboard-first devices.
+
+The keyboard-first profile should make communication triage deterministic:
+
+```text
+1 / P  Priority
+2 / M  Messages
+3 / E  Email
+4 / C  People
+Up/Down  move selection
+Enter    open
+R        reply only when the active source exposes reply capability
+Esc      back
+```
+
+Exact reserved global chords remain owned by the Sable Keyboard Policy Service;
+single-key commands apply only when Hub itself owns the focused context and must
+not steal text input.
+
 ## Keyboard-first tools surface
 
 Physical-keyboard devices should also have a compact Sable-native power-user/device toolbox.
