@@ -133,10 +133,7 @@ fun HubScreen(
                     },
                 )
 
-                if (
-                    current.pivot == HubPivot.Messages ||
-                    current.pivot == HubPivot.Email
-                ) {
+                if (current.pivot == HubPivot.Messages) {
                     SableActionButton(
                         text = "connected apps",
                         primary = false,
