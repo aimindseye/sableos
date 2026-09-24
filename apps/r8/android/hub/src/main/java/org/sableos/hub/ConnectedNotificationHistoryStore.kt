@@ -64,10 +64,7 @@ class ConnectedNotificationHistoryStore(
             }
         }
 
-        appContext.contentResolver.notifyChange(
-            ConnectedAppsRepository.HISTORY_URI,
-            null,
-        )
+        notifyHubDataChanged()
     }
 
     fun appendLocalReply(
@@ -128,10 +125,7 @@ class ConnectedNotificationHistoryStore(
         }
 
         if (inserted) {
-            appContext.contentResolver.notifyChange(
-                ConnectedAppsRepository.HISTORY_URI,
-                null,
-            )
+            notifyHubDataChanged()
         }
         return inserted
     }
@@ -148,8 +142,16 @@ class ConnectedNotificationHistoryStore(
             )
         }
 
+        notifyHubDataChanged()
+    }
+
+    private fun notifyHubDataChanged() {
         appContext.contentResolver.notifyChange(
             ConnectedAppsRepository.HISTORY_URI,
+            null,
+        )
+        appContext.contentResolver.notifyChange(
+            HubSnapshotProvider.SNAPSHOT_URI,
             null,
         )
     }
