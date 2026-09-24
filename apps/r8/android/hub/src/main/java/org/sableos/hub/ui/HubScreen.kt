@@ -23,11 +23,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,9 +79,12 @@ private sealed interface HubRoute {
     ) : HubRoute
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HubScreen(
     snapshot: HubSnapshot?,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onRequestAccess: () -> Unit,
     onSendSms: (String, String) -> HubSendResult,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
@@ -115,7 +120,11 @@ fun HubScreen(
         return
     }
 
-    when (val current = route) {
+    PullToRefreshBox(
+        isRefreshing = isRefreshing,
+        onRefresh = onRefresh,
+    ) {
+        when (val current = route) {
         is HubRoute.Root -> {
             SableScreen {
                 SablePageHeader(
@@ -328,6 +337,7 @@ fun HubScreen(
                     },
                 )
             }
+        }
         }
     }
 }
