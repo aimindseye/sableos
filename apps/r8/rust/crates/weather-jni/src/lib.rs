@@ -13,6 +13,7 @@ fn jni_string(env: &JNIEnv<'_>, value: String) -> jstring {
 fn qualification() -> String {
     let fixture = r#"{
       "current":{
+        "time":"2026-09-21T09:37",
         "temperature_2m":72.4,
         "apparent_temperature":71.8,
         "relative_humidity_2m":58,
