@@ -8,6 +8,7 @@ from pathlib import Path
 EXPECTED_DIRS = {
     "r8",
     "r8/prebuilt",
+    "r8/permissions",
 }
 
 EXPECTED_FILES = {
@@ -16,6 +17,7 @@ EXPECTED_FILES = {
     "r8/manifest.tsv",
     "r8/SHA256SUMS.txt",
     "r8/SABLEOS_SOURCE_COMMIT.txt",
+    "r8/permissions/sable-privapp-permissions-com.android.settings.xml",
     "r8/prebuilt/SableCalculator.apk",
     "r8/prebuilt/SableSudoku.apk",
     "r8/prebuilt/SableMinesweeper.apk",
