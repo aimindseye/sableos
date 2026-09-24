@@ -1,5 +1,17 @@
 # SableOS build entry points
 
+## K1/K2 multi-device foundation
+
+The active R10 tooling tranche generalizes the artifact registry and deployment
+boundary without enabling unqualified devices. See
+`docs/K1_K2_MULTI_DEVICE_FOUNDATION.md`.
+
+Key rule: artifact identity is device/release/source based; physical serial is
+used only for device contact. Panther remains the qualified target-files/A-B
+adapter while Titan 2, Titan 2 Elite and Q27 stay fail-closed until their own
+transport/restore contracts are proven.
+
+
 ## Canonical multi-device entry point
 
 The operator-facing SableOS engineering entry point is now:
