@@ -9,10 +9,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
@@ -24,6 +29,11 @@ import org.sableos.hub.ConnectedAppCandidate
 import org.sableos.hub.ConnectedAppKey
 import org.sableos.hub.ConnectedAppPolicy
 
+private enum class ConnectedAppsPivot {
+    Enabled,
+    Available,
+}
+
 @Composable
 internal fun ConnectedAppsScreen(
     candidates: List<ConnectedAppCandidate>,
@@ -33,6 +43,13 @@ internal fun ConnectedAppsScreen(
     onOpenNotificationAccess: () -> Unit,
     onPolicyChanged: (ConnectedAppPolicy) -> Unit,
 ) {
+    var pivot by remember {
+        mutableStateOf(ConnectedAppsPivot.Enabled)
+    }
+    var search by remember {
+        mutableStateOf("")
+    }
+
     SableScreen {
         SablePageHeader(
             title = "connected apps",
@@ -77,26 +94,109 @@ internal fun ConnectedAppsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
-            ) {
-                items(
-                    items = candidates,
-                    key = { candidate ->
-                        candidate.key.packageName + ":" + candidate.key.userSerial
-                    },
-                ) { candidate ->
-                    val policy =
+            ConnectedAppsPivotRow(
+                selected = pivot,
+                onSelect = { selected ->
+                    pivot = selected
+                    search = ""
+                },
+            )
+
+            if (pivot == ConnectedAppsPivot.Available) {
+                OutlinedTextField(
+                    value = search,
+                    onValueChange = { search = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text("Search installed apps") },
+                )
+            }
+
+            val visibleCandidates =
+                candidates.filter { candidate ->
+                    val enabled =
                         policies[candidate.key]
-                            ?: ConnectedAppPolicy(key = candidate.key)
-                    ConnectedAppRow(
-                        candidate = candidate,
-                        policy = policy,
-                        onPolicyChanged = onPolicyChanged,
-                    )
-                    HorizontalDivider()
+                            ?.normalized()
+                            ?.includeInMessages == true
+                    val belongsToPivot =
+                        when (pivot) {
+                            ConnectedAppsPivot.Enabled -> enabled
+                            ConnectedAppsPivot.Available -> !enabled
+                        }
+                    val matchesSearch =
+                        search.isBlank() ||
+                            candidate.label.contains(search, ignoreCase = true) ||
+                            candidate.key.packageName.contains(search, ignoreCase = true)
+
+                    belongsToPivot && matchesSearch
                 }
+
+            if (visibleCandidates.isEmpty()) {
+                Text(
+                    text =
+                        when (pivot) {
+                            ConnectedAppsPivot.Enabled ->
+                                "No connected apps are enabled."
+                            ConnectedAppsPivot.Available ->
+                                if (search.isBlank()) {
+                                    "No additional installed apps are available."
+                                } else {
+                                    "No installed apps match this search."
+                                }
+                        },
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+                ) {
+                    items(
+                        items = visibleCandidates,
+                        key = { candidate ->
+                            candidate.key.packageName + ":" + candidate.key.userSerial
+                        },
+                    ) { candidate ->
+                        val policy =
+                            policies[candidate.key]
+                                ?: ConnectedAppPolicy(key = candidate.key)
+                        ConnectedAppRow(
+                            candidate = candidate,
+                            policy = policy,
+                            onPolicyChanged = onPolicyChanged,
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConnectedAppsPivotRow(
+    selected: ConnectedAppsPivot,
+    onSelect: (ConnectedAppsPivot) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
+    ) {
+        ConnectedAppsPivot.entries.forEach { pivot ->
+            TextButton(
+                onClick = { onSelect(pivot) },
+            ) {
+                Text(
+                    text = pivot.name.lowercase(),
+                    style = MaterialTheme.typography.titleLarge,
+                    color =
+                        if (pivot == selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                )
             }
         }
     }
@@ -146,33 +246,34 @@ private fun ConnectedAppRow(
             )
         }
 
-        PolicySwitchRow(
-            label = "Allow quick reply",
-            checked = policy.allowQuickReply,
-            enabled = policy.includeInMessages,
-            onCheckedChange = { enabled ->
-                onPolicyChanged(policy.copy(allowQuickReply = enabled))
-            },
-        )
-        PolicySwitchRow(
-            label = "Hide from SableLauncher",
-            checked = policy.hideFromLauncher,
-            enabled = policy.includeInMessages,
-            onCheckedChange = { enabled ->
-                onPolicyChanged(policy.copy(hideFromLauncher = enabled))
-            },
-        )
-        TextButton(
-            enabled = policy.includeInMessages,
-            onClick = {
-                onPolicyChanged(
-                    policy.copy(
-                        retention = policy.retention.next(),
-                    ),
-                )
-            },
-        ) {
-            Text("History retention: ${policy.retention.label}")
+        if (policy.includeInMessages) {
+            PolicySwitchRow(
+                label = "Allow quick reply",
+                checked = policy.allowQuickReply,
+                enabled = true,
+                onCheckedChange = { enabled ->
+                    onPolicyChanged(policy.copy(allowQuickReply = enabled))
+                },
+            )
+            PolicySwitchRow(
+                label = "Hide from SableLauncher",
+                checked = policy.hideFromLauncher,
+                enabled = true,
+                onCheckedChange = { enabled ->
+                    onPolicyChanged(policy.copy(hideFromLauncher = enabled))
+                },
+            )
+            TextButton(
+                onClick = {
+                    onPolicyChanged(
+                        policy.copy(
+                            retention = policy.retention.next(),
+                        ),
+                    )
+                },
+            ) {
+                Text("History retention: ${policy.retention.label}")
+            }
         }
     }
 }
