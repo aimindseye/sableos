@@ -568,6 +568,7 @@ private fun MetroTile(
     val liveTile =
         tile.app.component.packageName in
             setOf("org.sableos.hub", "org.sableos.weather", "org.sableos.mail") ||
+            tile.app.label.equals("Sable Hub", ignoreCase = true) ||
             tile.app.label.equals("Sable Messages", ignoreCase = true) ||
             tile.app.label.equals("Sable Weather", ignoreCase = true) ||
             tile.app.label.equals("Sable Mail", ignoreCase = true)
@@ -791,6 +792,7 @@ private fun approvedMetric(
         }
 
         app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> {
             val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
             count to "unread"
@@ -1398,7 +1400,9 @@ private fun approvedGlyphPackage(app: AppEntry): String? {
 
     return when {
         app.label.equals("Phone", ignoreCase = true) -> "com.android.dialer"
-        app.label.equals("Sable Messages", ignoreCase = true) ||
+        app.label.equals("Sable Hub", ignoreCase = true) ||
+            app.label.equals("Hub", ignoreCase = true) ||
+            app.label.equals("Sable Messages", ignoreCase = true) ||
             app.label.equals("Messages", ignoreCase = true) -> "org.sableos.hub"
         app.label.equals("Sable Mail", ignoreCase = true) ||
             app.label.equals("Mail", ignoreCase = true) -> "org.sableos.mail"
@@ -1831,7 +1835,7 @@ private fun LiveSurfaceScreen(
             )
             ApprovedLiveRow(
                 app = findLiveApp(apps, "org.sableos.hub"),
-                title = "Sable Messages",
+                title = "Sable Hub",
                 datum = snapshot.messages,
                 kind = "messages",
             )
@@ -2303,6 +2307,7 @@ private fun appMark(app: AppEntry): String =
 private fun appColor(app: AppEntry): Color =
     when {
         app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> SableGreen
         app.component.packageName == "org.sableos.mail" ||
             app.label.equals("Sable Mail", ignoreCase = true) -> SableSlate
@@ -2340,6 +2345,7 @@ private fun liveDatumForApp(
         app.component.packageName == "org.sableos.calendar" ||
             app.label.equals("Calendar", ignoreCase = true) -> snapshot.calendar
         app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> snapshot.messages
         app.component.packageName == "org.sableos.mail" ||
             app.label.equals("Sable Mail", ignoreCase = true) -> snapshot.mail
@@ -2369,7 +2375,7 @@ private val PREFERRED_START_APP_GROUPS =
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.hub"),
-            labels = listOf("Sable Messages", "Messages"),
+            labels = listOf("Sable Hub", "Hub", "Sable Messages", "Messages"),
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.weather"),
