@@ -84,12 +84,28 @@ class HubRepository(
     fun replyToConnected(
         notificationKey: String,
         body: String,
-    ): HubSendResult =
-        ConnectedReplyRegistry.send(
-            context = context,
-            notificationKey = notificationKey,
-            body = body,
-        )
+    ): HubSendResult {
+        val result =
+            ConnectedReplyRegistry.send(
+                context = context,
+                notificationKey = notificationKey,
+                body = body,
+            )
+        if (result.success) {
+            val policySnapshot =
+                connectedApps
+                    .loadPolicies()
+                    .associateBy { policy ->
+                        policy.key
+                    }
+            connectedHistory.appendLocalReply(
+                notificationKey = notificationKey,
+                body = body,
+                policies = policySnapshot,
+            )
+        }
+        return result
+    }
 
     fun openConnectedApp(
         packageName: String,
