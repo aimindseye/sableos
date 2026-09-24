@@ -1,463 +1,111 @@
-# SableOS current validated Panther status
+# SableOS current status
 
-Last updated: 2026-09-22
+Last updated: 2026-09-24
 
-The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
+## Executive state
 
-## 2026-09-22 R9 system-cohesion pre-image handoff
-
-The Panther candidate built from source
-`d35a1c9f79da1d7a0d114602f8b41fd4f799df35` is rejected for R9 physical
-daily-driver acceptance. It proved package/runtime identity but exposed native
-Launcher3 presentation escape, inconsistent global appearance propagation,
-Start-to-Settings ownership confusion and Reader chrome/content theme
-divergence.
-
-The active remediation line is:
+Pixel 7 / Panther R9 is closed for active feature development and retained as a
+frozen touch-first reference / regression target.
 
 ```text
-BRANCH=r9/system-cohesion-closure-20260921
-R9_WS0_BASELINE_CONTRACT=PASS_SOURCE
-R9_WS1_SYSTEM_APPEARANCE_AUTHORITY=PASS_SOURCE_SETTINGS_HOSTED
-R9_WS2_SABLE_HOME_OWNERSHIP=PASS_SOURCE
-R9_WS3_SETTINGS_CONTROL_CENTER=PASS_SOURCE_APPEARANCE_NETWORK_MANAGER
-R9_WS4_SYSTEMUI_COHESION=PASS_SOURCE
-R9_WS5_CORE_APP_READER_APPEARANCE=PASS_SOURCE
-R9_WS6_PLATFORM_SURFACE_CLASSIFICATION=PASS_SOURCE
-R9_WS7_STATIC_PIPELINE_PREFLIGHT=PASS_20260922
-R9_WS7_FIRST_PARTY_ANDROID_BUILD=PASS
-R9_WS7_READER_BUILD=PASS
-R9_WS7_MAIL_BUILD=PASS
-R9_WS7_TEN_APK_BUNDLE=PASS
-R9_WS7_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED
-R9_WS7_SYSTEMUI_COHESION=PASS_APPLIED_SETTINGS_AUTHORITY
-R9_WS7_SETTINGS_COHESION=PASS_APPLIED
-R9_WS7_SHARED_SABLE_DESIGN_SYNC=PASS
-R9_WS7_LAUNCHER_FOUNDATION_RESUME=PASS_SOURCE_VERIFY_BEFORE_REPLAY
-R9_WS7_LAUNCHER_COHESION=NEXT_RUNTIME_FRONTIER
-R9_WS7_SABLESTART_SYNC=FIXED_RETIRED_PROVIDER_CONTRACT_PENDING_RERUN
-R9_READER_NATIVE_STRIP_WARNING_COUNT=0
-R9_READER_KOTLIN_WARNING_COUNT=0
-R9_MAIL_GRADLE_DEPRECATIONS=DEFERRED_UPSTREAM_BUILD_TOOLING_OFFLINE_CACHE_PRESERVED
-R9_SDK_XML_WARNING=KNOWN_NONBLOCKING_CMDLINE_TOOLS_22_0
-R9_WS8_FRESH_IMAGE_PHYSICAL_ACCEPTANCE=BLOCKED_ON_WS7
-R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
-R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_UNTIL_MODULE_QUALIFICATION_PASS
+R9_PANTHER_SOURCE=6f1d6d2f0f2525067874238c4b797ad58f2bcbc6
+R9_PANTHER_TARGET_FILES_SHA256=08ef429c7f9eef17de7ddad4ce9baa81911950e8d34b6751b6e4588f66821502
+R9_MODULE_QUALIFICATION=PASS
+R9_LOCAL_FULL_CI=PASS
+R9_FRESH_FULL_BUILD=PASS
+R9_ARTIFACT_REGISTRATION=PASS
+R9_STANDARD_PRESERVED_DATA_FLASH=PASS
+R9_POSTFLASH_SMOKE=PASS_19_OF_19
+R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY
+R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION
+R9_LIGHT_DARK_PROPAGATION=PASS_PHYSICAL
+R9_PANTHER_DEVELOPMENT=HOLD_REFERENCE_MAINTENANCE_ONLY
 ```
 
-The global appearance authority is no longer Launcher3. Privileged Settings
-hosts `content://org.sableos.appearance/appearance`, persists state in
-device-protected storage and restores explicit Light/Dark through
-`UiModeManager`. Launcher, SystemUI and first-party apps consume the same
-contract. Quickstep remains the Android Recents/task implementation while
-Sable owns every HOME-facing launcher destination.
+The private repository `main` now contains the reconciled R9 lineage and the
+Titan camera / sealed stock-firmware documentation. Later documentation or
+multi-device tooling commits do not retroactively become Panther image
+qualification sources.
 
-Sable Settings now also contains a **Network Manager** backed directly by the
-GrapheneOS user-revocable `android.permission.INTERNET`. It provides one
-all-network access switch per mutable app. The reviewed Unihertz Mobile/WLAN
-split is not emulated because the GrapheneOS base does not provide
-transport-specific per-app enforcement; see `docs/R9_NETWORK_MANAGER.md`.
-
-The source/classification contracts are
-`docs/R9_SYSTEM_COHESION_CLOSURE.md`,
-`docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md` and
-`build/gates/r9-system-cohesion-contract.py`.
-
-The latest WS7 attempt passed the first-party Android build, Sable Reader,
-Sable Mail, the source-bound ten-APK bundle, cumulative UI5C/UI6 recognition,
-the SystemUI legacy-authority upgrade, Settings-hosted appearance/Network
-Manager application and shared Sable Design synchronization. It then stopped
-because `sync-sablestart.sh` still classified the intentionally retired
-`SableAppearanceProvider.kt` as required presentation source. That duplicated
-contract is now corrected: the provider is explicitly retired from both the
-repository and workspace sync while Settings remains the global appearance
-owner.
-
-The tracked Reader Kotlin/native-strip warning counts are both zero. An
-attempt to rewrite Thunderbird build logic solely to eliminate five Gradle 10
-deprecation warnings invalidated the offline build-logic cache and required
-uncached Kotlin 2.3.21 artifacts. That warning-only rewrite was reverted.
-Sable Mail now explicitly forbids mutations to the upstream root Gradle build
-and `build-plugin/` tree; the five upstream build-tool warnings remain visible
-and nonblocking while the offline dependency closure is preserved.
-
-The next authoritative action is to rerun local Panther module qualification on
-`ai-g732`. Only after that passes is one fresh target-files build authorized.
-
-
-## 2026-09-19 R8 final Pixel UI closure handoff
-
-The 2026-09-19 sandbox-qualified Panther build and preserved-data flash proved the development build/deployment pipeline, but physical review exposed a product-composition gap: the flashed image did not contain the completed R8 application/UI set. The exact flashed target-files SHA-256 was `b5c9d9804db8ac3173f2b17c3c95dd02925880b001b7ef9ead1d7b5388bc5cbd`; it is retained as build/flash evidence, not accepted as the final UI candidate.
-
-The execution authority is now `docs/R8_PIXEL_UI_PRODUCT_CLOSURE.md`.
+## Active development
 
 ```text
-R8_SANDBOX_QUALIFICATION_BUILD=PASS
-R8_PANTHER_FLASH_AND_BOOT=PASS
-R8_PRESERVED_DATA=PASS
-
-R8_A_SHARED_DESIGN=PARTIAL
-R8_START_METRO_HOME=IMPLEMENTED_IN_REPOSITORY_NOT_PRODUCT_PROVEN
-R8_B_CALCULATOR_CONVERT=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
-R8_C_GAMES=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
-R8_D_READER_PUBLICATION=STANDALONE_QUALIFIED_PRODUCT_PHYSICAL_PENDING
-R8_D2_TEXT_TTS=PASS
-R8_D2_OCR=NOT_INTEGRATED
-R8_E_MEDIA=STANDALONE_PASS_PRODUCT_INTEGRATION_MISSING
-
-UI4_SYSTEMUI=SOURCE_AND_INCREMENTAL_BUILD_PASS_PHYSICAL_PENDING
-UI5_SETTINGS_APP_SECURITY=SOURCE_AND_INCREMENTAL_BUILD_PASS_PHYSICAL_PENDING
-UI5C_UI6_SETUP_ABOUT_KEYGUARD=SOURCE_AND_INCREMENTAL_BUILD_PASS_PHYSICAL_PENDING
-
-R8_FINAL_UI_PRODUCT_COMPOSITION=FAIL
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
-NEXT_ACTIVE_DELIVERABLE=R8_PIXEL_UI_PRODUCT_CLOSURE
+PRIMARY_ACTIVE_WORK=KEYBOARD_FIRST_COMMON_PRODUCT
+DEVICE_1=TITAN2
+DEVICE_2=TITAN2_ELITE
+FUTURE_DEVICE=Q27
+PANTHER=FROZEN_REFERENCE
+BRAMBLE=HISTORICAL_REFERENCE
 ```
 
-R8-D2 is explicitly incomplete: TXT, VIEW/SEND/PROCESS_TEXT and local Android TTS are composed, while OCR/camera/gallery recognition and offline model/runtime qualification remain to be implemented. Translation/model-download support is not required for the current UI closure unless separately approved.
+Titan 2 and Titan 2 Elite are independent physical qualification targets even
+when they consume the same common Sable applications and interaction semantics.
 
-Titan 2 is expected to become available on 2026-09-19. Read-only T0 stock/device inventory may begin immediately on arrival. Titan 2 GSI mutation/flash remains blocked until the final Panther UI product-composition, build and physical-acceptance gates pass.
+Titan 2 already has a sealed stock firmware/OTA corpus and active camera
+research. Titan 2 Elite must receive its own read-only inventory and
+bootloader/recovery/Treble/camera evidence when the device arrives.
 
-Titan 2 interaction is now explicitly **keyboard-first** (`navigation.primary=keyboard`, `navigation.secondary=touch`). The pinned physical-keyboard/launcher reference review is `docs/TITAN2_KEYBOARD_FIRST_REFERENCE.md`; implementation tracking is issue #45.
+## Canonical engineering interface
 
-## 2026-09-18 UI refresh handoff
-
-The product UI refresh is now a cross-surface contract rather than a collection of app-specific restyles.
+The operator contract is already device/release neutral:
 
 ```text
-UI_REFRESH=ACTIVE
-UI_CONTRACT=SABLE_DESIGN_SYSTEM_V1
-UI1_SHARED_DESIGN_AND_START=MERGED
-UI2_FIRST_PARTY_APPS=MERGED
-UI2G_SEPARATE_GAME_APKS=MERGED
-UI3_READER_COMPOSITION=MERGED
-UI4_SYSTEMUI_SHADE_QUICK_SETTINGS=UI4R4_PREVIEW_BUILD_FLASH
-UI4R0A_TILE_RENDERER_BASELINE=MERGED
-UI4R1_QS_VISUAL_APPLICATOR=MERGED
-UI4R2_NOTIFICATION_SHADE_VISUAL=MERGED
-UI4R3_SYSTEM_MEDIA_VISUAL=MERGED
-UI4R4_PANTHER_PREVIEW_BUILD_FLASH=IN_REVIEW
-FIRST_UI_PREVIEW_FLASH=READY_AFTER_UI4R4_GATE_MERGES_AND_LOCAL_BUILD_PASSES
-UI5_SETUP_SETTINGS_APP_SECURITY_BRANDING=QUEUED
-UI6_REMAINING_SYSTEM_SURFACES=QUEUED
+bash build/sable.sh <device> <release> <function> [options]
 ```
 
-All new or refreshed screens must follow `docs/UI_UX_CONTRACT.md`. The same shared Compose design source is intended for R8 Gradle apps and Soong-built Sable surfaces such as SableStart. User-facing product copy should use SableOS branding where SableOS owns the surface, while internal identifiers and technically truthful provider/service references are not globally renamed.
-
-## 2026-09-18 execution handoff
-
-The current implementation line has advanced beyond the older M1-only snapshot below. Where this handoff conflicts with an older near-term milestone label in this file, this section is the current execution authority.
+Canonical device IDs:
 
 ```text
-R8_APPLICATION_FOUNDATION=MERGED
-R8_CALCULATOR_CONVERT_GAMES_JNI=MERGED
-INFRA2_CI_SECURITY_QUALITY=INTEGRATED
-INFRA3_SUPPLY_CHAIN_BASELINE=INTEGRATED
-INFRA4_TRUSTED_RUNNER_GATE=INTEGRATED
-INFRA5_TRUSTED_RUNNER_ACTIVATION=DEFERRED_NON_BLOCKING
-GITHUB_HOSTED_CI=DISABLED_COST_CONTAINMENT
-TRUSTED_SELF_HOSTED_RUNNER=DISABLED
-LOCAL_DIRECT_CI=ACTIVE
-PRODUCTION_SIGNING=DEFERRED
-NEXT_ACTIVE_DELIVERABLE=UI4R4_PANTHER_PREVIEW_BUILD_FLASH
+panther
+titan2
+titan2-elite
+q27
 ```
 
-INFRA5 GitHub Actions runner activation remains parked. The `ai-g732` host continues to be used directly as the development/build machine, but its unencrypted Sable source/build storage still does not qualify it for remote GitHub Actions execution. As of 2026-09-20, GitHub-hosted CI is retired for cost containment and qualification runs locally through `build/local-ci/run.sh`. This does not weaken the INFRA4 rule: GitHub self-hosted runner activation remains blocked until the encryption/isolation requirements are satisfied.
+The hardware serial is intentionally **not** part of build/image identity.
+It is required only for device-contact operations such as flash and acceptance:
 
-The active R8 handoff is to finish application implementation and build preparation across the shared design/Kotlin surfaces, Calculator+Convert, Games, Reader/Text Reader composition and Media, then run the already-defined standalone qualification/artifact-freeze gates before product-image integration.
+```bash
+bash build/sable.sh titan2 R10 flash \
+  --build-source <sha> \
+  --serial <serial> \
+  --preserve-data \
+  --authorize
+```
 
-See `docs/INFRA5_DEFERRED_TRUSTED_RUNNER.md` and `apps/r8/README.md`.
+Titan 2, Titan 2 Elite and Q27 adapters currently fail closed for build,
+qualification and flash until each platform contract is proven.
 
-## Current project priority
+## Repository direction
 
-SableOS has moved from substrate/release-engineering closure back to **active product development**.
+During the keyboard-first transition:
 
-The accepted near-term product direction is **Sable Flow**: a Metro-inspired, information-first shell with Sable-owned visual identity, live tiles, native phone essentials, and a central Sable Hub for people, communication and social-service access.
+- `aimindseye/sableos` remains the private integration/release authority;
+- `sableos-project` is the target canonical public home for reusable Sable
+  product code, architecture and build contracts;
+- do not publish the private monorepo wholesale;
+- migrate reusable components one at a time after provenance, licensing,
+  secret/private-path review and independent build/test closure;
+- private host evidence, raw firmware, serials and unreviewed vendor diagnostics
+  remain outside public Git.
+
+See `docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md`.
+
+## Next execution order
 
 ```text
-SABLEOS_PRODUCT_DEVELOPMENT=ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE=R8_FINAL_UI_PRODUCT_CLOSURE
-NEXT_PRODUCT_MILESTONE=R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
-TARGET=panther
+1. Freeze Panther feature development.
+2. Reconcile public sableos-project documentation with accepted R9 architecture.
+3. Keep the canonical multi-device entry point and make artifact/flash strategy
+   adapter-driven rather than Panther-target-files-specific.
+4. Titan 2: finish T0/T1 read-only platform + camera + keyboard evidence.
+5. Titan 2: qualify the first keyboard-first N0 SableOS image path.
+6. Titan 2 Elite: run the same independent evidence sequence.
+7. Implement common Sable Camera + Sable Keyboard/system input integration.
+8. Q27 remains research until shipped hardware qualifies.
+9. Return to production signing/OTA after repeatable multi-device development
+   qualification.
 ```
 
-Primary sequence:
-
-```text
-Sable Flow shared UI primitives
-    -> Sable Start vertical live-tile shell
-    -> Phone / People / Messages / Settings vertical slice
-    -> Sable Hub provider capability framework
-    -> isolated social-service web capsules
-    -> broader native apps and polish
-    -> Titan 2 N0 GSI/userspace/UI portability lab when Panther is ready
-    -> Q27 full-QWERTY evaluation when shipped hardware qualifies
-    -> production signing/OTA closure before release candidate
-```
-
-See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`, `docs/CORE_PRODUCT_ROADMAP.md`, and `docs/NON_PIXEL_DEVICE_ROADMAP.md`.
-
-## Current validated physical state
-
-```text
-Pixel 7 / panther
-Android 17 / SDK 37
-BUILD_ID CP2A.260705.006
-BUILD_NUMBER 2026090500
-userdebug / test-keys
-
-active slot: B
-bootloader: unlocked
-verified boot state: orange
-file-based encryption: enabled
-SableOS B2 packaged target-files: flashed successfully
-shared userdata: preserved
-exact post-boot BuildManifest identity: PASS
-exact post-boot ART identity: PASS_5_OF_5
-slot B current: PASS
-slot B bootable: PASS
-slot B marked successful: PASS
-```
-
-Canonical packaged B2 target-files:
-
-```text
-/srv/data/sableos_panther_graphene_2026081300_workspace/
-  out_d4_b2_final/target/product/panther/obj/PACKAGING/
-  target_files_intermediates/panther-target_files.zip
-sha256=b22c5ab5676b3a61304102cd508bf75a01bd4d0bc2a47ffceba8be153376bb78
-```
-
-Installed BuildManifest:
-
-```text
-/system/etc/security/fsverity/BuildManifest.apk
-sha256=8a56fddab2ae42f40d522e96241b4b486bb2d702e11f9bb0b10e7527d32f8cec
-```
-
-## Panther D4 — CLOSED
-
-```text
-R7R7 fs-verity named-input fidelity                 PASS / CLOSED
-R8 ART residual classification                      PARTIAL / historical C2 evidence unavailable
-R9 preserved-data flash preflight                   PASS
-R10R3 exact packaged B2 flash                       PASS
-R10R3 Android boot                                  PASS
-R10R3 BuildManifest identity                        PASS
-R10R3 postboot ART loop                             SUPERSEDED HOST HARNESS DEFECT
-sablectl exact postboot ART                         PASS_5_OF_5
-sablectl v0.3.1 full tests                          PASS_26_OF_26
-sablectl D4 release gate                            PASS
-D4 automated acceptance                             PASS
-D4 minimum physical acceptance                      PASS
-D4 broad functional acceptance                      PASS_WITH_NONBLOCKING_NFC_RF_GAP
-D4 slot B boot                                      PASS
-D4 slot B current                                   PASS
-D4 slot B bootable                                  PASS
-D4 slot B successful                                PASS
-D4 shared data preserved                            PASS
-D4 automated regression                             PASS
-PANTHER_D4_R2                                       PASS
-PANTHER_D4                                          CLOSED
-```
-
-D4 release gate:
-
-```text
-PASS=56 FAIL=0 SKIP=8 MANUAL=0 ERROR=0
-OVERALL=PASS
-RELEASE_D4_RC=0
-```
-
-NFC framework/service/HAL initialization and enable/routing passed. RF tag read remains:
-
-```text
-NFC_RF_TAG_READ=NOT_TESTED_NO_TEST_HARDWARE
-NFC_DISPOSITION=DEFERRED_NON_BLOCKING_EXTERNAL_HARDWARE_VALIDATION
-```
-
-This is not a D4 blocking defect.
-
-## R1 release engineering — PAUSED / NON-BLOCKING
-
-R1 established the production release identity, update endpoint, key-custody policy, source-mutation controls and signing architecture. It is intentionally paused while SableOS product/UI work advances.
-
-### Closed release foundations
-
-```text
-R1_R0=CLOSED
-R1_R1=CLOSED
-R1_R3R2=PASS_EXACT_TWO_FILE_SOURCE_MUTATION
-R1_R4R2=PASS_POST_MUTATION_STATIC_VALIDATION
-```
-
-Canonical release policy:
-
-```text
-release/r1/panther-release-policy-v1.json
-sha256=32d09f8ccb7b21bca083c8db3d41ae838daa1ee46e953454dfdb3c3f596a8c92
-git_blob=9db278de6bdaa8781043762a326f2f9df03f0902
-```
-
-Adopted policy:
-
-```text
-CERTIFICATE_SUBJECT=CN=SableOS
-SIGNING_KEY_DOMAINS=9_BOUND
-SABLE_UPDATE_BASE_URL=https://updates.sableos.org/
-UPDATE_ENDPOINT_OWNERSHIP=OPERATOR_VERIFIED
-BUILD_VARIANT=user
-OFFICIAL_BUILD=true
-BUILD_NUMBER_POLICY=YYYYMMDDRR_NO_REUSE
-TESTING_CHANNEL_FIRST=YES
-FUTURE_UPDATE_PATH_TEST=REQUIRED
-PERSISTENT_PRIVATE_KEYS=OFFLINE_ENCRYPTED_EXTERNAL_TO_WORKSPACE
-DECRYPTED_SIGNING_WORKDIR=TMPFS
-PRIVATE_KEY_MATERIAL_IN_PUBLIC_EVIDENCE=NO
-PRIVATE_KEY_HASHES_IN_PUBLIC_EVIDENCE=NO
-```
-
-### Applied exact Android source mutations
-
-The two authorized source mutations were completed and postvalidated:
-
-```text
-script/generate-keys
-    CN=GrapheneOS -> CN=SableOS
-    sha256=c9957d82c62c61ec404c2d7366b0d80b71d98e2e6a6df60322fe066f0d58b440
-    git_blob=211209f492071e3a9f9c4247ad63c2dee3ffbf30
-
-packages/apps/Updater/res/values/config.xml
-    https://releases.grapheneos.org/
-    -> https://updates.sableos.org/
-    sha256=84a7aac655c3e863cb1b473b11d12269baa16c44ccc242757d9c2c9051428b3d
-    git_blob=9c0b38b3189c9674d4a150ffead95336211d462c
-```
-
-Postmutation validation:
-
-```text
-SOURCE_POSTIMAGES=PASS_2_OF_2
-GIT_INDEX_UNCHANGED=PASS_2_OF_2
-SOURCE_DELTA_CARDINALITY=PASS_EXACT_2_FILES
-TARGET_PROJECT_DELTA_SCOPE=PASS_2_OF_2
-GENERATOR_CN_SEMANTICS=PASS
-UPDATER_ENDPOINT_SEMANTICS=PASS
-R1_R4R2_POST_MUTATION_VALIDATION=PASS
-R1_R4R2_RC=0
-```
-
-### Key-custody exploration status
-
-No production key has been generated.
-
-The ThinkPad host was proven unsuitable for immediate key generation while unencrypted persistent swap is active. The `/dev/sda` external disk was safely inspected and temporarily unmounted for read-only classification; its existing GPT/ext4 contents remain preserved and it is no longer on the critical path for production keystore provisioning.
-
-Latest storage review:
-
-```text
-R1_R5R5ER5R2_POST_UNMOUNT_READONLY_REVIEW=PASS
-R1_R5R5ER5R2_REPORT_SHA256=51e79fdc7fc39a4103ee7001c47b3f8c8031a089b90a7f2a70ffd109e407483d
-EXTERNAL_STORAGE=/dev/sda
-EXTERNAL_STORAGE_PARTITION=/dev/sda1
-PARTITION_TABLE=gpt
-FILESYSTEM=ext4
-ACTIVE_MOUNT_COUNT=0
-OVERWRITE_SAFE=NO
-OVERWRITE_AUTHORIZED=NO
-```
-
-A future dedicated or isolated signing-host environment remains preferred, but host selection is intentionally deferred. No hardware purchase is required for current product development.
-
-### Current release authorization boundary
-
-```text
-SOURCE_MUTATION_AUTHORIZED=NO
-WORKSPACE_OUTPUT_MUTATION_AUTHORIZED=NO
-BUILD_AUTHORIZED=NO
-KEY_GENERATION_AUTHORIZED=NO
-SIGNING_AUTHORIZED=NO
-OTA_GENERATION_AUTHORIZED=NO
-MOUNT_MUTATION_AUTHORIZED=NO
-OVERWRITE_AUTHORIZED=NO
-KEYSTORE_PROVISIONING_AUTHORIZED=NO
-PARTITION_AUTHORIZED=NO
-FORMAT_AUTHORIZED=NO
-CRYPTSETUP_AUTHORIZED=NO
-SWAP_MUTATION_AUTHORIZED=NO
-DELETE_AUTHORIZED=NO
-DEVICE_CONTACT_AUTHORIZED=NO
-DEVICE_REBOOT_AUTHORIZED=NO
-FLASH_AUTHORIZED=NO
-SLOT_CHANGE_AUTHORIZED=NO
-USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO
-```
-
-Release-signing work resumes before release-candidate/OTA distribution. It does not block feature/UI development.
-
-## Non-Pixel / MediaTek planning
-
-No non-Pixel device is currently declared a supported SableOS production target. The September 2026 Brax3/iodéOS source review established a formal non-Pixel architecture without changing Panther's priority.
-
-```text
-N0_GSI_USERSPACE_LAB
-N1_INTEGRATED_VENDOR_BSP_PORT
-N2_PRODUCTION_QUALIFIED
-
-1. Pixel 7 / panther
-   canonical full-stack SableOS development target
-
-2. Unihertz Titan 2
-   preferred interim N0 GSI/userspace/UI development lab
-
-3. Zinwa Q27
-   preferred future full physical-QWERTY candidate if shipped hardware qualifies
-
-4. Zinwa Q25
-   optional source-available MediaTek/kernel/device research platform
-```
-
-A booting GSI does not imply production support. A prebuilt kernel/BSP can be useful for N0/N1 functionality work but does not provide Sable-owned kernel security maintenance. Platform, kernel, vendor, modem, TEE, bootloader and connectivity firmware provenance must remain separate release inputs. Radio/data/5G/IMS/VoLTE/VoWiFi are separate acceptance gates rather than one generic telephony result.
-
-See `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `docs/NON_PIXEL_DEVICE_ROADMAP.md`, `docs/TITAN2_GSI_PLAN.md`, `docs/Q25_PORT_PLAN.md`, `docs/NON_PIXEL_RELEASE_VALIDATION.md`, and `docs/BRAX3_IODEOS_REFERENCE.md`.
-
-## Sable Flow M1 — NEXT
-
-The first concrete product milestone is:
-
-```text
-SABLE_M1=METRO_SHELL_PROTOTYPE
-TARGET=panther
-
-DELIVERABLES:
-  Sable Flow shared primitives
-  Sable Start vertical tile grid
-  typography + accent themes
-  app/service list transition
-  live-tile provider contract
-  Phone tile
-  People tile
-  Messages tile
-  Settings tile
-  Social Hub placeholder
-```
-
-Sable Hub will use a provider capability model rather than pretending every service exposes a universal native API. Initial social targets are WhatsApp, Instagram, Facebook and LinkedIn, with isolated web capsules used where supported native/API consumer integration is unavailable.
-
-The same semantic shell/Hub model is intended to become the base for Titan 2, Q25 and Q27 compact/QWERTY work without device-specific application forks.
-
-## Start here
-
-- `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Hub direction and M1-M5 sequence.
-- `docs/CORE_PRODUCT_MODEL.md` — normative product architecture and trust boundaries.
-- `docs/CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
-- `docs/NON_PIXEL_DEVICE_ROADMAP.md` — non-Pixel hardware strategy and assurance ordering.
-- `docs/NON_PIXEL_MEDIATEK_ARCHITECTURE.md` — normative non-Pixel/MediaTek architecture.
-- `docs/TITAN2_GSI_PLAN.md` — Titan 2 N0 GSI/userspace/UI plan.
-- `docs/PANTHER_D4_CLOSURE_20260908.md` — D4 final closure record.
-- `docs/SABLE_R1_R1_RELEASE_POLICY_AND_CUSTODY.md` — preserved release/signing custody architecture.
-- `release/r1/panther-release-policy-v1.json` — canonical Panther release policy.
-- `docs/BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical GrapheneOS-based build procedure.
-
-Historical pure-AOSP Panther bring-up records remain forensic/reference evidence only; the active GrapheneOS-derived Android 17 Panther workspace is the canonical product-development substrate.
+Historical R5-R9 status details remain available in Git history and milestone
+documents; this file is the current execution authority.
