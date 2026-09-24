@@ -179,6 +179,9 @@ class SableStartActivity : ComponentActivity() {
                     launcherAppsRepository.openAppDetails(entry)
                 },
                 onRequestLivePermissions = ::requestLivePermissions,
+                onRefreshLive = {
+                    liveRefreshGeneration.value += 1
+                },
             )
         }
     }
