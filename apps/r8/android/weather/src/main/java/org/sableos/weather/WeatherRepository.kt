@@ -1,6 +1,7 @@
 package org.sableos.weather
 
 import android.content.Context
+import android.net.Uri
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
@@ -155,6 +156,11 @@ internal class WeatherRepository(
             )
             .apply()
 
+        appContext.contentResolver.notifyChange(
+            WeatherSnapshotContract.SNAPSHOT_URI,
+            null,
+        )
+
         return WeatherUiState(
             location = location,
             snapshot = parsed,
@@ -234,6 +240,9 @@ internal class WeatherRepository(
 internal object WeatherSnapshotContract {
     const val AUTHORITY = "org.sableos.weather.snapshot"
     const val PATH_CURRENT = "current"
+
+    val SNAPSHOT_URI: Uri =
+        Uri.parse("content://$AUTHORITY/$PATH_CURRENT")
 
     const val COLUMN_TITLE = "title"
     const val COLUMN_DETAIL = "detail"
