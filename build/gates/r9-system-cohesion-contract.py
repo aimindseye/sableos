@@ -384,7 +384,9 @@ require(
 )
 
 # ---------------------------------------------------------------------------
-# Live snapshot privacy boundary moves from Launcher3 to SableLauncher.
+# Live snapshot privacy boundary moves away from Launcher3. General live
+# providers remain SableLauncher-only; Sable Mail deliberately admits the
+# bounded first-party SableHub caller for the Hub Email pivot.
 # ---------------------------------------------------------------------------
 require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
@@ -405,8 +407,10 @@ for provider in (
 require(
     "apps/r8/mail/apply_sable_flavor.py",
     "SableMailSnapshotProvider.kt",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
 )
 forbid(
     "apps/r8/mail/apply_sable_flavor.py",
@@ -414,9 +418,12 @@ forbid(
 )
 require(
     "apps/r8/mail/verify_sable_mail.py",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
     "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT",
+    "SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY",
 )
 forbid(
     "apps/r8/mail/verify_sable_mail.py",
