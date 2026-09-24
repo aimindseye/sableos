@@ -103,6 +103,9 @@ class MainActivity : ComponentActivity() {
                             body = body,
                         )
                     },
+                    onOpenSableMail = {
+                        repository.openSableMail()
+                    },
                     onOpenConnectedApps = {
                         startActivity(
                             Intent(
