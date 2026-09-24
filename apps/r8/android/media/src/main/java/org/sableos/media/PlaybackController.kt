@@ -5,6 +5,8 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -14,6 +16,11 @@ internal data class QueueItemUiState(
     val title: String,
     val source: String,
 )
+
+internal enum class PlaybackSkip {
+    Previous,
+    Next,
+}
 
 internal data class PlaybackUiState(
     val connected: Boolean = false,
@@ -34,7 +41,9 @@ internal class PlaybackController(
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var controller: MediaController? = null
+    private var cachedQueue: List<QueueItemUiState> = emptyList()
     private var closed = false
+    private var progressUpdatesEnabled = false
 
     private val listener =
         object : Player.Listener {
@@ -42,16 +51,23 @@ internal class PlaybackController(
                 player: Player,
                 events: Player.Events,
             ) {
-                publishState()
+                publishState(
+                    refreshQueue =
+                        events.contains(Player.EVENT_TIMELINE_CHANGED) ||
+                            cachedQueue.size != player.mediaItemCount,
+                )
             }
         }
 
     private val ticker =
         object : Runnable {
             override fun run() {
-                if (closed) return
-                publishState()
-                handler.postDelayed(this, 500L)
+                if (closed || !progressUpdatesEnabled) {
+                    return
+                }
+
+                publishState(refreshQueue = false)
+                handler.postDelayed(this, TICK_INTERVAL_MS)
             }
         }
 
@@ -66,37 +82,27 @@ internal class PlaybackController(
             )
 
         val future =
-            MediaController.Builder(
-                context,
-                token,
-            ).buildAsync()
+            MediaController
+                .Builder(
+                    context,
+                    token,
+                ).buildAsync()
 
         future.addListener(
             {
                 runCatching { future.get() }
-                    .onSuccess { resolved ->
-                        handler.post {
-                            if (closed) {
-                                resolved.release()
-                            } else {
-                                controller = resolved
-                                resolved.addListener(listener)
-                                publishState()
-                                handler.post(ticker)
-                            }
-                        }
-                    }
+                    .onSuccess(::attachController)
             },
             { command -> command.run() },
         )
     }
 
-    fun play() {
-        controller?.play()
-    }
-
-    fun pause() {
-        controller?.pause()
+    fun setPlaying(playing: Boolean) {
+        if (playing) {
+            controller?.play()
+        } else {
+            controller?.pause()
+        }
     }
 
     fun stop() {
@@ -107,19 +113,44 @@ internal class PlaybackController(
         controller?.seekTo(positionMs.coerceAtLeast(0L))
     }
 
-    fun previous() {
-        controller?.seekToPreviousMediaItem()
-    }
-
-    fun next() {
-        controller?.seekToNextMediaItem()
+    fun skip(direction: PlaybackSkip) {
+        when (direction) {
+            PlaybackSkip.Previous -> controller?.seekToPreviousMediaItem()
+            PlaybackSkip.Next -> controller?.seekToNextMediaItem()
+        }
     }
 
     fun playQueueIndex(index: Int) {
         val player = controller ?: return
-        if (index !in 0 until player.mediaItemCount) return
+        if (index !in 0 until player.mediaItemCount) {
+            return
+        }
+
         player.seekToDefaultPosition(index)
         player.play()
+    }
+
+    fun addToQueue(
+        uri: String,
+        title: String,
+        source: String,
+    ): Boolean {
+        val player = controller ?: return false
+        val item =
+            MediaItem
+                .Builder()
+                .setUri(uri)
+                .setMediaMetadata(
+                    MediaMetadata
+                        .Builder()
+                        .setTitle(title)
+                        .setArtist(source)
+                        .build(),
+                ).build()
+
+        player.addMediaItem(item)
+        publishState(refreshQueue = true)
+        return true
     }
 
     fun moveQueueItem(
@@ -127,11 +158,12 @@ internal class PlaybackController(
         toIndex: Int,
     ) {
         val player = controller ?: return
-        if (
-            fromIndex !in 0 until player.mediaItemCount ||
-            toIndex !in 0 until player.mediaItemCount ||
-            fromIndex == toIndex
-        ) {
+        val validMove =
+            fromIndex in 0 until player.mediaItemCount &&
+                toIndex in 0 until player.mediaItemCount &&
+                fromIndex != toIndex
+
+        if (!validMove) {
             return
         }
 
@@ -140,8 +172,24 @@ internal class PlaybackController(
 
     fun removeQueueItem(index: Int) {
         val player = controller ?: return
-        if (index !in 0 until player.mediaItemCount) return
+        if (index !in 0 until player.mediaItemCount) {
+            return
+        }
+
         player.removeMediaItem(index)
+    }
+
+    fun setProgressUpdatesEnabled(enabled: Boolean) {
+        if (closed || progressUpdatesEnabled == enabled) {
+            return
+        }
+
+        progressUpdatesEnabled = enabled
+        handler.removeCallbacks(ticker)
+        if (enabled) {
+            publishState(refreshQueue = false)
+            handler.postDelayed(ticker, TICK_INTERVAL_MS)
+        }
     }
 
     fun close() {
@@ -152,69 +200,88 @@ internal class PlaybackController(
         controller = null
     }
 
-    private fun publishState() {
-        val player = controller
+    private fun attachController(resolved: MediaController) {
+        handler.post {
+            if (closed) {
+                resolved.release()
+                return@post
+            }
 
+            controller = resolved
+            resolved.addListener(listener)
+            publishState(refreshQueue = true)
+            if (progressUpdatesEnabled) {
+                handler.postDelayed(ticker, TICK_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun publishState(refreshQueue: Boolean) {
+        val player = controller
         if (player == null) {
+            cachedQueue = emptyList()
             onStateChanged(PlaybackUiState())
             return
         }
 
-        val duration =
-            player.duration
-                .takeIf { it != C.TIME_UNSET && it > 0L }
-                ?: 0L
+        if (refreshQueue) {
+            cachedQueue = buildQueue(player)
+        }
 
+        onStateChanged(buildPlaybackState(player))
+    }
+
+    private fun buildQueue(player: Player): List<QueueItemUiState> =
+        List(player.mediaItemCount) { index ->
+            val metadata = player.getMediaItemAt(index).mediaMetadata
+            QueueItemUiState(
+                index = index,
+                title =
+                    metadata.title
+                        ?.toString()
+                        ?.takeIf(String::isNotBlank)
+                        ?: "Untitled audio",
+                source =
+                    metadata.artist
+                        ?.toString()
+                        ?.takeIf(String::isNotBlank)
+                        ?: "Local audio",
+            )
+        }
+
+    private fun buildPlaybackState(player: Player): PlaybackUiState {
         val metadata = player.mediaMetadata
-        val title =
-            metadata.title
-                ?.toString()
-                ?.takeIf { it.isNotBlank() }
-                ?: "Nothing queued"
-        val source =
-            metadata.artist
-                ?.toString()
-                ?.takeIf { it.isNotBlank() }
-                ?: "Local music or radio"
-
-        val queue =
-            buildList {
-                for (index in 0 until player.mediaItemCount) {
-                    val item = player.getMediaItemAt(index)
-                    add(
-                        QueueItemUiState(
-                            index = index,
-                            title =
-                                item.mediaMetadata.title
-                                    ?.toString()
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: "Untitled audio",
-                            source =
-                                item.mediaMetadata.artist
-                                    ?.toString()
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: "Local audio",
-                        ),
-                    )
-                }
-            }
-
-        onStateChanged(
-            PlaybackUiState(
-                connected = true,
-                title = title,
-                source = source,
-                isPlaying = player.isPlaying,
-                positionMs = player.currentPosition.coerceAtLeast(0L),
-                durationMs = duration,
-                hasPrevious = player.hasPreviousMediaItem(),
-                hasNext = player.hasNextMediaItem(),
-                currentIndex =
-                    player.currentMediaItemIndex
-                        .takeIf { it != C.INDEX_UNSET }
-                        ?: -1,
-                queue = queue,
-            ),
+        return PlaybackUiState(
+            connected = true,
+            title =
+                metadata.title
+                    ?.toString()
+                    ?.takeIf(String::isNotBlank)
+                    ?: "Nothing queued",
+            source =
+                metadata.artist
+                    ?.toString()
+                    ?.takeIf(String::isNotBlank)
+                    ?: "Local music or radio",
+            isPlaying = player.isPlaying,
+            positionMs = player.currentPosition.coerceAtLeast(0L),
+            durationMs = resolvedDuration(player),
+            hasPrevious = player.hasPreviousMediaItem(),
+            hasNext = player.hasNextMediaItem(),
+            currentIndex =
+                player.currentMediaItemIndex
+                    .takeIf { it != C.INDEX_UNSET }
+                    ?: C.INDEX_UNSET,
+            queue = cachedQueue,
         )
+    }
+
+    private fun resolvedDuration(player: Player): Long =
+        player.duration
+            .takeIf { it != C.TIME_UNSET && it > 0L }
+            ?: 0L
+
+    private companion object {
+        const val TICK_INTERVAL_MS = 500L
     }
 }

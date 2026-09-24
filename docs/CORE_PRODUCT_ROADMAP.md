@@ -30,6 +30,27 @@ SIGNING_HOST_SELECTION=DEFERRED_NON_BLOCKING
 
 Release engineering remains preserved as a paused parallel track; it does not block product development.
 
+### R9 current execution delta
+
+The older R8 status tables below are retained as historical closure context.
+Current R9 execution has advanced beyond that snapshot:
+
+```text
+SABLE_START_STATUS=STANDALONE_HOME_SOURCE_MODULE_QUALIFIED_PHYSICAL_PENDING
+SABLE_MEDIA_STATUS=LARGE_LIBRARY_HARDENED_ALPHABET_NAVIGATION_QUALIFIED
+SABLE_MESSAGES_STATUS=NATIVE_SMS_PEOPLE_FOCUSED_QUALIFIED
+SABLE_MESSAGES_WEB_CAPSULES=RETIRED
+SABLE_MESSAGES_NEXT=CONFIGURABLE_LOCAL_CONVERSATION_ADAPTERS
+QUICKSTEP_ROLE=RECENTS_ONLY
+FULL_PANTHER_PHYSICAL_ACCEPTANCE=PENDING
+```
+
+The next Messages tranche is generic rather than provider-coded: users select
+installed messaging apps in Settings; Sable consumes user-authorized Android
+notification/conversation metadata and RemoteInput actions where available.
+Configuration is keyed by package + Android user/profile, so compatible future
+apps do not require recompilation.
+
 ## R8 final UI product closure
 
 Status: **ACTIVE / BUILD-BLOCKING**.
@@ -63,7 +84,7 @@ validated Panther substrate
         -> Sable Start shell prototype
         -> native phone/people/messages vertical slice
         -> Sable Hub provider framework
-        -> social capsules / supported provider integrations
+        -> configurable installed-app / notification-conversation adapters
         -> broader product composition
         -> release-candidate signing/OTA closure
 ```
@@ -89,7 +110,7 @@ Outputs:
 - retain/replace boundary for AOSP/application capability;
 - people/attention/action product model;
 - Metro-inspired Sable Flow interaction direction;
-- provider/capsule Hub model;
+- provider capability model with native, notification-derived, supported-API and installed-app boundaries;
 - product-stage markers;
 - multilingual/local-first voice dependency;
 - release signing explicitly separated from near-term feature work.
@@ -129,7 +150,7 @@ Sable Start requirements:
 - Messages tile;
 - Settings tile;
 - Social Hub placeholder tile;
-- Launcher3 retained as development fallback until replacement qualification passes.
+- standalone SableLauncher owns HOME; Launcher3QuickStep is retained only for Recents/Quickstep.
 
 M1 is intentionally a real shell/product milestone, not only a renderer demo.
 
@@ -184,7 +205,7 @@ Provider types:
 NATIVE_DATA
 ANDROID_NOTIFICATION
 SUPPORTED_API
-WEB
+INSTALLED_APP
 UNAVAILABLE
 ```
 
@@ -198,7 +219,7 @@ CONTACTS
 SHARE
 NOTIFICATIONS
 DEEP_LINK
-WEB_SESSION
+INSTALLED_APP
 ```
 
 Requirements:
@@ -211,14 +232,16 @@ Requirements:
 - bounded local history;
 - unified share/deep-link semantics;
 - privacy/data-flow disclosure;
-- separate provider session/storage boundaries;
+- package + Android user/profile configuration;
+- source-app-authorized RemoteInput reply when present;
+- bounded local notification-derived history;
 - no private messaging-app database scraping.
 
-The Hub must expose the difference between native/API/web capability rather than pretending every provider is a native universal integration.
+The Hub must expose the difference between native/API, notification-derived and installed-app capability rather than pretending every provider is a native universal integration.
 
-## M4 / CP4 — social service capsules
+## M4 / CP4 — local conversation adapters
 
-Status: **PLANNED**.
+Status: **NEXT R9 MESSAGES TRANCHE**.
 
 Initial service targets:
 
@@ -231,16 +254,19 @@ LinkedIn
 
 The first implementation does not require or promise a native universal client for these services.
 
-Where an appropriate supported consumer API is unavailable, use isolated Sable-managed web capsules with independent provider session state. Official provider API capability must be reverified at implementation time because provider terms and supported account types can change.
+The primary no-server integration path keeps supported official Android apps installed and treats Android's notification/conversation surface as the local adapter boundary. Users opt apps in through Settings; no provider package is compiled into Sable Messages.
 
 Requirements:
 
-- isolated persistent provider sessions;
-- no automatic cross-provider authentication sharing;
-- bounded background/resource behavior;
-- explicit WEB capability classification;
-- Android notification/deep-link integration where intentionally available;
-- no unsupported native/API claims.
+- generic NotificationListenerService ingestion, not provider-private APIs;
+- MessagingStyle/Person/conversation metadata when supplied by the source app;
+- generic RemoteInput reply only when the source notification exposes a valid reply action;
+- package + user/profile configuration and dynamic launcher-hiding preference;
+- provider notifications remain authoritative; the first tranche does not cancel them to preserve PendingIntent/RemoteInput validity;
+- callback work is copied/bounded and moved off the NotificationListener main callback;
+- CE-only, bounded local history with explicit retention/privacy controls;
+- no provider credentials, private databases, protocol reverse engineering or embedded WebViews;
+- truthful fallback to “Open in app” when reply/history capability is unavailable.
 
 ## M5 / CP5 — broader Sable core apps + Search/Security
 
@@ -301,7 +327,7 @@ No generic root shell, arbitrary privileged executor or unrestricted other-app p
 
 Language requirements remain governed by `LANGUAGE_AND_VOICE_POLICY.md`.
 
-## Titan 2 family / Q27 portability track
+## Q25 / Q27 portability track
 
 Sable Flow and Hub are explicitly the common foundation for future QWERTY/compact devices.
 
@@ -320,7 +346,7 @@ navigation
 search/command
 ```
 
-Panther validates the touch-first presentation. Titan 2 and Titan 2 Elite validate square/near-square and physical-keyboard assumptions across two materially different form factors. Q27 remains the future integrated/full-QWERTY direction. Q25 is retired from active investment.
+Panther validates the touch-first presentation. Q25 may later validate compact/square and physical-keyboard assumptions as an engineering reference. Q27 remains a future preferred modern QWERTY direction.
 
 Device-specific UI forks are rejected. Form-factor differences belong in interaction/layout profiles consuming shared semantics.
 
@@ -365,8 +391,9 @@ Production adds the signing/security/privacy/update gates in `RELEASE_VALIDATION
 5. pass the generated R8 final UI product-composition gate
 6. run one final sandbox-qualified Panther build and full physical UI acceptance
 7. begin Titan 2 N0 GSI/UI work after T0 read-only inventory; T0 may run in parallel
-8. resume M2 Phone / People / Messages and later Hub work on the closed UI foundation
-9. production signing / OTA finalization before release candidate
+8. qualify configurable local notification/conversation adapters for Sable Messages
+9. rerun combined R9 physical-UX module qualification and fresh Panther physical acceptance
+10. production signing / OTA finalization before release candidate
 ```
 
 This ordering intentionally prioritizes building SableOS as a distinct, useful operating-system experience before optimizing future production distribution machinery.

@@ -1,0 +1,341 @@
+# R9L9 — Mac mini / Pixel 7 launcher visual validation
+
+Status: **Pixel 7 visual set PASS / full Panther build authorized**
+
+Date: 2026-09-20
+
+Branch:
+
+```text
+r9/launcher-visual-review-r9l9-20260920
+```
+
+Base:
+
+```text
+r9/launcher3-quickstep-foundation-v2-20260920
+bccb38f4b9344960e4f81c9940c398057ac1c2b8
+```
+
+## Purpose
+
+Re-establish the previously used Mac mini + Android emulator review loop for
+R9 without reviving the retired standalone SableStart launcher architecture.
+
+The review APK renders the production `SableStartScreen` compiled by
+`:sablestart-presentation-check`. It does not contain a HOME intent filter,
+is not selected by the Panther product, and does not replace
+`Launcher3QuickStep`.
+
+The emulator answers a visual/product question:
+
+> Does the current production Sable launcher presentation look and interact as
+> intended on the Pixel 7 phone profile?
+
+It does not replace the later physical Panther proof for HOME, Quickstep,
+Overview/Recents, task animation, role ownership, or boot behavior.
+
+The Mac visual-review runner is intentionally not blocked by Android lint. It
+compiles and assembles the production-linked review APK, while
+`:sablestart-visual-review:lintDebug` remains a separate local-CI quality gate.
+This keeps visual validation fast without weakening the maintained lint policy.
+
+## Prior evidence reused
+
+The repository already established this style of review before the R9
+Launcher3 cutover:
+
+```text
+6e0e752  UI: add production-mode SableStart emulator adapter
+67e5a7c  UI: launch production-mode SableStart in emulator
+e43f909  UI-A: wire emulator adapter to production actions
+909f985  UI-A: persist emulator preview pinned apps
+924f1f7  UI-A: rename emulator review activity
+```
+
+The organization repository also retains the earlier screenshot-bound runtime
+visual-closure record in:
+
+```text
+sableos-project/packages_apps_SableStart
+docs/R3C_R3_VISUAL_CLOSURE_20260911.md
+```
+
+R9L9 keeps the useful evidence discipline while removing the old independent
+HOME/model boundary.
+
+## R9L9 production delta
+
+Production SableStart now renders the real launcher activity icon when Android
+can resolve it through the supported `LauncherApps` API.
+
+Important boundary:
+
+```text
+Launcher3 AllAppsStore = authoritative inventory and update stream
+Launcher3 AppInfo      = authoritative product launch/details bridge
+LauncherApps           = presentation icon resolution only
+SableStartScreen       = presentation
+```
+
+If an icon cannot be resolved, the existing deterministic Sable initial tile is
+retained as the fallback. Missing icon data must not make an app disappear.
+
+## Review APK contract
+
+Module:
+
+```text
+apps/r8/android/sablestart-visual-review
+applicationId = org.sableos.start.visualreview
+```
+
+Required properties:
+
+```text
+HOME intent                         ABSENT
+HOME role request                   ABSENT
+Panther product inclusion           ABSENT
+Sable app bundle export             ABSENT
+production SableStartScreen reuse   REQUIRED
+production design module reuse      REQUIRED
+full Panther image build            NOT REQUIRED
+flash                               NOT REQUIRED
+```
+
+The review activity uses Android `LauncherApps` only to provide the emulator's
+launcher-visible fixture inventory and to exercise taps. That code lives only
+inside the non-product review module.
+
+## Mac mini preparation
+
+Use the existing Pixel 7 AVD from the earlier UI review work.
+
+From the repository checkout:
+
+```bash
+git fetch origin \
+  r9/launcher3-quickstep-foundation-v2-20260920 \
+  r9/launcher-visual-review-r9l9-20260920
+
+git switch --detach origin/r9/launcher-visual-review-r9l9-20260920
+
+git diff --check \
+  origin/r9/launcher3-quickstep-foundation-v2-20260920...HEAD
+
+export ANDROID_SDK_ROOT="$HOME/Library/Android/sdk"
+
+# Only needed when the Pixel 7 AVD is not already running.
+export AVD_NAME="<existing Pixel 7 AVD name>"
+
+bash build/macos/prepare-r9-launcher-visual-review.sh
+```
+
+The runner defaults to Gradle offline mode. On a Mac that has not yet cached
+the pinned AndroidX graph, it reports `R9_VISUAL_REVIEW_DEPENDENCY_CACHE=MISS`
+instead of silently using the network. Authorize the one-time dependency
+bootstrap explicitly:
+
+```bash
+NETWORK_FETCH_AUTHORIZED=YES \
+  bash build/macos/prepare-r9-launcher-visual-review.sh
+```
+
+After that successful fetch, normal review reruns return to offline mode.
+
+The presentation-check and visual-review modules also constrain AndroidX core and
+process lifecycle to the already verified repository baseline:
+
+```text
+androidx.core:core-ktx:1.16.0
+androidx.lifecycle:lifecycle-process:2.9.4
+```
+
+These are dependency-resolution constraints, not new Sable runtime requirements.
+They prevent older unverified transitive variants from entering the review
+compile classpath while keeping Gradle dependency verification enabled.
+
+The runner is intentionally compatible with the older Bash shipped by macOS.
+It does not use an empty array expansion for the network-enabled Gradle path,
+because Bash 3.x plus `set -u` treats that expansion as an unbound variable.
+
+It refuses a non-Pixel-7 AVD unless an explicit reviewed exception sets:
+
+```bash
+ALLOW_NON_PIXEL7_AVD=YES
+```
+
+Do not set that for the normal R9 review.
+
+The preparation step:
+
+1. verifies macOS;
+2. finds or starts the established Pixel 7 AVD;
+3. compiles the production presentation source;
+4. assembles the review APK;
+5. installs and launches the review activity;
+6. records AVD/device/display identity;
+7. captures the initial Start frame;
+8. leaves the full Panther build unauthorized.
+
+## Current visual acceptance
+
+The third Start recapture is accepted as the R9 Start baseline.
+
+```text
+R9_L10_START_VISUAL_REVIEW=PASS
+R9_L10_START_PRODUCT_IDENTITY=APPROVED
+R9_SABLESTART_VISUAL_REVIEW_SET=PARTIAL_START_PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_REMAINING_SURFACES
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+Do not reopen Start unless a later surface reveals a shared typography,
+contrast, icon, focus, or navigation defect.
+
+## Required visual set
+
+Capture after manually navigating the production UI:
+
+```text
+00-start-initial
+01-start-dark
+02-start-light
+03-all-apps-top
+04-all-apps-rail
+05-search-command
+06-search-results
+07-sable-peek
+08-local-context-denied
+09-appearance
+10-start-accent-alternate
+```
+
+For each frame:
+
+```bash
+bash build/macos/capture-r9-launcher-visual-review.sh 01-start-dark
+```
+
+The helper stores a PNG, SHA-256 and focused-activity state beside the initial
+evidence.
+
+## Review criteria
+
+### Start
+
+- real application icons are visible for resolvable launcher activities;
+- no package names are shown in the ordinary Start UI;
+- four Start tiles remain visually coherent with the Metro-derived hierarchy;
+- the Favorites section stays within comfortable lower-screen reach;
+- Search / Command and All Apps are discoverable without excess chrome;
+- truthful context does not fabricate remote/live state.
+
+### All Apps / Sable Rail
+
+- label-first list remains the dominant surface;
+- real icons do not crowd the label;
+- right-edge alphabet rail remains reachable;
+- tap and drag rail behavior remain visually stable;
+- long labels do not collide with the rail or context affordance.
+
+### Search / Command
+
+- search field is immediately legible;
+- local commands remain visually distinct from app results;
+- app results use the same real-icon treatment as All Apps;
+- no web/cloud search affordance is implied.
+
+### Sable Peek
+
+- app identity is obvious;
+- Open, Pin/Unpin and Permissions & app info have clear hierarchy;
+- the panel remains a single contextual level rather than a nested menu system.
+
+### Appearance
+
+- Follow system, Light and Dark remain the only theme modes;
+- the bounded accent set remains visually coherent;
+- changing theme/accent updates the production screen rather than a mock surface.
+
+## Explicit non-claims
+
+Passing this emulator visual gate does not prove:
+
+- Launcher3 HOME ownership;
+- Quickstep Recents/Overview correctness;
+- gesture/task-animation integration;
+- system-server role persistence;
+- boot-to-HOME behavior;
+- physical Pixel 7 performance or power;
+- Titan 2 keyboard/focus acceptance.
+
+Those remain later device/runtime gates.
+
+## Acceptance state
+
+Current execution evidence (2026-09-20, commit
+`2bcdc6699a705a965dc0a4a89c98314cdaaa1162`):
+
+```text
+R9_VISUAL_REVIEW_APK_BUILD=PASS
+R9_VISUAL_REVIEW_PIXEL7_AVD=PASS
+R9_VISUAL_REVIEW_INSTALL=PASS
+R9_VISUAL_REVIEW_INITIAL_CAPTURE=PASS
+R9_L6_VISUAL_REVIEW_STATUS=PENDING_USER_REVIEW
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+The initial frame exists as runtime evidence, but the visual set is not accepted
+until the captured PNGs are actually reviewed.
+
+Before screenshots are reviewed:
+
+```text
+R9_L9_VISUAL_REVIEW_HARNESS=RUNTIME_READY
+R9_SABLESTART_VISUAL_REVIEW_SET=PENDING
+R9_SABLESTART_PRODUCT_IDENTITY=PENDING_USER_REVIEW
+R9_L6_VISUAL_REVIEW_STATUS=PENDING
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+```
+
+Only after the captured set is reviewed and accepted should this become:
+
+```text
+R9_SABLESTART_VISUAL_REVIEW_SET=PASS
+R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
+R9_L6_VISUAL_REVIEW_STATUS=PASS
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
+```
+
+## R9L15 visual closure
+
+The final Pixel 7 dark-mode recapture is accepted. Status-bar content is now
+light/readable on the dark Sable background, closing the last visual blocker.
+
+The accepted visual source is machine-sealed by
+`build/gates/r9-launcher-visual-acceptance.py`. The gate validates the exact
+Git blob identities of the production Start presentation, Sable theme/system-bar
+implementation, Launcher3/Quickstep host, and the review host used to produce
+the evidence. Any later change to those files fails closed and returns
+`NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO` until visual review is repeated.
+
+```text
+R9_SABLESTART_PRODUCTION_COMPILE=PASS
+R9_SABLESTART_VISUAL_REVIEW_SET=PASS
+R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
+R9_SABLESTART_ONE_HAND_REACH=PASS
+R9_SABLESTART_ALL_APPS_RAIL=PASS_WITH_FULL_INVENTORY_RUNTIME_FOLLOWUP
+R9_SABLESTART_SEARCH_COMMAND=PASS
+R9_SABLESTART_PEEK=PASS
+R9_SABLESTART_LOCAL_CONTEXT=PASS
+R9_SABLESTART_APPEARANCE=PASS
+R9_SABLESTART_LIGHT_DARK=PASS
+R9_SABLESTART_DARK_SYSTEM_BARS=PASS
+R9_L6_VISUAL_REVIEW_STATUS=PASS
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
+```
+
+The remaining rail long-list proof belongs to the full-inventory Panther/device
+runtime stage and does not block the full image build.
+

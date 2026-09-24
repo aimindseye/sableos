@@ -11,6 +11,7 @@ For the current project state and active product direction:
 - `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
 - `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
 - `R9_SABLESTART_LAUNCHER_DESIGN.md` — design-first SableStart expansion using pinned Niagara/Kvaesitso/Lawnchair/Olauncher/OpenMiniLaunch references, one-hand app navigation, Sable Rail, Search/Command, Sable Peek, Quickstep boundary, privacy rules, and the no-full-build-before-visual-review gate.
+- `R9_LAUNCHER3_FOUNDATION_MIGRATION.md` — phased migration from standalone SableStart HOME to the pinned Launcher3/Quickstep foundation, with compile-before-retirement sequencing and focused Panther qualification.
 - `R9_SABLESTART_VISUAL_REVIEW_20260920.md` — source-derived combined L1-L6 review sheet for Start dark/light, Sable Rail, Search/Command, Sable Peek, truthful local context and accessibility states; visual acceptance remains pending.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
@@ -52,13 +53,11 @@ Accepted ADRs include:
 
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — active product plan.
 - `CORE_PRODUCT_ROADMAP.md` — active M1-M6 / CP integration track.
-- `NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel strategy: Panther first, Titan 2 + Titan 2 Elite as complementary keyboard-first N0 labs, Q27 as future full-QWERTY candidate, Q25 retired.
-- `TITAN2_GSI_PLAN.md` — staged Titan 2 family GSI/userspace development plan, stock-artifact qualification, UI/keyboard/5G work, assurance boundaries, and possible later N1 research.
-- `TITAN2_STOCK_FIRMWARE_CORPUS.md` — sealed 18-package Titan 2 firmware/OTA corpus, byte-size verification, checksum-manifest seal and T0 scope boundary.
-- `CAMERA_ENHANCEMENT_ROADMAP.md` — shared Titan 2 / Titan 2 Elite / Q27 camera-quality and capability-probing roadmap.
-- `TITAN2_KEYBOARD_FIRST_REFERENCE.md` — normative Titan 2 family keyboard-first interaction contract plus pinned keyboard/launcher references and licensing boundary.
+- `NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel device strategy: Panther first, Titan 2 as preferred interim N0 GSI/UI lab, Q27 as future full-QWERTY candidate, Q25 as optional low-level MediaTek/kernel research target.
+- `TITAN2_GSI_PLAN.md` — staged Titan 2 GSI/userspace development plan, stock-artifact qualification, UI/keyboard/5G work, assurance boundaries, and possible later N1 research.
+- `TITAN2_KEYBOARD_FIRST_REFERENCE.md` — normative Titan 2 keyboard-first interaction contract plus pinned Pastiera, OpenMiniLaunch, TypeQ25 and Q25 Toolbox reference review and licensing boundary.
 - `KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md` — common Titan 2/Q27 Sable Tools direction inspired by BB10 power-user/device utilities, with pinned bb10tools revision, GPL boundary, safe capabilities and explicit non-goals.
-- `Q25_PORT_PLAN.md` — retired / not-planned tombstone; historical Q25 repositories remain reference material only.
+- `Q25_PORT_PLAN.md` — optional source-available MediaTek/kernel/QWERTY research-port plan; not a required first non-Pixel purchase or Q27 precursor.
 - `S1_8_PLATFORM_TRANSITION.md` — historical bramble UI/toolchain closure and Panther transition.
 
 Current product progression:
@@ -88,10 +87,9 @@ SABLE_HUB_STATUS                   NOT_INTEGRATED
 NEXT_PRODUCT_MILESTONE             R8_SABLESTART_RUNTIME_FIX + R9_VISUAL_REVIEW
 
 NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                         STOCK_CORPUS_SEALED_KEYBOARD_FIRST_N0_AFTER_PANTHER
-TITAN2_ELITE_ROLE                   KEYBOARD_FIRST_N0_CANDIDATE_LOCAL_GSI_PROOF_PENDING
+TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
 Q27_ROLE                            FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
-Q25_ROLE                            RETIRED_NOT_PLANNED
+Q25_ROLE                            OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
 INFRA5_TRUSTED_RUNNER              DEFERRED_NON_BLOCKING

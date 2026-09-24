@@ -1,6 +1,6 @@
 # R9 SableStart launcher design expansion
 
-Status: **design-first release scope / implementation not yet authorized for a full Panther build**
+Status: **approved design scope / Mac gate waived for R9 / physical Panther is final visual authority**
 
 Date: 2026-09-20
 
@@ -8,15 +8,20 @@ Date: 2026-09-20
 
 R9 exists to make SableStart feel like the primary SableOS shell rather than a launcher prototype.
 
-The next full Panther image build is intentionally blocked until the launcher is visually reviewed from production-source UI states.
+The approved Daily Driver design remains the R9 visual target. For this build,
+Mac-mini visual validation is closed and the final visual decision is deferred
+to the physical Panther after Linux CI, module qualification and a fresh image
+build.
 
 ~~~
 R9_LAUNCHER_DESIGN_REVIEW_REQUIRED=YES
-R9_PRODUCTION_SOURCE_PREVIEW_REQUIRED=YES
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
+R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
+R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_LINUX_QUALIFICATION
 ~~~
 
-The build gate may be reopened only after a reviewed preview set proves the intended Start, All Apps, Search/Command, app-context and live-state layouts in both light/dark appearance.
+The build may proceed after ai-g732 qualification; visual/runtime acceptance is
+then completed on the flashed Panther.
 
 This does not block source review, tests, documentation, CI, standalone design work, or other non-image product work.
 
@@ -199,20 +204,39 @@ The top context line is conditional. Empty data does not create a blank card.
 
 The root is not an infinite widget canvas.
 
-### 2. Primary tiles
+### 2. Start tiles
 
-Use Sable tiles for a small set of intentional first-party/system capabilities.
+Start is a vertically scrolling Sable tile surface rather than a four-tile
+shortcut strip or an unrestricted widget canvas.
 
-Initial target:
+Default capability order:
 
 ~~~
-People      Phone
-Messages    Mail
-Calendar    Photos
+Phone       Messages
+Mail        Calendar
+Weather     Photos
 Media       Camera
+Calculator  Files
 ~~~
 
-The visible set is user-editable and may be smaller than eight.
+The default resolver chooses the first installed app matching each capability
+alias. Weather recognizes `Sable Weather` / `Weather` and becomes a normal
+preferred Start tile once the production Weather app exists.
+
+The default target is ten tiles. It is not a hard user limit.
+
+Once the user customizes Start, the explicit Start-tile set is persisted
+separately from Favorites. An explicit empty set means the user intentionally
+wants no Start tiles. User-added Start tiles are not capped by the old
+four-tile limit; the existing Start `LazyColumn` provides vertical scrolling.
+
+Tile interaction:
+
+- tap -> launch immediately;
+- long press -> Sable Peek;
+- Peek -> Pin to Start / Remove from Start;
+- Start membership is independent of Favorites membership;
+- later drag/reorder may refine ordering but is not required for R9.
 
 Tile rules:
 
@@ -221,7 +245,8 @@ Tile rules:
 - redaction follows lock/privacy policy;
 - no fake weather/feed data;
 - no provider state without an explicit provider;
-- color supplements state but does not replace text/state cues.
+- color supplements state but does not replace text/state cues;
+- no arbitrary Android widget canvas is introduced.
 
 ### 3. Favorites
 
@@ -229,6 +254,8 @@ Favorites are the fastest user-curated launch surface.
 
 R9 target:
 
+- Favorites are persisted independently from Start tiles;
+- Pin to Favorites never implicitly pins to Start and vice versa;
 - 4-8 user-selected favorites;
 - label-first presentation;
 - enough icon/mark identity for scanning without turning Start into a generic icon grid;
@@ -334,7 +361,12 @@ nothing
 
 The user may disable this block.
 
-Weather requires an explicit configured provider and remains visually identified as remote/provider data.
+Weather remains visually identified as provider data. Production Live uses bounded app-owned
+snapshot providers for Weather, Calendar, Messages, Mail and Media. SableLauncher reads
+only those bounded snapshots and does not read the applications' sensitive databases directly. Photos remain local MediaStore data
+behind explicit photo permission. Refresh is driven by provider changes and HOME lifecycle;
+there is no ambient one-minute launcher polling loop. Message bodies and mail subjects are
+not rendered on Home.
 
 ## Gesture contract
 
@@ -374,24 +406,39 @@ The existing StartStateRepository rule remains: launcher presentation state may 
 
 ## Quickstep boundary
 
-Quickstep remains installed in R9.
+Quickstep remains installed in R9, but Launcher3 is no longer the user-facing
+HOME implementation.
 
-SableStart owns:
+SableLauncher owns:
 
-- HOME;
+- the Android HOME activity and HOME role;
 - Start;
 - All Apps;
 - Search/Command;
 - Sable Peek;
-- launcher appearance and local live context.
+- launcher appearance editing and local live context;
+- touch and keyboard navigation inside HOME.
 
-Quickstep/Android continues to own:
+Launcher3QuickStep owns only the Android Recents/Overview integration,
+TouchInteractionService and task-animation plumbing that Sable has not
+separately replaced. Its `QuickstepLauncher` activity remains private for
+upstream Quickstep bookkeeping and does not advertise HOME, ALL_APPS or other
+launcher entry intents.
 
-- Recents/Overview implementation;
-- mature gesture-navigation integration;
-- task animations/services that Sable has not separately replaced.
+When another package is HOME, upstream Quickstep already provides the fallback
+`RecentsActivity` path. R9 uses that supported separation rather than
+rendering Sable as a full-screen layer over native Launcher3 workspace.
 
-R9 must prove SableStart HOME ownership without disabling Quickstep's recents path.
+R9 must therefore prove:
+
+```
+HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity
+HOME_ROLE_HOLDER=org.sableos.launcher
+LAUNCHER3_HOME_ROLE_ABSENT=PASS
+LAUNCHER3_HOME_ELIGIBILITY_ABSENT=PASS
+QUICKSTEP_SERVICE_PRESENT=PASS
+QUICKSTEP_FALLBACK_RECENTS_PRESERVED=PASS
+```
 
 ## Visual direction
 
@@ -406,45 +453,27 @@ SableStart should look recognizably Sable:
 - tiles may use app/provider artwork only where the content itself is visual, such as media/photos;
 - motion remains in the 120/180/240ms Sable timing classes.
 
-## Production-source visual review gate
+## Production visual acceptance for this R9 build
 
-Before the next full Panther build, produce a visual review set from the same production SableStart composables/source path used by the product.
+The earlier Mac production-source review gate is superseded for this build.
+The approved Daily Driver frames remain the design reference, but the Mac AVD
+is not required to authorize the image.
 
-Required frames:
-
-~~~
-01 Start root — dark / Sable Blue
-02 Start root — light / Sable Blue
-03 All Apps — alphabet rail active
-04 Search / Command — mixed local results
-05 Sable Peek — app context
-06 Start — active media context
-07 Start — calendar/live context
-08 accessibility state — large font / visible focus
-~~~
-
-At least one frame must demonstrate one-handed lower-screen reach on Panther geometry.
-
-The review artifact must not revive the retired prototype/demo APK path. A review harness may exist only if it consumes production SableStart UI code and is excluded from product packages.
-
-Required decision markers:
+Required policy markers:
 
 ~~~
-R9_SABLESTART_VISUAL_REVIEW_SET=PASS
-R9_SABLESTART_PRODUCT_IDENTITY=APPROVED
-R9_SABLESTART_ONE_HAND_REACH=PASS
-R9_SABLESTART_ALL_APPS_RAIL=PASS
-R9_SABLESTART_SEARCH_COMMAND=PASS
-R9_SABLESTART_PEEK=PASS
-R9_SABLESTART_LIGHT_DARK=PASS
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES
+R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
+R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED
+R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
 ~~~
 
-Until those markers are satisfied:
+Production SableStart must still compile and lint through the Linux
+source/design checks, build as the standalone `SableLauncher` module alongside
+the recents-only `Launcher3QuickStep` substrate during module qualification,
+and pass final physical Panther acceptance after flash.
 
-~~~
-NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO
-~~~
+A review harness may remain in the repository as non-product tooling, but it is
+not executed by the R9 release-blocking Linux CI path.
 
 ## Runtime acceptance
 
@@ -453,14 +482,22 @@ A visual approval does not replace runtime qualification.
 R9 physical acceptance must additionally prove:
 
 ~~~
-HOME_RESOLVER=org.sableos.start/.SableStartActivity
-HOME_ROLE_HOLDER=org.sableos.start
+HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity
+HOME_ROLE_HOLDER=org.sableos.launcher
+LAUNCHER3_HOME_ROLE_ABSENT=PASS
+LAUNCHER3_HOME_ELIGIBILITY_ABSENT=PASS
+QUICKSTEP_SERVICE_PRESENT=PASS
+LEGACY_SABLESTART_PACKAGE_ABSENT=PASS
 COLD_HOME_LAUNCH_CRASHES=0
 HOME_KEY_RETURNS_TO_START=PASS
-QUICKSTEP_RECENTS_PRESERVED=PASS
+QUICKSTEP_FALLBACK_RECENTS_PRESERVED=PASS
 ALL_APPS_TOUCH_NAVIGATION=PASS
 SEARCH_LOCAL_RESULTS=PASS
 SABLE_PEEK=PASS
+SABLE_SUBSURFACE_BACK_GESTURES=PASS
+SABLE_ABORTED_SWIPE_NO_NATIVE_ESCAPE=PASS
+SABLE_FALLBACK_RECENTS_GESTURE=PASS
+SABLE_STATUS_SHADE_GESTURE_STABILITY=PASS
 THEME_PROPAGATION=PASS
 ~~~
 
@@ -474,9 +511,9 @@ R9-L1  Start root + one-hand geometry + favorites
 R9-L2  All Apps + Sable Rail
 R9-L3  Sable Search / Command
 R9-L4  Sable Peek
-R9-L5  contextual media/calendar live block
-R9-L6  production-source screenshot review
-R9-L7  Panther image integration + physical HOME/Recents/runtime qualification
+R9-L5  provider-owned weather/calendar/messages/mail/media live block
+R9-L6  Linux production-source compile/design qualification
+R9-L7  Panther image integration + physical visual/HOME/Recents/runtime qualification
 ~~~
 
-The slices may be implemented in parallel where source boundaries allow, but R9-L6 is the gate before R9-L7 full Panther build.
+The slices may be implemented in parallel where source boundaries allow. For this build, successful R9-L6 Linux qualification authorizes the R9-L7 fresh Panther build; final visual acceptance occurs on the physical device.

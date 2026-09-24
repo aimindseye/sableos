@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SableOS R9 product permission delta.
+
+  Settings owns the Sable global appearance authority and therefore requests
+  android.permission.MODIFY_DAY_NIGHT_MODE. Settings is a privileged app on
+  system_ext, so this grant must be allowlisted on the same partition.
+-->
+<permissions>
+    <privapp-permissions package="com.android.settings">
+        <permission name="android.permission.MODIFY_DAY_NIGHT_MODE"/>
+    </privapp-permissions>
+</permissions>

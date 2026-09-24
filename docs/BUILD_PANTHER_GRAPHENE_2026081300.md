@@ -333,7 +333,13 @@ The D3 procedure above remains historical/canonical substrate evidence. Current 
 
 For an R8 final UI build, do not infer product completeness from the output-directory name, an incremental module build, or successful `target-files-package`. Before the long build begins, prove the exact application/system source and package set in the generated product graph.
 
-In particular, the R8 gate must prove SableStart, Sable Calculator, three separate Sable game APKs, Sable Media and Sable Reader are integrated, and must classify retained/replaced Android packages such as `ExactCalculator`.
+In particular, the current product gate must prove standalone SableLauncher,
+Sable Calculator, three separate Sable game APKs, Sable Media, Sable Reader,
+standalone Sable Text Reader, Sable Messages/Hub, Sable Mail, Sable Weather and
+Sable Calendar are integrated, and must classify retained/replaced Android
+packages such as `ExactCalculator`. Sable Text Reader is package
+`org.sableos.textreader`; legacy upstream `VaachakTextReader.apk` /
+`TextReader.apk` artifact names remain forbidden.
 
 The current development R8 target remains:
 

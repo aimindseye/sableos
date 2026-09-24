@@ -31,18 +31,39 @@ def check() -> None:
     require(
         start,
         (
-            "SectionLabel(\"favorites\")",
-            "Search / Command",
+            "SableControlShortcut(",
+            "SableGlyphIcon(",
+            'in 12..16 -> "good afternoon"',
+            "ApprovedStartNavigationRow(",
+            'text = "all apps"',
+            'text = "search"',
+            'text = "live"',
+            "approvedWideContent(",
+            "approvedMetric(",
+            "approvedGlyphPackage(app)",
+            ".height(if (tile.wide) 106.dp else 118.dp)",
             "SableStartDestination.Peek",
-            "Sable Peek",
+            'text = "peek"',
             "rememberLazyListState()",
             "detectDragGestures(",
             ".align(Alignment.CenterStart)",
             ".fillMaxHeight()",
             "listState.scrollToItem(index)",
-            "Pin to Favorites",
-            "apps · settings · Sable actions",
-            "SableStart does not perform ambient network search",
+            "pin to start",
+            "remove from start",
+            "pin to favorites",
+            "permissions + app info",
+            "DEFAULT_START_TILE_TARGET = 10",
+            'packageNames = setOf("org.sableos.weather")',
+            'labels = listOf("Sable Weather", "Weather")',
+            "app.component.packageName in group.packageNames",
+            ".combinedClickable(",
+            'text = "Useful state only. No fake feeds and no ambient polling."',
+            '"message content stays private on Home"',
+            '"subject previews off"',
+            "AppearanceChoiceRow(",
+            "AccentChoiceRow(",
+            "reset · follow system + Sable Blue",
         ),
         "R9_SABLESTART_COMBINED_SOURCE",
     )
@@ -50,8 +71,12 @@ def check() -> None:
         start,
         (
             "pinned & recent",
+            "MAX_START_TILES",
             "A calmer device",
             "Search apps…",
+            "AppearanceShortcut(",
+            "private fun StartNavigationRow(",
+            'text = "appearance"',
         ),
         "R9_SABLESTART_OLD_SURFACE_RETIREMENT",
     )
@@ -59,13 +84,25 @@ def check() -> None:
     require(
         live,
         (
-            "CalendarContract.Events.TITLE",
-            "CalendarContract.Events.DTSTART",
-            "CalendarContract.Events.ALL_DAY",
-            "nothing else today",
-            'detail = "$whenText · $title"',
+            "content://org.sableos.weather.snapshot/current",
+            "content://org.sableos.calendar.snapshot/current",
+            "content://org.sableos.hub.snapshot/current",
+            "content://org.sableos.mail.snapshot/current",
+            "content://org.sableos.media.snapshot/current",
+            "OBSERVED_URIS",
+            "providerSnapshot(",
         ),
-        "R9_SABLESTART_CONTEXTUAL_CALENDAR",
+        "R9_SABLESTART_CONTEXTUAL_PROVIDER_SNAPSHOTS",
+    )
+    forbid(
+        live,
+        (
+            "CalendarContract.",
+            "Telephony.",
+            "NotificationManager",
+            "MediaSessionManager",
+        ),
+        "R9_SABLESTART_NO_SENSITIVE_PROVIDER_OWNERSHIP",
     )
 
     forbid(
@@ -90,30 +127,57 @@ def check() -> None:
             "R9-L2  All Apps + Sable Rail",
             "R9-L3  Sable Search / Command",
             "R9-L4  Sable Peek",
-            "R9-L5  contextual media/calendar live block",
-            "R9-L6  production-source screenshot review",
-            "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO",
+            "R9-L5  provider-owned weather/calendar/messages/mail/media live block",
+            "R9-L6  Linux production-source compile/design qualification",
+            "R9-L7  Panther image integration + physical visual/HOME/Recents/runtime qualification",
+            "R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9",
+            "R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED",
+            "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_LINUX_QUALIFICATION",
+            "HOME_RESOLVER=org.sableos.launcher/org.sableos.start.SableStartActivity",
+            "HOME_ROLE_HOLDER=org.sableos.launcher",
+            "LAUNCHER3_HOME_ROLE_ABSENT=PASS",
+            "LAUNCHER3_HOME_ELIGIBILITY_ABSENT=PASS",
+            "QUICKSTEP_SERVICE_PRESENT=PASS",
+            "QUICKSTEP_FALLBACK_RECENTS_PRESERVED=PASS",
         ),
         "R9_SABLESTART_DESIGN_CONTRACT",
     )
 
-    print("R9_L1_START_FAVORITES=PASS_SOURCE")
+    print("R9_L1_START_APPROVED_DAILY_DRIVER_COMPOSITION=PASS_SOURCE")
+    print("R9_L1_START_TILES=PASS_SCROLLING_SEPARATE_STATE")
+    print("R9_L1_START_WEATHER=PASS_PACKAGE_FIRST_PREFERRED")
     print("R9_L2_SABLE_RAIL=PASS_SOURCE")
     print("R9_L3_SEARCH_COMMAND=PASS_SOURCE")
     print("R9_L4_SABLE_PEEK=PASS_SOURCE")
     print("R9_L5_CONTEXTUAL_LOCAL_DATA=PASS_SOURCE")
-    print("R9_L6_VISUAL_REVIEW_GATE=PASS_BLOCKING_BUILD")
+    print("R9_SABLELAUNCHER_HOME_DESIGN=PASS_STANDALONE")
+    print("R9_QUICKSTEP_BOUNDARY_DESIGN=PASS_RECENTS_ONLY")
+    print("R9_L6_BASELINE_VISUAL_SEAL=PASS_HISTORICAL_REFERENCE_ONLY")
+    print("R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9")
+    print("R9_PHYSICAL_PANTHER_VISUAL_ACCEPTANCE=REQUIRED")
+    print("NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_LINUX_QUALIFICATION")
     print("R9_SABLESTART_COMBINED_DESIGN_CONTRACT=PASS")
 
 
 def self_test() -> None:
-    good = "favorites Search / Command Sable Peek detectDragGestures"
-    bad = "favorites Search apps…"
-    assert "Search / Command" in good
-    assert "Sable Peek" in good
+    good = (
+        "SableControlShortcut SableGlyphIcon in 12..16 -> \"good afternoon\" "
+        "ApprovedStartNavigationRow all apps search live "
+        "peek pin to start remove from start pin to favorites "
+        "Useful state only. No fake feeds and no ambient polling. detectDragGestures"
+    )
+    bad = "favorites Search apps… Reset to Follow system · Sable Blue"
+    assert "SableControlShortcut" in good
+    assert "SableGlyphIcon" in good
+    assert 'in 12..16 -> "good afternoon"' in good
+    assert "ApprovedStartNavigationRow" in good
+    assert "pin to start" in good
+    assert "remove from start" in good
+    assert "pin to favorites" in good
+    assert "Useful state only. No fake feeds and no ambient polling." in good
     assert "detectDragGestures" in good
-    assert "Search / Command" not in bad
     assert "Search apps…" in bad
+    assert "Reset to Follow system · Sable Blue" in bad
     print("R9_SABLESTART_DESIGN_CONTRACT_SELF_TEST=PASS")
 
 

@@ -103,9 +103,9 @@ Dense layouts are acceptable when they remain readable and navigable from the ke
 
 This is inspiration, not an attempt to clone BlackBerry OS/BB10.
 
-## Titan 2 family keyboard-first profile
+## Titan 2 keyboard-first profile
 
-Titan 2 and Titan 2 Elite are the first near-term hardware targets where the keyboard-first profile is mandatory rather than optional.
+Titan 2 is the first near-term hardware target where the keyboard-first profile is mandatory rather than optional.
 
 ```text
 TITAN2_INTERACTION_PROFILE=KEYBOARD_FIRST
@@ -144,7 +144,7 @@ Required interaction properties:
 - touch as a secondary path;
 - no root/accessibility/bind-mount hacks for functionality SableOS owns at platform level.
 
-Titan 2, Titan 2 Elite and Q27 should consume the same Sable Tools semantics and source where compatible.
+Titan 2 and Q27 should consume the same Sable Tools semantics and source where compatible.
 
 ## Do not branch on model name
 

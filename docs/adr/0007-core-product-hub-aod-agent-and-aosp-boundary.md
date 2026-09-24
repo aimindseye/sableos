@@ -64,6 +64,56 @@ Hub is the central attention/communication surface. It uses standard Android not
 
 Reply and other generic actions use application-supplied Android actions such as `RemoteInput`/`PendingIntent` semantics. Person linking is local-first and evidence-based.
 
+### Notification delivery and presentation boundary
+
+Sable does not introduce or search for a GrapheneOS-specific notification-manager stack. Android/AOSP `NotificationManager`, notification channels, conversation metadata, `RemoteInput`, `PendingIntent` actions and the existing SystemUI notification presentation path remain authoritative.
+
+Notification **delivery to an application before it posts an Android notification** is a separate application/provider concern:
+
+- an app may use Firebase Cloud Messaging when it depends on FCM and the user has chosen to install sandboxed Google Play;
+- a portable app may maintain its own push connection, for example WebSocket-style messaging or IMAP IDLE for mail;
+- an app may use UnifiedPush when it explicitly supports that ecosystem;
+- infrequent pull-based work should use Android scheduling such as `JobScheduler`, rather than Sable inventing a privileged polling daemon.
+
+Sable Hub consumes the Android notification/conversation surface after the application has posted it. Hub must not become a universal push proxy, obtain provider credentials merely to relay notifications, or bypass Android application sandboxing.
+
+For Sable Mail, the retained mail client's own supported background synchronization / IMAP IDLE behavior is preferred. Sable must not add an FCM middleman that requires uploading mail credentials to a Sable server solely to generate notifications.
+
+For the GrapheneOS 2026081300 substrate, `external/Messaging` is a pinned `android_app_import` containing `prebuilt/Messaging.apk`; it is not source code with an Android manifest that Sable should rewrite. Sable preserves that prebuilt package unchanged as the default SMS/MMS transport substrate. Duplicate launcher presentation is handled by standalone SableLauncher suppressing only package `com.android.messaging`. Sable Messages owns the normal SMS/People presentation and uses standard Android messaging intents only for contextual MMS/attachment handoff rather than taking ownership of the prebuilt's transport internals.
+
+Embedded WhatsApp/Instagram/Messenger/LinkedIn WebViews are retired from Sable Messages. Proprietary social services use their supported installed Android applications when the user chooses to install them, with future Sable integration limited to supported intents, share/deep-link surfaces and user-authorized Android notification/conversation metadata. Sable does not capture provider credentials or emulate a provider's primary client in WebView.
+
+Reference: GrapheneOS FAQ, “Do notifications work properly on GrapheneOS?” — https://grapheneos.org/faq#notifications
+
+### Local third-party conversation adapters
+
+For R9, third-party messaging integration uses Android's application-authored
+notification/conversation surface rather than a Sable cloud relay, embedded
+provider WebView or provider protocol implementation.
+
+The user explicitly enables installed apps. Configuration is package +
+Android-user/profile based, so new compatible apps do not require recompilation.
+A NotificationListenerService normalizes structured MessagingStyle/Person data
+where available and may invoke only a source-authored RemoteInput/PendingIntent
+reply action. Generic notification text is a bounded fallback, not proof of
+complete provider history.
+
+The source application remains authoritative for networking, account state,
+cryptography, complete history and rich-provider actions. Sable does not obtain
+provider credentials or inspect private application databases.
+
+Notification-listener callbacks perform only bounded extraction/enqueue work;
+persistence, person linking and expensive normalization run off the callback
+thread. Notification-derived history is credential-encrypted and retention is
+user-configurable.
+
+The first tranche keeps source notifications alive rather than canceling them,
+because their PendingIntent/RemoteInput objects are part of the authorized
+reply path.
+
+This architecture is detailed in ADR-0008 and
+`../R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md`.
+
 ### AOD
 
 AOD is Sable presentation layered over supported Android/device doze/display capability. Lock-screen privacy remains authoritative. AOD does not gain unrestricted microphone, Hub or Agent privilege.

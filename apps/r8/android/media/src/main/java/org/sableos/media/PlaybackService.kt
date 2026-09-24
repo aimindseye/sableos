@@ -1,28 +1,72 @@
 package org.sableos.media
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class PlaybackService : MediaSessionService() {
     private var player: ExoPlayer? = null
     private var session: MediaSession? = null
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var queueBuildJob: Job? = null
+    private var queueGeneration = 0L
 
     override fun onCreate() {
         super.onCreate()
-        val exoPlayer = ExoPlayer.Builder(this).build()
+        val exoPlayer =
+            ExoPlayer.Builder(this).build().also { resolvedPlayer ->
+                resolvedPlayer.addListener(
+                    object : Player.Listener {
+                        override fun onMediaItemTransition(
+                            mediaItem: MediaItem?,
+                            reason: Int,
+                        ) {
+                            MediaSnapshotStore.update(
+                                this@PlaybackService,
+                                resolvedPlayer,
+                            )
+                        }
+
+                        override fun onIsPlayingChanged(isPlaying: Boolean) {
+                            MediaSnapshotStore.update(
+                                this@PlaybackService,
+                                resolvedPlayer,
+                            )
+                        }
+                    },
+                )
+            }
+
         player = exoPlayer
-        session = MediaSession.Builder(this, exoPlayer).build()
+        session =
+            MediaSession
+                .Builder(this, exoPlayer)
+                .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = session
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         when (intent?.action) {
-            ACTION_PLAY_URI ->
+            ACTION_PLAY_URI -> {
                 intent.data?.let { uri ->
                     play(
                         uri = uri,
@@ -30,37 +74,60 @@ class PlaybackService : MediaSessionService() {
                         source = intent.getStringExtra(EXTRA_SOURCE),
                     )
                 }
+            }
 
-            ACTION_PLAY_QUEUE ->
-                playQueue(
-                    uris = intent.getStringArrayListExtra(EXTRA_URIS).orEmpty(),
-                    titles = intent.getStringArrayListExtra(EXTRA_TITLES).orEmpty(),
-                    artists = intent.getStringArrayListExtra(EXTRA_ARTISTS).orEmpty(),
-                    startIndex = intent.getIntExtra(EXTRA_START_INDEX, 0),
-                )
+            ACTION_PLAY_QUEUE -> {
+                val request =
+                    intent
+                        .getStringExtra(EXTRA_QUEUE_TOKEN)
+                        ?.let(PlaybackQueueRequestStore::consume)
+                if (request != null) {
+                    playQueue(request)
+                }
+            }
 
-            ACTION_PAUSE -> player?.pause()
-            ACTION_RESUME -> player?.play()
-            ACTION_STOP -> player?.stop()
-            ACTION_PREVIOUS -> player?.seekToPreviousMediaItem()
-            ACTION_NEXT -> player?.seekToNextMediaItem()
+            ACTION_PAUSE -> {
+                player?.pause()
+            }
+
+            ACTION_RESUME -> {
+                player?.play()
+            }
+
+            ACTION_STOP -> {
+                cancelPendingQueueBuild()
+                player?.stop()
+                MediaSnapshotStore.clear(this)
+            }
+
+            ACTION_PREVIOUS -> {
+                player?.seekToPreviousMediaItem()
+            }
+
+            ACTION_NEXT -> {
+                player?.seekToNextMediaItem()
+            }
         }
+
         return super.onStartCommand(intent, flags, startId)
     }
 
     private fun play(
-        uri: android.net.Uri,
+        uri: Uri,
         title: String?,
         source: String?,
     ) {
+        cancelPendingQueueBuild()
         val metadata =
-            MediaMetadata.Builder()
+            MediaMetadata
+                .Builder()
                 .setTitle(title?.takeIf { it.isNotBlank() } ?: "Sable Media")
                 .setArtist(source?.takeIf { it.isNotBlank() })
                 .build()
 
         val mediaItem =
-            MediaItem.Builder()
+            MediaItem
+                .Builder()
                 .setUri(uri)
                 .setMediaMetadata(metadata)
                 .build()
@@ -72,48 +139,70 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
-    private fun playQueue(
-        uris: List<String>,
-        titles: List<String>,
-        artists: List<String>,
-        startIndex: Int,
-    ) {
-        if (uris.isEmpty()) return
-
-        val items =
-            uris.mapIndexed { index, value ->
-                val metadata =
-                    MediaMetadata.Builder()
-                        .setTitle(
-                            titles.getOrNull(index)
-                                ?.takeIf { it.isNotBlank() }
-                                ?: "Local audio",
+    private fun playQueue(request: PlaybackQueueRequest) {
+        cancelPendingQueueBuild()
+        val generation = ++queueGeneration
+        queueBuildJob =
+            serviceScope.launch {
+                val mediaItems =
+                    request.items.map { item ->
+                        mediaItem(
+                            uri = item.uri,
+                            title = item.title,
+                            artist = item.artist,
                         )
-                        .setArtist(
-                            artists.getOrNull(index)
-                                ?.takeIf { it.isNotBlank() }
-                                ?: "Unknown artist",
-                        )
-                        .build()
+                    }
 
-                MediaItem.Builder()
-                    .setUri(android.net.Uri.parse(value))
-                    .setMediaMetadata(metadata)
-                    .build()
+                if (mediaItems.isEmpty()) {
+                    return@launch
+                }
+
+                mainHandler.post {
+                    if (generation != queueGeneration) {
+                        return@post
+                    }
+                    player?.apply {
+                        setMediaItems(
+                            mediaItems,
+                            request.startIndex.coerceIn(0, mediaItems.lastIndex),
+                            0L,
+                        )
+                        prepare()
+                        play()
+                    }
+                }
             }
+    }
 
-        player?.apply {
-            setMediaItems(
-                items,
-                startIndex.coerceIn(0, items.lastIndex),
-                0L,
-            )
-            prepare()
-            play()
-        }
+    private fun cancelPendingQueueBuild() {
+        queueGeneration++
+        queueBuildJob?.cancel()
+        queueBuildJob = null
+    }
+
+    private fun mediaItem(
+        uri: String,
+        title: String?,
+        artist: String?,
+    ): MediaItem {
+        val metadata =
+            MediaMetadata
+                .Builder()
+                .setTitle(title?.takeIf { it.isNotBlank() } ?: "Local audio")
+                .setArtist(artist?.takeIf { it.isNotBlank() } ?: "Unknown artist")
+                .build()
+
+        return MediaItem
+            .Builder()
+            .setUri(Uri.parse(uri))
+            .setMediaMetadata(metadata)
+            .build()
     }
 
     override fun onDestroy() {
+        cancelPendingQueueBuild()
+        mainHandler.removeCallbacksAndMessages(null)
+        serviceScope.cancel()
         session?.release()
         session = null
         player?.release()
@@ -132,9 +221,6 @@ class PlaybackService : MediaSessionService() {
 
         const val EXTRA_TITLE = "org.sableos.media.TITLE"
         const val EXTRA_SOURCE = "org.sableos.media.SOURCE"
-        const val EXTRA_URIS = "org.sableos.media.URIS"
-        const val EXTRA_TITLES = "org.sableos.media.TITLES"
-        const val EXTRA_ARTISTS = "org.sableos.media.ARTISTS"
-        const val EXTRA_START_INDEX = "org.sableos.media.START_INDEX"
+        const val EXTRA_QUEUE_TOKEN = "org.sableos.media.QUEUE_TOKEN"
     }
 }

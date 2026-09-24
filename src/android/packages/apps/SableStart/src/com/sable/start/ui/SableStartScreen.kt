@@ -1,8 +1,14 @@
 package org.sableos.start.ui
 
-import androidx.activity.compose.BackHandler
+import android.content.Context
+import android.content.pm.LauncherApps
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,10 +32,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,14 +46,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.sableos.design.AccentPreset
 import org.sableos.design.AppearanceMode
@@ -61,6 +70,7 @@ import org.sableos.start.live.LiveSurfaceSnapshot
 import org.sableos.start.model.AppEntry
 import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
+import java.time.LocalTime
 import java.util.Locale
 
 private enum class SableStartDestination {
@@ -74,9 +84,12 @@ private enum class SableStartDestination {
 
 private data class HomeTile(
     val title: String,
-    val mark: String,
-    val color: Color,
+    val app: AppEntry,
+    val accent: Color,
+    val liveDatum: LiveDatum?,
+    val wide: Boolean,
     val onClick: () -> Unit,
+    val onLongClick: () -> Unit,
 )
 
 private data class AppRailRow(
@@ -95,7 +108,7 @@ private data class SearchCommand(
 private val SableBlue = Color(0xFF4D9CFF)
 private val SableGreen = Color(0xFF35C66B)
 private val SablePurple = Color(0xFF7A42E8)
-private val SableSlate = Color(0xFF45515F)
+private val SableSlate = Color(0xFF64748B)
 private val SableOrange = Color(0xFFF28C45)
 private val SableTilePalette =
     listOf(
@@ -119,35 +132,56 @@ fun SableStartScreen(
     liveSurfaceRepository: LiveSurfaceRepository,
     appearance: SableAppearance = SableAppearance(),
     refreshGeneration: Int = 0,
-    initialPinnedKeys: Set<String> = emptySet(),
-    onPinnedKeysChanged: (Set<String>) -> Unit = {},
+    homeGeneration: Int = 0,
+    backGeneration: Int = 0,
+    initialScreen: String = "start",
+    onCanNavigateBackChanged: (Boolean) -> Unit = {},
+    initialFavoriteKeys: Set<String> = emptySet(),
+    onFavoriteKeysChanged: (Set<String>) -> Unit = {},
+    initialStartTileKeys: Set<String>? = null,
+    onStartTileKeysChanged: (Set<String>) -> Unit = {},
     onAppearanceChanged: (SableAppearance) -> Unit = {},
     onResetAppearance: () -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
-    onOpenSettings: () -> Unit,
+    onOpenSystemSettings: () -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
 ) {
-    var destination by remember { mutableStateOf(SableStartDestination.Start) }
+    var destination by remember(initialScreen) {
+        mutableStateOf(
+            when (initialScreen.lowercase(Locale.ROOT)) {
+                "live" -> SableStartDestination.Live
+                "apps" -> SableStartDestination.Apps
+                "search" -> SableStartDestination.Search
+                "appearance" -> SableStartDestination.Appearance
+                else -> SableStartDestination.Start
+            },
+        )
+    }
     var returnDestination by remember { mutableStateOf(SableStartDestination.Start) }
     var selectedApp by remember { mutableStateOf<AppEntry?>(null) }
-    var pinnedKeys by remember(initialPinnedKeys) {
-        mutableStateOf(initialPinnedKeys.toList())
+    var favoriteKeys by remember(initialFavoriteKeys) {
+        mutableStateOf(initialFavoriteKeys.toList())
+    }
+    var startTileKeys by remember(initialStartTileKeys) {
+        mutableStateOf(initialStartTileKeys?.toList())
     }
     var recentKeys by remember { mutableStateOf<List<String>>(emptyList()) }
     var liveSnapshot by remember {
         mutableStateOf(liveSurfaceRepository.initialSnapshot())
     }
 
-    LaunchedEffect(refreshGeneration) {
-        while (true) {
-            liveSnapshot = liveSurfaceRepository.snapshot()
-            delay(60_000L)
-        }
+    LaunchedEffect(refreshGeneration, homeGeneration) {
+        liveSnapshot = liveSurfaceRepository.snapshot()
     }
 
     val appByKey = apps.associateBy { it.stableKey() }
-    val pinnedApps = pinnedKeys.mapNotNull(appByKey::get)
+    val favoriteApps = favoriteKeys.mapNotNull(appByKey::get)
+    val startApps =
+        resolveStartApps(
+            apps = apps,
+            explicitKeys = startTileKeys?.toSet(),
+        )
     val recentApps = recentKeys.mapNotNull(appByKey::get)
 
     fun launchApp(entry: AppEntry) {
@@ -187,8 +221,22 @@ fun SableStartScreen(
             }
     }
 
-    BackHandler(enabled = destination != SableStartDestination.Start) {
-        navigateBack()
+    LaunchedEffect(homeGeneration) {
+        if (homeGeneration > 0) {
+            destination = SableStartDestination.Start
+            returnDestination = SableStartDestination.Start
+            selectedApp = null
+        }
+    }
+
+    LaunchedEffect(backGeneration) {
+        if (backGeneration > 0 && destination != SableStartDestination.Start) {
+            navigateBack()
+        }
+    }
+
+    LaunchedEffect(destination) {
+        onCanNavigateBackChanged(destination != SableStartDestination.Start)
     }
 
     SableTheme(appearance = appearance) {
@@ -206,15 +254,11 @@ fun SableStartScreen(
                     SableStartDestination.Start ->
                         StartScreen(
                             snapshot = liveSnapshot,
-                            primaryApps = choosePrimaryApps(apps, pinnedApps),
-                            favoriteApps = pinnedApps,
-                            recentApps = recentApps,
-                            appearance = appearance,
+                            startApps = startApps,
                             onLaunchApp = ::launchApp,
                             onOpenPeek = { app ->
                                 openPeek(app, SableStartDestination.Start)
                             },
-                            onOpenSettings = onOpenSettings,
                             onAllApps = {
                                 destination = SableStartDestination.Apps
                             },
@@ -259,12 +303,13 @@ fun SableStartScreen(
                             onLive = {
                                 destination = SableStartDestination.Live
                             },
-                            onOpenSettings = onOpenSettings,
+                            onOpenSettings = onOpenSystemSettings,
                         )
 
                     SableStartDestination.Live ->
                         LiveSurfaceScreen(
                             snapshot = liveSnapshot,
+                            apps = apps,
                             onBack = ::navigateBack,
                             onRequestPermissions = onRequestLivePermissions,
                         )
@@ -285,18 +330,33 @@ fun SableStartScreen(
                             val key = app.stableKey()
                             SablePeekScreen(
                                 app = app,
-                                isPinned = key in pinnedKeys,
+                                isFavorite = key in favoriteKeys,
+                                isStartTile = startApps.any { it.stableKey() == key },
                                 onClose = ::navigateBack,
                                 onOpen = { launchApp(app) },
                                 onOpenAppInfo = { onOpenAppInfo(app) },
-                                onTogglePinned = {
-                                    pinnedKeys =
-                                        if (key in pinnedKeys) {
-                                            pinnedKeys.filterNot { it == key }
+                                onToggleFavorite = {
+                                    favoriteKeys =
+                                        if (key in favoriteKeys) {
+                                            favoriteKeys.filterNot { it == key }
                                         } else {
-                                            (pinnedKeys + key).distinct()
+                                            (favoriteKeys + key).distinct()
                                         }
-                                    onPinnedKeysChanged(pinnedKeys.toSet())
+                                    onFavoriteKeysChanged(favoriteKeys.toSet())
+                                },
+                                onToggleStartTile = {
+                                    val current =
+                                        startTileKeys
+                                            ?: startApps.map { it.stableKey() }
+                                    startTileKeys =
+                                        if (key in current) {
+                                            current.filterNot { it == key }
+                                        } else {
+                                            (current + key).distinct()
+                                        }
+                                    onStartTileKeysChanged(
+                                        startTileKeys.orEmpty().toSet(),
+                                    )
                                 },
                             )
                         }
@@ -310,48 +370,36 @@ fun SableStartScreen(
 @Composable
 private fun StartScreen(
     snapshot: LiveSurfaceSnapshot,
-    primaryApps: List<AppEntry>,
-    favoriteApps: List<AppEntry>,
-    recentApps: List<AppEntry>,
-    appearance: SableAppearance,
+    startApps: List<AppEntry>,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenPeek: (AppEntry) -> Unit,
-    onOpenSettings: () -> Unit,
     onAllApps: () -> Unit,
     onSearch: () -> Unit,
     onLive: () -> Unit,
     onAppearance: () -> Unit,
 ) {
-    val contextDatum = chooseContextDatum(snapshot)
-    val quickApps =
-        if (favoriteApps.isNotEmpty()) {
-            favoriteApps.take(MAX_FAVORITES_ON_START)
-        } else {
-            recentApps.take(MAX_FAVORITES_ON_START)
-        }
-
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding =
             PaddingValues(
                 start = 20.dp,
                 end = 20.dp,
-                top = 18.dp,
-                bottom = 36.dp,
+                top = 10.dp,
+                bottom = 28.dp,
             ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column {
                     Text(
                         text = snapshot.timeText,
-                        style = MaterialTheme.typography.displayLarge,
+                        fontSize = 56.sp,
                         fontWeight = FontWeight.Light,
+                        lineHeight = 58.sp,
                     )
                     Text(
                         text = snapshot.dateText,
@@ -359,125 +407,108 @@ private fun StartScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                TextButton(onClick = onAppearance) {
-                    Text(
-                        text = appearance.accent.displayName,
-                        color = appearance.accent.color,
-                    )
-                }
-            }
-        }
-
-        if (contextDatum != null) {
-            item {
-                ContextCard(
-                    datum = contextDatum,
-                    accent = appearance.accent.color,
-                    onClick = onLive,
+                Spacer(Modifier.weight(1f))
+                SableControlShortcut(
+                    onClick = onAppearance,
                 )
             }
-        }
 
-        item {
-            SectionLabel("start")
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = startGreeting(),
+                style = MaterialTheme.typography.headlineLarge,
+            )
+            Spacer(Modifier.height(14.dp))
 
-            val tilePalette =
-                listOf(appearance.accent.color) +
-                    SableTilePalette.filterNot { it == appearance.accent.color }
-            val appTiles =
-                primaryApps.mapIndexed { index, app ->
+            val tiles =
+                startApps.map { app ->
                     HomeTile(
                         title = app.label,
-                        mark = appMark(app),
-                        color = tilePalette[index % tilePalette.size],
+                        app = app,
+                        accent = appColor(app),
+                        liveDatum = liveDatumForApp(app, snapshot),
+                        wide = isWideStartTile(app),
                         onClick = { onLaunchApp(app) },
+                        onLongClick = { onOpenPeek(app) },
                     )
                 }
-            val tiles =
-                (appTiles +
-                    HomeTile(
-                        title = "Settings",
-                        mark = "⚙",
-                        color = SableSlate,
-                        onClick = onOpenSettings,
-                    ))
-                    .take(MAX_START_TILES)
 
             TileGrid(tiles)
-        }
-
-        item {
-            SectionLabel("favorites")
-            Spacer(Modifier.height(4.dp))
-
-            if (quickApps.isEmpty()) {
-                Text(
-                    text = "Pin apps from All Apps to keep them in thumb reach.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 10.dp),
-                )
-            } else {
-                quickApps.forEach { app ->
-                    CompactAppRow(
-                        app = app,
-                        onClick = { onLaunchApp(app) },
-                        onContext = { onOpenPeek(app) },
-                    )
-                }
-            }
-        }
-
-        item {
-            SearchLaunchButton(onClick = onSearch)
-            Spacer(Modifier.height(6.dp))
-            MetroLink("all apps  →", onAllApps)
-            MetroLink("local context  →", onLive)
+            Spacer(Modifier.height(18.dp))
+            ApprovedStartNavigationRow(
+                onAllApps = onAllApps,
+                onSearch = onSearch,
+                onLive = onLive,
+            )
         }
     }
 }
 
+private fun startGreeting(): String =
+    when (LocalTime.now().hour) {
+        in 5..11 -> "good morning"
+        in 12..16 -> "good afternoon"
+        in 17..21 -> "good evening"
+        else -> "good night"
+    }
+
 @Composable
-private fun ContextCard(
-    datum: LiveDatum,
-    accent: Color,
+private fun SableControlShortcut(
     onClick: () -> Unit,
 ) {
-    Row(
+    Box(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .heightIn(min = 76.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .size(46.dp)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        SableGlyphIcon(
+            packageName = "com.android.settings",
+            accent = SableSlate,
+            modifier = Modifier.size(46.dp),
+            compact = true,
+        )
+    }
+}
+
+@Composable
+private fun ApprovedStartNavigationRow(
+    onAllApps: () -> Unit,
+    onSearch: () -> Unit,
+    onLive: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(accent),
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = datum.title.lowercase(Locale.getDefault()),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = datum.detail,
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
         Text(
-            text = "›",
-            fontSize = 28.sp,
+            text = "all apps",
+            modifier = Modifier.clickable(onClick = onAllApps),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "   ·   ",
+            style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "search",
+            modifier = Modifier.clickable(onClick = onSearch),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "   ·   ",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "live",
+            modifier = Modifier.clickable(onClick = onLive),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -485,25 +516,39 @@ private fun ContextCard(
 @Composable
 private fun TileGrid(tiles: List<HomeTile>) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        tiles.chunked(2).forEach { rowTiles ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowTiles.forEach { tile ->
+        var index = 0
+        while (index < tiles.size) {
+            val tile = tiles[index]
+            if (tile.wide) {
+                MetroTile(
+                    tile = tile,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                index += 1
+            } else {
+                val next =
+                    tiles.getOrNull(index + 1)
+                        ?.takeIf { candidate -> !candidate.wide }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     MetroTile(
-                        title = tile.title,
-                        mark = tile.mark,
-                        color = tile.color,
+                        tile = tile,
                         modifier = Modifier.weight(1f),
-                        onClick = tile.onClick,
                     )
+                    if (next != null) {
+                        MetroTile(
+                            tile = next,
+                            modifier = Modifier.weight(1f),
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
                 }
-                if (rowTiles.size == 1) {
-                    Spacer(Modifier.weight(1f))
-                }
+                index += if (next == null) 1 else 2
             }
         }
     }
@@ -511,52 +556,269 @@ private fun TileGrid(tiles: List<HomeTile>) {
 
 @Composable
 private fun MetroTile(
-    title: String,
-    mark: String,
-    color: Color,
+    tile: HomeTile,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit,
 ) {
-    val tileContentColor =
-        if (
-            (0.2126f * color.red) +
-                (0.7152f * color.green) +
-                (0.0722f * color.blue) >
-            0.52f
-        ) {
-            Color(0xFF06111F)
-        } else {
-            Color.White
+    val shape = RoundedCornerShape(8.dp)
+    val live =
+        tile.liveDatum?.takeIf { datum ->
+            datum.availability == LiveAvailability.LIVE ||
+                datum.availability == LiveAvailability.EMPTY
         }
+    val liveTile =
+        tile.app.component.packageName in
+            setOf("org.sableos.hub", "org.sableos.weather", "org.sableos.mail") ||
+            tile.app.label.equals("Sable Messages", ignoreCase = true) ||
+            tile.app.label.equals("Sable Weather", ignoreCase = true) ||
+            tile.app.label.equals("Sable Mail", ignoreCase = true)
 
-    Column(
+    Box(
         modifier =
             modifier
-                .height(118.dp)
-                .clip(RoundedCornerShape(5.dp))
-                .background(color)
-                .clickable(onClick = onClick)
-                .padding(13.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
+                .height(if (tile.wide) 106.dp else 118.dp)
+                .shadow(3.dp, shape)
+                .clip(shape)
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            tile.accent.copy(alpha = 0.11f),
+                        ),
+                    ),
+                )
+                .border(
+                    width = 1.dp,
+                    color = tile.accent.copy(alpha = 0.30f),
+                    shape = shape,
+                )
+                .combinedClickable(
+                    onClick = tile.onClick,
+                    onLongClick = tile.onLongClick,
+                ),
     ) {
-        Text(
-            text = mark,
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Medium,
-            color = tileContentColor,
+        Box(
+            modifier =
+                Modifier
+                    .fillMaxHeight()
+                    .width(3.dp)
+                    .background(tile.accent),
         )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = tileContentColor,
-            maxLines = 2,
-        )
+
+        when {
+            tile.wide -> {
+                val wide = approvedWideContent(tile, live)
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AppMark(
+                        app = tile.app,
+                        size = 54,
+                        fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                        showFallbackSurface = true,
+                    )
+                    Spacer(Modifier.width(14.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = wide.first,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = tile.accent,
+                        )
+                        Text(
+                            text = wide.second,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = wide.third,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+
+            liveTile -> {
+                val metric = approvedMetric(tile.app, live)
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = tile.title.uppercase(Locale.getDefault()),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = tile.accent,
+                            maxLines = 1,
+                        )
+                        AppMark(
+                            app = tile.app,
+                            size = 28,
+                            fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                            showFallbackSurface = false,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(
+                            text = metric.first,
+                            fontSize = 34.sp,
+                            lineHeight = 36.sp,
+                            fontWeight = FontWeight.Light,
+                        )
+                        if (metric.second.isNotBlank()) {
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = metric.second,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 3.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+
+            else -> {
+                Column(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    AppMark(
+                        app = tile.app,
+                        size = 42,
+                        fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                        showFallbackSurface = true,
+                    )
+                    Column {
+                        Text(
+                            text = tile.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        live?.detail?.let { detail ->
+                            Text(
+                                text = approvedCompactDetail(tile.app, detail),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
+private data class ApprovedWideContent(
+    val first: String,
+    val second: String,
+    val third: String,
+)
+
+private fun approvedWideContent(
+    tile: HomeTile,
+    live: LiveDatum?,
+): ApprovedWideContent =
+    when (tile.app.component.packageName) {
+        "org.sableos.calendar" ->
+            ApprovedWideContent(
+                first = "NEXT",
+                second = live?.detail ?: "nothing scheduled",
+                third = "Calendar",
+            )
+
+        "org.sableos.media" -> {
+            val parts = live?.detail.orEmpty().split(" · ")
+            ApprovedWideContent(
+                first = "NOW PLAYING",
+                second = parts.firstOrNull()?.takeIf { it.isNotBlank() } ?: "Nothing playing",
+                third =
+                    parts.drop(1).joinToString(" · ")
+                        .replace("playing", "▶")
+                        .ifBlank { "Sable Media" },
+            )
+        }
+
+        else ->
+            ApprovedWideContent(
+                first = tile.title.uppercase(Locale.getDefault()),
+                second = live?.detail ?: tile.title,
+                third = tile.title,
+            )
+    }
+
+private fun approvedMetric(
+    app: AppEntry,
+    live: LiveDatum?,
+): Pair<String, String> {
+    val detail = live?.detail.orEmpty()
+    return when {
+        app.component.packageName == "org.sableos.weather" ||
+            app.label.equals("Sable Weather", ignoreCase = true) -> {
+            val parts = detail.split(" · ")
+            val temperature =
+                parts.firstOrNull { it.trim().endsWith("°") }
+                    ?.trim()
+                    ?: "--°"
+            val condition =
+                parts.dropWhile { !it.trim().endsWith("°") }
+                    .drop(1)
+                    .joinToString(" · ")
+                    .ifBlank { "weather" }
+            temperature to condition
+        }
+
+        app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Messages", ignoreCase = true) -> {
+            val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
+            count to "unread"
+        }
+
+        app.component.packageName == "org.sableos.mail" ||
+            app.label.equals("Sable Mail", ignoreCase = true) -> {
+            val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
+            count to "unread"
+        }
+
+        else -> detail to ""
+    }
+}
+
+private fun approvedCompactDetail(
+    app: AppEntry,
+    detail: String,
+): String =
+    when (app.component.packageName) {
+        "com.android.gallery3d" ->
+            detail.replace(" photos", " local")
+        else -> detail
+    }
+
 @Composable
 private fun SearchLaunchButton(
+    accent: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit,
 ) {
     Row(
@@ -564,21 +826,24 @@ private fun SearchLaunchButton(
             Modifier
                 .fillMaxWidth()
                 .heightIn(min = 54.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable(onClick = onClick)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "⌕",
-            fontSize = 24.sp,
+        Box(
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .height(42.dp)
+                    .background(accent),
         )
         Spacer(Modifier.width(12.dp))
         Column {
             Text(
-                text = "Search / Command",
-                style = MaterialTheme.typography.bodyLarge,
+                text = "search + command",
+                fontSize = 20.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = "apps · settings · Sable actions",
@@ -828,16 +1093,12 @@ private fun SearchScreen(
         )
         Spacer(Modifier.height(10.dp))
 
-        OutlinedTextField(
+        SableSearchField(
             value = query,
             onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = RoundedCornerShape(6.dp),
-            label = { Text("Search apps and Sable actions") },
         )
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(16.dp))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -885,6 +1146,63 @@ private fun SearchScreen(
 }
 
 @Composable
+private fun SableSearchField(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 62.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .height(46.dp)
+                    .background(MaterialTheme.colorScheme.primary),
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                singleLine = true,
+                textStyle =
+                    MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                    ),
+                decorationBox = { innerTextField ->
+                    if (value.isEmpty()) {
+                        Text(
+                            text = "search apps + Sable actions",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    innerTextField()
+                },
+            )
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(MaterialTheme.colorScheme.onSurfaceVariant),
+            )
+        }
+    }
+}
+
+@Composable
 private fun SearchCommandRow(
     command: SearchCommand,
 ) {
@@ -897,24 +1215,19 @@ private fun SearchCommandRow(
                 .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(
-            modifier =
-                Modifier
-                    .size(42.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = command.mark,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        Spacer(Modifier.width(14.dp))
+        Text(
+            text = command.mark,
+            modifier = Modifier.width(38.dp),
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.width(8.dp))
         Column {
             Text(
                 text = command.title,
                 style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
             )
             Text(
                 text = command.subtitle,
@@ -949,12 +1262,23 @@ private fun AppRow(
         ) {
             AppMark(app = app, size = 42)
             Spacer(Modifier.width(14.dp))
-            Text(
-                text = app.label,
+            Column(
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-            )
+            ) {
+                Text(
+                    text = app.label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                )
+                if (app.privacySummary.isNotBlank()) {
+                    Text(
+                        text = app.privacySummary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                    )
+                }
+            }
         }
 
         TextButton(
@@ -1009,30 +1333,144 @@ private fun CompactAppRow(
 private fun AppMark(
     app: AppEntry,
     size: Int,
+    fallbackContentColor: Color = MaterialTheme.colorScheme.onSurface,
+    showFallbackSurface: Boolean = true,
 ) {
-    Box(
-        modifier =
-            Modifier
-                .size(size.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(appColor(app)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = appMark(app),
-            fontWeight = FontWeight.Bold,
+    val glyphPackage = approvedGlyphPackage(app)
+    if (glyphPackage != null) {
+        SableGlyphIcon(
+            packageName = glyphPackage,
+            accent = appColor(app),
+            modifier = Modifier.size(size.dp),
+            compact = size <= 46,
         )
+        return
+    }
+
+    val context = LocalContext.current
+    val densityDpi = context.resources.displayMetrics.densityDpi
+    val icon =
+        remember(app.stableKey(), size, densityDpi) {
+            loadLauncherIcon(
+                context = context,
+                app = app,
+                sizeDp = size,
+            )
+        }
+
+    if (icon != null) {
+        Image(
+            bitmap = icon.asImageBitmap(),
+            contentDescription = null,
+            modifier =
+                Modifier
+                    .size(size.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Fit,
+        )
+    } else {
+        Box(
+            modifier =
+                Modifier
+                    .size(size.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .then(
+                        if (showFallbackSurface) {
+                            Modifier.background(appColor(app))
+                        } else {
+                            Modifier
+                        },
+                    ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = appMark(app),
+                fontWeight = FontWeight.Bold,
+                color = fallbackContentColor,
+            )
+        }
     }
 }
+
+private fun approvedGlyphPackage(app: AppEntry): String? {
+    val packageName = app.component.packageName
+    if (sableGlyphForPackage(packageName) != null) return packageName
+
+    return when {
+        app.label.equals("Phone", ignoreCase = true) -> "com.android.dialer"
+        app.label.equals("Sable Messages", ignoreCase = true) ||
+            app.label.equals("Messages", ignoreCase = true) -> "org.sableos.hub"
+        app.label.equals("Sable Mail", ignoreCase = true) ||
+            app.label.equals("Mail", ignoreCase = true) -> "org.sableos.mail"
+        app.label.equals("Sable Calendar", ignoreCase = true) ||
+            app.label.equals("Calendar", ignoreCase = true) -> "org.sableos.calendar"
+        app.label.equals("Sable Weather", ignoreCase = true) ||
+            app.label.equals("Weather", ignoreCase = true) -> "org.sableos.weather"
+        app.label.equals("Photos", ignoreCase = true) ||
+            app.label.equals("Gallery", ignoreCase = true) -> "com.android.gallery3d"
+        app.label.equals("Sable Media", ignoreCase = true) ||
+            app.label.equals("Media", ignoreCase = true) -> "org.sableos.media"
+        app.label.equals("Camera", ignoreCase = true) -> "app.grapheneos.camera"
+        app.label.equals("Sable Calculator", ignoreCase = true) ||
+            app.label.equals("Calculator", ignoreCase = true) -> "org.sableos.calculator"
+        app.label.equals("Files", ignoreCase = true) -> "com.android.documentsui"
+        app.label.equals("Clock", ignoreCase = true) -> "com.android.deskclock"
+        app.label.equals("Vanadium", ignoreCase = true) -> "app.vanadium.browser"
+        app.label.equals("Settings", ignoreCase = true) -> "com.android.settings"
+        else -> null
+    }
+}
+
+private fun loadLauncherIcon(
+    context: Context,
+    app: AppEntry,
+    sizeDp: Int,
+): Bitmap? =
+    runCatching {
+        val launcherApps = context.getSystemService(LauncherApps::class.java)
+        val activityInfo =
+            launcherApps
+                .getActivityList(app.component.packageName, app.user)
+                .firstOrNull { candidate ->
+                    candidate.componentName == app.component
+                } ?: return@runCatching null
+
+        val densityDpi = context.resources.displayMetrics.densityDpi
+        val density = context.resources.displayMetrics.density
+        val iconSizePx =
+            (sizeDp * density)
+                .toInt()
+                .coerceAtLeast(1)
+        val insetPx = (iconSizePx * 0.06f).toInt()
+        val drawable = activityInfo.getBadgedIcon(densityDpi)
+        val bitmap =
+            Bitmap.createBitmap(
+                iconSizePx,
+                iconSizePx,
+                Bitmap.Config.ARGB_8888,
+            )
+        val canvas = Canvas(bitmap)
+
+        drawable.setBounds(
+            insetPx,
+            insetPx,
+            iconSizePx - insetPx,
+            iconSizePx - insetPx,
+        )
+        drawable.draw(canvas)
+        bitmap
+    }.getOrNull()
 
 @Composable
 private fun SablePeekScreen(
     app: AppEntry,
-    isPinned: Boolean,
+    isFavorite: Boolean,
+    isStartTile: Boolean,
     onClose: () -> Unit,
     onOpen: () -> Unit,
     onOpenAppInfo: () -> Unit,
-    onTogglePinned: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onToggleStartTile: () -> Unit,
 ) {
     Box(
         modifier =
@@ -1040,79 +1478,118 @@ private fun SablePeekScreen(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background),
     ) {
-        TextButton(
-            onClick = onClose,
+        Text(
+            text = "close",
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
-                    .padding(10.dp),
-        ) {
-            Text("Close")
-        }
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onClose)
+                    .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 12.dp),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
 
-        Surface(
+        Column(
             modifier =
                 Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(12.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            shape = RoundedCornerShape(6.dp),
+                    .padding(horizontal = 20.dp, vertical = 28.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
+            Box(
+                modifier =
+                    Modifier
+                        .width(54.dp)
+                        .height(4.dp)
+                        .background(MaterialTheme.colorScheme.primary),
+            )
+            Spacer(Modifier.height(18.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    AppMark(app = app, size = 54)
-                    Spacer(Modifier.width(14.dp))
-                    Column(modifier = Modifier.weight(1f)) {
+                AppMark(app = app, size = 58)
+                Spacer(Modifier.width(14.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = app.label,
+                        fontSize = 34.sp,
+                        lineHeight = 38.sp,
+                        fontWeight = FontWeight.Light,
+                    )
+                    Text(
+                        text = "peek",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (app.privacySummary.isNotBlank()) {
                         Text(
-                            text = app.label,
-                            style = MaterialTheme.typography.headlineLarge,
-                        )
-                        Text(
-                            text = "Sable Peek",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = app.privacySummary,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
                         )
                     }
                 }
+            }
 
-                Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(18.dp))
 
-                Button(
-                    onClick = onOpen,
-                    modifier =
-                        Modifier
-                            .fillMaxWidth()
-                            .height(54.dp),
-                    shape = RoundedCornerShape(6.dp),
-                ) {
-                    Text("Open")
-                }
-
-                Spacer(Modifier.height(8.dp))
-
-                ContextAction(
-                    mark = if (isPinned) "−" else "+",
-                    label = if (isPinned) "Unpin from Favorites" else "Pin to Favorites",
-                    onClick = onTogglePinned,
-                )
-                ContextAction(
-                    mark = "ⓘ",
-                    label = "Permissions & app info",
-                    onClick = onOpenAppInfo,
-                )
-
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 54.dp)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable(onClick = onOpen)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    text = "Published app shortcuts and notification content stay hidden until their Android capability and privacy gates are wired.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 12.dp),
+                    text = "open",
+                    fontSize = 20.sp,
+                    lineHeight = 22.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(Modifier.weight(1f))
+                Text(
+                    text = "→",
+                    fontSize = 22.sp,
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
+
+            Spacer(Modifier.height(6.dp))
+
+            ContextAction(
+                mark = if (isStartTile) "−" else "+",
+                label = if (isStartTile) "remove from start" else "pin to start",
+                onClick = onToggleStartTile,
+            )
+            ContextAction(
+                mark = if (isFavorite) "−" else "+",
+                label =
+                    if (isFavorite) {
+                        "unpin from favorites"
+                    } else {
+                        "pin to favorites"
+                    },
+                onClick = onToggleFavorite,
+            )
+            ContextAction(
+                mark = "ⓘ",
+                label = "permissions + app info",
+                onClick = onOpenAppInfo,
+            )
+
+            Text(
+                text = "Shortcuts and notification content stay hidden until Android capability and privacy gates are wired.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 10.dp),
+            )
         }
     }
 }
@@ -1129,108 +1606,185 @@ private fun AppearanceScreen(
             Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        contentPadding = PaddingValues(bottom = 28.dp),
     ) {
         item {
             MetroHeader(
                 title = "appearance",
                 onBack = onBack,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
             SectionLabel("theme")
+            Spacer(Modifier.height(4.dp))
         }
 
         items(AppearanceMode.entries) { mode ->
             val selected = appearance.mode == mode
-            Button(
+            AppearanceChoiceRow(
+                title =
+                    when (mode) {
+                        AppearanceMode.FollowSystem -> "follow system"
+                        AppearanceMode.Light -> "light"
+                        AppearanceMode.Dark -> "dark"
+                    },
+                selected = selected,
+                accent = appearance.accent.color,
                 onClick = {
                     onAppearanceChanged(
                         appearance.copy(mode = mode),
                     )
                 },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(5.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (selected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        contentColor =
-                            if (selected) {
-                                MaterialTheme.colorScheme.onPrimary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                    ),
-            ) {
-                Text(
-                    when (mode) {
-                        AppearanceMode.FollowSystem -> "Follow system"
-                        AppearanceMode.Light -> "Light"
-                        AppearanceMode.Dark -> "Dark"
-                    },
-                )
-            }
+            )
         }
 
         item {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(14.dp))
             SectionLabel("accent")
+            Spacer(Modifier.height(4.dp))
         }
 
         items(AccentPreset.entries) { accent ->
             val selected = appearance.accent == accent
-            Button(
+            AccentChoiceRow(
+                accent = accent,
+                selected = selected,
                 onClick = {
                     onAppearanceChanged(
                         appearance.copy(accent = accent),
                     )
                 },
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-                shape = RoundedCornerShape(5.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = accent.color,
-                        contentColor = accent.onColor,
-                    ),
-            ) {
-                Text(
-                    text =
-                        if (selected) {
-                            "✓  ${accent.displayName}"
-                        } else {
-                            accent.displayName
-                        },
-                )
-            }
+            )
         }
 
         item {
-            TextButton(
-                onClick = onReset,
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = "reset · follow system + Sable Blue",
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 48.dp),
-            ) {
-                Text("Reset to Follow system · Sable Blue")
-            }
+                        .heightIn(min = 48.dp)
+                        .clickable(onClick = onReset)
+                        .padding(vertical = 12.dp),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
         }
     }
 }
 
 @Composable
+private fun AppearanceChoiceRow(
+    title: String,
+    selected: Boolean,
+    accent: Color,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 54.dp)
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .width(4.dp)
+                    .height(34.dp)
+                    .background(
+                        if (selected) {
+                            accent
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
+                    ),
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight =
+                if (selected) {
+                    FontWeight.Medium
+                } else {
+                    FontWeight.Normal
+                },
+        )
+        if (selected) {
+            Text(
+                text = "✓",
+                fontSize = 20.sp,
+                color = accent,
+            )
+        }
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
+}
+
+@Composable
+private fun AccentChoiceRow(
+    accent: AccentPreset,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 54.dp)
+                .clickable(onClick = onClick)
+                .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(22.dp)
+                    .background(accent.color),
+        )
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = accent.displayName.lowercase(Locale.getDefault()),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight =
+                if (selected) {
+                    FontWeight.Medium
+                } else {
+                    FontWeight.Normal
+                },
+        )
+        if (selected) {
+            Text(
+                text = "✓",
+                fontSize = 20.sp,
+                color = accent.color,
+            )
+        }
+    }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
+}
+
+@Composable
 private fun LiveSurfaceScreen(
     snapshot: LiveSurfaceSnapshot,
+    apps: List<AppEntry>,
     onBack: () -> Unit,
     onRequestPermissions: () -> Unit,
 ) {
@@ -1242,11 +1796,16 @@ private fun LiveSurfaceScreen(
         contentPadding = PaddingValues(bottom = 28.dp),
     ) {
         item {
-            MetroHeader(
-                title = "local context",
-                onBack = onBack,
+            Text(
+                text = "live",
+                style = MaterialTheme.typography.displayLarge,
             )
-            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Useful state only. No fake feeds and no ambient polling.",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(18.dp))
             Text(
                 text = snapshot.timeText,
                 style = MaterialTheme.typography.displayLarge,
@@ -1257,93 +1816,293 @@ private fun LiveSurfaceScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(18.dp))
+
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.weather"),
+                title = "Sable Weather",
+                datum = snapshot.weather,
+                kind = "weather",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.calendar"),
+                title = "Calendar",
+                datum = snapshot.calendar,
+                kind = "calendar",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.hub"),
+                title = "Sable Messages",
+                datum = snapshot.messages,
+                kind = "messages",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.mail"),
+                title = "Sable Mail",
+                datum = snapshot.mail,
+                kind = "mail",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "org.sableos.media"),
+                title = "Sable Media",
+                datum = snapshot.music,
+                kind = "media",
+            )
+            ApprovedLiveRow(
+                app = findLiveApp(apps, "com.android.gallery3d"),
+                title = "Photos",
+                datum = snapshot.photos,
+                kind = "photos",
+            )
         }
 
-        item {
-            LiveCard("17", snapshot.calendar)
-            Spacer(Modifier.height(8.dp))
-            LiveCard("♪", snapshot.music)
-            Spacer(Modifier.height(8.dp))
-            LiveCard("▣", snapshot.photos)
-            Spacer(Modifier.height(14.dp))
-        }
-
-        if (
-            snapshot.photos.availability == LiveAvailability.PERMISSION_REQUIRED ||
-                snapshot.music.availability == LiveAvailability.PERMISSION_REQUIRED ||
-                snapshot.calendar.availability == LiveAvailability.PERMISSION_REQUIRED
-        ) {
+        if (snapshot.photos.availability == LiveAvailability.PERMISSION_REQUIRED) {
             item {
-                Button(
-                    onClick = onRequestPermissions,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(6.dp),
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 54.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .border(
+                                1.dp,
+                                MaterialTheme.colorScheme.primary,
+                                RoundedCornerShape(6.dp),
+                            )
+                            .clickable(onClick = onRequestPermissions)
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Enable local live data")
+                    Text(
+                        text = "+  enable local photos",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
-                Spacer(Modifier.height(14.dp))
             }
-        }
-
-        item {
-            Text(
-                text = "Weather and tasks remain unavailable until explicit providers are configured.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "SableStart does not perform ambient network search or invent remote context.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
         }
     }
 }
 
-@Composable
-private fun LiveCard(
-    mark: String,
-    datum: LiveDatum,
-) {
-    val status =
-        when (datum.availability) {
-            LiveAvailability.LOADING -> "loading"
-            LiveAvailability.LIVE -> "live"
-            LiveAvailability.EMPTY -> "empty"
-            LiveAvailability.PERMISSION_REQUIRED -> "permission required"
-            LiveAvailability.UNAVAILABLE -> "unavailable"
-            LiveAvailability.ERROR -> "error"
+private fun findLiveApp(
+    apps: List<AppEntry>,
+    packageName: String,
+): AppEntry? =
+    apps.firstOrNull { it.component.packageName == packageName }
+        ?: when (packageName) {
+            "org.sableos.weather" ->
+                apps.firstOrNull { it.label.equals("Sable Weather", ignoreCase = true) }
+            "org.sableos.mail" ->
+                apps.firstOrNull { it.label.equals("Sable Mail", ignoreCase = true) }
+            else -> null
         }
 
+private data class ApprovedLiveContent(
+    val primary: String,
+    val secondary: String,
+    val state: String,
+    val accent: Color,
+)
+
+private fun approvedLiveContent(
+    kind: String,
+    datum: LiveDatum,
+): ApprovedLiveContent {
+    val unavailable =
+        datum.availability !in setOf(
+            LiveAvailability.LIVE,
+            LiveAvailability.EMPTY,
+        )
+
+    if (unavailable) {
+        val state =
+            when (datum.availability) {
+                LiveAvailability.LOADING -> "LOADING"
+                LiveAvailability.PERMISSION_REQUIRED -> "ACCESS"
+                LiveAvailability.ERROR -> "ERROR"
+                else -> "OFFLINE"
+            }
+        return ApprovedLiveContent(
+            primary = datum.detail.ifBlank { "unavailable" },
+            secondary = "no fabricated content",
+            state = state,
+            accent = SableSlate,
+        )
+    }
+
+    return when (kind) {
+        "weather" -> {
+            val parts = datum.detail.split(" · ")
+            val location = parts.firstOrNull().orEmpty()
+            val primary = parts.drop(1).joinToString(" · ").ifBlank { datum.detail }
+            ApprovedLiveContent(
+                primary = primary,
+                secondary =
+                    buildString {
+                        if (location.isNotBlank()) {
+                            append(location)
+                            append(" · ")
+                        }
+                        append(observedAge(datum.observedAtEpochMs))
+                    },
+                state = "LIVE",
+                accent = SableBlue,
+            )
+        }
+
+        "calendar" ->
+            ApprovedLiveContent(
+                primary = datum.detail,
+                secondary = "next event",
+                state = "NEXT",
+                accent = SableOrange,
+            )
+
+        "messages" ->
+            ApprovedLiveContent(
+                primary = datum.detail,
+                secondary = "message content stays private on Home",
+                state = "PRIVATE",
+                accent = SableGreen,
+            )
+
+        "mail" ->
+            ApprovedLiveContent(
+                primary =
+                    datum.detail
+                        .replace("mail alert", "unread")
+                        .replace("unreads", "unread"),
+                secondary = "subject previews off",
+                state = "PRIVATE",
+                accent = SableSlate,
+            )
+
+        "media" -> {
+            val parts = datum.detail.split(" · ")
+            ApprovedLiveContent(
+                primary = parts.firstOrNull().orEmpty().ifBlank { "nothing playing" },
+                secondary = parts.drop(1).joinToString(" · ").ifBlank { "local playback" },
+                state =
+                    if (datum.detail.contains("playing", ignoreCase = true)) {
+                        "PLAYING"
+                    } else {
+                        "PAUSED"
+                    },
+                accent = SablePurple,
+            )
+        }
+
+        "photos" ->
+            ApprovedLiveContent(
+                primary =
+                    datum.detail
+                        .replace(" photos", " local photos")
+                        .replace(" photo", " local photo"),
+                secondary = "device media only",
+                state = "LOCAL",
+                accent = SablePurple,
+            )
+
+        else ->
+            ApprovedLiveContent(
+                primary = datum.detail,
+                secondary = datum.title,
+                state = "LIVE",
+                accent = SableBlue,
+            )
+    }
+}
+
+private fun observedAge(observedAtEpochMs: Long): String {
+    if (observedAtEpochMs <= 0L) return "updated recently"
+    val ageMinutes =
+        ((System.currentTimeMillis() - observedAtEpochMs).coerceAtLeast(0L) / 60_000L)
+    return when {
+        ageMinutes <= 1L -> "updated now"
+        ageMinutes < 60L -> "updated " + ageMinutes + " min ago"
+        else -> "updated today"
+    }
+}
+
+@Composable
+private fun ApprovedLiveRow(
+    app: AppEntry?,
+    title: String,
+    datum: LiveDatum,
+    kind: String,
+) {
+    val content = approvedLiveContent(kind, datum)
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .heightIn(min = 72.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
+                .heightIn(min = 78.dp)
+                .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(mark, fontSize = 26.sp)
-        Spacer(Modifier.width(14.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(datum.title, style = MaterialTheme.typography.bodyLarge)
-            Text(
-                datum.detail,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        if (app != null) {
+            AppMark(
+                app = app,
+                size = 48,
+                fallbackContentColor = MaterialTheme.colorScheme.onSurface,
+                showFallbackSurface = true,
             )
-            if (!datum.detail.equals(status, ignoreCase = true)) {
+        } else {
+            Box(
+                modifier =
+                    Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(content.accent.copy(alpha = 0.16f))
+                        .border(
+                            1.dp,
+                            content.accent.copy(alpha = 0.55f),
+                            RoundedCornerShape(11.dp),
+                        ),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
-                    status,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = title.take(1),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = content.accent,
                 )
             }
         }
+        Spacer(Modifier.width(14.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = content.primary,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = content.secondary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = content.state,
+            style = MaterialTheme.typography.labelLarge,
+            color = content.accent,
+        )
     }
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+    )
 }
 
 @Composable
@@ -1471,46 +2230,68 @@ private fun alphabetSection(
     return if (first.firstOrNull()?.isLetter() == true) first else "#"
 }
 
-private fun choosePrimaryApps(
+private fun resolveStartApps(
     apps: List<AppEntry>,
-    pinnedApps: List<AppEntry>,
+    explicitKeys: Set<String>?,
 ): List<AppEntry> {
-    val candidates =
-        apps.filterNot { app ->
-            app.label.equals("Settings", ignoreCase = true) ||
-                app.component.packageName == "com.android.settings"
-        }
-    val candidateKeys = candidates.mapTo(mutableSetOf()) { it.stableKey() }
+    if (explicitKeys != null) {
+        return apps
+            .filter { it.stableKey() in explicitKeys }
+            .sortedWith(startTileComparator())
+    }
+
     val selected = linkedMapOf<String, AppEntry>()
 
-    pinnedApps
-        .filter { it.stableKey() in candidateKeys }
+    PREFERRED_START_APP_GROUPS.forEach { group ->
+        val selectedApp =
+            apps.firstOrNull { app ->
+                app.component.packageName in group.packageNames
+            } ?: apps.firstOrNull { app ->
+                group.labels.any { preferred ->
+                    app.label.equals(preferred, ignoreCase = true)
+                }
+            }
+
+        selectedApp?.let { app ->
+            selected.putIfAbsent(app.stableKey(), app)
+        }
+    }
+
+    apps
+        .filterNot(::isSettingsApp)
+        .sortedWith(startTileComparator())
         .forEach { app ->
-            selected.putIfAbsent(app.stableKey(), app)
+            if (selected.size < DEFAULT_START_TILE_TARGET) {
+                selected.putIfAbsent(app.stableKey(), app)
+            }
         }
 
-    PRIMARY_APP_LABELS.forEach { preferred ->
-        candidates.firstOrNull { app ->
-            app.label.equals(preferred, ignoreCase = true)
-        }?.let { app ->
-            selected.putIfAbsent(app.stableKey(), app)
-        }
-    }
-
-    candidates.forEach { app ->
-        selected.putIfAbsent(app.stableKey(), app)
-    }
-
-    return selected.values.take(MAX_PRIMARY_APPS)
+    return selected.values.take(DEFAULT_START_TILE_TARGET)
 }
 
-private fun chooseContextDatum(snapshot: LiveSurfaceSnapshot): LiveDatum? =
-    when {
-        snapshot.calendar.availability == LiveAvailability.LIVE -> snapshot.calendar
-        snapshot.music.availability == LiveAvailability.LIVE -> snapshot.music
-        snapshot.photos.availability == LiveAvailability.LIVE -> snapshot.photos
-        else -> null
+private fun startTileComparator(): Comparator<AppEntry> =
+    compareBy<AppEntry> { app ->
+        preferredStartRank(app)
+    }.thenBy { app ->
+        app.label.lowercase(Locale.getDefault())
+    }.thenBy { app ->
+        app.component.flattenToString()
     }
+
+private fun preferredStartRank(app: AppEntry): Int {
+    val index =
+        PREFERRED_START_APP_GROUPS.indexOfFirst { group ->
+            app.component.packageName in group.packageNames ||
+                group.labels.any { preferred ->
+                    app.label.equals(preferred, ignoreCase = true)
+                }
+        }
+    return if (index >= 0) index else Int.MAX_VALUE
+}
+
+private fun isSettingsApp(app: AppEntry): Boolean =
+    app.label.equals("Settings", ignoreCase = true) ||
+        app.component.packageName == "com.android.settings"
 
 private fun appMark(app: AppEntry): String =
     app.label
@@ -1519,28 +2300,111 @@ private fun appMark(app: AppEntry): String =
         .uppercase()
         .ifEmpty { "•" }
 
-private fun appColor(app: AppEntry): Color {
-    val index = Math.floorMod(app.stableKey().hashCode(), SableTilePalette.size)
-    return SableTilePalette[index]
-}
+private fun appColor(app: AppEntry): Color =
+    when {
+        app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Messages", ignoreCase = true) -> SableGreen
+        app.component.packageName == "org.sableos.mail" ||
+            app.label.equals("Sable Mail", ignoreCase = true) -> SableSlate
+        app.component.packageName == "org.sableos.calendar" ||
+            app.label.equals("Calendar", ignoreCase = true) -> SableOrange
+        app.component.packageName == "org.sableos.weather" ||
+            app.label.equals("Sable Weather", ignoreCase = true) -> SableBlue
+        app.component.packageName == "org.sableos.media" ||
+            app.label.equals("Sable Media", ignoreCase = true) -> SablePurple
+        app.component.packageName == "com.android.gallery3d" ||
+            app.label.equals("Photos", ignoreCase = true) -> SablePurple
+        app.component.packageName == "app.grapheneos.camera" ||
+            app.label.equals("Camera", ignoreCase = true) -> SableSlate
+        app.component.packageName == "org.sableos.calculator" ||
+            app.label.equals("Sable Calculator", ignoreCase = true) -> SableBlue
+        app.component.packageName == "com.android.documentsui" ||
+            app.label.equals("Files", ignoreCase = true) -> SableOrange
+        app.component.packageName == "com.android.dialer" ||
+            app.label.equals("Phone", ignoreCase = true) -> SableBlue
+        else -> {
+            val index =
+                Math.floorMod(
+                    app.stableKey().hashCode(),
+                    SableTilePalette.size,
+                )
+            SableTilePalette[index]
+        }
+    }
 
-private val PRIMARY_APP_LABELS =
+private fun liveDatumForApp(
+    app: AppEntry,
+    snapshot: LiveSurfaceSnapshot,
+): LiveDatum? =
+    when {
+        app.component.packageName == "org.sableos.calendar" ||
+            app.label.equals("Calendar", ignoreCase = true) -> snapshot.calendar
+        app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Messages", ignoreCase = true) -> snapshot.messages
+        app.component.packageName == "org.sableos.mail" ||
+            app.label.equals("Sable Mail", ignoreCase = true) -> snapshot.mail
+        app.component.packageName == "org.sableos.weather" ||
+            app.label.equals("Sable Weather", ignoreCase = true) -> snapshot.weather
+        app.component.packageName == "org.sableos.media" ||
+            app.label.equals("Sable Media", ignoreCase = true) -> snapshot.music
+        app.component.packageName == "com.android.gallery3d" ||
+            app.label.equals("Photos", ignoreCase = true) -> snapshot.photos
+        else -> null
+    }
+
+private fun isWideStartTile(app: AppEntry): Boolean =
+    app.component.packageName == "org.sableos.calendar" ||
+        app.component.packageName == "org.sableos.media"
+
+private data class PreferredStartAppGroup(
+    val packageNames: Set<String> = emptySet(),
+    val labels: List<String>,
+)
+
+private val PREFERRED_START_APP_GROUPS =
     listOf(
-        "Sable Mail",
-        "Sable Messages",
-        "Messages",
-        "Phone",
-        "Calendar",
-        "Photos",
-        "Sable Media",
-        "Camera",
-        "Sable Calculator",
-        "Calculator",
-        "Files",
-        "Vanadium",
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.calendar"),
+            labels = listOf("Sable Calendar", "Calendar"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.hub"),
+            labels = listOf("Sable Messages", "Messages"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.weather"),
+            labels = listOf("Sable Weather", "Weather"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.media"),
+            labels = listOf("Sable Media", "Media"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.mail"),
+            labels = listOf("Sable Mail", "Mail"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("com.android.dialer"),
+            labels = listOf("Phone"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("app.grapheneos.camera"),
+            labels = listOf("Camera"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("com.android.gallery3d"),
+            labels = listOf("Photos", "Gallery"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("org.sableos.calculator"),
+            labels = listOf("Sable Calculator", "Calculator"),
+        ),
+        PreferredStartAppGroup(
+            packageNames = setOf("com.android.documentsui"),
+            labels = listOf("Files"),
+        ),
     )
 
-private const val MAX_PRIMARY_APPS = 3
-private const val MAX_START_TILES = 4
-private const val MAX_FAVORITES_ON_START = 6
+private const val DEFAULT_START_TILE_TARGET = 10
+private const val MAX_FAVORITES_ON_START = 4
 private const val MAX_SESSION_RECENTS = 8

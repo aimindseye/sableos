@@ -4,8 +4,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 source "$ROOT/build/config/r8-host-tools.env"
+source "$ROOT/build/console.sh"
+sable_console_capture_color
 
 PROFILE="${1:-core}"
+SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"
+SABLEOS_RELEASE_VERSION="${SABLEOS_RELEASE_VERSION:-R9}"
 case "$PROFILE" in
   core|full|release) ;;
   *)
@@ -31,8 +35,11 @@ mkdir -p "$EVIDENCE_DIR"
 
 exec > >(tee "$EVIDENCE_DIR/local-ci.log") 2>&1
 
+sable_checkpoint_info "Local CI profile=$PROFILE source=$SOURCE_COMMIT"
 echo "===== SABLE LOCAL CI ====="
 echo "PROFILE=$PROFILE"
+echo "SABLEOS_DEVICE=$SABLEOS_DEVICE"
+echo "SABLEOS_RELEASE_VERSION=$SABLEOS_RELEASE_VERSION"
 echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "CACHE_ROOT=$CACHE_ROOT"
@@ -54,8 +61,15 @@ stage() {
   shift
   echo
   echo "===== $name ====="
-  "$@"
-  echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+  if "$@"; then
+    echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+    sable_checkpoint_pass "CI stage $name"
+  else
+    local rc=$?
+    echo "SABLE_LOCAL_CI_STAGE_$name=FAIL rc=$rc"
+    sable_checkpoint_fail "CI stage $name"
+    return "$rc"
+  fi
 }
 
 run_policy() {
@@ -79,43 +93,132 @@ run_static() {
       'apps/r8/**/*.sh' \
       'build/*.sh' \
       'build/host/*.sh' \
+      'build/macos/*.sh' \
       'build/panther/*.sh' \
+      'build/deploy/*.sh' \
+      'build/devices/*.sh' \
       'build/gates/*.sh' \
       'tests/sablestart/host/*.sh' \
-      'tests/sablestart/device/*.sh'
+      'tests/sablestart/device/*.sh' \
+      'tests/launcher3/device/*.sh'
   )
   echo "SABLE_LOCAL_CI_ACTIVE_SHELL_SYNTAX_COUNT=$shell_count"
 
-  local python_count=0
-  while IFS= read -r py; do
-    [[ -n "$py" ]] || continue
-    python3 -m py_compile "$ROOT/$py"
-    python_count=$((python_count + 1))
-  done < <(
+  mapfile -t python_files < <(
     git -C "$ROOT" ls-files -- \
       'apps/r8/*.py' \
       'apps/r8/**/*.py' \
       'build/*.py' \
+      'build/deploy/*.py' \
       'build/gates/*.py' \
       'patches/android-17-grapheneos-2026081300/*.py'
   )
+  local python_count="${#python_files[@]}"
+
+  python3 - "$ROOT" "${python_files[@]}" <<'PY'
+import pathlib
+import sys
+import tokenize
+
+root = pathlib.Path(sys.argv[1])
+failures: list[str] = []
+
+for rel in sys.argv[2:]:
+    path = root / rel
+    try:
+        with tokenize.open(path) as source_file:
+            source = source_file.read()
+        compile(source, str(path), "exec", dont_inherit=True)
+    except (OSError, SyntaxError, UnicodeError) as exc:
+        failures.append(f"{rel}: {exc}")
+
+if failures:
+    print("SABLE_LOCAL_CI_PYTHON_SYNTAX=FAIL")
+    for failure in failures:
+        print(f"PYTHON_SYNTAX_FAILURE={failure}")
+    raise SystemExit(1)
+
+print("SABLE_LOCAL_CI_PYTHON_SYNTAX=PASS")
+PY
   echo "SABLE_LOCAL_CI_ACTIVE_PYTHON_SYNTAX_COUNT=$python_count"
 
   # tools/validation/** is a byte-preserved historical evidence archive, not
   # the maintained CI execution surface. Its SHA-bound artifacts are not
   # rewritten or syntax-qualified as current tooling.
 
+  local applicator_self_test_failures=0
   for applicator in "$ROOT"/patches/android-17-grapheneos-2026081300/apply_*.py; do
     [[ -f "$applicator" ]] || continue
     if grep -Fq -- '--self-test' "$applicator"; then
-      python3 "$applicator" --self-test
+      if ! python3 "$applicator" --self-test; then
+        echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TEST_FAILURE=$applicator"
+        applicator_self_test_failures=$((applicator_self_test_failures + 1))
+      fi
     fi
   done
+  if [[ "$applicator_self_test_failures" -ne 0 ]]; then
+    echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=FAIL count=$applicator_self_test_failures"
+    return 1
+  fi
+  echo "SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS"
 
-  bash "$ROOT/build/gates/r8-build-driver-contract.sh"
-  bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
-  python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
-  python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  local static_contract_failures=0
+  local -a static_contract_failure_names=()
+
+  run_static_contract() {
+    local name="$1"
+    shift
+    if ! "$@"; then
+      echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE=$name"
+      static_contract_failure_names+=("$name")
+      static_contract_failures=$((static_contract_failures + 1))
+    fi
+  }
+
+  run_static_contract r8-build-driver \
+    bash "$ROOT/build/gates/r8-build-driver-contract.sh"
+  run_static_contract sable-pipeline \
+    bash "$ROOT/build/gates/sable-pipeline-contract.sh"
+  run_static_contract r9-physical-remediation \
+    python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
+  run_static_contract r9-system-cohesion \
+    python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
+  run_static_contract r9-physical-ux-closure \
+    python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  run_static_contract r9-textreader-standalone \
+    python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
+  run_static_contract r9-sms-mms-blocking \
+    python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
+  run_static_contract r9-first-party-app-icon \
+    python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  run_static_contract r9-media-flow \
+    python3 "$ROOT/build/gates/r9-media-flow-contract.py"
+  run_static_contract r9-messages-native-first \
+    python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+  run_static_contract r9-messages-local-conversation \
+    python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  run_static_contract r9-messages-source-style \
+    python3 "$ROOT/build/gates/r9-messages-source-style.py"
+  run_static_contract r8-no-stale-product-code \
+    env R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO \
+      bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
+  run_static_contract r9-sablestart-design-self-test \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
+  run_static_contract r9-sablestart-design \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  run_static_contract r9-launcher3-foundation-self-test \
+    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
+  run_static_contract r9-launcher3-foundation \
+    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+
+  if [[ "$static_contract_failures" -ne 0 ]]; then
+    local failure_csv
+    failure_csv="$(IFS=,; printf '%s' "${static_contract_failure_names[*]}")"
+    echo "SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=$failure_csv"
+    echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=FAIL count=$static_contract_failures"
+    return 1
+  fi
+  echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=PASS"
 }
 
 run_rust() {
@@ -138,11 +241,15 @@ run_android() {
   export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
   export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"
   export JAVA_HOME="$SABLE_JDK17"
-  export PATH="$JAVA_HOME/bin:$PATH"
+  export CARGO_HOME="$SABLE_CARGO_HOME"
+  export RUSTUP_HOME="$SABLE_RUSTUP_HOME"
+  export CARGO="$SABLE_CARGO"
+  export RUSTC="$SABLE_RUSTC"
+  export PATH="$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_CARGO_HOME/bin:$JAVA_HOME/bin:$PATH"
 
   (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-production-check:compileDebugKotlin       :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :sablestart-production-check:lintDebug       --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin        :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :weather:assembleDebug       :calendar:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :weather:lintDebug       :calendar:lintDebug       :sablestart-presentation-check:lintDebug        --stacktrace --console=plain --no-daemon
   )
 }
 
@@ -189,7 +296,7 @@ run_quality() {
 
   (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :weather:detekt       :calendar:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :weather:ktlintCheck       :calendar:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
   )
 
   verify_shared_security_tools
@@ -283,6 +390,8 @@ run_apk_seal() {
     "$ROOT/apps/r8/android/games/build/outputs/apk/game2048/debug/games-game2048-debug.apk"
     "$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk"
     "$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
+    "$ROOT/apps/r8/android/weather/build/outputs/apk/debug/weather-debug.apk"
+    "$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk"
   )
 
   : > "$EVIDENCE_DIR/R8_APK_SEALS.txt"
@@ -297,8 +406,8 @@ run_apk_seal() {
     "$aapt2" dump permissions "$apk"       | tee -a "$EVIDENCE_DIR/R8_APK_SEALS.txt"
   done
 
-  test "$(grep -c '^===== ' "$EVIDENCE_DIR/R8_APK_SEALS.txt")" -eq 6
-  for pkg in     org.sableos.calculator     org.sableos.media     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.hub
+  test "$(grep -c '^===== ' "$EVIDENCE_DIR/R8_APK_SEALS.txt")" -eq 8
+  for pkg in     org.sableos.calculator     org.sableos.media     org.sableos.sudoku     org.sableos.minesweeper     org.sableos.game2048     org.sableos.hub     org.sableos.weather     org.sableos.calendar
   do
     grep -q "name='$pkg'" "$EVIDENCE_DIR/R8_APK_SEALS.txt"
   done
@@ -348,6 +457,9 @@ run_textreader() {
   mkdir -p "$CACHE_ROOT"
   clone_pinned "$VAACHAK_TEXTREADER_REPOSITORY" "$VAACHAK_TEXTREADER_COMMIT" "$work"
 
+  python3 "$ROOT/apps/r8/textreader/apply_sable_flavor.py" "$work"
+  python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" "$work"
+
   export JAVA_HOME="$SABLE_JDK17"
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
   export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
@@ -355,40 +467,36 @@ run_textreader() {
   (
     cd "$work"
     chmod +x gradlew
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       testDebugUnitTest lintDebug assembleDebug       --stacktrace --console=plain --no-daemon --no-configuration-cache
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}" \
+      testDebugUnitTest \
+      lintDebug \
+      assembleDebug \
+      --stacktrace --console=plain --no-daemon --no-configuration-cache
 
-    manifest=app/src/main/AndroidManifest.xml
-    main=app/src/main/java/org/vaachak/textreader/MainActivity.kt
-    shared=app/src/main/java/org/vaachak/textreader/SharedComponents.kt
-    util=app/src/main/java/org/vaachak/textreader/TextReaderUtil.kt
+    mapfile -t apks < <(
+      find app/build/outputs/apk/debug \
+        -maxdepth 1 -type f -name 'SableTextReader-*.apk' -print | sort
+    )
+    [[ "${#apks[@]}" -eq 1 ]] || {
+      echo "SABLE_TEXT_READER_APK=FAIL_COUNT count=${#apks[@]}"
+      return 1
+    }
 
-    grep -q 'android.permission.CAMERA' "$manifest"
-    grep -q 'android.hardware.camera.*required="false"' "$manifest"
-    grep -q 'android.permission.INTERNET' "$manifest"
-    grep -q 'android.intent.action.SEND' "$manifest"
-    grep -q 'android.intent.action.PROCESS_TEXT' "$manifest"
-    grep -q 'ActivityResultContracts.OpenDocument' "$main"
-    grep -q 'TextToSpeech' "$main"
-    grep -q 'CreateDocument("audio/wav")' "$main"
-    grep -q 'TextRecognition.getClient' "$main"
-    grep -q 'downloadModelIfNeeded' "$shared"
-    ! grep -q '^import android\.' "$util"
-
-    find app/build/outputs/apk/debug -type f -name '*.apk'       -print -exec sha256sum {} \; > "$EVIDENCE_DIR/textreader-apk-seal.txt"
+    APKANALYZER="$SABLE_APKANALYZER" \
+      python3 "$ROOT/apps/r8/textreader/verify_sable_textreader.py" \
+        "$work" "${apks[0]}"
+    sha256sum "${apks[0]}" > "$EVIDENCE_DIR/textreader-apk-seal.txt"
   )
 }
 
 run_reader() {
   source "$ROOT/apps/r8/reader/upstream.env"
-  source "$ROOT/apps/r8/textreader/upstream.env"
   local reader="$CACHE_ROOT/vaachak-reader"
-  local text="$CACHE_ROOT/vaachak-textreader-reader"
   mkdir -p "$CACHE_ROOT"
 
   clone_pinned "$VAACHAK_REPOSITORY" "$VAACHAK_COMMIT" "$reader"
-  clone_pinned "$VAACHAK_TEXTREADER_REPOSITORY" "$VAACHAK_TEXTREADER_COMMIT" "$text"
 
-  python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader" "$text"
+  python3 "$ROOT/apps/r8/reader/apply_sable_flavor.py" "$reader"
 
   export JAVA_HOME="$SABLE_JDK21"
   export ANDROID_HOME="$SABLE_ANDROID_SDK"
@@ -504,8 +612,21 @@ fi
 
 if [[ "$PROFILE" == release ]]; then
   echo
-  echo "===== PANTHER RELEASE CANDIDATE ====="
-  EXPECTED_SOURCE_COMMIT="$SOURCE_COMMIT"   SOURCE_MUTATION_AUTHORIZED=YES   BUILD_AUTHORIZED=YES     bash "$ROOT/build/panther/run-r8-release-candidate.sh"
+  echo "===== SOURCE-BOUND VISUAL ACCEPTANCE ====="
+  python3 "$ROOT/build/gates/r9-launcher-visual-acceptance.py"
+  echo "SABLE_LOCAL_CI_STAGE_VISUAL_ACCEPTANCE=PASS"
+
+  echo
+  echo "===== DEVICE RELEASE CANDIDATE ====="
+  if [[ "$SABLEOS_DEVICE" != panther ]]; then
+    echo "SABLE_LOCAL_CI_STAGE_RELEASE=BLOCKED_UNQUALIFIED_DEVICE device=$SABLEOS_DEVICE"
+    exit 78
+  fi
+  SABLEOS_RELEASE_VERSION="$SABLEOS_RELEASE_VERSION" \
+  EXPECTED_SOURCE_COMMIT="$SOURCE_COMMIT" \
+  SOURCE_MUTATION_AUTHORIZED=YES \
+  BUILD_AUTHORIZED=YES \
+    bash "$ROOT/build/panther/run-r8-release-candidate.sh"
   echo "SABLE_LOCAL_CI_STAGE_RELEASE=PASS"
 fi
 
@@ -516,3 +637,4 @@ echo "SABLE_LOCAL_CI=PASS"
 echo "PROFILE=$PROFILE"
 echo "SOURCE_COMMIT=$SOURCE_COMMIT"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+sable_checkpoint_pass "Local CI $PROFILE complete for $SOURCE_COMMIT"

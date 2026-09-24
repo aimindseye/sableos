@@ -83,10 +83,9 @@ SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDI
 NEXT_PRODUCT_MILESTONE             R8_FINAL_UI_PRODUCT_COMPOSITION_PASS
 
 NON_PIXEL_ASSURANCE_MODEL          N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                        STOCK_CORPUS_SEALED_THEN_N0_AFTER_PANTHER_PHYSICAL_CLOSURE
-TITAN2_ELITE_ROLE                  KEYBOARD_FIRST_N0_CANDIDATE_LOCAL_GSI_PROOF_PENDING
+TITAN2_ROLE                        T0_READ_ONLY_ON_ARRIVAL_THEN_N0_AFTER_PANTHER_UI_CLOSURE
 Q27_ROLE                           FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
-Q25_ROLE                           RETIRED_NOT_PLANNED
+Q25_ROLE                           OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
 
 R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
 INFRA5_TRUSTED_RUNNER              DEFERRED_NON_BLOCKING
@@ -378,13 +377,9 @@ Sable Flow establishes:
 - touch/gesture semantics;
 - accessibility and multilingual behavior.
 
-### Unihertz Titan 2 family
+### Unihertz Titan 2
 
-Status: **PREFERRED KEYBOARD-FIRST NON-PIXEL N0 LABS AFTER PANTHER**.
-
-Titan 2 is the larger square/dual-screen reference. Titan 2 Elite is the compact
-near-square reference. Both share the same capability-driven Sable application
-model; neither is a production-security target at N0.
+Status: **PREFERRED INTERIM NON-PIXEL N0 LAB AFTER PANTHER**.
 
 Titan 2 is intended first as a GSI/userspace/UI laboratory, not a production-security target. Initial work should preserve the stock kernel, vendor, firmware and boot-chain substrate while qualifying:
 
@@ -400,9 +395,14 @@ A successful GSI boot remains `N0_GSI_USERSPACE_LAB`. It does not imply Sable-ow
 
 Status: **OPTIONAL SOURCE-AVAILABLE MEDIATEK/KERNEL RESEARCH REFERENCE**.
 
-SableOS is no longer planning engineering investment in Q25. Historical source and
-keymap repositories may remain research references, but active keyboard-device
-investment is Titan 2 -> Titan 2 Elite -> Q27. See `Q25_PORT_PLAN.md`.
+Q25 may validate lower-level areas which Titan 2 cannot if Titan 2 kernel/BSP source is unavailable:
+
+- MediaTek kernel/device-tree work;
+- source-level module and boot integration;
+- compact/square layout constraints;
+- physical keyboard/focus/navigation semantics.
+
+Q25 is not a required first non-Pixel purchase and is not a prerequisite for Q27. It must reuse the common Sable Start/Hub semantic model rather than creating a product fork. See `Q25_PORT_PLAN.md`.
 
 ### Zinwa Q27
 
@@ -410,7 +410,7 @@ Status: **FUTURE PREFERRED MODERN FULL-QWERTY CANDIDATE**.
 
 Q27 remains subject to shipped-hardware qualification of source/BSP/vendor/bootloader/security/radio/power/firmware/update behavior. Sable Flow and Hub are deliberately being designed now so Q27 can consume the same semantic model later.
 
-Q27 does not inherit support status from the Titan 2 family. It must independently qualify the N2 requirements if it is ever proposed as a production-supported device.
+Q27 does not inherit support status from Titan 2 or Q25. It must independently qualify the N2 requirements if it is ever proposed as a production-supported device.
 
 See `NON_PIXEL_MEDIATEK_ARCHITECTURE.md`, `NON_PIXEL_DEVICE_ROADMAP.md`, and `NON_PIXEL_RELEASE_VALIDATION.md`.
 
@@ -555,9 +555,9 @@ Before SableOS becomes a release candidate:
 4. M3 Sable Hub provider framework
 5. M4 social-service capsules
 6. M5 broader native apps and polish
-7. Titan 2 N0 portability/UI lab after Panther physical closure
-8. Titan 2 Elite local GSI/unlock/recovery qualification
-9. Q27 qualification when shipped hardware and source/BSP inputs are known
+7. Titan 2 N0 portability/UI lab when Panther product work is ready
+8. Q27 qualification when shipped hardware and source/BSP inputs are known
+9. Q25 only when source-level MediaTek/kernel research is specifically useful
 10. M6 AOD / Voice / Agent
 11. production signing / OTA finalization before release candidate
 ```

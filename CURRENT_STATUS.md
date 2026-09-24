@@ -1,8 +1,90 @@
 # SableOS current validated Panther status
 
-Last updated: 2026-09-20
+Last updated: 2026-09-22
 
 The canonical Android/Pixel base for active SableOS Pixel 7 development is the exact signed **GrapheneOS 2026081300** Android 17 release, with audited Sable-specific deltas layered on top.
+
+## 2026-09-22 R9 system-cohesion pre-image handoff
+
+The Panther candidate built from source
+`d35a1c9f79da1d7a0d114602f8b41fd4f799df35` is rejected for R9 physical
+daily-driver acceptance. It proved package/runtime identity but exposed native
+Launcher3 presentation escape, inconsistent global appearance propagation,
+Start-to-Settings ownership confusion and Reader chrome/content theme
+divergence.
+
+The active remediation line is:
+
+```text
+BRANCH=r9/system-cohesion-closure-20260921
+R9_WS0_BASELINE_CONTRACT=PASS_SOURCE
+R9_WS1_SYSTEM_APPEARANCE_AUTHORITY=PASS_SOURCE_SETTINGS_HOSTED
+R9_WS2_SABLE_HOME_OWNERSHIP=PASS_SOURCE
+R9_WS3_SETTINGS_CONTROL_CENTER=PASS_SOURCE_APPEARANCE_NETWORK_MANAGER
+R9_WS4_SYSTEMUI_COHESION=PASS_SOURCE
+R9_WS5_CORE_APP_READER_APPEARANCE=PASS_SOURCE
+R9_WS6_PLATFORM_SURFACE_CLASSIFICATION=PASS_SOURCE
+R9_WS7_STATIC_PIPELINE_PREFLIGHT=PASS_20260922
+R9_WS7_FIRST_PARTY_ANDROID_BUILD=PASS
+R9_WS7_READER_BUILD=PASS
+R9_WS7_MAIL_BUILD=PASS
+R9_WS7_TEN_APK_BUNDLE=PASS
+R9_WS7_CUMULATIVE_SYSTEM_SURFACES=PASS_SYSTEMUI_LATER_DIRT_RECOGNIZED
+R9_WS7_SYSTEMUI_COHESION=PASS_APPLIED_SETTINGS_AUTHORITY
+R9_WS7_SETTINGS_COHESION=PASS_APPLIED
+R9_WS7_SHARED_SABLE_DESIGN_SYNC=PASS
+R9_WS7_LAUNCHER_FOUNDATION_RESUME=PASS_SOURCE_VERIFY_BEFORE_REPLAY
+R9_WS7_LAUNCHER_COHESION=NEXT_RUNTIME_FRONTIER
+R9_WS7_SABLESTART_SYNC=FIXED_RETIRED_PROVIDER_CONTRACT_PENDING_RERUN
+R9_READER_NATIVE_STRIP_WARNING_COUNT=0
+R9_READER_KOTLIN_WARNING_COUNT=0
+R9_MAIL_GRADLE_DEPRECATIONS=DEFERRED_UPSTREAM_BUILD_TOOLING_OFFLINE_CACHE_PRESERVED
+R9_SDK_XML_WARNING=KNOWN_NONBLOCKING_CMDLINE_TOOLS_22_0
+R9_WS8_FRESH_IMAGE_PHYSICAL_ACCEPTANCE=BLOCKED_ON_WS7
+R9_MAC_VISUAL_ACCEPTANCE=WAIVED_BY_USER_FOR_R9
+R9_FINAL_VISUAL_AUTHORITY=PHYSICAL_PANTHER
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO_UNTIL_MODULE_QUALIFICATION_PASS
+```
+
+The global appearance authority is no longer Launcher3. Privileged Settings
+hosts `content://org.sableos.appearance/appearance`, persists state in
+device-protected storage and restores explicit Light/Dark through
+`UiModeManager`. Launcher, SystemUI and first-party apps consume the same
+contract. Quickstep remains the Android Recents/task implementation while
+Sable owns every HOME-facing launcher destination.
+
+Sable Settings now also contains a **Network Manager** backed directly by the
+GrapheneOS user-revocable `android.permission.INTERNET`. It provides one
+all-network access switch per mutable app. The reviewed Unihertz Mobile/WLAN
+split is not emulated because the GrapheneOS base does not provide
+transport-specific per-app enforcement; see `docs/R9_NETWORK_MANAGER.md`.
+
+The source/classification contracts are
+`docs/R9_SYSTEM_COHESION_CLOSURE.md`,
+`docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md` and
+`build/gates/r9-system-cohesion-contract.py`.
+
+The latest WS7 attempt passed the first-party Android build, Sable Reader,
+Sable Mail, the source-bound ten-APK bundle, cumulative UI5C/UI6 recognition,
+the SystemUI legacy-authority upgrade, Settings-hosted appearance/Network
+Manager application and shared Sable Design synchronization. It then stopped
+because `sync-sablestart.sh` still classified the intentionally retired
+`SableAppearanceProvider.kt` as required presentation source. That duplicated
+contract is now corrected: the provider is explicitly retired from both the
+repository and workspace sync while Settings remains the global appearance
+owner.
+
+The tracked Reader Kotlin/native-strip warning counts are both zero. An
+attempt to rewrite Thunderbird build logic solely to eliminate five Gradle 10
+deprecation warnings invalidated the offline build-logic cache and required
+uncached Kotlin 2.3.21 artifacts. That warning-only rewrite was reverted.
+Sable Mail now explicitly forbids mutations to the upstream root Gradle build
+and `build-plugin/` tree; the five upstream build-tool warnings remain visible
+and nonblocking while the offline dependency closure is preserved.
+
+The next authoritative action is to rerun local Panther module qualification on
+`ai-g732`. Only after that passes is one fresh target-files build authorized.
+
 
 ## 2026-09-19 R8 final Pixel UI closure handoff
 

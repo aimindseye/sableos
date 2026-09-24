@@ -1,14 +1,15 @@
 # Sable Flow and Hub product plan
 
-Status: **accepted product direction / implementation planning**.
+Status: **accepted product direction / implementation planning; revised for native-first messaging**.
 
-Date: 2026-09-09
+Original date: 2026-09-09  
+Native-first messaging revision: 2026-09-22
 
 This document turns the existing SableOS product principle into the concrete user-facing direction for the next product-development phase:
 
 > **Applications provide capabilities; Sable organizes people, attention and actions.**
 
-SableOS should feel like a distinct phone operating system rather than a differently branded Android distribution. The primary interaction model is a Metro-inspired, information-first shell with Sable-owned visual language, live tiles, native phone essentials, and a central Hub that organizes communication and social services without requiring a separate full Android application for every service where a safe, supported alternative is possible.
+SableOS should feel like a distinct phone operating system rather than a differently branded Android distribution. The primary interaction model is a Metro-inspired, information-first shell with Sable-owned visual language, live tiles, native phone essentials, and a central Hub that organizes communication and attention without bypassing provider-supported clients or Android application sandboxing.
 
 The working design-language name is **Sable Flow**. It is inspired by the useful interaction principles of Windows Phone / Metro but must use original Sable visual assets, naming, implementation and product identity.
 
@@ -18,9 +19,9 @@ The working design-language name is **Sable Flow**. It is inspired by the useful
 2. **Android remains the capability and enforcement substrate.** Sable replaces presentation and orchestration only where it has a clear product benefit.
 3. **No private-database scraping.** Sable Hub must not impersonate third-party applications or read their private application databases.
 4. **Official/supported integration first.** Native provider APIs are used only when the provider and user account type actually authorize the required capability.
-5. **Web capsules are a legitimate fallback.** Where a consumer service does not expose an appropriate supported API, Sable may provide an isolated web session rather than requiring the vendor's full Android application.
-6. **Provider capability is explicit.** The Hub UI must distinguish native, notification-derived, API-backed and web-backed capability instead of pretending all services are equally integrated.
-7. **Privacy boundaries remain visible.** Provider sessions, cookies and storage remain isolated by provider unless the user explicitly chooses otherwise.
+5. **Installed-app integration before embedded web emulation.** When a proprietary consumer service requires its supported Android client for account creation or primary-device behavior, Sable launches or integrates with that installed app instead of embedding an unofficial WebView client.
+6. **Provider capability is explicit.** The Hub UI must distinguish native, notification-derived, API-backed, installed-app and unavailable capability instead of pretending all services are equally integrated.
+7. **Privacy boundaries remain visible.** Third-party apps keep their normal Android sandbox and permissions. Sable may consume user-authorized Android notification/conversation surfaces, but does not own provider cookies or credentials.
 8. **One semantic product across form factors.** The same shell/Hub concepts must scale from Panther touch-first development to future Q25/Q27 compact and physical-keyboard profiles without device-name forks.
 
 ## Sable Start
@@ -158,11 +159,11 @@ notification/conversation adapter
 supported provider API adapter
     only capabilities explicitly allowed by current provider APIs/account types
 
-isolated web capsule
-    provider web application/session when a supported native consumer API is unavailable
+installed-app adapter
+    explicit launch/deep-link/share integration with a user-installed provider app
 ```
 
-The UI consumes capabilities, not provider-specific implementation details.
+The UI consumes capabilities, not provider-specific implementation details. Embedded provider WebViews are not a Sable messaging capability.
 
 ### Provider capability model
 
@@ -176,7 +177,7 @@ CONTACTS
 SHARE
 NOTIFICATIONS
 DEEP_LINK
-WEB_SESSION
+INSTALLED_APP
 NATIVE_DATA
 ```
 
@@ -186,11 +187,11 @@ A capability may be classified as:
 NATIVE
 ANDROID_NOTIFICATION
 SUPPORTED_API
-WEB
+INSTALLED_APP
 UNAVAILABLE
 ```
 
-The Hub must not silently promote `WEB` or `UNAVAILABLE` into a claim of native integration.
+The Hub must not silently promote `INSTALLED_APP` or `UNAVAILABLE` into a claim of native integration.
 
 ### Initial social providers
 
@@ -205,21 +206,114 @@ LinkedIn
 
 The first milestone does **not** require implementing a native universal client for those services. Provider capabilities and terms change; implementation must verify the current official provider documentation before enabling API-backed functionality.
 
-The practical initial path is isolated Sable web capsules where necessary, with native Android notification/deep-link integration when a compatible installed application is intentionally present.
+The practical path is installed-app-first: if the user chooses to install a provider's supported Android application, Sable may launch it, deep-link into supported destinations, share to it, and later consume user-authorized Android notification/conversation semantics. Sable does not embed provider login pages inside its own WebView.
 
-### Capsule isolation
+WhatsApp is the concrete reason for this boundary: WhatsApp Web is a linked-device surface that requires an already-active primary account and therefore cannot serve as Sable's account-creation or primary-client path.
 
-Each social/web provider should have independent persistent session state and storage isolation. The architecture should not automatically combine authentication state merely because services share a parent company.
+### Third-party application boundary
+
+Provider account state, credentials, cookies, media and private databases stay inside the provider application sandbox. Sable Hub does not reproduce or proxy those stores.
 
 Conceptually:
 
 ```text
-WhatsApp session != Instagram session
-Instagram session != Facebook session
-Facebook session != LinkedIn session
+Sable Hub -> supported Android intent / notification surface
+provider app -> provider account/session/data
 ```
 
-A provider capsule must not gain broad system privilege by virtue of appearing inside Sable Hub.
+Removing embedded capsules also removes the need for Sable Messages to request network access solely to host proprietary provider sessions.
+
+## Local conversation adapters
+
+The accepted R9 no-server integration architecture is a configurable local
+Android conversation adapter layer. It is not a provider-specific protocol
+client.
+
+### Connected apps
+
+Settings exposes installed messaging-capable applications under:
+
+```text
+Settings
+  -> Messages
+      -> Connected apps
+```
+
+Configuration is keyed by:
+
+```text
+(packageName, Android user/profile)
+```
+
+rather than compile-time provider enums. A compatible future app such as
+Signal, Telegram, Session, Threema, Element or another messaging application
+can therefore be enabled/disabled without recompiling SableOS.
+
+Per-app policy includes at minimum:
+
+```text
+Include in Sable Messages
+Allow quick reply when source exposes RemoteInput
+Hide from SableLauncher
+Retention policy for notification-derived history
+```
+
+### Android integration boundary
+
+The generic adapter consumes:
+
+- NotificationListenerService posted/removed notification events;
+- MessagingStyle messages when present;
+- Person / conversation metadata when present;
+- source package, user/profile, notification key and shortcut/conversation id;
+- RemoteInput + source PendingIntent for quick reply when the notification
+  explicitly exposes a valid reply action.
+
+The adapter does not require provider credentials or provider-private APIs.
+The official installed application remains responsible for push/networking,
+end-to-end cryptography, account/session state, attachments, complete history
+and protocol compatibility.
+
+### Capability levels
+
+```text
+CONVERSATION_REPLY
+    structured conversation metadata + source-authorized RemoteInput reply
+
+NOTIFICATION_ONLY
+    bounded title/text timeline + Open in app
+
+LAUNCH_ONLY
+    insufficient usable notification content; launch provider app only
+```
+
+Sable must not claim complete history merely because it has a notification
+timeline.
+
+### Privacy and lifecycle rules
+
+- notification access is explicit user authorization;
+- only enabled package/profile pairs are retained;
+- callback work is copied/bounded and moved off the notification callback
+  thread before Room/identity/contact work;
+- no private-database scraping, accessibility scraping or provider credential
+  capture;
+- no embedded provider WebViews;
+- source notification privacy/redaction is respected; Sable does not reconstruct
+  content the source app intentionally withheld;
+- source notifications are not canceled in the first tranche so reply
+  PendingIntents remain valid;
+- notification-derived history is CE-only and bounded by explicit retention
+  policy;
+- identity linking is evidence-based and ambiguous cross-provider person merges
+  require user confirmation.
+
+### Launcher integration
+
+SableLauncher hiding becomes dynamic rather than package-coded. Connected-app
+settings may hide an enabled provider from the Sable app list, but the package
+remains installed/enabled and can always be surfaced again through Settings.
+Graphene Messaging remains a separately documented product transport exception.
 
 ## People-centric model
 
@@ -273,7 +367,7 @@ Settings tile
 Social Hub placeholder tile
 ```
 
-The Social tile initially opens a real Sable Flow Hub shell with provider entries for WhatsApp, Instagram, Facebook and LinkedIn; provider integration may remain placeholder/capsule-only while shell interaction and architecture are validated.
+The Social tile may initially open a Sable Flow Hub shell that reports installed/supported provider capability. It must not present placeholder WebView sessions as if they were functional provider clients.
 
 Acceptance must include:
 
@@ -302,17 +396,16 @@ Acceptance must include:
 - provider lifecycle/account state;
 - notification/conversation adapters;
 - unified share/deep-link semantics;
-- isolated provider storage/session model;
+- provider sandbox / authorization boundary;
 - provider-specific privacy/data-flow disclosure.
 
-### M4 — social capsules
+### M4 — social app adapters
 
-- WhatsApp web capsule;
-- Instagram web capsule;
-- Facebook web capsule;
-- LinkedIn web capsule;
-- independent session storage;
-- bounded resource/background policy;
+- detect intentionally installed provider apps without bypassing package visibility policy;
+- supported launch/deep-link/share actions;
+- Android notification/conversation adapters only with explicit user authorization;
+- no provider credential capture or private-database access;
+- no embedded provider WebView clients;
 - no claim of unsupported native/API functionality.
 
 ### M5 — richer supported integrations
@@ -368,7 +461,7 @@ Release signing returns to the critical path when the product approaches release
 2. Sable Start M1 prototype on Panther
 3. Phone / People / Messages / Settings vertical slice
 4. Sable Hub shell + provider capability contract
-5. social web capsules
+5. installed-app / notification adapters for selected social services
 6. broader native apps and polish
 7. Q25/Q27 portability work when hardware/projects justify it
 8. production signing / OTA finalization before release candidate

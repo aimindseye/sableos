@@ -74,6 +74,14 @@ UI6_NEW_DIRT = {
     f" M {SYSTEMUI_STRINGS.as_posix()}",
 }
 
+# Exact later-layer framework paths which UI5C/UI6 may subtract from its own
+# dirty-scope proof. Each path is independently verified by the later R9
+# SystemUI coherence layer; arbitrary caller-supplied paths remain rejected.
+KNOWN_LATER_FRAMEWORK_MODIFIED = {
+    Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt"),
+    Path("core/java/android/debug/AdbNotifications.java"),
+}
+
 WELCOME_ROOT_OLD = """    android:id="@+id/glif_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -532,7 +540,13 @@ def apply(source: Path) -> None:
     print("SABLE_UI5C_UI6_APPLY=PASS")
 
 
-def repair_known_setup_strings_alias(source: Path) -> None:
+def repair_known_setup_strings_alias(
+    source: Path,
+    allowed_later_framework_untracked: tuple[Path, ...] = (),
+    allowed_later_framework_modified: tuple[Path, ...] = (),
+    allowed_later_settings_untracked: tuple[Path, ...] = (),
+    allowed_later_settings_modified: tuple[Path, ...] = (),
+) -> None:
     """Repair the exact UI5C template-alias bug from commit e744e494 only.
 
     The original applicator keyed both SetupWizard2 and Settings strings templates
@@ -560,18 +574,82 @@ def repair_known_setup_strings_alias(source: Path) -> None:
         raise SystemExit("UI5C_REPAIR_SETUP_SCOPE_MISMATCH")
 
     expected_settings = expected_settings_pre_dirt(ui5b) | SETTINGS_EXTRA_DIRT
-    if status_set(settings) != expected_settings:
-        raise SystemExit("UI5C_REPAIR_SETTINGS_SCOPE_MISMATCH")
+    actual_settings = status_set(settings)
+    allowed_settings_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_settings_untracked
+    } | {
+        f" M {path.as_posix()}"
+        for path in allowed_later_settings_modified
+    }
+    missing_allowed_settings = allowed_settings_dirt - actual_settings
+    if missing_allowed_settings:
+        raise SystemExit(
+            "UI5C_REPAIR_ALLOWED_LATER_SETTINGS_DIRT_MISSING="
+            f"{sorted(missing_allowed_settings)!r}"
+        )
+    settings_for_ui5c = actual_settings - allowed_settings_dirt
+    if settings_for_ui5c != expected_settings:
+        raise SystemExit(
+            "UI5C_REPAIR_SETTINGS_SCOPE_MISMATCH="
+            f"expected={sorted(expected_settings)!r} "
+            f"actual={sorted(settings_for_ui5c)!r} "
+            f"allowed_later={sorted(allowed_settings_dirt)!r}"
+        )
 
     actual_framework = status_set(framework)
-    framework_pre = actual_framework - UI6_NEW_DIRT
+    unknown_modified = (
+        set(allowed_later_framework_modified) - KNOWN_LATER_FRAMEWORK_MODIFIED
+    )
+    if unknown_modified:
+        raise SystemExit(
+            "UI5C_REPAIR_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
+            f"{sorted(path.as_posix() for path in unknown_modified)!r}"
+        )
+    allowed_framework_untracked_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_framework_untracked
+    }
+    allowed_framework_modified_dirt = {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
+    }
+    missing_allowed_framework = (
+        allowed_framework_untracked_dirt
+        | allowed_framework_modified_dirt
+    ) - actual_framework
+    if missing_allowed_framework:
+        raise SystemExit(
+            "UI5C_REPAIR_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
+            f"{sorted(missing_allowed_framework)!r}"
+        )
+
+    # A later modification which already belongs to UI4 (Tile.kt) must remain
+    # in the inherited UI4 dirty scope. A newly introduced later-layer path
+    # (AdbNotifications.java) is outside UI4 and is subtracted here, then
+    # independently verified by the R9 SystemUI coherence layer.
+    later_new_modified_dirt = later_new_framework_modified_dirt(
+        allowed_later_framework_modified,
+        set(ui4.PATCHES),
+    )
+    framework_for_ui6 = (
+        actual_framework
+        - allowed_framework_untracked_dirt
+        - later_new_modified_dirt
+    )
+    framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
     )
     if framework_pre not in valid_framework_pre:
         raise SystemExit("UI5C_REPAIR_FRAMEWORK_SCOPE_MISMATCH")
-    if actual_framework != framework_pre | UI6_NEW_DIRT:
+    if framework_for_ui6 != framework_pre | UI6_NEW_DIRT:
         raise SystemExit("UI5C_REPAIR_FRAMEWORK_FINAL_SCOPE_MISMATCH")
+    verify_ui4_tokens(
+        framework,
+        ui4,
+        allowed_later_framework_modified,
+    )
 
     setup_strings_path = setup / SETUP_UI5C_STRINGS
     wrong_template = settings_template_for(SETTINGS_UI5C_STRINGS)
@@ -586,7 +664,13 @@ def repair_known_setup_strings_alias(source: Path) -> None:
 
     if actual_hash == correct_hash:
         print("SABLE_UI5C_SETUP_STRINGS_RESOURCE=ALREADY_CORRECT")
-        verify(source)
+        verify(
+            source,
+            allowed_later_framework_untracked,
+            allowed_later_framework_modified,
+            allowed_later_settings_untracked,
+            allowed_later_settings_modified,
+        )
         print("SABLE_UI5C_UI6_RESOURCE_REPAIR=PASS")
         return
 
@@ -598,13 +682,49 @@ def repair_known_setup_strings_alias(source: Path) -> None:
 
     shutil.copyfile(correct_template, setup_strings_path)
 
-    verify(source)
+    verify(
+        source,
+        allowed_later_framework_untracked,
+        allowed_later_framework_modified,
+        allowed_later_settings_untracked,
+        allowed_later_settings_modified,
+    )
     print("SABLE_UI5C_SETUP_STRINGS_RESOURCE=REPAIRED_KNOWN_TEMPLATE_ALIAS")
     print("SABLE_UI5C_UI6_RESOURCE_REPAIR=PASS")
 
 
-def verify_ui4_tokens(framework: Path, ui4) -> None:
+def later_new_framework_modified_dirt(
+    allowed_later_framework_modified: tuple[Path, ...],
+    ui4_paths: set[Path],
+) -> set[str]:
+    """Return only later modified paths which are new beyond inherited UI4 dirt."""
+    return {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
+        if path not in ui4_paths
+    }
+
+
+def verify_ui4_tokens(
+    framework: Path,
+    ui4,
+    allowed_later_framework_modified: tuple[Path, ...] = (),
+) -> None:
+    allowed = set(allowed_later_framework_modified)
+    unknown = allowed - KNOWN_LATER_FRAMEWORK_MODIFIED
+    if unknown:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
+            f"{sorted(path.as_posix() for path in unknown)!r}"
+        )
+
+    # Only an allowed path that is itself part of UI4 can supersede UI4 token
+    # verification. New later-layer paths such as AdbNotifications.java are
+    # simply outside UI4's token set and are verified by their owning layer.
+    superseded_ui4 = allowed & set(ui4.PATCHES)
     for rel, replacements in ui4.PATCHES.items():
+        if rel in superseded_ui4:
+            continue
         text = (framework / rel).read_text(encoding="utf-8")
         for old, new in replacements:
             if old in text:
@@ -613,7 +733,13 @@ def verify_ui4_tokens(framework: Path, ui4) -> None:
                 raise SystemExit(f"UI5C_UI6_UI4_NEW_TOKEN_MISSING={rel}")
 
 
-def verify(source: Path) -> None:
+def verify(
+    source: Path,
+    allowed_later_framework_untracked: tuple[Path, ...] = (),
+    allowed_later_framework_modified: tuple[Path, ...] = (),
+    allowed_later_settings_untracked: tuple[Path, ...] = (),
+    allowed_later_settings_modified: tuple[Path, ...] = (),
+) -> None:
     assert_heads(source)
     verify_templates()
 
@@ -635,14 +761,67 @@ def verify(source: Path) -> None:
 
     expected_settings = expected_settings_pre_dirt(ui5b) | SETTINGS_EXTRA_DIRT
     actual_settings = status_set(settings)
-    if actual_settings != expected_settings:
+
+    allowed_settings_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_settings_untracked
+    } | {
+        f" M {path.as_posix()}"
+        for path in allowed_later_settings_modified
+    }
+    missing_allowed_settings = allowed_settings_dirt - actual_settings
+    if missing_allowed_settings:
+        raise SystemExit(
+            "UI5C_ALLOWED_LATER_SETTINGS_DIRT_MISSING="
+            f"{sorted(missing_allowed_settings)!r}"
+        )
+
+    settings_for_ui5c = actual_settings - allowed_settings_dirt
+    if settings_for_ui5c != expected_settings:
         raise SystemExit(
             "UI5C_SETTINGS_FINAL_DIRTY_SCOPE_MISMATCH="
-            f"expected={sorted(expected_settings)!r} actual={sorted(actual_settings)!r}"
+            f"expected={sorted(expected_settings)!r} "
+            f"actual={sorted(settings_for_ui5c)!r} "
+            f"allowed_later={sorted(allowed_settings_dirt)!r}"
         )
 
     actual_framework = status_set(framework)
-    framework_pre = actual_framework - UI6_NEW_DIRT
+    unknown_modified = (
+        set(allowed_later_framework_modified) - KNOWN_LATER_FRAMEWORK_MODIFIED
+    )
+    if unknown_modified:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_MODIFIED_UNKNOWN="
+            f"{sorted(path.as_posix() for path in unknown_modified)!r}"
+        )
+    allowed_later_untracked_dirt = {
+        f"?? {path.as_posix()}"
+        for path in allowed_later_framework_untracked
+    }
+    allowed_later_modified_dirt = {
+        f" M {path.as_posix()}"
+        for path in allowed_later_framework_modified
+    }
+    missing_allowed_later = (
+        allowed_later_untracked_dirt
+        | allowed_later_modified_dirt
+    ) - actual_framework
+    if missing_allowed_later:
+        raise SystemExit(
+            "UI6_ALLOWED_LATER_FRAMEWORK_DIRT_MISSING="
+            f"{sorted(missing_allowed_later)!r}"
+        )
+
+    later_new_modified_dirt = later_new_framework_modified_dirt(
+        allowed_later_framework_modified,
+        set(ui4.PATCHES),
+    )
+    framework_for_ui6 = (
+        actual_framework
+        - allowed_later_untracked_dirt
+        - later_new_modified_dirt
+    )
+    framework_pre = framework_for_ui6 - UI6_NEW_DIRT
     valid_framework_pre = tuple(
         set(ui4.UI4_DIRT) | set(scope) for scope in ui4.ALLOWED_PREEXISTING_SCOPES
     )
@@ -650,7 +829,7 @@ def verify(source: Path) -> None:
         raise SystemExit(
             f"UI6_FRAMEWORK_PRE_SCOPE_RECOVERY_FAIL={sorted(framework_pre)!r}"
         )
-    if actual_framework != framework_pre | UI6_NEW_DIRT:
+    if framework_for_ui6 != framework_pre | UI6_NEW_DIRT:
         raise SystemExit("UI6_FRAMEWORK_FINAL_DIRTY_SCOPE_MISMATCH")
     if not set(ui4.BRANDING_DIRT) <= framework_pre:
         raise SystemExit("UI6_FINAL_BRANDING_SCOPE_MISSING")
@@ -701,7 +880,11 @@ def verify(source: Path) -> None:
         if needle not in controller:
             raise SystemExit(f"UI5C_ABOUT_REAL_PROPERTY_VERIFY_FAIL={needle}")
 
-    verify_ui4_tokens(framework, ui4)
+    verify_ui4_tokens(
+        framework,
+        ui4,
+        allowed_later_framework_modified,
+    )
 
     clock = (framework / CLOCK_SECTION).read_text(encoding="utf-8")
     dimens = (framework / SYSTEMUI_DIMENS).read_text(encoding="utf-8")
@@ -800,6 +983,29 @@ def self_test() -> None:
             if sha256(out) != sha256(settings_template_for(dest)):
                 raise SystemExit(f"UI5C_UI6_SELF_TEST_SETTINGS_TEMPLATE_FAIL={dest}")
 
+    required_later_paths = {
+        Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt"),
+        Path("core/java/android/debug/AdbNotifications.java"),
+    }
+    if KNOWN_LATER_FRAMEWORK_MODIFIED != required_later_paths:
+        raise SystemExit("UI5C_UI6_SELF_TEST_KNOWN_LATER_FRAMEWORK_SCOPE_FAIL")
+
+    # Prove the mixed later-layer rule through the same helper used by verify:
+    # inherited Tile.kt stays in UI4 scope; only the new ADB source is removed.
+    fake_ui4_paths = {
+        Path("packages/SystemUI/src/com/android/systemui/qs/panels/ui/compose/infinitegrid/Tile.kt")
+    }
+    later_new = later_new_framework_modified_dirt(
+        tuple(required_later_paths),
+        fake_ui4_paths,
+    )
+    if later_new != {" M core/java/android/debug/AdbNotifications.java"}:
+        raise SystemExit(
+            f"UI5C_UI6_SELF_TEST_MIXED_LATER_SCOPE_FAIL={sorted(later_new)!r}"
+        )
+
+    print("SABLE_UI5C_UI6_MIXED_LATER_SCOPE_SELF_TEST=PASS")
+    print("SABLE_UI5C_UI6_KNOWN_LATER_FRAMEWORK_SCOPE_SELF_TEST=PASS")
     print("SABLE_UI5C_UI6_SELF_TEST=PASS")
     print("SELF_TEST_REAL_SOURCE_MUTATION=NONE")
     print("SELF_TEST_BUILD=NONE")
@@ -810,12 +1016,66 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("mode", nargs="?", choices=("apply", "verify", "repair-known-setup-strings"))
     parser.add_argument("--source", type=Path)
+    parser.add_argument(
+        "--allow-framework-untracked",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact later-layer untracked frameworks/base path to subtract from "
+            "UI5C/UI6 dirty-scope validation while retaining semantic checks."
+        ),
+    )
+    parser.add_argument(
+        "--allow-framework-modified",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact known later-layer modified frameworks/base path to subtract "
+            "from UI5C/UI6 dirty-scope validation. UI4 paths may supersede "
+            "their UI4 token checks; new paths are verified by their owning layer."
+        ),
+    )
+    parser.add_argument(
+        "--allow-settings-untracked",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact later-layer untracked packages/apps/Settings path to "
+            "subtract from UI5C dirty-scope validation while retaining "
+            "UI5C semantic checks."
+        ),
+    )
+    parser.add_argument(
+        "--allow-settings-modified",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Exact later-layer modified packages/apps/Settings path to "
+            "subtract from UI5C dirty-scope validation while retaining "
+            "UI5C semantic checks."
+        ),
+    )
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
     if args.self_test:
-        if args.mode is not None or args.source is not None:
-            parser.error("--self-test cannot be combined with mode or --source")
+        if (
+            args.mode is not None
+            or args.source is not None
+            or args.allow_framework_untracked
+            or args.allow_framework_modified
+            or args.allow_settings_untracked
+            or args.allow_settings_modified
+        ):
+            parser.error(
+                "--self-test cannot be combined with mode, --source, "
+                "--allow-framework-untracked/--allow-framework-modified or "
+                "--allow-settings-untracked/--allow-settings-modified"
+            )
         self_test()
         return 0
 
@@ -829,11 +1089,32 @@ def main() -> int:
         raise SystemExit(f"NOT_ANDROID_REPO_ROOT={source}")
 
     if args.mode == "apply":
+        if (
+            args.allow_framework_untracked
+            or args.allow_framework_modified
+            or args.allow_settings_untracked
+            or args.allow_settings_modified
+        ):
+            parser.error(
+                "--allow-framework-* and --allow-settings-* are valid only with verify"
+            )
         apply(source)
     elif args.mode == "verify":
-        verify(source)
+        verify(
+            source,
+            tuple(args.allow_framework_untracked),
+            tuple(args.allow_framework_modified),
+            tuple(args.allow_settings_untracked),
+            tuple(args.allow_settings_modified),
+        )
     else:
-        repair_known_setup_strings_alias(source)
+        repair_known_setup_strings_alias(
+            source,
+            tuple(args.allow_framework_untracked),
+            tuple(args.allow_framework_modified),
+            tuple(args.allow_settings_untracked),
+            tuple(args.allow_settings_modified),
+        )
     return 0
 
 

@@ -51,12 +51,21 @@ val rustNdkVersion = "30.0.16248370"
 val rustAndroidApi = 30
 val rustTargetDir = layout.buildDirectory.dir("rust-jni-target")
 
-val cargoExecutable = providers.environmentVariable("CARGO")
+val cargoExecutable = providers.environmentVariable("SABLE_CARGO")
+    .orElse(providers.environmentVariable("CARGO"))
     .orElse(
-        providers.environmentVariable("CARGO_HOME")
+        providers.environmentVariable("SABLE_CARGO_HOME")
+            .orElse(providers.environmentVariable("CARGO_HOME"))
             .map { "$it/bin/cargo" }
     )
     .orElse("cargo")
+
+val rustcExecutable = providers.environmentVariable("SABLE_RUSTC")
+    .orElse(providers.environmentVariable("RUSTC"))
+val cargoHome = providers.environmentVariable("SABLE_CARGO_HOME")
+    .orElse(providers.environmentVariable("CARGO_HOME"))
+val rustupHome = providers.environmentVariable("SABLE_RUSTUP_HOME")
+    .orElse(providers.environmentVariable("RUSTUP_HOME"))
 
 val androidSdkRoot = providers.environmentVariable("ANDROID_SDK_ROOT")
     .orElse(providers.environmentVariable("ANDROID_HOME"))
@@ -80,6 +89,7 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
         "libsable_calculator_jni.so",
         "libsable_convert_jni.so",
         "libsable_games_jni.so",
+        "libsable_weather_jni.so",
     ).forEach { library ->
         outputs.file(
             rustTargetDir.map {
@@ -133,6 +143,10 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
             linker.absolutePath,
         )
 
+        cargoHome.orNull?.let { environment("CARGO_HOME", it) }
+        rustupHome.orNull?.let { environment("RUSTUP_HOME", it) }
+        rustcExecutable.orNull?.let { environment("RUSTC", it) }
+
         executable = cargoExecutable.get()
 
         args(
@@ -147,6 +161,8 @@ val buildRustJniArm64 = tasks.register<Exec>("buildRustJniArm64") {
             "sable-convert-jni",
             "-p",
             "sable-games-jni",
+            "-p",
+            "sable-weather-jni",
         )
     }
 }
@@ -190,4 +206,10 @@ registerRustJniStage(
     "stageGamesRustJni",
     ":games",
     "libsable_games_jni.so",
+)
+
+registerRustJniStage(
+    "stageWeatherRustJni",
+    ":weather",
+    "libsable_weather_jni.so",
 )

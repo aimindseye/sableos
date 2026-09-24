@@ -13,10 +13,15 @@ import android.provider.Telephony
 import android.telephony.PhoneNumberUtils
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
+import org.sableos.hub.notifications.ConnectedReplyRegistry
 
 class HubRepository(
     private val context: Context,
 ) {
+    private val connectedApps = ConnectedAppsRepository(context)
+    private val connectedHistory = ConnectedNotificationHistoryStore(context)
+    private val connectedInventory = ConnectedAppsInventory(context)
+
     fun snapshot(): HubSnapshot {
         val capabilities = capabilities()
         val messages =
@@ -37,20 +42,65 @@ class HubRepository(
                 normalizeAddress(person.phoneNumber) to person.displayName
             }
 
-        val conversations =
+        val smsConversations =
             HubConversationReducer.reduce(messages) { address ->
                 namesByNumber[normalizeAddress(address)]
                     ?: lookupContactName(address)
                     ?: address
             }
 
+        val connectedPolicies =
+            connectedApps
+                .loadPolicies()
+                .associateBy { policy ->
+                    policy.key
+                }
+        val connectedRecords =
+            connectedHistory.load(
+                policies = connectedPolicies,
+            )
+        val connected =
+            HubConnectedConversationReducer.reduce(
+                records = connectedRecords,
+                canReply = ConnectedReplyRegistry::canReply,
+            )
+
         return HubSnapshot(
             capabilities = capabilities,
-            conversations = conversations,
-            messages = messages,
+            conversations =
+                (smsConversations + connected.conversations)
+                    .sortedByDescending { conversation ->
+                        conversation.lastDateMillis
+                    },
+            messages =
+                (messages + connected.messages)
+                    .sortedByDescending { message ->
+                        message.dateMillis
+                    },
             people = people,
         )
     }
+
+    fun replyToConnected(
+        notificationKey: String,
+        body: String,
+    ): HubSendResult =
+        ConnectedReplyRegistry.send(
+            context = context,
+            notificationKey = notificationKey,
+            body = body,
+        )
+
+    fun openConnectedApp(
+        packageName: String,
+        userSerial: Long,
+    ): Boolean =
+        connectedInventory.open(
+            ConnectedAppKey(
+                packageName = packageName,
+                userSerial = userSerial,
+            ),
+        )
 
     fun capabilities(): HubCapabilities {
         val roleManager =
@@ -117,11 +167,10 @@ class HubRepository(
         }
     }
 
-    private fun smsManagerForSubscription(
-        subscriptionId: Int,
-    ): SmsManager =
+    private fun smsManagerForSubscription(subscriptionId: Int): SmsManager =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(SmsManager::class.java)
+            context
+                .getSystemService(SmsManager::class.java)
                 .createForSubscriptionId(subscriptionId)
         } else {
             @Suppress("DEPRECATION")
@@ -165,9 +214,7 @@ class HubRepository(
         }.getOrDefault(false)
     }
 
-    private fun loadMessages(
-        maxMessages: Int = 1200,
-    ): List<HubMessage> {
+    private fun loadMessages(maxMessages: Int = MAX_SMS_MESSAGES): List<HubMessage> {
         val projection =
             arrayOf(
                 Telephony.Sms._ID,
@@ -182,43 +229,43 @@ class HubRepository(
         val result = mutableListOf<HubMessage>()
 
         runCatching {
-            context.contentResolver.query(
-                Telephony.Sms.CONTENT_URI,
-                projection,
-                null,
-                null,
-                Telephony.Sms.DATE + " DESC",
-            )?.use { cursor ->
-                val idIndex = cursor.getColumnIndexOrThrow(Telephony.Sms._ID)
-                val threadIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.THREAD_ID)
-                val addressIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
-                val bodyIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
-                val dateIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
-                val typeIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
-                val readIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.READ)
+            context
+                .contentResolver
+                .query(
+                    Telephony.Sms.CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    Telephony.Sms.DATE + " DESC",
+                )?.use { cursor ->
+                    val idIndex = cursor.getColumnIndexOrThrow(Telephony.Sms._ID)
+                    val threadIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.THREAD_ID)
+                    val addressIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)
+                    val bodyIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)
+                    val dateIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.DATE)
+                    val typeIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.TYPE)
+                    val readIndex = cursor.getColumnIndexOrThrow(Telephony.Sms.READ)
 
-                while (cursor.moveToNext() && result.size < maxMessages) {
-                    val type = cursor.getInt(typeIndex)
-                    result +=
-                        HubMessage(
-                            id = cursor.getLong(idIndex),
-                            threadId = cursor.getLong(threadIndex),
-                            address = cursor.getString(addressIndex).orEmpty(),
-                            body = cursor.getString(bodyIndex).orEmpty(),
-                            dateMillis = cursor.getLong(dateIndex),
-                            incoming = type == Telephony.Sms.MESSAGE_TYPE_INBOX,
-                            read = cursor.getInt(readIndex) != 0,
-                        )
+                    while (cursor.moveToNext() && result.size < maxMessages) {
+                        val type = cursor.getInt(typeIndex)
+                        result +=
+                            HubMessage(
+                                id = cursor.getLong(idIndex),
+                                threadId = cursor.getLong(threadIndex),
+                                address = cursor.getString(addressIndex).orEmpty(),
+                                body = cursor.getString(bodyIndex).orEmpty(),
+                                dateMillis = cursor.getLong(dateIndex),
+                                incoming = type == Telephony.Sms.MESSAGE_TYPE_INBOX,
+                                read = cursor.getInt(readIndex) != 0,
+                            )
+                    }
                 }
-            }
         }
 
         return result
     }
 
-    private fun loadPeople(
-        maxPeople: Int = 300,
-    ): List<HubPerson> {
+    private fun loadPeople(maxPeople: Int = MAX_CONTACT_PEOPLE): List<HubPerson> {
         val projection =
             arrayOf(
                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
@@ -228,52 +275,53 @@ class HubRepository(
         val result = linkedMapOf<String, HubPerson>()
 
         runCatching {
-            context.contentResolver.query(
-                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                projection,
-                null,
-                null,
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE LOCALIZED ASC",
-            )?.use { cursor ->
-                val idIndex =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
-                    )
-                val nameIndex =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                    )
-                val numberIndex =
-                    cursor.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.NUMBER,
-                    )
-
-                while (cursor.moveToNext() && result.size < maxPeople) {
-                    val number = cursor.getString(numberIndex).orEmpty()
-                    val normalized = normalizeAddress(number)
-                    if (normalized.isBlank() || result.containsKey(normalized)) {
-                        continue
-                    }
-
-                    result[normalized] =
-                        HubPerson(
-                            id = cursor.getLong(idIndex),
-                            displayName =
-                                cursor.getString(nameIndex)
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?: number,
-                            phoneNumber = number,
+            context
+                .contentResolver
+                .query(
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE LOCALIZED ASC",
+                )?.use { cursor ->
+                    val idIndex =
+                        cursor.getColumnIndexOrThrow(
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
                         )
+                    val nameIndex =
+                        cursor.getColumnIndexOrThrow(
+                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                        )
+                    val numberIndex =
+                        cursor.getColumnIndexOrThrow(
+                            ContactsContract.CommonDataKinds.Phone.NUMBER,
+                        )
+
+                    while (cursor.moveToNext() && result.size < maxPeople) {
+                        val number = cursor.getString(numberIndex).orEmpty()
+                        val normalized = normalizeAddress(number)
+                        if (normalized.isBlank() || result.containsKey(normalized)) {
+                            continue
+                        }
+
+                        result[normalized] =
+                            HubPerson(
+                                id = cursor.getLong(idIndex),
+                                displayName =
+                                    cursor
+                                        .getString(nameIndex)
+                                        ?.takeIf { it.isNotBlank() }
+                                        ?: number,
+                                phoneNumber = number,
+                            )
+                    }
                 }
-            }
         }
 
         return result.values.toList()
     }
 
-    private fun lookupContactName(
-        address: String,
-    ): String? {
+    private fun lookupContactName(address: String): String? {
         if (!hasPermission(Manifest.permission.READ_CONTACTS)) {
             return null
         }
@@ -285,23 +333,25 @@ class HubRepository(
             )
 
         return runCatching {
-            context.contentResolver.query(
-                uri,
-                arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    cursor.getString(
-                        cursor.getColumnIndexOrThrow(
-                            ContactsContract.PhoneLookup.DISPLAY_NAME,
-                        ),
-                    )
-                } else {
-                    null
+            context
+                .contentResolver
+                .query(
+                    uri,
+                    arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        cursor.getString(
+                            cursor.getColumnIndexOrThrow(
+                                ContactsContract.PhoneLookup.DISPLAY_NAME,
+                            ),
+                        )
+                    } else {
+                        null
+                    }
                 }
-            }
         }.getOrNull()
     }
 
@@ -310,6 +360,12 @@ class HubRepository(
             PackageManager.PERMISSION_GRANTED
 
     private fun normalizeAddress(value: String): String =
-        PhoneNumberUtils.normalizeNumber(value)
+        PhoneNumberUtils
+            .normalizeNumber(value)
             .ifBlank { value.trim() }
+
+    private companion object {
+        const val MAX_SMS_MESSAGES = 1200
+        const val MAX_CONTACT_PEOPLE = 300
+    }
 }

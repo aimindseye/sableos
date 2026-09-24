@@ -1,5 +1,6 @@
 package org.sableos.design
 
+import android.content.ContentValues
 import android.content.Context
 import android.database.ContentObserver
 import android.net.Uri
@@ -16,7 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 
 object SableGlobalAppearanceContract {
-    const val AUTHORITY = "org.sableos.start.appearance"
+    const val AUTHORITY = "org.sableos.appearance"
     const val PATH_APPEARANCE = "appearance"
     const val COLUMN_MODE = "mode"
     const val COLUMN_ACCENT = "accent"
@@ -65,6 +66,32 @@ fun readGlobalSableAppearance(
             }
             ?: SableAppearance()
     }.getOrDefault(SableAppearance())
+
+
+fun writeGlobalSableAppearance(
+    context: Context,
+    appearance: SableAppearance,
+): Boolean =
+    runCatching {
+        val values =
+            ContentValues().apply {
+                put(
+                    SableGlobalAppearanceContract.COLUMN_MODE,
+                    appearance.mode.stableValue,
+                )
+                put(
+                    SableGlobalAppearanceContract.COLUMN_ACCENT,
+                    appearance.accent.stableValue,
+                )
+            }
+
+        context.contentResolver.update(
+            SableGlobalAppearanceContract.CONTENT_URI,
+            values,
+            null,
+            null,
+        ) == 1
+    }.getOrDefault(false)
 
 @Composable
 fun rememberGlobalSableAppearance(

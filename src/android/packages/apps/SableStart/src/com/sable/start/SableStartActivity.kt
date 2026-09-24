@@ -3,142 +3,178 @@ package org.sableos.start
 import android.Manifest
 import android.content.Intent
 import android.content.pm.LauncherApps
+import android.database.ContentObserver
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.UserHandle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import org.sableos.design.SableAppearance
 import org.sableos.design.applySableSystemBars
+import org.sableos.design.rememberGlobalSableAppearance
 import org.sableos.design.resolveSableDarkAppearance
-import org.sableos.start.bridge.SableStartNative
+import org.sableos.design.writeGlobalSableAppearance
 import org.sableos.start.model.AppEntry
 import org.sableos.start.platform.LauncherAppsRepository
 import org.sableos.start.platform.LiveSurfaceRepository
 import org.sableos.start.platform.StartStateRepository
 import org.sableos.start.ui.SableStartScreen
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicLong
 
+/**
+ * Standalone SableOS HOME.
+ *
+ * Launcher3QuickStep is not an Activity superclass and does not own this view
+ * hierarchy. It remains installed only as Android's Quickstep/Recents service.
+ */
 class SableStartActivity : ComponentActivity() {
-    private var nativeHandle: Long = 0
-
     private lateinit var launcherAppsRepository: LauncherAppsRepository
     private lateinit var liveSurfaceRepository: LiveSurfaceRepository
     private lateinit var startStateRepository: StartStateRepository
 
-    private val appsState =
-        mutableStateOf<List<AppEntry>>(emptyList())
+    private val appsState = mutableStateOf<List<AppEntry>>(emptyList())
+    private val liveRefreshGeneration = mutableStateOf(0)
+    private val homeGeneration = mutableStateOf(0)
+    private val backGeneration = mutableStateOf(0)
 
-    private val appearanceState =
-        mutableStateOf(SableAppearance())
-
-    private var liveRefreshGeneration by mutableStateOf(0)
     private var callbackRegistered = false
+    private var canNavigateBack = false
+    private val inventoryGeneration = AtomicLong(0L)
+    private val inventoryExecutor = Executors.newSingleThreadExecutor()
 
     private val launcherCallback =
         object : LauncherApps.Callback() {
-            override fun onPackageRemoved(
-                packageName: String,
-                user: UserHandle,
-            ) {
+            override fun onPackageRemoved(packageName: String, user: UserHandle) =
                 scheduleInventoryRefresh()
-            }
 
-            override fun onPackageAdded(
-                packageName: String,
-                user: UserHandle,
-            ) {
+            override fun onPackageAdded(packageName: String, user: UserHandle) =
                 scheduleInventoryRefresh()
-            }
 
-            override fun onPackageChanged(
-                packageName: String,
-                user: UserHandle,
-            ) {
+            override fun onPackageChanged(packageName: String, user: UserHandle) =
                 scheduleInventoryRefresh()
-            }
 
             override fun onPackagesAvailable(
                 vararg packageNames: String,
                 user: UserHandle,
                 replacing: Boolean,
-            ) {
-                scheduleInventoryRefresh()
-            }
+            ) = scheduleInventoryRefresh()
 
             override fun onPackagesUnavailable(
-                packageNames: Array<String>,
+                packageNames: Array<out String>,
                 user: UserHandle,
                 replacing: Boolean,
-            ) {
-                scheduleInventoryRefresh()
-            }
+            ) = scheduleInventoryRefresh()
 
             override fun onPackagesSuspended(
                 vararg packageNames: String,
                 user: UserHandle,
-            ) {
-                scheduleInventoryRefresh()
-            }
+            ) = scheduleInventoryRefresh()
 
             override fun onPackagesUnsuspended(
                 vararg packageNames: String,
                 user: UserHandle,
-            ) {
+            ) = scheduleInventoryRefresh()
+        }
+
+    private val liveContentObserver =
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                liveRefreshGeneration.value += 1
+            }
+        }
+
+    private val appInventoryObserver =
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
                 scheduleInventoryRefresh()
             }
         }
 
-    override fun onCreate(
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        nativeHandle =
-            SableStartNative.nativeCreate()
+        launcherAppsRepository = LauncherAppsRepository(this)
+        liveSurfaceRepository = LiveSurfaceRepository(this)
+        startStateRepository = StartStateRepository(this)
 
-        launcherAppsRepository =
-            LauncherAppsRepository(this)
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (canNavigateBack) {
+                        backGeneration.value += 1
+                    }
+                    // HOME root deliberately consumes Back.
+                }
+            },
+        )
 
-        liveSurfaceRepository =
-            LiveSurfaceRepository(this)
+        LiveSurfaceRepository.OBSERVED_URIS.forEach { uri ->
+            runCatching {
+                contentResolver.registerContentObserver(
+                    uri,
+                    true,
+                    liveContentObserver,
+                )
+            }
+        }
+        runCatching {
+            contentResolver.registerContentObserver(
+                LauncherAppsRepository.HIDDEN_APPS_URI,
+                false,
+                appInventoryObserver,
+            )
+        }
 
-        startStateRepository =
-            StartStateRepository(this)
-
-        appearanceState.value = startStateRepository.loadAppearance()
-        applyCurrentSystemBars()
-
-        refreshInventory()
+        scheduleInventoryRefresh()
 
         setContent {
+            val appearance = rememberGlobalSableAppearance()
+
+            SideEffect {
+                applySableSystemBars(
+                    window = window,
+                    darkTheme =
+                        resolveSableDarkAppearance(
+                            context = this@SableStartActivity,
+                            appearance = appearance,
+                        ),
+                )
+            }
+
             SableStartScreen(
                 apps = appsState.value,
                 liveSurfaceRepository = liveSurfaceRepository,
-                appearance = appearanceState.value,
-                refreshGeneration = liveRefreshGeneration,
-                initialPinnedKeys = startStateRepository.loadPinnedKeys(),
-                onPinnedKeysChanged = startStateRepository::savePinnedKeys,
-                onAppearanceChanged = { appearance ->
-                    appearanceState.value = appearance
-                    startStateRepository.saveAppearance(appearance)
-                    applyCurrentSystemBars()
+                appearance = appearance,
+                refreshGeneration = liveRefreshGeneration.value,
+                homeGeneration = homeGeneration.value,
+                backGeneration = backGeneration.value,
+                onCanNavigateBackChanged = { value ->
+                    canNavigateBack = value
+                },
+                initialFavoriteKeys = startStateRepository.loadFavoriteKeys(),
+                onFavoriteKeysChanged = startStateRepository::saveFavoriteKeys,
+                initialStartTileKeys = startStateRepository.loadStartTileKeys(),
+                onStartTileKeysChanged = startStateRepository::saveStartTileKeys,
+                onAppearanceChanged = { next ->
+                    writeGlobalSableAppearance(this@SableStartActivity, next)
                 },
                 onResetAppearance = {
-                    appearanceState.value = startStateRepository.resetAppearance()
-                    applyCurrentSystemBars()
+                    writeGlobalSableAppearance(
+                        this@SableStartActivity,
+                        org.sableos.design.SableAppearance(),
+                    )
                 },
                 onLaunchApp = { entry ->
-                    val launched = launcherAppsRepository.launch(entry)
-                    if (!launched) {
-                        refreshInventory()
-                    }
-                    launched
+                    launcherAppsRepository.launch(entry)
                 },
-                onOpenSettings = ::openSettings,
+                onOpenSystemSettings = ::openSystemSettings,
                 onOpenAppInfo = { entry ->
                     launcherAppsRepository.openAppDetails(entry)
                 },
@@ -149,18 +185,25 @@ class SableStartActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
-
         if (!callbackRegistered) {
             launcherAppsRepository.registerCallback(launcherCallback)
             callbackRegistered = true
         }
-
-        refreshInventory()
+        scheduleInventoryRefresh()
     }
 
     override fun onResume() {
         super.onResume()
-        refreshInventory()
+        scheduleInventoryRefresh()
+        liveRefreshGeneration.value += 1
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.action == Intent.ACTION_MAIN) {
+            homeGeneration.value += 1
+        }
     }
 
     override fun onStop() {
@@ -168,7 +211,6 @@ class SableStartActivity : ComponentActivity() {
             launcherAppsRepository.unregisterCallback(launcherCallback)
             callbackRegistered = false
         }
-
         super.onStop()
     }
 
@@ -177,15 +219,14 @@ class SableStartActivity : ComponentActivity() {
             launcherAppsRepository.unregisterCallback(launcherCallback)
             callbackRegistered = false
         }
-
-        if (nativeHandle != 0L) {
-            SableStartNative.nativeDestroy(
-                nativeHandle,
-            )
-
-            nativeHandle = 0
+        runCatching {
+            contentResolver.unregisterContentObserver(liveContentObserver)
         }
-
+        runCatching {
+            contentResolver.unregisterContentObserver(appInventoryObserver)
+        }
+        inventoryGeneration.incrementAndGet()
+        inventoryExecutor.shutdownNow()
         super.onDestroy()
     }
 
@@ -194,40 +235,30 @@ class SableStartActivity : ComponentActivity() {
         permissions: Array<String>,
         grantResults: IntArray,
     ) {
-        super.onRequestPermissionsResult(
-            requestCode,
-            permissions,
-            grantResults,
-        )
-
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == LIVE_PERMISSION_REQUEST_CODE) {
-            liveRefreshGeneration += 1
+            liveRefreshGeneration.value += 1
         }
     }
 
     private fun scheduleInventoryRefresh() {
-        runOnUiThread {
-            refreshInventory()
+        val generation = inventoryGeneration.incrementAndGet()
+        runCatching {
+            inventoryExecutor.execute {
+                val apps = launcherAppsRepository.loadApps()
+                runOnUiThread {
+                    if (
+                        !isDestroyed &&
+                        inventoryGeneration.get() == generation
+                    ) {
+                        appsState.value = apps
+                    }
+                }
+            }
         }
     }
 
-    private fun refreshInventory() {
-        appsState.value =
-            launcherAppsRepository.loadApps()
-    }
-
-    private fun applyCurrentSystemBars() {
-        applySableSystemBars(
-            window = window,
-            darkTheme =
-                resolveSableDarkAppearance(
-                    context = this,
-                    appearance = appearanceState.value,
-                ),
-        )
-    }
-
-    private fun openSettings() {
+    private fun openSystemSettings() {
         runCatching {
             startActivity(Intent(Settings.ACTION_SETTINGS))
         }
@@ -235,18 +266,14 @@ class SableStartActivity : ComponentActivity() {
 
     private fun requestLivePermissions() {
         val permissions =
-            buildList {
-                add(Manifest.permission.READ_CALENDAR)
-                if (Build.VERSION.SDK_INT >= 33) {
-                    add(Manifest.permission.READ_MEDIA_IMAGES)
-                    add(Manifest.permission.READ_MEDIA_AUDIO)
-                } else {
-                    add(Manifest.permission.READ_EXTERNAL_STORAGE)
-                }
+            if (Build.VERSION.SDK_INT >= 33) {
+                arrayOf(Manifest.permission.READ_MEDIA_IMAGES)
+            } else {
+                arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
 
         requestPermissions(
-            permissions.toTypedArray(),
+            permissions,
             LIVE_PERMISSION_REQUEST_CODE,
         )
     }

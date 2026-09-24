@@ -53,13 +53,12 @@ internal class MediaSettingsRepository(
             .putBoolean(
                 KEY_KEEP_SCREEN_AWAKE,
                 settings.keepScreenAwakeWhilePlaying,
-            )
-            .apply()
+            ).apply()
     }
 
-    companion object {
-        private const val KEY_START_PAGE = "start_page"
-        private const val KEY_SHOW_MINI_PLAYER = "show_mini_player"
-        private const val KEY_KEEP_SCREEN_AWAKE = "keep_screen_awake_while_playing"
+    private companion object {
+        const val KEY_START_PAGE = "start_page"
+        const val KEY_SHOW_MINI_PLAYER = "show_mini_player"
+        const val KEY_KEEP_SCREEN_AWAKE = "keep_screen_awake_while_playing"
     }
 }

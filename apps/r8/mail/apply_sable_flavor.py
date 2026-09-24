@@ -735,7 +735,7 @@ internal data class SableMailAppearance(
 )
 
 internal object SableMailAppearanceReader {
-    private const val AUTHORITY = "org.sableos.start.appearance"
+    private const val AUTHORITY = "org.sableos.appearance"
     private val URI = Uri.parse("content://$AUTHORITY/appearance")
 
     fun read(context: Context): SableMailAppearance =
@@ -957,6 +957,110 @@ internal object SableMailAppearanceSync {
 ''',
     )
 
+    mail_snapshot_provider = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/SableMailSnapshotProvider.kt"
+    )
+    write(
+        mail_snapshot_provider,
+        '''package net.thunderbird.android
+
+import android.app.Notification
+import android.app.NotificationManager
+import android.content.ContentProvider
+import android.content.ContentValues
+import android.database.Cursor
+import android.database.MatrixCursor
+import android.net.Uri
+import android.os.Binder
+import android.os.Process
+
+class SableMailSnapshotProvider : ContentProvider() {
+    override fun onCreate(): Boolean = true
+
+    override fun query(
+        uri: Uri,
+        projection: Array<out String>?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+        sortOrder: String?,
+    ): Cursor {
+        val appContext = checkNotNull(context)
+        enforceLauncherCaller(appContext)
+        val manager = appContext.getSystemService(NotificationManager::class.java)
+        val count =
+            runCatching {
+                manager?.activeNotifications
+                    .orEmpty()
+                    .count { item ->
+                        item.notification.category == Notification.CATEGORY_EMAIL ||
+                            item.notification.category == Notification.CATEGORY_MESSAGE
+                    }
+            }.getOrDefault(0)
+
+        val detail =
+            when (count) {
+                0 -> "no mail alerts"
+                1 -> "1 mail alert"
+                else -> count.toString() + " mail alerts"
+            }
+
+        return MatrixCursor(COLUMNS).apply {
+            addRow(
+                arrayOf<Any?>(
+                    "Mail",
+                    detail,
+                    if (count == 0) "EMPTY" else "LIVE",
+                    System.currentTimeMillis(),
+                ),
+            )
+            setNotificationUri(appContext.contentResolver, SNAPSHOT_URI)
+        }
+    }
+
+    override fun getType(uri: Uri): String =
+        "vnd.android.cursor.item/vnd.org.sableos.mail.snapshot"
+
+    override fun insert(uri: Uri, values: ContentValues?): Uri? =
+        throw UnsupportedOperationException("Read-only provider")
+
+    override fun delete(
+        uri: Uri,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+    ): Int = throw UnsupportedOperationException("Read-only provider")
+
+    override fun update(
+        uri: Uri,
+        values: ContentValues?,
+        selection: String?,
+        selectionArgs: Array<out String>?,
+    ): Int = throw UnsupportedOperationException("Read-only provider")
+
+    private fun enforceLauncherCaller(context: android.content.Context) {
+        val callingUid = Binder.getCallingUid()
+        if (callingUid == Process.myUid()) return
+        val packages =
+            context.packageManager.getPackagesForUid(callingUid)
+                ?.toSet()
+                .orEmpty()
+        if ("org.sableos.launcher" !in packages) {
+            throw SecurityException(
+                "Sable live snapshot is restricted to SableLauncher.",
+            )
+        }
+    }
+
+    companion object {
+        val SNAPSHOT_URI: Uri =
+            Uri.parse("content://org.sableos.mail.snapshot/current")
+        private val COLUMNS =
+            arrayOf("title", "detail", "availability", "observed_at")
+    }
+}
+''',
+    )
+
     core_theme_manager = (
         root
         / "core/ui/theme/manager/src/main/java/net/thunderbird/core/ui/theme/manager/ThemeManager.kt"
@@ -993,7 +1097,7 @@ internal object SableMailAppearanceSync {
         application_anchor,
         """
     <queries>
-        <provider android:authorities="org.sableos.start.appearance" />
+        <provider android:authorities="org.sableos.appearance" />
     </queries>
 
     <application""",
@@ -1016,6 +1120,21 @@ internal object SableMailAppearanceSync {
         "@style/Theme.Thunderbird.DayNight.Dialog.Translucent",
         "@style/Theme.SableMail.DayNight.Dialog.Translucent",
     )
+    provider_anchor = "\n    </application>"
+    if manifest_text.count(provider_anchor) != 1:
+        fail("SABLE_MAIL_MANIFEST=FAIL_PROVIDER_ANCHOR")
+    manifest_text = manifest_text.replace(
+        provider_anchor,
+        """
+        <provider
+            android:name="net.thunderbird.android.SableMailSnapshotProvider"
+            android:authorities="org.sableos.mail.snapshot"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
+    </application>""",
+        1,
+    )
     manifest.write_text(manifest_text, encoding="utf-8")
 
     write(
@@ -1023,14 +1142,16 @@ internal object SableMailAppearanceSync {
         '''<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="48dp"
     android:height="48dp"
-    android:viewportWidth="48"
-    android:viewportHeight="48">
-    <path
-        android:fillColor="#4D9CFF"
-        android:pathData="M6,10h36v28H6z" />
-    <path
-        android:fillColor="#05070A"
-        android:pathData="M8,12l16,13 16,-13v5L24,30 8,17z" />
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path android:fillColor="#161C24"
+        android:pathData="M32,16h192c8.8,0 16,7.2 16,16v192c0,8.8 -7.2,16 -16,16H32c-8.8,0 -16,-7.2 -16,-16V32c0,-8.8 7.2,-16 16,-16z" />
+    <group android:scaleX="0.70" android:scaleY="0.70"
+        android:translateX="38.4" android:translateY="34">
+        <path android:fillColor="#F7F9FC"
+            android:pathData="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM203.43,64,128,133.15,52.57,64ZM216,192H40V74.19l82.59,75.71a8,8,0,0,0,10.82,0L216,74.19V192Z" />
+    </group>
+    <path android:fillColor="#64748B" android:pathData="M28,226h200v6H28z" />
 </vector>
 ''',
     )

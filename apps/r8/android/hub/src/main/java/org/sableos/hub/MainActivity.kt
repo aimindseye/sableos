@@ -1,27 +1,47 @@
 package org.sableos.hub
 
 import android.Manifest
+import android.content.Intent
+import android.database.ContentObserver
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.sableos.design.SableGlobalTheme
 import org.sableos.hub.ui.HubScreen
-import org.sableos.hub.web.ProviderCapsuleLauncher
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: HubRepository
     private var refreshGeneration by mutableIntStateOf(0)
 
+    private val connectedHistoryObserver =
+        object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                refreshGeneration += 1
+            }
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         repository = HubRepository(applicationContext)
+        contentResolver.registerContentObserver(
+            ConnectedAppsRepository.HISTORY_URI,
+            false,
+            connectedHistoryObserver,
+        )
+
         setContent {
             val permissionLauncher =
                 rememberLauncherForActivityResult(
@@ -30,18 +50,20 @@ class MainActivity : ComponentActivity() {
                     refreshGeneration += 1
                 }
 
-            val snapshot =
-                remember(refreshGeneration) {
-                    repository.snapshot()
-                }
+            var snapshot by remember {
+                mutableStateOf<HubSnapshot?>(null)
+            }
+
+            LaunchedEffect(refreshGeneration) {
+                snapshot =
+                    withContext(Dispatchers.IO) {
+                        repository.snapshot()
+                    }
+            }
 
             SableGlobalTheme(window = window) {
                 HubScreen(
                     snapshot = snapshot,
-                    providers = HubProviderCatalog.providers,
-                    onRefresh = {
-                        refreshGeneration += 1
-                    },
                     onRequestAccess = {
                         permissionLauncher.launch(
                             arrayOf(
@@ -81,10 +103,24 @@ class MainActivity : ComponentActivity() {
                             body = body,
                         )
                     },
-                    onOpenProvider = { providerId ->
-                        ProviderCapsuleLauncher.open(
-                            context = this,
-                            providerId = providerId,
+                    onOpenConnectedApps = {
+                        startActivity(
+                            Intent(
+                                this@MainActivity,
+                                ConnectedAppsActivity::class.java,
+                            ),
+                        )
+                    },
+                    onReplyConnected = { notificationKey, body ->
+                        repository.replyToConnected(
+                            notificationKey = notificationKey,
+                            body = body,
+                        )
+                    },
+                    onOpenConnectedApp = { packageName, userSerial ->
+                        repository.openConnectedApp(
+                            packageName = packageName,
+                            userSerial = userSerial,
                         )
                     },
                 )
@@ -97,5 +133,12 @@ class MainActivity : ComponentActivity() {
         if (::repository.isInitialized) {
             refreshGeneration += 1
         }
+    }
+
+    override fun onDestroy() {
+        runCatching {
+            contentResolver.unregisterContentObserver(connectedHistoryObserver)
+        }
+        super.onDestroy()
     }
 }

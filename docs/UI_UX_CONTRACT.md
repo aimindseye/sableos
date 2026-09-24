@@ -37,7 +37,7 @@ accent          -> Sable Blue
 local overrides -> cleared
 ```
 
-`Follow system` is the normal default unless a surface has an explicit reviewed exception. R8 uses one SableStart-owned, read-only global appearance contract for `Follow system` / `Light` / `Dark` plus the bounded Blue / Green / Purple / Orange / Slate accents. Sable-owned apps consume that state through `SableGlobalTheme`; standalone qualification falls back to Follow system + Sable Blue when the provider is unavailable. A production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
+`Follow system` is the normal default unless a surface has an explicit reviewed exception. R9 uses one Settings-owned global appearance authority at `content://org.sableos.appearance/appearance` for `Follow system` / `Light` / `Dark` plus the bounded Blue / Green / Purple / Orange / Slate accents. SableLauncher and Sable-owned apps consume/edit that state through the shared appearance contract; standalone app qualification falls back to Follow system + Sable Blue when the provider is unavailable. A production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
 
 ## Core principles
 
@@ -63,7 +63,7 @@ src/android/shared/sabledesign/
 It is consumed by:
 
 - the Gradle `:design` module used by R8 first-party apps;
-- the Soong-built `SableStart` launcher through `:sable_design_shared_srcs`.
+- the Soong-built standalone `SableLauncher` through `:sable_design_shared_srcs`.
 
 Shared primitives currently include:
 
@@ -151,8 +151,9 @@ The Applications surface is a strategic SableOS privacy/security surface, not on
 
 - Calculator: Basic, Scientific and Converter are modes within one product shell. The phone UI uses a dark calculator display, filled touch-first keypad surfaces and an accent hierarchy for operators/results rather than desktop-style form controls.
 - Games: each game should present as a professional color-phone game rather than a developer test card. Sudoku uses visible cell borders and stronger 3×3 boundaries; Minesweeper uses explicit covered/revealed/flagged tile states and visible board structure; 2048 uses a bordered board, value-specific color tiles and swipe-first movement. Shared game screens may be developed together, but the product target remains separate Sudoku, Minesweeper and 2048 launcher APKs.
-- Media: use a dark, immersive media-library/player hierarchy influenced by Zune/modern Windows media design while retaining Sable typography, spacing and state rules. Album/now-playing art may use richer color than ordinary system surfaces; playback and source state must remain truthful rather than displaying invented metadata. Local media favorites, playlists, queue ordering and Media preferences are stored on-device and operate only on files the user explicitly added. Up Next edits must apply to the active Media3 queue rather than a disconnected mock list. Live-radio presets and favorites are managed locally: users can name, save, play, favorite, edit and remove explicit HTTP(S) stream URLs without a background recommendation/history service. A future radio-directory search must be an explicit network feature with its provider and privacy boundary made visible.
-- Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent. The current Sable color-phone tranche uses the same dark baseline; the upstream E-ink-specific theme remains a separately selected compatibility mode rather than the visual default.
+- Media: use a Zune/Modern-inspired media-library/player hierarchy while following the global Sable Light/Dark/accent contract. Songs, Artists, Albums and Favorites use lazy flat rows plus a right-edge alphabet rail; destructive remove is not an inline browse action. Large collections must not trigger whole-library Compose rendering or per-frame grouping/sorting: collection indexing occurs off the UI thread, Up Next and playlist editing are lazy, playback-position ticks are scoped to Now Playing, and queue handoff must stay bounded rather than serialize an entire library through Binder. Album/now-playing art may use richer color than ordinary system surfaces; playback/source state remains truthful. Local favorites, playlists, queue ordering and preferences stay on-device and operate only on files explicitly added by the user.
+- Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent. Ordinary Light/Dark follows the SableOS global appearance authority. Sepia remains an explicit reading override and E-ink remains an explicit compatibility mode. The library shows actual distinct books in a continuously accessible vertical grid; it must not collapse a larger library into a six-item/stack-only presentation.
+- Messages: the normal product surface is Messages + People, not a provider-services dashboard. SMS presentation remains over the retained Android/Graphene Messaging transport boundary. Third-party apps integrate through user-authorized Android notification/conversation metadata and source-app RemoteInput actions where available. Connected-app configuration is package + Android user/profile based and must not require recompiling SableOS when a compatible messaging app is added.
 
 ## Rollout sequence
 

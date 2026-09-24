@@ -1,12 +1,56 @@
 # SableOS build entry points
 
+## Canonical multi-device entry point
+
+The operator-facing SableOS engineering entry point is now:
+
+```text
+build/sable.sh <device> <release> <function>
+```
+
+It owns the stable interface for local CI, release builds, artifact registration,
+flash-plan validation, device deployment and acceptance. Device-specific behavior
+is selected through `build/devices/<device>.sh`; release-specific behavior is an
+input, not a new top-level script.
+
+Examples:
+
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 build --tmux
+bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --preserve-data --authorize
+bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
+```
+
+`build/panther/run-release.sh` remains the qualified Panther release-build
+implementation behind the common entry point. It is no longer the desired
+cross-device operator contract.
+
+See `docs/STANDARD_ENGINEERING_PIPELINE.md`.
+
 SableOS local builds use repository-owned orchestration and a canonical host-tool
 profile. Do not create milestone-specific /tmp build drivers or rediscover SDK,
 NDK, Rust, Java or Gradle paths during a build.
 
-## Canonical R8 local build contract
+## Canonical local release build contract
 
-The permanent R8 entry points are:
+The user-facing release entry point is:
+
+```text
+build/panther/run-release.sh <release-version>
+```
+
+Example:
+
+```bash
+bash build/panther/run-release.sh R9
+```
+
+The release version is the release-specific input. Do not create a new build
+script, a new /tmp driver, or a new command sequence for each release.
+
+Current R8-named files remain implementation details of the present product
+baseline while they are incrementally generalized:
 
 ```text
 build/config/r8-host-tools.env
@@ -14,10 +58,12 @@ build/config/r8-release.env
 build/host/verify-r8-host-tools.sh
 build/host/migrate-r8-final-v1-host-tools.sh
 build/panther/run-r8-release-candidate.sh
-build/panther/render-r8-build-driver.sh
 build/gates/r8-build-driver-contract.sh
-.github/workflows/r8-build-driver.yml
 ```
+
+`build/panther/render-r8-build-driver.sh` is retained only for compatibility
+with historical PR #57 / CI-produced driver evidence. It is not the normal
+operator entry point.
 
 Host tools live outside the build farm under:
 
@@ -27,21 +73,54 @@ Host tools live outside the build farm under:
 
 The R8 profile pins Android SDK 36, build-tools 36.0.0, NDK
 30.0.16248370, Rust 1.98.1 with the aarch64-linux-android target, JDK 17
-for first-party Android applications, JDK 21 for Reader/Mail, and a central
-Gradle user home.
+for first-party Android applications and Text Reader, JDK 21 for Reader/Mail,
+and a central Gradle user home.
 
-The GitHub workflow `R8 canonical local build driver` renders a
-source-commit-bound `sableos-panther-r8-build.sh`, syntax-checks and contract
-checks it, writes SHA-256 metadata, and uploads it as a workflow artifact.
-That CI-produced artifact is the normal executable for `ai-g732`.
+PR #57 originally used a CI-rendered source-bound driver. After the
+repository moved to local direct CI/execution, the permanent
+`run-release.sh` entry point owns source binding and tmux execution directly,
+without generating a milestone-specific /tmp script.
 
-The generated script verifies that the local repository is at the exact GitHub
-commit embedded by CI, then runs the repository-owned release-candidate runner.
-The runner performs the host-tool gate, application builds, Reader/Mail
-composition, exact eight-APK freeze, workspace/product preparation, exact
-`vendor/sable` inventory validation, a focused production `SableStart` Soong
-preflight, the combined Settings/SystemUI module gate, and the final Panther
-target-files build. Device contact and flashing remain separate operations.
+The entry point verifies the repository source identity and passes the release
+version into the repository-owned release-candidate runner.
+The runner performs the host-tool gate, application builds, independent
+Text Reader/Reader/Mail composition, exact eleven-APK freeze, workspace/product
+preparation, exact `vendor/sable` inventory validation, the standalone
+SableLauncher + Quickstep preflight, the combined module gate, and the final
+Panther target-files build. Device contact and flashing remain separate
+operations.
+
+## R9 system-cohesion pre-image qualification
+
+Before the next full Panther image, run the source-bound R9 module
+qualification. This executes the integrated system-cohesion source contract,
+rebuilds the eleven source-bound prebuilt application APKs, including separate
+Sable Text Reader, Reader and Mail products, upgrades the recognized long-lived
+Android workspace deltas, stages the source-bound bundle, and compiles
+SableLauncher, Launcher3QuickStep, Settings, SystemUI and the daily-driver
+module set.
+It does **not** build target-files, contact a device, flash, clean or clobber.
+
+```bash
+bash build/sable.sh panther R9 qualify physical-ux
+```
+
+Required terminal marker:
+
+```text
+R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS
+NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES_AFTER_MODULE_QUALIFICATION
+```
+
+Only after those markers pass, start the one fresh R9 Panther build:
+
+```bash
+bash build/sable.sh panther R9 build --tmux
+```
+
+The Mac visual-review harness is retained as non-blocking design tooling. It
+does not emulate the production Settings-hosted appearance provider and is not
+an R9 release gate.
 
 ## Other stable Panther entry points
 
@@ -51,7 +130,6 @@ build/panther/bootstrap.sh
 build/panther/capture-sablestart.sh
 build/panther/verify-sablestart-snapshot.sh
 build/panther/sync-sablestart.sh
-build/panther/build-sablestart.sh
 build/panther/build-target-files.sh
 ```
 
@@ -63,28 +141,28 @@ See `docs/BUILD_LAYOUT.md`, `docs/PORTABLE_DEVELOPMENT.md`, and
 `docs/BUILD_PANTHER_GRAPHENE_2026081300.md`.
 
 
-## R8 production-source qualification
+## R9 standalone HOME source qualification
 
-The historical `start-preview` and `system-preview` Gradle applications and
-the Panther UI-preview build/flash/validation scripts are retired. GitHub Android
-CI now compiles the complete production SableStart Kotlin source tree through
-`:sablestart-production-check:compileDebugKotlin`, using the production
-manifest and resources.
+The historical `start-preview`, `system-preview` and
+`sablestart-production-check` Gradle paths are retired. Current host-side
+presentation qualification mirrors only the canonical
+`sable_start_presentation_srcs` filegroup, while the Android product builds
+the real source module `SableLauncher`.
 
-The local Panther build remains authoritative: after lunch and before the
-combined module gate, `build-r8-final-ui.sh` runs a focused
-`m SableStart` Soong preflight and stores
-`sablestart-soong-preflight.log`.
+The local Panther build remains authoritative: before the combined module gate,
+`build-r8-final-ui.sh` runs the Sable HOME + Quickstep Recents preflight with
+`m SableLauncher Launcher3QuickStep` and records
+`sable-home-quickstep-preflight.log`.
 
 The R8 no-stale gate also requires the workspace `vendor/sable` tree to match
 the exact canonical R8 inventory: one Android.bp, one product makefile, three
-source/seal control files, and exactly eight canonical APKs.
+source/seal control files, and exactly eleven canonical APKs.
 
 
-## SableStart signing/package-scan policy
+## SableLauncher signing/package-scan policy
 
-SableStart is source-built as a normal system application and must explicitly
-disable APK Signature Scheme v4 sidecar generation in its Soong module:
+The current `SableLauncher` module is source-built as a normal system
+application and explicitly disables APK Signature Scheme v4 sidecar generation:
 
 ```bp
 v4_signature: false,
@@ -95,17 +173,10 @@ The R8 physical validation on 2026-09-19 proved that packaging
 attempt fs-verity measurement of the `/system` APK, hit the current Panther
 SELinux denial, and reject the package during boot.
 
-The reusable gate
-`build/gates/r8-sablestart-signing-policy.py` enforces both sides of the
-contract:
-
-- canonical/workspace Android.bp must explicitly disable v4 signing;
-- final target-files must contain SableStart.apk and must not contain
-  SableStart.apk.idsig.
-
-`build-r8-final-ui.sh` records a source-policy check before compilation and a
-target-files-policy check after the final target-files build. The authoritative
-target-files composition gate independently reruns the policy.
+That incident remains historical evidence. Current R9 enforcement is carried by
+the active build-driver/no-stale/target-files contracts: the source module must
+be `SableLauncher` with `v4_signature: false`, target-files must contain
+exactly one `SableLauncher.apk`, and legacy `SableStart.apk` must be absent.
 
 Do not replace this with an `unzip -l | grep -q` check under `pipefail`.
 An early successful `grep -q` can SIGPIPE `unzip`, making the pipeline
@@ -169,13 +240,13 @@ After successful retirement, `vendor/sable_devices` must be absent.
 
 ## Presigned R8 APK preservation
 
-The eight standalone R8 application APKs are already signed before they enter the
-Panther product graph. Their `android_app_import` definitions therefore set both
+The eleven staged Sable application APKs are already signed before they enter
+the Panther product graph. Their `android_app_import` definitions therefore set both
 `presigned: true` and `preprocessed: true`, with dex preopt disabled.
 
 For targetSdkVersion 30 and newer, Soong requires presigned imports to be marked
 preprocessed so the product build does not rewrite the APK and invalidate its
 APK Signature Scheme v2+ signature.
 
-The final product-composition gate validates this contract for all eight
+The final product-composition gate validates this contract for all eleven
 canonical APK imports before Soong module compilation begins.

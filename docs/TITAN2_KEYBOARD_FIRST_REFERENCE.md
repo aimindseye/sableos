@@ -1,10 +1,10 @@
-# Titan 2 family keyboard-first reference review
+# Titan 2 keyboard-first reference review
 
 Status: **accepted design/reference input; no external implementation is automatically imported**
 
 Date: 2026-09-19
 
-Titan 2 family is a keyboard-first SableOS target.
+Titan 2 is a keyboard-first SableOS target.
 
 The physical QWERTY keyboard is a primary OS input device, not an accessory layered over a touch-first phone UI.
 
@@ -22,7 +22,7 @@ key_repeat = true
 touch_required_for_core_navigation = false
 ```
 
-The same Sable semantic application model remains shared with Panther. Titan 2 family changes interaction/layout presentation, not application meaning or service authority.
+The same Sable semantic application model remains shared with Panther. Titan 2 changes interaction/layout presentation, not application meaning or service authority.
 
 ## Reviewed external references
 
@@ -39,7 +39,7 @@ role: physical-keyboard IME / input-routing reference
 
 Observed useful concepts:
 
-- explicitly profiled for physical-keyboard Android devices including Titan 2 family;
+- explicitly profiled for physical-keyboard Android devices including Titan 2;
 - dedicated physical-keyboard `InputMethodService`;
 - separated input routing from modifier state;
 - configurable Ctrl/Alt/Shift/SYM behavior;
@@ -112,7 +112,7 @@ Observed useful concepts:
 - ESDF/IJKL directional navigation;
 - D-pad/UI navigation;
 - layout switching and customizable mapping data;
-- explicit Titan 2 family Alt map:
+- explicit Titan 2 Alt map:
   - Q/W/E/R -> 0/1/2/3
   - S/D/F -> 4/5/6
   - X/C/V -> 7/8/9
@@ -121,7 +121,7 @@ Observed useful concepts:
 
 Sable lessons:
 
-- Titan 2 family needs a sealed physical-key mapping baseline before changing input behavior;
+- Titan 2 needs a sealed physical-key mapping baseline before changing input behavior;
 - Alt/SYM mappings should be represented as versioned data rather than scattered code constants;
 - navigation-mode mappings should be customizable behind stable semantic actions;
 - device mapping is an adapter beneath common keyboard-first semantics.
@@ -175,13 +175,13 @@ license: GPL-3.0
 role: BB10/QNX engineering and device-tooling reference
 ~~~
 
-Use it as a capability/reference inventory for a future common Sable Tools app on Titan 2 family and Q27. Useful inspiration includes structured device/radio inspection, keyboard/input diagnostics, file/report workflows, storage/device inspection and compact service tooling.
+Use it as a capability/reference inventory for a future common Sable Tools app on Titan 2 and Q27. Useful inspiration includes structured device/radio inspection, keyboard/input diagnostics, file/report workflows, storage/device inspection and compact service tooling.
 
 Do **not** port its BB10-specific kernel patching, memory writes, NVRAM mutation, trust/security bypass or unauthenticated service mechanisms into production SableOS.
 
 The normative Sable interpretation is in KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md.
 
-## Titan 2 family keyboard-first UX contract
+## Titan 2 keyboard-first UX contract
 
 ### HOME / SableStart
 
@@ -266,7 +266,7 @@ Hardware-specific keycodes/scancodes map into those semantic actions through an 
 
 ### Text input / IME
 
-Titan 2 family requires a physical-keyboard-aware Sable input strategy.
+Titan 2 requires a physical-keyboard-aware Sable input strategy.
 
 Requirements:
 
@@ -352,7 +352,7 @@ screen geometry/density/orientation
 pointer/touch-surface devices if present
 ```
 
-Do not infer Titan 2 family mappings from Q25 mappings. Reference repositories guide what to measure; the physical Titan 2 family provides the authoritative mapping.
+Do not infer Titan 2 mappings from Q25 mappings. Reference repositories guide what to measure; the physical Titan 2 provides the authoritative mapping.
 
 ## Architecture layers
 

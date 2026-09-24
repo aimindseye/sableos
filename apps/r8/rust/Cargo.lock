@@ -145,6 +145,18 @@ name = "sable-media-domain"
 version = "0.1.0"
 
 [[package]]
+name = "sable-weather-core"
+version = "0.1.0"
+
+[[package]]
+name = "sable-weather-jni"
+version = "0.1.0"
+dependencies = [
+ "jni",
+ "sable-weather-core",
+]
+
+[[package]]
 name = "same-file"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"

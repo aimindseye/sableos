@@ -1,8 +1,16 @@
 # R8 Pixel UI Product Closure
 
-Status: **active / R8-G global appearance + Sable Mail integration, source-bound eight-APK refreeze, module compile, full build and physical acceptance pending**
+Status: **historical R8 execution record; superseded for current R9 product architecture**
 
 Date: 2026-09-19
+
+> R9 supersession (2026-09-23): the integrated R8-D2 TextReader/OCR-inside-Reader
+> design below is historical evidence, not current product authority. R9 ships
+> `org.sableos.reader` as the publication product and
+> `org.sableos.textreader` as a separate offline-first Text Reader. The
+> source-bound Panther prebuilt bundle is now eleven APKs. See
+> `docs/adr/0009-separate-reader-and-text-reader-products.md`,
+> `docs/ARCHITECTURE.md`, and `docs/RELEASE_VALIDATION.md`.
 
 
 Current execution evidence:
@@ -25,7 +33,8 @@ PANTHER_FINAL_UI_PHYSICAL_ACCEPTANCE=PENDING
 
 The previously frozen seven-APK bundle at `/srv/data/sable-build/artifacts/panther/r8-final-app-bundle/20260919_113505` remains valid historical qualification evidence only. The final R8 bundle is now eight APKs because R8-G adds Sable Mail and global appearance consumers. New bundles carry an exact SableOS source-commit identity; after the R8-G stacked PR merges, Calculator/Games/Media/Hub must be rebuilt, Reader and Mail composed from their pinned upstreams, the eight-APK bundle exported, Panther restaged, and product composition passed again before the corrected module gate.
 
-This document is the execution authority for completing the current Pixel 7 / Panther UI refresh before the next full Panther build.
+This document records the historical R8 execution plan and evidence. It is not
+the execution authority for current R9 Panther product composition.
 
 The governing rule is:
 

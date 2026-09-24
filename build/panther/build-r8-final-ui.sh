@@ -3,12 +3,23 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+source "$ROOT/build/config/r8-release.env"
 source "$ROOT/build/config/panther-grapheneos-2026081300.env"
 
 BUILD_AUTHORIZED="${BUILD_AUTHORIZED:-NO}"
 WS="${WS:-$SABLEOS_UPSTREAM}"
 OUT_DIR="${OUT_DIR:-out_sable_ui_final_qual}"
 JOBS="${JOBS:-8}"
+REQUIRE_FRESH_OUT="${REQUIRE_FRESH_OUT:-NO}"
+SABLE_BUILD_STAGE="${SABLE_BUILD_STAGE:-full}"
+
+case "$SABLE_BUILD_STAGE" in
+    full|modules) ;;
+    *)
+        echo "R8_FINAL_BUILD=FAIL_BUILD_STAGE value=$SABLE_BUILD_STAGE"
+        exit 2
+        ;;
+esac
 
 if [[ "$BUILD_AUTHORIZED" != YES ]]; then
     echo "R8_FINAL_BUILD=REFUSED_BUILD_NOT_AUTHORIZED"
@@ -26,6 +37,49 @@ else
     OUT_ABS="$WS/$OUT_DIR"
 fi
 
+if [[ "$SABLE_BUILD_STAGE" == modules && "$REQUIRE_FRESH_OUT" == YES ]]; then
+    echo "R9_MODULE_QUALIFICATION_OUT_POLICY=FAIL_FRESH_OUT_FORBIDDEN"
+    echo "R8_FINAL_BUILD=FAIL_MODULE_QUALIFICATION_OUT_POLICY"
+    exit 3
+fi
+
+if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
+    if [[ -e "$OUT_ABS" ]]; then
+        echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=FAIL_PRESENT path=$OUT_ABS"
+        echo "R9_FRESH_FULL_BUILD=FAIL"
+        exit 3
+    fi
+    echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=PASS_ABSENT path=$OUT_ABS"
+else
+    echo "R9_FRESH_FULL_BUILD_OUT_PRECONDITION=NOT_REQUIRED"
+fi
+
+if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
+    [[ -d "$OUT_ABS/target/product/panther" ]] || {
+        echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_PRODUCT_TREE path=$OUT_ABS"
+        echo "R8_FINAL_BUILD=FAIL_MODULE_QUALIFICATION_WARM_OUT"
+        exit 3
+    }
+
+    warm_graph=NO
+    [[ -f "$OUT_ABS/build.ninja" ]] && warm_graph=YES
+    [[ -f "$OUT_ABS/soong/build.ninja" ]] && warm_graph=YES
+    compgen -G "$OUT_ABS/build-*panther*.ninja" >/dev/null && warm_graph=YES
+    compgen -G "$OUT_ABS/combined-*panther*.ninja" >/dev/null && warm_graph=YES
+
+    [[ "$warm_graph" == YES ]] || {
+        echo "R9_MODULE_QUALIFICATION_WARM_OUT=FAIL_NINJA_GRAPH path=$OUT_ABS"
+        echo "R8_FINAL_BUILD=FAIL_MODULE_QUALIFICATION_WARM_OUT"
+        exit 3
+    }
+
+    echo "R9_MODULE_QUALIFICATION_OUT_POLICY=PASS_WARM_REUSE"
+    echo "R9_MODULE_QUALIFICATION_WARM_OUT=PASS path=$OUT_ABS"
+fi
+
+R9_FULL_BUILD_START_EPOCH="$(date +%s)"
+echo "R9_FULL_BUILD_START_EPOCH=$R9_FULL_BUILD_START_EPOCH"
+
 STAMP="$(date +%Y%m%d_%H%M%S)"
 EVIDENCE_DIR="${EVIDENCE_DIR:-/srv/data/sable-build/evidence/panther/r8-final-ui/$STAMP}"
 mkdir -p "$EVIDENCE_DIR"
@@ -39,46 +93,38 @@ echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "WORKSPACE=$WS"
 echo "OUT_DIR=$OUT_DIR"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+echo "REQUIRE_FRESH_OUT=$REQUIRE_FRESH_OUT"
+echo "SABLE_BUILD_STAGE=$SABLE_BUILD_STAGE"
 
 echo
 echo "===== PRE-BUILD PRODUCT COMPOSITION ====="
 
-WS="$WS" SABLEOS_UPSTREAM="$WS"     bash "$ROOT/build/gates/r8-final-product-composition.sh"     | tee "$EVIDENCE_DIR/prebuild-composition.log"
+if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
+    COMPOSITION_QUALIFICATION_ONLY=YES
+else
+    COMPOSITION_QUALIFICATION_ONLY=NO
+fi
+
+SABLE_QUALIFICATION_ONLY="$COMPOSITION_QUALIFICATION_ONLY" \
+WS="$WS" SABLEOS_UPSTREAM="$WS" \
+    bash "$ROOT/build/gates/r8-final-product-composition.sh" \
+    | tee "$EVIDENCE_DIR/prebuild-composition.log"
 
 grep -Fxq 'R8_FINAL_UI_PRODUCT_COMPOSITION=PASS'     "$EVIDENCE_DIR/prebuild-composition.log"     || {
         echo "R8_FINAL_BUILD=FAIL_PREBUILD_COMPOSITION"
         exit 4
     }
 
-grep -Fxq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' \
-    "$EVIDENCE_DIR/prebuild-composition.log" || {
-        echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING"
-        echo "R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW"
-        exit 5
-    }
-
-echo
-echo "===== SABLESTART SIGNING SOURCE POLICY ====="
-
-SIGNING_POLICY="$ROOT/build/gates/r8-sablestart-signing-policy.py"
-SABLESTART_BP="$WS/packages/apps/SableStart/Android.bp"
-
-set +e
-python3 "$SIGNING_POLICY" \
-    --source-bp "$SABLESTART_BP" \
-    2>&1 | tee "$EVIDENCE_DIR/sablestart-signing-source.log"
-SABLESTART_SIGNING_SOURCE_RC=${PIPESTATUS[0]}
-set -e
-
-echo "R8_SABLESTART_SIGNING_SOURCE_RC=$SABLESTART_SIGNING_SOURCE_RC"
-
-if [[ "$SABLESTART_SIGNING_SOURCE_RC" -ne 0 ]]; then
-    echo "R8_SABLESTART_SIGNING_SOURCE_POLICY=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_SABLESTART_SIGNING_SOURCE"
-    exit 4
+if [[ "$SABLE_BUILD_STAGE" == full ]]; then
+    grep -Fxq 'NEXT_FULL_PANTHER_BUILD_AUTHORIZED=YES' \
+        "$EVIDENCE_DIR/prebuild-composition.log" || {
+            echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING"
+            echo "R8_FINAL_BUILD=BLOCKED_R9_VISUAL_REVIEW"
+            exit 5
+        }
+else
+    echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING_ALLOWED_FOR_MODULE_QUALIFICATION"
 fi
-
-echo "R8_SABLESTART_SIGNING_SOURCE_POLICY=PASS"
 
 echo
 echo "===== ANDROID BUILD ENVIRONMENT ====="
@@ -134,28 +180,31 @@ echo "R8_TARGET_BUILD_VARIANT=PASS value=$TARGET_BUILD_VARIANT"
 echo "R8_LUNCH=PASS"
 
 echo
-echo "===== SABLESTART SOONG PREFLIGHT ====="
+echo "===== SABLE HOME + QUICKSTEP RECENTS PREFLIGHT ====="
 
 set +e
-m -j"$JOBS" SableStart 2>&1 | tee "$EVIDENCE_DIR/sablestart-soong-preflight.log"
-SABLESTART_RC=${PIPESTATUS[0]}
+m -j"$JOBS" SableLauncher Launcher3QuickStep \
+    2>&1 | tee "$EVIDENCE_DIR/sable-home-quickstep-preflight.log"
+HOME_RC=${PIPESTATUS[0]}
 set -e
 
-echo "R8_SABLESTART_SOONG_PREFLIGHT_RC=$SABLESTART_RC"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT_RC=$HOME_RC"
 
-if [[ "$SABLESTART_RC" -ne 0 ]]; then
-    echo "R8_SABLESTART_SOONG_PREFLIGHT=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_SABLESTART_PREFLIGHT"
+if [[ "$HOME_RC" -ne 0 ]]; then
+    echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=FAIL"
+    echo "R8_FINAL_BUILD=FAIL_SABLE_HOME_QUICKSTEP_PREFLIGHT"
     exit 5
 fi
 
-echo "R8_SABLESTART_SOONG_PREFLIGHT=PASS"
+echo "R9_SABLELAUNCHER_MODULE_BUILD=PASS"
+echo "R9_QUICKSTEP_RECENTS_MODULE_BUILD=PASS"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS"
 
 echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
-m -j"$JOBS"     SableStart     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableReader     SableHub     SableMail     SetupWizard2     Settings     SystemUI     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
+m -j"$JOBS"     SableLauncher     Launcher3QuickStep     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableTextReader     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     framework-minus-apex     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
 MODULE_RC=${PIPESTATUS[0]}
 set -e
 
@@ -168,6 +217,29 @@ if [[ "$MODULE_RC" -ne 0 ]]; then
 fi
 
 echo "R8_UI_MODULE_BUILD=PASS"
+echo "R9_PHONE_MODULE_BUILD=PASS"
+echo "R9_CONTACTS_MODULE_BUILD=PASS"
+echo "R9_CLOCK_MODULE_BUILD=PASS"
+echo "R9_FILES_MODULE_BUILD=PASS"
+echo "R9_PHOTOS_MODULE_BUILD=PASS"
+echo "R9_SABLE_WEATHER_MODULE_BUILD=PASS"
+echo "R9_SABLE_CALENDAR_MODULE_BUILD=PASS"
+echo "R9_SABLE_TEXT_READER_MODULE_BUILD=PASS"
+echo "R9_SABLELAUNCHER_MODULE_BUILD=PASS"
+echo "R9_QUICKSTEP_RECENTS_MODULE_BUILD=PASS"
+echo "R9_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS"
+
+if [[ "$SABLE_BUILD_STAGE" == modules ]]; then
+    echo
+    echo "===== MODULE-ONLY QUALIFICATION RESULT ====="
+    echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS"
+    echo "R8_UI_MODULE_BUILD=PASS"
+    echo "R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS"
+    echo "FULL_TARGET_FILES_BUILD_PERFORMED=NO"
+    echo "R9_FRESH_FULL_BUILD=NOT_PROVEN"
+    echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+    exit 0
+fi
 
 echo
 echo "===== FULL TARGET-FILES BUILD ====="
@@ -209,30 +281,20 @@ TF="$(
 }
 
 TF_SHA="$(sha256sum "$TF" | awk '{print $1}')"
+TF_MTIME_EPOCH="$(stat -c %Y "$TF")"
 
 echo "R8_TARGET_FILES=$TF"
 echo "R8_TARGET_FILES_SHA256=$TF_SHA"
+echo "R9_TARGET_FILES_MTIME_EPOCH=$TF_MTIME_EPOCH"
 
-echo
-echo "===== SABLESTART SIGNING TARGET-FILES POLICY ====="
-
-set +e
-python3 "$SIGNING_POLICY" \
-    --source-bp "$SABLESTART_BP" \
-    --target-files "$TF" \
-    2>&1 | tee "$EVIDENCE_DIR/sablestart-signing-target-files.log"
-SABLESTART_SIGNING_TARGET_RC=${PIPESTATUS[0]}
-set -e
-
-echo "R8_SABLESTART_SIGNING_TARGET_RC=$SABLESTART_SIGNING_TARGET_RC"
-
-if [[ "$SABLESTART_SIGNING_TARGET_RC" -ne 0 ]]; then
-    echo "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=FAIL"
-    echo "R8_FINAL_BUILD=FAIL_SABLESTART_SIGNING_TARGET"
-    exit 9
+if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
+    [[ "$TF_MTIME_EPOCH" -ge "$R9_FULL_BUILD_START_EPOCH" ]] || {
+        echo "R9_TARGET_FILES_FRESHNESS=FAIL start=$R9_FULL_BUILD_START_EPOCH mtime=$TF_MTIME_EPOCH"
+        echo "R9_FRESH_FULL_BUILD=FAIL"
+        exit 8
+    }
+    echo "R9_TARGET_FILES_FRESHNESS=PASS"
 fi
-
-echo "R8_SABLESTART_SIGNING_TARGET_FILES_POLICY=PASS"
 
 WS="$WS" OUT_DIR="$OUT_DIR" TF="$TF"     bash "$ROOT/build/gates/r8-final-target-files.sh"     | tee "$EVIDENCE_DIR/target-files-composition.log"
 
@@ -244,10 +306,19 @@ grep -Fxq 'R8_FINAL_TARGET_FILES=PASS'     "$EVIDENCE_DIR/target-files-compositi
 echo
 echo "===== R8 FINAL BUILD RESULT ====="
 echo "R8_FINAL_UI_PRODUCT_COMPOSITION=PASS"
+echo "R9_SABLE_HOME_QUICKSTEP_PREFLIGHT=PASS"
+echo "R9_STANDALONE_SABLELAUNCHER_PRODUCT=PASS_PRESENT"
+echo "R9_LAUNCHER3_HOME_ELIGIBILITY=PASS_ABSENT"
 echo "R8_UI_MODULE_BUILD=PASS"
 echo "R8_FULL_BUILD=PASS"
 echo "R8_BUILD_SANDBOX=PASS"
 echo "R8_FINAL_TARGET_FILES=PASS"
+if [[ "$REQUIRE_FRESH_OUT" == YES ]]; then
+    echo "R9_FRESH_FULL_BUILD=PASS"
+    echo "R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES"
+else
+    echo "R9_FRESH_FULL_BUILD=NOT_PROVEN"
+fi
 echo "PANTHER_FINAL_UI_BUILD=PASS"
 echo "TARGET_FILES=$TF"
 echo "TARGET_FILES_SHA256=$TF_SHA"

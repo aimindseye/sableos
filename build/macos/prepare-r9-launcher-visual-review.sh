@@ -1,0 +1,339 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+[[ "$(uname -s)" == "Darwin" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_HOST_NOT_MACOS"
+    exit 2
+}
+
+SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+[[ -n "$SDK_ROOT" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_ANDROID_SDK_UNSET"
+    exit 3
+}
+
+ADB="$SDK_ROOT/platform-tools/adb"
+EMULATOR="$SDK_ROOT/emulator/emulator"
+[[ -x "$ADB" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_ADB path=$ADB"
+    exit 4
+}
+[[ -x "$EMULATOR" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_EMULATOR path=$EMULATOR"
+    exit 5
+}
+
+EVIDENCE_ROOT="${SABLE_VISUAL_EVIDENCE_ROOT:-$HOME/sableos-evidence/r9-launcher-visual-review}"
+RUN_ID="${SABLE_VISUAL_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$(git -C "$ROOT" rev-parse --short=12 HEAD)}"
+EVIDENCE_DIR="$EVIDENCE_ROOT/$RUN_ID"
+mkdir -p "$EVIDENCE_DIR"
+
+CACHE_DIR="$HOME/Library/Caches/sableos"
+LAST_DIR_FILE="$CACHE_DIR/r9-launcher-visual-review-last-dir"
+READY_FILE="$EVIDENCE_DIR/prepare-ready.txt"
+SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
+mkdir -p "$CACHE_DIR"
+printf '%s\n' "$EVIDENCE_DIR" > "$LAST_DIR_FILE"
+
+exec > >(tee "$EVIDENCE_DIR/prepare.log") 2>&1
+
+on_error() {
+    local rc=$?
+    echo
+    echo "R9_VISUAL_REVIEW_PREPARE=FAIL rc=$rc"
+    echo "R9_VISUAL_REVIEW_PREPARE_LOG=$EVIDENCE_DIR/prepare.log"
+    if [[ -f "$EVIDENCE_DIR/gradle-visual-review.log" ]]; then
+        echo "R9_VISUAL_REVIEW_GRADLE_LOG=$EVIDENCE_DIR/gradle-visual-review.log"
+        echo "===== LAST 40 GRADLE LINES ====="
+        tail -n 40 "$EVIDENCE_DIR/gradle-visual-review.log" || true
+    fi
+}
+trap on_error ERR
+
+echo "===== R9L9 MAC MINI / PIXEL 7 VISUAL REVIEW PREP ====="
+echo "SOURCE_COMMIT=$SOURCE_COMMIT"
+echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+echo "NETWORK_FETCH_AUTHORIZED=${NETWORK_FETCH_AUTHORIZED:-NO}"
+echo "FULL_PANTHER_BUILD_AUTHORIZED=NO"
+echo "DEVICE_FLASH_AUTHORIZED=NO"
+echo "REVIEW_APK_PRODUCT_INCLUSION=NO"
+
+"$ADB" start-server >/dev/null
+
+select_serial() {
+    if [[ -n "${ANDROID_SERIAL:-}" ]]; then
+        printf '%s\n' "$ANDROID_SERIAL"
+        return
+    fi
+
+    "$ADB" devices |
+        awk 'NR > 1 && $2 == "device" { print $1; exit }'
+}
+
+SERIAL="$(select_serial)"
+
+if [[ -z "$SERIAL" ]]; then
+    AVD_NAME="${AVD_NAME:-}"
+    if [[ -z "$AVD_NAME" ]]; then
+        AVD_NAME="$(
+            "$EMULATOR" -list-avds |
+                grep -Ei 'pixel[_ -]?7|panther' |
+                head -n 1 || true
+        )"
+    fi
+
+    [[ -n "$AVD_NAME" ]] || {
+        echo "R9_VISUAL_REVIEW=FAIL_NO_PIXEL7_AVD"
+        echo "Set AVD_NAME to the established Pixel 7 AVD on the Mac mini."
+        "$EMULATOR" -list-avds || true
+        exit 6
+    }
+
+    echo "STARTING_AVD=$AVD_NAME"
+    nohup "$EMULATOR"         -avd "$AVD_NAME"         -no-boot-anim         -no-snapshot-save         > "$EVIDENCE_DIR/emulator.log" 2>&1 &
+
+    "$ADB" wait-for-device
+    attempt=0
+    while (( attempt < 180 )); do
+        SERIAL="$(select_serial)"
+        if [[ -n "$SERIAL" ]] &&
+            [[ "$("$ADB" -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
+            break
+        fi
+        attempt=$((attempt + 1))
+        sleep 1
+    done
+fi
+
+[[ -n "$SERIAL" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_NO_DEVICE"
+    exit 7
+}
+
+export ANDROID_SERIAL="$SERIAL"
+ACTUAL_AVD="$("$ADB" -s "$SERIAL" emu avd name 2>/dev/null | tr -d '\r' | head -n 1 || true)"
+echo "ANDROID_SERIAL=$SERIAL"
+echo "ACTUAL_AVD=$ACTUAL_AVD"
+
+HOST_CHROME_PATH="$(
+    "$ADB" -s "$SERIAL" shell pm path com.android.chrome 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
+HOST_GOOGLE_MESSAGES_PATH="$(
+    "$ADB" -s "$SERIAL" shell pm path com.google.android.apps.messaging 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
+HOST_VANADIUM_PATH="$(
+    "$ADB" -s "$SERIAL" shell pm path app.vanadium.browser 2>/dev/null |
+        tr -d '\r' |
+        head -n 1 || true
+)"
+
+echo "R9_VISUAL_REVIEW_BROWSER_IDENTITY_SOURCE=HOST_AVD_NOT_PRODUCT"
+if [[ -n "$HOST_CHROME_PATH" ]]; then
+    echo "R9_VISUAL_REVIEW_HOST_AVD_CHROME=DETECTED_FILTERED_FROM_REVIEW"
+else
+    echo "R9_VISUAL_REVIEW_HOST_AVD_CHROME=ABSENT"
+fi
+if [[ -n "$HOST_GOOGLE_MESSAGES_PATH" ]]; then
+    echo "R9_VISUAL_REVIEW_HOST_AVD_GOOGLE_MESSAGES=DETECTED_FILTERED_FROM_REVIEW"
+else
+    echo "R9_VISUAL_REVIEW_HOST_AVD_GOOGLE_MESSAGES=ABSENT"
+fi
+if [[ -n "$HOST_VANADIUM_PATH" ]]; then
+    echo "R9_VISUAL_REVIEW_HOST_AVD_VANADIUM=DETECTED_NONAUTHORITATIVE"
+else
+    echo "R9_VISUAL_REVIEW_HOST_AVD_VANADIUM=ABSENT_EXPECTED"
+fi
+echo "R9_VISUAL_REVIEW_VANADIUM_PROOF=DEFERRED_PHYSICAL_PANTHER"
+echo "R9_VISUAL_REVIEW_PLATFORM_NIGHT_MODE_PROOF=DEFERRED_PHYSICAL_PANTHER"
+echo "R9_VISUAL_REVIEW_APPEARANCE_MODE=LOCAL_DESIGN_ONLY"
+echo "R9_VISUAL_REVIEW_PRODUCTION_APPEARANCE_AUTHORITY=DEFERRED_PHYSICAL_PANTHER"
+
+if [[ "${ALLOW_NON_PIXEL7_AVD:-NO}" != "YES" ]]; then
+    if ! printf '%s' "$ACTUAL_AVD" | grep -Eiq 'pixel[_ -]?7|panther'; then
+        echo "R9_VISUAL_REVIEW=FAIL_NOT_PIXEL7_AVD actual=$ACTUAL_AVD"
+        echo "Set ALLOW_NON_PIXEL7_AVD=YES only for an explicitly reviewed exception."
+        exit 8
+    fi
+fi
+
+if [[ "${NETWORK_FETCH_AUTHORIZED:-NO}" == "YES" ]]; then
+    GRADLE_OFFLINE=NO
+else
+    GRADLE_OFFLINE=YES
+fi
+
+GRADLE_LOG="$EVIDENCE_DIR/gradle-visual-review.log"
+set +e
+(
+    cd "$ROOT/apps/r8/android"
+
+    if [[ "$GRADLE_OFFLINE" == "YES" ]]; then
+        ./gradlew --offline \
+            :sablestart-presentation-check:compileDebugKotlin \
+            :sablestart-visual-review:assembleDebug \
+            :hub:assembleDebug \
+            :calendar:assembleDebug \
+            :media:assembleDebug \
+            --stacktrace \
+            --console=plain \
+            --no-daemon
+    else
+        ./gradlew \
+            :sablestart-presentation-check:compileDebugKotlin \
+            :sablestart-visual-review:assembleDebug \
+            :hub:assembleDebug \
+            :calendar:assembleDebug \
+            :media:assembleDebug \
+            --stacktrace \
+            --console=plain \
+            --no-daemon
+    fi
+) 2>&1 | tee "$GRADLE_LOG"
+gradle_rc=${PIPESTATUS[0]}
+set -e
+
+if [[ "$gradle_rc" -ne 0 ]]; then
+    if [[ "${NETWORK_FETCH_AUTHORIZED:-NO}" != "YES" ]] &&
+        grep -Fq "No cached version of" "$GRADLE_LOG" &&
+        grep -Fq "available for offline mode" "$GRADLE_LOG"; then
+        echo "R9_VISUAL_REVIEW_DEPENDENCY_CACHE=MISS"
+        echo "R9_VISUAL_REVIEW_NETWORK_BOOTSTRAP_REQUIRED=YES"
+        echo "RETRY=NETWORK_FETCH_AUTHORIZED=YES bash build/macos/prepare-r9-launcher-visual-review.sh"
+        exit 10
+    fi
+
+    if grep -Fq "Dependency verification failed" "$GRADLE_LOG"; then
+        echo "R9_VISUAL_REVIEW_DEPENDENCY_VERIFICATION=FAIL"
+        echo "R9_VISUAL_REVIEW_DEPENDENCY_VERIFICATION_ACTION=DO_NOT_DISABLE_VERIFICATION"
+    fi
+
+    echo "R9_VISUAL_REVIEW_GRADLE=FAIL rc=$gradle_rc log=$GRADLE_LOG"
+    exit "$gradle_rc"
+fi
+
+echo "R9_VISUAL_REVIEW_DEPENDENCY_CACHE=READY"
+echo "R9_VISUAL_REVIEW_MAC_BUILD_SCOPE=COMPILE_ASSEMBLE_INSTALL"
+echo "R9_VISUAL_REVIEW_LINT_SCOPE=LOCAL_CI_SEPARATE_GATE"
+
+APK="$ROOT/apps/r8/android/sablestart-visual-review/build/outputs/apk/debug/sablestart-visual-review-debug.apk"
+HUB_APK="$ROOT/apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk"
+CALENDAR_APK="$ROOT/apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk"
+MEDIA_APK="$ROOT/apps/r8/android/media/build/outputs/apk/debug/media-debug.apk"
+[[ -f "$APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_APK_MISSING path=$APK"
+    exit 9
+}
+[[ -f "$HUB_APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_HUB_APK_MISSING path=$HUB_APK"
+    exit 9
+}
+[[ -f "$CALENDAR_APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_CALENDAR_APK_MISSING path=$CALENDAR_APK"
+    exit 9
+}
+[[ -f "$MEDIA_APK" ]] || {
+    echo "R9_VISUAL_REVIEW=FAIL_MEDIA_APK_MISSING path=$MEDIA_APK"
+    exit 9
+}
+
+if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$APK" | tee "$EVIDENCE_DIR/review-apk.sha256"
+else
+    shasum -a 256 "$APK" | tee "$EVIDENCE_DIR/review-apk.sha256"
+fi
+
+for stale_package in \
+    org.sableos.weather.visualreview \
+    org.sableos.weather \
+    org.sableos.mail \
+    org.sableos.calculator \
+    org.sableos.sudoku \
+    org.sableos.minesweeper \
+    org.sableos.game2048
+do
+    "$ADB" -s "$SERIAL" shell pm uninstall "$stale_package" >/dev/null 2>&1 || true
+done
+echo "R9_VISUAL_REVIEW_STALE_FIRST_PARTY_CLEANUP=PASS"
+
+"$ADB" -s "$SERIAL" install -r "$APK"
+"$ADB" -s "$SERIAL" shell pm clear org.sableos.start.visualreview >/dev/null
+echo "R9_VISUAL_REVIEW_STATE_RESET=PASS"
+"$ADB" -s "$SERIAL" install -r "$HUB_APK"
+"$ADB" -s "$SERIAL" install -r "$CALENDAR_APK"
+"$ADB" -s "$SERIAL" install -r "$MEDIA_APK"
+
+"$ADB" -s "$SERIAL" shell pm grant \
+    org.sableos.calendar android.permission.READ_CALENDAR >/dev/null
+"$ADB" -s "$SERIAL" shell pm grant \
+    org.sableos.calendar android.permission.WRITE_CALENDAR >/dev/null
+
+if [[ "$("$ADB" -s "$SERIAL" shell getprop ro.build.version.sdk | tr -d '\r')" -ge 33 ]]; then
+    "$ADB" -s "$SERIAL" shell pm grant \
+        org.sableos.start.visualreview android.permission.READ_MEDIA_IMAGES >/dev/null 2>&1 || true
+else
+    "$ADB" -s "$SERIAL" shell pm grant \
+        org.sableos.start.visualreview android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1 || true
+fi
+
+for permission in \
+    android.permission.READ_SMS \
+    android.permission.SEND_SMS \
+    android.permission.READ_CONTACTS
+do
+    "$ADB" -s "$SERIAL" shell pm grant \
+        org.sableos.hub "$permission" >/dev/null 2>&1 || true
+done
+
+echo "R9_VISUAL_REVIEW_LOCAL_DATA_FIXTURE_GRANTS=PASS_BEST_EFFORT"
+echo "R9_VISUAL_REVIEW_SABLE_MESSAGES_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_SABLE_MEDIA_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_SABLE_CALENDAR_PERMISSION_FIXTURE=PASS"
+
+echo "R9_VISUAL_REVIEW_APPEARANCE_PROVIDER=RETIRED_SYSTEM_AUTHORITY_PHYSICAL_ONLY"
+
+"$ADB" -s "$SERIAL" shell am force-stop org.sableos.start.visualreview
+"$ADB" -s "$SERIAL" shell am start -W     -n org.sableos.start.visualreview/.R9LauncherVisualReviewActivity
+
+sleep 1
+
+{
+    echo "source_commit=$(git -C "$ROOT" rev-parse HEAD)"
+    echo "serial=$SERIAL"
+    echo "avd=$ACTUAL_AVD"
+    echo "product=$("$ADB" -s "$SERIAL" shell getprop ro.product.name | tr -d '\r')"
+    echo "model=$("$ADB" -s "$SERIAL" shell getprop ro.product.model | tr -d '\r')"
+    echo "sdk=$("$ADB" -s "$SERIAL" shell getprop ro.build.version.sdk | tr -d '\r')"
+    echo "release=$("$ADB" -s "$SERIAL" shell getprop ro.build.version.release | tr -d '\r')"
+    echo "wm_size=$("$ADB" -s "$SERIAL" shell wm size | tr -d '\r')"
+    echo "wm_density=$("$ADB" -s "$SERIAL" shell wm density | tr -d '\r')"
+} | tee "$EVIDENCE_DIR/device.txt"
+
+"$ADB" -s "$SERIAL" exec-out screencap -p > "$EVIDENCE_DIR/00-start-initial.png"
+
+{
+    echo "source_commit=$SOURCE_COMMIT"
+    echo "serial=$SERIAL"
+    echo "status=READY"
+} > "$READY_FILE"
+
+echo "R9_VISUAL_REVIEW_PREPARE_READY=PASS"
+echo "R9_VISUAL_REVIEW_APK_BUILD=PASS"
+echo "R9_VISUAL_REVIEW_THEME_PROBE_APP=SABLE_MESSAGES"
+echo "R9_VISUAL_REVIEW_PIXEL7_AVD=PASS"
+echo "R9_VISUAL_REVIEW_INSTALL=PASS"
+echo "R9_VISUAL_REVIEW_INITIAL_CAPTURE=PASS"
+echo "R9_L6_VISUAL_REVIEW_STATUS=PENDING_USER_REVIEW"
+echo "NEXT_FULL_PANTHER_BUILD_AUTHORIZED=NO"
+echo
+echo "Capture additional frames with:"
+echo "  bash build/macos/capture-r9-launcher-visual-review.sh <frame-name>"
+echo "Evidence:"
+echo "  $EVIDENCE_DIR"

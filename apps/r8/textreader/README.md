@@ -1,61 +1,131 @@
-# R8-D2 Vaachak Text Reader capability qualification
+# R9 Sable Text Reader
 
-This directory qualifies reusable text-accessibility capability from `vaachak-platform/vaachak-textreader` without treating it as a second Sable Reader product.
+Sable Text Reader is a standalone SableOS application for plain text,
+accessibility-oriented reading and user-directed OCR.
 
-## Product role
-
-The primary Sable Reader remains the Vaachak Mobile / Readium-derived reader path. Vaachak Text Reader is a complementary capability source for plain text, accessibility, OCR, text-to-speech and Android text-sharing integration.
-
-Candidate capabilities for Sable Reader composition:
-
-- local `text/plain` document ingestion through Android's document picker;
-- `ACTION_SEND` share-target ingestion;
-- `ACTION_PROCESS_TEXT` / selected-text handoff;
-- Android `TextToSpeech` playback;
-- user-directed WAV export through the Storage Access Framework;
-- CameraX live-scanner flow;
-- gallery image OCR;
-- Latin and Devanagari ML Kit text-recognition paths;
-- local-translation UX/state patterns where product/privacy policy permits them.
-
-The text stream reader (`TextReaderUtil`) is especially suitable for extraction into a small independently testable adapter because it has no Android-context dependency.
-
-## Privacy / offline boundary
-
-Upstream currently declares `android.permission.INTERNET`, and its translation flow calls ML Kit `downloadModelIfNeeded`. Therefore a strict offline Sable Reader must not import the translation path unchanged or claim offline closure merely because translation executes on-device after model acquisition.
-
-The Sable integration gate must separately decide whether translation is:
-
-1. omitted from the first offline Reader tranche;
-2. retained only behind an explicit network/model-acquisition policy; or
-3. accepted after a reproducible pre-provisioned-model design is proven.
-
-OCR model packaging/runtime behavior also requires verification in the qualified APK before an offline claim is made.
-
-Camera permission belongs only to the OCR capability and must remain optional. Plain-text/TTS reading must not require camera authority.
-
-## Qualification boundary
-
-The pinned source identity lives in `upstream.env`. CI clones exactly that SHA and runs upstream unit tests, debug APK assembly and lint independently from the Panther/AOSP image build.
-
-A passing capability APK proves the upstream code compiles and its source behavior is inspectable. It does **not** prove that Sable Reader has integrated the capability, that Internet permission has been removed, or that all ML models are available offline.
-
-## Integration direction
-
-Preferred R8 composition:
+## Product identity
 
 ```text
-Sable Reader
-  |
-  +-- publication path
-  |     Vaachak Mobile / Readium
-  |     EPUB, library, progress, bookmarks, highlights, search
-  |
-  +-- text accessibility path
-        Vaachak Text Reader capability
-        TXT / share / process-text / TTS / OCR
+name     Sable Text Reader
+package  org.sableos.textreader
+module   SableTextReader
 ```
 
-R8-D2 now composes both the pinned pure `TextReaderUtil` stream capability and the pinned CameraX/ML Kit OCR surface into the Sable Reader flavor. TXT/view/share/process-text/TTS remain local. OCR supports user-directed camera or gallery input with Latin and Devanagari recognizers; camera permission is requested only for the camera path and camera hardware remains optional.
+It is intentionally separate from Sable Reader. Sable Reader owns publications
+and Readium-based book reading; Sable Text Reader owns plain-text workflows.
 
-The Text Reader launcher UI, translation path and independent theme remain outside the composed product. The Sable flavor removes INTERNET and does not compose the upstream translation/model-download flow. Physical Pixel validation still has to prove camera/gallery OCR, both scripts, and truthful unavailable/failure states before the R8-D2 closure marker is set.
+## Upstream pin
+
+The product is composed from the pinned Vaachak Text Reader source recorded in
+`upstream.env`:
+
+```text
+repository  https://github.com/vaachak-platform/vaachak-textreader.git
+commit      50fca365baae9869264716569830690fb62029a7
+```
+
+The upstream checkout is ephemeral build input. SableOS does not vendor a
+copy-pasted fork into this repository.
+
+## Product surface
+
+The standalone application provides:
+
+- one launcher-visible Text Reader activity;
+- local text-file opening with `ACTION_VIEW` / `text/plain`, bounded to
+  2 MiB per ingestion;
+- Android `ACTION_SEND` text ingestion;
+- Android `ACTION_PROCESS_TEXT` selected-text handoff;
+- paste/edit text;
+- Android text-to-speech playback using local-only voices;
+- WAV audio export through the Android document picker, also local-voice-only;
+- user-directed live camera OCR;
+- user-directed gallery/image OCR;
+- Latin and Devanagari OCR;
+- Sable global Light/Dark/accent appearance.
+
+The product API floor is Android 11 / API 30, matching the current SableOS
+application baseline.
+
+## Privacy boundary
+
+The Sable flavor is offline-first:
+
+```text
+INTERNET permission       ABSENT IN FINAL APK
+manifest merge policy     tools:node="remove" FOR INTERNET
+translation dependency    ABSENT
+translation UI            ABSENT
+model download path       ABSENT
+camera permission          DECLARED; runtime-requested for camera OCR
+camera hardware            OPTIONAL
+gallery OCR                ENABLED without camera permission
+backup                      DISABLED
+text ingestion              BOUNDED TO 2 MiB
+TTS network voices          FILTERED / FAIL CLOSED
+```
+
+The pinned upstream application includes ML Kit translation and calls
+`downloadModelIfNeeded`. Those paths are deliberately removed from the Sable
+product. Translation can only be reconsidered later with an explicit offline
+model-packaging and privacy design.
+
+The source manifest keeps an explicit Android manifest-merger removal rule for
+`android.permission.INTERNET`. This is intentional: deleting only the app's
+own declaration is insufficient because a transitive library manifest can
+reintroduce the permission. Qualification therefore proves both the source
+merge rule and final APK absence.
+
+OCR remains local to the application. The current product uses the pinned Latin
+and Devanagari recognizer dependencies and has no Sable network fallback.
+
+Text-to-speech is also constrained to local voices. If the requested language
+has no local voice installed, playback/export reports that condition instead of
+silently selecting a cloud voice or an unrelated-language local voice.
+
+## Appearance
+
+`apply_sable_flavor.py` composes the canonical Sable design sources into the
+ephemeral Text Reader checkout and routes the application through
+`SableGlobalTheme(window = window)`. Settings remains the persisted global
+appearance authority at `content://org.sableos.appearance/appearance`.
+
+## Qualification
+
+Focused qualification:
+
+```bash
+bash build/sable.sh panther R9 qualify textreader
+```
+
+The focused gate is source-bound, offline, non-device and non-image. It runs
+before the new eleven-APK product bundle is staged, so it validates repository
+no-stale/product policy but deliberately skips the exact current-workspace
+`vendor/sable` APK inventory. That exact inventory is mandatory again after
+release-candidate staging and before module/full product qualification.
+
+It:
+
+1. verifies the standalone Text Reader architecture contract;
+2. verifies system-cohesion and physical-UX source contracts;
+3. verifies the exact pinned upstream cache;
+4. applies the Sable flavor in a temporary checkout;
+5. verifies the composed source policy;
+6. runs upstream/Sable unit tests;
+7. runs Android lint;
+8. assembles the debug qualification APK;
+9. verifies APK package identity as `org.sableos.textreader`;
+10. records its SHA-256.
+
+Expected final marker:
+
+```text
+R9_TEXT_READER_FOCUSED_QUALIFICATION=PASS
+```
+
+Full local CI independently repeats the Text Reader product build in the
+`TEXTREADER` stage. The release-candidate path then source-binds its qualified
+APK into the eleven-APK Panther bundle as `SableTextReader.apk`.
+
+A focused Text Reader pass does not authorize target-files generation, device
+contact or flashing.

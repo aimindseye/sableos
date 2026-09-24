@@ -1,5 +1,15 @@
 # Local CI
 
+The canonical operator entry point is now device/release/function based:
+
+```bash
+bash build/sable.sh panther R9 ci core
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 ci release
+```
+
+Direct `build/local-ci/run.sh` invocation remains the implementation-level interface.
+
 SableOS CI executes directly on the controlled build machine. GitHub Actions is
 not part of the qualification path.
 
@@ -18,12 +28,48 @@ bash build/local-ci/run.sh release
 ```
 
 `core` runs repository policy/layout, host-tool verification, shell/Python
-syntax, product/build-driver static gates, Rust correctness, Android
-compile/tests/lint, quality/coverage tasks and deterministic supply-chain
-evidence.
+syntax, product/build-driver static gates, the active Media and Messages
+source/architecture gates, Rust correctness, Android compile/tests/lint,
+quality/coverage tasks and deterministic supply-chain evidence. The Python
+syntax pass scans the complete maintained Python set in one batch and reports
+all parser failures before failing STATIC, rather than stopping at the first
+file. Applicator `--self-test` executions are also aggregated so STATIC
+reports every failing active applicator before returning failure. The remaining
+source/product contract checks use the same aggregation rule, so one STATIC run
+reports all failing maintained contracts before the stage exits. Failed contract
+names are repeated in the final
+`SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=<comma-separated names>` marker
+for concise triage.
 
-`full` adds Rust dependency policy, Gitleaks, MobSFScan and pinned Reader,
-Text Reader and Mail qualification.
+`full` adds Rust dependency policy, Gitleaks, MobSFScan and separate pinned
+Reader, Text Reader and Mail qualification. Reader is the publication product;
+Text Reader is independently flavored, tested, linted, assembled and APK-verified
+as `org.sableos.textreader`. It is the pre-image source/build/security CI
+profile and does not authorize a Panther image build by itself.
+
+STATIC no-stale checks run in pre-staging mode. They still reject retired source,
+product modules and legacy workspace trees, but they do not require the existing
+Android workspace to already contain the APK inventory produced by the source
+being qualified. Exact `vendor/sable` inventory is re-enabled after the
+release-candidate path stages the source-bound bundle.
+
+The source-bound Launcher visual acceptance seal is intentionally not part of
+`full`. Visual acceptance is an image-authorization gate and is required by the
+`release` profile and the full Panther product-composition path. This allows
+new source to compile and pass CI before a fresh visual review without weakening
+the rule that no image build proceeds from stale visual acceptance.
+
+For R9 Panther work, the canonical pre-image sequence is:
+
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 qualify physical-ux
+```
+
+The first command proves the full source/build/security CI profile. The second
+proves the source-bound Panther module/product-composition path while keeping
+`FULL_TARGET_FILES_BUILD_AUTHORIZED=NO`. Do not enter the release build /
+target-files path until both pass for the same source commit.
 
 ## One host toolchain
 
@@ -91,8 +137,10 @@ Network authorization in local CI applies only to pinned source/upstream
 retrieval such as Reader, Text Reader and Mail when those source caches are
 missing. It does not authorize host-tool installation.
 
-`release` runs `full` and then the source-bound Panther release-candidate
-driver.
+`release` runs `full`, requires the source-bound Launcher visual acceptance
+seal, and only then enters the Panther release-candidate driver. Do not use the
+`release` profile for pre-image compile qualification while visual acceptance is
+pending; use `ci full` followed by `qualify physical-ux`.
 
 Evidence defaults to:
 

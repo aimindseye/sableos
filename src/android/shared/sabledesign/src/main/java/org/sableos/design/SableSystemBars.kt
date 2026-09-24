@@ -2,7 +2,6 @@ package org.sableos.design
 
 import android.content.Context
 import android.content.res.Configuration
-import android.graphics.Color
 import android.view.Window
 import android.view.WindowInsetsController
 
@@ -24,15 +23,10 @@ fun applySableSystemBars(
     window: Window,
     darkTheme: Boolean,
 ) {
-    val barColor =
-        if (darkTheme) {
-            Color.rgb(5, 7, 10)
-        } else {
-            Color.rgb(245, 247, 249)
-        }
-    window.statusBarColor = barColor
-    window.navigationBarColor = barColor
-
+    // Android 15+ enforces edge-to-edge for current-target apps. The status
+    // and gesture navigation bars are transparent, and Window bar-color
+    // setters are deprecated/disabled. Sable draws its own surface behind the
+    // system bars and only controls icon appearance here.
     val lightAppearance =
         WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or
             WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS

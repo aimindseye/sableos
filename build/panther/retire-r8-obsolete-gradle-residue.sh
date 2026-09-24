@@ -23,6 +23,7 @@ echo "GENERAL_DELETE_AUTHORIZED=NO"
 retired_paths=(
     "apps/r8/android/start-preview"
     "apps/r8/android/system-preview"
+    "apps/r8/android/sablestart-production-check"
 )
 
 for rel in "${retired_paths[@]}"; do

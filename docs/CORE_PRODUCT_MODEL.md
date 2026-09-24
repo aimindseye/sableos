@@ -34,7 +34,7 @@ Replacing a Sable-facing experience does not imply replacing the underlying Andr
 Examples:
 
 - Sable Hub may replace notification/communication presentation while retaining Android NotificationManager, conversation semantics and application-authored actions.
-- Sable Start may replace Launcher3 as the primary home experience after qualification while retaining ActivityManager, PackageManager and normal Android application semantics.
+- Standalone SableLauncher owns the intended HOME experience while retaining ActivityManager, PackageManager and normal Android application semantics; Launcher3QuickStep remains only as the qualified Recents/Quickstep substrate.
 - Sable Phone/Messages presentation may evolve while retaining Telecom/Telephony/carrier SMS/MMS machinery.
 - Sable Security & Privacy may provide a new application-transparency experience while retaining PackageManager, PermissionController and AppOps as enforcement authorities.
 - Sable AOD may own ambient presentation while retaining Android display/doze/power infrastructure.
@@ -86,7 +86,7 @@ SOCIAL      CALENDAR
 SETTINGS    CLOCK
 ```
 
-Launcher3 remains the compatibility/reference fallback until Sable Start passes replacement gates.
+Standalone `org.sableos.launcher` is the R9 HOME product architecture. Launcher3QuickStep remains installed only for Recents/Quickstep integration and is not a user-facing launcher fallback.
 
 ### Sable Hub
 
@@ -100,7 +100,7 @@ Supported provider classes:
 NATIVE_DATA
 ANDROID_NOTIFICATION
 SUPPORTED_API
-WEB
+INSTALLED_APP
 UNAVAILABLE
 ```
 
@@ -114,10 +114,10 @@ CONTACTS
 SHARE
 NOTIFICATIONS
 DEEP_LINK
-WEB_SESSION
+INSTALLED_APP
 ```
 
-The Hub must expose capability honestly. A web-backed service must not be presented as a native/API integration.
+The Hub must expose capability honestly. Notification-derived or installed-app capability must not be presented as a native protocol/API integration.
 
 Initial social-service targets are:
 
@@ -134,10 +134,11 @@ Implementation rules:
 2. consume Android notification/conversation semantics and application-authorized actions where appropriate;
 3. use official/supported provider APIs only for capabilities/account types they actually authorize;
 4. reverify provider/API capability at implementation time because provider support/terms can change;
-5. use isolated Sable-managed web capsules where a suitable native consumer API is unavailable;
-6. isolate provider session/cookie/storage state by default;
-7. never scrape third-party private application databases;
-8. never gain broad system privilege merely because a service is surfaced in Hub.
+5. prefer generic Android notification/conversation + RemoteInput adapters for intentionally enabled installed messaging apps;
+6. key third-party adapter configuration by package + Android user/profile so adding Signal, Telegram or another compatible app does not require a SableOS rebuild;
+7. never scrape third-party private application databases or capture provider credentials;
+8. keep the provider app authoritative for transport, cryptography, account state and complete history;
+9. never gain broad system privilege merely because a service is surfaced in Hub.
 
 The first Hub may organize bounded state through views such as:
 
@@ -355,7 +356,7 @@ Browser    -> maintained Chromium-derived path
 Email      -> standard client/provider or future Sable presentation; participates through Hub when authorized
 Gallery    -> compatible option initially; Sable local-first Photos is a product candidate
 RCS        -> preserve available carrier/application compatibility; do not invent a Sable transport
-Social     -> Hub provider/capsule model; do not require full vendor Android apps when a safe supported alternative works
+Social     -> configurable installed-app / notification-conversation adapters; no embedded provider WebView or private-protocol impersonation
 ```
 
 This matrix is a starting policy, not an excuse to ship obsolete/unmaintained applications.

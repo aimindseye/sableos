@@ -37,6 +37,9 @@ required = (
     ROOT / "build" / "supply-chain-lock.json",
     ROOT / "build" / "generate-supply-chain-evidence.py",
     ROOT / "build" / "check-gradle-supply-chain.py",
+    ROOT / "build" / "gates" / "r9-sms-mms-blocking-contract.py",
+    ROOT / "build" / "gates" / "r9-first-party-app-icon-contract.py",
+    ROOT / "build" / "gates" / "r9-system-cohesion-contract.py",
     ROOT / "apps" / "r8" / "rust" / "Cargo.lock",
     ROOT / "apps" / "r8" / "rust" / "rust-toolchain.toml",
     ROOT / "apps" / "r8" / "android" / "gradle" / "verification-metadata.xml",
@@ -75,6 +78,73 @@ if policy_path.is_file():
                 f"actual={policy.get(key)!r} expected={expected!r}"
             )
 
+layout_gate = ROOT / "build" / "check-repo-layout.sh"
+if layout_gate.is_file():
+    layout_text = layout_gate.read_text(encoding="utf-8")
+    for token in (
+        "build/panther/prepare-r8-final-ui.sh",
+        "build/panther/build-r8-final-ui.sh",
+        "build/panther/qualify-r9-physical-ux.sh",
+        "build/macos/prepare-r9-launcher-visual-review.sh",
+        "build/macos/audit-r9-launcher-review-fidelity.sh",
+        "build/macos/capture-r9-theme-fidelity-review.sh",
+        '"$ROOT"/build/macos/*.sh',
+        "R9_MAC_VISUAL_REVIEW_LAYOUT=PASS_RETAINED_NONBLOCKING_TOOLING",
+        "patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py",
+        "patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py",
+        "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
+        "build/gates/r9-system-cohesion-contract.py",
+        "docs/R9_PLATFORM_SURFACE_CLASSIFICATION.md",
+        "docs/R9_NETWORK_MANAGER.md",
+        "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableNetworkManagerSettings.java",
+        "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/sable_network_manager_settings.xml",
+        "src/android/packages/apps/SableStart/AndroidManifest.xml",
+        "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt",
+        "src/android/packages/apps/SableStart/src/com/sable/start/platform/LauncherAppsRepository.kt",
+        "R9_STANDALONE_SABLELAUNCHER_MODULE=PASS_PRESENT",
+        "R9_STANDALONE_SABLELAUNCHER_MANIFEST=PASS_PRESENT",
+        "R9_SABLESTART_PRESENTATION_FILEGROUP=PASS",
+        "R9_QUICKSTEP_RECENTS_ONLY_LAYOUT=PASS",
+    ):
+        if token not in layout_text:
+            failures.append(f"repo layout contract token missing: {token}")
+    required_match = re.search(
+        r"(?ms)^required=\(\n(?P<body>.*?)^\)\n",
+        layout_text,
+    )
+    if required_match is None:
+        failures.append("repo layout required array could not be parsed")
+        required_body = ""
+    else:
+        required_body = required_match.group("body")
+
+    retired_match = re.search(
+        r"(?ms)^retired_sablestart=\(\n(?P<body>.*?)^\)\n",
+        layout_text,
+    )
+    if retired_match is None:
+        failures.append("repo layout retired_sablestart array could not be parsed")
+        retired_body = ""
+    else:
+        retired_body = retired_match.group("body")
+
+    for obsolete_rel in (
+        "build/panther/build-sablestart.sh",
+        "src/android/packages/apps/SableStart/rust/src/lib.rs",
+        "src/android/packages/apps/SableStart/src/com/sable/start/bridge/SableStartNative.kt",
+        "src/android/packages/apps/SableStart/src/com/sable/start/platform/SableAppearanceProvider.kt",
+    ):
+        if obsolete_rel in required_body:
+            failures.append(
+                "retired SableStart artifact remains in required layout: "
+                + obsolete_rel
+            )
+        if obsolete_rel not in retired_body:
+            failures.append(
+                "retired SableStart artifact missing from retired layout: "
+                + obsolete_rel
+            )
+
 local_ci = ROOT / "build" / "local-ci" / "run.sh"
 if local_ci.is_file():
     text = local_ci.read_text(encoding="utf-8")
@@ -88,6 +158,16 @@ if local_ci.is_file():
         "SABLE_SECURITY_BIN",
         "SABLE_GITLEAKS",
         "SABLE_MOBSFSCAN",
+        "r9-sms-mms-blocking-contract.py",
+        "r9-first-party-app-icon-contract.py",
+        "r9-system-cohesion-contract.py",
+        ":weather:assembleDebug",
+        ":weather:lintDebug",
+        ":weather:detekt",
+        ":weather:ktlintCheck",
+        "weather-debug.apk",
+        "r9-launcher-visual-acceptance.py",
+        "SABLE_LOCAL_CI_STAGE_VISUAL_ACCEPTANCE=PASS",
         "run-r8-release-candidate.sh",
         "sable-local-ci",
         "SABLE_LOCAL_CI=PASS",

@@ -7,6 +7,7 @@ data class AppEntry(
     val label: String,
     val component: ComponentName,
     val user: UserHandle,
+    val privacySummary: String = "",
 )
 
 

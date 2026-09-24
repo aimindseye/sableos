@@ -19,7 +19,7 @@ set -euo pipefail
 
 EXPECTED_SOURCE_COMMIT="@@SOURCE_COMMIT@@"
 REPO="${SABLEOS_REPO:-/srv/data/sable-build/sableos/repo}"
-SESSION="${SABLE_TMUX_SESSION:-sable-r8-panther}"
+SESSION="${SABLE_TMUX_SESSION:-sable-r9-panther-${EXPECTED_SOURCE_COMMIT:0:12}}"
 
 run_direct() {
     [[ -d "$REPO/.git" ]] || {

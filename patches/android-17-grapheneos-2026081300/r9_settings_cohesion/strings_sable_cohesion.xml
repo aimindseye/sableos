@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sable_appearance_title">Appearance</string>
+    <string name="sable_appearance_summary">Theme and Sable accent</string>
+    <string name="sable_appearance_theme_title">Theme</string>
+    <string name="sable_appearance_accent_title">Accent</string>
+    <string name="sable_appearance_system_category">System display</string>
+    <string name="sable_appearance_android_display_title">Android display settings</string>
+    <string name="sable_appearance_android_display_summary">Brightness, display size, wallpaper and other platform display controls</string>
+
+    <string name="sable_network_manager_title">Network Manager</string>
+    <string name="sable_network_manager_summary">Control network access for each app</string>
+    <string name="sable_network_manager_explanation_title">Per-app network access</string>
+    <string name="sable_network_manager_explanation_summary">Uses the system Network permission. Turning access off blocks the app from direct and indirect network access across Wi-Fi, mobile data, VPN-backed connectivity, OS network APIs and localhost. Mobile-only and Wi-Fi-only rules are not exposed because the current platform permission does not provide transport-specific app controls.</string>
+    <string name="sable_network_manager_apps_title">Apps requesting network access</string>
+    <string name="sable_network_manager_app_summary">Network permission</string>
+    <string name="sable_network_manager_fixed_summary">Network permission is fixed by system or device policy</string>
+
+    <string name="sable_messages_settings_title">Messages</string>
+    <string name="sable_messages_settings_summary">Connected apps, notification access and local conversation privacy</string>
+
+    <string-array name="sable_appearance_mode_entries">
+        <item>Follow system</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+    <string-array name="sable_appearance_mode_values">
+        <item>follow-system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+
+    <string-array name="sable_appearance_accent_entries">
+        <item>Sable Blue</item>
+        <item>Green</item>
+        <item>Purple</item>
+        <item>Orange</item>
+        <item>Slate</item>
+    </string-array>
+    <string-array name="sable_appearance_accent_values">
+        <item>blue</item>
+        <item>green</item>
+        <item>purple</item>
+        <item>orange</item>
+        <item>slate</item>
+    </string-array>
+</resources>

@@ -45,6 +45,27 @@ def main() -> None:
         )
     print(f"SABLE_MAIL_UPSTREAM_COMMIT=PASS value={actual}")
 
+    build_logic_diff = subprocess.check_output(
+        [
+            "git",
+            "-C",
+            str(root),
+            "diff",
+            "--name-only",
+            "HEAD",
+            "--",
+            "build.gradle.kts",
+            "build-plugin",
+        ],
+        text=True,
+    ).splitlines()
+    if build_logic_diff:
+        fail(
+            "SABLE_MAIL_UPSTREAM_BUILD_LOGIC_MUTATION",
+            f"paths={build_logic_diff!r}",
+        )
+    print("SABLE_MAIL_UPSTREAM_BUILD_LOGIC_MUTATION=PASS_ABSENT")
+
     build = app / "build.gradle.kts"
     require_text(
         build,
@@ -303,7 +324,7 @@ def main() -> None:
         / "src/main/kotlin/net/thunderbird/android/SableMailAppearance.kt"
     )
     for needle in (
-        "org.sableos.start.appearance",
+        "org.sableos.appearance",
         '"follow-system"',
         '"light"',
         '"dark"',
@@ -341,6 +362,11 @@ def main() -> None:
             f"Theme.SableMail.Dark.{accent}",
             "SABLE_MAIL_THEME_SET",
         )
+    reject_text(
+        appearance,
+        "org.sableos.start.appearance",
+        "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY",
+    )
     print("SABLE_MAIL_GLOBAL_APPEARANCE_SOURCE=PASS")
 
     manifest = app / "src/main/AndroidManifest.xml"
@@ -356,9 +382,49 @@ def main() -> None:
     )
     require_text(
         manifest,
-        'android:authorities="org.sableos.start.appearance"',
+        'android:authorities="org.sableos.appearance"',
         "SABLE_MAIL_APPEARANCE_PROVIDER_VISIBILITY",
     )
+    reject_text(
+        manifest,
+        'android:authorities="org.sableos.start.appearance"',
+        "SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY",
+    )
+    print("SABLE_MAIL_RETIRED_APPEARANCE_AUTHORITY=PASS_ABSENT")
+    require_text(
+        manifest,
+        'android:authorities="org.sableos.mail.snapshot"',
+        "SABLE_MAIL_SNAPSHOT_PROVIDER",
+    )
+    snapshot_provider = (
+        app
+        / "src/main/kotlin/net/thunderbird/android/SableMailSnapshotProvider.kt"
+    )
+    for needle in (
+        "NotificationManager::class.java",
+        "Notification.CATEGORY_EMAIL",
+        "Notification.CATEGORY_MESSAGE",
+        '"no mail alerts"',
+        '" mail alerts"',
+        "content://org.sableos.mail.snapshot/current",
+        'if ("org.sableos.launcher" !in packages)',
+        "Sable live snapshot is restricted to SableLauncher.",
+        "SecurityException(",
+        "Binder.getCallingUid()",
+        "UnsupportedOperationException",
+    ):
+        require_text(
+            snapshot_provider,
+            needle,
+            "SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT",
+        )
+    reject_text(
+        snapshot_provider,
+        'if ("com.android.launcher3" !in packages)',
+        "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER",
+    )
+    print("SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT")
+    print("SABLE_MAIL_PRIVACY_SAFE_LIVE_SNAPSHOT=PASS_NOTIFICATION_COUNT_ONLY")
     app_source = (
         app
         / "src/main/kotlin/net/thunderbird/android/ThunderbirdApp.kt"

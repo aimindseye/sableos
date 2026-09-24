@@ -22,6 +22,17 @@ echo "SECURITY_TOOLS_ROOT=$SABLE_SECURITY_TOOLS_ROOT"
 echo "SECURITY_BIN=$SABLE_SECURITY_BIN"
 echo "MOBSFSCAN_ROOT=$SABLE_MOBSFSCAN_ROOT"
 
+cmdline_source="$SABLE_ANDROID_SDK/cmdline-tools/latest/source.properties"
+if [[ -f "$cmdline_source" ]]; then
+    cmdline_revision="$(
+        awk -F= '/^[[:space:]]*Pkg.Revision[[:space:]]*=/{gsub(/[[:space:]]/, "", $2); print $2; exit}' \
+            "$cmdline_source"
+    )"
+else
+    cmdline_revision="UNKNOWN"
+fi
+echo "R8_ANDROID_CMDLINE_TOOLS_REVISION=${cmdline_revision:-UNKNOWN}"
+
 for path in     "$SABLE_ANDROID_SDK/platforms/android-$SABLE_ANDROID_API"     "$SABLE_ANDROID_SDK/build-tools/$SABLE_ANDROID_BUILD_TOOLS_VERSION"     "$SABLE_ANDROID_SDK/ndk/$SABLE_ANDROID_NDK_VERSION"     "$SABLE_GRADLE_USER_HOME"
 do
     [[ -d "$path" ]] || fail R8_HOST_TOOL_PATH
