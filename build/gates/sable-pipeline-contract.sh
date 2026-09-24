@@ -315,6 +315,16 @@ echo "SABLE_PIPELINE_MESSAGES_STRICT_QUALITY_GATE=PASS"
 echo "SABLE_PIPELINE_MESSAGES_FOCUSED_QUALIFIER=PASS"
 echo "SABLE_PIPELINE_SYSTEM_COHESION_GATE=PASS"
 
+grep -Fq 'SableSettingsPrivappPermissions' "$ROOT/product/r8/panther/Android.bp"
+grep -Fq 'system_ext_specific: true' "$ROOT/product/r8/panther/Android.bp"
+grep -Fq 'android.permission.MODIFY_DAY_NIGHT_MODE' \
+  "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml"
+grep -Fq 'R9_SETTINGS_PRIVAPP_ALLOWLIST_PRODUCT=PASS_SYSTEM_EXT' \
+  "$ROOT/build/gates/r8-final-product-composition.sh"
+grep -Fq 'R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET=PASS_SYSTEM_EXT' \
+  "$ROOT/build/gates/r8-final-target-files.sh"
+echo "SABLE_PIPELINE_SETTINGS_PRIVAPP_ALLOWLIST=PASS_SYSTEM_EXT_EXACT"
+
 grep -Fq 'R9:identity|r9:identity' "$ROOT/build/devices/panther.sh"
 grep -Fq 'DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
 grep -Fq 'R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
