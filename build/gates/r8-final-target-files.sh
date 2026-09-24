@@ -114,8 +114,22 @@ with zipfile.ZipFile(tf) as z:
         raise SystemExit(
             f"R9_APPSTORE_TARGET_COUNT=FAIL matches={appstore!r}"
         )
-    (tmp / "AppStore.apk").write_bytes(z.read(appstore[0]))
-    print(f"R9_APPSTORE_TARGET=PASS member={appstore[0]}")
+    appstore_data = z.read(appstore[0])
+    appstore_digest = hashlib.sha256(appstore_data).hexdigest()
+    expected_appstore_digest = (
+        "0247e7ad3f244cf7d79a00b1bc5780cb"
+        "f195da6484ad6545b4940223ddb24e52"
+    )
+    if appstore_digest != expected_appstore_digest:
+        raise SystemExit(
+            "R9_APPSTORE_TARGET_SHA256=FAIL "
+            f"expected={expected_appstore_digest} actual={appstore_digest}"
+        )
+    (tmp / "AppStore.apk").write_bytes(appstore_data)
+    print(
+        "R9_APPSTORE_TARGET=PASS "
+        f"member={appstore[0]} sha256={appstore_digest}"
+    )
 
     appstore_allowlist = "PRODUCT/etc/permissions/app.grapheneos.apps.xml"
     if appstore_allowlist not in names:
@@ -253,7 +267,7 @@ do
     echo "R8_TARGET_PACKAGE_IDENTITY=PASS file=$apk package=$pkg"
 done
 
-echo "R9_APPSTORE_TARGET_FILES=PASS_PRESENT"
+echo "R9_APPSTORE_TARGET_FILES=PASS_PRESENT_PINNED_SHA256"
 echo "R9_APPSTORE_PACKAGE_IDENTITY=PASS_APP_GRAPHENEOS_APPS"
 echo "R9_GOOGLE_PLAY_PREINSTALLED_TARGET_FILES=PASS_ABSENT"
 echo "R9_SABLELAUNCHER_HOME_TARGET_FILES=PASS_PRESENT"
