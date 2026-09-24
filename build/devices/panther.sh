@@ -127,7 +127,7 @@ sable_device_flash_plan() {
   tf_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" target_files_sha256)"
   android_info="$(sable_device_registry_field "$registry_root" "$release" "$build_source" android_info)"
 
-  python3 "$ROOT/build/deploy/target_files_plan.py"     --target-files "$tf"     --expected-sha256 "$tf_sha"     --evidence-dir "$evidence_dir"     --android-info "$android_info"
+  python3 "$ROOT/build/deploy/target_files_plan.py"     --target-files "$tf"     --expected-sha256 "$tf_sha"     --evidence-dir "$evidence_dir"     --android-info "$android_info" || return 1
   echo "SABLE_DEVICE_FLASH_PLAN=PASS_TARGET_FILES_AB"
 }
 
@@ -140,12 +140,12 @@ sable_device_flash_prepare_artifact() {
     return 1
   }
 
-  TF="$(field target_files)"
-  EXPECTED_TF_SHA="$(field target_files_sha256)"
-  ANDROID_INFO="$(field android_info)"
-  EXPECTED_ANDROID_INFO_SHA="$(field android_info_sha256)"
+  TF="$(field target_files)" || return 1
+  EXPECTED_TF_SHA="$(field target_files_sha256)" || return 1
+  ANDROID_INFO="$(field android_info)" || return 1
+  EXPECTED_ANDROID_INFO_SHA="$(field android_info_sha256)" || return 1
 
-  python3 "$PLAN"     --target-files "$TF"     --expected-sha256 "$EXPECTED_TF_SHA"     --evidence-dir "$EVIDENCE_DIR"     --stage-dir "$STAGE_DIR"     --android-info "$ANDROID_INFO"
+  python3 "$PLAN"     --target-files "$TF"     --expected-sha256 "$EXPECTED_TF_SHA"     --evidence-dir "$EVIDENCE_DIR"     --stage-dir "$STAGE_DIR"     --android-info "$ANDROID_INFO" || return 1
 
   echo "TARGET_FILES=$TF"
   echo "TARGET_FILES_SHA256=$EXPECTED_TF_SHA"
@@ -176,7 +176,7 @@ sable_device_flash_preflight() {
   echo "FLASH_TARGET_SLOT=$SLOT"
 
   echo "===== PRE-REBOOT ANDROID-INFO ====="
-  cat "$ANDROID_INFO"
+  cat "$ANDROID_INFO" || return 1
   REQUIRED_BOARD="$(sed -n 's/^require board=//p' "$ANDROID_INFO" | tail -n1)"
   [[ -z "$REQUIRED_BOARD" || "$REQUIRED_BOARD" == "$PRE_DEVICE_PRODUCT" ]] || {
     echo "SABLE_ANDROID_INFO_BOARD=FAIL expected=$REQUIRED_BOARD actual=$PRE_DEVICE_PRODUCT"
