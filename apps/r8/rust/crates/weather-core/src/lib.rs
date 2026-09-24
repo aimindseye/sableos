@@ -199,23 +199,25 @@ impl WeatherSnapshot {
 }
 
 pub fn parse_open_meteo(json: &str) -> Result<WeatherSnapshot, &'static str> {
-    let current = object_for_key(json, "current").ok_or("current object missing")?;
+    let current_object = object_for_key(json, "current").ok_or("current object missing")?;
     let hourly = object_for_key(json, "hourly").ok_or("hourly object missing")?;
     let daily = object_for_key(json, "daily").ok_or("daily object missing")?;
+    let current_hour =
+        string_for_key(current_object, "time").and_then(|value| local_hour_start(&value));
 
     let current = CurrentConditions {
-        temperature: number_for_key(current, "temperature_2m")
+        temperature: number_for_key(current_object, "temperature_2m")
             .ok_or("current temperature missing")?,
-        apparent_temperature: number_for_key(current, "apparent_temperature")
+        apparent_temperature: number_for_key(current_object, "apparent_temperature")
             .ok_or("apparent temperature missing")?,
-        humidity: number_for_key(current, "relative_humidity_2m")
+        humidity: number_for_key(current_object, "relative_humidity_2m")
             .ok_or("humidity missing")?
             .round() as i32,
-        weather_code: number_for_key(current, "weather_code")
+        weather_code: number_for_key(current_object, "weather_code")
             .ok_or("weather code missing")?
             .round() as i32,
-        wind_speed: number_for_key(current, "wind_speed_10m").ok_or("wind speed missing")?,
-        wind_direction: number_for_key(current, "wind_direction_10m")
+        wind_speed: number_for_key(current_object, "wind_speed_10m").ok_or("wind speed missing")?,
+        wind_direction: number_for_key(current_object, "wind_direction_10m")
             .ok_or("wind direction missing")?
             .round() as i32,
     };
@@ -232,10 +234,19 @@ pub fn parse_open_meteo(json: &str) -> Result<WeatherSnapshot, &'static str> {
         .len()
         .min(hourly_temp.len())
         .min(hourly_precip.len())
-        .min(hourly_code.len())
-        .min(24);
+        .min(hourly_code.len());
+    let hourly_start = current_hour
+        .as_deref()
+        .and_then(|start| {
+            hourly_time
+                .iter()
+                .position(|candidate| candidate.as_str() >= start)
+        })
+        .unwrap_or(0)
+        .min(hourly_len);
+    let hourly_end = hourly_start.saturating_add(24).min(hourly_len);
 
-    let hourly = (0..hourly_len)
+    let hourly = (hourly_start..hourly_end)
         .map(|index| HourForecast {
             time: hourly_time[index].clone(),
             temperature: hourly_temp[index],
@@ -351,6 +362,21 @@ fn balanced(text: &str, open: u8, close: u8) -> Option<&str> {
     None
 }
 
+fn string_for_key(json: &str, key: &str) -> Option<String> {
+    let rest = key_start(json, key)?;
+    let value = rest.strip_prefix('"')?;
+    let end = value.find('"')?;
+    Some(value[..end].to_owned())
+}
+
+fn local_hour_start(value: &str) -> Option<String> {
+    let hour = value.get(..13)?;
+    if value.as_bytes().get(10).copied() != Some(b'T') {
+        return None;
+    }
+    Some(format!("{hour}:00"))
+}
+
 fn number_for_key(json: &str, key: &str) -> Option<f64> {
     let rest = key_start(json, key)?;
     let end = rest
@@ -396,6 +422,7 @@ mod tests {
     const FIXTURE: &str = r#"
     {
       "current": {
+        "time": "2026-09-21T09:37",
         "temperature_2m": 72.4,
         "apparent_temperature": 71.8,
         "relative_humidity_2m": 58,
@@ -404,10 +431,10 @@ mod tests {
         "wind_direction_10m": 315
       },
       "hourly": {
-        "time": ["2026-09-21T09:00", "2026-09-21T10:00"],
-        "temperature_2m": [72.4, 73.1],
-        "precipitation_probability": [12, 14],
-        "weather_code": [2, 1]
+        "time": ["2026-09-21T00:00", "2026-09-21T09:00", "2026-09-21T10:00"],
+        "temperature_2m": [60.0, 72.4, 73.1],
+        "precipitation_probability": [0, 12, 14],
+        "weather_code": [0, 2, 1]
       },
       "daily": {
         "time": ["2026-09-21", "2026-09-22"],
@@ -424,6 +451,7 @@ mod tests {
         assert_eq!(snapshot.current.weather_code, 2);
         assert_eq!(snapshot.hourly.len(), 2);
         assert_eq!(snapshot.daily.len(), 2);
+        assert_eq!(snapshot.hourly[0].time, "2026-09-21T09:00");
         assert_eq!(snapshot.hourly[1].temperature, 73.1);
         assert_eq!(snapshot.daily[0].precipitation_probability, 18);
     }
