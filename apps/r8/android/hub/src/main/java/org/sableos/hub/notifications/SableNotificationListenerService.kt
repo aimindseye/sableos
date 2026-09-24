@@ -99,6 +99,7 @@ class SableNotificationListenerService : NotificationListenerService() {
 
         if (key == null || policy?.includeInMessages != true) {
             ConnectedReplyRegistry.remove(sbn.key)
+            ConnectedNotificationActivityRegistry.remove(sbn.key)
         }
 
         return if (key == null || policy?.includeInMessages != true) {
