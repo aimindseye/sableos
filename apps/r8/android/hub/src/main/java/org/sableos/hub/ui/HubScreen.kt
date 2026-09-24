@@ -39,8 +39,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import java.text.DateFormat
-import java.util.Date
 import kotlinx.coroutines.launch
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableListRow
@@ -55,6 +53,8 @@ import org.sableos.hub.HubMessage
 import org.sableos.hub.HubPerson
 import org.sableos.hub.HubSendResult
 import org.sableos.hub.HubSnapshot
+import java.text.DateFormat
+import java.util.Date
 
 private enum class HubPivot {
     Messages,
@@ -730,9 +730,7 @@ private fun ColumnScope.PeoplePivot(
     }
 }
 
-private fun buildPeopleAlphabetTargets(
-    people: List<HubPerson>,
-): Map<Char, Int> {
+private fun buildPeopleAlphabetTargets(people: List<HubPerson>): Map<Char, Int> {
     val targets = linkedMapOf<Char, Int>()
     people.forEachIndexed { index, person ->
         val letter =
