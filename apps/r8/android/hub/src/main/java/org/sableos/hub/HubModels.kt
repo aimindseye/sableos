@@ -39,6 +39,12 @@ data class HubPerson(
     val phoneNumber: String,
 )
 
+data class HubMailSnapshot(
+    val detail: String,
+    val available: Boolean,
+    val observedAtMillis: Long,
+)
+
 data class HubCapabilities(
     val hasTelephony: Boolean,
     val canReadSms: Boolean,
@@ -52,6 +58,7 @@ data class HubSnapshot(
     val conversations: List<HubConversation>,
     val messages: List<HubMessage>,
     val people: List<HubPerson>,
+    val mail: HubMailSnapshot,
 )
 
 data class HubSendResult(
