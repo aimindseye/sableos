@@ -180,6 +180,34 @@ forbid(
         "SecurityException(",""",
 )
 
+# Weather: the hourly list must begin at the provider's current local hour,
+# not the first midnight row returned for the forecast day. Successful refresh
+# must also invalidate the launcher-facing snapshot URI.
+require(
+    "apps/r8/rust/crates/weather-core/src/lib.rs",
+    'string_for_key(current_object, "time")',
+    "local_hour_start(&value)",
+    "hourly_start.saturating_add(24)",
+    "hourly_start..hourly_end",
+    'assert_eq!(snapshot.hourly[0].time, "2026-09-21T09:00")',
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherRepository.kt",
+    "WeatherSnapshotContract.SNAPSHOT_URI",
+    "contentResolver.notifyChange(",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
+    "cursor.setNotificationUri(",
+    "WeatherSnapshotContract.SNAPSHOT_URI",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    "destination == SableStartDestination.Live",
+    "onRefreshLive()",
+    "PullToRefreshBox(",
+)
+
 # Clock/Photos: physical Dark -> Light regression must be structurally fixed.
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py",
@@ -514,7 +542,10 @@ print("R9_ALL_APPS_PERMISSION_SUMMARY_CONTRACT=PASS")
 print("R9_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER")
 print("R9_MAIL_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER_AND_SABLEHUB")
 print("R9_HUB_CONNECTED_LIVE_STATUS=PASS_ACTIVE_CONVERSATION_AWARE")
-print("R9_SABLE_REFRESH_GESTURES=PASS_START_AND_HUB")
+print("R9_SABLE_REFRESH_GESTURES=PASS_START_HUB_AND_LIVE")
+print("R9_WEATHER_HOURLY_FRESHNESS=PASS_CURRENT_LOCAL_HOUR")
+print("R9_WEATHER_LIVE_SNAPSHOT_INVALIDATION=PASS")
+print("R9_LIVE_SURFACE_ENTRY_REFRESH=PASS")
 print("R9_CLOCK_LIGHT_VISIBILITY_CONTRACT=PASS")
 print("R9_PHOTOS_LIGHT_DARK_CONTRACT=PASS")
 print("R9_CAMERA_APPEARANCE_BOUNDARY=PASS_UPSTREAM_DARK_ONLY")
