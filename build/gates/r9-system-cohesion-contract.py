@@ -19,6 +19,7 @@ R9 architecture:
 from __future__ import annotations
 
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 failures: list[str] = []
@@ -122,6 +123,37 @@ require(
     "product/r8/panther/r8-product.mk",
     "SableSettingsPrivappPermissions",
 )
+
+settings_privapp_path = (
+    ROOT
+    / "product/r8/panther/permissions/"
+      "sable-privapp-permissions-com.android.settings.xml"
+)
+if settings_privapp_path.is_file():
+    try:
+        settings_privapp_root = ET.parse(settings_privapp_path).getroot()
+        settings_privapp_nodes = settings_privapp_root.findall("privapp-permissions")
+        settings_privapp_permissions = (
+            [
+                node.attrib.get("name")
+                for node in settings_privapp_nodes[0].findall("permission")
+            ]
+            if len(settings_privapp_nodes) == 1
+            else []
+        )
+        if (
+            len(settings_privapp_nodes) != 1
+            or settings_privapp_nodes[0].attrib.get("package") != "com.android.settings"
+            or settings_privapp_permissions
+            != ["android.permission.MODIFY_DAY_NIGHT_MODE"]
+        ):
+            failures.append(
+                "settings_privapp_allowlist_not_exact="
+                f"nodes={len(settings_privapp_nodes)} "
+                f"permissions={settings_privapp_permissions!r}"
+            )
+    except ET.ParseError as exc:
+        failures.append(f"settings_privapp_allowlist_xml_invalid={exc}")
 
 require(
     "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/SableAppearanceContract.java",
