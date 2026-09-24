@@ -53,15 +53,15 @@ class HubSnapshotProvider : ContentProvider() {
         val detail =
             when {
                 !canReadSms -> "permission required"
-                unread == 0 -> "no unread messages"
-                unread == 1 -> "1 unread"
-                else -> unread.toString() + " unread"
+                unread == 0 -> "no unread SMS"
+                unread == 1 -> "1 unread SMS"
+                else -> unread.toString() + " unread SMS"
             }
 
         return MatrixCursor(COLUMNS).apply {
             addRow(
                 arrayOf<Any?>(
-                    "Messages",
+                    "Hub",
                     detail,
                     availability,
                     System.currentTimeMillis(),
