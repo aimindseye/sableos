@@ -50,6 +50,44 @@ SABLEOS_UPSTREAM="$WS" \
     || fail R8_NO_STALE_PRODUCT_CODE
 
 echo
+echo "===== R9 OPTIONAL APP INSTALLATION SURFACE ====="
+
+APPSTORE_BP="$WS/external/AppStore/Android.bp"
+APPSTORE_APK="$WS/external/AppStore/prebuilt/app-release.apk"
+APPSTORE_PERMISSIONS="$WS/external/AppStore/permissions/app.grapheneos.apps.xml"
+
+for f in "$APPSTORE_BP" "$APPSTORE_APK" "$APPSTORE_PERMISSIONS"; do
+    [[ -f "$f" ]] || fail R9_APPSTORE_UPSTREAM
+done
+
+for needle in \
+    'name: "AppStore"' \
+    'product_specific: true' \
+    'privileged: true' \
+    'apk: "prebuilt/app-release.apk"' \
+    'preprocessed: true' \
+    '"privapp-permissions_app.grapheneos.apps.xml"'
+do
+    grep -Fq "$needle" "$APPSTORE_BP" || fail R9_APPSTORE_UPSTREAM_MODULE
+done
+
+grep -Fq '<privapp-permissions package="app.grapheneos.apps">' "$APPSTORE_PERMISSIONS" \
+    || fail R9_APPSTORE_PRIVAPP_ALLOWLIST
+
+grep -Eq '^[[:space:]]*AppStore([[:space:]\\]|$)' "$DEST/r8-product.mk" \
+    || fail R9_APPSTORE_PRODUCT_MODULE
+
+for forbidden in GmsCore Phonesky GoogleServicesFramework; do
+    if grep -Eq "^[[:space:]]*$forbidden([[:space:]\\]|$)" "$DEST/r8-product.mk"; then
+        fail R9_GOOGLE_PLAY_PREINSTALLED
+    fi
+done
+
+echo "R9_APPSTORE_UPSTREAM=PASS_PINNED_GRAPHENE_MODULE"
+echo "R9_APPSTORE_PRODUCT_MODULE=PASS"
+echo "R9_GOOGLE_PLAY_PREINSTALLED=PASS_ABSENT_FROM_SABLE_PRODUCT"
+
+echo
 echo "===== R8-A SHARED DESIGN ====="
 
 THEME="$ROOT/src/android/shared/sabledesign/src/main/java/org/sableos/design/SableTheme.kt"
@@ -634,6 +672,8 @@ echo "R8_G_GLOBAL_APPEARANCE=PASS_SOURCE_AND_PRODUCT_STAGED"
 echo "R8_G_SABLE_MAIL=PASS_PRODUCT_STAGED"
 echo "R9_SABLE_WEATHER=PASS_PRODUCT_STAGED"
 echo "R9_SABLE_CALENDAR=PASS_PRODUCT_STAGED"
+echo "R9_APPSTORE=PASS_PRODUCT_STAGED_USER_OPTIONAL_APP_INSTALLATION"
+echo "R9_GOOGLE_PLAY_DEFAULT=PASS_NOT_PREINSTALLED"
 
 python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" \
     --source "$WS" verify
