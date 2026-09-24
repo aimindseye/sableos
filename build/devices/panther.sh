@@ -67,6 +67,27 @@ sable_device_accept() {
       evidence="$evidence_root/panther/r9-physical/${stamp}_system-identity"
       SERIAL="$serial"       EVIDENCE_DIR="$evidence"         bash "$ROOT/tests/systemui/device/r9_identity_audit.sh"
       ;;
+    R9:appstore-baseline|r9:appstore-baseline)
+      local stamp evidence
+      stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+      evidence="$evidence_root/panther/r9-physical/${stamp}_appstore-baseline"
+      SERIAL="$serial" PHASE=baseline EVIDENCE_DIR="$evidence" \
+        bash "$ROOT/tests/systemui/device/r9_appstore_third_party_compat_audit.sh"
+      ;;
+    R9:appstore-play|r9:appstore-play)
+      local stamp evidence
+      stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+      evidence="$evidence_root/panther/r9-physical/${stamp}_appstore-play"
+      SERIAL="$serial" PHASE=play EVIDENCE_DIR="$evidence" \
+        bash "$ROOT/tests/systemui/device/r9_appstore_third_party_compat_audit.sh"
+      ;;
+    R9:third-party|r9:third-party)
+      local stamp evidence
+      stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+      evidence="$evidence_root/panther/r9-physical/${stamp}_third-party"
+      SERIAL="$serial" PHASE=providers EVIDENCE_DIR="$evidence" \
+        bash "$ROOT/tests/systemui/device/r9_appstore_third_party_compat_audit.sh"
+      ;;
     *)
       echo "SABLE_DEVICE_ACCEPT=UNSUPPORTED device=panther release=$release suite=$suite" >&2
       return 64
