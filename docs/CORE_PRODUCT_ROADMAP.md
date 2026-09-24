@@ -20,7 +20,7 @@ Current product state:
 SABLEOS_CORE_PRODUCT_STAGE=R8_FINAL_UI_PRODUCT_CLOSURE
 SABLE_FLOW_STATUS=IMPLEMENTED_IN_REPOSITORY_PRODUCT_INTEGRATION_PENDING
 SABLE_START_STATUS=IMPLEMENTED_NOT_PRODUCT_PROVEN
-SABLE_HUB_STATUS=NOT_INTEGRATED
+SABLE_HUB_STATUS=V1_SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
 PRODUCTION_KEYS_GENERATED=NO
 KEY_GENERATION_AUTHORIZED=NO
 SIGNING_AUTHORIZED=NO
@@ -38,18 +38,22 @@ Current R9 execution has advanced beyond that snapshot:
 ```text
 SABLE_START_STATUS=STANDALONE_HOME_SOURCE_MODULE_QUALIFIED_PHYSICAL_PENDING
 SABLE_MEDIA_STATUS=LARGE_LIBRARY_HARDENED_ALPHABET_NAVIGATION_QUALIFIED
-SABLE_MESSAGES_STATUS=NATIVE_SMS_PEOPLE_FOCUSED_QUALIFIED
+SABLE_MESSAGES_STATUS=PROVIDER_FOUNDATION_PHYSICALLY_PROVEN
 SABLE_MESSAGES_WEB_CAPSULES=RETIRED
-SABLE_MESSAGES_NEXT=CONFIGURABLE_LOCAL_CONVERSATION_ADAPTERS
+SABLE_HUB_V1=PRIORITY_MESSAGES_EMAIL_PEOPLE_SOURCE_IMPLEMENTED
+SABLE_CONNECTED_APPS=ENABLED_AVAILABLE_SOURCE_IMPLEMENTED
+SABLE_HUB_REPLY_HISTORY=TRUTHFUL_HANDOFF_SOURCE_IMPLEMENTED
 QUICKSTEP_ROLE=RECENTS_ONLY
 FULL_PANTHER_PHYSICAL_ACCEPTANCE=PENDING
 ```
 
-The next Messages tranche is generic rather than provider-coded: users select
-installed messaging apps in Settings; Sable consumes user-authorized Android
-notification/conversation metadata and RemoteInput actions where available.
-Configuration is keyed by package + Android user/profile, so compatible future
-apps do not require recompilation.
+The local conversation foundation is generic rather than provider-coded:
+configuration is keyed by package + Android user/profile and Sable consumes
+user-authorized Android notification/conversation metadata and RemoteInput
+actions where available. Panther physical testing proved Signal reply,
+LinkedIn notification/open-app fallback and WhatsApp ingestion; the final Hub
+V1 closure remediates generic WhatsApp reply-handle selection and promotes the
+surface to Priority / Messages / Email / People.
 
 ## R8 final UI product closure
 
@@ -195,7 +199,7 @@ The first useful product should feel coherent without requiring third-party soci
 
 ## M3 / CP3 — Sable Hub provider framework
 
-Status: **PLANNED AFTER M2 FOUNDATION**.
+Status: **V1 SOURCE IMPLEMENTED / FINAL QUALIFICATION PENDING**.
 
 Hub becomes the common people/communication/service layer.
 
@@ -241,7 +245,7 @@ The Hub must expose the difference between native/API, notification-derived and 
 
 ## M4 / CP4 — local conversation adapters
 
-Status: **NEXT R9 MESSAGES TRANCHE**.
+Status: **PHYSICAL FOUNDATION PROVEN / FINAL HUB REMEDIATION PENDING**.
 
 Initial service targets:
 
@@ -391,9 +395,10 @@ Production adds the signing/security/privacy/update gates in `RELEASE_VALIDATION
 5. pass the generated R8 final UI product-composition gate
 6. run one final sandbox-qualified Panther build and full physical UI acceptance
 7. begin Titan 2 N0 GSI/UI work after T0 read-only inventory; T0 may run in parallel
-8. qualify configurable local notification/conversation adapters for Sable Messages
-9. rerun combined R9 physical-UX module qualification and fresh Panther physical acceptance
-10. production signing / OTA finalization before release candidate
+8. qualify Sable Hub V1 with Enabled / Available Connected Apps, inline reply handoff history and bounded Sable Mail snapshot integration
+9. rerun combined R9 physical-UX module qualification and one final Panther physical acceptance
+10. freeze Panther and carry the same Hub semantics into Titan 2 / Titan 2 Elite keyboard-first work
+11. production signing / OTA finalization before release candidate
 ```
 
 This ordering intentionally prioritizes building SableOS as a distinct, useful operating-system experience before optimizing future production distribution machinery.
