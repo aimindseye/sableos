@@ -32,8 +32,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -126,6 +128,7 @@ private val SableTilePalette =
  * Command, Sable Peek and contextual local-data work in one production path.
  * Recents/Overview remain owned by Android Quickstep.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SableStartScreen(
     apps: List<AppEntry>,
@@ -146,6 +149,7 @@ fun SableStartScreen(
     onOpenSystemSettings: () -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
+    onRefreshLive: () -> Unit,
 ) {
     var destination by remember(initialScreen) {
         mutableStateOf(
@@ -170,9 +174,14 @@ fun SableStartScreen(
     var liveSnapshot by remember {
         mutableStateOf(liveSurfaceRepository.initialSnapshot())
     }
+    var liveRefreshing by remember {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(refreshGeneration, homeGeneration) {
+        liveRefreshing = true
         liveSnapshot = liveSurfaceRepository.snapshot()
+        liveRefreshing = false
     }
 
     val appByKey = apps.associateBy { it.stableKey() }
@@ -252,26 +261,32 @@ fun SableStartScreen(
             ) {
                 when (destination) {
                     SableStartDestination.Start ->
-                        StartScreen(
-                            snapshot = liveSnapshot,
-                            startApps = startApps,
-                            onLaunchApp = ::launchApp,
-                            onOpenPeek = { app ->
-                                openPeek(app, SableStartDestination.Start)
-                            },
-                            onAllApps = {
-                                destination = SableStartDestination.Apps
-                            },
-                            onSearch = {
-                                openSearch(SableStartDestination.Start)
-                            },
-                            onLive = {
-                                destination = SableStartDestination.Live
-                            },
-                            onAppearance = {
-                                destination = SableStartDestination.Appearance
-                            },
-                        )
+                        PullToRefreshBox(
+                            isRefreshing = liveRefreshing,
+                            onRefresh = onRefreshLive,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            StartScreen(
+                                snapshot = liveSnapshot,
+                                startApps = startApps,
+                                onLaunchApp = ::launchApp,
+                                onOpenPeek = { app ->
+                                    openPeek(app, SableStartDestination.Start)
+                                },
+                                onAllApps = {
+                                    destination = SableStartDestination.Apps
+                                },
+                                onSearch = {
+                                    openSearch(SableStartDestination.Start)
+                                },
+                                onLive = {
+                                    destination = SableStartDestination.Live
+                                },
+                                onAppearance = {
+                                    destination = SableStartDestination.Appearance
+                                },
+                            )
+                        }
 
                     SableStartDestination.Apps ->
                         AppsScreen(
@@ -307,12 +322,18 @@ fun SableStartScreen(
                         )
 
                     SableStartDestination.Live ->
-                        LiveSurfaceScreen(
-                            snapshot = liveSnapshot,
-                            apps = apps,
-                            onBack = ::navigateBack,
-                            onRequestPermissions = onRequestLivePermissions,
-                        )
+                        PullToRefreshBox(
+                            isRefreshing = liveRefreshing,
+                            onRefresh = onRefreshLive,
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            LiveSurfaceScreen(
+                                snapshot = liveSnapshot,
+                                apps = apps,
+                                onBack = ::navigateBack,
+                                onRequestPermissions = onRequestLivePermissions,
+                            )
+                        }
 
                     SableStartDestination.Appearance ->
                         AppearanceScreen(
@@ -794,8 +815,14 @@ private fun approvedMetric(
         app.component.packageName == "org.sableos.hub" ||
             app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> {
-            val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
-            count to "unread"
+            val count =
+                detail.substringBefore(" ")
+                    .takeIf { it.all(Char::isDigit) }
+                    ?: "0"
+            val label =
+                detail.substringAfter(" ", "active")
+                    .ifBlank { "active" }
+            count to label
         }
 
         app.component.packageName == "org.sableos.mail" ||
