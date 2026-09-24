@@ -220,6 +220,17 @@ require(
     "HiddenAppKey(packageName, userSerial) !in hiddenApps",
 )
 require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
+    'messages = loading.copy(title = "Hub")',
+    'fallbackTitle = "Hub"',
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    'title = "Sable Hub"',
+    'labels = listOf("Sable Hub", "Hub", "Sable Messages", "Messages")',
+)
+
+require(
     "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt",
     "LauncherAppsRepository.HIDDEN_APPS_URI",
     "appInventoryObserver",
