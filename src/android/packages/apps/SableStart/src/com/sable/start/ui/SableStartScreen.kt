@@ -246,6 +246,9 @@ fun SableStartScreen(
 
     LaunchedEffect(destination) {
         onCanNavigateBackChanged(destination != SableStartDestination.Start)
+        if (destination == SableStartDestination.Live) {
+            onRefreshLive()
+        }
     }
 
     SableTheme(appearance = appearance) {
