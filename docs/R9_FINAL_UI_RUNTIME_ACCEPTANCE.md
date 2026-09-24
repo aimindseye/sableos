@@ -84,6 +84,15 @@ Sable appearance has one system authority:
 
 `content://org.sableos.appearance/appearance`
 
+Settings is installed as a privileged `system_ext` application. The Sable
+appearance authority requests `android.permission.MODIFY_DAY_NIGHT_MODE`, which
+is `signature|privileged|role`; R9 therefore installs the Sable-owned
+`SableSettingsPrivappPermissions` fragment into `system_ext/etc/permissions`.
+The fragment grants exactly that permission to `com.android.settings`. Runtime
+identity acceptance must report
+`R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION`; a live "Permission
+allowlist violation" System journal notification is release-blocking.
+
 The provider is hosted by the privileged Settings package and stores its state
 in device-protected storage. It owns:
 
