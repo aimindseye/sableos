@@ -255,6 +255,19 @@ def show(args: argparse.Namespace) -> int:
 def resolve_field(doc: dict, field_name: str):
     if field_name in doc:
         return doc[field_name]
+    if doc.get("schema") == 1:
+        if field_name == "artifact_kind":
+            return "target-files"
+        if field_name == "primary_artifact":
+            return "target_files"
+        if field_name == "artifacts.target_files.path":
+            return doc.get("target_files")
+        if field_name == "artifacts.target_files.sha256":
+            return doc.get("target_files_sha256")
+        if field_name == "artifacts.android_info.path":
+            return doc.get("android_info")
+        if field_name == "artifacts.android_info.sha256":
+            return doc.get("android_info_sha256")
 
     # Generic dotted artifact access, for example:
     # artifacts.system.path / artifacts.system.sha256 / artifacts.system.size
@@ -278,6 +291,60 @@ def field(args: argparse.Namespace) -> int:
         print(json.dumps(value, sort_keys=True))
     else:
         print(value)
+    return 0
+
+
+def verify(args: argparse.Namespace) -> int:
+    try:
+        path, doc = load_manifest(args)
+    except FileNotFoundError as exc:
+        print(f"SABLE_ARTIFACT_MANIFEST=NOT_FOUND path={exc}", file=sys.stderr)
+        return 2
+
+    schema = doc.get("schema")
+    rows: list[tuple[str, pathlib.Path, str]] = []
+    if schema == 1:
+        rows = [
+            ("target_files", pathlib.Path(doc["target_files"]), doc["target_files_sha256"]),
+            ("android_info", pathlib.Path(doc["android_info"]), doc["android_info_sha256"]),
+        ]
+        kind = "target-files"
+        primary = "target_files"
+    elif schema == 2:
+        kind = doc.get("artifact_kind")
+        primary = doc.get("primary_artifact")
+        artifacts = doc.get("artifacts")
+        if kind not in ARTIFACT_KINDS or not isinstance(artifacts, dict) or primary not in artifacts:
+            print("SABLE_ARTIFACT_MANIFEST_VERIFY=FAIL_SCHEMA2_STRUCTURE")
+            return 5
+        for name, row in sorted(artifacts.items()):
+            if not isinstance(row, dict):
+                print(f"SABLE_ARTIFACT_MANIFEST_VERIFY=FAIL_ARTIFACT_ROW name={name}")
+                return 5
+            rows.append((name, pathlib.Path(str(row.get("path", ""))), str(row.get("sha256", ""))))
+    else:
+        print(f"SABLE_ARTIFACT_MANIFEST_VERIFY=FAIL_SCHEMA value={schema!r}")
+        return 5
+
+    print(f"ARTIFACT_MANIFEST={path}")
+    print(f"ARTIFACT_SCHEMA={schema}")
+    print(f"ARTIFACT_KIND={kind}")
+    print(f"PRIMARY_ARTIFACT={primary}")
+
+    for name, artifact_path, expected in rows:
+        if not artifact_path.is_file():
+            print(f"SABLE_ARTIFACT_VERIFY=FAIL_MISSING name={name} path={artifact_path}")
+            return 6
+        if not SHA256_RE.fullmatch(expected):
+            print(f"SABLE_ARTIFACT_VERIFY=FAIL_STORED_SHA name={name}")
+            return 6
+        actual = sha256_file(artifact_path)
+        print(f"ARTIFACT_VERIFY name={name} expected={expected} actual={actual}")
+        if actual != expected:
+            print(f"SABLE_ARTIFACT_VERIFY=FAIL_SHA256 name={name}")
+            return 7
+
+    print("SABLE_ARTIFACT_MANIFEST_VERIFY=PASS")
     return 0
 
 
@@ -337,6 +404,13 @@ def self_test() -> int:
         assert doc["target_files_sha256"] == digest
         assert doc["artifacts"]["target_files"]["sha256"] == digest
         assert doc["artifacts"]["android_info"]["path"] == str(ai.resolve())
+        verify_legacy = argparse.Namespace(
+            registry_root=str(registry),
+            device="panther",
+            release="R9",
+            build_source="0" * 40,
+        )
+        assert verify(verify_legacy) == 0
 
         gsi = root / "system.img"
         gsi.write_bytes(b"sable-gsi")
@@ -362,6 +436,13 @@ def self_test() -> int:
         assert gdoc["artifacts"]["system"]["sha256"] == gsi_digest
         assert gdoc["metadata"]["stock_basis"] == "titan2-stock-a16-example"
         assert "target_files" not in gdoc
+        verify_gsi = argparse.Namespace(
+            registry_root=str(registry),
+            device="titan2",
+            release="R10",
+            build_source="2" * 40,
+        )
+        assert verify(verify_gsi) == 0
 
         bad = make_namespace(
             registry_root=str(registry),
@@ -412,6 +493,11 @@ def parser() -> argparse.ArgumentParser:
     r.add_argument("--build-evidence-dir")
     r.add_argument("--replace", action="store_true")
 
+    v = sub.add_parser("verify")
+    v.add_argument("--device", required=True)
+    v.add_argument("--release", required=True)
+    v.add_argument("--build-source", required=True)
+
     s = sub.add_parser("show")
     s.add_argument("--device", required=True)
     s.add_argument("--release", required=True)
@@ -431,6 +517,8 @@ def main() -> int:
         return self_test()
     if args.command == "register":
         return register(args)
+    if args.command == "verify":
+        return verify(args)
     if args.command == "show":
         return show(args)
     if args.command == "field":
