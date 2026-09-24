@@ -141,6 +141,67 @@ Sable releases require exact source/tool/vendor/kernel/firmware/signing provenan
 
 `BOOT=PASS` and `HOME=PASS` are bring-up signals only. Non-Pixel support requires radio/IMS, camera/audio, connectivity, suspend/power, security, OTA/recovery, AVB and firmware-lifecycle acceptance.
 
+## Keyboard-first and non-Pixel reference lessons
+
+### OpenMiniLaunch / MinkLauncher
+
+Reviewed repository: `katoaapps/openminilaunch`, Apache-2.0.
+
+Useful lessons include immediate printable-key entry from HOME with first-key
+preservation, a searchable command surface, app-published shortcuts,
+work-profile-aware results, local-first data handling, active message/email
+conversation grouping through `NotificationListenerService`, source-app
+`RemoteInput` reply and assistant-role invocation over the foreground app.
+
+Sable does not replace its Launcher3/Quickstep integration with Mink. It may
+reuse Apache-licensed implementation ideas only after normal provenance/NOTICE
+review and should prefer platform-owned integration where Sable owns the OS.
+
+### Commander
+
+Reviewed repository: `astroboii47/Commander`.
+
+Useful lessons include a broad keyboard command vocabulary, app/settings/contact
+search, recent-app navigation, notification-Hub triage and explicit handling of
+Android limitations around third-party messaging and reply actions.
+
+Accessibility/overlay workarounds required by an ordinary Android app are not
+automatically the Sable platform architecture.
+
+### Pastiera / Plektra
+
+Pastiera remains a strong GPL-3.0 physical-keyboard IME/modifier/layout and
+trackpad-behavior reference. Current source points to a future successor named
+Plektra. Until that successor's accessible source, license and maintenance model
+are established, Sable treats the family primarily as behavioral/test input.
+
+Direct GPL code reuse requires an explicit licensing decision. Process/IPC
+separation is not treated as an automatic legal safe harbor.
+
+### q25toolbox
+
+q25toolbox is valuable empirical evidence about effective keylayout discovery,
+MediaTek/Q25 input failure modes, per-app keyboard behavior, firmware quirks and
+stock-device constraints. Its root/KernelSU/LSPosed/Accessibility/bind-mount
+mechanisms are not the production SableOS design when Sable owns the platform.
+
+### TrebleDroid / RestlessOS
+
+RestlessOS/TrebleDroid is a useful compatibility laboratory for arbitrary vendor
+partitions and contains concrete Unihertz/MediaTek lessons. It also documents
+cases where GrapheneOS-derived hardening is removed or disabled for broader
+vendor compatibility.
+
+Sable therefore uses it to learn **where compatibility breaks**, not to define
+what Sable security should disable. Each candidate workaround must be reproduced,
+device-scoped and entered into the security delta ledger defined by ADR-0010.
+
+### Community / prototype evidence
+
+Discord, Facebook and prototype reports may generate test hypotheses for Titan
+or Q27. They do not become repository hardware claims until reproduced or backed
+by source/firmware/device evidence.
+
 ## Resulting Sable decisions
 
 1. Keep UI unprivileged relative to hardware services.
