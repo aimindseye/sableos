@@ -80,7 +80,7 @@ Initial M1 tile set:
 
 ```text
 PEOPLE      PHONE
-MESSAGES    MAIL
+HUB         MAIL
 CAMERA      PHOTOS
 SOCIAL      CALENDAR
 SETTINGS    CLOCK
