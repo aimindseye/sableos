@@ -22,6 +22,7 @@ for f in \
   "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
   "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh" \
   "$ROOT/tests/systemui/device/r9_final_ui_runtime_audit.sh" \
+  "$ROOT/tests/systemui/device/r9_appstore_third_party_compat_audit.sh" \
   "$ROOT/build/check-repo-layout.sh" \
   "$ROOT/build/devices/panther.sh" \
   "$ROOT/build/devices/titan2.sh" \
@@ -134,6 +135,9 @@ done
 grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
 grep -Fq 'sable_device_qualify' "$ROOT/build/devices/panther.sh"
 grep -Fq 'qualify-r9-physical-ux.sh' "$ROOT/build/devices/panther.sh"
+grep -Fq 'R9:appstore-baseline|r9:appstore-baseline' "$ROOT/build/devices/panther.sh"
+grep -Fq 'R9:appstore-play|r9:appstore-play' "$ROOT/build/devices/panther.sh"
+grep -Fq 'R9:third-party|r9:third-party' "$ROOT/build/devices/panther.sh"
 grep -Fq 'sable_device_artifact_gate' "$ROOT/build/devices/panther.sh"
 for d in titan2 titan2-elite q27; do
   f="$ROOT/build/devices/$d.sh"
@@ -334,6 +338,13 @@ grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
 grep -Fq 'R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS' "$FINAL_BUILD"
 grep -Fq 'framework-minus-apex' "$FINAL_BUILD"
 grep -Fq 'R9_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS' "$FINAL_BUILD"
+grep -Fq 'R9_APPSTORE_MODULE_BUILD=PASS' "$FINAL_BUILD"
+grep -Fq 'AppStore' "$ROOT/product/r8/panther/r8-product.mk"
+grep -Fq 'R9_APPSTORE_PRODUCT_MODULE=PASS' "$ROOT/build/gates/r8-final-product-composition.sh"
+grep -Fq 'R9_GOOGLE_PLAY_PREINSTALLED=PASS_ABSENT_FROM_SABLE_PRODUCT' "$ROOT/build/gates/r8-final-product-composition.sh"
+grep -Fq 'R9_APPSTORE_TARGET_FILES=PASS_PRESENT_PINNED_SHA256' "$ROOT/build/gates/r8-final-target-files.sh"
+grep -Fq 'R9_GOOGLE_PLAY_PREINSTALLED_TARGET_FILES=PASS_ABSENT' "$ROOT/build/gates/r8-final-target-files.sh"
+echo "SABLE_PIPELINE_APPSTORE_OPTIONAL_PLAY_POLICY=PASS"
 echo "SABLE_PIPELINE_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS"
 grep -Fq 'FULL_TARGET_FILES_BUILD_PERFORMED=NO' "$FINAL_BUILD"
 grep -Fq 'SABLE_QUALIFICATION_ONLY' "$RC_DRIVER"
