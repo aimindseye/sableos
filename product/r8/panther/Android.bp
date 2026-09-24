@@ -1,3 +1,12 @@
+
+prebuilt_etc {
+    name: "SableSettingsPrivappPermissions",
+    system_ext_specific: true,
+    sub_dir: "permissions",
+    src: "permissions/sable-privapp-permissions-com.android.settings.xml",
+    filename_from_src: true,
+}
+
 android_app_import {
     name: "SableCalculator",
     apk: "prebuilt/SableCalculator.apk",
