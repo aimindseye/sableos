@@ -10,6 +10,7 @@ import android.net.Uri
 import android.os.Binder
 import android.os.Process
 import android.provider.Telephony
+import org.sableos.hub.notifications.ConnectedNotificationActivityRegistry
 
 class HubSnapshotProvider : ContentProvider() {
     override fun onCreate(): Boolean = true
@@ -44,18 +45,21 @@ class HubSnapshotProvider : ContentProvider() {
                 null
             }
 
+        val connectedActive =
+            ConnectedNotificationActivityRegistry.activeConversationCount()
+        val attentionCount =
+            (unread ?: 0) + connectedActive
         val availability =
-            when {
-                !canReadSms -> "PERMISSION_REQUIRED"
-                unread == 0 -> "EMPTY"
-                else -> "LIVE"
+            if (attentionCount == 0) {
+                "EMPTY"
+            } else {
+                "LIVE"
             }
         val detail =
-            when {
-                !canReadSms -> "permission required"
-                unread == 0 -> "no unread SMS"
-                unread == 1 -> "1 unread SMS"
-                else -> unread.toString() + " unread SMS"
+            when (attentionCount) {
+                0 -> "0 active"
+                1 -> "1 active"
+                else -> attentionCount.toString() + " active"
             }
 
         return MatrixCursor(COLUMNS).apply {
