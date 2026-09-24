@@ -113,8 +113,15 @@ Required observations:
 
 ### P1 — user installs sandboxed Google Play
 
-Use Apps / App Store on the device to install the supported core Google Play
-components. Do not use ADB sideloading for this acceptance path.
+Use Apps / App Store on the device to install Google Play services and Google
+Play Store. Do not use ADB sideloading for this acceptance path.
+
+For fresh Android 15+ installations, GrapheneOS removed Google Services
+Framework (GSF) as an App Store dependency and provides compatibility stubs
+instead. SableOS Android 17 acceptance therefore requires
+`com.google.android.gsf` to remain absent after a fresh sandboxed Play install.
+Existing upgraded GrapheneOS installations may retain GSF, but that is not the
+Sable fresh-install test path.
 
 Then run:
 
@@ -126,6 +133,7 @@ PHASE=play \
 
 Physically verify:
 
+- Play Store and Play services are installed while GSF remains absent;
 - Play Store launches and account sign-in works;
 - package installation/update UI is coherent;
 - permission and install confirmation dialogs remain Sable/Android-correct;
