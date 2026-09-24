@@ -5,6 +5,8 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
+internal const val CONNECTED_LOCAL_REPLY_PREFIX = "local-reply:"
+
 class ConnectedNotificationHistoryStore(
     context: Context,
 ) {
@@ -99,7 +101,7 @@ class ConnectedNotificationHistoryStore(
                         record =
                             source.copy(
                                 id =
-                                    LOCAL_REPLY_PREFIX +
+                                    CONNECTED_LOCAL_REPLY_PREFIX +
                                         notificationKey +
                                         ":" +
                                         nowMillis +
@@ -337,7 +339,6 @@ class ConnectedNotificationHistoryStore(
     }
 
     private companion object {
-        const val LOCAL_REPLY_PREFIX = "local-reply:"
         const val DATABASE_NAME = "sable_connected_message_history.db"
         const val DATABASE_VERSION = 1
         const val TABLE_HISTORY = "connected_message_history"
