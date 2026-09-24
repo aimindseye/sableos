@@ -265,6 +265,15 @@ class SableNotificationListenerService : NotificationListenerService() {
 
         ConnectedReplyRegistry.remove(envelope.notificationKey)
         ConnectedReplyRegistry.register(normalized.replyHandle)
+        normalized.records
+            .firstOrNull()
+            ?.let { record ->
+                ConnectedNotificationActivityRegistry.upsert(
+                    notificationKey = envelope.notificationKey,
+                    sourceKey = record.key,
+                    conversationId = record.conversationId,
+                )
+            }
 
         val policySnapshot = policies.cachedPolicySnapshot()
         withContext(Dispatchers.IO) {
@@ -289,8 +298,23 @@ class SableNotificationListenerService : NotificationListenerService() {
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         notificationGenerations.remove(sbn.key)
         ConnectedReplyRegistry.remove(sbn.key)
+        ConnectedNotificationActivityRegistry.remove(sbn.key)
+        notifyHubDataChanged()
+    }
+
+    override fun onListenerDisconnected() {
+        ConnectedNotificationActivityRegistry.clear()
+        notifyHubDataChanged()
+        super.onListenerDisconnected()
+    }
+
+    private fun notifyHubDataChanged() {
         applicationContext.contentResolver.notifyChange(
             ConnectedAppsRepository.HISTORY_URI,
+            null,
+        )
+        applicationContext.contentResolver.notifyChange(
+            org.sableos.hub.HubSnapshotProvider.SNAPSHOT_URI,
             null,
         )
     }
