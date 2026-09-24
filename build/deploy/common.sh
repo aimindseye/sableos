@@ -107,3 +107,54 @@ sable_run_sablectl() {
   shift
   PYTHONPATH="$root/tools/sablectl" python3 -m sablectl.cli "$@"
 }
+
+
+sable_artifact_kind_supported() {
+  local kind="$1"
+  local supported="${SABLE_DEVICE_ARTIFACT_KINDS:-}"
+  local candidate
+  for candidate in $supported; do
+    [[ "$candidate" == "$kind" ]] && return 0
+  done
+  return 1
+}
+
+sable_require_adb_serial_exact_once() {
+  local adb_bin="$1"
+  local serial="$2"
+  local -a ready=()
+  local match_count=0
+  local ready_serial
+
+  mapfile -t ready < <("$adb_bin" devices </dev/null | awk 'NR>1 && $2=="device" {print $1}')
+  for ready_serial in "${ready[@]}"; do
+    [[ "$ready_serial" == "$serial" ]] && match_count=$((match_count + 1))
+  done
+  [[ "$match_count" -eq 1 ]] || {
+    echo "SABLE_ADB_TARGET_SERIAL=FAIL"
+    echo "SABLE_ADB_TARGET_MATCHES=$match_count"
+    return 1
+  }
+  echo "SABLE_ADB_TARGET_SERIAL=PASS"
+  echo "SABLE_ADB_OTHER_READY_COUNT=$(( ${#ready[@]} - match_count ))"
+}
+
+sable_require_fastboot_serial_exact_once() {
+  local fastboot_bin="$1"
+  local serial="$2"
+  local -a ready=()
+  local match_count=0
+  local ready_serial
+
+  mapfile -t ready < <("$fastboot_bin" devices </dev/null | awk 'NF>=1 {print $1}')
+  for ready_serial in "${ready[@]}"; do
+    [[ "$ready_serial" == "$serial" ]] && match_count=$((match_count + 1))
+  done
+  [[ "$match_count" -eq 1 ]] || {
+    echo "SABLE_FASTBOOT_TARGET_SERIAL=FAIL"
+    echo "SABLE_FASTBOOT_TARGET_MATCHES=$match_count"
+    return 1
+  }
+  echo "SABLE_FASTBOOT_TARGET_SERIAL=PASS"
+  echo "SABLE_FASTBOOT_OTHER_READY_COUNT=$(( ${#ready[@]} - match_count ))"
+}
