@@ -214,6 +214,14 @@ org.sableos.calendar
 
 The gate must also prove the current UI4/UI5/UI6 source/applicator identities for SystemUI, Settings, SetupWizard2 and Keyguard/frameworks/base.
 
+Because Sable Settings owns explicit global Light/Dark selection, the final
+product must include a same-partition privileged-permission grant for
+`android.permission.MODIFY_DAY_NIGHT_MODE`. The Sable product fragment is
+installed to `system_ext/etc/permissions`, grants the permission only to
+`com.android.settings`, and is verified both in staged product composition and
+inside final target-files. Physical identity acceptance additionally requires
+the absence of the System journal "Permission allowlist violation" notification.
+
 For each Sable application bind:
 
 - source commit/blob or qualified upstream/composition identity;
