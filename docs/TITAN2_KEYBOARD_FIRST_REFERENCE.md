@@ -94,6 +94,33 @@ Sable lessons:
 
 OpenMiniLaunch is Apache-2.0. It remains a reference by default; any direct reuse still requires provenance/attribution review.
 
+### Commander
+
+```text
+repository: astroboii47/Commander
+reviewed state: current September 2026 main/release line
+role: keyboard-first command palette / notification Hub reference
+```
+
+Observed useful concepts:
+
+- fast keyboard-first overlay/search across apps, settings, contacts and actions;
+- recent-app filtering and keyboard navigation;
+- notification grouping, filtering, dismiss/open and source-authorized inline reply;
+- explicit acknowledgment that third-party messaging capability depends on
+  Android intents, shortcuts, notifications and RemoteInput exposed by the
+  source app;
+- optional notification history rather than assuming unrestricted access.
+
+Sable lessons:
+
+- command/search and notification triage should be first-class keyboard
+  surfaces;
+- third-party reply must remain source-app-authorized;
+- Sable should implement system-owned behavior through platform surfaces rather
+  than reproducing Accessibility/overlay workarounds required by an ordinary
+  app.
+
 ### TypeQ25
 
 ```text
@@ -163,6 +190,32 @@ For SableOS:
 - avoid root shell, accessibility injection or runtime bind-mount hacks for functionality SableOS owns at build/platform level;
 - do not copy q25toolbox implementation because no repository license was detected;
 - retain its empirical lessons about effective keylayout discovery, scancodes, SELinux labels, firmware quirks and failure modes.
+
+### TrebleDroid / RestlessOS
+
+```text
+repository: cawilliamson/treble_restlessos
+reviewed revision: 268490dc4150cd1686a9ec1afb5ea32be4acab83
+role: non-Pixel / Treble / vendor-compatibility reference
+```
+
+Useful Titan-family evidence includes:
+
+- Unihertz MediaTek keylayout replacement logic and dedicated PTT/capacitive
+  navigation key maps;
+- Unihertz/Agold camera compatibility work;
+- fingerprint/vendor-policy examples;
+- explicit documentation of GrapheneOS-derived hardening features that may fail
+  on arbitrary vendor kernels/partitions.
+
+Sable boundary:
+
+- use RestlessOS/TrebleDroid to identify and reproduce compatibility failures;
+- never import a blanket hardening relaxation merely because it broadens GSI
+  boot compatibility;
+- bind every accepted delta to a Titan device/firmware profile, security impact,
+  runtime test and removal condition;
+- GrapheneOS/AOSP security architecture remains the reference baseline.
 
 ### BB10 Tools / Sable Tools reference
 
@@ -283,6 +336,64 @@ Requirements:
 
 Pastiera is the primary behavior/reference model for this work.
 
+### App display compatibility
+
+Titan-class displays require user-controllable per-app presentation rather than
+one hard-coded letterbox rule.
+
+Sable App Display Profiles should allow, per Android user/profile + package +
+display class:
+
+```text
+Automatic
+App Default
+Native / Full Screen
+1:1
+4:3
+3:2
+16:9 Portrait
+device-tested presets
+Custom logical width x height
+optional density / UI scale
+```
+
+The global physical display must remain unchanged. Sable should use Android
+Activity/Task size-compat/window configuration, including coherent resource,
+inset and input-coordinate transforms. Foreground-driven global `wm size`
+switching is not the target architecture.
+
+Titan research should record real applications that fail or waste substantial
+space at native geometry and capture screenshots/metrics sufficient to build
+reproducible compatibility tests. User choice remains authoritative over an
+automatic profile.
+
+### Notification configuration and hardware attention
+
+Keyboard-first notification handling must include both triage and configuration.
+Notification delivery policy is separate from Sable Hub aggregation.
+
+Required Sable-owned behavior includes keyboard navigation of the notification
+surface plus contextual open, reply when RemoteInput exists, dismiss, snooze,
+mute/configure and expand/collapse actions.
+
+Per app/channel/conversation, expose Android-supported delivery and privacy
+controls such as alerting/quiet/off, sound, vibration, presentation, badge,
+lockscreen visibility, priority and snooze.
+
+Titan device research must separately establish which hardware attention outputs
+actually exist and who owns them:
+
+```text
+status / notification LED
+keyboard backlight or indicator behavior
+rear SubScreen notification presentation
+haptic patterns
+audio
+doze / always-on presentation if supported
+```
+
+Only physically proven outputs become Titan device-profile capabilities.
+
 ### System surfaces
 
 Keyboard-first means more than the launcher.
@@ -359,12 +470,13 @@ Do not infer Titan 2 mappings from Q25 mappings. Reference repositories guide wh
 Preferred Sable ownership:
 
 ```text
-physical keyboard hardware
+physical keyboard / pointer surface hardware
     -> kernel/input driver + stock vendor
-    -> Android keylayout/key character map
-    -> Sable device input adapter
-    -> Sable keyboard semantic command layer
-    -> SableStart / SystemUI / Settings / first-party apps
+    -> EventHub / InputReader + keylayout/key character map
+    -> Sable hardware input mapper / device profile
+    -> Sable Input Surface API
+    -> Sable Keyboard Policy Service / semantic command layer
+    -> SableStart / SystemUI / Settings / IME / first-party apps
 
 editable text
     -> Android InputMethod/InputConnection
@@ -386,6 +498,10 @@ TITAN2_FOCUS_NAVIGATION=PASS
 TITAN2_TEXT_INPUT=PASS
 TITAN2_SYSTEM_SURFACE_KEYBOARD_ACCEPTANCE=PASS
 TITAN2_TOUCH_KEYBOARD_COEXISTENCE=PASS
+TITAN2_INPUT_SURFACE_PROFILE=PASS
+TITAN2_APP_DISPLAY_PROFILE_BASELINE=PASS
+TITAN2_NOTIFICATION_POLICY_KEYBOARD_ACCEPTANCE=PASS
+TITAN2_NOTIFICATION_OUTPUT_CAPABILITY_BASELINE=PASS
 ```
 
 These are N0 development acceptance markers. They do not imply N2 production support.
