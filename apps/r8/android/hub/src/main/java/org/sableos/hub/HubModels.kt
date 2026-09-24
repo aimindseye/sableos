@@ -15,6 +15,7 @@ data class HubMessage(
     val read: Boolean,
     val source: HubConversationSource = HubConversationSource.Sms,
     val senderLabel: String? = null,
+    val handoffOnly: Boolean = false,
 )
 
 data class HubConversation(
@@ -140,6 +141,10 @@ object HubConnectedConversationReducer {
             read = true,
             source = HubConversationSource.ConnectedApp,
             senderLabel = senderLabel,
+            handoffOnly =
+                id.startsWith(
+                    ConnectedNotificationHistoryStore.LOCAL_REPLY_PREFIX,
+                ),
         )
 
     private fun ConnectedNotificationRecord.toHubConversation(
