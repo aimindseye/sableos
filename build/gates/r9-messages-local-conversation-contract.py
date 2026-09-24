@@ -242,6 +242,11 @@ require(
 )
 
 require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    '<string name="sable_messages_settings_title">Hub</string>',
+    "Connected apps, conversations, email and local privacy",
+)
+require(
     "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
     "MESSAGES_BLOCK",
     'android:key="top_level_sable_messages"',
