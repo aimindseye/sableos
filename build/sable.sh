@@ -111,6 +111,10 @@ case "$FUNCTION" in
     ;;
 
   register-artifact)
+    [[ "${SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED:-NO}" == YES ]] || {
+      echo "SABLE_ARTIFACT_REGISTER=BLOCKED_UNQUALIFIED device=$DEVICE"
+      exit 78
+    }
     BUILD_SOURCE=""
     ARTIFACT_KIND=""
     PRIMARY_ARTIFACT=""
