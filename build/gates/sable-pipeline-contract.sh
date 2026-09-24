@@ -35,6 +35,7 @@ echo "SABLE_PIPELINE_SHELL_SYNTAX=PASS"
 grep -Fq 'sable_console_capture_color' "$ROOT/build/console.sh"
 grep -Fq 'sable_checkpoint_pass' "$ROOT/build/console.sh"
 grep -Fq 'sable_checkpoint_pass "CI stage $name"' "$ROOT/build/local-ci/run.sh"
+grep -Fq 'sable_checkpoint_fail "CI stage $name"' "$ROOT/build/local-ci/run.sh"
 grep -Fq 'sable_checkpoint_pass "R9 physical UX static contracts"' \
   "$ROOT/build/panther/qualify-r9-physical-ux.sh"
 grep -Fq 'sable_checkpoint_pass "Source-bound full CI attestation"' \
