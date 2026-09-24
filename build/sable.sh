@@ -20,7 +20,7 @@ functions:
   ci [core|full|release]
   qualify [suite]
   build [--tmux|--direct]
-  register-artifact --build-source SHA --target-files PATH --sha256 SHA256 --android-info PATH [--out-dir PATH] [--build-evidence-dir PATH]
+  register-artifact --build-source SHA [legacy target-files options | generic artifact options]
   show-artifact --build-source SHA
   flash-plan --build-source SHA
   flash --build-source SHA --serial SERIAL --preserve-data --authorize
@@ -30,6 +30,8 @@ examples:
   bash build/sable.sh panther R9 ci full
   bash build/sable.sh panther R9 qualify physical-ux
   bash build/sable.sh panther R9 build --tmux
+  bash build/sable.sh panther R9 register-artifact --build-source <sha> --target-files <zip> --sha256 <sha256> --android-info <path>
+  bash build/sable.sh titan2 R10 register-artifact --build-source <sha> --artifact-kind gsi-system-image --primary-artifact system --artifact system=<system.img> --expected-sha256 system=<sha256>
   bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --preserve-data --authorize
   bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
 EOF
@@ -110,15 +112,25 @@ case "$FUNCTION" in
 
   register-artifact)
     BUILD_SOURCE=""
+    ARTIFACT_KIND=""
+    PRIMARY_ARTIFACT=""
     TARGET_FILES=""
     SHA256=""
     ANDROID_INFO=""
     OUT_DIR=""
     BUILD_EVIDENCE_DIR=""
     REPLACE=NO
+    ARTIFACT_ARGS=()
+    EXPECTED_SHA_ARGS=()
+    METADATA_ARGS=()
     while (($#)); do
       case "$1" in
         --build-source) BUILD_SOURCE="$2"; shift 2 ;;
+        --artifact-kind) ARTIFACT_KIND="$2"; shift 2 ;;
+        --primary-artifact) PRIMARY_ARTIFACT="$2"; shift 2 ;;
+        --artifact) ARTIFACT_ARGS+=("$2"); shift 2 ;;
+        --expected-sha256) EXPECTED_SHA_ARGS+=("$2"); shift 2 ;;
+        --metadata) METADATA_ARGS+=("$2"); shift 2 ;;
         --target-files) TARGET_FILES="$2"; shift 2 ;;
         --sha256) SHA256="$2"; shift 2 ;;
         --android-info) ANDROID_INFO="$2"; shift 2 ;;
@@ -133,24 +145,60 @@ case "$FUNCTION" in
       echo "SABLE_ARTIFACT_REGISTER=FAIL_BUILD_SOURCE_NOT_IN_REPOSITORY"
       exit 65
     }
-    if declare -F sable_device_artifact_gate >/dev/null 2>&1; then
-      sable_device_artifact_gate "$RELEASE" "$BUILD_SOURCE" "$SHA256" "$BUILD_EVIDENCE_DIR" || exit 66
+
+    if [[ -n "$TARGET_FILES" ]]; then
+      [[ -z "$ARTIFACT_KIND" || "$ARTIFACT_KIND" == target-files ]] || {
+        echo "SABLE_ARTIFACT_REGISTER=FAIL_LEGACY_KIND_MISMATCH"
+        exit 64
+      }
+      ARTIFACT_KIND=target-files
+      PRIMARY_ARTIFACT=target_files
+      PRIMARY_SHA="$SHA256"
+    else
+      [[ -n "$ARTIFACT_KIND" && -n "$PRIMARY_ARTIFACT" ]] || {
+        echo "SABLE_ARTIFACT_REGISTER=FAIL_GENERIC_IDENTITY"
+        exit 64
+      }
+      PRIMARY_SHA=""
+      for item in "${EXPECTED_SHA_ARGS[@]}"; do
+        if [[ "${item%%=*}" == "$PRIMARY_ARTIFACT" ]]; then
+          PRIMARY_SHA="${item#*=}"
+        fi
+      done
     fi
+    [[ "$PRIMARY_SHA" =~ ^[0-9a-f]{64}$ ]] || {
+      echo "SABLE_ARTIFACT_REGISTER=FAIL_PRIMARY_SHA256"
+      exit 64
+    }
+
+    if declare -F sable_device_artifact_gate >/dev/null 2>&1; then
+      sable_device_artifact_gate         "$RELEASE" "$BUILD_SOURCE" "$ARTIFACT_KIND" "$PRIMARY_SHA" "$BUILD_EVIDENCE_DIR"         || exit 66
+    fi
+
     ARGS=(
       --registry-root "$REGISTRY_ROOT" register
       --device "$DEVICE"
       --release "$RELEASE"
       --build-source "$BUILD_SOURCE"
-      --target-files "$TARGET_FILES"
-      --sha256 "$SHA256"
-      --android-info "$ANDROID_INFO"
+      --tool-source "$TOOL_SOURCE_COMMIT"
+      --artifact-kind "$ARTIFACT_KIND"
+      --primary-artifact "$PRIMARY_ARTIFACT"
     )
+    if [[ -n "$TARGET_FILES" ]]; then
+      ARGS+=(
+        --target-files "$TARGET_FILES"
+        --sha256 "$SHA256"
+        --android-info "$ANDROID_INFO"
+      )
+    fi
+    for item in "${ARTIFACT_ARGS[@]}"; do ARGS+=(--artifact "$item"); done
+    for item in "${EXPECTED_SHA_ARGS[@]}"; do ARGS+=(--expected-sha256 "$item"); done
+    for item in "${METADATA_ARGS[@]}"; do ARGS+=(--metadata "$item"); done
     [[ -n "$OUT_DIR" ]] && ARGS+=(--out-dir "$OUT_DIR")
     [[ -n "$BUILD_EVIDENCE_DIR" ]] && ARGS+=(--build-evidence-dir "$BUILD_EVIDENCE_DIR")
     [[ "$REPLACE" == YES ]] && ARGS+=(--replace)
     python3 "$REGISTRY" "${ARGS[@]}"
     ;;
-
   show-artifact)
     BUILD_SOURCE=""
     while (($#)); do
@@ -173,22 +221,21 @@ case "$FUNCTION" in
       esac
     done
     [[ "$BUILD_SOURCE" =~ ^[0-9a-f]{40}$ ]] || { echo "SABLE_FLASH_PLAN=FAIL_BUILD_SOURCE"; exit 64; }
-
-    field() {
-      python3 "$REGISTRY" --registry-root "$REGISTRY_ROOT" field \
-        --device "$DEVICE" --release "$RELEASE" --build-source "$BUILD_SOURCE" --field "$1"
+    [[ "${SABLE_DEVICE_FLASH_PLAN_SUPPORTED:-NO}" == YES ]] || {
+      echo "SABLE_FLASH_PLAN=BLOCKED_UNQUALIFIED device=$DEVICE"
+      exit 78
     }
-    TF="$(field target_files)"
-    TF_SHA="$(field target_files_sha256)"
-    ANDROID_INFO="$(field android_info)"
+    declare -F sable_device_flash_plan >/dev/null 2>&1 || {
+      echo "SABLE_FLASH_PLAN=FAIL_ADAPTER_FUNCTION_MISSING device=$DEVICE"
+      exit 78
+    }
+
+    python3 "$REGISTRY" --registry-root "$REGISTRY_ROOT" verify       --device "$DEVICE" --release "$RELEASE" --build-source "$BUILD_SOURCE"
+
     STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
     EVIDENCE_DIR="$EVIDENCE_ROOT/$DEVICE/${RELEASE,,}-physical/${STAMP}_flash-plan"
     mkdir -p "$EVIDENCE_DIR"
-    python3 "$PLAN" \
-      --target-files "$TF" \
-      --expected-sha256 "$TF_SHA" \
-      --evidence-dir "$EVIDENCE_DIR" \
-      --android-info "$ANDROID_INFO"
+    sable_device_flash_plan "$RELEASE" "$BUILD_SOURCE" "$REGISTRY_ROOT" "$EVIDENCE_DIR"
     (
       cd "$EVIDENCE_DIR"
       find . -type f ! -name SHA256SUMS.txt -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS.txt
@@ -197,7 +244,6 @@ case "$FUNCTION" in
     echo "EVIDENCE_SEAL_SHA256=$(sha256sum "$EVIDENCE_DIR/SHA256SUMS.txt" | awk '{print $1}')"
     echo "SABLE_FLASH_PLAN=PASS"
     ;;
-
   flash)
     exec bash "$ROOT/build/deploy/flash.sh" \
       --device "$DEVICE" \
