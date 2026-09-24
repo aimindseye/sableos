@@ -38,7 +38,8 @@ When an older concept note or historical validation record conflicts with an acc
 - `APP_SECURITY_AND_COMPATIBILITY.md` — standard Android application compatibility and Secure Package Intelligence direction.
 - `APPLICATION_SECURITY_PRIVACY_TRANSPARENCY.md` — application authority, component, tracker/library, storage/network and history transparency.
 - `ANDROID_VERSION_PORTABILITY.md` — stable Sable semantics across Android/device/compiler changes.
-- `INTERACTION_PROFILES.md` — common product semantics with touch-first and keyboard-first profiles.
+- `INTERACTION_PROFILES.md` — common product semantics with touch-first and keyboard-first profiles, including input-surface, app-display-profile and notification-attention capabilities.
+- `KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md` — active Titan-family keyboard-first execution plan bound to ADR-0010.
 - `SECURITY_MAINTENANCE.md` — platform/kernel/vendor/browser/security-update provenance and release claims.
 
 Accepted ADRs include:
@@ -52,6 +53,7 @@ Accepted ADRs include:
 - `adr/0007-core-product-hub-aod-agent-and-aosp-boundary.md` — strategic Sable product surfaces over retained Android capability/enforcement.
 - `adr/0008-configurable-local-conversation-adapters.md` — provider-agnostic package/profile Connected Apps using Android notification/conversation/RemoteInput authority.
 - `adr/0009-separate-reader-and-text-reader-products.md` — separate publication Reader and plain-text/TTS/OCR Text Reader products.
+- `adr/0010-keyboard-first-sableos-design-v1.md` — normative keyboard-first platform architecture: input normalization/surfaces/policy, physical IME, SableStart command surface, focus, per-app display profiles, notification policy, Hub and non-Pixel security delta ledger.
 - `adr/0011-sable-hub-v1.md` — promotes the existing SableHub package into the common Priority / Messages / Email / People communication surface.
 
 ## Product planning
@@ -161,6 +163,11 @@ SableOS studies external systems for specific lessons rather than inheriting com
 
 - Windows Phone / Metro — information-first touch interaction and live-tile inspiration; Sable Flow uses original Sable identity and implementation.
 - BlackBerry Hub / BB10 — people/communication organization and keyboard-first workflow inspiration.
+- OpenMiniLaunch / MinkLauncher — Apache-2.0 keyboard-first HOME type-to-command and active Conversations reference.
+- Commander — keyboard-first command palette, recents and notification-Hub interaction reference.
+- Pastiera / future Plektra — physical-keyboard IME, modifiers, layouts and input-surface behavior reference; Pastiera is GPL-3.0.
+- q25toolbox — rooted Q25 hardware/input forensic reference; workarounds are not Sable platform architecture.
+- TrebleDroid / RestlessOS — non-Pixel/GSI/vendor compatibility reference; not the Sable security baseline.
 - App Manager — package/application transparency reference for Secure Package Intelligence.
 - GrapheneOS — security-engineering reference and current audited Panther substrate source.
 - MarathonOS — mobile/QWERTY and recovery/device lessons.
