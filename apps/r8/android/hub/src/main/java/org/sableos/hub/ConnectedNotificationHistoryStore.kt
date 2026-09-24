@@ -68,6 +68,72 @@ class ConnectedNotificationHistoryStore(
         )
     }
 
+    fun appendLocalReply(
+        notificationKey: String,
+        body: String,
+        policies: Map<ConnectedAppKey, ConnectedAppPolicy>,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Boolean {
+        val text = body.trim()
+        if (text.isEmpty()) {
+            return false
+        }
+
+        var inserted = false
+        synchronized(lock) {
+            val database = helper.writableDatabase
+            database.beginTransaction()
+            try {
+                val source =
+                    queryRecords(database).firstOrNull { record ->
+                        record.notificationKey == notificationKey
+                    }
+                val policy =
+                    source
+                        ?.let { record -> policies[record.key] }
+                        ?.normalized()
+
+                if (source != null && policy?.includeInMessages == true) {
+                    insertRecord(
+                        database = database,
+                        record =
+                            source.copy(
+                                id =
+                                    LOCAL_REPLY_PREFIX +
+                                        notificationKey +
+                                        ":" +
+                                        nowMillis +
+                                        ":" +
+                                        text.hashCode(),
+                                senderLabel = null,
+                                body = text,
+                                timestampMillis = nowMillis,
+                                incoming = false,
+                            ),
+                    )
+                    pruneAndLoad(
+                        database = database,
+                        policies = policies,
+                        nowMillis = nowMillis,
+                    )
+                    inserted = true
+                }
+
+                database.setTransactionSuccessful()
+            } finally {
+                database.endTransaction()
+            }
+        }
+
+        if (inserted) {
+            appContext.contentResolver.notifyChange(
+                ConnectedAppsRepository.HISTORY_URI,
+                null,
+            )
+        }
+        return inserted
+    }
+
     fun clearFor(key: ConnectedAppKey) {
         synchronized(lock) {
             helper.writableDatabase.delete(
@@ -271,6 +337,7 @@ class ConnectedNotificationHistoryStore(
     }
 
     private companion object {
+        const val LOCAL_REPLY_PREFIX = "local-reply:"
         const val DATABASE_NAME = "sable_connected_message_history.db"
         const val DATABASE_VERSION = 1
         const val TABLE_HISTORY = "connected_message_history"
