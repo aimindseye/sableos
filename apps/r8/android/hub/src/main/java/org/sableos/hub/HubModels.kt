@@ -98,10 +98,20 @@ object HubConnectedConversationReducer {
     ): ConnectedConversationSlice {
         val ordered = records.sortedBy(ConnectedNotificationRecord::timestampMillis)
         val latest = ordered.last()
+        val replyNotificationKey =
+            ordered
+                .asReversed()
+                .firstOrNull { record ->
+                    canReply(record.notificationKey)
+                }?.notificationKey
         val threadId = stableNegativeId(key.stableKey())
 
         return ConnectedConversationSlice(
-            conversation = latest.toHubConversation(threadId, canReply),
+            conversation =
+                latest.toHubConversation(
+                    threadId = threadId,
+                    replyNotificationKey = replyNotificationKey,
+                ),
             messages = ordered.map { record -> record.toHubMessage(threadId) },
         )
     }
@@ -134,7 +144,7 @@ object HubConnectedConversationReducer {
 
     private fun ConnectedNotificationRecord.toHubConversation(
         threadId: Long,
-        canReply: (String) -> Boolean,
+        replyNotificationKey: String?,
     ): HubConversation =
         HubConversation(
             threadId = threadId,
@@ -146,9 +156,9 @@ object HubConnectedConversationReducer {
             source = HubConversationSource.ConnectedApp,
             sourcePackage = key.packageName,
             sourceUserSerial = key.userSerial,
-            sourceNotificationKey = notificationKey,
+            sourceNotificationKey = replyNotificationKey ?: notificationKey,
             sourceLabel = sourceLabel,
-            canQuickReply = canReply(notificationKey),
+            canQuickReply = replyNotificationKey != null,
         )
 
     private fun stableNegativeId(value: String): Long {
