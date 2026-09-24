@@ -99,11 +99,14 @@ case "$PHASE" in
         echo "R9_GOOGLE_PLAY_RUNTIME=PASS_ABSENT_USER_OPTIONAL"
         ;;
     play|providers)
-        for package in             com.android.vending             com.google.android.gms             com.google.android.gsf
+        for package in \
+            com.android.vending \
+            com.google.android.gms
         do
             require_package "$package"
         done
-        echo "R9_GOOGLE_PLAY_RUNTIME=PASS_USER_INSTALLED_SANDBOXED"
+        forbid_package com.google.android.gsf
+        echo "R9_GOOGLE_PLAY_RUNTIME=PASS_USER_INSTALLED_SANDBOXED_ANDROID15_PLUS_NO_GSF"
         ;;
 esac
 
