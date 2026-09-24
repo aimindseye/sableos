@@ -233,11 +233,13 @@ else
     echo "R8_LEGACY_PRODUCT_PARENT=PASS_ABSENT"
 fi
 
-mkdir -p "$DEST/prebuilt"
+mkdir -p "$DEST/prebuilt" "$DEST/permissions"
 rm -f "$DEST/prebuilt/"*.apk
+rm -f "$DEST/permissions/"*.xml
 
 install -m 0644     "$ROOT/product/r8/panther/Android.bp"     "$DEST/Android.bp"
 install -m 0644     "$ROOT/product/r8/panther/r8-product.mk"     "$DEST/r8-product.mk"
+install -m 0644     "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml"     "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml"
 install -m 0644     "$BUNDLE_MANIFEST"     "$DEST/manifest.tsv"
 install -m 0644     "$BUNDLE_SUMS"     "$DEST/SHA256SUMS.txt"
 install -m 0644     "$BUNDLE_SOURCE_IDENTITY"     "$DEST/SABLEOS_SOURCE_COMMIT.txt"
@@ -263,6 +265,10 @@ cmp -s "$ROOT/product/r8/panther/r8-product.mk" "$DEST/r8-product.mk" || {
     echo "R8_PRODUCT_MK=FAIL"
     exit 13
 }
+cmp -s "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml" "$DEST/permissions/sable-privapp-permissions-com.android.settings.xml" || {
+    echo "R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE=FAIL"
+    exit 13
+}
 cmp -s "$BUNDLE_MANIFEST" "$DEST/manifest.tsv" || {
     echo "R8_PRODUCT_MANIFEST=FAIL"
     exit 14
@@ -283,6 +289,7 @@ echo "R8_PANTHER_PRODUCT_SHA256_AFTER=$PRODUCT_MK_SHA256_AFTER"
 
 echo "R8_PRODUCT_ANDROID_BP=PASS"
 echo "R8_PRODUCT_MK=PASS"
+echo "R9_SETTINGS_PRIVAPP_ALLOWLIST_STAGE=PASS_SYSTEM_EXT"
 echo "R8_PRODUCT_MANIFEST=PASS"
 echo "R8_PRODUCT_SOURCE_IDENTITY=PASS"
 echo "R8_STAGED_PREBUILT_HASHES=PASS"
