@@ -162,6 +162,21 @@ Esc     -> back
 Exact reserved chords remain subject to the Sable Keyboard Policy Service and
 must not steal conventional app shortcuts.
 
+## Freshness and refresh contract
+
+Hub and Start use event-driven refresh as the primary path:
+
+- committed connected-app history changes notify both the Hub history URI and
+  the Hub live-snapshot URI;
+- SableStart observes the Hub snapshot URI and refreshes its live tile;
+- Hub observes the local history URI and reloads its snapshot;
+- the Start Hub tile reports generic active communication attention rather than
+  claiming third-party notification state is Android SMS unread state.
+
+Both SableStart and Sable Hub also expose standard pull-to-refresh. Manual
+refresh is an escape hatch for delayed provider callbacks or lifecycle races; it
+does not replace event-driven updates.
+
 ## Security and privacy invariants
 
 - Hub has no provider credentials for third-party messaging services.
