@@ -139,7 +139,9 @@ if (
 ).exists():
     failures.append("retired_launcher_cohesion_applicator_present")
 
-# Live providers: sensitive data is visible only to SableLauncher.
+# Live providers: general sensitive snapshots remain SableLauncher-only.
+# Sable Mail additionally admits the bounded first-party SableHub caller for
+# the Hub Email pivot; arbitrary apps and Launcher3 remain excluded.
 require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
     'packageName == "org.sableos.launcher"',
@@ -156,14 +158,19 @@ for provider in (
     )
 require(
     "apps/r8/mail/apply_sable_flavor.py",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
 )
 require(
     "apps/r8/mail/verify_sable_mail.py",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
     "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT",
+    "SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY",
 )
 forbid(
     "apps/r8/mail/verify_sable_mail.py",
@@ -485,6 +492,7 @@ print("R9_SABLE_HOME_SOURCE=PASS_STANDALONE")
 print("R9_QUICKSTEP_RECENTS_SOURCE=PASS_NO_HOME")
 print("R9_ALL_APPS_PERMISSION_SUMMARY_CONTRACT=PASS")
 print("R9_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER")
+print("R9_MAIL_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER_AND_SABLEHUB")
 print("R9_CLOCK_LIGHT_VISIBILITY_CONTRACT=PASS")
 print("R9_PHOTOS_LIGHT_DARK_CONTRACT=PASS")
 print("R9_CAMERA_APPEARANCE_BOUNDARY=PASS_UPSTREAM_DARK_ONLY")
