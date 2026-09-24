@@ -334,6 +334,8 @@ PY
 then
     fail R9_SETTINGS_PRIVAPP_ALLOWLIST
 fi
+
+(
     cd "$DEST/prebuilt"
     sha256sum -c "$DEST/SHA256SUMS.txt"
 ) || fail R8_PRODUCT_PREBUILT_HASHES
