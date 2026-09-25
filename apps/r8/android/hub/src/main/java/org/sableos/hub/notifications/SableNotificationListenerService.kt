@@ -225,9 +225,7 @@ class SableNotificationListenerService : NotificationListenerService() {
                     senderLabel =
                         if (incoming) {
                             boundedText(
-                                sender
-                                    ?.name
-                                    ?.toString(),
+                                sender.name?.toString(),
                                 MAX_NOTIFICATION_LABEL_LENGTH,
                             )
                         } else {
@@ -249,8 +247,10 @@ class SableNotificationListenerService : NotificationListenerService() {
     }
 
     @Suppress("DEPRECATION")
-    private fun messagingUser(notification: Notification): Person? =
-        notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
+    private fun messagingUser(notification: Notification): Person? {
+        val extras = notification.extras
+        return extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
+    }
 
     private fun samePerson(
         first: Person,
