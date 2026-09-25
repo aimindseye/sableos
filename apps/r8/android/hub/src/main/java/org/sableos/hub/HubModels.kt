@@ -166,42 +166,44 @@ object HubConnectedConversationReducer {
         first: ConnectedNotificationRecord,
         second: ConnectedNotificationRecord,
     ): Boolean {
-        val firstBody = first.body?.trim().orEmpty()
-        val secondBody = second.body?.trim().orEmpty()
-        if (
-            firstBody.isEmpty() ||
-            firstBody != secondBody ||
-            first.incoming != second.incoming
-        ) {
-            return false
-        }
-
         val firstLocal = first.id.startsWith(CONNECTED_LOCAL_REPLY_PREFIX)
         val secondLocal = second.id.startsWith(CONNECTED_LOCAL_REPLY_PREFIX)
-        if (firstLocal && secondLocal) {
-            return false
-        }
-
-        val firstSender = first.senderLabel?.trim().orEmpty()
-        val secondSender = second.senderLabel?.trim().orEmpty()
-        if (
-            firstSender.isNotEmpty() &&
-            secondSender.isNotEmpty() &&
-            !firstSender.equals(secondSender, ignoreCase = true)
-        ) {
-            return false
-        }
-
         val window =
             if (firstLocal != secondLocal) {
                 LOCAL_REPLY_DEDUP_WINDOW_MILLIS
             } else {
                 NOTIFICATION_DUPLICATE_WINDOW_MILLIS
             }
-        return timestampDistance(
-            first.timestampMillis,
-            second.timestampMillis,
-        ) <= window
+
+        return sameMessagePayload(first, second) &&
+            !(firstLocal && secondLocal) &&
+            compatibleSenders(first.senderLabel, second.senderLabel) &&
+            timestampDistance(
+                first.timestampMillis,
+                second.timestampMillis,
+            ) <= window
+    }
+
+    private fun sameMessagePayload(
+        first: ConnectedNotificationRecord,
+        second: ConnectedNotificationRecord,
+    ): Boolean {
+        val firstBody = first.body?.trim().orEmpty()
+        val secondBody = second.body?.trim().orEmpty()
+        return firstBody.isNotEmpty() &&
+            firstBody == secondBody &&
+            first.incoming == second.incoming
+    }
+
+    private fun compatibleSenders(
+        first: String?,
+        second: String?,
+    ): Boolean {
+        val firstSender = first?.trim().orEmpty()
+        val secondSender = second?.trim().orEmpty()
+        return firstSender.isEmpty() ||
+            secondSender.isEmpty() ||
+            firstSender.equals(secondSender, ignoreCase = true)
     }
 
     private fun preferredDuplicate(
