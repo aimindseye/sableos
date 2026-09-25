@@ -395,6 +395,156 @@ import android.view.LayoutInflater;
     ),
     DIALER_CONTACTS_FRAGMENT: (
         (
+            '''import android.content.Context;
+import android.content.Intent;
+import android.content.Loader;
+''',
+            '''import android.content.Context;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
+''',
+        ),
+        (
+            '''import android.net.Uri;
+import android.os.Bundle;
+import android.support.annotation.IntDef;
+''',
+            '''import android.net.Uri;
+import android.os.Bundle;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.support.annotation.IntDef;
+''',
+        ),
+        (
+            '''import android.support.v7.widget.RecyclerView.State;
+import android.view.LayoutInflater;
+''',
+            '''import android.support.v7.widget.RecyclerView.State;
+import android.text.TextUtils;
+import android.util.LongSparseArray;
+import android.view.LayoutInflater;
+''',
+        ),
+        (
+            '''  private static final String EXTRA_HEADER = "extra_header";
+  private static final String EXTRA_HAS_PHONE_NUMBERS = "extra_has_phone_numbers";
+''',
+            '''  private static final String EXTRA_HEADER = "extra_header";
+  private static final String EXTRA_HAS_PHONE_NUMBERS = "extra_has_phone_numbers";
+  private static final int SABLE_PHONE_NUMBERS_LOADER_ID = 1;
+''',
+        ),
+        (
+            '''    if (getActivity() != null
+        && isAdded()
+        && PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      getLoaderManager().restartLoader(0, null, this);
+    }
+''',
+            '''    if (getActivity() != null
+        && isAdded()
+        && PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      getLoaderManager().restartLoader(0, null, this);
+      getLoaderManager().restartLoader(SABLE_PHONE_NUMBERS_LOADER_ID, null, this);
+    }
+''',
+        ),
+        (
+            '''  public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+    ContactsCursorLoader cursorLoader = new ContactsCursorLoader(getContext(), hasPhoneNumbers);
+    cursorLoader.setQuery(query);
+    return cursorLoader;
+  }
+''',
+            '''  public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+    if (id == SABLE_PHONE_NUMBERS_LOADER_ID) {
+      return new CursorLoader(
+          getContext(),
+          Phone.CONTENT_URI,
+          new String[] {Phone.CONTACT_ID, Phone.NUMBER},
+          Phone.NUMBER + " IS NOT NULL",
+          null,
+          Phone.CONTACT_ID
+              + " ASC, "
+              + Phone.IS_SUPER_PRIMARY
+              + " DESC, "
+              + Phone.IS_PRIMARY
+              + " DESC, "
+              + Phone._ID
+              + " ASC");
+    }
+
+    ContactsCursorLoader cursorLoader = new ContactsCursorLoader(getContext(), hasPhoneNumbers);
+    cursorLoader.setQuery(query);
+    return cursorLoader;
+  }
+''',
+        ),
+        (
+            '''  public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+    LogUtil.enterBlock("ContactsFragment.onLoadFinished");
+''',
+            '''  public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+    LogUtil.enterBlock("ContactsFragment.onLoadFinished");
+    if (loader.getId() == SABLE_PHONE_NUMBERS_LOADER_ID) {
+      updateSablePhoneNumbers(cursor);
+      return;
+    }
+''',
+        ),
+        (
+            '''  @Override
+  public void onLoaderReset(Loader<Cursor> loader) {
+    recyclerView.setAdapter(null);
+    recyclerView.setOnScrollChangeListener(null);
+    adapter = null;
+  }
+''',
+            '''  private void updateSablePhoneNumbers(Cursor cursor) {
+    LongSparseArray<String> phoneNumbers = new LongSparseArray<>();
+    if (cursor != null) {
+      int contactIdIndex = cursor.getColumnIndexOrThrow(Phone.CONTACT_ID);
+      int numberIndex = cursor.getColumnIndexOrThrow(Phone.NUMBER);
+      while (cursor.moveToNext()) {
+        long contactId = cursor.getLong(contactIdIndex);
+        String number = cursor.getString(numberIndex);
+        if (phoneNumbers.indexOfKey(contactId) < 0 && !TextUtils.isEmpty(number)) {
+          phoneNumbers.put(contactId, number);
+        }
+      }
+    }
+    if (adapter != null) {
+      adapter.updatePhoneNumbers(phoneNumbers);
+    }
+  }
+
+  @Override
+  public void onLoaderReset(Loader<Cursor> loader) {
+    if (loader.getId() == SABLE_PHONE_NUMBERS_LOADER_ID) {
+      if (adapter != null) {
+        adapter.updatePhoneNumbers(new LongSparseArray<>());
+      }
+      return;
+    }
+    recyclerView.setAdapter(null);
+    recyclerView.setOnScrollChangeListener(null);
+    adapter = null;
+  }
+''',
+        ),
+        (
+            '''  private void loadContacts() {
+    getLoaderManager().initLoader(0, null, this);
+    recyclerView.setVisibility(View.VISIBLE);
+''',
+            '''  private void loadContacts() {
+    getLoaderManager().initLoader(0, null, this);
+    getLoaderManager().initLoader(SABLE_PHONE_NUMBERS_LOADER_ID, null, this);
+    recyclerView.setVisibility(View.VISIBLE);
+''',
+        ),
+        (
             '''import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnScrollChangeListener;
