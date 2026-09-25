@@ -436,9 +436,38 @@ Q25 is no longer assumed to be the required first non-Pixel SableOS development 
 
 Role: **preferred future physical-QWERTY full-device candidate**, subject to real shipped hardware and complete source/BSP/bootloader/AVB/firmware/security-lifecycle qualification.
 
+## TrebleDroid / RestlessOS compatibility-reference policy
+
+TrebleDroid and RestlessOS are useful non-Pixel compatibility laboratories,
+especially for identifying vendor assumptions around Unihertz/MediaTek
+keylayouts, Agold/vendor camera behavior, fingerprint HAL policy, VINTF, SELinux
+and older kernel/vendor compatibility.
+
+They are not the SableOS security baseline. A compatibility patch may disable or
+relax a hardening feature in order to boot across arbitrary vendor partitions;
+SableOS must not generalize that trade-off to every target.
+
+Every candidate compatibility delta must enter a device-scoped security ledger:
+
+```text
+target device/profile
+affected hardening/security feature
+vendor/kernel dependency
+reproduced failure
+smallest required delta
+security/privacy impact
+runtime/physical test
+removal condition
+reference/upstream source
+```
+
+If a hardening feature is unsupported by the retained vendor kernel/BSP, the
+release/support claim must say so. Compatibility success does not upgrade N0/N1
+security ownership.
+
 ## External reference relationship
 
-Brax3/iodéOS is a device-port and MediaTek-integration reference. It is not the SableOS security baseline.
+Brax3/iodéOS and TrebleDroid/RestlessOS are device-port and compatibility references. They are not the SableOS security baseline.
 
 GrapheneOS remains the primary additional reference for production security engineering. AOSP documentation remains normative for Android partitioning, VINTF, AVB, SELinux, update and GKI behavior.
 

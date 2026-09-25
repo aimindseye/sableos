@@ -126,7 +126,7 @@ Required first-class behaviors:
 - physical-keyboard text entry without summoning the soft keyboard by default;
 - touch/keyboard coexistence rather than touch fallback as the normal path.
 
-The normative external reference review and licensing/provenance boundary is `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
+The normative architecture is `adr/0010-keyboard-first-sableos-design-v1.md`; the Titan-specific external reference review and licensing/provenance boundary is `TITAN2_KEYBOARD_FIRST_REFERENCE.md`.
 
 ## Keyboard-first Hub
 
@@ -188,18 +188,33 @@ display.aspect_class = compact_portrait
 
 This allows future portrait QWERTY, landscape QWERTY, slider, folding or other keyboard devices to share the same interaction profile.
 
-## Input capability examples
+## Input, display and attention capability examples
 
-The eventual capability model should be able to express at least:
+The capability model must describe behavior rather than branding and must not
+collapse the physical key matrix and pointer/touch surface into one boolean.
+It should be able to express at least:
 
 ```text
 input.has_touch
 input.has_physical_keyboard
-input.has_pointer
-input.keyboard_touch_surface
 input.has_dpad
 input.modifier_keys
+input.programmable_keys
 input.repeat_capable
+input.keyboard_wake
+input.keyboard_backlight
+
+input.surface.relative_pointer
+input.surface.absolute_pointer
+input.surface.scroll_x
+input.surface.scroll_y
+input.surface.tap
+input.surface.click
+input.surface.long_press
+input.surface.swipe
+input.surface.multi_zone
+input.surface.gesture_select
+input.surface.location = keyboard_matrix | toolbelt | separate_trackpad | other
 
 navigation.primary
 navigation.secondary
@@ -207,9 +222,58 @@ navigation.secondary
 display.aspect_class
 display.compactness
 display.orientation_preference
+display.app_profile_support
+
+notification.output.status_led
+notification.output.keyboard_backlight
+notification.output.secondary_display
+notification.output.haptic
+notification.output.audio
+notification.output.always_on_display
 ```
 
-Capabilities should describe behavior, not branding.
+A device capability says what can be done. The owning Sable policy surface says
+whether and how the capability is used.
+
+## Sable App Display Profiles
+
+Keyboard-first and unusual-aspect devices require application compatibility to
+be user-controllable rather than hard-coded per model.
+
+A per-app profile may choose:
+
+```text
+Automatic
+App Default
+Native / Full Screen
+1:1
+4:3
+3:2
+16:9 Portrait
+device-tested preset
+Custom logical width x height
+optional density / UI scale
+```
+
+The physical/global display remains unchanged. Profiles are applied through
+Android Activity/Task size-compat and window configuration and are scoped by
+Android user/profile + package + display class. Global foreground-driven
+`wm size` switching is not the Sable architecture.
+
+## Keyboard-first notification interaction
+
+Keyboard-first devices must expose notification triage and configuration without
+requiring touch. Notification delivery policy remains distinct from Sable Hub
+conversation aggregation.
+
+While the Sable notification surface has focus, contextual keys may provide
+open, reply, dismiss, snooze, mute/configure and expand/collapse actions. These
+single-key commands are not global shortcuts.
+
+Per-app/channel/conversation controls may include alerting/quiet/off, sound,
+vibration, presentation, badge, lockscreen privacy, priority, snooze and Hub
+inclusion where technically valid. Hardware attention outputs appear only when
+the device profile proves that capability.
 
 ## Q25 profile
 

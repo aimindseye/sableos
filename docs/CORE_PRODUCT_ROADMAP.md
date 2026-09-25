@@ -354,6 +354,39 @@ Panther validates the touch-first presentation. Q25 may later validate compact/s
 
 Device-specific UI forks are rejected. Form-factor differences belong in interaction/layout profiles consuming shared semantics.
 
+## R10 / keyboard-first Design V1 implementation track
+
+Status: **ARCHITECTURE FROZEN / IMPLEMENTATION NEXT**.
+
+ADR-0010 freezes the common keyboard-first architecture for Titan 2, Titan 2
+Elite and future QWERTY hardware while retaining Panther as the touch-first
+regression reference.
+
+The implementation workstreams are:
+
+```text
+KF1 capability schema + device profile + normalized input-surface model
+KF2 Keyboard Policy Service + routing/security tests
+KF3 SableStart type-to-command + keyboard focus/navigation
+KF4 physical IME baseline + modifier/layout tests
+KF5 SystemUI/Settings keyboard traversal
+KF6 per-app Sable App Display Profiles (aspect, logical W x H, optional density)
+KF7 Sable Notification Policy & Profiles + keyboard notification center
+KF8 Hub integration against notification policy
+KF9 Titan 2 N0 adapter/evidence binding
+KF10 Titan 2 Elite independent evidence/adapter binding
+KF11 Q27 shipped-hardware qualification when available
+```
+
+KF6 must preserve native global display metrics and use Activity/Task size-compat
+configuration. KF7 must keep delivery policy distinct from Hub aggregation and
+show status-LED/keyboard-backlight/secondary-display controls only when the
+device profile proves those outputs.
+
+Each workstream should have focused host/module tests before a combined image
+build. Titan-family physical acceptance remains independent per retail unit and
+firmware baseline.
+
 ## Release-candidate composition closure
 
 Production release infrastructure returns to the critical path here, not during M1 shell development.

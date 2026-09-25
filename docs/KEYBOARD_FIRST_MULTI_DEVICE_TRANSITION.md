@@ -161,6 +161,52 @@ square/near-square responsive layout
 hardware-key discoverability
 ```
 
+## 6A. Keyboard-First Design V1 binding
+
+The normative architecture is ADR-0010:
+`docs/adr/0010-keyboard-first-sableos-design-v1.md`.
+
+The transition plan therefore treats keyboard-first as eleven coordinated
+platform/product components rather than a launcher-only tranche:
+
+```text
+Device Profile
+Hardware Input Mapper
+Input Surface API
+Keyboard Policy Service
+Physical IME
+SableStart Command Surface
+Focus & Navigation
+App Display Profiles
+Notification Policy & Profiles
+Sable Hub
+Device Adapter & Security Delta Ledger
+```
+
+Important implementation consequences:
+
+- EventHub/InputReader is the preferred userspace normalization boundary;
+- physical keyboard and pointer/touch surfaces are independent capabilities;
+- HOME printable-key routing preserves the first key and yields to editable
+  fields/application shortcuts according to the common policy order;
+- per-app logical resolution/density uses Activity/Task size-compat rather than
+  foreground-driven global `wm size` changes;
+- notification delivery configuration remains separate from Hub aggregation;
+- device notification outputs such as keyboard backlight, status LED or rear
+  display are exposed only when physical evidence proves them;
+- TrebleDroid/RestlessOS compatibility deltas are research inputs, not automatic
+  Sable security relaxations.
+
+Reference projects are tracked explicitly:
+
+```text
+Pastiera / future Plektra  physical IME/modifier/layout behavior
+Commander                  command palette + notification UX
+OpenMiniLaunch / Mink      HOME type-to-command + Conversations UX
+q25toolbox                 hardware/input failure-mode evidence
+TrebleDroid / RestlessOS   non-Pixel vendor compatibility evidence
+```
+
 ## 7. System applications that should be baked into keyboard-first images
 
 ### Sable Camera
@@ -309,14 +355,20 @@ plus explicitly private binary/evidence inputs.
 ## 12. Immediate implementation sequence
 
 ```text
-K0 repository/status reconciliation
-K1 artifact descriptor generalized beyond target-files
-K2 flash driver split into common policy + device transport adapter
-K3 Titan 2 read-only bring-up + stock restore contract
-K4 keyboard-first SableLauncher profile
-K5 Sable Keyboard / physical-keyboard adapter
-K6 Sable Camera normal system-app baseline
-K7 Titan 2 N0 image/build/flash qualification
-K8 Titan 2 Elite independent K3-K7 sequence
-K9 Q27 only after shipped-hardware acceptance
+K0  repository/status reconciliation
+K1  artifact descriptor generalized beyond target-files
+K2  flash driver split into common policy + device transport adapter
+K3  Titan 2 read-only bring-up + stock restore contract
+KF1 capability schema + device profile + normalized input-surface model
+KF2 Keyboard Policy Service + routing/security tests
+KF3 SableStart type-to-command + keyboard focus/navigation
+KF4 physical IME baseline + modifier/layout tests
+KF5 SystemUI/Settings keyboard traversal
+KF6 Sable App Display Profiles
+KF7 Sable Notification Policy + keyboard notification center
+KF8 Hub integration against notification policy
+K6  Sable Camera normal system-app baseline
+K7  Titan 2 N0 image/build/flash qualification
+K8  Titan 2 Elite independent evidence/adapter qualification
+K9  Q27 only after shipped-hardware acceptance
 ```
