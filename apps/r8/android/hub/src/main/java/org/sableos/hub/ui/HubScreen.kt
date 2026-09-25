@@ -225,6 +225,7 @@ fun HubScreen(
                 if (conversation == null) {
                     MissingConversationView(
                         onBack = {
+                            statusMessage = null
                             route = HubRoute.Root(HubPivot.Messages)
                         },
                     )
@@ -245,6 +246,7 @@ fun HubScreen(
                             conversation = conversation,
                             messages = threadMessages,
                             onBack = {
+                                statusMessage = null
                                 route = HubRoute.Root(HubPivot.Messages)
                             },
                             onReply =
@@ -274,7 +276,6 @@ fun HubScreen(
                                                 conversation.sourceNotificationKey,
                                                 body,
                                             )
-                                        statusMessage = result.message
                                         result
                                     }
                                 } else {
@@ -528,6 +529,18 @@ private fun ColumnScope.MessagesPivot(
                     conversation.lastBody.contains(query, ignoreCase = true)
             }
         }
+    val listState = rememberLazyListState()
+    val newestConversation = conversations.firstOrNull()
+
+    LaunchedEffect(
+        query,
+        newestConversation?.threadId,
+        newestConversation?.lastDateMillis,
+    ) {
+        if (query.isBlank() && newestConversation != null) {
+            listState.scrollToItem(0)
+        }
+    }
 
     if (conversations.isEmpty()) {
         Text(
@@ -552,6 +565,7 @@ private fun ColumnScope.MessagesPivot(
     } else {
         LazyColumn(
             modifier = modifier.fillMaxWidth(),
+            state = listState,
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
         ) {
             items(
@@ -913,10 +927,11 @@ private fun ColumnScope.ConversationView(
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
+        reverseLayout = true,
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
     ) {
         items(
-            items = messages,
+            items = messages.asReversed(),
             key = HubMessage::id,
         ) { message ->
             MessageBubble(message)
