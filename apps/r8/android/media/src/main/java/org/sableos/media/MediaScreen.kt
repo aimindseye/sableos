@@ -105,6 +105,7 @@ internal data class MediaScreenState(
     val playedPodcastEpisodeIds: Set<String>,
     val podcastFeedUrl: String,
     val podcastBusy: Boolean,
+    val podcastRefreshing: Boolean,
     val podcastMessage: String?,
     val stations: List<RadioStation>,
     val playback: PlaybackUiState,
@@ -182,6 +183,7 @@ internal fun MediaScreen(
     val playedPodcastEpisodeIds = state.playedPodcastEpisodeIds
     val podcastFeedUrl = state.podcastFeedUrl
     val podcastBusy = state.podcastBusy
+    val podcastRefreshing = state.podcastRefreshing
     val podcastMessage = state.podcastMessage
     val stations = state.stations
     val playback = state.playback
@@ -485,7 +487,7 @@ internal fun MediaScreen(
 
                 if (destination == MediaDestination.Podcasts) {
                     SableRefreshableSurface(
-                        isRefreshing = podcastBusy,
+                        isRefreshing = podcastRefreshing,
                         onRefresh = {
                             if (!podcastBusy && podcastSubscriptions.isNotEmpty()) {
                                 onRefreshPodcasts()
