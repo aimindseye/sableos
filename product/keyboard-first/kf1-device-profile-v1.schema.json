@@ -1,0 +1,319 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sableos.org/schemas/kf1-device-profile-v1.schema.json",
+  "title": "SableOS KF1 Device Profile V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_id",
+    "device_class",
+    "interaction_profile",
+    "support_level",
+    "evidence",
+    "displays",
+    "input_surfaces",
+    "indicators",
+    "vendor_compatibility",
+    "policy_decisions"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "device_class": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]+$"
+    },
+    "interaction_profile": {
+      "enum": ["TOUCH_FIRST", "KEYBOARD_FIRST", "HYBRID"]
+    },
+    "support_level": {
+      "enum": [
+        "REFERENCE_FROZEN",
+        "N0_GSI_USERSPACE_LAB",
+        "N1_INTEGRATED_VENDOR_BSP_PORT",
+        "N2_PRODUCTION_QUALIFIED",
+        "RESEARCH"
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "baseline",
+        "source_repository",
+        "source_documents"
+      ],
+      "properties": {
+        "state": {
+          "enum": ["PHYSICALLY_VERIFIED", "PARTIAL", "RESEARCH_ONLY"]
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["stock_build", "android_release"],
+          "properties": {
+            "stock_build": {"type": "string"},
+            "android_release": {"type": "integer", "minimum": 1},
+            "security_patch": {"type": "string"}
+          }
+        },
+        "source_repository": {"type": "string"},
+        "source_documents": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        }
+      }
+    },
+    "displays": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/display"},
+      "minItems": 1
+    },
+    "input_surfaces": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/input_surface"},
+      "minItems": 1
+    },
+    "indicators": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/indicator"}
+    },
+    "vendor_compatibility": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/vendor_compatibility"}
+    },
+    "policy_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "state", "question"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "state": {
+            "enum": ["UNDECIDED", "DECIDED", "DEFERRED"]
+          },
+          "question": {"type": "string"},
+          "decision": {"type": ["string", "null"]}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "role",
+        "native_width_px",
+        "native_height_px",
+        "refresh_hz",
+        "base_density_dpi",
+        "identity_strategy",
+        "android_display_id_policy",
+        "touch_association"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "role": {
+          "enum": ["PRIMARY", "SECONDARY_REAR", "SECONDARY_OTHER"]
+        },
+        "native_width_px": {"type": "integer", "minimum": 1},
+        "native_height_px": {"type": "integer", "minimum": 1},
+        "refresh_hz": {"type": "number", "exclusiveMinimum": 0},
+        "base_density_dpi": {"type": "integer", "minimum": 1},
+        "identity_strategy": {
+          "enum": [
+            "PRIMARY_DEFAULT_DISPLAY",
+            "DISCOVER_BY_PHYSICAL_PROPERTIES",
+            "DISCOVER_BY_DEVICE_PROFILE"
+          ]
+        },
+        "android_display_id_policy": {
+          "enum": ["DISCOVER", "FIXED"]
+        },
+        "android_display_id": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "touch_association": {
+          "enum": ["PRIMARY_TOUCH", "DYNAMIC_ASSOCIATION", "NONE", "UNKNOWN"]
+        },
+        "stock_can_host_tasks": {
+          "type": ["boolean", "null"]
+        },
+        "stock_security_class": {
+          "type": ["string", "null"]
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "input_surface": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "surface_type",
+        "surface_location",
+        "linux_name",
+        "normalization",
+        "capabilities",
+        "ownership"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "surface_type": {
+          "enum": [
+            "PHYSICAL_KEYBOARD",
+            "ABSOLUTE_TOUCH_SURFACE",
+            "RELATIVE_POINTER",
+            "PROGRAMMABLE_KEY",
+            "FINGERPRINT_GESTURE_HELPER",
+            "OTHER"
+          ]
+        },
+        "surface_location": {
+          "enum": [
+            "KEYBOARD_MATRIX",
+            "DEVICE_SIDE",
+            "FINGERPRINT_SENSOR",
+            "PRIMARY_DISPLAY",
+            "SECONDARY_DISPLAY",
+            "TOOLBELT",
+            "SEPARATE_TRACKPAD",
+            "OTHER"
+          ]
+        },
+        "linux_name": {"type": "string"},
+        "transport": {"type": ["string", "null"]},
+        "driver": {"type": ["string", "null"]},
+        "module": {"type": ["string", "null"]},
+        "normalization": {
+          "enum": [
+            "STANDARD_ANDROID_KEY_EVENT",
+            "RAW_ABS_MT",
+            "SABLE_PROGRAMMABLE_ACTION",
+            "OPTIONAL_GESTURE_ACTION",
+            "OTHER"
+          ]
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$"
+          }
+        },
+        "scan_code": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "stock_wake_behavior": {
+          "type": ["string", "null"]
+        },
+        "semantic_default": {
+          "type": ["string", "null"]
+        },
+        "ownership": {
+          "enum": [
+            "HARDWARE_REQUIRED",
+            "OPTIONAL_DEVICE_CAPABILITY",
+            "VENDOR_COMPATIBILITY_ONLY"
+          ]
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "indicator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "indicator_type",
+        "backend",
+        "ownership"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "indicator_type": {
+          "enum": ["KEYBOARD_BACKLIGHT", "STATUS_LED", "HAPTIC", "AUDIO", "OTHER"]
+        },
+        "backend": {"type": "string"},
+        "sysfs_path": {"type": ["string", "null"]},
+        "api_min": {"type": ["integer", "null"]},
+        "api_max": {"type": ["integer", "null"]},
+        "effective_min_nonzero": {"type": ["integer", "null"]},
+        "effective_max": {"type": ["integer", "null"]},
+        "ownership": {
+          "enum": ["KERNEL_BACKEND", "VENDOR_SERVICE", "SABLE_POLICY"]
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "vendor_compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "stock_value",
+        "sable_exposure"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "kind": {
+          "enum": [
+            "SYNTHETIC_ANDROID_KEY",
+            "FRAMEWORK_INTERCEPT",
+            "VENDOR_GESTURE",
+            "OTHER"
+          ]
+        },
+        "stock_value": {
+          "type": ["integer", "string"]
+        },
+        "sable_exposure": {
+          "enum": [
+            "DO_NOT_EXPOSE_AS_COMMON_SEMANTIC",
+            "OPTIONAL_COMPATIBILITY_LAYER",
+            "NORMALIZE_TO_COMMON_SEMANTIC"
+          ]
+        },
+        "producer": {"type": ["string", "null"]},
+        "consumers": {
+          "type": "array",
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}
