@@ -1213,6 +1213,16 @@ def inspect_repo_state(
     return current, states
 
 
+def canonical_scope_complete(
+    current: set[str],
+    expected_dirt: set[str],
+    states: dict[Path, tuple[str, str]],
+) -> bool:
+    return current == expected_dirt and all(
+        state == "CANONICAL" for state, _ in states.values()
+    )
+
+
 def apply_repo(
     root: Path,
     transforms: dict[Path, tuple[tuple[str, str], ...]],
@@ -1225,9 +1235,7 @@ def apply_repo(
         expected_dirt,
         label,
     )
-    if current == expected_dirt and all(
-        state == "CANONICAL" for state, _ in states.values()
-    ):
+    if canonical_scope_complete(current, expected_dirt, states):
         print(f"R9_{label}_PRESENTATION=ALREADY_APPLIED")
         return
 
@@ -1505,6 +1513,19 @@ def self_test() -> None:
     ) != "PARTIAL":
         raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_PARTIAL_UPGRADE")
     print("R9_PHONE_CONTACTS_SAME_FILE_UPGRADE_SELF_TEST=PASS")
+
+    full_scope = {" M example.java"}
+    partial_states = {Path("example.java"): ("PARTIAL", "canonical")}
+    canonical_states = {Path("example.java"): ("CANONICAL", "canonical")}
+    if canonical_scope_complete(full_scope, full_scope, partial_states):
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_FULL_SCOPE_PARTIAL_EARLY_RETURN"
+        )
+    if not canonical_scope_complete(full_scope, full_scope, canonical_states):
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_FULL_SCOPE_CANONICAL_DETECTION"
+        )
+    print("R9_PHONE_CONTACTS_FULL_SCOPE_PARTIAL_CONVERGENCE_SELF_TEST=PASS")
 
     if classify_text_state(
         "pinned",
