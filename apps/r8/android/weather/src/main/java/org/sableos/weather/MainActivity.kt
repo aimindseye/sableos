@@ -120,61 +120,61 @@ private fun WeatherApp() {
                         vertical = SableSpacing.Xl,
                     ),
         ) {
-        Text(
-            text = "weather",
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Text(
-            text = statusLine(state),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+            Text(
+                text = "weather",
+                style = MaterialTheme.typography.displayLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+            Text(
+                text = statusLine(state),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
-        Spacer(Modifier.height(SableSpacing.Xl))
+            Spacer(Modifier.height(SableSpacing.Xl))
 
-        val snapshot = state.snapshot
-        if (snapshot == null) {
-            WeatherNotice(
-                title =
-                    when (state.availability) {
-                        WeatherAvailability.Fetching -> "loading forecast"
-                        WeatherAvailability.Failed -> "forecast unavailable"
-                        else -> "weather ready"
+            val snapshot = state.snapshot
+            if (snapshot == null) {
+                WeatherNotice(
+                    title =
+                        when (state.availability) {
+                            WeatherAvailability.Fetching -> "loading forecast"
+                            WeatherAvailability.Failed -> "forecast unavailable"
+                            else -> "weather ready"
+                        },
+                    detail = state.message,
+                )
+            } else {
+                CurrentConditions(snapshot)
+                Spacer(Modifier.height(SableSpacing.Xl))
+                MetricRow(snapshot)
+                Spacer(Modifier.height(SableSpacing.Xl))
+                HourlySection(snapshot.hourly)
+                Spacer(Modifier.height(SableSpacing.Xl))
+                DailySection(snapshot.daily)
+            }
+
+            Spacer(Modifier.height(SableSpacing.Xl))
+            SectionHeader("locations")
+
+            DefaultWeatherLocations.forEach { location ->
+                LocationRow(
+                    location = location,
+                    selected = location == selectedLocation,
+                    onClick = {
+                        selectedLocation = location
                     },
-                detail = state.message,
+                )
+            }
+
+            Spacer(Modifier.height(SableSpacing.Xl))
+            Text(
+                text =
+                    "Open-Meteo · HTTPS · cached locally · manual city by default · " +
+                        "precise location is not required",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        } else {
-            CurrentConditions(snapshot)
-            Spacer(Modifier.height(SableSpacing.Xl))
-            MetricRow(snapshot)
-            Spacer(Modifier.height(SableSpacing.Xl))
-            HourlySection(snapshot.hourly)
-            Spacer(Modifier.height(SableSpacing.Xl))
-            DailySection(snapshot.daily)
-        }
-
-        Spacer(Modifier.height(SableSpacing.Xl))
-        SectionHeader("locations")
-
-        DefaultWeatherLocations.forEach { location ->
-            LocationRow(
-                location = location,
-                selected = location == selectedLocation,
-                onClick = {
-                    selectedLocation = location
-                },
-            )
-        }
-
-        Spacer(Modifier.height(SableSpacing.Xl))
-        Text(
-            text =
-                "Open-Meteo · HTTPS · cached locally · manual city by default · " +
-                    "precise location is not required",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         }
     }
 }
