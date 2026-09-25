@@ -342,7 +342,7 @@ class ConnectedNotificationHistoryStore(
 
     private companion object {
         const val DATABASE_NAME = "sable_connected_message_history.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val TABLE_HISTORY = "connected_message_history"
         const val COLUMN_ID = "id"
         const val COLUMN_PACKAGE_NAME = "package_name"
