@@ -57,7 +57,7 @@ internal fun ConnectedAppsScreen(
         onRefresh = onRefresh,
     ) {
         SableScreen {
-                SablePageHeader(
+            SablePageHeader(
                 title = "connected apps",
                 subtitle =
                     "Choose installed apps that may contribute notification-derived conversations.",

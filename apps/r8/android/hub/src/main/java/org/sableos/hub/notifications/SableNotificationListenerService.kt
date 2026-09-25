@@ -249,8 +249,7 @@ class SableNotificationListenerService : NotificationListenerService() {
     }
 
     @Suppress("DEPRECATION")
-    private fun messagingUser(notification: Notification): Person? =
-        notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
+    private fun messagingUser(notification: Notification): Person? = notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
 
     private fun samePerson(
         first: Person,
@@ -264,12 +263,19 @@ class SableNotificationListenerService : NotificationListenerService() {
         val secondName = second.name?.toString()?.trim()
 
         return when {
-            firstKey != null && secondKey != null -> firstKey == secondKey
-            firstUri != null && secondUri != null -> firstUri == secondUri
-            else ->
+            firstKey != null && secondKey != null -> {
+                firstKey == secondKey
+            }
+
+            firstUri != null && secondUri != null -> {
+                firstUri == secondUri
+            }
+
+            else -> {
                 !firstName.isNullOrEmpty() &&
                     !secondName.isNullOrEmpty() &&
                     firstName.equals(secondName, ignoreCase = true)
+            }
         }
     }
 

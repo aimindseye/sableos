@@ -131,9 +131,7 @@ object HubConnectedConversationReducer {
         )
     }
 
-    private fun deduplicateRecords(
-        records: List<ConnectedNotificationRecord>,
-    ): List<ConnectedNotificationRecord> {
+    private fun deduplicateRecords(records: List<ConnectedNotificationRecord>): List<ConnectedNotificationRecord> {
         val deduplicated = mutableListOf<ConnectedNotificationRecord>()
         records
             .sortedWith(
