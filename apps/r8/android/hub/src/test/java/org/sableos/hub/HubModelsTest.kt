@@ -129,6 +129,133 @@ class HubModelsTest {
     }
 
     @Test
+    fun connectedReducerCollapsesDuplicateRowsAcrossNotificationKeys() {
+        val key =
+            ConnectedAppKey(
+                packageName = "org.example.messaging",
+                userSerial = 10L,
+            )
+        val records =
+            listOf(
+                ConnectedNotificationRecord(
+                    id = "child:100",
+                    key = key,
+                    notificationKey = "child",
+                    conversationId = "alice",
+                    conversationTitle = "Alice",
+                    sourceLabel = "Example",
+                    senderLabel = "Alice",
+                    body = "hello",
+                    timestampMillis = 100L,
+                    incoming = true,
+                ),
+                ConnectedNotificationRecord(
+                    id = "replacement:100",
+                    key = key,
+                    notificationKey = "replacement",
+                    conversationId = "alice",
+                    conversationTitle = "Alice",
+                    sourceLabel = "Example",
+                    senderLabel = null,
+                    body = "hello",
+                    timestampMillis = 100L,
+                    incoming = true,
+                ),
+            )
+
+        val reduced = HubConnectedConversationReducer.reduce(records)
+
+        assertEquals(1, reduced.messages.size)
+        assertEquals("hello", reduced.messages.single().body)
+        assertEquals("Alice", reduced.messages.single().senderLabel)
+    }
+
+    @Test
+    fun connectedReducerCollapsesSourceEchoOfLocalReply() {
+        val key =
+            ConnectedAppKey(
+                packageName = "org.example.messaging",
+                userSerial = 10L,
+            )
+        val records =
+            listOf(
+                ConnectedNotificationRecord(
+                    id = CONNECTED_LOCAL_REPLY_PREFIX + "notification-1:1000:1",
+                    key = key,
+                    notificationKey = "notification-1",
+                    conversationId = "alice",
+                    conversationTitle = "Alice",
+                    sourceLabel = "Example",
+                    senderLabel = null,
+                    body = "reply",
+                    timestampMillis = 1_000L,
+                    incoming = false,
+                ),
+                ConnectedNotificationRecord(
+                    id = "provider-echo",
+                    key = key,
+                    notificationKey = "notification-2",
+                    conversationId = "alice",
+                    conversationTitle = "You",
+                    sourceLabel = "Example",
+                    senderLabel = null,
+                    body = "reply",
+                    timestampMillis = 1_010L,
+                    incoming = false,
+                ),
+            )
+
+        val reduced = HubConnectedConversationReducer.reduce(records)
+
+        assertEquals(1, reduced.messages.size)
+        assertEquals(true, reduced.messages.single().handoffOnly)
+        assertEquals("reply", reduced.messages.single().body)
+    }
+
+    @Test
+    fun connectedReducerKeepsIncomingIdentityWhenLatestMessageIsOutgoing() {
+        val key =
+            ConnectedAppKey(
+                packageName = "org.example.messaging",
+                userSerial = 10L,
+            )
+        val records =
+            listOf(
+                ConnectedNotificationRecord(
+                    id = "incoming",
+                    key = key,
+                    notificationKey = "notification-1",
+                    conversationId = "alice",
+                    conversationTitle = "Alice",
+                    sourceLabel = "Example",
+                    senderLabel = "Alice",
+                    body = "hello",
+                    timestampMillis = 100L,
+                    incoming = true,
+                ),
+                ConnectedNotificationRecord(
+                    id = "outgoing",
+                    key = key,
+                    notificationKey = "notification-2",
+                    conversationId = "alice",
+                    conversationTitle = "You",
+                    sourceLabel = "Example",
+                    senderLabel = null,
+                    body = "reply",
+                    timestampMillis = 200L,
+                    incoming = false,
+                ),
+            )
+
+        val reduced = HubConnectedConversationReducer.reduce(records)
+
+        val conversation = reduced.conversations.single()
+        assertEquals("Alice", conversation.displayName)
+        assertEquals("reply", conversation.lastBody)
+        assertEquals(200L, conversation.lastDateMillis)
+    }
+
+    @Test
     fun connectedReducerKeepsSourceBoundaryAndReplyCapability() {
         val key =
             ConnectedAppKey(
