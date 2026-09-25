@@ -1117,14 +1117,17 @@ def classify_text_state(
     pinned: str,
     canonical: str,
     label: str,
+    upgraded: str | None = None,
 ) -> str:
     if actual == pinned:
         return "PINNED"
     if actual == canonical:
         return "CANONICAL"
+    if upgraded == canonical:
+        return "PARTIAL"
     raise SystemExit(
         f"R9_{label}_CONTENT_STATE=FAIL "
-        "expected=PINNED_OR_CANONICAL"
+        "expected=PINNED_PARTIAL_OR_CANONICAL"
     )
 
 
@@ -1186,11 +1189,13 @@ def inspect_repo_state(
         pinned = head_text(root, rel)
         canonical = transform_text(pinned, replacements, rel.as_posix())
         actual = (root / rel).read_text(encoding="utf-8")
+        upgraded = transform_text(actual, replacements, rel.as_posix())
         state = classify_text_state(
             actual,
             pinned,
             canonical,
             label,
+            upgraded=upgraded,
         )
         marker = f" M {rel.as_posix()}"
         if state == "PINNED" and marker in current:
@@ -1198,10 +1203,10 @@ def inspect_repo_state(
                 f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
                 f"file={rel} state=PINNED status=DIRTY"
             )
-        if state == "CANONICAL" and marker not in current:
+        if state in {"PARTIAL", "CANONICAL"} and marker not in current:
             raise SystemExit(
                 f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
-                f"file={rel} state=CANONICAL status=CLEAN"
+                f"file={rel} state={state} status=CLEAN"
             )
         states[rel] = (state, canonical)
 
@@ -1234,7 +1239,7 @@ def apply_repo(
             )
 
     for rel, (state, canonical) in states.items():
-        if state == "PINNED":
+        if state != "CANONICAL":
             (root / rel).write_text(canonical, encoding="utf-8")
 
     final, final_states = inspect_repo_state(
@@ -1476,6 +1481,28 @@ def self_test() -> None:
             "R9_PHONE_CONTACTS_SELF_TEST=FAIL_NESTED_REPLACEMENT_STATE"
         )
     print("R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS")
+
+    partial_pinned = "alpha\nbeta\n"
+    partial_canonical = "alpha-new\nbeta-new\n"
+    partial_actual = "alpha-new\nbeta\n"
+    partial_replacements = (
+        ("alpha\n", "alpha-new\n"),
+        ("beta\n", "beta-new\n"),
+    )
+    partial_upgraded = transform_text(
+        partial_actual,
+        partial_replacements,
+        "SELF_TEST_PARTIAL",
+    )
+    if classify_text_state(
+        partial_actual,
+        partial_pinned,
+        partial_canonical,
+        "SELF_TEST_PARTIAL",
+        upgraded=partial_upgraded,
+    ) != "PARTIAL":
+        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_PARTIAL_UPGRADE")
+    print("R9_PHONE_CONTACTS_SAME_FILE_UPGRADE_SELF_TEST=PASS")
 
     if classify_text_state(
         "pinned",
