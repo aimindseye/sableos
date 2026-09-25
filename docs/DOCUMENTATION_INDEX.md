@@ -1,34 +1,57 @@
 # SableOS Documentation Index
 
-## Start here
+## Current authority
 
-For the current project state and active product direction:
+For the current project state and active product direction, start here:
 
-- `../CURRENT_STATUS.md` — current execution handoff, R8 implementation/build-prep priority, paused release work, and validated Panther state.
-- `R8_PIXEL_UI_PRODUCT_CLOSURE.md` — build-blocking final Pixel UI matrix covering R8-A through R8-E, SystemUI/Settings/Setup/Keyguard, Reader OCR, product composition, final Panther build/physical acceptance, and Titan 2 handoff.
-- `R8_SABLESTART_V4_SIGNING_INCIDENT_20260919.md` — R8 physical PackageManager failure, confirmed v4 `.idsig`/fs-verity/SELinux causal chain, source fix, CI/build gates, and requalification contract.
-- `R8_SABLESTART_HOME_RUNTIME_INCIDENT_20260920.md` — R8 physical HOME-role selection gap and SableStart early-window startup crash, lifecycle-safe system-bar fix, HOME priority contract, and cold-launch acceptance requirements.
-- `INFRA5_DEFERRED_TRUSTED_RUNNER.md` — decision to defer encrypted trusted-runner activation until release/security hardening while preserving the INFRA4 fail-closed gate.
-- `UI_UX_CONTRACT.md` — cross-surface SableOS design language, shared Compose primitives, branding rules, accessibility requirements, and UI refresh rollout order.
-- `R9_SABLESTART_LAUNCHER_DESIGN.md` — design-first SableStart expansion using pinned Niagara/Kvaesitso/Lawnchair/Olauncher/OpenMiniLaunch references, one-hand app navigation, Sable Rail, Search/Command, Sable Peek, Quickstep boundary, privacy rules, and the no-full-build-before-visual-review gate.
-- `R9_LAUNCHER3_FOUNDATION_MIGRATION.md` — phased migration from standalone SableStart HOME to the pinned Launcher3/Quickstep foundation, with compile-before-retirement sequencing and focused Panther qualification.
-- `R9_SABLESTART_VISUAL_REVIEW_20260920.md` — source-derived combined L1-L6 review sheet for Start dark/light, Sable Rail, Search/Command, Sable Peek, truthful local context and accessibility states; visual acceptance remains pending.
-- `R9_PANTHER_APPSTORE_THIRD_PARTY_FREEZE.md` — bounded final Panther closure for the pinned Apps/App Store surface, optional sandboxed Google Play, third-party Light/Dark/UI interoperability, Connected Apps physical evidence and the final return to frozen-reference status.
+- `../CURRENT_STATUS.md` — current execution authority: Panther R9 Hub V1 closure merged, final accepted source/target-files seal, frozen touch-first reference state, Titan-family keyboard-first next work.
+- `adr/0010-keyboard-first-sableos-design-v1.md` — accepted keyboard-first platform architecture and implementation workstreams.
 - `adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 product model: Priority / Messages / Email / People, Enabled / Available Connected Apps, truthful local reply handoff bubbles, bounded Sable Mail integration and keyboard-first semantics.
-- `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
-- `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
-- `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
-- `ROADMAP.md` — broader historical/platform/service roadmap.
-- `NON_PIXEL_DEVICE_ROADMAP.md` — Panther-first non-Pixel device ordering and Titan 2/Q27/Q25 roles.
+- `KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md` — active Titan-family keyboard-first execution plan bound to ADR-0010.
+- `TITAN2_KEYBOARD_FIRST_REFERENCE.md` — normative Titan 2 keyboard-first interaction contract plus pinned Pastiera, OpenMiniLaunch, TypeQ25 and Q25 Toolbox reference review and licensing boundary.
+- `KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md` — common Titan 2/Q27 Sable Tools direction inspired by BB10 power-user/device utilities, with pinned bb10tools revision, GPL boundary, safe capabilities and explicit non-goals.
+- `build/README.md` — canonical multi-device build/deploy/acceptance entry point.
+
+When an older concept note or historical validation record conflicts with an
+accepted ADR, `CURRENT_STATUS.md` or this index, the newer normative/current
+status document takes precedence.
+
+## Current milestone snapshot
+
+```text
+PRIVATE_MAIN_HEAD                         2624e1af
+R10_KEYBOARD_FIRST_DESIGN_V1              MERGED / PR #108
+R9_PANTHER_HUB_V1_CLOSURE                 MERGED / PR #110
+R9_PANTHER_ACCEPTED_SOURCE                edf62e5bb08372a1395841d6cc5d78d3148a7695
+R9_PANTHER_TARGET_FILES_SHA256            a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285
+R9_PANTHER_PHYSICAL_ACCEPTANCE            PASS_WITH_PRESERVED_PLAY_STATE
+PANTHER_ROLE                              FROZEN_TOUCH_FIRST_REFERENCE
+THEME_PROPAGATION                         DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_GATE
+CLEAN_BASELINE_APPSTORE                   NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
+
+NON_PIXEL_ASSURANCE_MODEL                 N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
+TITAN2_ROLE                               ACTIVE_KEYBOARD_FIRST_N0_TARGET
+TITAN2_ELITE_ROLE                         NEXT_INDEPENDENT_KEYBOARD_FIRST_TARGET
+Q27_ROLE                                  RESEARCH / FUTURE CANDIDATE
+
+PRODUCTION_KEYS_GENERATED                 NO
+SIGNING_AUTHORIZED                        NO
+OTA_GENERATION_AUTHORIZED                 NO
+PRODUCTION_SIGNING                        DEFERRED
+```
+
+Open follow-up issues are intentionally left open until the Titan 2 SableOS
+install path proves or supersedes them. This includes physical appearance/theme
+propagation, Reader appearance, large-library Media performance, duplicate
+visible Messages review, production icons/launch performance, first-run crash
+capture and All Apps permission summaries.
 
 ## Normative architecture / policy
-
-When an older concept note or historical validation record conflicts with an accepted ADR or normative document, the normative/ADR decision takes precedence.
 
 - `ARCHITECTURE.md` — platform layering, service boundaries, privilege placement, device separation, and N0/N1/N2 non-Pixel assurance classes.
 - `NON_PIXEL_MEDIATEK_ARCHITECTURE.md` — normative candidate-port architecture for MediaTek/non-Pixel devices, including prebuilt-kernel policy, BSP/VINTF/ABI-shim boundaries, firmware lifecycle, AVB, recovery and production-support classification.
 - `CORE_PRODUCT_MODEL.md` — Sable Start, Hub, People, Search, Security/Privacy, AOD, Agent/Voice and default-app/product composition model.
-- `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — concrete Metro-inspired Sable Flow implementation direction and social-service provider/capsule policy.
+- `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — Sable Flow / Sable Start / Sable Hub direction and provider/capsule policy.
 - `SECURITY_MODEL.md` — trust boundaries, IPC policy, SELinux/service-manager rules and privacy architecture.
 - `SECURITY_PRIVACY_ASSURANCE_STANDARD.md` — project-wide security/privacy assurance stages, controls and evidence expectations.
 - `HARDWARE_SECURITY_CAPABILITIES.md` — per-device security capability registry.
@@ -39,7 +62,6 @@ When an older concept note or historical validation record conflicts with an acc
 - `APPLICATION_SECURITY_PRIVACY_TRANSPARENCY.md` — application authority, component, tracker/library, storage/network and history transparency.
 - `ANDROID_VERSION_PORTABILITY.md` — stable Sable semantics across Android/device/compiler changes.
 - `INTERACTION_PROFILES.md` — common product semantics with touch-first and keyboard-first profiles, including input-surface, app-display-profile and notification-attention capabilities.
-- `KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md` — active Titan-family keyboard-first execution plan bound to ADR-0010.
 - `SECURITY_MAINTENANCE.md` — platform/kernel/vendor/browser/security-update provenance and release claims.
 
 Accepted ADRs include:
@@ -53,71 +75,42 @@ Accepted ADRs include:
 - `adr/0007-core-product-hub-aod-agent-and-aosp-boundary.md` — strategic Sable product surfaces over retained Android capability/enforcement.
 - `adr/0008-configurable-local-conversation-adapters.md` — provider-agnostic package/profile Connected Apps using Android notification/conversation/RemoteInput authority.
 - `adr/0009-separate-reader-and-text-reader-products.md` — separate publication Reader and plain-text/TTS/OCR Text Reader products.
-- `adr/0010-keyboard-first-sableos-design-v1.md` — normative keyboard-first platform architecture: input normalization/surfaces/policy, physical IME, SableStart command surface, focus, per-app display profiles, notification policy, Hub and non-Pixel security delta ledger.
-- `adr/0011-sable-hub-v1.md` — promotes the existing SableHub package into the common Priority / Messages / Email / People communication surface.
+- `adr/0010-keyboard-first-sableos-design-v1.md` — normative keyboard-first platform architecture.
+- `adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 communications surface.
 
 ## Product planning
 
-- `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — active product plan.
-- `CORE_PRODUCT_ROADMAP.md` — active M1-M6 / CP integration track.
-- `NON_PIXEL_DEVICE_ROADMAP.md` — current non-Pixel device strategy: Panther first, Titan 2 as preferred interim N0 GSI/UI lab, Q27 as future full-QWERTY candidate, Q25 as optional low-level MediaTek/kernel research target.
+- `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
+- `NON_PIXEL_DEVICE_ROADMAP.md` — non-Pixel device strategy and device roles.
 - `TITAN2_GSI_PLAN.md` — staged Titan 2 GSI/userspace development plan, stock-artifact qualification, UI/keyboard/5G work, assurance boundaries, and possible later N1 research.
-- `TITAN2_KEYBOARD_FIRST_REFERENCE.md` — normative Titan 2 keyboard-first interaction contract plus pinned Pastiera, OpenMiniLaunch, TypeQ25 and Q25 Toolbox reference review and licensing boundary.
-- `KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md` — common Titan 2/Q27 Sable Tools direction inspired by BB10 power-user/device utilities, with pinned bb10tools revision, GPL boundary, safe capabilities and explicit non-goals.
 - `Q25_PORT_PLAN.md` — optional source-available MediaTek/kernel/QWERTY research-port plan; not a required first non-Pixel purchase or Q27 precursor.
 - `S1_8_PLATFORM_TRANSITION.md` — historical bramble UI/toolchain closure and Panther transition.
 
 Current product progression:
 
 ```text
-validated Panther substrate
-    -> Sable Flow shared primitives
-    -> Sable Start M1
-    -> Phone / People / Messages foundation
-    -> Sable Hub V1 (Priority / Messages / Email / People)
-    -> configurable notification/conversation adapters + bounded first-party providers
-    -> broader native apps and polish
-    -> Titan 2 N0 GSI/userspace/UI portability lab when Panther is ready
+frozen Panther touch-first reference
+    -> keyboard-first SableOS design V1 merged
+    -> Titan 2 N0 read-only evidence / restore / keyboard / display / camera / radio qualification
+    -> first Titan 2 keyboard-first SableOS artifact + deployment path
+    -> close remaining open Panther/Titan shared polish issues where proven or superseded
+    -> Titan 2 Elite independent evidence and deployment sequence
+    -> common Sable Camera + Sable Keyboard/system input integration
     -> Q27 full-port evaluation when shipped hardware qualifies
-    -> release-candidate signing/OTA closure
-```
-
-## Current milestone snapshot
-
-```text
-PANTHER_D4                          CLOSED / PASS
-SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
-SABLEOS_CORE_PRODUCT_STAGE         R8_RUNTIME_CLOSURE + R9_LAUNCHER_DESIGN
-SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDING
-SABLE_START_STATUS                 IMPLEMENTED_NOT_PRODUCT_PROVEN
-SABLE_HUB_STATUS                   V1_SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
-NEXT_PRODUCT_MILESTONE             R9_HUB_V1_FINAL_PANTHER_CLOSURE
-
-NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER
-Q27_ROLE                            FUTURE_FULL_QWERTY_CANDIDATE_PENDING_QUALIFICATION
-Q25_ROLE                            OPTIONAL_MEDIATEK_KERNEL_DEVICE_RESEARCH
-
-R1_RELEASE_SIGNING_WORK            PAUSED_NON_BLOCKING
-INFRA5_TRUSTED_RUNNER              DEFERRED_NON_BLOCKING
-TRUSTED_SELF_HOSTED_RUNNER         DISABLED
-SOURCE_BUILD_STORAGE_ENCRYPTED     NO
-PRODUCTION_KEYS_GENERATED          NO
-KEY_GENERATION_AUTHORIZED          NO
-SIGNING_AUTHORIZED                 NO
-OTA_GENERATION_AUTHORIZED          NO
-SIGNING_HOST_SELECTION             DEFERRED
+    -> production signing / OTA closure after repeatable multi-device development qualification
 ```
 
 ## Panther / release evidence
 
-Key current Panther records:
+Key Panther records:
 
+- `R9_PANTHER_APPSTORE_THIRD_PARTY_FREEZE.md` — bounded final Panther compatibility closure, pinned AppStore, optional sandboxed Google Play and Connected Apps physical evidence.
+- `adr/0011-sable-hub-v1.md` — final Hub V1 communications product decision.
 - `PANTHER_D4_CLOSURE_20260908.md` — D4 final closure.
 - `PANTHER_D4_ROADMAP.md` — closed D4 roadmap and R1 handoff history.
 - `PANTHER_D4_B2_PHYSICAL_VALIDATION.md` — physical B2 validation evidence.
 - `PANTHER_D4_R2_SLOT_SUCCESS_PROOF.md` — slot-success proof.
-- `BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical current Panther build procedure.
+- `BUILD_PANTHER_GRAPHENE_2026081300.md` — canonical Panther build procedure history.
 
 R1 release-engineering records:
 
@@ -128,13 +121,14 @@ R1 release-engineering records:
 - `RELEASE_VALIDATION.md` — release validation policy and gates.
 - `NON_PIXEL_RELEASE_VALIDATION.md` — additional N0/N1/N2 gates for non-Pixel kernel/BSP/vendor/firmware provenance, ABI shims, 5G/IMS, AVB, recovery, physical variants and release claims.
 
-Production signing/OTA work is intentionally paused during current UI/feature development. Completed release identity and source-mutation evidence remains valid; no production private key has been generated.
-
-Trusted self-hosted runner activation is likewise deferred. Current CI remains GitHub-hosted; the unencrypted `ai-g732` Sable build volume is not accepted as a trusted release-runner environment. INFRA5 should be reopened with production signing/release hardening.
+Production signing/OTA work is intentionally paused during current UI/feature
+and multi-device development. Completed release identity and source-mutation
+evidence remains valid; no production private key has been generated.
 
 ## Frozen architecture / validation references
 
-Historical validation records remain evidence for the milestone they closed. They are not authority to revive superseded design assumptions.
+Historical validation records remain evidence for the milestone they closed.
+They are not authority to revive superseded design assumptions.
 
 Important frozen records:
 
@@ -161,7 +155,7 @@ Important frozen records:
 
 SableOS studies external systems for specific lessons rather than inheriting complete trust/product models.
 
-- Windows Phone / Metro — information-first touch interaction and live-tile inspiration; Sable Flow uses original Sable identity and implementation.
+- Windows Phone / Metro — information-first touch interaction and live-tile inspiration.
 - BlackBerry Hub / BB10 — people/communication organization and keyboard-first workflow inspiration.
 - OpenMiniLaunch / MinkLauncher — Apache-2.0 keyboard-first HOME type-to-command and active Conversations reference.
 - Commander — keyboard-first command palette, recents and notification-Hub interaction reference.
@@ -171,7 +165,9 @@ SableOS studies external systems for specific lessons rather than inheriting com
 - App Manager — package/application transparency reference for Secure Package Intelligence.
 - GrapheneOS — security-engineering reference and current audited Panther substrate source.
 - MarathonOS — mobile/QWERTY and recovery/device lessons.
-- Brax3/iodéOS — MediaTek device-port, prebuilt-kernel/BSP, VINTF/SELinux, firmware/OTA, ABI-shim and recovery reference; see `BRAX3_IODEOS_REFERENCE.md`.
+- Brax3/iodéOS — MediaTek device-port, prebuilt-kernel/BSP, VINTF/SELinux, firmware/OTA, ABI-shim and recovery reference.
 - Rust UI frameworks such as Slint, WaterUI, Project Robius/Makepad, Blinc, Vexo and Dioxus Native/Blitz — qualification candidates/references, not automatic dependencies.
 
-Third-party social provider capability must be verified against current official provider documentation at implementation time. Sable Hub must not rely on private application-database scraping or claim unsupported native/API integrations.
+Third-party social provider capability must be verified against current official
+provider documentation at implementation time. Sable Hub must not rely on private
+application-database scraping or claim unsupported native/API integrations.
