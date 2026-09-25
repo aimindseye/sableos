@@ -97,8 +97,9 @@ fun SableRefreshableSurface(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
         modifier = modifier.fillMaxSize(),
-        content = content,
-    )
+    ) {
+        content()
+    }
 }
 
 @Composable
