@@ -1225,7 +1225,9 @@ def apply_repo(
         expected_dirt,
         label,
     )
-    if current == expected_dirt:
+    if current == expected_dirt and all(
+        state == "CANONICAL" for state, _ in states.values()
+    ):
         print(f"R9_{label}_PRESENTATION=ALREADY_APPLIED")
         return
 
