@@ -95,6 +95,12 @@ CONTACTS_PARTIAL_SCOPE_MARKER = "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE="
 CONTACTS_PARTIAL_CONVERGENCE_MARKER = (
     "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS"
 )
+PHONE_BEHAVIORAL_SCOPE_MARKER = (
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
+)
+CONTACTS_BEHAVIORAL_SCOPE_MARKER = (
+    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
+)
 
 DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     DIALER_LIGHT: (
@@ -1324,10 +1330,7 @@ def verify_repo(
                 "R9_PHONE_BEHAVIORAL_SCOPE=FAIL "
                 f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print(
-            "R9_PHONE_BEHAVIORAL_SCOPE="
-            "PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
-        )
+        print(PHONE_BEHAVIORAL_SCOPE_MARKER)
     else:
         allowed_behavioral = {
             f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
@@ -1339,10 +1342,7 @@ def verify_repo(
                 "R9_CONTACTS_BEHAVIORAL_SCOPE=FAIL "
                 f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print(
-            "R9_CONTACTS_BEHAVIORAL_SCOPE="
-            "PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
-        )
+        print(CONTACTS_BEHAVIORAL_SCOPE_MARKER)
 
     print(f"R9_{label}_PRESENTATION=PASS")
 
