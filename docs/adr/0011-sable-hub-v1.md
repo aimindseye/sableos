@@ -162,6 +162,31 @@ Esc     -> back
 Exact reserved chords remain subject to the Sable Keyboard Policy Service and
 must not steal conventional app shortcuts.
 
+## Conversation normalization
+
+Connected-app notifications are accepted only when Android exposes a
+conversation signal: MessagingStyle messages, a reply action, a conversation
+shortcut/title, or the platform message category. Group-summary notifications
+are excluded from conversation history.
+
+MessagingStyle's declared user Person is used to distinguish source-app echoes
+of the user's own replies from incoming messages. The reducer also collapses
+semantic duplicates produced when a provider reposts the same message under a
+new notification key and collapses an immediate source echo against Hub's local
+"Handed off" reply record.
+
+Conversation identity comes from the newest incoming record when available so a
+source-app outgoing echo cannot rename a one-to-one thread to "You".
+
+Hub history is derived CE-only data rather than authoritative provider storage.
+The normalization change intentionally increments the derived-history schema and
+rebuilds that cache once, preventing pre-fix group summaries and duplicate test
+records from surviving the upgrade.
+
+The Messages root follows the newest conversation when a fresh item is inserted,
+and conversation views open with the newest message visible while preserving
+normal chronological reading order.
+
 ## Freshness and refresh contract
 
 Hub and Start use event-driven refresh as the primary path:
