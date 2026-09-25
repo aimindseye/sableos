@@ -249,7 +249,8 @@ class SableNotificationListenerService : NotificationListenerService() {
     }
 
     @Suppress("DEPRECATION")
-    private fun messagingUser(notification: Notification): Person? = notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
+    private fun messagingUser(notification: Notification): Person? =
+        notification.extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
 
     private fun samePerson(
         first: Person,
