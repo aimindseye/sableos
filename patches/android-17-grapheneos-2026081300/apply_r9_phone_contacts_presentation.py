@@ -38,6 +38,12 @@ DIALER_DIALPAD = Path(
 DIALER_CONTACTS_ADAPTER = Path(
     "java/com/android/dialer/contactsfragment/ContactsAdapter.java"
 )
+DIALER_CONTACT_VIEW_HOLDER = Path(
+    "java/com/android/dialer/contactsfragment/ContactViewHolder.java"
+)
+DIALER_CONTACT_ROW = Path(
+    "java/com/android/dialer/contactsfragment/res/layout/contact_row.xml"
+)
 DIALER_CONTACTS_FRAGMENT = Path(
     "java/com/android/dialer/contactsfragment/ContactsFragment.java"
 )
@@ -48,6 +54,9 @@ CONTACTS_TOOLBAR = Path("res/layout/people_activity_toolbar.xml")
 CONTACTS_STYLES = Path("res/values/styles.xml")
 CONTACTS_INDEXER_ADAPTER = Path(
     "src/com/android/contacts/list/IndexerListAdapter.java"
+)
+CONTACTS_DEFAULT_ADAPTER = Path(
+    "src/com/android/contacts/list/DefaultContactListAdapter.java"
 )
 CONTACTS_BROWSE_FRAGMENT = Path(
     "src/com/android/contacts/list/DefaultContactBrowseListFragment.java"
@@ -66,6 +75,8 @@ DIALER_DIRT = {
     f" M {DIALER_BOTTOM_NAV.as_posix()}",
     f" M {DIALER_DIALPAD.as_posix()}",
     f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+    f" M {DIALER_CONTACT_VIEW_HOLDER.as_posix()}",
+    f" M {DIALER_CONTACT_ROW.as_posix()}",
     f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
 }
 
@@ -75,6 +86,7 @@ CONTACTS_DIRT = {
     f" M {CONTACTS_TOOLBAR.as_posix()}",
     f" M {CONTACTS_STYLES.as_posix()}",
     f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
+    f" M {CONTACTS_DEFAULT_ADAPTER.as_posix()}",
     f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
 }
 
