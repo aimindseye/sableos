@@ -262,7 +262,9 @@ The sensitive app-owned providers accept `org.sableos.launcher` as the product
 launcher caller and reject unrelated callers. Launcher3 is not a live-snapshot
 consumer in the standalone-HOME architecture. Sable Start requests local photo access only for the Photos
 summary. Live refresh is provider/lifecycle driven rather than a permanent
-one-minute polling loop. Home must not expose message bodies or mail subjects.
+one-minute polling loop, with the shared Sable pull-to-refresh gesture as the
+explicit user fallback on Start and Live. Home must not expose message bodies
+or mail subjects.
 
 ## Daily-driver core application presentation
 
