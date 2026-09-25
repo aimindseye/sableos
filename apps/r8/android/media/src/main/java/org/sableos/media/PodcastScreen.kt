@@ -290,7 +290,6 @@ private fun PodcastStatusDeck(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-
         }
     }
 }
