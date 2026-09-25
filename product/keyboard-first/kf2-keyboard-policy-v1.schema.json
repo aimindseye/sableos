@@ -1,0 +1,441 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sableos.org/schemas/kf2-keyboard-policy-v1.schema.json",
+  "title": "SableOS KF2 Keyboard Policy V1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_id",
+    "device_profile_id",
+    "device_class",
+    "interaction_profile",
+    "routing_order",
+    "text_routing",
+    "semantic_actions",
+    "reserved_global_chords",
+    "programmable_keys",
+    "navigation_mode",
+    "keyboard_touch_policy",
+    "keyboard_backlight_policy",
+    "delegated_decisions"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "device_profile_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]+$"
+    },
+    "device_class": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]+$"
+    },
+    "interaction_profile": {
+      "const": "KEYBOARD_FIRST"
+    },
+    "routing_order": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "prefixItems": [
+        {
+          "const": "SECURITY_LOCKSCREEN"
+        },
+        {
+          "const": "RESERVED_SABLE_CHORD"
+        },
+        {
+          "const": "IME_TEXT_COMPOSITION"
+        },
+        {
+          "const": "APPLICATION_SHORTCUT"
+        },
+        {
+          "const": "HOME_TYPE_TO_COMMAND"
+        },
+        {
+          "const": "SABLE_NAVIGATION_MODE"
+        },
+        {
+          "const": "NORMAL_APPLICATION_EVENT"
+        }
+      ],
+      "items": false
+    },
+    "text_routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "editable_text_owner",
+        "physical_soft_ime_default",
+        "home_printable_key",
+        "home_first_key_preserved",
+        "conventional_app_shortcuts",
+        "alt_text_role",
+        "sym_text_role"
+      ],
+      "properties": {
+        "editable_text_owner": {
+          "const": "IME_TEXT_COMPOSITION"
+        },
+        "physical_soft_ime_default": {
+          "enum": [
+            "HIDDEN",
+            "VISIBLE",
+            "USER_CHOICE"
+          ]
+        },
+        "home_printable_key": {
+          "enum": [
+            "START_COMMAND",
+            "PASS_TO_APP",
+            "DISABLED"
+          ]
+        },
+        "home_first_key_preserved": {
+          "type": "boolean"
+        },
+        "conventional_app_shortcuts": {
+          "enum": [
+            "PRESERVE",
+            "RESERVE_ALL",
+            "APP_OPT_IN"
+          ]
+        },
+        "alt_text_role": {
+          "enum": [
+            "TEXT_COMPOSITION_FIRST",
+            "GLOBAL_SHORTCUT_FIRST",
+            "UNDECIDED"
+          ]
+        },
+        "sym_text_role": {
+          "enum": [
+            "TEXT_COMPOSITION_FIRST",
+            "GLOBAL_SHORTCUT_FIRST",
+            "UNDECIDED"
+          ]
+        }
+      }
+    },
+    "semantic_actions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/semantic_action"
+      }
+    },
+    "reserved_global_chords": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/reserved_chord"
+      }
+    },
+    "programmable_keys": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/programmable_key"
+      }
+    },
+    "navigation_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "default_state",
+        "activation_state",
+        "activation",
+        "scope"
+      ],
+      "properties": {
+        "default_state": {
+          "enum": [
+            "OFF",
+            "ON"
+          ]
+        },
+        "activation_state": {
+          "enum": [
+            "UNDECIDED",
+            "ASSIGNED",
+            "DISABLED"
+          ]
+        },
+        "activation": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "CONTEXTUAL",
+            "GLOBAL"
+          ]
+        }
+      }
+    },
+    "keyboard_touch_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_state",
+        "default_mode",
+        "allowed_modes",
+        "raw_surface_id"
+      ],
+      "properties": {
+        "decision_state": {
+          "enum": [
+            "UNDECIDED",
+            "DECIDED",
+            "DEFERRED"
+          ]
+        },
+        "default_mode": {
+          "enum": [
+            "UNDECIDED",
+            "POINTER",
+            "GESTURE",
+            "HYBRID",
+            "RAW_APP"
+          ]
+        },
+        "allowed_modes": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "POINTER",
+              "GESTURE",
+              "HYBRID",
+              "RAW_APP"
+            ]
+          }
+        },
+        "raw_surface_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "keyboard_backlight_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_state",
+        "indicator_id",
+        "ui_owns_sysfs",
+        "timeout_policy",
+        "wake_on_key",
+        "notification_attention"
+      ],
+      "properties": {
+        "decision_state": {
+          "enum": [
+            "UNDECIDED",
+            "DECIDED",
+            "DEFERRED"
+          ]
+        },
+        "indicator_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "ui_owns_sysfs": {
+          "type": "boolean"
+        },
+        "timeout_policy": {
+          "enum": [
+            "UNDECIDED",
+            "MANUAL_ONLY",
+            "FIXED_TIMEOUT",
+            "ADAPTIVE"
+          ]
+        },
+        "wake_on_key": {
+          "enum": [
+            "UNDECIDED",
+            "ENABLED",
+            "DISABLED"
+          ]
+        },
+        "notification_attention": {
+          "enum": [
+            "UNDECIDED",
+            "ENABLED",
+            "DISABLED"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "delegated_decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "owner",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "owner": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "semantic_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "category",
+        "lock_policy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "category": {
+          "enum": [
+            "NAVIGATION",
+            "ATTENTION",
+            "DEVICE",
+            "SECURITY",
+            "TEXT",
+            "OTHER"
+          ]
+        },
+        "lock_policy": {
+          "enum": [
+            "ALLOW_LOCKED",
+            "ALLOW_LOCKED_REDACTED",
+            "AUTH_REQUIRED",
+            "UNLOCKED_ONLY",
+            "DISABLED"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    },
+    "reserved_chord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "keys",
+        "semantic_action",
+        "lock_policy"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "keys": {
+          "type": "array",
+          "minItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$"
+          }
+        },
+        "semantic_action": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "lock_policy": {
+          "enum": [
+            "ALLOW_LOCKED",
+            "ALLOW_LOCKED_REDACTED",
+            "AUTH_REQUIRED",
+            "UNLOCKED_ONLY",
+            "DISABLED"
+          ]
+        }
+      }
+    },
+    "programmable_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface_id",
+        "assignment_state",
+        "semantic_action",
+        "lock_policy",
+        "wake_policy"
+      ],
+      "properties": {
+        "surface_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]+$"
+        },
+        "assignment_state": {
+          "enum": [
+            "UNDECIDED",
+            "ASSIGNED",
+            "DISABLED"
+          ]
+        },
+        "semantic_action": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "lock_policy": {
+          "enum": [
+            "ALLOW_LOCKED",
+            "ALLOW_LOCKED_REDACTED",
+            "AUTH_REQUIRED",
+            "UNLOCKED_ONLY",
+            "DISABLED"
+          ]
+        },
+        "wake_policy": {
+          "enum": [
+            "KEEP_HARDWARE_DEFAULT",
+            "REQUEST_PRIMARY",
+            "REQUEST_SECONDARY",
+            "NO_DISPLAY_WAKE",
+            "UNDECIDED"
+          ]
+        },
+        "notes": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
