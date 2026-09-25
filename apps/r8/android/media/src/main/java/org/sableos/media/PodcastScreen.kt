@@ -62,7 +62,6 @@ internal data class PodcastScreenState(
 internal data class PodcastScreenActions(
     val onFeedUrlChange: (String) -> Unit,
     val onAddFeed: () -> Unit,
-    val onRefresh: () -> Unit,
     val onRemoveSubscription: (PodcastSubscription) -> Unit,
     val onPlayEpisode: (PodcastEpisode) -> Unit,
     val onQueueEpisode: (PodcastEpisode) -> Unit,
@@ -85,7 +84,6 @@ internal fun PodcastScreen(
     val showMiniPlayer = state.showMiniPlayer
     val onFeedUrlChange = actions.onFeedUrlChange
     val onAddFeed = actions.onAddFeed
-    val onRefresh = actions.onRefresh
     val onRemoveSubscription = actions.onRemoveSubscription
     val onPlayEpisode = actions.onPlayEpisode
     val onQueueEpisode = actions.onQueueEpisode
@@ -120,8 +118,6 @@ internal fun PodcastScreen(
         PodcastStatusDeck(
             subscriptionCount = subscriptions.size,
             episodeCount = latest.size,
-            busy = busy,
-            onRefresh = onRefresh,
         )
 
         Row(
@@ -253,8 +249,6 @@ internal fun PodcastScreen(
 private fun PodcastStatusDeck(
     subscriptionCount: Int,
     episodeCount: Int,
-    busy: Boolean,
-    onRefresh: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -297,15 +291,6 @@ private fun PodcastStatusDeck(
                 )
             }
 
-            SableActionButton(
-                text = if (busy) "Refreshing…" else "Refresh",
-                primary = false,
-                onClick = {
-                    if (!busy && subscriptionCount > 0) {
-                        onRefresh()
-                    }
-                },
-            )
         }
     }
 }
