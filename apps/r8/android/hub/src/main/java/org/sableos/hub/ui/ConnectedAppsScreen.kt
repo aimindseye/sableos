@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import org.sableos.design.SableActionButton
 import org.sableos.design.SablePageHeader
 import org.sableos.design.SablePanel
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableScreen
 import org.sableos.design.SableSpacing
 import org.sableos.hub.ConnectedAppCandidate
@@ -40,6 +41,7 @@ internal fun ConnectedAppsScreen(
     policies: Map<ConnectedAppKey, ConnectedAppPolicy>,
     notificationAccessGranted: Boolean,
     loading: Boolean,
+    onRefresh: () -> Unit,
     onOpenNotificationAccess: () -> Unit,
     onPolicyChanged: (ConnectedAppPolicy) -> Unit,
 ) {
@@ -50,8 +52,12 @@ internal fun ConnectedAppsScreen(
         mutableStateOf("")
     }
 
-    SableScreen {
-        SablePageHeader(
+    SableRefreshableSurface(
+        isRefreshing = loading,
+        onRefresh = onRefresh,
+    ) {
+        SableScreen {
+            SablePageHeader(
             title = "connected apps",
             subtitle =
                 "Choose installed apps that may contribute notification-derived conversations.",
@@ -173,6 +179,7 @@ internal fun ConnectedAppsScreen(
                     }
                 }
             }
+        }
         }
     }
 }
