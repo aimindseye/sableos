@@ -32,12 +32,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -65,6 +63,7 @@ import kotlinx.coroutines.launch
 import org.sableos.design.AccentPreset
 import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableTheme
 import org.sableos.start.live.LiveAvailability
 import org.sableos.start.live.LiveDatum
@@ -128,7 +127,6 @@ private val SableTilePalette =
  * Command, Sable Peek and contextual local-data work in one production path.
  * Recents/Overview remain owned by Android Quickstep.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SableStartScreen(
     apps: List<AppEntry>,
@@ -264,10 +262,9 @@ fun SableStartScreen(
             ) {
                 when (destination) {
                     SableStartDestination.Start ->
-                        PullToRefreshBox(
+                        SableRefreshableSurface(
                             isRefreshing = liveRefreshing,
                             onRefresh = onRefreshLive,
-                            modifier = Modifier.fillMaxSize(),
                         ) {
                             StartScreen(
                                 snapshot = liveSnapshot,
@@ -325,10 +322,9 @@ fun SableStartScreen(
                         )
 
                     SableStartDestination.Live ->
-                        PullToRefreshBox(
+                        SableRefreshableSurface(
                             isRefreshing = liveRefreshing,
                             onRefresh = onRefreshLive,
-                            modifier = Modifier.fillMaxSize(),
                         ) {
                             LiveSurfaceScreen(
                                 snapshot = liveSnapshot,
