@@ -18,6 +18,9 @@
     "policy_decisions"
   ],
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "schema_version": {
       "const": 1
     },
@@ -30,7 +33,11 @@
       "pattern": "^[a-z0-9][a-z0-9-]+$"
     },
     "interaction_profile": {
-      "enum": ["TOUCH_FIRST", "KEYBOARD_FIRST", "HYBRID"]
+      "enum": [
+        "TOUCH_FIRST",
+        "KEYBOARD_FIRST",
+        "HYBRID"
+      ]
     },
     "support_level": {
       "enum": [
@@ -52,61 +59,102 @@
       ],
       "properties": {
         "state": {
-          "enum": ["PHYSICALLY_VERIFIED", "PARTIAL", "RESEARCH_ONLY"]
+          "enum": [
+            "PHYSICALLY_VERIFIED",
+            "PARTIAL",
+            "RESEARCH_ONLY"
+          ]
         },
         "baseline": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["stock_build", "android_release"],
+          "required": [
+            "stock_build",
+            "android_release"
+          ],
           "properties": {
-            "stock_build": {"type": "string"},
-            "android_release": {"type": "integer", "minimum": 1},
-            "security_patch": {"type": "string"}
+            "stock_build": {
+              "type": "string"
+            },
+            "android_release": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "security_patch": {
+              "type": "string"
+            }
           }
         },
-        "source_repository": {"type": "string"},
+        "source_repository": {
+          "type": "string"
+        },
         "source_documents": {
           "type": "array",
           "minItems": 1,
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         }
       }
     },
     "displays": {
       "type": "array",
-      "items": {"$ref": "#/$defs/display"},
+      "items": {
+        "$ref": "#/$defs/display"
+      },
       "minItems": 1
     },
     "input_surfaces": {
       "type": "array",
-      "items": {"$ref": "#/$defs/input_surface"},
+      "items": {
+        "$ref": "#/$defs/input_surface"
+      },
       "minItems": 1
     },
     "indicators": {
       "type": "array",
-      "items": {"$ref": "#/$defs/indicator"}
+      "items": {
+        "$ref": "#/$defs/indicator"
+      }
     },
     "vendor_compatibility": {
       "type": "array",
-      "items": {"$ref": "#/$defs/vendor_compatibility"}
+      "items": {
+        "$ref": "#/$defs/vendor_compatibility"
+      }
     },
     "policy_decisions": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "state", "question"],
+        "required": [
+          "id",
+          "state",
+          "question"
+        ],
         "properties": {
           "id": {
             "type": "string",
             "pattern": "^[A-Z0-9_]+$"
           },
           "state": {
-            "enum": ["UNDECIDED", "DECIDED", "DEFERRED"]
+            "enum": [
+              "UNDECIDED",
+              "DECIDED",
+              "DEFERRED"
+            ]
           },
-          "question": {"type": "string"},
-          "decision": {"type": ["string", "null"]}
+          "question": {
+            "type": "string"
+          },
+          "decision": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
         }
       }
     }
@@ -132,12 +180,28 @@
           "pattern": "^[a-z0-9][a-z0-9._-]+$"
         },
         "role": {
-          "enum": ["PRIMARY", "SECONDARY_REAR", "SECONDARY_OTHER"]
+          "enum": [
+            "PRIMARY",
+            "SECONDARY_REAR",
+            "SECONDARY_OTHER"
+          ]
         },
-        "native_width_px": {"type": "integer", "minimum": 1},
-        "native_height_px": {"type": "integer", "minimum": 1},
-        "refresh_hz": {"type": "number", "exclusiveMinimum": 0},
-        "base_density_dpi": {"type": "integer", "minimum": 1},
+        "native_width_px": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "native_height_px": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "refresh_hz": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "base_density_dpi": {
+          "type": "integer",
+          "minimum": 1
+        },
         "identity_strategy": {
           "enum": [
             "PRIMARY_DEFAULT_DISPLAY",
@@ -146,22 +210,38 @@
           ]
         },
         "android_display_id_policy": {
-          "enum": ["DISCOVER", "FIXED"]
+          "enum": [
+            "DISCOVER",
+            "FIXED"
+          ]
         },
         "android_display_id": {
           "type": "integer",
           "minimum": 0
         },
         "touch_association": {
-          "enum": ["PRIMARY_TOUCH", "DYNAMIC_ASSOCIATION", "NONE", "UNKNOWN"]
+          "enum": [
+            "PRIMARY_TOUCH",
+            "DYNAMIC_ASSOCIATION",
+            "NONE",
+            "UNKNOWN"
+          ]
         },
         "stock_can_host_tasks": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "stock_security_class": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
-        "notes": {"type": "string"}
+        "notes": {
+          "type": "string"
+        }
       }
     },
     "input_surface": {
@@ -203,10 +283,27 @@
             "OTHER"
           ]
         },
-        "linux_name": {"type": "string"},
-        "transport": {"type": ["string", "null"]},
-        "driver": {"type": ["string", "null"]},
-        "module": {"type": ["string", "null"]},
+        "linux_name": {
+          "type": "string"
+        },
+        "transport": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "driver": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "module": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "normalization": {
           "enum": [
             "STANDARD_ANDROID_KEY_EVENT",
@@ -226,14 +323,23 @@
           }
         },
         "scan_code": {
-          "type": ["integer", "null"],
+          "type": [
+            "integer",
+            "null"
+          ],
           "minimum": 0
         },
         "stock_wake_behavior": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "semantic_default": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "ownership": {
           "enum": [
@@ -242,7 +348,9 @@
             "VENDOR_COMPATIBILITY_ONLY"
           ]
         },
-        "notes": {"type": "string"}
+        "notes": {
+          "type": "string"
+        }
       }
     },
     "indicator": {
@@ -260,18 +368,57 @@
           "pattern": "^[a-z0-9][a-z0-9._-]+$"
         },
         "indicator_type": {
-          "enum": ["KEYBOARD_BACKLIGHT", "STATUS_LED", "HAPTIC", "AUDIO", "OTHER"]
+          "enum": [
+            "KEYBOARD_BACKLIGHT",
+            "STATUS_LED",
+            "HAPTIC",
+            "AUDIO",
+            "OTHER"
+          ]
         },
-        "backend": {"type": "string"},
-        "sysfs_path": {"type": ["string", "null"]},
-        "api_min": {"type": ["integer", "null"]},
-        "api_max": {"type": ["integer", "null"]},
-        "effective_min_nonzero": {"type": ["integer", "null"]},
-        "effective_max": {"type": ["integer", "null"]},
+        "backend": {
+          "type": "string"
+        },
+        "sysfs_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "api_min": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "api_max": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "effective_min_nonzero": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "effective_max": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
         "ownership": {
-          "enum": ["KERNEL_BACKEND", "VENDOR_SERVICE", "SABLE_POLICY"]
+          "enum": [
+            "KERNEL_BACKEND",
+            "VENDOR_SERVICE",
+            "SABLE_POLICY"
+          ]
         },
-        "notes": {"type": "string"}
+        "notes": {
+          "type": "string"
+        }
       }
     },
     "vendor_compatibility": {
@@ -297,7 +444,10 @@
           ]
         },
         "stock_value": {
-          "type": ["integer", "string"]
+          "type": [
+            "integer",
+            "string"
+          ]
         },
         "sable_exposure": {
           "enum": [
@@ -306,13 +456,22 @@
             "NORMALIZE_TO_COMMON_SEMANTIC"
           ]
         },
-        "producer": {"type": ["string", "null"]},
+        "producer": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "consumers": {
           "type": "array",
-          "items": {"type": "string"},
+          "items": {
+            "type": "string"
+          },
           "uniqueItems": true
         },
-        "notes": {"type": "string"}
+        "notes": {
+          "type": "string"
+        }
       }
     }
   }
