@@ -17,10 +17,20 @@ creating a Titan 2 build target or enabling device mutation.
 product/keyboard-first/kf1-device-profile-v1.schema.json
 product/keyboard-first/titan2.device-profile.json
 build/validate_kf1_device_profile.py
+build/kf1-validate.sh
 tests/kf1/test_device_profile.py
 ```
 
-Validate locally:
+Validate locally with the saved-report wrapper:
+
+```bash
+bash build/kf1-validate.sh
+```
+
+The full result is written under `out/kf1/<timestamp>/` with a unique report
+filename, and the terminal prints only the report path and PASS/FAIL status.
+
+The wrapper runs:
 
 ```bash
 python3 build/validate_kf1_device_profile.py \
