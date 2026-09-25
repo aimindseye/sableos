@@ -1,0 +1,141 @@
+{
+  "$schema": "./kf2-keyboard-policy-v1.schema.json",
+  "schema_version": 1,
+  "policy_id": "titan2-keyboard-policy-v1",
+  "device_profile_id": "titan2-stock-v01.00.13",
+  "device_class": "titan2",
+  "interaction_profile": "KEYBOARD_FIRST",
+  "routing_order": [
+    "SECURITY_LOCKSCREEN",
+    "RESERVED_SABLE_CHORD",
+    "IME_TEXT_COMPOSITION",
+    "APPLICATION_SHORTCUT",
+    "HOME_TYPE_TO_COMMAND",
+    "SABLE_NAVIGATION_MODE",
+    "NORMAL_APPLICATION_EVENT"
+  ],
+  "text_routing": {
+    "editable_text_owner": "IME_TEXT_COMPOSITION",
+    "physical_soft_ime_default": "HIDDEN",
+    "home_printable_key": "START_COMMAND",
+    "home_first_key_preserved": true,
+    "conventional_app_shortcuts": "PRESERVE",
+    "alt_text_role": "TEXT_COMPOSITION_FIRST",
+    "sym_text_role": "TEXT_COMPOSITION_FIRST"
+  },
+  "semantic_actions": [
+    {
+      "id": "OPEN_HOME",
+      "category": "NAVIGATION",
+      "lock_policy": "UNLOCKED_ONLY",
+      "notes": "Return to Sable HOME/Start."
+    },
+    {
+      "id": "OPEN_SEARCH_COMMAND",
+      "category": "NAVIGATION",
+      "lock_policy": "UNLOCKED_ONLY",
+      "notes": "Open SableStart Search/Command surface."
+    },
+    {
+      "id": "OPEN_RECENTS",
+      "category": "NAVIGATION",
+      "lock_policy": "UNLOCKED_ONLY",
+      "notes": "Open task/Recents surface."
+    },
+    {
+      "id": "OPEN_NOTIFICATIONS",
+      "category": "ATTENTION",
+      "lock_policy": "ALLOW_LOCKED_REDACTED",
+      "notes": "Lockscreen privacy remains authoritative."
+    },
+    {
+      "id": "OPEN_QUICK_SETTINGS",
+      "category": "ATTENTION",
+      "lock_policy": "ALLOW_LOCKED_REDACTED",
+      "notes": "Sensitive controls remain subject to platform lockscreen policy."
+    },
+    {
+      "id": "BACK",
+      "category": "NAVIGATION",
+      "lock_policy": "ALLOW_LOCKED",
+      "notes": "Security/lockscreen interception runs before ordinary navigation."
+    },
+    {
+      "id": "TOGGLE_KEYBOARD_BACKLIGHT",
+      "category": "DEVICE",
+      "lock_policy": "ALLOW_LOCKED",
+      "notes": "Actual brightness/timeout policy is separate and still undecided."
+    },
+    {
+      "id": "WAKE_PRIMARY",
+      "category": "DEVICE",
+      "lock_policy": "ALLOW_LOCKED",
+      "notes": "Waking a display does not grant unlock or reveal unredacted content."
+    },
+    {
+      "id": "WAKE_SECONDARY",
+      "category": "DEVICE",
+      "lock_policy": "ALLOW_LOCKED",
+      "notes": "Secondary-display content remains governed by its own privacy policy."
+    }
+  ],
+  "reserved_global_chords": [],
+  "programmable_keys": [
+    {
+      "surface_id": "func1",
+      "assignment_state": "UNDECIDED",
+      "semantic_action": null,
+      "lock_policy": "DISABLED",
+      "wake_policy": "UNDECIDED",
+      "notes": "KF1 proves a programmable/wake-capable stock path. Sable default action is intentionally not inherited from AGUI."
+    },
+    {
+      "surface_id": "func2",
+      "assignment_state": "UNDECIDED",
+      "semantic_action": null,
+      "lock_policy": "DISABLED",
+      "wake_policy": "UNDECIDED",
+      "notes": "KF1 proves the gpio_key-backed programmable input. Sable default action remains a product decision."
+    }
+  ],
+  "navigation_mode": {
+    "default_state": "OFF",
+    "activation_state": "UNDECIDED",
+    "activation": null,
+    "scope": "CONTEXTUAL"
+  },
+  "wake_policy": {
+    "decision_state": "UNDECIDED",
+    "ordinary_keyboard_primary_wake": "UNDECIDED",
+    "lockscreen_security_first": true,
+    "notes": "KF1 records stock ordinary-key no-wake behavior and hardware wake facts; KF2 must choose the Sable policy without weakening lockscreen interception."
+  },
+  "keyboard_touch_policy": {
+    "decision_state": "UNDECIDED",
+    "default_mode": "UNDECIDED",
+    "allowed_modes": [
+      "POINTER",
+      "GESTURE",
+      "HYBRID",
+      "RAW_APP"
+    ],
+    "raw_surface_id": "keyboard-touch-surface",
+    "notes": "touchPad is raw ABS_MT. Pointer/gesture semantics must be layered above KF1 normalization rather than assumed from stock Mouse Keys."
+  },
+  "keyboard_backlight_policy": {
+    "decision_state": "UNDECIDED",
+    "indicator_id": "keyboard-backlight",
+    "ui_owns_sysfs": false,
+    "timeout_policy": "UNDECIDED",
+    "wake_on_key": "UNDECIDED",
+    "notification_attention": "UNDECIDED",
+    "notes": "A bounded service/controller owns the backend. UI code must not write the keypad LED sysfs node directly."
+  },
+  "delegated_decisions": [
+    {
+      "id": "REAR_SUBSCREEN_PRODUCT_ROLE",
+      "owner": "KF7_SECONDARY_DISPLAY_POLICY",
+      "reason": "KF2 may route a semantic request toward the rear display, but task hosting, notification presentation, privacy and product role are display/attention policy."
+    }
+  ]
+}
