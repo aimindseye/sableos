@@ -205,7 +205,7 @@ require(
     'text = "Send reply"',
     '"Handed off · "',
     "onSendConnectedReply",
-    "PullToRefreshBox(",
+    "SableRefreshableSurface(",
     "isRefreshing = isRefreshing",
     "onRefresh = onRefresh",
     "reverseLayout = true",
@@ -261,7 +261,7 @@ require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     'title = "Sable Hub"',
     'labels = listOf("Sable Hub", "Hub", "Sable Messages", "Messages")',
-    "PullToRefreshBox(",
+    "SableRefreshableSurface(",
     "onRefresh = onRefreshLive",
     'ifBlank { "active" }',
 )
@@ -442,6 +442,6 @@ print("R9_HUB_NOTIFICATION_FILTER=PASS_CONVERSATION_ONLY")
 print("R9_HUB_CONNECTED_DEDUP=PASS_SEMANTIC_AND_LOCAL_REPLY")
 print("R9_HUB_LATEST_VISIBILITY=PASS_ROOT_AND_THREAD")
 print("R9_HUB_DERIVED_HISTORY_SCHEMA=PASS_V2_RESET")
-print("R9_HUB_PULL_TO_REFRESH=PASS")
-print("R9_SABLESTART_PULL_TO_REFRESH=PASS")
+print("R9_HUB_PULL_TO_REFRESH=PASS_SHARED_SABLE_SURFACE")
+print("R9_SABLESTART_PULL_TO_REFRESH=PASS_SHARED_SABLE_SURFACE")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
