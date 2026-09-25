@@ -58,6 +58,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableGlobalTheme
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableSpacing
 
 class MainActivity : ComponentActivity() {
@@ -121,12 +122,18 @@ private fun CalendarApp(
     var mode by remember { mutableStateOf(CalendarMode.Agenda) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var events by remember { mutableStateOf<List<CalendarEvent>>(emptyList()) }
+    var refreshing by remember { mutableStateOf(false) }
 
     LaunchedEffect(refreshGeneration, selectedDate) {
-        events =
-            withContext(Dispatchers.IO) {
-                repository.agenda(selectedDate)
-            }
+        refreshing = true
+        try {
+            events =
+                withContext(Dispatchers.IO) {
+                    repository.agenda(selectedDate)
+                }
+        } finally {
+            refreshing = false
+        }
     }
 
     Surface(
@@ -134,7 +141,11 @@ private fun CalendarApp(
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
-        Column(
+        SableRefreshableSurface(
+            isRefreshing = refreshing,
+            onRefresh = onRefresh,
+        ) {
+            Column(
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -204,6 +215,7 @@ private fun CalendarApp(
                         onRequestPermissions = onRequestPermissions,
                     )
                 }
+            }
             }
         }
     }
