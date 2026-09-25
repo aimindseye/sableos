@@ -16,6 +16,7 @@
     "reserved_global_chords",
     "programmable_keys",
     "navigation_mode",
+    "wake_policy",
     "keyboard_touch_policy",
     "keyboard_backlight_policy",
     "delegated_decisions"
@@ -305,6 +306,37 @@
           "reason": {
             "type": "string"
           }
+        }
+      }
+    },
+    "wake_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_state",
+        "ordinary_keyboard_primary_wake",
+        "lockscreen_security_first"
+      ],
+      "properties": {
+        "decision_state": {
+          "enum": [
+            "UNDECIDED",
+            "DECIDED",
+            "DEFERRED"
+          ]
+        },
+        "ordinary_keyboard_primary_wake": {
+          "enum": [
+            "UNDECIDED",
+            "ENABLED",
+            "DISABLED"
+          ]
+        },
+        "lockscreen_security_first": {
+          "const": true
+        },
+        "notes": {
+          "type": "string"
         }
       }
     }
