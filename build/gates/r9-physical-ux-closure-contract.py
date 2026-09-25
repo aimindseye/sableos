@@ -221,6 +221,11 @@ require(
     "SableRefreshableSurface(",
 )
 require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/ConnectedAppsScreen.kt",
+    "SableRefreshableSurface(",
+    "onRefresh = onRefresh",
+)
+require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "SableRefreshableSurface(",
 )
@@ -619,7 +624,7 @@ print("R9_HUB_CONNECTED_LIVE_STATUS=PASS_ACTIVE_CONVERSATION_AWARE")
 print("R9_HUB_CONVERSATION_FILTER=PASS_NO_GROUP_SUMMARY_OR_STATUS_NOISE")
 print("R9_HUB_CONVERSATION_DEDUP=PASS")
 print("R9_HUB_LATEST_MESSAGE_VISIBILITY=PASS_ROOT_AND_THREAD")
-print("R9_SABLE_REFRESH_GESTURES=PASS_SHARED_START_HUB_LIVE_WEATHER_CALENDAR_PODCASTS")
+print("R9_SABLE_REFRESH_GESTURES=PASS_SHARED_START_HUB_CONNECTED_APPS_LIVE_WEATHER_CALENDAR_PODCASTS")
 print("R9_SABLE_MANUAL_REFRESH_BUTTONS=PASS_ABSENT_FROM_SCREEN_REFRESH")
 print("R9_WEATHER_HOURLY_FRESHNESS=PASS_CURRENT_LOCAL_HOUR")
 print("R9_WEATHER_LIVE_SNAPSHOT_INVALIDATION=PASS")
