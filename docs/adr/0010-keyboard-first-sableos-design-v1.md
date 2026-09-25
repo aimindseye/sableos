@@ -408,6 +408,19 @@ behavior must be reproduced before becoming a Sable device-profile fact.
 
 ## Implementation workstreams
 
+### KF2 implementation binding
+
+The concrete V1 routing/security policy contract is defined in
+`docs/KF2_KEYBOARD_POLICY_SERVICE.md` and
+`product/keyboard-first/kf2-keyboard-policy-v1.schema.json`.
+
+KF2 references stable KF1 surface/indicator IDs and never raw scan codes,
+driver names or vendor Android key codes. The Titan 2 first policy draft binds
+the seven-stage routing precedence, lock-state policy model, IME/app-shortcut
+preservation and first-HOME-key behavior while leaving device product choices
+such as Func1/Func2 actions, wake policy and keyboard-touch default mode
+explicitly undecided.
+
 ### KF1 implementation binding
 
 The concrete V1 schema and first physically verified device profile are defined
