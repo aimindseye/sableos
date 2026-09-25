@@ -40,7 +40,7 @@ class LiveSurfaceRepository(
                     .format(Date(nowEpochMs)),
             weather = loading.copy(title = "Weather"),
             calendar = loading.copy(title = "Calendar"),
-            messages = loading.copy(title = "Messages"),
+            messages = loading.copy(title = "Hub"),
             mail = loading.copy(title = "Mail"),
             music = loading.copy(title = "Media"),
             photos = loading.copy(title = "Photos"),
@@ -72,7 +72,7 @@ class LiveSurfaceRepository(
                 messages =
                     providerSnapshot(
                         uri = MESSAGES_URI,
-                        fallbackTitle = "Messages",
+                        fallbackTitle = "Hub",
                     ),
                 mail =
                     providerSnapshot(

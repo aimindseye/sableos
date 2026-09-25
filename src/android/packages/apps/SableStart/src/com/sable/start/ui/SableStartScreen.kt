@@ -63,6 +63,7 @@ import kotlinx.coroutines.launch
 import org.sableos.design.AccentPreset
 import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableTheme
 import org.sableos.start.live.LiveAvailability
 import org.sableos.start.live.LiveDatum
@@ -146,6 +147,7 @@ fun SableStartScreen(
     onOpenSystemSettings: () -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
+    onRefreshLive: () -> Unit,
 ) {
     var destination by remember(initialScreen) {
         mutableStateOf(
@@ -170,9 +172,14 @@ fun SableStartScreen(
     var liveSnapshot by remember {
         mutableStateOf(liveSurfaceRepository.initialSnapshot())
     }
+    var liveRefreshing by remember {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(refreshGeneration, homeGeneration) {
+        liveRefreshing = true
         liveSnapshot = liveSurfaceRepository.snapshot()
+        liveRefreshing = false
     }
 
     val appByKey = apps.associateBy { it.stableKey() }
@@ -237,6 +244,9 @@ fun SableStartScreen(
 
     LaunchedEffect(destination) {
         onCanNavigateBackChanged(destination != SableStartDestination.Start)
+        if (destination == SableStartDestination.Live) {
+            onRefreshLive()
+        }
     }
 
     SableTheme(appearance = appearance) {
@@ -252,26 +262,31 @@ fun SableStartScreen(
             ) {
                 when (destination) {
                     SableStartDestination.Start ->
-                        StartScreen(
-                            snapshot = liveSnapshot,
-                            startApps = startApps,
-                            onLaunchApp = ::launchApp,
-                            onOpenPeek = { app ->
-                                openPeek(app, SableStartDestination.Start)
-                            },
-                            onAllApps = {
-                                destination = SableStartDestination.Apps
-                            },
-                            onSearch = {
-                                openSearch(SableStartDestination.Start)
-                            },
-                            onLive = {
-                                destination = SableStartDestination.Live
-                            },
-                            onAppearance = {
-                                destination = SableStartDestination.Appearance
-                            },
-                        )
+                        SableRefreshableSurface(
+                            isRefreshing = liveRefreshing,
+                            onRefresh = onRefreshLive,
+                        ) {
+                            StartScreen(
+                                snapshot = liveSnapshot,
+                                startApps = startApps,
+                                onLaunchApp = ::launchApp,
+                                onOpenPeek = { app ->
+                                    openPeek(app, SableStartDestination.Start)
+                                },
+                                onAllApps = {
+                                    destination = SableStartDestination.Apps
+                                },
+                                onSearch = {
+                                    openSearch(SableStartDestination.Start)
+                                },
+                                onLive = {
+                                    destination = SableStartDestination.Live
+                                },
+                                onAppearance = {
+                                    destination = SableStartDestination.Appearance
+                                },
+                            )
+                        }
 
                     SableStartDestination.Apps ->
                         AppsScreen(
@@ -307,12 +322,17 @@ fun SableStartScreen(
                         )
 
                     SableStartDestination.Live ->
-                        LiveSurfaceScreen(
-                            snapshot = liveSnapshot,
-                            apps = apps,
-                            onBack = ::navigateBack,
-                            onRequestPermissions = onRequestLivePermissions,
-                        )
+                        SableRefreshableSurface(
+                            isRefreshing = liveRefreshing,
+                            onRefresh = onRefreshLive,
+                        ) {
+                            LiveSurfaceScreen(
+                                snapshot = liveSnapshot,
+                                apps = apps,
+                                onBack = ::navigateBack,
+                                onRequestPermissions = onRequestLivePermissions,
+                            )
+                        }
 
                     SableStartDestination.Appearance ->
                         AppearanceScreen(
@@ -568,6 +588,7 @@ private fun MetroTile(
     val liveTile =
         tile.app.component.packageName in
             setOf("org.sableos.hub", "org.sableos.weather", "org.sableos.mail") ||
+            tile.app.label.equals("Sable Hub", ignoreCase = true) ||
             tile.app.label.equals("Sable Messages", ignoreCase = true) ||
             tile.app.label.equals("Sable Weather", ignoreCase = true) ||
             tile.app.label.equals("Sable Mail", ignoreCase = true)
@@ -791,9 +812,16 @@ private fun approvedMetric(
         }
 
         app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> {
-            val count = detail.substringBefore(" ").takeIf { it.all(Char::isDigit) } ?: "0"
-            count to "unread"
+            val count =
+                detail.substringBefore(" ")
+                    .takeIf { it.all(Char::isDigit) }
+                    ?: "0"
+            val label =
+                detail.substringAfter(" ", "active")
+                    .ifBlank { "active" }
+            count to label
         }
 
         app.component.packageName == "org.sableos.mail" ||
@@ -1398,7 +1426,9 @@ private fun approvedGlyphPackage(app: AppEntry): String? {
 
     return when {
         app.label.equals("Phone", ignoreCase = true) -> "com.android.dialer"
-        app.label.equals("Sable Messages", ignoreCase = true) ||
+        app.label.equals("Sable Hub", ignoreCase = true) ||
+            app.label.equals("Hub", ignoreCase = true) ||
+            app.label.equals("Sable Messages", ignoreCase = true) ||
             app.label.equals("Messages", ignoreCase = true) -> "org.sableos.hub"
         app.label.equals("Sable Mail", ignoreCase = true) ||
             app.label.equals("Mail", ignoreCase = true) -> "org.sableos.mail"
@@ -1831,7 +1861,7 @@ private fun LiveSurfaceScreen(
             )
             ApprovedLiveRow(
                 app = findLiveApp(apps, "org.sableos.hub"),
-                title = "Sable Messages",
+                title = "Sable Hub",
                 datum = snapshot.messages,
                 kind = "messages",
             )
@@ -2303,6 +2333,7 @@ private fun appMark(app: AppEntry): String =
 private fun appColor(app: AppEntry): Color =
     when {
         app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> SableGreen
         app.component.packageName == "org.sableos.mail" ||
             app.label.equals("Sable Mail", ignoreCase = true) -> SableSlate
@@ -2340,6 +2371,7 @@ private fun liveDatumForApp(
         app.component.packageName == "org.sableos.calendar" ||
             app.label.equals("Calendar", ignoreCase = true) -> snapshot.calendar
         app.component.packageName == "org.sableos.hub" ||
+            app.label.equals("Sable Hub", ignoreCase = true) ||
             app.label.equals("Sable Messages", ignoreCase = true) -> snapshot.messages
         app.component.packageName == "org.sableos.mail" ||
             app.label.equals("Sable Mail", ignoreCase = true) -> snapshot.mail
@@ -2369,7 +2401,7 @@ private val PREFERRED_START_APP_GROUPS =
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.hub"),
-            labels = listOf("Sable Messages", "Messages"),
+            labels = listOf("Sable Hub", "Hub", "Sable Messages", "Messages"),
         ),
         PreferredStartAppGroup(
             packageNames = setOf("org.sableos.weather"),

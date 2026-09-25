@@ -40,6 +40,9 @@ require(
     'android:name=".notifications.SableNotificationListenerService"',
     'android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"',
     'android.service.notification.NotificationListenerService',
+    'android:label="Sable Hub"',
+    'android:authorities="org.sableos.mail.snapshot"',
+    'android:name="org.sableos.mail"',
 )
 forbid(
     MANIFEST,
@@ -88,6 +91,11 @@ require(
     "MAX_HISTORY_RECORDS = 1200",
     "ConnectedNotificationRetention.shouldKeep",
     "normalized?.includeInMessages == true",
+    'CONNECTED_LOCAL_REPLY_PREFIX = "local-reply:"',
+    "DATABASE_VERSION = 2",
+    "fun appendLocalReply(",
+    "incoming = false",
+    "HubSnapshotProvider.SNAPSHOT_URI",
 )
 forbid(
     HISTORY,
@@ -131,8 +139,16 @@ require(
     "Dispatchers.Main.immediate",
     "notificationGenerations",
     "ConnectedReplyRegistry.register",
+    "ConnectedNotificationActivityRegistry.upsert(",
+    "Notification.FLAG_GROUP_SUMMARY",
+    "Notification.CATEGORY_MESSAGE",
+    "Notification.EXTRA_MESSAGING_PERSON",
+    "isConversationCandidate()",
+    "samePerson(",
+    "ConnectedNotificationActivityRegistry.remove(",
     "policies.cachedPolicySnapshot()",
     "history.merge(",
+    "HubSnapshotProvider.SNAPSHOT_URI",
 )
 forbid(
     LISTENER,
@@ -155,24 +171,65 @@ require(
 require(
     f"{HUB_KT}/ui/ConnectedAppsScreen.kt",
     'title = "connected apps"',
+    "ConnectedAppsPivot.Enabled",
+    "ConnectedAppsPivot.Available",
+    'label = { Text("Search installed apps") }',
     'label = "Allow quick reply"',
     'label = "Hide from SableLauncher"',
     "History retention:",
+    "SableRefreshableSurface(",
+    "onRefresh = onRefresh",
+)
+require(
+    f"{HUB_KT}/notifications/ConnectedNotificationActivityRegistry.kt",
+    "ConcurrentHashMap",
+    "activeConversationCount()",
+    "toSet()",
+)
+require(
+    f"{HUB_KT}/HubSnapshotProvider.kt",
+    "ConnectedNotificationActivityRegistry.activeConversationCount()",
+    '0 -> "0 active"',
+    '1 -> "1 active"',
 )
 require(
     f"{HUB_KT}/ui/HubScreen.kt",
-    "HubRoute.ConnectedReply",
+    "HubPivot.Priority",
+    "HubPivot.Messages",
+    "HubPivot.Email",
+    "HubPivot.People",
+    'title = "hub"',
     'text = "connected apps"',
     "HubConversationSource.ConnectedApp",
     "Content hidden by source app",
-    'text = "Open source app"',
+    'text = "Open app"',
+    'label = { Text("Reply") }',
+    'text = "Send reply"',
+    '"Handed off · "',
+    "onSendConnectedReply",
+    "SableRefreshableSurface(",
+    "isRefreshing = isRefreshing",
+    "onRefresh = onRefresh",
+    "reverseLayout = true",
+    "messages.asReversed()",
+    "newestConversation?.lastDateMillis",
+    "listState.scrollToItem(0)",
+)
+forbid(
+    f"{HUB_KT}/ui/HubScreen.kt",
+    "HubRoute.ConnectedReply",
+    "private fun ConnectedReplyView(",
 )
 require(
     f"{HUB_KT}/HubRepository.kt",
     "HubConnectedConversationReducer.reduce",
     "ConnectedReplyRegistry::canReply",
     "fun replyToConnected(",
+    "connectedHistory.appendLocalReply(",
     "fun openConnectedApp(",
+    "fun openSableMail(",
+    "private fun loadMailSnapshot(",
+    'content://org.sableos.mail.snapshot/current',
 )
 
 require(
@@ -182,6 +239,13 @@ require(
     "private fun ConnectedNotificationRecord.toHubMessage(",
     "private fun ConnectedNotificationRecord.toHubConversation(",
     "ConnectedConversationSlice",
+    "handoffOnly",
+    "CONNECTED_LOCAL_REPLY_PREFIX",
+    "deduplicateRecords(",
+    "LOCAL_REPLY_DEDUP_WINDOW_MILLIS",
+    "NOTIFICATION_DUPLICATE_WINDOW_MILLIS",
+    "identity = identity",
+    "data class HubMailSnapshot(",
 )
 
 require(
@@ -190,6 +254,20 @@ require(
     'content://org.sableos.hub.connected_apps/hidden',
     "HiddenAppKey(packageName, userSerial) !in hiddenApps",
 )
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/platform/LiveSurfaceRepository.kt",
+    'messages = loading.copy(title = "Hub")',
+    'fallbackTitle = "Hub"',
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    'title = "Sable Hub"',
+    'labels = listOf("Sable Hub", "Hub", "Sable Messages", "Messages")',
+    "SableRefreshableSurface(",
+    "onRefresh = onRefreshLive",
+    'ifBlank { "active" }',
+)
+
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/SableStartActivity.kt",
     "LauncherAppsRepository.HIDDEN_APPS_URI",
@@ -213,6 +291,11 @@ require(
 )
 
 require(
+    "patches/android-17-grapheneos-2026081300/r9_settings_cohesion/strings_sable_cohesion.xml",
+    '<string name="sable_messages_settings_title">Hub</string>',
+    "Connected apps, conversations, email and local privacy",
+)
+require(
     "patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py",
     "MESSAGES_BLOCK",
     'android:key="top_level_sable_messages"',
@@ -226,6 +309,26 @@ require(
     "NOTIFICATION_ONLY",
     "LAUNCH_ONLY",
 )
+require(
+    "apps/r8/mail/apply_sable_flavor.py",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
+)
+require(
+    "apps/r8/mail/verify_sable_mail.py",
+    '"org.sableos.hub"',
+    "SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY",
+)
+require(
+    "docs/adr/0011-sable-hub-v1.md",
+    "Priority | Messages | Email | People",
+    "Enabled | Available",
+    "Handed off",
+    "Hub must not read Sable Mail's private database",
+)
+
 require(
     "docs/R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md",
     "R9_MESSAGES_CONNECTED_APPS=PASS_CONFIGURABLE_PACKAGE_USER",
@@ -331,4 +434,16 @@ print("R9_MESSAGES_SOURCE_STYLE_PREFLIGHT=PASS_REQUIRED")
 print("R9_MESSAGES_COMPOSE_KTLINT_POLICY=PASS_MEDIA_ALIGNED")
 print("R9_MESSAGES_QUALITY_CONFIG=PASS_FAIL_CLOSED")
 print("R9_MESSAGES_QUALIFICATION_ORDER=PASS_SOURCE_STYLE_BEFORE_GRADLE")
+print("R9_HUB_PRODUCT_IDENTITY=PASS_SABLE_HUB")
+print("R9_HUB_PIVOTS=PASS_PRIORITY_MESSAGES_EMAIL_PEOPLE")
+print("R9_HUB_CONNECTED_APPS=PASS_ENABLED_AVAILABLE")
+print("R9_HUB_REPLY_HISTORY=PASS_TRUTHFUL_HANDOFF_ONLY")
+print("R9_HUB_MAIL_BOUNDARY=PASS_BOUNDED_SNAPSHOT")
+print("R9_HUB_LIVE_ACTIVITY=PASS_CONNECTED_NOTIFICATION_AWARE")
+print("R9_HUB_NOTIFICATION_FILTER=PASS_CONVERSATION_ONLY")
+print("R9_HUB_CONNECTED_DEDUP=PASS_SEMANTIC_AND_LOCAL_REPLY")
+print("R9_HUB_LATEST_VISIBILITY=PASS_ROOT_AND_THREAD")
+print("R9_HUB_DERIVED_HISTORY_SCHEMA=PASS_V2_RESET")
+print("R9_HUB_PULL_TO_REFRESH=PASS_SHARED_SABLE_SURFACE")
+print("R9_SABLESTART_PULL_TO_REFRESH=PASS_SHARED_SABLE_SURFACE")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")

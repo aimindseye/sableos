@@ -384,7 +384,9 @@ require(
 )
 
 # ---------------------------------------------------------------------------
-# Live snapshot privacy boundary moves from Launcher3 to SableLauncher.
+# Live snapshot privacy boundary moves away from Launcher3. General live
+# providers remain SableLauncher-only; Sable Mail deliberately admits the
+# bounded first-party SableHub caller for the Hub Email pivot.
 # ---------------------------------------------------------------------------
 require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
@@ -405,8 +407,10 @@ for provider in (
 require(
     "apps/r8/mail/apply_sable_flavor.py",
     "SableMailSnapshotProvider.kt",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
 )
 forbid(
     "apps/r8/mail/apply_sable_flavor.py",
@@ -414,9 +418,12 @@ forbid(
 )
 require(
     "apps/r8/mail/verify_sable_mail.py",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
     "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT",
+    "SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY",
 )
 forbid(
     "apps/r8/mail/verify_sable_mail.py",
@@ -485,15 +492,31 @@ require(
     "getListPositionForSection",
     "classify_text_state",
     "inspect_repo_state",
+    "canonical_scope_complete",
     "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS",
     "R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
     "R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS",
+    "R9_PHONE_CONTACTS_SAME_FILE_UPGRADE_SELF_TEST=PASS",
+    "R9_PHONE_CONTACTS_FULL_SCOPE_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
     "installSableAlphabetRail",
     "scrollToSableSection",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
     "R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX",
+    "CONTACTS_DEFAULT_ADAPTER = Path(",
+    "DIALER_CONTACT_VIEW_HOLDER = Path(",
+    "DIALER_CONTACT_ROW = Path(",
+    "ContactsContract.CommonDataKinds.Phone",
+    "Phone.IS_SUPER_PRIMARY",
+    "Phone.IS_PRIMARY",
+    "setSablePhoneNumbers",
+    "updatePhoneNumbers",
+    "contact_phone_number",
+    "setPhoneNumber(phoneNumber, null)",
+    "R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_PREFERRED_CONTACTSPROVIDER_NUMBER",
+    "R9_PHONE_CONTACTS_PHONE_QUERY=PASS_ONE_BACKGROUND_PROVIDER_QUERY_PER_SURFACE",
     "getPositionForHeader",
-    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY",
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE",
+    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
 )
 require(
@@ -594,6 +617,7 @@ print("R9_CAMERA_PRESENTATION_CONTRACT=PASS_EXPLICIT_DARK_UPSTREAM_BOUNDARY")
 print("R9_READER_APPEARANCE_CONTRACT=PASS_SABLEOS_GLOBAL")
 print("R9_READER_LIBRARY_CONTRACT=PASS_ACTUAL_BOOKS_CONTINUOUS")
 print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
+print("R9_PHONE_CONTACTS_PHONE_SUBTITLE_CONTRACT=PASS_PREFERRED_NUMBER")
 print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_LARGE_LIBRARY_ANR_CONTRACT=PASS")
 print("R9_SABLE_MESSAGES_NATIVE_SMS_PEOPLE=PASS")

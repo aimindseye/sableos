@@ -28,6 +28,8 @@ internal data class ConnectedNotificationEnvelope(
     val notificationTitle: String?,
     val notificationBody: String?,
     val conversationTitle: String?,
+    val category: String?,
+    val isGroupSummary: Boolean,
     val messages: List<ConnectedNotificationMessageSnapshot>,
     val replyCandidate: ConnectedNotificationReplyCandidate?,
     val allowQuickReply: Boolean,

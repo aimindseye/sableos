@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Apply/verify the approved Sable Phone + Contacts UX.
 
-The Dialer portion remains presentation-only. Contacts additionally receives a
-bounded right-edge alphabet rail backed by its existing SectionIndexer. No
-second contact index/database is introduced. ContactsProvider, accounts, sync,
-permissions and contact-data semantics remain untouched.
+Phone and Contacts keep their upstream ContactsProvider ownership. Both add a
+bounded read-only preferred-phone-number cache for list subtitles, while the
+existing alphabet rails continue to use upstream section indexes. No second
+contact index/database is introduced. Accounts, sync, permissions and
+contact-data semantics remain untouched.
 """
 
 from __future__ import annotations
@@ -38,6 +39,12 @@ DIALER_DIALPAD = Path(
 DIALER_CONTACTS_ADAPTER = Path(
     "java/com/android/dialer/contactsfragment/ContactsAdapter.java"
 )
+DIALER_CONTACT_VIEW_HOLDER = Path(
+    "java/com/android/dialer/contactsfragment/ContactViewHolder.java"
+)
+DIALER_CONTACT_ROW = Path(
+    "java/com/android/dialer/contactsfragment/res/layout/contact_row.xml"
+)
 DIALER_CONTACTS_FRAGMENT = Path(
     "java/com/android/dialer/contactsfragment/ContactsFragment.java"
 )
@@ -48,6 +55,9 @@ CONTACTS_TOOLBAR = Path("res/layout/people_activity_toolbar.xml")
 CONTACTS_STYLES = Path("res/values/styles.xml")
 CONTACTS_INDEXER_ADAPTER = Path(
     "src/com/android/contacts/list/IndexerListAdapter.java"
+)
+CONTACTS_DEFAULT_ADAPTER = Path(
+    "src/com/android/contacts/list/DefaultContactListAdapter.java"
 )
 CONTACTS_BROWSE_FRAGMENT = Path(
     "src/com/android/contacts/list/DefaultContactBrowseListFragment.java"
@@ -66,6 +76,8 @@ DIALER_DIRT = {
     f" M {DIALER_BOTTOM_NAV.as_posix()}",
     f" M {DIALER_DIALPAD.as_posix()}",
     f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+    f" M {DIALER_CONTACT_VIEW_HOLDER.as_posix()}",
+    f" M {DIALER_CONTACT_ROW.as_posix()}",
     f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
 }
 
@@ -75,12 +87,19 @@ CONTACTS_DIRT = {
     f" M {CONTACTS_TOOLBAR.as_posix()}",
     f" M {CONTACTS_STYLES.as_posix()}",
     f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
+    f" M {CONTACTS_DEFAULT_ADAPTER.as_posix()}",
     f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
 }
 
 CONTACTS_PARTIAL_SCOPE_MARKER = "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE="
 CONTACTS_PARTIAL_CONVERGENCE_MARKER = (
     "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS"
+)
+PHONE_BEHAVIORAL_SCOPE_MARKER = (
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
+)
+CONTACTS_BEHAVIORAL_SCOPE_MARKER = (
+    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
 )
 
 DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
@@ -205,8 +224,322 @@ DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
   }
 }''',
         ),
+        (
+            '''import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+''',
+            '''import android.support.v7.widget.RecyclerView;
+import android.util.LongSparseArray;
+import android.view.LayoutInflater;
+''',
+        ),
+        (
+            '''  // Cursor with list of contacts
+  private Cursor cursor;
+''',
+            '''  // Cursor with list of contacts
+  private Cursor cursor;
+  private LongSparseArray<String> phoneNumbers = new LongSparseArray<>();
+''',
+        ),
+        (
+            '''  void updateCursor(Cursor cursor) {
+    this.cursor = cursor;
+    headers = cursor.getExtras().getStringArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_TITLES);
+    counts = cursor.getExtras().getIntArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_COUNTS);
+    if (counts != null) {
+      int sum = 0;
+      for (int count : counts) {
+        sum += count;
+      }
+
+      if (sum != cursor.getCount()) {
+        LogUtil.e(
+            "ContactsAdapter", "Count sum (%d) != cursor count (%d).", sum, cursor.getCount());
+      }
+    }
+    notifyDataSetChanged();
+  }
+''',
+            '''  void updateCursor(Cursor cursor) {
+    this.cursor = cursor;
+    headers = cursor.getExtras().getStringArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_TITLES);
+    counts = cursor.getExtras().getIntArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_COUNTS);
+    if (counts != null) {
+      int sum = 0;
+      for (int count : counts) {
+        sum += count;
+      }
+
+      if (sum != cursor.getCount()) {
+        LogUtil.e(
+            "ContactsAdapter", "Count sum (%d) != cursor count (%d).", sum, cursor.getCount());
+      }
+    }
+    notifyDataSetChanged();
+  }
+
+  void updatePhoneNumbers(LongSparseArray<String> phoneNumbers) {
+    this.phoneNumbers = phoneNumbers == null ? new LongSparseArray<>() : phoneNumbers;
+    notifyDataSetChanged();
+  }
+''',
+        ),
+        (
+            '''    String name = getDisplayName(cursor);
+    String header = getHeaderString(position);
+    Uri contactUri = getContactUri(cursor);
+''',
+            '''    String name = getDisplayName(cursor);
+    String header = getHeaderString(position);
+    long contactId = getContactId(cursor);
+    String phoneNumber = phoneNumbers.get(contactId);
+    Uri contactUri = getContactUri(cursor);
+''',
+        ),
+        (
+            '''    contactViewHolder.bind(header, name, contactUri, getContactId(cursor), showHeader);
+''',
+            '''    contactViewHolder.bind(
+        header, name, phoneNumber, contactUri, contactId, showHeader);
+''',
+        ),
+    ),
+    DIALER_CONTACT_VIEW_HOLDER: (
+        (
+            '''  private final TextView header;
+  private final BidiTextView name;
+  private final QuickContactBadge photo;
+''',
+            '''  private final TextView header;
+  private final BidiTextView name;
+  private final BidiTextView phoneNumber;
+  private final QuickContactBadge photo;
+''',
+        ),
+        (
+            '''    header = itemView.findViewById(R.id.header);
+    name = itemView.findViewById(R.id.contact_name);
+    photo = itemView.findViewById(R.id.photo);
+''',
+            '''    header = itemView.findViewById(R.id.header);
+    name = itemView.findViewById(R.id.contact_name);
+    phoneNumber = itemView.findViewById(R.id.contact_phone_number);
+    photo = itemView.findViewById(R.id.photo);
+''',
+        ),
+        (
+            '''  public void bind(
+      String headerText, String displayName, Uri contactUri, long contactId, boolean showHeader) {
+''',
+            '''  public void bind(
+      String headerText,
+      String displayName,
+      String phoneNumberText,
+      Uri contactUri,
+      long contactId,
+      boolean showHeader) {
+''',
+        ),
+        (
+            '''    name.setText(displayName);
+    header.setText(headerText);
+''',
+            '''    name.setText(displayName);
+    phoneNumber.setText(phoneNumberText);
+    phoneNumber.setVisibility(TextUtils.isEmpty(phoneNumberText) ? View.GONE : View.VISIBLE);
+    header.setText(headerText);
+''',
+        ),
+    ),
+    DIALER_CONTACT_ROW: (
+        (
+            '''    <com.android.dialer.widget.BidiTextView
+        android:id="@+id/contact_name"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/text_padding_start"
+        android:paddingEnd="@dimen/text_padding_end"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:textSize="@dimen/text_size"
+        android:textColor="?android:attr/textColorPrimary"
+        android:fontFamily="sans-serif"/>
+''',
+            '''    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:paddingStart="@dimen/text_padding_start"
+        android:paddingEnd="@dimen/text_padding_end"
+        android:gravity="center_vertical">
+
+      <com.android.dialer.widget.BidiTextView
+          android:id="@+id/contact_name"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:maxLines="1"
+          android:ellipsize="end"
+          android:textSize="@dimen/text_size"
+          android:textColor="?android:attr/textColorPrimary"
+          android:fontFamily="sans-serif"/>
+
+      <com.android.dialer.widget.BidiTextView
+          android:id="@+id/contact_phone_number"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:maxLines="1"
+          android:ellipsize="end"
+          android:textSize="14sp"
+          android:textColor="?android:attr/textColorSecondary"
+          android:fontFamily="sans-serif"/>
+    </LinearLayout>
+''',
+        ),
     ),
     DIALER_CONTACTS_FRAGMENT: (
+        (
+            '''import android.content.Context;
+import android.content.Intent;
+import android.content.Loader;
+''',
+            '''import android.content.Context;
+import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.Loader;
+''',
+        ),
+        (
+            '''import android.net.Uri;
+import android.os.Bundle;
+import android.support.annotation.IntDef;
+''',
+            '''import android.net.Uri;
+import android.os.Bundle;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.support.annotation.IntDef;
+''',
+        ),
+        (
+            '''  private static final String EXTRA_HEADER = "extra_header";
+  private static final String EXTRA_HAS_PHONE_NUMBERS = "extra_has_phone_numbers";
+''',
+            '''  private static final String EXTRA_HEADER = "extra_header";
+  private static final String EXTRA_HAS_PHONE_NUMBERS = "extra_has_phone_numbers";
+  private static final int SABLE_PHONE_NUMBERS_LOADER_ID = 1;
+''',
+        ),
+        (
+            '''    if (getActivity() != null
+        && isAdded()
+        && PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      getLoaderManager().restartLoader(0, null, this);
+    }
+''',
+            '''    if (getActivity() != null
+        && isAdded()
+        && PermissionsUtil.hasContactsReadPermissions(getContext())) {
+      getLoaderManager().restartLoader(0, null, this);
+      getLoaderManager().restartLoader(SABLE_PHONE_NUMBERS_LOADER_ID, null, this);
+    }
+''',
+        ),
+        (
+            '''  public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+    ContactsCursorLoader cursorLoader = new ContactsCursorLoader(getContext(), hasPhoneNumbers);
+    cursorLoader.setQuery(query);
+    return cursorLoader;
+  }
+''',
+            '''  public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+    if (id == SABLE_PHONE_NUMBERS_LOADER_ID) {
+      return new CursorLoader(
+          getContext(),
+          Phone.CONTENT_URI,
+          new String[] {Phone.CONTACT_ID, Phone.NUMBER},
+          Phone.NUMBER + " IS NOT NULL",
+          null,
+          Phone.CONTACT_ID
+              + " ASC, "
+              + Phone.IS_SUPER_PRIMARY
+              + " DESC, "
+              + Phone.IS_PRIMARY
+              + " DESC, "
+              + Phone._ID
+              + " ASC");
+    }
+
+    ContactsCursorLoader cursorLoader = new ContactsCursorLoader(getContext(), hasPhoneNumbers);
+    cursorLoader.setQuery(query);
+    return cursorLoader;
+  }
+''',
+        ),
+        (
+            '''  public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+    LogUtil.enterBlock("ContactsFragment.onLoadFinished");
+''',
+            '''  public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+    LogUtil.enterBlock("ContactsFragment.onLoadFinished");
+    if (loader.getId() == SABLE_PHONE_NUMBERS_LOADER_ID) {
+      updateSablePhoneNumbers(cursor);
+      return;
+    }
+''',
+        ),
+        (
+            '''  @Override
+  public void onLoaderReset(Loader<Cursor> loader) {
+    recyclerView.setAdapter(null);
+    recyclerView.setOnScrollChangeListener(null);
+    adapter = null;
+  }
+''',
+            '''  private void updateSablePhoneNumbers(Cursor cursor) {
+    LongSparseArray<String> phoneNumbers = new LongSparseArray<>();
+    if (cursor != null) {
+      int contactIdIndex = cursor.getColumnIndexOrThrow(Phone.CONTACT_ID);
+      int numberIndex = cursor.getColumnIndexOrThrow(Phone.NUMBER);
+      while (cursor.moveToNext()) {
+        long contactId = cursor.getLong(contactIdIndex);
+        String number = cursor.getString(numberIndex);
+        if (phoneNumbers.indexOfKey(contactId) < 0 && !TextUtils.isEmpty(number)) {
+          phoneNumbers.put(contactId, number);
+        }
+      }
+    }
+    if (adapter != null) {
+      adapter.updatePhoneNumbers(phoneNumbers);
+    }
+  }
+
+  @Override
+  public void onLoaderReset(Loader<Cursor> loader) {
+    if (loader.getId() == SABLE_PHONE_NUMBERS_LOADER_ID) {
+      if (adapter != null) {
+        adapter.updatePhoneNumbers(new LongSparseArray<>());
+      }
+      return;
+    }
+    recyclerView.setAdapter(null);
+    recyclerView.setOnScrollChangeListener(null);
+    adapter = null;
+  }
+''',
+        ),
+        (
+            '''  private void loadContacts() {
+    getLoaderManager().initLoader(0, null, this);
+    recyclerView.setVisibility(View.VISIBLE);
+''',
+            '''  private void loadContacts() {
+    getLoaderManager().initLoader(0, null, this);
+    getLoaderManager().initLoader(SABLE_PHONE_NUMBERS_LOADER_ID, null, this);
+    recyclerView.setVisibility(View.VISIBLE);
+''',
+        ),
         (
             '''import android.view.LayoutInflater;
 import android.view.View;
@@ -224,6 +557,16 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+''',
+        ),
+        (
+            '''import android.support.v7.widget.RecyclerView.State;
+import android.view.Gravity;
+''',
+            '''import android.support.v7.widget.RecyclerView.State;
+import android.text.TextUtils;
+import android.util.LongSparseArray;
+import android.view.Gravity;
 ''',
         ),
         (
@@ -459,7 +802,168 @@ CONTACTS_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
 ''',
         ),
     ),
+    CONTACTS_DEFAULT_ADAPTER: (
+        (
+            '''import android.text.TextUtils;
+import android.view.View;
+''',
+            '''import android.text.TextUtils;
+import android.util.LongSparseArray;
+import android.view.View;
+''',
+        ),
+        (
+            '''    public static final char SNIPPET_START_MATCH = '[';
+    public static final char SNIPPET_END_MATCH = ']';
+
+
+    public DefaultContactListAdapter(Context context) {
+''',
+            '''    public static final char SNIPPET_START_MATCH = '[';
+    public static final char SNIPPET_END_MATCH = ']';
+
+    private LongSparseArray<String> mSablePhoneNumbers = new LongSparseArray<>();
+
+    public DefaultContactListAdapter(Context context) {
+''',
+        ),
+        (
+            '''    public DefaultContactListAdapter(Context context) {
+        super(context);
+    }
+
+    @Override
+    public void configureLoader(CursorLoader loader, long directoryId) {
+''',
+            '''    public DefaultContactListAdapter(Context context) {
+        super(context);
+    }
+
+    void setSablePhoneNumbers(LongSparseArray<String> phoneNumbers) {
+        mSablePhoneNumbers =
+                phoneNumbers == null ? new LongSparseArray<String>() : phoneNumbers;
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public void configureLoader(CursorLoader loader, long directoryId) {
+''',
+        ),
+        (
+            '''        bindNameAndViewId(view, cursor);
+        bindPresenceAndStatusMessage(view, cursor);
+''',
+            '''        bindNameAndViewId(view, cursor);
+        final long directoryId =
+                ((DirectoryPartition) getPartition(partition)).getDirectoryId();
+        final String phoneNumber =
+                directoryId == Directory.DEFAULT || directoryId == Directory.LOCAL_INVISIBLE
+                        ? mSablePhoneNumbers.get(cursor.getLong(ContactQuery.CONTACT_ID))
+                        : null;
+        view.setPhoneNumber(phoneNumber, null);
+        bindPresenceAndStatusMessage(view, cursor);
+''',
+        ),
+    ),
     CONTACTS_BROWSE_FRAGMENT: (
+        (
+            '''import android.provider.ContactsContract;
+import android.provider.ContactsContract.Directory;
+import android.text.TextUtils;
+''',
+            '''import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Directory;
+import android.text.TextUtils;
+''',
+        ),
+        (
+            '''import android.text.TextUtils;
+import android.util.Log;
+import android.view.Gravity;
+''',
+            '''import android.text.TextUtils;
+import android.util.Log;
+import android.util.LongSparseArray;
+import android.view.Gravity;
+''',
+        ),
+        (
+            '''    private static final int ACTIVITY_REQUEST_CODE_SHARE = 0;
+
+    private View mSearchHeaderView;
+''',
+            '''    private static final int ACTIVITY_REQUEST_CODE_SHARE = 0;
+    private static final int SABLE_PHONE_NUMBERS_LOADER_ID = -2;
+
+    private View mSearchHeaderView;
+''',
+        ),
+        (
+            '''    public void onResume() {
+        super.onResume();
+        configureFragment();
+''',
+            '''    public void onResume() {
+        super.onResume();
+        configureFragment();
+        if (getContext().checkSelfPermission(android.Manifest.permission.READ_CONTACTS)
+                == PackageManager.PERMISSION_GRANTED) {
+            getLoaderManager().restartLoader(SABLE_PHONE_NUMBERS_LOADER_ID, null, this);
+        }
+''',
+        ),
+        (
+            '''    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (loader.getId() == Directory.DEFAULT) {
+''',
+            '''    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        if (id == SABLE_PHONE_NUMBERS_LOADER_ID) {
+            return new CursorLoader(
+                    getContext(),
+                    Phone.CONTENT_URI,
+                    new String[] {Phone.CONTACT_ID, Phone.NUMBER},
+                    Phone.NUMBER + " IS NOT NULL",
+                    null,
+                    Phone.CONTACT_ID
+                            + " ASC, "
+                            + Phone.IS_SUPER_PRIMARY
+                            + " DESC, "
+                            + Phone.IS_PRIMARY
+                            + " DESC, "
+                            + Phone._ID
+                            + " ASC");
+        }
+        return super.onCreateLoader(id, args);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (loader.getId() == SABLE_PHONE_NUMBERS_LOADER_ID) {
+            final LongSparseArray<String> phoneNumbers = new LongSparseArray<>();
+            if (data != null) {
+                final int contactIdIndex = data.getColumnIndexOrThrow(Phone.CONTACT_ID);
+                final int numberIndex = data.getColumnIndexOrThrow(Phone.NUMBER);
+                while (data.moveToNext()) {
+                    final long contactId = data.getLong(contactIdIndex);
+                    final String number = data.getString(numberIndex);
+                    if (phoneNumbers.indexOfKey(contactId) < 0 && !TextUtils.isEmpty(number)) {
+                        phoneNumbers.put(contactId, number);
+                    }
+                }
+            }
+            final ContactListAdapter adapter = getAdapter();
+            if (adapter instanceof DefaultContactListAdapter) {
+                ((DefaultContactListAdapter) adapter).setSablePhoneNumbers(phoneNumbers);
+            }
+            return;
+        }
+
+        if (loader.getId() == Directory.DEFAULT) {
+''',
+        ),
         (
             '''import android.widget.ImageView;
 import android.widget.LinearLayout.LayoutParams;
@@ -619,14 +1123,17 @@ def classify_text_state(
     pinned: str,
     canonical: str,
     label: str,
+    upgraded: str | None = None,
 ) -> str:
     if actual == pinned:
         return "PINNED"
     if actual == canonical:
         return "CANONICAL"
+    if upgraded == canonical:
+        return "PARTIAL"
     raise SystemExit(
         f"R9_{label}_CONTENT_STATE=FAIL "
-        "expected=PINNED_OR_CANONICAL"
+        "expected=PINNED_PARTIAL_OR_CANONICAL"
     )
 
 
@@ -688,11 +1195,13 @@ def inspect_repo_state(
         pinned = head_text(root, rel)
         canonical = transform_text(pinned, replacements, rel.as_posix())
         actual = (root / rel).read_text(encoding="utf-8")
+        upgraded = transform_text(actual, replacements, rel.as_posix())
         state = classify_text_state(
             actual,
             pinned,
             canonical,
             label,
+            upgraded=upgraded,
         )
         marker = f" M {rel.as_posix()}"
         if state == "PINNED" and marker in current:
@@ -700,14 +1209,24 @@ def inspect_repo_state(
                 f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
                 f"file={rel} state=PINNED status=DIRTY"
             )
-        if state == "CANONICAL" and marker not in current:
+        if state in {"PARTIAL", "CANONICAL"} and marker not in current:
             raise SystemExit(
                 f"R9_{label}_STATUS_CONTENT_MISMATCH=FAIL "
-                f"file={rel} state=CANONICAL status=CLEAN"
+                f"file={rel} state={state} status=CLEAN"
             )
         states[rel] = (state, canonical)
 
     return current, states
+
+
+def canonical_scope_complete(
+    current: set[str],
+    expected_dirt: set[str],
+    states: dict[Path, tuple[str, str]],
+) -> bool:
+    return current == expected_dirt and all(
+        state == "CANONICAL" for state, _ in states.values()
+    )
 
 
 def apply_repo(
@@ -722,7 +1241,7 @@ def apply_repo(
         expected_dirt,
         label,
     )
-    if current == expected_dirt:
+    if canonical_scope_complete(current, expected_dirt, states):
         print(f"R9_{label}_PRESENTATION=ALREADY_APPLIED")
         return
 
@@ -736,7 +1255,7 @@ def apply_repo(
             )
 
     for rel, (state, canonical) in states.items():
-        if state == "PINNED":
+        if state != "CANONICAL":
             (root / rel).write_text(canonical, encoding="utf-8")
 
     final, final_states = inspect_repo_state(
@@ -803,6 +1322,7 @@ def verify_repo(
     if label == "PHONE":
         allowed_behavioral = {
             f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+            f" M {DIALER_CONTACT_VIEW_HOLDER.as_posix()}",
             f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
         }
         if behavioral != allowed_behavioral:
@@ -810,10 +1330,11 @@ def verify_repo(
                 "R9_PHONE_BEHAVIORAL_SCOPE=FAIL "
                 f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY")
+        print(PHONE_BEHAVIORAL_SCOPE_MARKER)
     else:
         allowed_behavioral = {
             f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
+            f" M {CONTACTS_DEFAULT_ADAPTER.as_posix()}",
             f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
         }
         if behavioral != allowed_behavioral:
@@ -821,7 +1342,7 @@ def verify_repo(
                 "R9_CONTACTS_BEHAVIORAL_SCOPE=FAIL "
                 f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print("R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY")
+        print(CONTACTS_BEHAVIORAL_SCOPE_MARKER)
 
     print(f"R9_{label}_PRESENTATION=PASS")
 
@@ -915,6 +1436,8 @@ def verify(source: Path) -> None:
     print("R9_PHONE_CONTACTS_PRESENTATION=PASS")
     print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER")
+    print("R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_PREFERRED_CONTACTSPROVIDER_NUMBER")
+    print("R9_PHONE_CONTACTS_PHONE_QUERY=PASS_ONE_BACKGROUND_PROVIDER_QUERY_PER_SURFACE")
     print("R9_CONTACTS_DATA_MODEL_MUTATION=NONE")
 
 
@@ -969,6 +1492,41 @@ def self_test() -> None:
         )
     print("R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS")
 
+    partial_pinned = "alpha\nbeta\n"
+    partial_canonical = "alpha-new\nbeta-new\n"
+    partial_actual = "alpha-new\nbeta\n"
+    partial_replacements = (
+        ("alpha\n", "alpha-new\n"),
+        ("beta\n", "beta-new\n"),
+    )
+    partial_upgraded = transform_text(
+        partial_actual,
+        partial_replacements,
+        "SELF_TEST_PARTIAL",
+    )
+    if classify_text_state(
+        partial_actual,
+        partial_pinned,
+        partial_canonical,
+        "SELF_TEST_PARTIAL",
+        upgraded=partial_upgraded,
+    ) != "PARTIAL":
+        raise SystemExit("R9_PHONE_CONTACTS_SELF_TEST=FAIL_PARTIAL_UPGRADE")
+    print("R9_PHONE_CONTACTS_SAME_FILE_UPGRADE_SELF_TEST=PASS")
+
+    full_scope = {" M example.java"}
+    partial_states = {Path("example.java"): ("PARTIAL", "canonical")}
+    canonical_states = {Path("example.java"): ("CANONICAL", "canonical")}
+    if canonical_scope_complete(full_scope, full_scope, partial_states):
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_FULL_SCOPE_PARTIAL_EARLY_RETURN"
+        )
+    if not canonical_scope_complete(full_scope, full_scope, canonical_states):
+        raise SystemExit(
+            "R9_PHONE_CONTACTS_SELF_TEST=FAIL_FULL_SCOPE_CANONICAL_DETECTION"
+        )
+    print("R9_PHONE_CONTACTS_FULL_SCOPE_PARTIAL_CONVERGENCE_SELF_TEST=PASS")
+
     if classify_text_state(
         "pinned",
         "pinned",
@@ -1019,7 +1577,11 @@ def self_test() -> None:
     print("R9_CONTACTS_PRESENTATION=PASS_SELF_TEST")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
     print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
-    print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY_SELF_TEST")
+    print("R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_SELF_TEST")
+    print(
+        "R9_PHONE_BEHAVIORAL_SCOPE="
+        "PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE_SELF_TEST"
+    )
     print("R9_PHONE_CONTACTS_PRESENTATION_SELF_TEST=PASS")
 
 

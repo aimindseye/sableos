@@ -66,7 +66,7 @@ Podcast support is deliberately explicit-network-action only and HTTPS-only.
 Current R9 Media Flow behavior:
 
 - the user pastes a publisher RSS or Atom feed URL;
-- feed refresh happens only when subscribing or pressing Refresh;
+- feed refresh happens only when subscribing or explicitly pulling down on Podcasts;
 - only HTTP(S) feed and episode URLs are accepted, including the final URL after redirects;
 - no podcast account is required;
 - no analytics SDK is introduced;
@@ -132,7 +132,7 @@ Podcasts adds:
 - shows;
 - saved;
 - manual feed subscription;
-- explicit refresh;
+- explicit pull-to-refresh through the shared Sable refresh surface;
 - direct playback through the shared player.
 
 Radio keeps the user-managed direct stream model.
@@ -157,7 +157,7 @@ R9_MEDIA_FLOW_PANORAMA_NAVIGATION=PASS
 R9_MEDIA_FLOW_SINGLE_MEDIA3_SESSION=PASS
 R9_MEDIA_FLOW_SHARED_UP_NEXT=PASS
 R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS
-R9_PODCAST_MANUAL_REFRESH=PASS
+R9_PODCAST_PULL_TO_REFRESH=PASS_EXPLICIT_USER_GESTURE
 R9_PODCAST_FEED_SIZE_BOUND=PASS
 R9_PODCAST_HTTPS_ONLY=PASS
 R9_PODCAST_XML_DOCTYPE_REJECTED=PASS
@@ -395,7 +395,7 @@ R9_MEDIA_FLOW_RADIO_NAVIGATION=PASS
 R9_MEDIA_FLOW_NOW_PLAYING=PASS
 R9_MEDIA_FLOW_LOCAL_IMPORT=PASS
 R9_MEDIA_FLOW_PODCAST_SUBSCRIBE=PASS
-R9_MEDIA_FLOW_PODCAST_MANUAL_REFRESH=PASS
+R9_MEDIA_FLOW_PODCAST_PULL_TO_REFRESH=PASS_EXPLICIT_USER_GESTURE
 R9_MEDIA_FLOW_PODCAST_STREAM_PLAYBACK=PASS
 R9_MEDIA_FLOW_PODCAST_SAVED_STATE=PASS
 R9_MEDIA_FLOW_PODCAST_REMOVE_SUBSCRIPTION=PASS

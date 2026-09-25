@@ -13,6 +13,8 @@ For the current project state and active product direction:
 - `R9_SABLESTART_LAUNCHER_DESIGN.md` — design-first SableStart expansion using pinned Niagara/Kvaesitso/Lawnchair/Olauncher/OpenMiniLaunch references, one-hand app navigation, Sable Rail, Search/Command, Sable Peek, Quickstep boundary, privacy rules, and the no-full-build-before-visual-review gate.
 - `R9_LAUNCHER3_FOUNDATION_MIGRATION.md` — phased migration from standalone SableStart HOME to the pinned Launcher3/Quickstep foundation, with compile-before-retirement sequencing and focused Panther qualification.
 - `R9_SABLESTART_VISUAL_REVIEW_20260920.md` — source-derived combined L1-L6 review sheet for Start dark/light, Sable Rail, Search/Command, Sable Peek, truthful local context and accessibility states; visual acceptance remains pending.
+- `R9_PANTHER_APPSTORE_THIRD_PARTY_FREEZE.md` — bounded final Panther closure for the pinned Apps/App Store surface, optional sandboxed Google Play, third-party Light/Dark/UI interoperability, Connected Apps physical evidence and the final return to frozen-reference status.
+- `adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 product model: Priority / Messages / Email / People, Enabled / Available Connected Apps, truthful local reply handoff bubbles, bounded Sable Mail integration and keyboard-first semantics.
 - `SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — accepted Sable Flow / Sable Start / Sable Hub direction, provider/capsule model, native phone baseline, and M1-M5 sequence.
 - `CORE_PRODUCT_MODEL.md` — normative product architecture and retain/replace boundaries.
 - `CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
@@ -48,6 +50,9 @@ Accepted ADRs include:
 - `adr/0005-independent-kernel-security-updates.md` — independent K1/K2 kernel-security updates.
 - `adr/0006-multilingual-local-first-voice.md` — multilingual/local-first voice architecture.
 - `adr/0007-core-product-hub-aod-agent-and-aosp-boundary.md` — strategic Sable product surfaces over retained Android capability/enforcement.
+- `adr/0008-configurable-local-conversation-adapters.md` — provider-agnostic package/profile Connected Apps using Android notification/conversation/RemoteInput authority.
+- `adr/0009-separate-reader-and-text-reader-products.md` — separate publication Reader and plain-text/TTS/OCR Text Reader products.
+- `adr/0011-sable-hub-v1.md` — promotes the existing SableHub package into the common Priority / Messages / Email / People communication surface.
 
 ## Product planning
 
@@ -66,9 +71,9 @@ Current product progression:
 validated Panther substrate
     -> Sable Flow shared primitives
     -> Sable Start M1
-    -> Phone / People / Messages
-    -> Sable Hub provider framework
-    -> social web capsules / supported API adapters
+    -> Phone / People / Messages foundation
+    -> Sable Hub V1 (Priority / Messages / Email / People)
+    -> configurable notification/conversation adapters + bounded first-party providers
     -> broader native apps and polish
     -> Titan 2 N0 GSI/userspace/UI portability lab when Panther is ready
     -> Q27 full-port evaluation when shipped hardware qualifies
@@ -83,8 +88,8 @@ SABLEOS_PRODUCT_DEVELOPMENT        ACTIVE
 SABLEOS_CORE_PRODUCT_STAGE         R8_RUNTIME_CLOSURE + R9_LAUNCHER_DESIGN
 SABLE_FLOW_STATUS                  IMPLEMENTED_IN_REPO_PRODUCT_INTEGRATION_PENDING
 SABLE_START_STATUS                 IMPLEMENTED_NOT_PRODUCT_PROVEN
-SABLE_HUB_STATUS                   NOT_INTEGRATED
-NEXT_PRODUCT_MILESTONE             R8_SABLESTART_RUNTIME_FIX + R9_VISUAL_REVIEW
+SABLE_HUB_STATUS                   V1_SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
+NEXT_PRODUCT_MILESTONE             R9_HUB_V1_FINAL_PANTHER_CLOSURE
 
 NON_PIXEL_ASSURANCE_MODEL           N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
 TITAN2_ROLE                         PREFERRED_INTERIM_N0_LAB_AFTER_PANTHER

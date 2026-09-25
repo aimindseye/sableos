@@ -54,12 +54,19 @@ bramble service baseline above. Current R9 source/module closure establishes:
   text ingestion to 2 MiB, and permits only local TTS voices;
 - Clock/Photos using qualified Day/Night presentation while Camera remains an
   intentionally upstream, security-sensitive dark-presentation boundary;
-- Sable Messages as a native-first SMS/People surface while the pinned
-  GrapheneOS Messaging package remains the default SMS/MMS transport substrate;
+- Sable Hub (`org.sableos.hub`) as the common communications surface with
+  Priority / Messages / Email / People pivots; the pinned GrapheneOS Messaging
+  package remains the default SMS/MMS transport substrate;
 - embedded social-provider WebViews retired. Third-party messaging integration
   proceeds through user-authorized Android notification/conversation adapters
   and supported installed-app actions rather than private-database or protocol
-  impersonation.
+  impersonation;
+- Sable Mail remains the owner of mail accounts, protocols, sync and private
+  mailbox storage. Hub consumes only a bounded local mail snapshot/provider
+  contract and does not become a second mail client or read the Mail database;
+- Hub Priority is local and explainable rather than an opaque ranking service.
+  V1 is driven by explicit unread/active communication state and preserves
+  source attribution.
 
 These R9 source/module decisions still require final fresh-image Panther
 physical acceptance. They must not be described as completed physical release
@@ -67,8 +74,9 @@ closure until the source-bound image and device gates pass.
 
 See `R9_SABLE_HOME_REPLACEMENT.md`,
 `R9_MESSAGES_LOCAL_CONVERSATION_ADAPTERS.md`,
-`R9_MEDIA_FLOW_REDESIGN.md`, ADR-0008, and
-`docs/adr/0009-separate-reader-and-text-reader-products.md`.
+`R9_MEDIA_FLOW_REDESIGN.md`, ADR-0008,
+`docs/adr/0009-separate-reader-and-text-reader-products.md`, and
+`docs/adr/0011-sable-hub-v1.md`.
 
 ## Architectural rules
 

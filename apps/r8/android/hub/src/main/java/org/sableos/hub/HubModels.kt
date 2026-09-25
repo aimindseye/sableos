@@ -15,6 +15,7 @@ data class HubMessage(
     val read: Boolean,
     val source: HubConversationSource = HubConversationSource.Sms,
     val senderLabel: String? = null,
+    val handoffOnly: Boolean = false,
 )
 
 data class HubConversation(
@@ -38,6 +39,12 @@ data class HubPerson(
     val phoneNumber: String,
 )
 
+data class HubMailSnapshot(
+    val detail: String,
+    val available: Boolean,
+    val observedAtMillis: Long,
+)
+
 data class HubCapabilities(
     val hasTelephony: Boolean,
     val canReadSms: Boolean,
@@ -51,6 +58,7 @@ data class HubSnapshot(
     val conversations: List<HubConversation>,
     val messages: List<HubMessage>,
     val people: List<HubPerson>,
+    val mail: HubMailSnapshot,
 )
 
 data class HubSendResult(
@@ -96,15 +104,129 @@ object HubConnectedConversationReducer {
         records: List<ConnectedNotificationRecord>,
         canReply: (String) -> Boolean,
     ): ConnectedConversationSlice {
-        val ordered = records.sortedBy(ConnectedNotificationRecord::timestampMillis)
+        val ordered = deduplicateRecords(records)
         val latest = ordered.last()
+        val identity =
+            ordered
+                .asReversed()
+                .firstOrNull { record ->
+                    record.incoming && record.conversationTitle.isNotBlank()
+                } ?: latest
+        val replyNotificationKey =
+            ordered
+                .asReversed()
+                .firstOrNull { record ->
+                    canReply(record.notificationKey)
+                }?.notificationKey
         val threadId = stableNegativeId(key.stableKey())
 
         return ConnectedConversationSlice(
-            conversation = latest.toHubConversation(threadId, canReply),
+            conversation =
+                latest.toHubConversation(
+                    threadId = threadId,
+                    replyNotificationKey = replyNotificationKey,
+                    identity = identity,
+                ),
             messages = ordered.map { record -> record.toHubMessage(threadId) },
         )
     }
+
+    private fun deduplicateRecords(records: List<ConnectedNotificationRecord>): List<ConnectedNotificationRecord> {
+        val deduplicated = mutableListOf<ConnectedNotificationRecord>()
+        records
+            .sortedWith(
+                compareBy<ConnectedNotificationRecord>(
+                    ConnectedNotificationRecord::timestampMillis,
+                    ConnectedNotificationRecord::id,
+                ),
+            ).forEach { candidate ->
+                val duplicateIndex =
+                    deduplicated.indexOfLast { existing ->
+                        semanticallyDuplicates(
+                            first = existing,
+                            second = candidate,
+                        )
+                    }
+                if (duplicateIndex < 0) {
+                    deduplicated += candidate
+                } else {
+                    deduplicated[duplicateIndex] =
+                        preferredDuplicate(
+                            first = deduplicated[duplicateIndex],
+                            second = candidate,
+                        )
+                }
+            }
+        return deduplicated
+    }
+
+    private fun semanticallyDuplicates(
+        first: ConnectedNotificationRecord,
+        second: ConnectedNotificationRecord,
+    ): Boolean {
+        val firstLocal = first.id.startsWith(CONNECTED_LOCAL_REPLY_PREFIX)
+        val secondLocal = second.id.startsWith(CONNECTED_LOCAL_REPLY_PREFIX)
+        val window =
+            if (firstLocal != secondLocal) {
+                LOCAL_REPLY_DEDUP_WINDOW_MILLIS
+            } else {
+                NOTIFICATION_DUPLICATE_WINDOW_MILLIS
+            }
+
+        return sameMessagePayload(first, second) &&
+            !(firstLocal && secondLocal) &&
+            compatibleSenders(first.senderLabel, second.senderLabel) &&
+            timestampDistance(
+                first.timestampMillis,
+                second.timestampMillis,
+            ) <= window
+    }
+
+    private fun sameMessagePayload(
+        first: ConnectedNotificationRecord,
+        second: ConnectedNotificationRecord,
+    ): Boolean {
+        val firstBody = first.body?.trim().orEmpty()
+        val secondBody = second.body?.trim().orEmpty()
+        return firstBody.isNotEmpty() &&
+            firstBody == secondBody &&
+            first.incoming == second.incoming
+    }
+
+    private fun compatibleSenders(
+        first: String?,
+        second: String?,
+    ): Boolean {
+        val firstSender = first?.trim().orEmpty()
+        val secondSender = second?.trim().orEmpty()
+        return firstSender.isEmpty() ||
+            secondSender.isEmpty() ||
+            firstSender.equals(secondSender, ignoreCase = true)
+    }
+
+    private fun preferredDuplicate(
+        first: ConnectedNotificationRecord,
+        second: ConnectedNotificationRecord,
+    ): ConnectedNotificationRecord {
+        val firstLocal = first.id.startsWith(CONNECTED_LOCAL_REPLY_PREFIX)
+        val secondLocal = second.id.startsWith(CONNECTED_LOCAL_REPLY_PREFIX)
+        return when {
+            firstLocal -> first
+            secondLocal -> second
+            first.senderLabel.isNullOrBlank() && !second.senderLabel.isNullOrBlank() -> second
+            else -> first
+        }
+    }
+
+    private fun timestampDistance(
+        first: Long,
+        second: Long,
+    ): Long =
+        if (first >= second) {
+            first - second
+        } else {
+            second - first
+        }
 
     private fun conversationKeyFor(record: ConnectedNotificationRecord): ConnectedConversationKey =
         ConnectedConversationKey(
@@ -130,25 +252,30 @@ object HubConnectedConversationReducer {
             read = true,
             source = HubConversationSource.ConnectedApp,
             senderLabel = senderLabel,
+            handoffOnly =
+                id.startsWith(
+                    CONNECTED_LOCAL_REPLY_PREFIX,
+                ),
         )
 
     private fun ConnectedNotificationRecord.toHubConversation(
         threadId: Long,
-        canReply: (String) -> Boolean,
+        replyNotificationKey: String?,
+        identity: ConnectedNotificationRecord,
     ): HubConversation =
         HubConversation(
             threadId = threadId,
             address = conversationId,
-            displayName = conversationTitle,
+            displayName = identity.conversationTitle,
             lastBody = body.orEmpty(),
             lastDateMillis = timestampMillis,
             unreadCount = 0,
             source = HubConversationSource.ConnectedApp,
             sourcePackage = key.packageName,
             sourceUserSerial = key.userSerial,
-            sourceNotificationKey = notificationKey,
-            sourceLabel = sourceLabel,
-            canQuickReply = canReply(notificationKey),
+            sourceNotificationKey = replyNotificationKey ?: notificationKey,
+            sourceLabel = identity.sourceLabel,
+            canQuickReply = replyNotificationKey != null,
         )
 
     private fun stableNegativeId(value: String): Long {
@@ -179,6 +306,8 @@ object HubConnectedConversationReducer {
     private const val FNV_OFFSET_BASIS = -3750763034362895579L
     private const val FNV_PRIME = 1099511628211L
     private const val BYTE_MASK = 0xFFL
+    private const val NOTIFICATION_DUPLICATE_WINDOW_MILLIS = 1_000L
+    private const val LOCAL_REPLY_DEDUP_WINDOW_MILLIS = 30_000L
 }
 
 object HubConversationReducer {

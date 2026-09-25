@@ -1,6 +1,15 @@
 # R9 Messages Local Conversation Adapter Foundation
 
-Status: **source implementation complete; focused module qualification pending**
+Status: **foundation physically proven on Panther; product presentation promoted to Sable Hub V1**
+
+The provider-agnostic adapter contract in this document remains normative for
+third-party conversations. ADR-0011 promotes the user-facing product from the
+earlier Messages / People presentation to Sable Hub with Priority / Messages /
+Email / People while preserving these adapter security boundaries.
+
+Physically proven behavior includes Signal `CONVERSATION_REPLY`, LinkedIn
+`NOTIFICATION_ONLY` / Open-app fallback, and WhatsApp notification ingestion
+with a generic reply-handle remediation pending final qualification.
 
 Base behavior already qualified:
 

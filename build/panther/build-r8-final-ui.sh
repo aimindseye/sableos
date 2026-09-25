@@ -204,7 +204,7 @@ echo
 echo "===== COMBINED UI MODULE COMPILE GATE ====="
 
 set +e
-m -j"$JOBS"     SableLauncher     Launcher3QuickStep     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableTextReader     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     framework-minus-apex     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
+m -j"$JOBS"     SableLauncher     Launcher3QuickStep     AppStore     Dialer     Contacts     DeskClock     DocumentsUI     Gallery2     SableCalculator     SableSudoku     SableMinesweeper     Sable2048     SableMedia     SableTextReader     SableReader     SableHub     SableMail     SableWeather     SableCalendar     SetupWizard2     Settings     SystemUI     framework-minus-apex     2>&1 | tee "$EVIDENCE_DIR/ui-module-build.log"
 MODULE_RC=${PIPESTATUS[0]}
 set -e
 
@@ -227,6 +227,7 @@ echo "R9_SABLE_CALENDAR_MODULE_BUILD=PASS"
 echo "R9_SABLE_TEXT_READER_MODULE_BUILD=PASS"
 echo "R9_SABLELAUNCHER_MODULE_BUILD=PASS"
 echo "R9_QUICKSTEP_RECENTS_MODULE_BUILD=PASS"
+echo "R9_APPSTORE_MODULE_BUILD=PASS"
 echo "R9_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS"
 
 if [[ "$SABLE_BUILD_STAGE" == modules ]]; then

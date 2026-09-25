@@ -5,6 +5,8 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 
+internal const val CONNECTED_LOCAL_REPLY_PREFIX = "local-reply:"
+
 class ConnectedNotificationHistoryStore(
     context: Context,
 ) {
@@ -62,10 +64,70 @@ class ConnectedNotificationHistoryStore(
             }
         }
 
-        appContext.contentResolver.notifyChange(
-            ConnectedAppsRepository.HISTORY_URI,
-            null,
-        )
+        notifyHubDataChanged()
+    }
+
+    fun appendLocalReply(
+        notificationKey: String,
+        body: String,
+        policies: Map<ConnectedAppKey, ConnectedAppPolicy>,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Boolean {
+        val text = body.trim()
+        if (text.isEmpty()) {
+            return false
+        }
+
+        var inserted = false
+        synchronized(lock) {
+            val database = helper.writableDatabase
+            database.beginTransaction()
+            try {
+                val source =
+                    queryRecords(database).firstOrNull { record ->
+                        record.notificationKey == notificationKey
+                    }
+                val policy =
+                    source
+                        ?.let { record -> policies[record.key] }
+                        ?.normalized()
+
+                if (source != null && policy?.includeInMessages == true) {
+                    insertRecord(
+                        database = database,
+                        record =
+                            source.copy(
+                                id =
+                                    CONNECTED_LOCAL_REPLY_PREFIX +
+                                        notificationKey +
+                                        ":" +
+                                        nowMillis +
+                                        ":" +
+                                        text.hashCode(),
+                                senderLabel = null,
+                                body = text,
+                                timestampMillis = nowMillis,
+                                incoming = false,
+                            ),
+                    )
+                    pruneAndLoad(
+                        database = database,
+                        policies = policies,
+                        nowMillis = nowMillis,
+                    )
+                    inserted = true
+                }
+
+                database.setTransactionSuccessful()
+            } finally {
+                database.endTransaction()
+            }
+        }
+
+        if (inserted) {
+            notifyHubDataChanged()
+        }
+        return inserted
     }
 
     fun clearFor(key: ConnectedAppKey) {
@@ -80,8 +142,16 @@ class ConnectedNotificationHistoryStore(
             )
         }
 
+        notifyHubDataChanged()
+    }
+
+    private fun notifyHubDataChanged() {
         appContext.contentResolver.notifyChange(
             ConnectedAppsRepository.HISTORY_URI,
+            null,
+        )
+        appContext.contentResolver.notifyChange(
+            HubSnapshotProvider.SNAPSHOT_URI,
             null,
         )
     }
@@ -272,7 +342,7 @@ class ConnectedNotificationHistoryStore(
 
     private companion object {
         const val DATABASE_NAME = "sable_connected_message_history.db"
-        const val DATABASE_VERSION = 1
+        const val DATABASE_VERSION = 2
         const val TABLE_HISTORY = "connected_message_history"
         const val COLUMN_ID = "id"
         const val COLUMN_PACKAGE_NAME = "package_name"

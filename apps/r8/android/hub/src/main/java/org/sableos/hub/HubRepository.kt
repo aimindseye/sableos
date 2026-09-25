@@ -78,18 +78,90 @@ class HubRepository(
                         message.dateMillis
                     },
             people = people,
+            mail = loadMailSnapshot(),
         )
     }
 
     fun replyToConnected(
         notificationKey: String,
         body: String,
-    ): HubSendResult =
-        ConnectedReplyRegistry.send(
-            context = context,
-            notificationKey = notificationKey,
-            body = body,
-        )
+    ): HubSendResult {
+        val result =
+            ConnectedReplyRegistry.send(
+                context = context,
+                notificationKey = notificationKey,
+                body = body,
+            )
+        if (result.success) {
+            val policySnapshot =
+                connectedApps
+                    .loadPolicies()
+                    .associateBy { policy ->
+                        policy.key
+                    }
+            connectedHistory.appendLocalReply(
+                notificationKey = notificationKey,
+                body = body,
+                policies = policySnapshot,
+            )
+        }
+        return result
+    }
+
+    fun openSableMail(): Boolean {
+        val intent =
+            context.packageManager
+                .getLaunchIntentForPackage(SABLE_MAIL_PACKAGE)
+                ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                ?: return false
+        return runCatching {
+            context.startActivity(intent)
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun loadMailSnapshot(): HubMailSnapshot {
+        val fallback =
+            HubMailSnapshot(
+                detail = "Sable Mail is unavailable.",
+                available = false,
+                observedAtMillis = System.currentTimeMillis(),
+            )
+
+        return runCatching {
+            context.contentResolver
+                .query(
+                    SABLE_MAIL_SNAPSHOT_URI,
+                    arrayOf(
+                        "detail",
+                        "availability",
+                        "observed_at",
+                    ),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (!cursor.moveToFirst()) {
+                        fallback
+                    } else {
+                        HubMailSnapshot(
+                            detail =
+                                cursor.getString(
+                                    cursor.getColumnIndexOrThrow("detail"),
+                                ),
+                            available =
+                                cursor.getString(
+                                    cursor.getColumnIndexOrThrow("availability"),
+                                ) != "UNAVAILABLE",
+                            observedAtMillis =
+                                cursor.getLong(
+                                    cursor.getColumnIndexOrThrow("observed_at"),
+                                ),
+                        )
+                    }
+                } ?: fallback
+        }.getOrDefault(fallback)
+    }
 
     fun openConnectedApp(
         packageName: String,
@@ -367,5 +439,8 @@ class HubRepository(
     private companion object {
         const val MAX_SMS_MESSAGES = 1200
         const val MAX_CONTACT_PEOPLE = 300
+        const val SABLE_MAIL_PACKAGE = "org.sableos.mail"
+        val SABLE_MAIL_SNAPSHOT_URI: Uri =
+            Uri.parse("content://org.sableos.mail.snapshot/current")
     }
 }

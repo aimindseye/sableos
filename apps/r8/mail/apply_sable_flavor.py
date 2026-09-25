@@ -986,7 +986,7 @@ class SableMailSnapshotProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor {
         val appContext = checkNotNull(context)
-        enforceLauncherCaller(appContext)
+        enforceSableSnapshotCaller(appContext)
         val manager = appContext.getSystemService(NotificationManager::class.java)
         val count =
             runCatching {
@@ -1037,16 +1037,21 @@ class SableMailSnapshotProvider : ContentProvider() {
         selectionArgs: Array<out String>?,
     ): Int = throw UnsupportedOperationException("Read-only provider")
 
-    private fun enforceLauncherCaller(context: android.content.Context) {
+    private fun enforceSableSnapshotCaller(context: android.content.Context) {
         val callingUid = Binder.getCallingUid()
         if (callingUid == Process.myUid()) return
         val packages =
             context.packageManager.getPackagesForUid(callingUid)
                 ?.toSet()
                 .orEmpty()
-        if ("org.sableos.launcher" !in packages) {
+        val authorized =
+            setOf(
+                "org.sableos.launcher",
+                "org.sableos.hub",
+            )
+        if (packages.intersect(authorized).isEmpty()) {
             throw SecurityException(
-                "Sable live snapshot is restricted to SableLauncher.",
+                "Sable mail snapshot is restricted to SableLauncher and SableHub.",
             )
         }
     }

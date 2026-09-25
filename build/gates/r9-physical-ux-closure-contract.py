@@ -77,6 +77,8 @@ forbid(
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "private fun AppsScreen(",
+    "SableRefreshableSurface(",
+    "onRefresh = onRefreshLive",
     "buildRailRows(apps)",
     "rememberLazyListState()",
     "detectDragGestures(",
@@ -139,7 +141,9 @@ if (
 ).exists():
     failures.append("retired_launcher_cohesion_applicator_present")
 
-# Live providers: sensitive data is visible only to SableLauncher.
+# Live providers: general sensitive snapshots remain SableLauncher-only.
+# Sable Mail additionally admits the bounded first-party SableHub caller for
+# the Hub Email pivot; arbitrary apps and Launcher3 remain excluded.
 require(
     "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
     'packageName == "org.sableos.launcher"',
@@ -156,19 +160,102 @@ for provider in (
     )
 require(
     "apps/r8/mail/apply_sable_flavor.py",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
 )
 require(
     "apps/r8/mail/verify_sable_mail.py",
-    'if ("org.sableos.launcher" !in packages)',
-    "Sable live snapshot is restricted to SableLauncher.",
+    '"org.sableos.launcher"',
+    '"org.sableos.hub"',
+    "packages.intersect(authorized).isEmpty()",
+    "Sable mail snapshot is restricted to SableLauncher and SableHub.",
     "SABLE_MAIL_RETIRED_LAUNCHER3_SNAPSHOT_CALLER=PASS_ABSENT",
+    "SABLE_MAIL_HUB_SNAPSHOT_CALLER=PASS_BOUNDED_READ_ONLY",
 )
 forbid(
     "apps/r8/mail/verify_sable_mail.py",
     """        'if ("com.android.launcher3" !in packages)',
         "SecurityException(",""",
+)
+
+# Refresh UX is a shared Sable interaction contract. Data-backed first-party
+# surfaces use Material3 pull-to-refresh through one shared design primitive;
+# app-local refresh buttons are not used for ordinary screen refresh.
+require(
+    "src/android/shared/sabledesign/src/main/java/org/sableos/design/SableComponents.kt",
+    "fun SableRefreshableSurface(",
+    "PullToRefreshBox(",
+    "isRefreshing = isRefreshing",
+    "onRefresh = onRefresh",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "SableRefreshableSurface(",
+    "onRefresh = ::refresh",
+)
+forbid(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "private fun FlatAction(",
+    '"refreshing…"',
+)
+require(
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt",
+    "SableRefreshableSurface(",
+    "isRefreshing = refreshing",
+    "onRefresh = onRefresh",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
+    "SableRefreshableSurface(",
+    "isRefreshing = podcastRefreshing",
+    "onRefreshPodcasts()",
+)
+forbid(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PodcastScreen.kt",
+    'text = if (busy) "Refreshing…" else "Refresh"',
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "SableRefreshableSurface(",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/ConnectedAppsScreen.kt",
+    "SableRefreshableSurface(",
+    "onRefresh = onRefresh",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    "SableRefreshableSurface(",
+)
+
+# Weather: the hourly list must begin at the provider's current local hour,
+# not the first midnight row returned for the forecast day. Successful refresh
+# must also invalidate the launcher-facing snapshot URI.
+require(
+    "apps/r8/rust/crates/weather-core/src/lib.rs",
+    'string_for_key(current_object, "time")',
+    "local_hour_start(&value)",
+    "hourly_start.saturating_add(24)",
+    "hourly_start..hourly_end",
+    'assert_eq!(snapshot.hourly[0].time, "2026-09-21T09:00")',
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherRepository.kt",
+    "WeatherSnapshotContract.SNAPSHOT_URI",
+    "contentResolver.notifyChange(",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/WeatherSnapshotProvider.kt",
+    "cursor.setNotificationUri(",
+    "WeatherSnapshotContract.SNAPSHOT_URI",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    "destination == SableStartDestination.Live",
+    "onRefreshLive()",
+    "SableRefreshableSurface(",
 )
 
 # Clock/Photos: physical Dark -> Light regression must be structurally fixed.
@@ -210,6 +297,53 @@ require(
     "Notification.EXTRA_SUBSTITUTE_APP_NAME",
     '"SableOS"',
     "R9_ADB_NOTIFICATION_PRODUCT_IDENTITY=PASS_SABLEOS",
+)
+
+# Hub live status must include active connected-app conversations and both
+# Hub and Start expose an explicit pull-to-refresh escape hatch.
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubSnapshotProvider.kt",
+    "ConnectedNotificationActivityRegistry.activeConversationCount()",
+    '0 -> "0 active"',
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ConnectedNotificationHistoryStore.kt",
+    "HubSnapshotProvider.SNAPSHOT_URI",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "SableRefreshableSurface(",
+    "isRefreshing = isRefreshing",
+    "onRefresh = onRefresh",
+)
+
+# Hub notification adapters must suppress group summaries/non-conversation
+# notifications, normalize self-authored MessagingStyle messages and keep the
+# latest root/thread content immediately visible.
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/notifications/SableNotificationListenerService.kt",
+    "Notification.FLAG_GROUP_SUMMARY",
+    "Notification.CATEGORY_MESSAGE",
+    "Notification.EXTRA_MESSAGING_PERSON",
+    "isConversationCandidate()",
+    "samePerson(",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubModels.kt",
+    "deduplicateRecords(",
+    "LOCAL_REPLY_DEDUP_WINDOW_MILLIS",
+    "identity = identity",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ConnectedNotificationHistoryStore.kt",
+    "DATABASE_VERSION = 2",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "reverseLayout = true",
+    "messages.asReversed()",
+    "newestConversation?.lastDateMillis",
+    "listState.scrollToItem(0)",
 )
 
 # Messages People uses the already sorted local ContactsProvider snapshot and
@@ -276,27 +410,47 @@ forbid(
     "SableOcrActivity",
 )
 
-# Contacts uses its existing SectionIndexer, not a duplicate data model.
+# Contacts keeps its existing SectionIndexer and ContactsProvider authority.
+# Phone and Contacts additionally use one background Phone-table query per
+# surface to show the preferred number under each local contact name.
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
     'CONTACTS_INDEXER_ADAPTER = Path(',
     '"src/com/android/contacts/list/IndexerListAdapter.java"',
+    'CONTACTS_DEFAULT_ADAPTER = Path(',
+    '"src/com/android/contacts/list/DefaultContactListAdapter.java"',
+    'DIALER_CONTACT_VIEW_HOLDER = Path(',
+    '"java/com/android/dialer/contactsfragment/ContactViewHolder.java"',
+    'DIALER_CONTACT_ROW = Path(',
+    '"java/com/android/dialer/contactsfragment/res/layout/contact_row.xml"',
     "return mIndexer.getPositionForSection(sectionIndex);",
     "getListPositionForSection",
     "getPositionForSection(sectionIndex)",
     "installSableAlphabetRail",
     "scrollToSableSection",
+    "SABLE_PHONE_NUMBERS_LOADER_ID",
+    "ContactsContract.CommonDataKinds.Phone",
+    "Phone.IS_SUPER_PRIMARY",
+    "Phone.IS_PRIMARY",
+    "setSablePhoneNumbers",
+    "updatePhoneNumbers",
+    "contact_phone_number",
+    "setPhoneNumber(phoneNumber, null)",
     "classify_text_state",
     "inspect_repo_state",
     "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE=",
     "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS",
     "R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
     "R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS",
-    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY",
+    "R9_PHONE_CONTACTS_SAME_FILE_UPGRADE_SELF_TEST=PASS",
+    "R9_PHONE_CONTACTS_FULL_SCOPE_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
+    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
     "R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX",
+    "R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_PREFERRED_CONTACTSPROVIDER_NUMBER",
+    "R9_PHONE_CONTACTS_PHONE_QUERY=PASS_ONE_BACKGROUND_PROVIDER_QUERY_PER_SURFACE",
     "getPositionForHeader",
-    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY",
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
 )
 forbid(
@@ -485,12 +639,23 @@ print("R9_SABLE_HOME_SOURCE=PASS_STANDALONE")
 print("R9_QUICKSTEP_RECENTS_SOURCE=PASS_NO_HOME")
 print("R9_ALL_APPS_PERMISSION_SUMMARY_CONTRACT=PASS")
 print("R9_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER")
+print("R9_MAIL_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER_AND_SABLEHUB")
+print("R9_HUB_CONNECTED_LIVE_STATUS=PASS_ACTIVE_CONVERSATION_AWARE")
+print("R9_HUB_CONVERSATION_FILTER=PASS_NO_GROUP_SUMMARY_OR_STATUS_NOISE")
+print("R9_HUB_CONVERSATION_DEDUP=PASS")
+print("R9_HUB_LATEST_MESSAGE_VISIBILITY=PASS_ROOT_AND_THREAD")
+print("R9_SABLE_REFRESH_GESTURES=PASS_SHARED_START_HUB_CONNECTED_APPS_LIVE_WEATHER_CALENDAR_PODCASTS")
+print("R9_SABLE_MANUAL_REFRESH_BUTTONS=PASS_ABSENT_FROM_SCREEN_REFRESH")
+print("R9_WEATHER_HOURLY_FRESHNESS=PASS_CURRENT_LOCAL_HOUR")
+print("R9_WEATHER_LIVE_SNAPSHOT_INVALIDATION=PASS")
+print("R9_LIVE_SURFACE_ENTRY_REFRESH=PASS")
 print("R9_CLOCK_LIGHT_VISIBILITY_CONTRACT=PASS")
 print("R9_PHOTOS_LIGHT_DARK_CONTRACT=PASS")
 print("R9_CAMERA_APPEARANCE_BOUNDARY=PASS_UPSTREAM_DARK_ONLY")
 print("R9_READER_GLOBAL_APPEARANCE_CONTRACT=PASS")
 print("R9_READER_ACTUAL_BOOK_COUNT_CONTRACT=PASS")
 print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
+print("R9_PHONE_CONTACTS_PHONE_SUBTITLE_CONTRACT=PASS_PREFERRED_NUMBER")
 print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_FLAT_ROWS_CONTRACT=PASS")
 print("R9_MEDIA_LARGE_LIBRARY_RENDER_CONTRACT=PASS")

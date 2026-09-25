@@ -53,17 +53,26 @@ class MainActivity : ComponentActivity() {
             var snapshot by remember {
                 mutableStateOf<HubSnapshot?>(null)
             }
+            var refreshing by remember {
+                mutableStateOf(false)
+            }
 
             LaunchedEffect(refreshGeneration) {
+                refreshing = true
                 snapshot =
                     withContext(Dispatchers.IO) {
                         repository.snapshot()
                     }
+                refreshing = false
             }
 
             SableGlobalTheme(window = window) {
                 HubScreen(
                     snapshot = snapshot,
+                    isRefreshing = refreshing,
+                    onRefresh = {
+                        refreshGeneration += 1
+                    },
                     onRequestAccess = {
                         permissionLauncher.launch(
                             arrayOf(
@@ -102,6 +111,9 @@ class MainActivity : ComponentActivity() {
                             recipient = recipient,
                             body = body,
                         )
+                    },
+                    onOpenSableMail = {
+                        repository.openSableMail()
                     },
                     onOpenConnectedApps = {
                         startActivity(

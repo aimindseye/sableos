@@ -61,6 +61,10 @@ class WeatherSnapshotProvider : ContentProvider() {
             .add(state.availability.name.uppercase())
             .add(snapshot?.observedAtEpochSeconds?.times(1000L) ?: 0L)
 
+        cursor.setNotificationUri(
+            appContext.contentResolver,
+            WeatherSnapshotContract.SNAPSHOT_URI,
+        )
         return cursor
     }
 

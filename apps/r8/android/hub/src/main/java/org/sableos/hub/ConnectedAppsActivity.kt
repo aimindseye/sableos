@@ -74,6 +74,9 @@ class ConnectedAppsActivity : ComponentActivity() {
                     policies = policies,
                     notificationAccessGranted = notificationAccessGranted,
                     loading = loading,
+                    onRefresh = {
+                        refreshGeneration += 1
+                    },
                     onOpenNotificationAccess = ::openNotificationAccess,
                     onPolicyChanged = { policy ->
                         val normalized = policy.normalized()

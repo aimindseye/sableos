@@ -1,6 +1,7 @@
 package org.sableos.hub.notifications
 
 import android.app.Notification
+import android.app.Person
 import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
@@ -96,21 +97,39 @@ class SableNotificationListenerService : NotificationListenerService() {
                 }
         val policy =
             key?.let(policies::cachedPolicyFor)
+        val envelope =
+            if (key != null && policy?.includeInMessages == true) {
+                captureEnvelope(
+                    sbn = sbn,
+                    key = key,
+                    policy = policy,
+                ).takeIf { candidate ->
+                    candidate.isConversationCandidate()
+                }
+            } else {
+                null
+            }
 
-        if (key == null || policy?.includeInMessages != true) {
-            ConnectedReplyRegistry.remove(sbn.key)
+        if (envelope == null) {
+            clearNotificationState(sbn.key)
         }
-
-        return if (key == null || policy?.includeInMessages != true) {
-            null
-        } else {
-            captureEnvelope(
-                sbn = sbn,
-                key = key,
-                policy = policy,
-            )
-        }
+        return envelope
     }
+
+    private fun clearNotificationState(notificationKey: String) {
+        ConnectedReplyRegistry.remove(notificationKey)
+        ConnectedNotificationActivityRegistry.remove(notificationKey)
+    }
+
+    private fun ConnectedNotificationEnvelope.isConversationCandidate(): Boolean =
+        !isGroupSummary &&
+            (
+                messages.isNotEmpty() ||
+                    replyCandidate != null ||
+                    shortcutId != null ||
+                    conversationTitle != null ||
+                    category == Notification.CATEGORY_MESSAGE
+            )
 
     private fun captureEnvelope(
         sbn: StatusBarNotification,
@@ -118,6 +137,7 @@ class SableNotificationListenerService : NotificationListenerService() {
         policy: ConnectedAppPolicy,
     ): ConnectedNotificationEnvelope {
         val notification = sbn.notification
+        val messagingUser = messagingUser(notification)
         return ConnectedNotificationEnvelope(
             key = key,
             notificationKey = sbn.key,
@@ -140,18 +160,7 @@ class SableNotificationListenerService : NotificationListenerService() {
                         ?.toString(),
                     MAX_NOTIFICATION_LABEL_LENGTH,
                 ),
-            notificationBody =
-                boundedText(
-                    notification.extras
-                        .getCharSequence(Notification.EXTRA_BIG_TEXT)
-                        ?.toString(),
-                    MAX_NOTIFICATION_BODY_LENGTH,
-                ) ?: boundedText(
-                    notification.extras
-                        .getCharSequence(Notification.EXTRA_TEXT)
-                        ?.toString(),
-                    MAX_NOTIFICATION_BODY_LENGTH,
-                ),
+            notificationBody = captureNotificationBody(notification),
             conversationTitle =
                 boundedText(
                     notification.extras
@@ -159,20 +168,42 @@ class SableNotificationListenerService : NotificationListenerService() {
                         ?.toString(),
                     MAX_NOTIFICATION_LABEL_LENGTH,
                 ),
+            category =
+                boundedText(
+                    notification.category,
+                    MAX_NOTIFICATION_LABEL_LENGTH,
+                ),
+            isGroupSummary =
+                notification.flags and Notification.FLAG_GROUP_SUMMARY != 0,
             messages =
                 captureMessages(
                     notification = notification,
                     fallbackTimestampMillis = sbn.postTime,
+                    messagingUser = messagingUser,
                 ),
             replyCandidate = captureReplyCandidate(notification),
             allowQuickReply = policy.allowQuickReply,
         )
     }
 
+    private fun captureNotificationBody(notification: Notification): String? =
+        boundedText(
+            notification.extras
+                .getCharSequence(Notification.EXTRA_BIG_TEXT)
+                ?.toString(),
+            MAX_NOTIFICATION_BODY_LENGTH,
+        ) ?: boundedText(
+            notification.extras
+                .getCharSequence(Notification.EXTRA_TEXT)
+                ?.toString(),
+            MAX_NOTIFICATION_BODY_LENGTH,
+        )
+
     @Suppress("DEPRECATION")
     private fun captureMessages(
         notification: Notification,
         fallbackTimestampMillis: Long,
+        messagingUser: Person?,
     ): List<ConnectedNotificationMessageSnapshot> {
         val bundles =
             notification.extras
@@ -183,14 +214,23 @@ class SableNotificationListenerService : NotificationListenerService() {
         return Notification.MessagingStyle.Message
             .getMessagesFromBundleArray(bundles)
             .map { message ->
+                val sender = message.senderPerson
+                val incoming =
+                    sender != null &&
+                        (
+                            messagingUser == null ||
+                                !samePerson(sender, messagingUser)
+                        )
                 ConnectedNotificationMessageSnapshot(
                     senderLabel =
-                        boundedText(
-                            message.senderPerson
-                                ?.name
-                                ?.toString(),
-                            MAX_NOTIFICATION_LABEL_LENGTH,
-                        ),
+                        if (incoming) {
+                            boundedText(
+                                sender.name?.toString(),
+                                MAX_NOTIFICATION_LABEL_LENGTH,
+                            )
+                        } else {
+                            null
+                        },
                     body =
                         boundedText(
                             message.text
@@ -201,9 +241,43 @@ class SableNotificationListenerService : NotificationListenerService() {
                         message.timestamp
                             .takeIf { it > 0L }
                             ?: fallbackTimestampMillis,
-                    incoming = message.senderPerson != null,
+                    incoming = incoming,
                 )
             }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun messagingUser(notification: Notification): Person? {
+        val extras = notification.extras
+        return extras.getParcelable(Notification.EXTRA_MESSAGING_PERSON)
+    }
+
+    private fun samePerson(
+        first: Person,
+        second: Person,
+    ): Boolean {
+        val firstKey = first.key?.takeIf(String::isNotBlank)
+        val secondKey = second.key?.takeIf(String::isNotBlank)
+        val firstUri = first.uri?.takeIf(String::isNotBlank)
+        val secondUri = second.uri?.takeIf(String::isNotBlank)
+        val firstName = first.name?.toString()?.trim()
+        val secondName = second.name?.toString()?.trim()
+
+        return when {
+            firstKey != null && secondKey != null -> {
+                firstKey == secondKey
+            }
+
+            firstUri != null && secondUri != null -> {
+                firstUri == secondUri
+            }
+
+            else -> {
+                !firstName.isNullOrEmpty() &&
+                    !secondName.isNullOrEmpty() &&
+                    firstName.equals(secondName, ignoreCase = true)
+            }
+        }
     }
 
     private fun captureReplyCandidate(notification: Notification): ConnectedNotificationReplyCandidate? {
@@ -265,6 +339,15 @@ class SableNotificationListenerService : NotificationListenerService() {
 
         ConnectedReplyRegistry.remove(envelope.notificationKey)
         ConnectedReplyRegistry.register(normalized.replyHandle)
+        normalized.records
+            .firstOrNull()
+            ?.let { record ->
+                ConnectedNotificationActivityRegistry.upsert(
+                    notificationKey = envelope.notificationKey,
+                    sourceKey = record.key,
+                    conversationId = record.conversationId,
+                )
+            }
 
         val policySnapshot = policies.cachedPolicySnapshot()
         withContext(Dispatchers.IO) {
@@ -289,8 +372,23 @@ class SableNotificationListenerService : NotificationListenerService() {
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
         notificationGenerations.remove(sbn.key)
         ConnectedReplyRegistry.remove(sbn.key)
+        ConnectedNotificationActivityRegistry.remove(sbn.key)
+        notifyHubDataChanged()
+    }
+
+    override fun onListenerDisconnected() {
+        ConnectedNotificationActivityRegistry.clear()
+        notifyHubDataChanged()
+        super.onListenerDisconnected()
+    }
+
+    private fun notifyHubDataChanged() {
         applicationContext.contentResolver.notifyChange(
             ConnectedAppsRepository.HISTORY_URI,
+            null,
+        )
+        applicationContext.contentResolver.notifyChange(
+            org.sableos.hub.HubSnapshotProvider.SNAPSHOT_URI,
             null,
         )
     }

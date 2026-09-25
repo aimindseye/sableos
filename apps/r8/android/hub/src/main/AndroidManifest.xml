@@ -17,13 +17,15 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
         <provider android:authorities="org.sableos.appearance" />
+        <provider android:authorities="org.sableos.mail.snapshot" />
+        <package android:name="org.sableos.mail" />
     </queries>
 
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_sable_messages"
         android:roundIcon="@drawable/ic_sable_messages"
-        android:label="Sable Messages"
+        android:label="Sable Hub"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:usesCleartextTraffic="false">

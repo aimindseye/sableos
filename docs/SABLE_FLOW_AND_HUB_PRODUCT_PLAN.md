@@ -43,7 +43,7 @@ Initial tile set:
 
 ```text
 PEOPLE      PHONE
-MESSAGES    MAIL
+HUB         MAIL
 CAMERA      PHOTOS
 SOCIAL      CALENDAR
 SETTINGS    CLOCK
@@ -147,6 +147,18 @@ These four tiles/surfaces are the minimum useful shell proof for Panther.
 
 Sable Hub is the central people, communication, attention and service surface.
 
+The accepted V1 navigation is:
+
+```text
+Priority | Messages | Email | People
+```
+
+Priority is local and explainable. Messages combines SMS with user-enabled
+notification/conversation adapters. Email consumes a bounded local Sable Mail
+summary and opens Sable Mail for full mailbox work; Hub does not read the Mail
+private database. People remains Android-contact backed.
+
+
 The Hub must support multiple provider types behind one capability model:
 
 ```text
@@ -231,7 +243,17 @@ client.
 
 ### Connected apps
 
-Settings exposes installed messaging-capable applications under:
+Connected-app management is provider-agnostic and uses two management pivots:
+
+```text
+Enabled | Available
+```
+
+Enabled keeps active providers and their reply/launcher/retention controls easy
+to reach. Available remains searchable and includes disabled installed apps so
+future compatible providers do not require a SableOS rebuild.
+
+Settings exposes the surface under:
 
 ```text
 Settings

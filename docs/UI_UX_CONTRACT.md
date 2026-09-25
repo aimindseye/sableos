@@ -1,7 +1,7 @@
 # SableOS UI/UX contract
 
-Status: active R8 baseline + R9 launcher-extension product contract  
-Contract version: 3  
+Status: active R8 baseline + R9 launcher-extension product contract
+Contract version: 4
 Design implementation schema: `SableDesignContract.SCHEMA_VERSION = 2`
 
 ## Purpose
@@ -51,6 +51,7 @@ local overrides -> cleared
 8. **Fast restrained motion.** UI motion uses 120/180/240ms timing classes and should explain navigation or state changes rather than decorate them.
 9. **Theme consistency.** R8 supports Follow system, Light and Dark through shared semantic roles and one global Sable appearance state. Follow system is the default, Sable Blue is the reset accent, and Start, Calculator, Games, Media, Reader, Hub and Mail must consume the same mode/accent selection. Individual apps must not maintain an unrelated private hard-coded palette.
 10. **Truthful branding.** User-facing product branding should say SableOS where SableOS owns the surface. Internal package/API identifiers and technically truthful provider/service ownership references are not blindly renamed.
+11. **One refresh interaction.** Refreshable first-party data surfaces use the shared Android pull-to-refresh gesture. Ordinary screen refresh must not add a separate app-local Refresh button. Event-driven updates remain the primary path where available; pull-to-refresh is the consistent user-controlled freshness fallback.
 
 ## Shared primitives
 
@@ -74,6 +75,7 @@ Shared primitives currently include:
 - `SableColorTokens`
 - `SableScreen`
 - `SableScrollableScreen`
+- `SableRefreshableSurface`
 - `SablePanel`
 - `SableActionButton`
 - `SableHeroHeader`
@@ -86,6 +88,28 @@ Shared primitives currently include:
 - `applySableDarkSystemBars`
 
 Screens should extend these primitives before introducing local visual conventions.
+
+## Refresh interaction contract
+
+Sable-owned refreshable data screens use `SableRefreshableSurface`, which owns the Material3 pull-to-refresh interaction.
+
+Current refreshable surfaces include:
+
+- SableStart Start and Live;
+- Sable Hub and Connected Apps;
+- Sable Weather;
+- Sable Calendar agenda/provider views;
+- Sable Media Podcasts.
+
+Rules:
+
+- a downward pull at the top of the data surface requests a fresh snapshot or explicit provider refresh;
+- the standard pull indicator communicates in-progress refresh state;
+- ordinary screen refresh does not get a separate visible **Refresh** button;
+- provider/content observers should still update screens automatically when SableOS has an event-driven signal;
+- pull-to-refresh is a fallback and explicit user action, not permission for background polling;
+- explicit domain operations remain explicit controls when they are not equivalent to refreshing the current screen (for example Subscribe, Import folder, Save, Send, or Retry a failed mutation);
+- editing/form screens do not need refresh gestures unless their content is itself a refreshable external-data view.
 
 ## Screen rules
 
@@ -153,6 +177,7 @@ The Applications surface is a strategic SableOS privacy/security surface, not on
 - Games: each game should present as a professional color-phone game rather than a developer test card. Sudoku uses visible cell borders and stronger 3×3 boundaries; Minesweeper uses explicit covered/revealed/flagged tile states and visible board structure; 2048 uses a bordered board, value-specific color tiles and swipe-first movement. Shared game screens may be developed together, but the product target remains separate Sudoku, Minesweeper and 2048 launcher APKs.
 - Media: use a Zune/Modern-inspired media-library/player hierarchy while following the global Sable Light/Dark/accent contract. Songs, Artists, Albums and Favorites use lazy flat rows plus a right-edge alphabet rail; destructive remove is not an inline browse action. Large collections must not trigger whole-library Compose rendering or per-frame grouping/sorting: collection indexing occurs off the UI thread, Up Next and playlist editing are lazy, playback-position ticks are scoped to Now Playing, and queue handoff must stay bounded rather than serialize an entire library through Binder. Album/now-playing art may use richer color than ordinary system surfaces; playback/source state remains truthful. Local favorites, playlists, queue ordering and preferences stay on-device and operate only on files explicitly added by the user.
 - Reader: reading surfaces may reduce chrome, but navigation, settings and dialogs remain Sable-consistent. Ordinary Light/Dark follows the SableOS global appearance authority. Sepia remains an explicit reading override and E-ink remains an explicit compatibility mode. The library shows actual distinct books in a continuously accessible vertical grid; it must not collapse a larger library into a six-item/stack-only presentation.
+- Phone / Contacts / People: local contact rows use the same two-line identity treatment where a phone number exists: human contact name first, preferred phone number second. Phone and Contacts derive that subtitle from one background ContactsProvider Phone query per surface, preferring super-primary then primary then the first stable provider row; they must not issue per-row contact queries or introduce a second contact database. Hub People remains ContactsProvider-backed.
 - Messages: the normal product surface is Messages + People, not a provider-services dashboard. SMS presentation remains over the retained Android/Graphene Messaging transport boundary. Third-party apps integrate through user-authorized Android notification/conversation metadata and source-app RemoteInput actions where available. Connected-app configuration is package + Android user/profile based and must not require recompiling SableOS when a compatible messaging app is added.
 
 ## Rollout sequence

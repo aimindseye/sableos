@@ -109,6 +109,58 @@ with zipfile.ZipFile(tf) as z:
             f"member={found[0]} sha256={digest}"
         )
 
+    appstore = matches("AppStore.apk")
+    if len(appstore) != 1:
+        raise SystemExit(
+            f"R9_APPSTORE_TARGET_COUNT=FAIL matches={appstore!r}"
+        )
+    appstore_data = z.read(appstore[0])
+    appstore_digest = hashlib.sha256(appstore_data).hexdigest()
+    expected_appstore_digest = (
+        "0247e7ad3f244cf7d79a00b1bc5780cb"
+        "f195da6484ad6545b4940223ddb24e52"
+    )
+    if appstore_digest != expected_appstore_digest:
+        raise SystemExit(
+            "R9_APPSTORE_TARGET_SHA256=FAIL "
+            f"expected={expected_appstore_digest} actual={appstore_digest}"
+        )
+    (tmp / "AppStore.apk").write_bytes(appstore_data)
+    print(
+        "R9_APPSTORE_TARGET=PASS "
+        f"member={appstore[0]} sha256={appstore_digest}"
+    )
+
+    appstore_allowlist = "PRODUCT/etc/permissions/app.grapheneos.apps.xml"
+    if appstore_allowlist not in names:
+        raise SystemExit(
+            "R9_APPSTORE_PRIVAPP_ALLOWLIST_TARGET=FAIL_MISSING "
+            f"member={appstore_allowlist}"
+        )
+    allowlist_text = z.read(appstore_allowlist).decode("utf-8")
+    if '<privapp-permissions package="app.grapheneos.apps">' not in allowlist_text:
+        raise SystemExit("R9_APPSTORE_PRIVAPP_ALLOWLIST_TARGET=FAIL_SEMANTICS")
+    print(
+        "R9_APPSTORE_PRIVAPP_ALLOWLIST_TARGET=PASS "
+        f"member={appstore_allowlist}"
+    )
+
+    for forbidden_apk in (
+        "Phonesky.apk",
+        "GmsCore.apk",
+        "GoogleServicesFramework.apk",
+    ):
+        found = matches(forbidden_apk)
+        if found:
+            raise SystemExit(
+                "R9_GOOGLE_PLAY_PREINSTALLED_TARGET=FAIL "
+                f"file={forbidden_apk} members={found!r}"
+            )
+        print(
+            "R9_GOOGLE_PLAY_PREINSTALLED_TARGET=PASS_ABSENT "
+            f"file={forbidden_apk}"
+        )
+
     launcher = matches("Launcher3QuickStep.apk")
     if len(launcher) != 1:
         raise SystemExit(
@@ -188,6 +240,7 @@ AAPT2="${AAPT2:-$OUT_ABS/host/linux-x86/bin/aapt2}"
 [[ -x "$AAPT2" ]] || fail R8_AAPT2 4
 
 declare -A expected_package=(
+    [AppStore.apk]=app.grapheneos.apps
     [SableLauncher.apk]=org.sableos.launcher
     [Launcher3QuickStep.apk]=com.android.launcher3
     [SableCalculator.apk]=org.sableos.calculator
@@ -203,7 +256,7 @@ declare -A expected_package=(
     [SableCalendar.apk]=org.sableos.calendar
 )
 
-for apk in     SableLauncher.apk     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableTextReader.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
+for apk in     AppStore.apk     SableLauncher.apk     Launcher3QuickStep.apk     SableCalculator.apk     SableSudoku.apk     SableMinesweeper.apk     Sable2048.apk     SableMedia.apk     SableTextReader.apk     SableReader.apk     SableHub.apk     SableMail.apk     SableWeather.apk     SableCalendar.apk
 do
     pkg="$("$AAPT2" dump packagename "$TMP/$apk" 2>/dev/null | tail -1)"
     expected="${expected_package[$apk]}"
@@ -214,6 +267,9 @@ do
     echo "R8_TARGET_PACKAGE_IDENTITY=PASS file=$apk package=$pkg"
 done
 
+echo "R9_APPSTORE_TARGET_FILES=PASS_PRESENT_PINNED_SHA256"
+echo "R9_APPSTORE_PACKAGE_IDENTITY=PASS_APP_GRAPHENEOS_APPS"
+echo "R9_GOOGLE_PLAY_PREINSTALLED_TARGET_FILES=PASS_ABSENT"
 echo "R9_SABLELAUNCHER_HOME_TARGET_FILES=PASS_PRESENT"
 echo "R9_LAUNCHER3_RECENTS_TARGET_FILES=PASS_PRESENT"
 echo "R9_LEGACY_SABLESTART_TARGET_FILES=PASS_ABSENT"
