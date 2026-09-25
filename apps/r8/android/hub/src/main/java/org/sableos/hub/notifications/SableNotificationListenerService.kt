@@ -97,21 +97,19 @@ class SableNotificationListenerService : NotificationListenerService() {
                 }
         val policy =
             key?.let(policies::cachedPolicyFor)
-
-        if (key == null || policy?.includeInMessages != true) {
-            clearNotificationState(sbn.key)
-            return null
-        }
-
         val envelope =
-            captureEnvelope(
-                sbn = sbn,
-                key = key,
-                policy = policy,
-            )
-        if (!envelope.isConversationCandidate()) {
+            if (key != null && policy?.includeInMessages == true) {
+                captureEnvelope(
+                    sbn = sbn,
+                    key = key,
+                    policy = policy,
+                ).takeIf(ConnectedNotificationEnvelope::isConversationCandidate)
+            } else {
+                null
+            }
+
+        if (envelope == null) {
             clearNotificationState(sbn.key)
-            return null
         }
         return envelope
     }
@@ -160,18 +158,7 @@ class SableNotificationListenerService : NotificationListenerService() {
                         ?.toString(),
                     MAX_NOTIFICATION_LABEL_LENGTH,
                 ),
-            notificationBody =
-                boundedText(
-                    notification.extras
-                        .getCharSequence(Notification.EXTRA_BIG_TEXT)
-                        ?.toString(),
-                    MAX_NOTIFICATION_BODY_LENGTH,
-                ) ?: boundedText(
-                    notification.extras
-                        .getCharSequence(Notification.EXTRA_TEXT)
-                        ?.toString(),
-                    MAX_NOTIFICATION_BODY_LENGTH,
-                ),
+            notificationBody = captureNotificationBody(notification),
             conversationTitle =
                 boundedText(
                     notification.extras
@@ -196,6 +183,19 @@ class SableNotificationListenerService : NotificationListenerService() {
             allowQuickReply = policy.allowQuickReply,
         )
     }
+
+    private fun captureNotificationBody(notification: Notification): String? =
+        boundedText(
+            notification.extras
+                .getCharSequence(Notification.EXTRA_BIG_TEXT)
+                ?.toString(),
+            MAX_NOTIFICATION_BODY_LENGTH,
+        ) ?: boundedText(
+            notification.extras
+                .getCharSequence(Notification.EXTRA_TEXT)
+                ?.toString(),
+            MAX_NOTIFICATION_BODY_LENGTH,
+        )
 
     @Suppress("DEPRECATION")
     private fun captureMessages(
@@ -256,21 +256,19 @@ class SableNotificationListenerService : NotificationListenerService() {
     ): Boolean {
         val firstKey = first.key?.takeIf(String::isNotBlank)
         val secondKey = second.key?.takeIf(String::isNotBlank)
-        if (firstKey != null && secondKey != null) {
-            return firstKey == secondKey
-        }
-
         val firstUri = first.uri?.takeIf(String::isNotBlank)
         val secondUri = second.uri?.takeIf(String::isNotBlank)
-        if (firstUri != null && secondUri != null) {
-            return firstUri == secondUri
-        }
-
         val firstName = first.name?.toString()?.trim()
         val secondName = second.name?.toString()?.trim()
-        return !firstName.isNullOrEmpty() &&
-            !secondName.isNullOrEmpty() &&
-            firstName.equals(secondName, ignoreCase = true)
+
+        return when {
+            firstKey != null && secondKey != null -> firstKey == secondKey
+            firstUri != null && secondUri != null -> firstUri == secondUri
+            else ->
+                !firstName.isNullOrEmpty() &&
+                    !secondName.isNullOrEmpty() &&
+                    firstName.equals(secondName, ignoreCase = true)
+        }
     }
 
     private fun captureReplyCandidate(notification: Notification): ConnectedNotificationReplyCandidate? {
