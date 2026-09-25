@@ -97,6 +97,8 @@ DEVICE_1=TITAN2
 DEVICE_2=TITAN2_ELITE
 FUTURE_DEVICE=Q27
 BRAMBLE=HISTORICAL_REFERENCE
+TITAN2_HARDWARE_DESIGN_HANDOFF=READY
+TITAN2_N0_BUILD=DEFERRED_UNTIL_KEYBOARD_FIRST_DESIGN_READY
 ```
 
 Titan 2 and Titan 2 Elite are independent physical qualification targets even
@@ -158,9 +160,11 @@ V1 closure, not the earlier `6f1d6d2f` / `08ef...` acceptance image.
 ```text
 1. Keep remaining open issues open until Titan 2 SableOS install closure.
 2. Synchronize sableos-project public documentation with this current state.
-3. Titan 2: finish T0/T1 read-only platform, keyboard, display, camera, radio
-   and restore evidence.
-4. Titan 2: qualify first keyboard-first N0 SableOS artifact/deployment path.
+3. Titan 2: use the completed keyboard/display/input/camera/restore evidence as
+   design input for KF1-KF8; remaining radio/audio/sensor/power stock baselines
+   continue independently and do not block keyboard-first product design.
+4. Titan 2: define the keyboard-first product/device target when design is ready,
+   then qualify the first N0 artifact/deployment path.
 5. Close Panther/Titan-shared open polish issues only when the Titan 2 install
    proves or supersedes them.
 6. Titan 2 Elite: run the same independent evidence sequence.
