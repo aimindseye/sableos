@@ -1301,6 +1301,7 @@ def verify_repo(
     if label == "PHONE":
         allowed_behavioral = {
             f" M {DIALER_CONTACTS_ADAPTER.as_posix()}",
+            f" M {DIALER_CONTACT_VIEW_HOLDER.as_posix()}",
             f" M {DIALER_CONTACTS_FRAGMENT.as_posix()}",
         }
         if behavioral != allowed_behavioral:
@@ -1308,10 +1309,14 @@ def verify_repo(
                 "R9_PHONE_BEHAVIORAL_SCOPE=FAIL "
                 f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY")
+        print(
+            "R9_PHONE_BEHAVIORAL_SCOPE="
+            "PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
+        )
     else:
         allowed_behavioral = {
             f" M {CONTACTS_INDEXER_ADAPTER.as_posix()}",
+            f" M {CONTACTS_DEFAULT_ADAPTER.as_posix()}",
             f" M {CONTACTS_BROWSE_FRAGMENT.as_posix()}",
         }
         if behavioral != allowed_behavioral:
@@ -1319,7 +1324,10 @@ def verify_repo(
                 "R9_CONTACTS_BEHAVIORAL_SCOPE=FAIL "
                 f"expected={sorted(allowed_behavioral)!r} actual={sorted(behavioral)!r}"
             )
-        print("R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY")
+        print(
+            "R9_CONTACTS_BEHAVIORAL_SCOPE="
+            "PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE"
+        )
 
     print(f"R9_{label}_PRESENTATION=PASS")
 
@@ -1413,6 +1421,8 @@ def verify(source: Path) -> None:
     print("R9_PHONE_CONTACTS_PRESENTATION=PASS")
     print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER")
+    print("R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_PREFERRED_CONTACTSPROVIDER_NUMBER")
+    print("R9_PHONE_CONTACTS_PHONE_QUERY=PASS_ONE_BACKGROUND_PROVIDER_QUERY_PER_SURFACE")
     print("R9_CONTACTS_DATA_MODEL_MUTATION=NONE")
 
 
@@ -1517,7 +1527,11 @@ def self_test() -> None:
     print("R9_CONTACTS_PRESENTATION=PASS_SELF_TEST")
     print("R9_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
     print("R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_SELF_TEST")
-    print("R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY_SELF_TEST")
+    print("R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_SELF_TEST")
+    print(
+        "R9_PHONE_BEHAVIORAL_SCOPE="
+        "PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE_SELF_TEST"
+    )
     print("R9_PHONE_CONTACTS_PRESENTATION_SELF_TEST=PASS")
 
 
