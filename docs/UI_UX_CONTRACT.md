@@ -1,7 +1,7 @@
 # SableOS UI/UX contract
 
 Status: active R8 baseline + R9 launcher-extension product contract  
-Contract version: 3  
+Contract version: 4  
 Design implementation schema: `SableDesignContract.SCHEMA_VERSION = 2`
 
 ## Purpose
@@ -51,6 +51,7 @@ local overrides -> cleared
 8. **Fast restrained motion.** UI motion uses 120/180/240ms timing classes and should explain navigation or state changes rather than decorate them.
 9. **Theme consistency.** R8 supports Follow system, Light and Dark through shared semantic roles and one global Sable appearance state. Follow system is the default, Sable Blue is the reset accent, and Start, Calculator, Games, Media, Reader, Hub and Mail must consume the same mode/accent selection. Individual apps must not maintain an unrelated private hard-coded palette.
 10. **Truthful branding.** User-facing product branding should say SableOS where SableOS owns the surface. Internal package/API identifiers and technically truthful provider/service ownership references are not blindly renamed.
+11. **One refresh interaction.** Refreshable first-party data surfaces use the shared Android pull-to-refresh gesture. Ordinary screen refresh must not add a separate app-local Refresh button. Event-driven updates remain the primary path where available; pull-to-refresh is the consistent user-controlled freshness fallback.
 
 ## Shared primitives
 
@@ -74,6 +75,7 @@ Shared primitives currently include:
 - `SableColorTokens`
 - `SableScreen`
 - `SableScrollableScreen`
+- `SableRefreshableSurface`
 - `SablePanel`
 - `SableActionButton`
 - `SableHeroHeader`
@@ -86,6 +88,28 @@ Shared primitives currently include:
 - `applySableDarkSystemBars`
 
 Screens should extend these primitives before introducing local visual conventions.
+
+## Refresh interaction contract
+
+Sable-owned refreshable data screens use `SableRefreshableSurface`, which owns the Material3 pull-to-refresh interaction.
+
+Current refreshable surfaces include:
+
+- SableStart Start and Live;
+- Sable Hub;
+- Sable Weather;
+- Sable Calendar agenda/provider views;
+- Sable Media Podcasts.
+
+Rules:
+
+- a downward pull at the top of the data surface requests a fresh snapshot or explicit provider refresh;
+- the standard pull indicator communicates in-progress refresh state;
+- ordinary screen refresh does not get a separate visible **Refresh** button;
+- provider/content observers should still update screens automatically when SableOS has an event-driven signal;
+- pull-to-refresh is a fallback and explicit user action, not permission for background polling;
+- explicit domain operations remain explicit controls when they are not equivalent to refreshing the current screen (for example Subscribe, Import folder, Save, Send, or Retry a failed mutation);
+- editing/form screens do not need refresh gestures unless their content is itself a refreshable external-data view.
 
 ## Screen rules
 
