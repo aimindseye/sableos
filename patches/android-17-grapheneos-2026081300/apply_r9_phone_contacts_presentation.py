@@ -417,16 +417,6 @@ import android.support.annotation.IntDef;
 ''',
         ),
         (
-            '''import android.support.v7.widget.RecyclerView.State;
-import android.view.LayoutInflater;
-''',
-            '''import android.support.v7.widget.RecyclerView.State;
-import android.text.TextUtils;
-import android.util.LongSparseArray;
-import android.view.LayoutInflater;
-''',
-        ),
-        (
             '''  private static final String EXTRA_HEADER = "extra_header";
   private static final String EXTRA_HAS_PHONE_NUMBERS = "extra_has_phone_numbers";
 ''',
@@ -561,6 +551,16 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+''',
+        ),
+        (
+            '''import android.support.v7.widget.RecyclerView.State;
+import android.view.Gravity;
+''',
+            '''import android.support.v7.widget.RecyclerView.State;
+import android.text.TextUtils;
+import android.util.LongSparseArray;
+import android.view.Gravity;
 ''',
         ),
         (
