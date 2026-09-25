@@ -796,7 +796,168 @@ CONTACTS_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
 ''',
         ),
     ),
+    CONTACTS_DEFAULT_ADAPTER: (
+        (
+            '''import android.text.TextUtils;
+import android.view.View;
+''',
+            '''import android.text.TextUtils;
+import android.util.LongSparseArray;
+import android.view.View;
+''',
+        ),
+        (
+            '''    public static final char SNIPPET_START_MATCH = '[';
+    public static final char SNIPPET_END_MATCH = ']';
+
+
+    public DefaultContactListAdapter(Context context) {
+''',
+            '''    public static final char SNIPPET_START_MATCH = '[';
+    public static final char SNIPPET_END_MATCH = ']';
+
+    private LongSparseArray<String> mSablePhoneNumbers = new LongSparseArray<>();
+
+    public DefaultContactListAdapter(Context context) {
+''',
+        ),
+        (
+            '''    public DefaultContactListAdapter(Context context) {
+        super(context);
+    }
+
+    @Override
+    public void configureLoader(CursorLoader loader, long directoryId) {
+''',
+            '''    public DefaultContactListAdapter(Context context) {
+        super(context);
+    }
+
+    void setSablePhoneNumbers(LongSparseArray<String> phoneNumbers) {
+        mSablePhoneNumbers =
+                phoneNumbers == null ? new LongSparseArray<String>() : phoneNumbers;
+        notifyDataSetChanged();
+    }
+
+    @Override
+    public void configureLoader(CursorLoader loader, long directoryId) {
+''',
+        ),
+        (
+            '''        bindNameAndViewId(view, cursor);
+        bindPresenceAndStatusMessage(view, cursor);
+''',
+            '''        bindNameAndViewId(view, cursor);
+        final long directoryId =
+                ((DirectoryPartition) getPartition(partition)).getDirectoryId();
+        final String phoneNumber =
+                directoryId == Directory.DEFAULT || directoryId == Directory.LOCAL_INVISIBLE
+                        ? mSablePhoneNumbers.get(cursor.getLong(ContactQuery.CONTACT_ID))
+                        : null;
+        view.setPhoneNumber(phoneNumber, null);
+        bindPresenceAndStatusMessage(view, cursor);
+''',
+        ),
+    ),
     CONTACTS_BROWSE_FRAGMENT: (
+        (
+            '''import android.provider.ContactsContract;
+import android.provider.ContactsContract.Directory;
+import android.text.TextUtils;
+''',
+            '''import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.Phone;
+import android.provider.ContactsContract.Directory;
+import android.text.TextUtils;
+''',
+        ),
+        (
+            '''import android.text.TextUtils;
+import android.util.Log;
+import android.view.Gravity;
+''',
+            '''import android.text.TextUtils;
+import android.util.Log;
+import android.util.LongSparseArray;
+import android.view.Gravity;
+''',
+        ),
+        (
+            '''    private static final int ACTIVITY_REQUEST_CODE_SHARE = 0;
+
+    private View mSearchHeaderView;
+''',
+            '''    private static final int ACTIVITY_REQUEST_CODE_SHARE = 0;
+    private static final int SABLE_PHONE_NUMBERS_LOADER_ID = -2;
+
+    private View mSearchHeaderView;
+''',
+        ),
+        (
+            '''    public void onResume() {
+        super.onResume();
+        configureFragment();
+''',
+            '''    public void onResume() {
+        super.onResume();
+        configureFragment();
+        if (getContext().checkSelfPermission(android.Manifest.permission.READ_CONTACTS)
+                == PackageManager.PERMISSION_GRANTED) {
+            getLoaderManager().restartLoader(SABLE_PHONE_NUMBERS_LOADER_ID, null, this);
+        }
+''',
+        ),
+        (
+            '''    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (loader.getId() == Directory.DEFAULT) {
+''',
+            '''    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        if (id == SABLE_PHONE_NUMBERS_LOADER_ID) {
+            return new CursorLoader(
+                    getContext(),
+                    Phone.CONTENT_URI,
+                    new String[] {Phone.CONTACT_ID, Phone.NUMBER},
+                    Phone.NUMBER + " IS NOT NULL",
+                    null,
+                    Phone.CONTACT_ID
+                            + " ASC, "
+                            + Phone.IS_SUPER_PRIMARY
+                            + " DESC, "
+                            + Phone.IS_PRIMARY
+                            + " DESC, "
+                            + Phone._ID
+                            + " ASC");
+        }
+        return super.onCreateLoader(id, args);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+        if (loader.getId() == SABLE_PHONE_NUMBERS_LOADER_ID) {
+            final LongSparseArray<String> phoneNumbers = new LongSparseArray<>();
+            if (data != null) {
+                final int contactIdIndex = data.getColumnIndexOrThrow(Phone.CONTACT_ID);
+                final int numberIndex = data.getColumnIndexOrThrow(Phone.NUMBER);
+                while (data.moveToNext()) {
+                    final long contactId = data.getLong(contactIdIndex);
+                    final String number = data.getString(numberIndex);
+                    if (phoneNumbers.indexOfKey(contactId) < 0 && !TextUtils.isEmpty(number)) {
+                        phoneNumbers.put(contactId, number);
+                    }
+                }
+            }
+            final ContactListAdapter adapter = getAdapter();
+            if (adapter instanceof DefaultContactListAdapter) {
+                ((DefaultContactListAdapter) adapter).setSablePhoneNumbers(phoneNumbers);
+            }
+            return;
+        }
+
+        if (loader.getId() == Directory.DEFAULT) {
+''',
+        ),
         (
             '''import android.widget.ImageView;
 import android.widget.LinearLayout.LayoutParams;
