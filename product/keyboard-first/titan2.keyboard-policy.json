@@ -134,7 +134,7 @@
   "delegated_decisions": [
     {
       "id": "REAR_SUBSCREEN_PRODUCT_ROLE",
-      "owner": "KF7_SECONDARY_DISPLAY_POLICY",
+      "owner": "SECONDARY_DISPLAY_PRODUCT_POLICY",
       "reason": "KF2 may route a semantic request toward the rear display, but task hosting, notification presentation, privacy and product role are display/attention policy."
     }
   ]
