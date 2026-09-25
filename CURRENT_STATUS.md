@@ -2,88 +2,112 @@
 
 Last updated: 2026-09-25
 
+This file is the private integration repository's current execution authority.
+Historical R5-R10 status files, issue bodies and PR descriptions remain evidence
+for the milestone they described, but they do not override this file when they
+conflict with the current merged state.
+
 ## Executive state
 
-Pixel 7 / Panther R9 is temporarily reopened for one **bounded final
-compatibility closure** before returning to frozen touch-first reference status.
-The approved closure scope now includes the physically discovered communication
-remediation required to freeze Panther cleanly: the pinned GrapheneOS App Store,
-optional sandboxed Google Play, third-party Android interoperability, and Sable
-Hub V1 over the proven Connected Apps notification/conversation foundation.
+Pixel 7 / Panther R9 is closed again as the frozen touch-first reference after
+the final Sable Hub V1 compatibility/remediation closure.
 
 ```text
-R9_PANTHER_PREVIOUS_ACCEPTED_SOURCE=6f1d6d2f0f2525067874238c4b797ad58f2bcbc6
-R9_PANTHER_PREVIOUS_ACCEPTED_TARGET_FILES_SHA256=08ef429c7f9eef17de7ddad4ce9baa81911950e8d34b6751b6e4588f66821502
-R9_MODULE_QUALIFICATION=PASS
-R9_LOCAL_FULL_CI=PASS
-R9_FRESH_FULL_BUILD=PASS
-R9_ARTIFACT_REGISTRATION=PASS
-R9_STANDARD_PRESERVED_DATA_FLASH=PASS
-R9_POSTFLASH_SMOKE=PASS_19_OF_19
-R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY
-R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION
-R9_LIGHT_DARK_PROPAGATION=PASS_PHYSICAL
-R9_PANTHER_DEVELOPMENT=BOUNDED_FINAL_APPSTORE_THIRD_PARTY_CLOSURE
-R9_APPSTORE_TESTED_SOURCE=86d0f67cd66f812c59e30a6fd28e455ae1dec6c1
-R9_APPSTORE_TESTED_TARGET_FILES_SHA256=87b7347fbc388bfb9f121aa0bf9b19ec68b2ce3d2f0079f837b797692fd416a0
-R9_APPSTORE_PRODUCT=PASS_PHYSICAL
-R9_GOOGLE_PLAY_POLICY=OPTIONAL_USER_INSTALLED_NOT_PREINSTALLED
-R9_SANDBOXED_GOOGLE_PLAY=PASS_PHYSICAL_GMS_WITHOUT_GSF
-R9_THIRD_PARTY_PROVIDER_INSTALLATION=PASS_SIGNAL_WHATSAPP_TELEGRAM_LINKEDIN
-R9_SIGNAL_CONNECTED_APP=PASS_CONVERSATION_REPLY
-R9_WHATSAPP_CONNECTED_APP=PASS_CONVERSATION_REPLY_PHYSICAL
-R9_TELEGRAM_CONNECTED_APP=NOT_EVALUATED_PROVIDER_VERIFICATION_CHARGE
-R9_LINKEDIN_CONNECTED_APP=PASS_CONVERSATION_REPLY_PHYSICAL
-R9_HUB_PRE_REFRESH_TESTED_SOURCE=29e521ae22d41dcc9d18f0ee4f458a8bfb809602
-R9_HUB_PRE_REFRESH_TARGET_FILES_SHA256=ed781c23ef7c76dfefc0dcbf781c73410e6b164450b8019258f88aeee993566f
-R9_HUB_PRE_REFRESH_FLASH=PASS_PRESERVED_DATA_SMOKE_19_OF_19
-R9_HUB_LIVE_REFRESH_PHYSICAL=FAIL_START_STALE_AND_HUB_DELAYED
-R9_HUB_REFRESH_TESTED_SOURCE=05bcc03fe1732f7bc7baafc54ecd0299e79d0069
-R9_HUB_REFRESH_TESTED_TARGET_FILES_SHA256=6589100e592af9b4ed19ce4a1298ebc371ef513084c1acbf24f600d1fbe5143d
-R9_HUB_SABLESTART_ACTIVE_COUNT=PASS_PHYSICAL
-R9_WEATHER_HOURLY_TIME_PHYSICAL=PASS_CURRENT_LOCAL_HOUR
-R9_LIVE_SURFACE_FRESHNESS=PASS_PHYSICAL
-R9_LINKEDIN_CONNECTED_APP=PASS_CONVERSATION_REPLY_PHYSICAL
-R9_HUB_WHATSAPP_DUPLICATES=FAIL_PHYSICAL
-R9_HUB_LATEST_ROOT_VISIBILITY=FAIL_INTERMITTENT
-R9_HUB_LATEST_THREAD_VISIBILITY=FAIL_REQUIRES_SCROLL
-R9_HUB_NOTIFICATION_NOISE=FAIL_GROUP_SUMMARY_STATUS_NON_CONVERSATION
-R9_HUB_FINAL_NORMALIZATION_REMEDIATION=SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
-R9_SHARED_REFRESH_UX=SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
-R9_PHONE_CONTACTS_NUMBER_SUBTITLE=SOURCE_IMPLEMENTED_QUALIFICATION_PENDING
-R9_PHONE_CONTACTS_NUMBER_SOURCE=CONTACTSPROVIDER_PREFERRED_PHONE_BACKGROUND_QUERY
-R9_SHARED_REFRESH_SURFACES=START_LIVE_HUB_CONNECTED_APPS_WEATHER_CALENDAR_PODCASTS
-R9_MANUAL_SCREEN_REFRESH_BUTTONS=RETIRED_WEATHER_AND_PODCASTS
-R9_HUB_V1=PHYSICAL_PASS_EXCEPT_DEDUP_AND_LATEST_VISIBILITY
-R9_PANTHER_FINAL_COMPATIBILITY_FREEZE=PENDING_HUB_FINAL_NORMALIZATION_REFRESH_UX_AND_CONTACT_SUBTITLES
+PRIVATE_MAIN_HEAD=2624e1af
+R10_KEYBOARD_FIRST_DESIGN_V1=MERGED
+R10_KEYBOARD_FIRST_DESIGN_PR=108
+R10_KEYBOARD_FIRST_DESIGN_MERGE_COMMIT=2624e1af
+R10_KEYBOARD_FIRST_DESIGN_SOURCE=20da2daa
+
+R9_PANTHER_HUB_V1_CLOSURE=MERGED
+R9_PANTHER_HUB_V1_PR=110
+R9_PANTHER_HUB_V1_MERGE_COMMIT=f175b00f
+R9_PANTHER_ACCEPTED_SOURCE=edf62e5bb08372a1395841d6cc5d78d3148a7695
+R9_PANTHER_TARGET_FILES_SHA256=a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285
+R9_PANTHER_STANDARD_PRESERVED_DATA_FLASH=PASS
+R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS_WITH_PRESERVED_PLAY_STATE
+R9_PANTHER_REFERENCE_STATE=FROZEN_TOUCH_FIRST_REFERENCE
+
+THEME_PROPAGATION=DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_GATE
+CLEAN_BASELINE_APPSTORE=NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
+PRODUCTION_SIGNING=DEFERRED
 ```
 
-The private repository `main` now contains the reconciled R9 lineage and the
-Titan camera / sealed stock-firmware documentation. Later documentation or
-multi-device tooling commits do not retroactively become Panther image
-qualification sources.
+The final Panther image is source-bound to `edf62e5b` and target-files-bound to
+`a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285`. Later
+merged documentation, keyboard-first planning and repository-cleanup commits do
+not become new Panther image qualification sources.
+
+## Final R9 closure evidence
+
+```text
+R9_MESSAGES_FOCUSED_QUALIFICATION=PASS
+R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS
+R9_FRESH_FULL_BUILD=PASS
+R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
+SABLE_DEVICE_ARTIFACT_GATE=PASS
+SABLE_ARTIFACT_REGISTER=PASS
+SABLE_RELEASE_ARTIFACT_REGISTER=PASS
+SABLE_STANDARD_FLASH=PASS
+R9_SABLE_HOME_DEVICE_ACCEPTANCE=PASS
+R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY
+R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION
+R9_APPSTORE_AUDIT=PASS_READ_ONLY_RUNTIME_STATE
+MAIN_CONTAINS_SOURCE=PASS
+```
+
+The preserved-data physical device intentionally kept user-installed state. The
+AppStore/Play read-only audit therefore proves the observed preserved runtime
+state and sandboxed Play behavior, not a clean baseline factory image without
+user-installed packages.
+
+## Current product status
+
+Sable Hub V1 is the accepted common communications surface:
+
+```text
+Priority | Messages | Email | People
+```
+
+Hub remains an aggregator/interaction surface. Sable Mail owns mail accounts,
+protocols, MIME/storage/security behavior and credentials. Hub consumes bounded
+local summaries and/or notification-derived state; it must not scrape private
+mail/provider databases or manufacture delivery/read semantics.
+
+Panther now serves as:
+
+- frozen touch-first reference;
+- regression/security/product-comparison baseline;
+- known-good build/flash/evidence pattern;
+- reference for common app semantics before Titan-family promotion.
+
+Open polish/physical issues intentionally remain open until the Titan 2 SableOS
+install path gives the next useful closure point. In particular, appearance,
+Reader propagation, large-media-library performance, duplicate visible Messages,
+production icons/launch timing, first-run crash evidence and All Apps permission
+summaries are tracked as open follow-ups rather than blockers to the current
+Panther freeze.
 
 ## Active development
 
 ```text
-PRIMARY_ACTIVE_WORK=PANTHER_FINAL_COMPATIBILITY_CLOSURE_THEN_KEYBOARD_FIRST
+PRIMARY_ACTIVE_WORK=KEYBOARD_FIRST_TITAN_N0_SEQUENCE
+PANTHER=FROZEN_TOUCH_FIRST_REFERENCE
 DEVICE_1=TITAN2
 DEVICE_2=TITAN2_ELITE
 FUTURE_DEVICE=Q27
-PANTHER=BOUNDED_REOPEN_THEN_FROZEN_REFERENCE
 BRAMBLE=HISTORICAL_REFERENCE
 ```
 
 Titan 2 and Titan 2 Elite are independent physical qualification targets even
 when they consume the same common Sable applications and interaction semantics.
-
-Titan 2 already has a sealed stock firmware/OTA corpus and active camera
-research. Titan 2 Elite must receive its own read-only inventory and
-bootloader/recovery/Treble/camera evidence when the device arrives.
+Titan 2 already has active sealed stock-firmware, camera and keyboard research.
+Titan 2 Elite must receive its own read-only inventory and bootloader/recovery/
+Treble/camera/telephony evidence when the device arrives.
 
 ## Canonical engineering interface
 
-The operator contract is already device/release neutral:
+The operator contract is device/release neutral:
 
 ```text
 bash build/sable.sh <device> <release> <function> [options]
@@ -98,8 +122,8 @@ titan2-elite
 q27
 ```
 
-The hardware serial is intentionally **not** part of build/image identity.
-It is required only for device-contact operations such as flash and acceptance:
+The hardware serial is intentionally **not** part of build/image identity. It is
+required only for device-contact operations such as flash and acceptance:
 
 ```bash
 bash build/sable.sh titan2 R10 flash \
@@ -109,7 +133,7 @@ bash build/sable.sh titan2 R10 flash \
   --authorize
 ```
 
-Titan 2, Titan 2 Elite and Q27 adapters currently fail closed for build,
+Titan 2, Titan 2 Elite and Q27 adapters remain fail-closed for build,
 qualification and flash until each platform contract is proven.
 
 ## Repository direction
@@ -125,28 +149,26 @@ During the keyboard-first transition:
 - private host evidence, raw firmware, serials and unreviewed vendor diagnostics
   remain outside public Git.
 
-See `docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md`.
+Public documentation must now reflect that PR #110 and PR #108 are merged and
+that Panther's current image authority is the `edf62e5b` / `a0b359...` R9 Hub
+V1 closure, not the earlier `6f1d6d2f` / `08ef...` acceptance image.
 
 ## Next execution order
 
 ```text
-1. Qualify the combined Sable Hub V1 closure in
-   docs/adr/0011-sable-hub-v1.md: generic WhatsApp reply-handle retention,
-   Enabled / Available Connected Apps, inline truthful reply handoff history,
-   Priority / Messages / Email / People, and bounded Sable Mail snapshot access.
-2. Build and physically verify one final source-bound Panther image.
-3. Record the final Panther source + target-files seal and freeze Panther again.
-4. Reconcile public sableos-project documentation with accepted R9 architecture.
-5. Keep the canonical multi-device entry point and make artifact/flash strategy
-   adapter-driven rather than Panther-target-files-specific.
-6. Titan 2: finish T0/T1 read-only platform + camera + keyboard evidence.
-7. Titan 2: qualify the first keyboard-first N0 SableOS image path.
-8. Titan 2 Elite: run the same independent evidence sequence.
-9. Implement common Sable Camera + Sable Keyboard/system input integration.
-10. Q27 remains research until shipped hardware qualifies.
-11. Return to production signing/OTA after repeatable multi-device development
+1. Keep remaining open issues open until Titan 2 SableOS install closure.
+2. Synchronize sableos-project public documentation with this current state.
+3. Titan 2: finish T0/T1 read-only platform, keyboard, display, camera, radio
+   and restore evidence.
+4. Titan 2: qualify first keyboard-first N0 SableOS artifact/deployment path.
+5. Close Panther/Titan-shared open polish issues only when the Titan 2 install
+   proves or supersedes them.
+6. Titan 2 Elite: run the same independent evidence sequence.
+7. Implement common Sable Camera and Sable Keyboard/system-input integration.
+8. Q27 remains research until shipped hardware qualifies.
+9. Return to production signing/OTA after repeatable multi-device development
    qualification.
 ```
 
-Historical R5-R9 status details remain available in Git history and milestone
-documents; this file is the current execution authority.
+Historical R5-R10 details remain available in Git history, issues, PRs and
+milestone documents; this file is the current execution authority.
