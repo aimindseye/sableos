@@ -1,7 +1,7 @@
 # SableOS UI/UX contract
 
-Status: active R8 baseline + R9 launcher-extension product contract  
-Contract version: 4  
+Status: active R8 baseline + R9 launcher-extension product contract
+Contract version: 4
 Design implementation schema: `SableDesignContract.SCHEMA_VERSION = 2`
 
 ## Purpose
