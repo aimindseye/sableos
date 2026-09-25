@@ -96,7 +96,7 @@ Sable-owned refreshable data screens use `SableRefreshableSurface`, which owns t
 Current refreshable surfaces include:
 
 - SableStart Start and Live;
-- Sable Hub;
+- Sable Hub and Connected Apps;
 - Sable Weather;
 - Sable Calendar agenda/provider views;
 - Sable Media Podcasts.
