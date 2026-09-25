@@ -93,7 +93,7 @@ def test_keyboard_light_ui_never_owns_sysfs():
 def test_rear_display_product_role_is_delegated():
     policy = load_policy()
     delegated = {item["id"]: item for item in policy["delegated_decisions"]}
-    assert delegated["REAR_SUBSCREEN_PRODUCT_ROLE"]["owner"] == "KF7_SECONDARY_DISPLAY_POLICY"
+    assert delegated["REAR_SUBSCREEN_PRODUCT_ROLE"]["owner"] == "SECONDARY_DISPLAY_PRODUCT_POLICY"
 
 
 def test_validator_rejects_raw_scan_code_in_policy():
