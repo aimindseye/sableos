@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Apply/verify the approved Sable Phone + Contacts UX.
 
-The Dialer portion remains presentation-only. Contacts additionally receives a
-bounded right-edge alphabet rail backed by its existing SectionIndexer. No
-second contact index/database is introduced. ContactsProvider, accounts, sync,
-permissions and contact-data semantics remain untouched.
+Phone and Contacts keep their upstream ContactsProvider ownership. Both add a
+bounded read-only preferred-phone-number cache for list subtitles, while the
+existing alphabet rails continue to use upstream section indexes. No second
+contact index/database is introduced. Accounts, sync, permissions and
+contact-data semantics remain untouched.
 """
 
 from __future__ import annotations
@@ -216,6 +217,180 @@ DIALER_TRANSFORMS: dict[Path, tuple[tuple[str, str], ...]] = {
     return -1;
   }
 }''',
+        ),
+        (
+            '''import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+''',
+            '''import android.support.v7.widget.RecyclerView;
+import android.util.LongSparseArray;
+import android.view.LayoutInflater;
+''',
+        ),
+        (
+            '''  // Cursor with list of contacts
+  private Cursor cursor;
+''',
+            '''  // Cursor with list of contacts
+  private Cursor cursor;
+  private LongSparseArray<String> phoneNumbers = new LongSparseArray<>();
+''',
+        ),
+        (
+            '''  void updateCursor(Cursor cursor) {
+    this.cursor = cursor;
+    headers = cursor.getExtras().getStringArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_TITLES);
+    counts = cursor.getExtras().getIntArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_COUNTS);
+    if (counts != null) {
+      int sum = 0;
+      for (int count : counts) {
+        sum += count;
+      }
+
+      if (sum != cursor.getCount()) {
+        LogUtil.e(
+            "ContactsAdapter", "Count sum (%d) != cursor count (%d).", sum, cursor.getCount());
+      }
+    }
+    notifyDataSetChanged();
+  }
+''',
+            '''  void updateCursor(Cursor cursor) {
+    this.cursor = cursor;
+    headers = cursor.getExtras().getStringArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_TITLES);
+    counts = cursor.getExtras().getIntArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_COUNTS);
+    if (counts != null) {
+      int sum = 0;
+      for (int count : counts) {
+        sum += count;
+      }
+
+      if (sum != cursor.getCount()) {
+        LogUtil.e(
+            "ContactsAdapter", "Count sum (%d) != cursor count (%d).", sum, cursor.getCount());
+      }
+    }
+    notifyDataSetChanged();
+  }
+
+  void updatePhoneNumbers(LongSparseArray<String> phoneNumbers) {
+    this.phoneNumbers = phoneNumbers == null ? new LongSparseArray<>() : phoneNumbers;
+    notifyDataSetChanged();
+  }
+''',
+        ),
+        (
+            '''    String name = getDisplayName(cursor);
+    String header = getHeaderString(position);
+    Uri contactUri = getContactUri(cursor);
+''',
+            '''    String name = getDisplayName(cursor);
+    String header = getHeaderString(position);
+    long contactId = getContactId(cursor);
+    String phoneNumber = phoneNumbers.get(contactId);
+    Uri contactUri = getContactUri(cursor);
+''',
+        ),
+        (
+            '''    contactViewHolder.bind(header, name, contactUri, getContactId(cursor), showHeader);
+''',
+            '''    contactViewHolder.bind(
+        header, name, phoneNumber, contactUri, contactId, showHeader);
+''',
+        ),
+    ),
+    DIALER_CONTACT_VIEW_HOLDER: (
+        (
+            '''  private final TextView header;
+  private final BidiTextView name;
+  private final QuickContactBadge photo;
+''',
+            '''  private final TextView header;
+  private final BidiTextView name;
+  private final BidiTextView phoneNumber;
+  private final QuickContactBadge photo;
+''',
+        ),
+        (
+            '''    header = itemView.findViewById(R.id.header);
+    name = itemView.findViewById(R.id.contact_name);
+    photo = itemView.findViewById(R.id.photo);
+''',
+            '''    header = itemView.findViewById(R.id.header);
+    name = itemView.findViewById(R.id.contact_name);
+    phoneNumber = itemView.findViewById(R.id.contact_phone_number);
+    photo = itemView.findViewById(R.id.photo);
+''',
+        ),
+        (
+            '''  public void bind(
+      String headerText, String displayName, Uri contactUri, long contactId, boolean showHeader) {
+''',
+            '''  public void bind(
+      String headerText,
+      String displayName,
+      String phoneNumberText,
+      Uri contactUri,
+      long contactId,
+      boolean showHeader) {
+''',
+        ),
+        (
+            '''    name.setText(displayName);
+    header.setText(headerText);
+''',
+            '''    name.setText(displayName);
+    phoneNumber.setText(phoneNumberText);
+    phoneNumber.setVisibility(TextUtils.isEmpty(phoneNumberText) ? View.GONE : View.VISIBLE);
+    header.setText(headerText);
+''',
+        ),
+    ),
+    DIALER_CONTACT_ROW: (
+        (
+            '''    <com.android.dialer.widget.BidiTextView
+        android:id="@+id/contact_name"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:paddingStart="@dimen/text_padding_start"
+        android:paddingEnd="@dimen/text_padding_end"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:gravity="center_vertical"
+        android:textSize="@dimen/text_size"
+        android:textColor="?android:attr/textColorPrimary"
+        android:fontFamily="sans-serif"/>
+''',
+            '''    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:paddingStart="@dimen/text_padding_start"
+        android:paddingEnd="@dimen/text_padding_end"
+        android:gravity="center_vertical">
+
+      <com.android.dialer.widget.BidiTextView
+          android:id="@+id/contact_name"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:maxLines="1"
+          android:ellipsize="end"
+          android:textSize="@dimen/text_size"
+          android:textColor="?android:attr/textColorPrimary"
+          android:fontFamily="sans-serif"/>
+
+      <com.android.dialer.widget.BidiTextView
+          android:id="@+id/contact_phone_number"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:maxLines="1"
+          android:ellipsize="end"
+          android:textSize="14sp"
+          android:textColor="?android:attr/textColorSecondary"
+          android:fontFamily="sans-serif"/>
+    </LinearLayout>
+''',
         ),
     ),
     DIALER_CONTACTS_FRAGMENT: (
