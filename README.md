@@ -1,14 +1,39 @@
 # SableOS
 
-SableOS is an experimental privacy- and security-focused Android-compatible mobile OS with narrow privilege boundaries, a Rust-first userspace direction, and one common product core across hardware and interaction profiles.
-
-The project is moving beyond substrate bring-up into a distinct user experience built around **Sable Flow**: a Metro-inspired, information-first shell with live tiles, people-centric communication and a central Sable Hub.
+SableOS is an experimental privacy- and security-focused Android-compatible
+mobile OS with narrow privilege boundaries, a Rust-first userspace direction,
+and one common product core across hardware and interaction profiles.
 
 > **Applications provide capabilities; Sable organizes people, attention and actions.**
 
+## Current milestone
+
+Pixel 7 / Panther R9 is closed as the frozen touch-first reference after the
+final Sable Hub V1 compatibility/remediation closure.
+
+Validated Panther release evidence is bound to the exact image source and
+artifact, not to later documentation-only repository heads:
+
+```text
+PRIVATE_MAIN_HEAD=2624e1af
+R9_PANTHER_HUB_V1_CLOSURE=MERGED
+R9_PANTHER_HUB_V1_MERGE_COMMIT=f175b00f
+R9_PANTHER_SOURCE=edf62e5bb08372a1395841d6cc5d78d3148a7695
+R9_PANTHER_TARGET_FILES_SHA256=a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285
+R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS_WITH_PRESERVED_PLAY_STATE
+R9_PANTHER_DEVELOPMENT=FROZEN_TOUCH_FIRST_REFERENCE
+R10_KEYBOARD_FIRST_DESIGN_V1=MERGED
+```
+
+The final preserved-data physical device intentionally kept user-installed
+state. Clean-baseline AppStore claims are therefore not made from that device.
+Appearance/theme-propagation and polish issues remain open follow-ups and will
+be closed with the Titan 2 SableOS install path where appropriate.
+
 ## Product direction
 
-SableOS should not become a collection of unrelated device ROMs or a differently branded Android launcher.
+SableOS should not become a collection of unrelated device ROMs or a differently
+branded Android launcher.
 
 The intended product model is:
 
@@ -25,105 +50,45 @@ Sable product surfaces
         organize people, attention, actions, privacy and intent
 ```
 
-Sable replaces presentation/orchestration where it creates a real product benefit while retaining mature Android transport, providers, HALs, application compatibility and enforcement where appropriate.
-
 Core rules:
 
 > One SableOS core, multiple hardware adapters, multiple interaction profiles.
 
-> Preserve proven Android/vendor capability unless there is a demonstrated privacy, security, performance, maintainability or architectural reason to replace it.
+> Preserve proven Android/vendor capability unless there is a demonstrated
+> privacy, security, performance, maintainability or architectural reason to
+> replace it.
 
 > The shell may observe and request; privileged services decide and execute.
 
-> Stable Sable semantic contracts should survive Android-version and device changes; substrate-specific behavior belongs behind bounded adapters.
+> Stable Sable semantic contracts should survive Android-version and device
+> changes; substrate-specific behavior belongs behind bounded adapters.
 
-## Sable Flow
+## Sable Flow and Sable Hub
 
-**Sable Flow** is the working name for the Sable-owned design language. It is inspired by useful Windows Phone / Metro interaction principles while using original Sable naming, visual assets, implementation and product identity.
+**Sable Flow** is the Sable-owned design language: information-first,
+Metro-influenced, privacy-bounded and implemented under Sable identity rather
+than as a clone of another shell.
 
-### Sable Start
-
-The launcher/home experience is **Sable Start**:
-
-```text
-vertical Start surface
-    -> information/action tiles
-    -> large typography
-    -> accent/theme system
-    -> live state where privacy policy allows
-    -> fast application/service list
-```
-
-Initial product tile set:
+**Sable Hub V1** is the accepted common people/communications surface:
 
 ```text
-PEOPLE      PHONE
-MESSAGES    MAIL
-CAMERA      PHOTOS
-SOCIAL      CALENDAR
-SETTINGS    CLOCK
+Priority | Messages | Email | People
 ```
 
-The first Panther product milestone focuses on a real vertical slice:
+Sable Hub is an aggregator and interaction surface, not the owner of every
+source database or account. Sable Mail owns mail accounts, protocols, MIME,
+storage, TLS/certificate handling and credentials. Hub consumes bounded local
+summaries and/or notification-derived state and must not scrape private provider
+databases or manufacture delivery/read semantics.
 
-```text
-PHONE
-PEOPLE
-MESSAGES
-SETTINGS
-```
-
-Launcher3 remains a development/reference fallback until Sable Start passes replacement qualification.
-
-## Sable Hub
-
-Sable Hub is the central people, communication, attention and service surface.
-
-The Hub uses a provider capability model rather than pretending every third-party service exposes the same native API:
-
-```text
-native Android/Sable data
-Android notification/conversation adapter
-supported provider API adapter
-isolated web capsule
-```
-
-Initial social-service targets are:
-
-```text
-WhatsApp
-Instagram
-Facebook
-LinkedIn
-```
-
-Sable does **not** depend on scraping private application databases or building an unsupported universal client. Provider/API capability is revalidated against current official service support at implementation time. Where an appropriate consumer API is unavailable, the planned fallback is an isolated Sable-managed web capsule with independent provider session/storage state.
-
-The UI must explicitly distinguish native, notification-derived, supported-API and web-backed capability.
-
-See `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md`.
-
-## Current milestone
-
-Pixel 7 / Panther R9 is **physically accepted and frozen as the touch-first
-reference baseline**. Active feature development is on hold for Panther.
-
-Validated Panther release evidence remains bound to the exact image source, not
-to later documentation-only repository heads:
-
-```text
-R9_PANTHER_SOURCE=6f1d6d2f0f2525067874238c4b797ad58f2bcbc6
-R9_PANTHER_TARGET_FILES_SHA256=08ef429c7f9eef17de7ddad4ce9baa81911950e8d34b6751b6e4588f66821502
-R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS
-R9_PANTHER_DEVELOPMENT=HOLD_REFERENCE_MAINTENANCE_ONLY
-```
+## Active device direction
 
 Active product work now moves to the keyboard-first portability line:
 
 ```text
 Titan 2
-    -> stock/firmware/camera evidence already active
-    -> first keyboard-first N0 SableOS/GSI integration target
+    -> active keyboard-first N0 SableOS/GSI integration target
+    -> stock/firmware/camera/keyboard/display/restore evidence in progress
 
 Titan 2 Elite
     -> independent stock/device baseline when hardware arrives
@@ -134,170 +99,71 @@ Q27
     -> no device claims until shipped hardware/firmware qualifies
 ```
 
-The common rule is unchanged: one Sable product core, multiple hardware
-adapters and interaction profiles. See
-`docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md`.
+The common rule is unchanged: one Sable product core, multiple hardware adapters
+and interaction profiles. See `docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md`.
+
+## Canonical engineering interface
+
+The operator-facing entry point is device/release neutral:
+
+```text
+bash build/sable.sh <device> <release> <function> [options]
+```
+
+Examples:
+
+```bash
+bash build/sable.sh panther R9 ci full
+bash build/sable.sh panther R9 build --tmux
+bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --preserve-data --authorize
+bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
+```
+
+Canonical device IDs:
+
+```text
+panther
+titan2
+titan2-elite
+q27
+```
+
+The hardware serial is not build/image identity. It is required only for
+device-contact operations such as flash and acceptance. Titan 2, Titan 2 Elite
+and Q27 adapters remain fail-closed until their restore, partition, AVB,
+transport and acceptance contracts are proven.
+
+## Repository direction
+
+During the keyboard-first transition:
+
+- `aimindseye/sableos` remains the private integration/release authority;
+- `sableos-project` is the target canonical public home for reusable Sable
+  product code, architecture and build contracts;
+- the private monorepo is not published wholesale;
+- reusable components migrate only after provenance, licensing, secret/private
+  path review and independent build/test closure;
+- private host evidence, raw firmware, serials and unreviewed vendor diagnostics
+  stay outside public Git.
 
 ## CI execution
 
-As of **2026-09-20**, SableOS qualification runs directly on the controlled
-local build machine. GitHub Actions is disabled to keep CI operating cost
-predictable and to avoid duplicating Android/Rust tool installation on hosted
-runners.
-
-```text
-GitHub
-  -> source hosting / PR review / issues only
-
-local build machine
-  -> one shared host toolchain under /srv/data/sable-host-tools
-  -> build and CI source build/config/r8-host-tools.env
-  -> build/local-ci/run.sh core
-  -> build/local-ci/run.sh full
-  -> build/local-ci/run.sh release
-  -> source-bound evidence under /srv/data/sable-build/sableos/local-ci-evidence
-```
+SableOS qualification runs directly on the controlled local build machine.
+GitHub is used for source hosting, PR review, issues and documentation.
 
 This is not a self-hosted GitHub Actions runner. Remote execution from GitHub
 remains disabled, and the prior encryption requirement for any future Actions
-runner remains intact. Local CI does not maintain a parallel tool installation:
-the canonical build-machine toolchain is verified and reused by both build and
-CI. A governed update of `main` requires a successful local `full` or
-`release` attestation for the exact candidate commit.
+runner remains intact.
 
-See `build/local-ci/README.md`, `docs/INFRA2C_FREE_GOVERNANCE.md` and
-`docs/INFRA4_TRUSTED_RUNNER_ENCRYPTION.md`.
+## Historical reference target
 
-## Current reference target
-
-Active development:
-
-- Device: Google Pixel 7 (`panther`)
-- Role: touch-first development reference
-- Android baseline: Android 17 / SDK 37
-- Canonical development substrate: GrapheneOS `2026081300` Android 17 with audited Sable-specific deltas
-- Physical D4 status: **CLOSED / PASS**
-- Canonical B2 target-files SHA-256: `b22c5ab5676b3a61304102cd508bf75a01bd4d0bc2a47ffceba8be153376bb78`
-
-Historical architecture/regression reference:
-
-- Pixel 4a 5G (`bramble`)
-- Android 14 / `android-14.0.0_r28`
-- S1.7 power service/API/runtime boundary: **PASS / FROZEN**
-
-Bramble no longer constrains active UI-framework/toolchain selection.
-
-## Proven service architecture
-
-Sable's first frozen semantic service is the read-only power API:
-
-```text
-com.sableos.power.IPowerService/default
-    getLatestState() -> PowerSnapshot
-```
-
-The architecture demonstrates the intended privilege model:
-
-```text
-Android/vendor Health authority
-        -> narrow Sable service
-        -> typed semantic state
-        -> authorized Sable/UI consumer
-```
-
-The UI does not gain Health HAL or raw battery-sysfs authority merely because it presents battery state.
-
-Exact S1.7 source/image/device/runtime evidence is in `docs/S1_7_VALIDATION.md`.
-
-## Architecture
-
-```text
-Sable shell / applications
-        |
-        | typed semantic IPC
-        v
-narrow Sable services / brokers
-        |
-        | SELinux + explicit capability policy
-        v
-AOSP framework / supported HAL / vendor stack
-        |
-        v
-hardware
-```
-
-Preferred:
-
-```text
-UI -> semantic read-only service
-UI -> narrow typed request -> dedicated service -> Android framework/HAL
-```
-
-Rejected as a base trust model:
-
-```text
-UI -> raw hardware sysfs
-UI -> direct privileged HAL without need
-UI -> generic privileged command executor
-agent -> unrestricted root shell
-```
-
-When UI and platform Rust compilers differ, Sable crosses through stable C/NDK/AIDL contracts rather than compiler-private cross-version Rust ABI.
-
-## Android application compatibility
-
-SableOS preserves standard Android application packaging and runtime semantics:
-
-```text
-APK / split APK
-PackageManager / PackageInstaller
-ART
-application sandbox
-permissions / AppOps
-intents / components
-profiles
-WebView / maintained browser path
-```
-
-A Rust-first Sable renderer is a presentation choice; it does not replace Android's application ecosystem.
-
-## Interaction profiles and future devices
-
-### Touch-first
-
-Panther establishes the Sable Flow touch profile:
-
-- live information tiles;
-- strong typography and spatial hierarchy;
-- low-chrome information surfaces;
-- fast peek/return workflows;
-- low-latency motion communicating hierarchy.
-
-### Keyboard-first / compact
-
-Future Q25/Q27 work should reuse the same semantic model with:
-
-- physical keyboard as first-class input;
-- deterministic focus;
-- type-to-search;
-- shortcuts/command palette;
-- compact/square layout rules;
-- predictable focus restoration.
-
-Device roles:
-
-- `panther` / Pixel 7 — active touch-first reference;
-- `bramble` / Pixel 4a 5G — frozen architecture/regression reference;
-- Zinwa Q25 — optional MediaTek/QWERTY engineering reference;
-- Zinwa Q27 — future preferred modern QWERTY direction subject to platform/hardware acceptance.
-
-The Sable Start/Hub data and capability model must remain common across these form factors.
+Pixel 7 / Panther remains the frozen touch-first reference. Pixel 4a 5G /
+Bramble is a historical architecture/regression reference only.
 
 ## Release signing
 
-Production signing/OTA engineering is intentionally **paused and non-blocking** while product features are developed.
-
-Completed release identity, source-mutation, update-endpoint and custody policy work is preserved, but no production key has been generated.
+Production signing/OTA engineering is intentionally **paused and non-blocking**
+while product features and multi-device qualification are developed.
 
 ```text
 PRODUCTION_KEYS_GENERATED=NO
@@ -307,7 +173,8 @@ OTA_GENERATION_AUTHORIZED=NO
 SIGNING_HOST_SELECTION=DEFERRED
 ```
 
-Production signing returns to the critical path before release-candidate/OTA distribution.
+Production signing returns to the critical path before release-candidate/OTA
+distribution.
 
 ## Engineering discipline
 
@@ -327,16 +194,13 @@ source guards
  -> fallback/recovery validation
 ```
 
-Power, thermal, scheduler, memory, modem and lifecycle tuning remain measurement-driven.
-
 ## Documentation
 
 Start with:
 
 - `CURRENT_STATUS.md` — current validated state and active milestone.
-- `docs/SABLE_FLOW_AND_HUB_PRODUCT_PLAN.md` — Sable Flow, Sable Start, Hub/provider/capsule architecture and M1-M5 plan.
-- `docs/CORE_PRODUCT_MODEL.md` — normative product architecture.
-- `docs/CORE_PRODUCT_ROADMAP.md` — active product-integration roadmap.
-- `docs/ARCHITECTURE.md` — platform/service layering and privilege boundaries.
-- `docs/SECURITY_MODEL.md` — trust/SELinux/IPC model.
-- `docs/DOCUMENTATION_INDEX.md` — broader documentation index.
+- `docs/DOCUMENTATION_INDEX.md` — current/historical documentation index.
+- `docs/adr/0010-keyboard-first-sableos-design-v1.md` — accepted keyboard-first design V1.
+- `docs/adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 communications model.
+- `docs/KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md` — Titan-family keyboard-first transition.
+- `build/README.md` — canonical build/deploy/acceptance entry points.
