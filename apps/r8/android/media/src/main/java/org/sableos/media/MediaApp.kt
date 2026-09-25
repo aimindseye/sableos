@@ -95,6 +95,9 @@ internal fun MediaApp(
     var podcastBusy by remember {
         mutableStateOf(false)
     }
+    var podcastRefreshing by remember {
+        mutableStateOf(false)
+    }
     var podcastMessage by remember {
         mutableStateOf<String?>(null)
     }
@@ -337,6 +340,7 @@ internal fun MediaApp(
                     playedPodcastEpisodeIds = playedPodcastEpisodeIds,
                     podcastFeedUrl = podcastFeedUrl,
                     podcastBusy = podcastBusy,
+                    podcastRefreshing = podcastRefreshing,
                     podcastMessage = podcastMessage,
                     stations = stations,
                     playback = playbackState,
@@ -460,7 +464,7 @@ internal fun MediaApp(
                                             podcastSubscriptions = updated
                                             podcastFeedUrl = ""
                                             podcastMessage =
-                                                "Podcast subscribed. Refresh remains manual."
+                                                "Podcast subscribed. Pull down to refresh feeds."
                                         }.onFailure { error ->
                                             podcastMessage =
                                                 error.message
@@ -476,6 +480,7 @@ internal fun MediaApp(
                         if (!podcastBusy && podcastSubscriptions.isNotEmpty()) {
                             val currentSubscriptions = podcastSubscriptions
                             podcastBusy = true
+                            podcastRefreshing = true
                             podcastMessage = "Refreshing subscribed feeds…"
 
                             uiScope.launch {
@@ -505,6 +510,7 @@ internal fun MediaApp(
                                                 ?.takeIf { it.isNotBlank() }
                                                 ?: "Podcast refresh failed; cached episodes were kept."
                                     }
+                                podcastRefreshing = false
                                 podcastBusy = false
                             }
                         }
