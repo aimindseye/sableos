@@ -177,6 +177,8 @@ require(
     'label = "Allow quick reply"',
     'label = "Hide from SableLauncher"',
     "History retention:",
+    "SableRefreshableSurface(",
+    "onRefresh = onRefresh",
 )
 require(
     f"{HUB_KT}/notifications/ConnectedNotificationActivityRegistry.kt",
