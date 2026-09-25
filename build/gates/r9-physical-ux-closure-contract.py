@@ -410,27 +410,45 @@ forbid(
     "SableOcrActivity",
 )
 
-# Contacts uses its existing SectionIndexer, not a duplicate data model.
+# Contacts keeps its existing SectionIndexer and ContactsProvider authority.
+# Phone and Contacts additionally use one background Phone-table query per
+# surface to show the preferred number under each local contact name.
 require(
     "patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py",
     'CONTACTS_INDEXER_ADAPTER = Path(',
     '"src/com/android/contacts/list/IndexerListAdapter.java"',
+    'CONTACTS_DEFAULT_ADAPTER = Path(',
+    '"src/com/android/contacts/list/DefaultContactListAdapter.java"',
+    'DIALER_CONTACT_VIEW_HOLDER = Path(',
+    '"java/com/android/dialer/contactsfragment/ContactViewHolder.java"',
+    'DIALER_CONTACT_ROW = Path(',
+    '"java/com/android/dialer/contactsfragment/res/layout/contact_row.xml"',
     "return mIndexer.getPositionForSection(sectionIndex);",
     "getListPositionForSection",
     "getPositionForSection(sectionIndex)",
     "installSableAlphabetRail",
     "scrollToSableSection",
+    "SABLE_PHONE_NUMBERS_LOADER_ID",
+    "ContactsContract.CommonDataKinds.Phone",
+    "Phone.IS_SUPER_PRIMARY",
+    "Phone.IS_PRIMARY",
+    "setSablePhoneNumbers",
+    "updatePhoneNumbers",
+    "contact_phone_number",
+    "setPhoneNumber(phoneNumber, null)",
     "classify_text_state",
     "inspect_repo_state",
     "R9_CONTACTS_PRESENTATION_PARTIAL_SCOPE=",
     "R9_CONTACTS_PRESENTATION_PARTIAL_CONVERGENCE=PASS",
     "R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS",
     "R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS",
-    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_ONLY",
+    "R9_CONTACTS_BEHAVIORAL_SCOPE=PASS_ALPHABET_RAIL_AND_PHONE_SUBTITLE",
     "R9_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_SECTION_INDEXER",
     "R9_PHONE_CONTACTS_ALPHABET_RAIL=PASS_EXISTING_ADDRESS_BOOK_INDEX",
+    "R9_PHONE_CONTACTS_PHONE_SUBTITLE=PASS_PREFERRED_CONTACTSPROVIDER_NUMBER",
+    "R9_PHONE_CONTACTS_PHONE_QUERY=PASS_ONE_BACKGROUND_PROVIDER_QUERY_PER_SURFACE",
     "getPositionForHeader",
-    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_ONLY",
+    "R9_PHONE_BEHAVIORAL_SCOPE=PASS_CONTACTS_ALPHABET_RAIL_AND_PHONE_SUBTITLE",
     "R9_CONTACTS_DATA_MODEL_MUTATION=NONE",
 )
 forbid(
@@ -635,6 +653,7 @@ print("R9_CAMERA_APPEARANCE_BOUNDARY=PASS_UPSTREAM_DARK_ONLY")
 print("R9_READER_GLOBAL_APPEARANCE_CONTRACT=PASS")
 print("R9_READER_ACTUAL_BOOK_COUNT_CONTRACT=PASS")
 print("R9_CONTACTS_ALPHABET_RAIL_CONTRACT=PASS")
+print("R9_PHONE_CONTACTS_PHONE_SUBTITLE_CONTRACT=PASS_PREFERRED_NUMBER")
 print("R9_MEDIA_ALPHABET_RAIL_CONTRACT=PASS")
 print("R9_MEDIA_FLAT_ROWS_CONTRACT=PASS")
 print("R9_MEDIA_LARGE_LIBRARY_RENDER_CONTRACT=PASS")
