@@ -146,76 +146,76 @@ private fun CalendarApp(
             onRefresh = onRefresh,
         ) {
             Column(
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(
-                        horizontal = SableSpacing.ScreenHorizontal,
-                        vertical = SableSpacing.ScreenVertical,
-                    ),
-        ) {
-            Text(
-                text = "calendar",
-                style = MaterialTheme.typography.displayLarge,
-            )
-            Text(
-                text = "Local CalendarProvider UI · account sync remains separate.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(SableSpacing.Lg))
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(
+                            horizontal = SableSpacing.ScreenHorizontal,
+                            vertical = SableSpacing.ScreenVertical,
+                        ),
+            ) {
+                Text(
+                    text = "calendar",
+                    style = MaterialTheme.typography.displayLarge,
+                )
+                Text(
+                    text = "Local CalendarProvider UI · account sync remains separate.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(SableSpacing.Lg))
 
-            if (!repository.canRead()) {
-                PermissionPanel(onRequestPermissions)
-                return@Column
-            }
-
-            when (mode) {
-                CalendarMode.Agenda ->
-                    ApprovedCalendarLanding(
-                        selectedDate = selectedDate,
-                        events = events,
-                        onSelectDate = { selectedDate = it },
-                        onOpenMonth = { mode = CalendarMode.Month },
-                        onNewEvent = { mode = CalendarMode.NewEvent },
-                    )
-
-                CalendarMode.Month -> {
-                    SableActionButton(
-                        text = "‹  agenda",
-                        primary = false,
-                        onClick = { mode = CalendarMode.Agenda },
-                    )
-                    Spacer(Modifier.height(SableSpacing.Md))
-                    MonthView(
-                        month = YearMonth.from(selectedDate),
-                        selectedDate = selectedDate,
-                        onSelectDate = { date ->
-                            selectedDate = date
-                            mode = CalendarMode.Agenda
-                        },
-                    )
+                if (!repository.canRead()) {
+                    PermissionPanel(onRequestPermissions)
+                    return@Column
                 }
 
-                CalendarMode.NewEvent -> {
-                    SableActionButton(
-                        text = "‹  agenda",
-                        primary = false,
-                        onClick = { mode = CalendarMode.Agenda },
-                    )
-                    Spacer(Modifier.height(SableSpacing.Md))
-                    NewEventView(
-                        repository = repository,
-                        selectedDate = selectedDate,
-                        onSaved = {
-                            onRefresh()
-                            mode = CalendarMode.Agenda
-                        },
-                        onRequestPermissions = onRequestPermissions,
-                    )
+                when (mode) {
+                    CalendarMode.Agenda ->
+                        ApprovedCalendarLanding(
+                            selectedDate = selectedDate,
+                            events = events,
+                            onSelectDate = { selectedDate = it },
+                            onOpenMonth = { mode = CalendarMode.Month },
+                            onNewEvent = { mode = CalendarMode.NewEvent },
+                        )
+
+                    CalendarMode.Month -> {
+                        SableActionButton(
+                            text = "‹  agenda",
+                            primary = false,
+                            onClick = { mode = CalendarMode.Agenda },
+                        )
+                        Spacer(Modifier.height(SableSpacing.Md))
+                        MonthView(
+                            month = YearMonth.from(selectedDate),
+                            selectedDate = selectedDate,
+                            onSelectDate = { date ->
+                                selectedDate = date
+                                mode = CalendarMode.Agenda
+                            },
+                        )
+                    }
+
+                    CalendarMode.NewEvent -> {
+                        SableActionButton(
+                            text = "‹  agenda",
+                            primary = false,
+                            onClick = { mode = CalendarMode.Agenda },
+                        )
+                        Spacer(Modifier.height(SableSpacing.Md))
+                        NewEventView(
+                            repository = repository,
+                            selectedDate = selectedDate,
+                            onSaved = {
+                                onRefresh()
+                                mode = CalendarMode.Agenda
+                            },
+                            onRequestPermissions = onRequestPermissions,
+                        )
+                    }
                 }
-            }
             }
         }
     }
