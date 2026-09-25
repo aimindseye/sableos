@@ -24,13 +24,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,6 +45,7 @@ import org.sableos.design.SableActionButton
 import org.sableos.design.SableListRow
 import org.sableos.design.SablePageHeader
 import org.sableos.design.SablePanel
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableScreen
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
@@ -80,7 +79,6 @@ private sealed interface HubRoute {
     ) : HubRoute
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HubScreen(
     snapshot: HubSnapshot?,
@@ -121,10 +119,9 @@ fun HubScreen(
         return
     }
 
-    PullToRefreshBox(
+    SableRefreshableSurface(
         isRefreshing = isRefreshing,
         onRefresh = onRefresh,
-        modifier = Modifier.fillMaxSize(),
     ) {
         when (val current = route) {
             is HubRoute.Root -> {
