@@ -39,6 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.sableos.design.SableGlobalTheme
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableSpacing
 
 class MainActivity : ComponentActivity() {
@@ -104,17 +105,21 @@ private fun WeatherApp() {
         }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.Xl,
-                ),
+    SableRefreshableSurface(
+        isRefreshing = refreshing,
+        onRefresh = ::refresh,
     ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = SableSpacing.ScreenHorizontal,
+                        vertical = SableSpacing.Xl,
+                    ),
+        ) {
         Text(
             text = "weather",
             style = MaterialTheme.typography.displayLarge,
@@ -163,17 +168,6 @@ private fun WeatherApp() {
         }
 
         Spacer(Modifier.height(SableSpacing.Xl))
-        FlatAction(
-            text =
-                if (refreshing) {
-                    "refreshing…"
-                } else {
-                    "refresh"
-                },
-            onClick = ::refresh,
-        )
-
-        Spacer(Modifier.height(SableSpacing.Md))
         Text(
             text =
                 "Open-Meteo · HTTPS · cached locally · manual city by default · " +
@@ -181,6 +175,7 @@ private fun WeatherApp() {
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        }
     }
 }
 
@@ -456,25 +451,6 @@ private fun SectionHeader(text: String) {
         text = text,
         style = MaterialTheme.typography.headlineMedium,
         color = MaterialTheme.colorScheme.onBackground,
-    )
-}
-
-@Composable
-private fun FlatAction(
-    text: String,
-    onClick: () -> Unit,
-) {
-    Text(
-        text = text,
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primary)
-                .clickable(onClick = onClick)
-                .padding(vertical = 14.dp),
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.onPrimary,
-        textAlign = TextAlign.Center,
     )
 }
 
