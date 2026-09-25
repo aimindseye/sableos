@@ -77,7 +77,7 @@ forbid(
 require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "private fun AppsScreen(",
-    "PullToRefreshBox(",
+    "SableRefreshableSurface(",
     "onRefresh = onRefreshLive",
     "buildRailRows(apps)",
     "rememberLazyListState()",
@@ -180,6 +180,51 @@ forbid(
         "SecurityException(",""",
 )
 
+# Refresh UX is a shared Sable interaction contract. Data-backed first-party
+# surfaces use Material3 pull-to-refresh through one shared design primitive;
+# app-local refresh buttons are not used for ordinary screen refresh.
+require(
+    "src/android/shared/sabledesign/src/main/java/org/sableos/design/SableComponents.kt",
+    "fun SableRefreshableSurface(",
+    "PullToRefreshBox(",
+    "isRefreshing = isRefreshing",
+    "onRefresh = onRefresh",
+)
+require(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "SableRefreshableSurface(",
+    "onRefresh = ::refresh",
+)
+forbid(
+    "apps/r8/android/weather/src/main/java/org/sableos/weather/MainActivity.kt",
+    "private fun FlatAction(",
+    '"refreshing…"',
+)
+require(
+    "apps/r8/android/calendar/src/main/java/org/sableos/calendar/MainActivity.kt",
+    "SableRefreshableSurface(",
+    "isRefreshing = refreshing",
+    "onRefresh = onRefresh",
+)
+require(
+    "apps/r8/android/media/src/main/java/org/sableos/media/MediaScreen.kt",
+    "SableRefreshableSurface(",
+    "isRefreshing = podcastRefreshing",
+    "onRefreshPodcasts()",
+)
+forbid(
+    "apps/r8/android/media/src/main/java/org/sableos/media/PodcastScreen.kt",
+    'text = if (busy) "Refreshing…" else "Refresh"',
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "SableRefreshableSurface(",
+)
+require(
+    "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
+    "SableRefreshableSurface(",
+)
+
 # Weather: the hourly list must begin at the provider's current local hour,
 # not the first midnight row returned for the forecast day. Successful refresh
 # must also invalidate the launcher-facing snapshot URI.
@@ -205,7 +250,7 @@ require(
     "src/android/packages/apps/SableStart/src/com/sable/start/ui/SableStartScreen.kt",
     "destination == SableStartDestination.Live",
     "onRefreshLive()",
-    "PullToRefreshBox(",
+    "SableRefreshableSurface(",
 )
 
 # Clock/Photos: physical Dark -> Light regression must be structurally fixed.
@@ -262,7 +307,7 @@ require(
 )
 require(
     "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
-    "PullToRefreshBox(",
+    "SableRefreshableSurface(",
     "isRefreshing = isRefreshing",
     "onRefresh = onRefresh",
 )
@@ -574,7 +619,8 @@ print("R9_HUB_CONNECTED_LIVE_STATUS=PASS_ACTIVE_CONVERSATION_AWARE")
 print("R9_HUB_CONVERSATION_FILTER=PASS_NO_GROUP_SUMMARY_OR_STATUS_NOISE")
 print("R9_HUB_CONVERSATION_DEDUP=PASS")
 print("R9_HUB_LATEST_MESSAGE_VISIBILITY=PASS_ROOT_AND_THREAD")
-print("R9_SABLE_REFRESH_GESTURES=PASS_START_HUB_AND_LIVE")
+print("R9_SABLE_REFRESH_GESTURES=PASS_SHARED_START_HUB_LIVE_WEATHER_CALENDAR_PODCASTS")
+print("R9_SABLE_MANUAL_REFRESH_BUTTONS=PASS_ABSENT_FROM_SCREEN_REFRESH")
 print("R9_WEATHER_HOURLY_FRESHNESS=PASS_CURRENT_LOCAL_HOUR")
 print("R9_WEATHER_LIVE_SNAPSHOT_INVALIDATION=PASS")
 print("R9_LIVE_SURFACE_ENTRY_REFRESH=PASS")
