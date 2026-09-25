@@ -100,6 +100,17 @@ require(
     "items = items",
 )
 require(
+    f"{MEDIA_KT}/MediaScreen.kt",
+    "SableRefreshableSurface(",
+    "isRefreshing = podcastRefreshing",
+    "onRefreshPodcasts()",
+)
+forbid(
+    f"{MEDIA_KT}/PodcastScreen.kt",
+    'text = if (busy) "Refreshing…" else "Refresh"',
+)
+
+require(
     f"{MEDIA_KT}/MainActivity.kt",
     "PlaybackQueueRequestStore.publish(",
     "PlaybackService.EXTRA_QUEUE_TOKEN",
@@ -180,6 +191,8 @@ require(
     "MediaHostServices(",
     "onAddPodcastFeed",
     "onRefreshPodcasts",
+    "podcastRefreshing = true",
+    "podcastRefreshing = false",
     "withContext(Dispatchers.IO)",
     "podcastRepository.subscribe(",
     "podcastRepository.refreshAll(",
@@ -339,7 +352,7 @@ print("R9_MEDIA_QUEUE_BUILD=PASS_BACKGROUND")
 print("R9_MEDIA_LIBRARY_STARTUP_LOAD=PASS_OFF_MAIN")
 print("R9_MEDIA_FOLDER_IMPORT_BOUND=PASS_2000")
 print("R9_PODCAST_EXPLICIT_SUBSCRIPTION=PASS")
-print("R9_PODCAST_MANUAL_REFRESH=PASS")
+print("R9_PODCAST_PULL_TO_REFRESH=PASS_EXPLICIT_USER_GESTURE")
 print("R9_PODCAST_FEED_SIZE_BOUND=PASS")
 print("R9_PODCAST_HTTPS_ONLY=PASS")
 print("R9_PODCAST_XML_DOCTYPE_REJECTED=PASS")
