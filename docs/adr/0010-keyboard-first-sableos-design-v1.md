@@ -408,6 +408,21 @@ behavior must be reproduced before becoming a Sable device-profile fact.
 
 ## Implementation workstreams
 
+### KF1 implementation binding
+
+The concrete V1 schema and first physically verified device profile are defined
+in `docs/KF1_DEVICE_PROFILE_AND_INPUT_SURFACE.md` and
+`product/keyboard-first/kf1-device-profile-v1.schema.json`.
+
+KF1 V1 adds an explicit `ABSOLUTE_TOUCH_SURFACE` /
+`ABSOLUTE_TOUCH` distinction to the minimum Input Surface vocabulary. This is
+an additive refinement of the "at least" capability set above and preserves the
+observed difference between a raw ABS_MT surface and a normalized pointer.
+
+The first profile is Titan 2. Titan 2 Elite will be represented independently
+when physical evidence is available.
+
+
 The next implementation plan is split into bounded workstreams:
 
 ```text
