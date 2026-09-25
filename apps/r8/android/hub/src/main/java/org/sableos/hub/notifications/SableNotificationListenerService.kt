@@ -103,7 +103,9 @@ class SableNotificationListenerService : NotificationListenerService() {
                     sbn = sbn,
                     key = key,
                     policy = policy,
-                ).takeIf(ConnectedNotificationEnvelope::isConversationCandidate)
+                ).takeIf { candidate ->
+                    candidate.isConversationCandidate()
+                }
             } else {
                 null
             }
