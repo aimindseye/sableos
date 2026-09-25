@@ -267,6 +267,35 @@ require(
     "onRefresh = onRefresh",
 )
 
+# Hub notification adapters must suppress group summaries/non-conversation
+# notifications, normalize self-authored MessagingStyle messages and keep the
+# latest root/thread content immediately visible.
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/notifications/SableNotificationListenerService.kt",
+    "Notification.FLAG_GROUP_SUMMARY",
+    "Notification.CATEGORY_MESSAGE",
+    "Notification.EXTRA_MESSAGING_PERSON",
+    "isConversationCandidate()",
+    "samePerson(",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/HubModels.kt",
+    "deduplicateRecords(",
+    "LOCAL_REPLY_DEDUP_WINDOW_MILLIS",
+    "identity = identity",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ConnectedNotificationHistoryStore.kt",
+    "DATABASE_VERSION = 2",
+)
+require(
+    "apps/r8/android/hub/src/main/java/org/sableos/hub/ui/HubScreen.kt",
+    "reverseLayout = true",
+    "messages.asReversed()",
+    "newestConversation?.lastDateMillis",
+    "listState.scrollToItem(0)",
+)
+
 # Messages People uses the already sorted local ContactsProvider snapshot and
 # a bounded lazy-list alphabet rail; it does not introduce a second contact DB.
 require(
@@ -542,6 +571,9 @@ print("R9_ALL_APPS_PERMISSION_SUMMARY_CONTRACT=PASS")
 print("R9_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER")
 print("R9_MAIL_LIVE_PROVIDER_CALLER_BOUNDARY=PASS_SABLELAUNCHER_AND_SABLEHUB")
 print("R9_HUB_CONNECTED_LIVE_STATUS=PASS_ACTIVE_CONVERSATION_AWARE")
+print("R9_HUB_CONVERSATION_FILTER=PASS_NO_GROUP_SUMMARY_OR_STATUS_NOISE")
+print("R9_HUB_CONVERSATION_DEDUP=PASS")
+print("R9_HUB_LATEST_MESSAGE_VISIBILITY=PASS_ROOT_AND_THREAD")
 print("R9_SABLE_REFRESH_GESTURES=PASS_START_HUB_AND_LIVE")
 print("R9_WEATHER_HOURLY_FRESHNESS=PASS_CURRENT_LOCAL_HOUR")
 print("R9_WEATHER_LIVE_SNAPSHOT_INVALIDATION=PASS")
