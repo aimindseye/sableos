@@ -92,6 +92,7 @@ require(
     "ConnectedNotificationRetention.shouldKeep",
     "normalized?.includeInMessages == true",
     'CONNECTED_LOCAL_REPLY_PREFIX = "local-reply:"',
+    "DATABASE_VERSION = 2",
     "fun appendLocalReply(",
     "incoming = false",
     "HubSnapshotProvider.SNAPSHOT_URI",
@@ -139,6 +140,11 @@ require(
     "notificationGenerations",
     "ConnectedReplyRegistry.register",
     "ConnectedNotificationActivityRegistry.upsert(",
+    "Notification.FLAG_GROUP_SUMMARY",
+    "Notification.CATEGORY_MESSAGE",
+    "Notification.EXTRA_MESSAGING_PERSON",
+    "isConversationCandidate()",
+    "samePerson(",
     "ConnectedNotificationActivityRegistry.remove(",
     "policies.cachedPolicySnapshot()",
     "history.merge(",
@@ -202,6 +208,10 @@ require(
     "PullToRefreshBox(",
     "isRefreshing = isRefreshing",
     "onRefresh = onRefresh",
+    "reverseLayout = true",
+    "messages.asReversed()",
+    "newestConversation?.lastDateMillis",
+    "listState.scrollToItem(0)",
 )
 forbid(
     f"{HUB_KT}/ui/HubScreen.kt",
@@ -229,6 +239,10 @@ require(
     "ConnectedConversationSlice",
     "handoffOnly",
     "CONNECTED_LOCAL_REPLY_PREFIX",
+    "deduplicateRecords(",
+    "LOCAL_REPLY_DEDUP_WINDOW_MILLIS",
+    "NOTIFICATION_DUPLICATE_WINDOW_MILLIS",
+    "identity = identity",
     "data class HubMailSnapshot(",
 )
 
@@ -424,6 +438,10 @@ print("R9_HUB_CONNECTED_APPS=PASS_ENABLED_AVAILABLE")
 print("R9_HUB_REPLY_HISTORY=PASS_TRUTHFUL_HANDOFF_ONLY")
 print("R9_HUB_MAIL_BOUNDARY=PASS_BOUNDED_SNAPSHOT")
 print("R9_HUB_LIVE_ACTIVITY=PASS_CONNECTED_NOTIFICATION_AWARE")
+print("R9_HUB_NOTIFICATION_FILTER=PASS_CONVERSATION_ONLY")
+print("R9_HUB_CONNECTED_DEDUP=PASS_SEMANTIC_AND_LOCAL_REPLY")
+print("R9_HUB_LATEST_VISIBILITY=PASS_ROOT_AND_THREAD")
+print("R9_HUB_DERIVED_HISTORY_SCHEMA=PASS_V2_RESET")
 print("R9_HUB_PULL_TO_REFRESH=PASS")
 print("R9_SABLESTART_PULL_TO_REFRESH=PASS")
 print("R9_MESSAGES_LOCAL_CONVERSATION_ADAPTER_CONTRACT=PASS")
