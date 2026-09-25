@@ -49,6 +49,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableHeroHeader
+import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableSpacing
 import java.util.Locale
 
@@ -305,7 +306,8 @@ internal fun MediaScreen(
             MediaDestination.AddStation,
             MediaDestination.Settings,
             -> {
-                LazyColumn(
+                val scrollableContent: @Composable () -> Unit = {
+                    LazyColumn(
                     modifier =
                         Modifier
                             .fillMaxSize()
@@ -396,7 +398,6 @@ internal fun MediaScreen(
                                         PodcastScreenActions(
                                             onFeedUrlChange = onPodcastFeedUrlChange,
                                             onAddFeed = onAddPodcastFeed,
-                                            onRefresh = onRefreshPodcasts,
                                             onRemoveSubscription = onRemovePodcastSubscription,
                                             onPlayEpisode = onPlayPodcastEpisode,
                                             onQueueEpisode = onQueuePodcastEpisode,
@@ -480,6 +481,21 @@ internal fun MediaScreen(
                             }
                         }
                     }
+                }
+
+                if (destination == MediaDestination.Podcasts) {
+                    SableRefreshableSurface(
+                        isRefreshing = podcastBusy,
+                        onRefresh = {
+                            if (!podcastBusy && podcastSubscriptions.isNotEmpty()) {
+                                onRefreshPodcasts()
+                            }
+                        },
+                    ) {
+                        scrollableContent()
+                    }
+                } else {
+                    scrollableContent()
                 }
             }
         }
