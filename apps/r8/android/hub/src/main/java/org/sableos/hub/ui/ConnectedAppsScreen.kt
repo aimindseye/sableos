@@ -57,129 +57,129 @@ internal fun ConnectedAppsScreen(
         onRefresh = onRefresh,
     ) {
         SableScreen {
-            SablePageHeader(
-            title = "connected apps",
-            subtitle =
-                "Choose installed apps that may contribute notification-derived conversations.",
-        )
-
-        SablePanel {
-            Text(
-                text =
-                    if (notificationAccessGranted) {
-                        "Notification access is enabled."
-                    } else {
-                        "Notification access is required before connected apps can contribute messages."
-                    },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            SableActionButton(
-                text =
-                    if (notificationAccessGranted) {
-                        "Review notification access"
-                    } else {
-                        "Enable notification access"
-                    },
-                primary = !notificationAccessGranted,
-                onClick = onOpenNotificationAccess,
-            )
-        }
-
-        Text(
-            text =
-                "Sable does not sign into these services. The installed app keeps networking, " +
-                    "encryption, account state and complete history.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        if (loading) {
-            Text(
-                text = "Loading installed apps…",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            ConnectedAppsPivotRow(
-                selected = pivot,
-                onSelect = { selected ->
-                    pivot = selected
-                    search = ""
-                },
+                SablePageHeader(
+                title = "connected apps",
+                subtitle =
+                    "Choose installed apps that may contribute notification-derived conversations.",
             )
 
-            if (pivot == ConnectedAppsPivot.Available) {
-                OutlinedTextField(
-                    value = search,
-                    onValueChange = { search = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Search installed apps") },
+            SablePanel {
+                Text(
+                    text =
+                        if (notificationAccessGranted) {
+                            "Notification access is enabled."
+                        } else {
+                            "Notification access is required before connected apps can contribute messages."
+                        },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                SableActionButton(
+                    text =
+                        if (notificationAccessGranted) {
+                            "Review notification access"
+                        } else {
+                            "Enable notification access"
+                        },
+                    primary = !notificationAccessGranted,
+                    onClick = onOpenNotificationAccess,
                 )
             }
 
-            val visibleCandidates =
-                candidates.filter { candidate ->
-                    val enabled =
-                        policies[candidate.key]
-                            ?.normalized()
-                            ?.includeInMessages == true
-                    val belongsToPivot =
-                        when (pivot) {
-                            ConnectedAppsPivot.Enabled -> enabled
-                            ConnectedAppsPivot.Available -> !enabled
-                        }
-                    val matchesSearch =
-                        search.isBlank() ||
-                            candidate.label.contains(search, ignoreCase = true) ||
-                            candidate.key.packageName.contains(search, ignoreCase = true)
+            Text(
+                text =
+                    "Sable does not sign into these services. The installed app keeps networking, " +
+                        "encryption, account state and complete history.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
-                    belongsToPivot && matchesSearch
-                }
-
-            if (visibleCandidates.isEmpty()) {
+            if (loading) {
                 Text(
-                    text =
-                        when (pivot) {
-                            ConnectedAppsPivot.Enabled -> {
-                                "No connected apps are enabled."
-                            }
-
-                            ConnectedAppsPivot.Available -> {
-                                if (search.isBlank()) {
-                                    "No additional installed apps are available."
-                                } else {
-                                    "No installed apps match this search."
-                                }
-                            }
-                        },
+                    text = "Loading installed apps…",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
-                ) {
-                    items(
-                        items = visibleCandidates,
-                        key = { candidate ->
-                            candidate.key.packageName + ":" + candidate.key.userSerial
-                        },
-                    ) { candidate ->
-                        val policy =
+                ConnectedAppsPivotRow(
+                    selected = pivot,
+                    onSelect = { selected ->
+                        pivot = selected
+                        search = ""
+                    },
+                )
+
+                if (pivot == ConnectedAppsPivot.Available) {
+                    OutlinedTextField(
+                        value = search,
+                        onValueChange = { search = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Search installed apps") },
+                    )
+                }
+
+                val visibleCandidates =
+                    candidates.filter { candidate ->
+                        val enabled =
                             policies[candidate.key]
-                                ?: ConnectedAppPolicy(key = candidate.key)
-                        ConnectedAppRow(
-                            candidate = candidate,
-                            policy = policy,
-                            onPolicyChanged = onPolicyChanged,
-                        )
-                        HorizontalDivider()
+                                ?.normalized()
+                                ?.includeInMessages == true
+                        val belongsToPivot =
+                            when (pivot) {
+                                ConnectedAppsPivot.Enabled -> enabled
+                                ConnectedAppsPivot.Available -> !enabled
+                            }
+                        val matchesSearch =
+                            search.isBlank() ||
+                                candidate.label.contains(search, ignoreCase = true) ||
+                                candidate.key.packageName.contains(search, ignoreCase = true)
+
+                        belongsToPivot && matchesSearch
+                    }
+
+                if (visibleCandidates.isEmpty()) {
+                    Text(
+                        text =
+                            when (pivot) {
+                                ConnectedAppsPivot.Enabled -> {
+                                    "No connected apps are enabled."
+                                }
+
+                                ConnectedAppsPivot.Available -> {
+                                    if (search.isBlank()) {
+                                        "No additional installed apps are available."
+                                    } else {
+                                        "No installed apps match this search."
+                                    }
+                                }
+                            },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(SableSpacing.Xs),
+                    ) {
+                        items(
+                            items = visibleCandidates,
+                            key = { candidate ->
+                                candidate.key.packageName + ":" + candidate.key.userSerial
+                            },
+                        ) { candidate ->
+                            val policy =
+                                policies[candidate.key]
+                                    ?: ConnectedAppPolicy(key = candidate.key)
+                            ConnectedAppRow(
+                                candidate = candidate,
+                                policy = policy,
+                                onPolicyChanged = onPolicyChanged,
+                            )
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
-        }
         }
     }
 }
