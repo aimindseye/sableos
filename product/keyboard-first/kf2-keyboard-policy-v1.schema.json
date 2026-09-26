@@ -153,7 +153,8 @@
         "default_state",
         "activation_state",
         "activation",
-        "scope"
+        "scope",
+        "user_configurable"
       ],
       "properties": {
         "default_state": {
@@ -180,6 +181,9 @@
             "CONTEXTUAL",
             "GLOBAL"
           ]
+        },
+        "user_configurable": {
+          "type": "boolean"
         }
       }
     },
@@ -190,7 +194,8 @@
         "decision_state",
         "default_mode",
         "allowed_modes",
-        "raw_surface_id"
+        "raw_surface_id",
+        "user_selectable"
       ],
       "properties": {
         "decision_state": {
@@ -228,6 +233,9 @@
         },
         "notes": {
           "type": "string"
+        },
+        "user_selectable": {
+          "type": "boolean"
         }
       }
     },
@@ -242,7 +250,8 @@
         "wake_on_key",
         "notification_attention",
         "default_brightness_percent",
-        "activity_timeout_seconds"
+        "activity_timeout_seconds",
+        "user_configurable"
       ],
       "properties": {
         "decision_state": {
@@ -293,6 +302,9 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 600
+        },
+        "user_configurable": {
+          "type": "boolean"
         }
       }
     },
@@ -437,7 +449,8 @@
         "assignment_state",
         "semantic_action",
         "lock_policy",
-        "wake_policy"
+        "wake_policy",
+        "user_configurable"
       ],
       "properties": {
         "surface_id": {
@@ -478,6 +491,9 @@
         },
         "notes": {
           "type": "string"
+        },
+        "user_configurable": {
+          "type": "boolean"
         }
       }
     }
