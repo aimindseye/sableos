@@ -156,6 +156,8 @@ def validate(profile: dict[str, Any], policy: dict[str, Any]) -> list[str]:
             elif state == "ASSIGNED":
                 require(action_id in action_map, errors,
                         f"programmable key {sid} ASSIGNED references unknown action {action_id!r}")
+                require(isinstance(item.get("user_configurable"), bool), errors,
+                        f"programmable key {sid} ASSIGNED requires explicit user_configurable boolean")
             else:
                 errors.append(f"programmable key {sid} has invalid assignment_state {state!r}")
 
@@ -168,6 +170,15 @@ def validate(profile: dict[str, Any], policy: dict[str, Any]) -> list[str]:
         if sid in surfaces:
             require(surfaces[sid].get("surface_type") == "ABSOLUTE_TOUCH_SURFACE", errors,
                     "keyboard_touch_policy raw_surface_id must reference ABSOLUTE_TOUCH_SURFACE")
+        allowed = touch.get("allowed_modes")
+        default = touch.get("default_mode")
+        if touch.get("decision_state") == "DECIDED":
+            require(default != "UNDECIDED", errors,
+                    "decided keyboard_touch_policy requires a concrete default_mode")
+            require(isinstance(allowed, list) and default in allowed, errors,
+                    "keyboard_touch_policy default_mode must be present in allowed_modes")
+        require(isinstance(touch.get("user_selectable"), bool), errors,
+                "keyboard_touch_policy requires explicit user_selectable boolean")
 
     indicators = by_id(profile.get("indicators", []))
     light = policy.get("keyboard_backlight_policy")
@@ -181,12 +192,39 @@ def validate(profile: dict[str, Any], policy: dict[str, Any]) -> list[str]:
                     "keyboard_backlight_policy must reference a KEYBOARD_BACKLIGHT indicator")
         require(light.get("ui_owns_sysfs") is False, errors,
                 "KF2 UI must not directly own keyboard-light sysfs")
+        if light.get("decision_state") == "DECIDED":
+            require(light.get("timeout_policy") != "UNDECIDED", errors,
+                    "decided keyboard_backlight_policy requires timeout_policy")
+            require(light.get("wake_on_key") != "UNDECIDED", errors,
+                    "decided keyboard_backlight_policy requires wake_on_key")
+            require(light.get("notification_attention") != "UNDECIDED", errors,
+                    "decided keyboard_backlight_policy requires notification_attention")
+            brightness = light.get("default_brightness_percent")
+            timeout = light.get("activity_timeout_seconds")
+            require(isinstance(brightness, int) and 0 <= brightness <= 100, errors,
+                    "keyboard backlight default_brightness_percent must be 0..100")
+            require(isinstance(timeout, int) and 0 <= timeout <= 600, errors,
+                    "keyboard backlight activity_timeout_seconds must be 0..600")
+        require(isinstance(light.get("user_configurable"), bool), errors,
+                "keyboard_backlight_policy requires explicit user_configurable boolean")
 
     wake = policy.get("wake_policy")
     require(isinstance(wake, dict), errors, "wake_policy must be an object")
     if isinstance(wake, dict):
         require(wake.get("lockscreen_security_first") is True, errors,
                 "lockscreen security must remain first in wake/input routing")
+        if wake.get("decision_state") == "DECIDED":
+            require(wake.get("ordinary_keyboard_primary_wake") != "UNDECIDED", errors,
+                    "decided wake_policy requires ordinary_keyboard_primary_wake")
+
+    nav = policy.get("navigation_mode")
+    require(isinstance(nav, dict), errors, "navigation_mode must be an object")
+    if isinstance(nav, dict):
+        require(isinstance(nav.get("user_configurable"), bool), errors,
+                "navigation_mode requires explicit user_configurable boolean")
+        if nav.get("activation_state") == "DISABLED":
+            require(nav.get("activation") is None, errors,
+                    "disabled navigation mode must not define an activation")
 
     delegated = policy.get("delegated_decisions")
     require(isinstance(delegated, list), errors, "delegated_decisions must be a list")
