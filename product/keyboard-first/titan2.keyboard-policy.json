@@ -83,36 +83,39 @@
   "programmable_keys": [
     {
       "surface_id": "func1",
-      "assignment_state": "UNDECIDED",
-      "semantic_action": null,
-      "lock_policy": "DISABLED",
-      "wake_policy": "UNDECIDED",
-      "notes": "KF1 proves a programmable/wake-capable stock path. Sable default action is intentionally not inherited from AGUI."
+      "assignment_state": "ASSIGNED",
+      "semantic_action": "OPEN_SEARCH_COMMAND",
+      "lock_policy": "UNLOCKED_ONLY",
+      "wake_policy": "REQUEST_PRIMARY",
+      "notes": "Default Sable command key. When locked/screen-off it may request primary-display wake, but the command action is suppressed until unlocked. User-remappable.",
+      "user_configurable": true
     },
     {
       "surface_id": "func2",
-      "assignment_state": "UNDECIDED",
-      "semantic_action": null,
-      "lock_policy": "DISABLED",
-      "wake_policy": "UNDECIDED",
-      "notes": "KF1 proves the gpio_key-backed programmable input. Sable default action remains a product decision."
+      "assignment_state": "ASSIGNED",
+      "semantic_action": "OPEN_NOTIFICATIONS",
+      "lock_policy": "ALLOW_LOCKED_REDACTED",
+      "wake_policy": "REQUEST_PRIMARY",
+      "notes": "Default Sable attention key. May wake the primary display and open the notification surface subject to lockscreen redaction. User-remappable.",
+      "user_configurable": true
     }
   ],
   "navigation_mode": {
     "default_state": "OFF",
-    "activation_state": "UNDECIDED",
+    "activation_state": "DISABLED",
     "activation": null,
-    "scope": "CONTEXTUAL"
+    "scope": "CONTEXTUAL",
+    "user_configurable": false
   },
   "wake_policy": {
-    "decision_state": "UNDECIDED",
-    "ordinary_keyboard_primary_wake": "UNDECIDED",
+    "decision_state": "DECIDED",
+    "ordinary_keyboard_primary_wake": "DISABLED",
     "lockscreen_security_first": true,
-    "notes": "KF1 records stock ordinary-key no-wake behavior and hardware wake facts; KF2 must choose the Sable policy without weakening lockscreen interception."
+    "notes": "Ordinary QWERTY/modifier keys do not wake the primary display by default. Explicit controls such as Power or assigned programmable keys may request wake. This avoids accidental wake/first-key ambiguity while preserving lockscreen security."
   },
   "keyboard_touch_policy": {
-    "decision_state": "UNDECIDED",
-    "default_mode": "UNDECIDED",
+    "decision_state": "DECIDED",
+    "default_mode": "POINTER",
     "allowed_modes": [
       "POINTER",
       "GESTURE",
@@ -120,16 +123,20 @@
       "RAW_APP"
     ],
     "raw_surface_id": "keyboard-touch-surface",
-    "notes": "touchPad is raw ABS_MT. Pointer/gesture semantics must be layered above KF1 normalization rather than assumed from stock Mouse Keys."
+    "notes": "Default to pointer semantics for broad Android app compatibility. Gesture/Hybrid remain user-selectable; RAW_APP is an explicit per-app escape hatch.",
+    "user_selectable": true
   },
   "keyboard_backlight_policy": {
-    "decision_state": "UNDECIDED",
+    "decision_state": "DECIDED",
     "indicator_id": "keyboard-backlight",
     "ui_owns_sysfs": false,
-    "timeout_policy": "UNDECIDED",
-    "wake_on_key": "UNDECIDED",
-    "notification_attention": "UNDECIDED",
-    "notes": "A bounded service/controller owns the backend. UI code must not write the keypad LED sysfs node directly."
+    "timeout_policy": "FIXED_TIMEOUT",
+    "wake_on_key": "ENABLED",
+    "notification_attention": "DISABLED",
+    "notes": "Default 50% user-facing brightness, illuminate on keyboard/touch-surface activity, turn off after 20 seconds of inactivity, and do not use the keyboard backlight for notifications. Settings may expose brightness/timeout within the bounded controller.",
+    "default_brightness_percent": 50,
+    "activity_timeout_seconds": 20,
+    "user_configurable": true
   },
   "delegated_decisions": [
     {
