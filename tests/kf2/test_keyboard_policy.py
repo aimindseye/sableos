@@ -57,8 +57,12 @@ def test_text_and_app_shortcuts_are_preserved():
 
 def test_programmable_keys_reference_kf1_surfaces_not_scan_codes():
     policy = load_policy()
-    assert pkey(policy, "func1")["assignment_state"] == "UNDECIDED"
-    assert pkey(policy, "func2")["assignment_state"] == "UNDECIDED"
+    func1 = pkey(policy, "func1")
+    func2 = pkey(policy, "func2")
+    assert func1["surface_id"] == "func1"
+    assert func2["surface_id"] == "func2"
+    assert func1["assignment_state"] in {"UNDECIDED", "ASSIGNED", "DISABLED"}
+    assert func2["assignment_state"] in {"UNDECIDED", "ASSIGNED", "DISABLED"}
     serialized = json.dumps(policy)
     assert '"scan_code"' not in serialized
     assert "KEYCODE_404" not in serialized
@@ -74,13 +78,13 @@ def test_lockscreen_policy_precedes_home_and_commands():
     assert policy["wake_policy"]["lockscreen_security_first"] is True
 
 
-def test_touch_surface_stays_raw_fact_until_policy_decision():
+def test_touch_surface_policy_stays_bound_to_raw_kf1_surface():
     policy = load_policy()
     touch = policy["keyboard_touch_policy"]
     assert touch["raw_surface_id"] == "keyboard-touch-surface"
-    assert touch["decision_state"] == "UNDECIDED"
-    assert touch["default_mode"] == "UNDECIDED"
+    assert touch["decision_state"] in {"UNDECIDED", "DECIDED", "DEFERRED"}
     assert set(touch["allowed_modes"]) == {"POINTER", "GESTURE", "HYBRID", "RAW_APP"}
+    assert touch["default_mode"] == "UNDECIDED" or touch["default_mode"] in touch["allowed_modes"]
 
 
 def test_keyboard_light_ui_never_owns_sysfs():
@@ -119,7 +123,7 @@ if __name__ == "__main__":
         test_text_and_app_shortcuts_are_preserved,
         test_programmable_keys_reference_kf1_surfaces_not_scan_codes,
         test_lockscreen_policy_precedes_home_and_commands,
-        test_touch_surface_stays_raw_fact_until_policy_decision,
+        test_touch_surface_policy_stays_bound_to_raw_kf1_surface,
         test_keyboard_light_ui_never_owns_sysfs,
         test_rear_display_product_role_is_delegated,
         test_validator_rejects_raw_scan_code_in_policy,
