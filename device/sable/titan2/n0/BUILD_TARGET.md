@@ -98,8 +98,25 @@ Panther config declares it as Android 17. It is therefore not accepted as the
 first Titan 2 Android 16 / SDK 36 build substrate merely because it contains
 `gsi_arm64.mk`.
 
-Next qualification step: inspect the exact generic product/release definitions
-in that tree and search for any other local Android 16 / SDK 36 source tree.
-Do not enable `SABLE_DEVICE_BUILD_SUPPORTED` until an SDK 36 substrate is
-positively identified, or until the Android-major compatibility decision is
-explicitly revisited and documented.
+The follow-up inspection confirmed that the Panther tree exposes the standard
+`gsi_arm64` product, but it remains an Android 17 substrate and no second
+top-level Android 16 source tree was found.
+
+The first dedicated Titan 2 substrate is therefore pinned to:
+
+```text
+AOSP_MANIFEST=https://android.googlesource.com/platform/manifest
+AOSP_TAG=android-16.0.0_r4
+AOSP_BUILD_ID_REFERENCE=BP4A.251205.006
+AOSP_SECURITY_PATCH_REFERENCE=2025-12-05
+LUNCH_TARGET=gsi_arm64-userdebug
+EXPECTED_PRODUCT=gsi_arm64
+EXPECTED_DEVICE=generic_arm64
+EXPECTED_ARCH=arm64
+EXPECTED_PLATFORM_SDK=36
+```
+
+This tag aligns with the stock V01.00.13 security-patch date while preserving a
+clean AOSP/GSI userspace boundary. Bootstrap remains explicit-network-authorized,
+and build remains disabled until `build/titan2/qualify-substrate.sh` reports
+`TITAN2_SUBSTRATE_QUALIFIED=YES`.
