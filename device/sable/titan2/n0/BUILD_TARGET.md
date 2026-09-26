@@ -78,3 +78,28 @@ The generated `system.img` then goes through the Titan repository's E3
 artifact preflight for sparse/logical size, current logical-partition fit and
 AVB metadata inspection. No write-capable command is authorized by a successful
 build alone.
+
+
+## Observed substrate probe — 2026-09-26
+
+The first host probe found one existing generic ARM64/GSI-capable Android tree:
+
+```text
+SUBSTRATE_PATH=/srv/data/sable-build/workspaces/r8-a4-panther-base-2026081300
+PLATFORM_SDK=UNOBSERVED
+PLATFORM_SDK_MATCH=NO
+GSI_REFERENCE_SUBSTRATE_COUNT=1
+SDK36_SUBSTRATE_COUNT=0
+TITAN2_SUBSTRATE_QUALIFIED=NO
+```
+
+That workspace is the existing Panther GrapheneOS 2026081300 substrate; Sable's
+Panther config declares it as Android 17. It is therefore not accepted as the
+first Titan 2 Android 16 / SDK 36 build substrate merely because it contains
+`gsi_arm64.mk`.
+
+Next qualification step: inspect the exact generic product/release definitions
+in that tree and search for any other local Android 16 / SDK 36 source tree.
+Do not enable `SABLE_DEVICE_BUILD_SUPPORTED` until an SDK 36 substrate is
+positively identified, or until the Android-major compatibility decision is
+explicitly revisited and documented.
