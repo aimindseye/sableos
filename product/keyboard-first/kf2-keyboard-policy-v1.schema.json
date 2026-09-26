@@ -240,7 +240,9 @@
         "ui_owns_sysfs",
         "timeout_policy",
         "wake_on_key",
-        "notification_attention"
+        "notification_attention",
+        "default_brightness_percent",
+        "activity_timeout_seconds"
       ],
       "properties": {
         "decision_state": {
@@ -281,6 +283,16 @@
         },
         "notes": {
           "type": "string"
+        },
+        "default_brightness_percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "activity_timeout_seconds": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 600
         }
       }
     },
