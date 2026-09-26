@@ -1,18 +1,23 @@
 # Titan 2 N0 stock basis
 
-Status: **placeholder — bind before artifact work**
+Status: **bound for first-build work — deployment decisions remain closed**
 
-The first Titan 2 N0 artifact must be bound to an exact stock firmware/vendor
-basis. This file records the normalized starting basis and the missing proofs
-that must be completed before E3/N0 deployment.
+The first Titan 2 N0 artifact is bound to the tested US retail stock
+firmware/vendor basis below. Normalized evidence comes from
+`aimindseye/unihertz-titan2` PR #15 at
+`cabae7ab474daebc25f201586821c257b216e612`; raw firmware, partition images,
+serials and private captures remain outside this repository.
 
 ## Normalized known basis
 
 ```text
 DEVICE=titan2
 FASTBOOT_PRODUCT=g71v78c2k_dfl_tee
+FASTBOOTD_PRODUCT=Titan_2
 STOCK_BASELINE=V01.00.13
 ANDROID_BASE=16
+PLATFORM_SDK=36
+BOARD_FIRST_API=34
 SOC=MediaTek_MT6878
 ARCH=arm64_only
 VENDOR_API=34
@@ -25,25 +30,42 @@ FASTBOOTD=YES
 FASTBOOT_BOOT=NO
 DSU=NO_ON_TESTED_STOCK_BUILD
 RECOVERY_PATH=vendor_boot_recovery_vendor_ramdisk
+ACTIVE_SLOT=a
+BOOTLOADER_UNLOCKED=YES
+VERIFIED_BOOT=orange
+SNAPSHOT_UPDATE_STATUS=none
 ```
 
-## Required binding before artifact creation
+## Evidence binding
 
 ```text
-STOCK_FIRMWARE_SOURCE_HASHED=TODO
-RESTORE_CRITICAL_IMAGE_HASHES=TODO
-ACTIVE_SLOT_CAPTURED=TODO
-LP_METADATA_CAPTURED=TODO
-SNAPSHOT_STATE_CAPTURED=TODO
-VBOOT_CHAIN_CAPTURED=TODO
-AVB_STRATEGY_DECIDED=TODO
-USERDATA_POLICY_DECIDED=TODO
+STOCK_FIRMWARE_SOURCE_HASHED=PASS
+RESTORE_CRITICAL_IMAGE_HASHES=PASS
+ACTIVE_SLOT_CAPTURED=PASS
+LP_METADATA_CAPTURED=PASS
+SNAPSHOT_STATE_CAPTURED=PASS_NONE_ACTIVE
+VBOOT_CHAIN_CAPTURED=PASS
+RESTORE_PLAN_VERIFIED=PASS
+TITAN2_STOCK_BASIS_BOUND=YES_FOR_BUILD
+```
+
+E0 restore verification, E1 bootloader-fastboot preflight and E2 fastbootd/LP
+preflight are complete. That is sufficient to create and inspect a **non-flashed**
+candidate system artifact.
+
+The following remain deployment gates, not build gates:
+
+```text
+AVB_STRATEGY_DECIDED=NO
+USERDATA_POLICY_DECIDED=NO
+E3_ARTIFACT_FIT_VERIFIED=NO
+E3_DEPLOYMENT_AUTHORIZED=NO
 ```
 
 ## Stock dependency assumption
 
-Initial N0 should preserve the stock MediaTek kernel/vendor stack unless evidence
-forces a different approach.
+Initial N0 preserves the stock MediaTek kernel/vendor/firmware stack unless
+first-boot evidence forces a narrower change:
 
 ```text
 boot
@@ -57,4 +79,5 @@ vbmeta_vendor
 modem and MTK firmware partitions
 ```
 
-Do not modify additional partitions without an explicit bring-up reason.
+The first build therefore must not package Panther boot images, Pixel vendor
+content, Titan stock firmware or extracted proprietary blobs.
