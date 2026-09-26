@@ -1,6 +1,6 @@
 # Sable Titan 2 device skeleton
 
-Status: **private integration skeleton — N0 placeholder**
+Status: **N0 build-target work active — deployment remains closed**
 
 This directory is the private integration skeleton for Titan 2 SableOS N0. It is
 not a public source release, not a build target, and not a flash contract.
@@ -8,12 +8,13 @@ not a public source release, not a build target, and not a flash contract.
 ```text
 DEVICE=titan2
 RELEASE=N0
-DEVICE_ADAPTER_STATUS=SKELETON_ONLY
+DEVICE_ADAPTER_STATUS=BUILD_TARGET_IN_PROGRESS
 BUILD_IMAGE_PUBLIC=NO
 BUILD_IMAGE_PRIVATE=NO
 FLASH_PUBLIC=NO
 FLASH_PRIVATE=NO
 FIRST_SABLE_ARTIFACT=ABSENT
+FIRST_BUILD_ARTIFACT_KIND=gsi-system-image
 FIRST_SABLE_BOOT=NOT_RUN
 ```
 
@@ -31,8 +32,10 @@ generated-super-image
 bounded system/product/system_ext bundle
 ```
 
-No build logic belongs here until the artifact decision, AVB strategy,
-userdata policy and restore path are documented.
+The first build candidate is now a system-only ARM64 GSI. Building remains
+non-destructive and is allowed to proceed after the Android 16 / SDK 36 source
+substrate and generic ARM64 product are qualified. AVB and userdata policy remain
+deployment gates and do not authorize a flash merely because an image builds.
 
 ## Source/evidence boundary
 
