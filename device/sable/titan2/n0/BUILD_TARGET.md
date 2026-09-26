@@ -1,4 +1,4 @@
-# Titan 2 N0 build target contract
+# Titan 2 N0_A16 build target contract
 
 Status: **substrate qualification required before first build**
 
@@ -15,7 +15,8 @@ source substrate and an implemented build driver.
 
 ```text
 DEVICE=titan2
-RELEASE=R10
+SABLE_RELEASE=R10
+TITAN_RELEASE_ID=N0_A16
 ARTIFACT_KIND=gsi-system-image
 PRIMARY_ARTIFACT=system
 TARGET_ARCH=arm64
@@ -27,11 +28,27 @@ BUILD_VARIANT=userdebug
 ADB_FOR_N0=REQUIRED
 STOCK_KERNEL_VENDOR_PRESERVED=YES
 PANTHER_BOOT_VENDOR_CONTENT_ALLOWED=NO
+RESTLESSOS_FIRST_BOOT_DEPENDENCY=NO
 ```
 
 The first artifact should be a generic/system-only userspace candidate. Titan
 device policy and Sable keyboard/display integration can be added incrementally
 after the first boot proves the stock vendor stack accepts the system image.
+
+## Strategy boundary
+
+Titan 2 is part of the Treble portability lane, not the Pixel reference lane.
+
+```text
+FIRST_TITAN2_N0_SUBSTRATE=AOSP16_CLEAN_GSI
+RESTLESSOS_ROLE=REFERENCE_AND_FUTURE_FORK
+RESTLESSOS_COMPARISON_PHASE=AFTER_AOSP16_SYSTEM_IMG_EXISTS
+```
+
+RestlessOS is valuable as a MediaTek/Treble compatibility reference and future
+Sable fork, but it is not the first Titan 2 boot substrate. The first build must
+isolate stock-vendor compatibility before adding RestlessOS policy/hardening
+variables.
 
 ## Phase A — qualify build substrate
 
@@ -55,9 +72,9 @@ TITAN2_SUBSTRATE_QUALIFIED=YES
 ```
 
 An Android 17 / SDK 37 Panther workspace is useful as a Sable reference but is
-not automatically accepted as the first Titan 2 N0 substrate. The first target
-is intentionally aligned to the stock Android 16 / SDK 36 userspace boundary to
-reduce bring-up variables.
+not automatically accepted as the first Titan 2 N0_A16 substrate. The first
+target is intentionally aligned to the stock Android 16 / SDK 36 userspace
+boundary to reduce bring-up variables.
 
 ## Phase B — implement build driver
 
@@ -78,7 +95,6 @@ The generated `system.img` then goes through the Titan repository's E3
 artifact preflight for sparse/logical size, current logical-partition fit and
 AVB metadata inspection. No write-capable command is authorized by a successful
 build alone.
-
 
 ## Observed substrate probe — 2026-09-26
 
