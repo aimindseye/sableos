@@ -11,6 +11,17 @@ AOSP_TAG=android-16.0.0_r4
 BUILD_ID=BP4A.251205.006
 ```
 
+## Canonical stage ownership
+
+```text
+N0-AOSP      = AOSP BP4A generic_system_arm64 control build
+N0-B-TREBLE  = RestlessOS / TrebleDroid hardware-capable GSI baseline
+N1-SABLE     = SableOS product overlay on the Treble baseline
+N2-TITAN2    = physical Titan 2 / Titan 2 Elite validation
+```
+
+Do not use `N1-TREBLE` for the RestlessOS / TrebleDroid baseline. That stage is `N0-B-TREBLE`.
+
 ## Current patch classes
 
 ### 1. `platform_testing` test-package graph unblocker
@@ -73,6 +84,26 @@ $(call enforce-product-packages-exist,com.android.ranging)
 
 instead of deleting `com.android.ranging` from `base_system.mk` or disabling `RELEASE_RANGING_STACK`.
 
+### 3. ABI check rerun setting
+
+Classification:
+
+```text
+CLASS=build_control_environment_workaround
+SOURCE_MUTATION=NO
+RUNTIME_SYSTEM_IMG_IMPACT=NO_EXPECTED
+```
+
+Reason:
+
+The N0-AOSP build produced `system.img` artifacts but returned nonzero after a late `header-abi-dumper` failure while processing `frameworks/base/native/android/libandroid`. The supported Soong knob is:
+
+```text
+SKIP_ABI_CHECKS=true
+```
+
+This setting is scoped to the N0-AOSP control build and should be recorded in evidence. It is not a Titan 2 runtime change and not a SableOS product feature.
+
 ## Explicit non-goals
 
 Do not use these as N0-AOSP fixes:
@@ -103,6 +134,6 @@ stage ownership
 | Stage | Allowed patch sources |
 | --- | --- |
 | `N0-AOSP` | AOSP/BP4A control patches only |
-| `N1-TREBLE` | RestlessOS / TrebleDroid patch series only |
-| `N2-SABLE` | SableOS product overlay and package deltas only |
-| `N3-TITAN2` | validation notes and device-specific runtime findings |
+| `N0-B-TREBLE` | RestlessOS / TrebleDroid patch series only |
+| `N1-SABLE` | SableOS product overlay and package deltas only |
+| `N2-TITAN2` | validation notes and device-specific runtime findings |
