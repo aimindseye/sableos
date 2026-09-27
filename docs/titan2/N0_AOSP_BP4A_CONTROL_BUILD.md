@@ -2,7 +2,7 @@
 
 Status: `IN_PROGRESS`
 
-This document records the first Android 16 / BP4A `generic_system_arm64` control build used to validate the SableOS host build environment, AOSP source graph, Soong/Kati behavior, and the minimum patch queue before moving to TrebleDroid / RestlessOS and then SableOS-specific product overlays.
+This document records the first Android 16 / BP4A `generic_system_arm64` control build used to validate the SableOS host build environment, AOSP source graph, Soong/Kati behavior, and the minimum patch queue before moving to the N0-B TrebleDroid / RestlessOS baseline and then SableOS-specific product overlays.
 
 This build is **not** the Titan 2 flashable image. It is the N0-AOSP control stage.
 
@@ -27,16 +27,20 @@ This build is **not** the Titan 2 flashable image. It is the N0-AOSP control sta
 
 > Can the Android 16 / BP4A AOSP source tree, host toolchain, Soong/Kati graph, and documented patch queue produce a valid `system.img`?
 
-It does not answer whether the image boots on Titan 2 or Titan 2 Elite. MediaTek / Titan hardware compatibility is handled by the later TrebleDroid / RestlessOS and SableOS product stages.
+It does not answer whether the image boots on Titan 2 or Titan 2 Elite. MediaTek / Titan hardware compatibility is handled by the later N0-B TrebleDroid / RestlessOS baseline and SableOS product stages.
 
-## Stage naming
+## Canonical stage naming
+
+The canonical naming keeps the first two stages under N0 because both are baseline build-proving stages:
 
 | Stage | Meaning | Expected target family |
 | --- | --- | --- |
 | `N0-AOSP` | Pure AOSP BP4A control build | `generic_system_arm64-bp4a-userdebug` |
-| `N1-TREBLE` | RestlessOS / TrebleDroid hardware-capable GSI baseline | TrebleDroid / RestlessOS product target |
-| `N2-SABLE` | SableOS product overlay on the Treble baseline | `sable_gsi_arm64` or successor |
-| `N3-TITAN2` | Physical Titan 2 / Titan 2 Elite validation | device-specific validation, no baseline source churn |
+| `N0-B-TREBLE` | RestlessOS / TrebleDroid hardware-capable GSI baseline | TrebleDroid / RestlessOS product target |
+| `N1-SABLE` | SableOS product overlay on the Treble baseline | `sable_gsi_arm64` or successor |
+| `N2-TITAN2` | Physical Titan 2 / Titan 2 Elite validation | device-specific validation, no baseline source churn |
+
+Avoid referring to the RestlessOS / TrebleDroid baseline as `N1-TREBLE`; that name is reserved for the first SableOS overlay stage (`N1-SABLE`).
 
 ## Local evidence anchors
 
@@ -97,12 +101,23 @@ RUNTIME_SYSTEM_IMG_IMPACT=NO_EXPECTED
 REVERT_FOR_ZERO_MUTATION_AOSP_CONTROL=YES
 ```
 
+### ABI check handling
+
+The N0-AOSP build reached `system.img` generation but failed late in `header-abi-dumper` while processing `frameworks/base/native/android/libandroid` because the ABI dumper could not resolve `pthread.h` through its include path. The selected next rerun uses the supported Soong knob:
+
+```text
+SKIP_ABI_CHECKS=true
+```
+
+This is an N0-AOSP build-control setting, not a Titan 2 runtime or SableOS product decision.
+
 ## Patch classification
 
 | Patch / mutation | Classification | Reason |
 | --- | --- | --- |
-| `platform_testing` targeted `test_package` unblocker | Temporary scratch unblocker | Avoids host test bundle graph failures while building runtime `systemimage` |
+| `platform_testing` targeted `test_package` unblocker | Temporary scratch unblocker | Avoids host-side Tradefed test bundle path errors while building runtime `systemimage` |
 | `generic_system_arm64.mk` `com.android.ranging` allowlist | Reusable Android 16 BP4A control patch candidate | Preserves `base_system.mk` and `RELEASE_RANGING_STACK` while allowing absent product package declaration |
+| `SKIP_ABI_CHECKS=true` for N0-AOSP rerun | Build-control environment workaround | Avoids late header ABI dumper failure; does not change runtime `system.img` package selection |
 | Adding `packages/modules/Ranging` from `main` | Not approved | Would mix `main` project state into a tagged BP4A source tree |
 | Deleting `com.android.ranging` from `base_system.mk` | Not approved for N0-AOSP | Removes upstream package entry instead of documenting the generic-system existence-check gap |
 | Disabling `RELEASE_RANGING_STACK` | Not approved | Would remove Android 16 ranging jars from the UWB APEX classpath fragments |
@@ -114,7 +129,7 @@ REVERT_FOR_ZERO_MUTATION_AOSP_CONTROL=YES
 ```text
 LUNCH_RC=0
 BUILD_RC=0
-SYSTEM_IMG_COUNT=1
+SYSTEM_IMG_COUNT>=1
 N0_BP4A_SYSTEMIMAGE=PASS
 DEVICE_CONTACT=NO
 FLASH_AUTHORIZED=NO
@@ -124,4 +139,4 @@ After completion, record the final artifact path, size, SHA-256, and build-prop 
 
 ## Next stage
 
-After `N0-AOSP` passes, move to `N1-TREBLE` using the RestlessOS / TrebleDroid product hierarchy in a separate output directory. Do not reuse the N0-AOSP output directory for the Treble product graph.
+After `N0-AOSP` passes, move to `N0-B-TREBLE` using the RestlessOS / TrebleDroid product hierarchy in a separate output directory. Do not reuse the N0-AOSP output directory for the Treble product graph.
