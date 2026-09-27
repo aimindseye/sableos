@@ -90,6 +90,15 @@ FLASH_AUTHORIZED=NO
 
 `N1-SABLE` should create a Sable product overlay that inherits from the TrebleDroid / RestlessOS product target.
 
+N1 also owns the Sable multilingual readiness contract. Keyboard language support and UI localization readiness must be treated as one product requirement, not separate features. The detailed contract lives in `docs/titan2/N1_SABLE_MULTILINGUAL_READINESS.md`.
+
+```text
+N1_MULTILINGUAL_READINESS_REQUIRED=YES
+FULL_LANGUAGE_PACKS_REQUIRED_IN_N1=NO
+KEYBOARD_ONLY_MULTILINGUAL=NOT_ACCEPTABLE
+UI_AND_KEYBOARD_LANGUAGE_ALIGNMENT=REQUIRED
+```
+
 Candidate layout:
 
 ```text
@@ -106,7 +115,16 @@ Titan keyboard .kl/.kcm overlays
 Square-display overlays/RROs
 Sable artifact allowlists
 Sable branding and default app policy
+Sable locale and multilingual-readiness policy
 ```
+
+The N1 overlay must include or stage a gate named:
+
+```text
+N1_SABLE_LOCALE_KEYBOARD_CONTRACT
+```
+
+The gate should cover resource-backed UI strings, physical keyboard layout ownership, font fallback, IME policy for complex scripts, and RTL safety review. Full language packs can come later; the N1 architecture must be locale-safe from the start.
 
 ## Historical rule
 
