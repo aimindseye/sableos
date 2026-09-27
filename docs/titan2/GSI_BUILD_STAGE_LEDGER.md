@@ -4,26 +4,30 @@ This ledger separates SableOS GSI work into stages so that AOSP control issues, 
 
 ## Canonical stage sequence
 
+The canonical sequence keeps both baseline build-proving stages under N0:
+
 | Stage | Name | Purpose | Target class | Device contact |
 | --- | --- | --- | --- | --- |
 | `N0-AOSP` | AOSP BP4A control | Prove source/toolchain/Soong/Kati can build a baseline `system.img` | `generic_system_arm64-bp4a-userdebug` | `NO` |
-| `N1-TREBLE` | TrebleDroid / RestlessOS baseline | Build a hardware-capable Treble GSI with MediaTek/phh compatibility layer | TrebleDroid / RestlessOS product | `NO` initially |
-| `N2-SABLE` | SableOS GSI product | Add SableOS identity, packages, policies, keyboard/display overlays | Sable product inheriting from Treble product | `NO` until image is qualified |
-| `N3-TITAN2` | Physical Titan validation | Validate Titan 2 / Titan 2 Elite boot/runtime behavior | Qualified Sable GSI artifact | Controlled, explicit |
+| `N0-B-TREBLE` | TrebleDroid / RestlessOS baseline | Build a hardware-capable Treble GSI with MediaTek/phh compatibility layer | TrebleDroid / RestlessOS product | `NO` initially |
+| `N1-SABLE` | SableOS GSI product | Add SableOS identity, packages, policies, keyboard/display overlays | Sable product inheriting from Treble product | `NO` until image is qualified |
+| `N2-TITAN2` | Physical Titan validation | Validate Titan 2 / Titan 2 Elite boot/runtime behavior | Qualified Sable GSI artifact | Controlled, explicit |
 
-## Why N0-AOSP and N1-TREBLE are separate
+`N1-TREBLE` is not canonical naming. The TrebleDroid / RestlessOS baseline is `N0-B-TREBLE`; `N1` is reserved for the first SableOS overlay stage.
+
+## Why N0-AOSP and N0-B-TREBLE are separate
 
 `N0-AOSP` is a control. It should answer whether the Android 16 / BP4A AOSP source tree and local host build setup can produce a valid `system.img`.
 
-`N1-TREBLE` is the first hardware-relevant build stage. It should use the TrebleDroid / RestlessOS product hierarchy rather than trying to make Google's pure `generic_system_arm64` product boot on Titan 2.
+`N0-B-TREBLE` is the first hardware-relevant baseline build stage. It should use the TrebleDroid / RestlessOS product hierarchy rather than trying to make Google's pure `generic_system_arm64` product boot on Titan 2.
 
 The separation gives a clean failure matrix:
 
 ```text
 N0-AOSP fails -> AOSP/source/toolchain/patch issue
-N0-AOSP passes and N1-TREBLE fails -> TrebleDroid/RestlessOS integration issue
-N1-TREBLE passes and N2-SABLE fails -> Sable product overlay issue
-N2-SABLE passes and N3-TITAN2 fails -> physical device/vendor/runtime compatibility issue
+N0-AOSP passes and N0-B-TREBLE fails -> TrebleDroid/RestlessOS integration issue
+N0-B-TREBLE passes and N1-SABLE fails -> Sable product overlay issue
+N1-SABLE passes and N2-TITAN2 fails -> physical device/vendor/runtime compatibility issue
 ```
 
 ## Output directory policy
@@ -32,8 +36,8 @@ Use one output directory per stage/product graph.
 
 ```text
 N0_AOSP_OUT=out_sable_t2_n0_aosp_gsi_bp4a
-N1_TREBLE_OUT=out_sable_t2_n1_treble_gsi
-N2_SABLE_OUT=out_sable_t2_n2_sable_gsi
+N0_B_TREBLE_OUT=out_sable_t2_n0b_treble_gsi
+N1_SABLE_OUT=out_sable_t2_n1_sable_gsi
 ```
 
 Do not share output directories across product graphs. Reusing an output directory within the same stage is allowed and expected for incremental builds.
@@ -58,10 +62,11 @@ Do not share output directories across product graphs. Reusing an output directo
 | --- | --- | --- | --- |
 | Targeted `platform_testing` `test_package` unblocker | `platform_testing/Android.bp` | scratch unblocker | Avoids host-side Tradefed test bundle path errors during `systemimage` graph generation |
 | Ranging existence-check allowlist | `build/make/target/product/generic_system_arm64.mk` | BP4A control patch candidate | Preserves `base_system.mk` and `RELEASE_RANGING_STACK`; allowlists only `com.android.ranging` for existence check |
+| ABI checks skipped for rerun | environment: `SKIP_ABI_CHECKS=true` | build-control workaround | Avoids late `header-abi-dumper` failure after `system.img` generation; no source mutation |
 
-## N1-TREBLE planning record
+## N0-B-TREBLE planning record
 
-`N1-TREBLE` should start only after the N0-AOSP result is captured. The expected direction is:
+`N0-B-TREBLE` should start only after the N0-AOSP result is captured. The expected direction is:
 
 ```text
 Use RestlessOS / TrebleDroid product hierarchy
@@ -70,20 +75,20 @@ Use separate OUT_DIR
 Keep SableOS identity out of build/make base products
 ```
 
-Items to identify before launching N1:
+Items to identify before launching N0-B:
 
 ```text
 RESTLESS_TREBLE_PRODUCT_NAME=<pending discovery>
 TREBLE_PRODUCT_MAKEFILE=<pending discovery>
-N1_OUT_DIR=out_sable_t2_n1_treble_gsi
+N0_B_OUT_DIR=out_sable_t2_n0b_treble_gsi
 PATCH_SOURCE=RestlessOS/TrebleDroid patch series only
 DEVICE_CONTACT=NO
 FLASH_AUTHORIZED=NO
 ```
 
-## N2-SABLE planning record
+## N1-SABLE planning record
 
-`N2-SABLE` should create a Sable product overlay that inherits from the TrebleDroid / RestlessOS product target.
+`N1-SABLE` should create a Sable product overlay that inherits from the TrebleDroid / RestlessOS product target.
 
 Candidate layout:
 
