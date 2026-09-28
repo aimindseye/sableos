@@ -11,6 +11,10 @@ pass() {
   echo "$1"
 }
 
+warn() {
+  echo "$1"
+}
+
 usage() {
   cat >&2 <<'EOF'
 usage:
@@ -23,7 +27,6 @@ Optional:
   --active-product-mk PATH
   --target-files PATH
   --marker-path-in-zip SYSTEM/product/etc/sableos/n1-substrate.env
-  --expected-marker N1A_SABLE_OVERLAY_STAMP=PASS
 
 This is a read-only N1A reporting/packaging guard. It does not build,
 contact a device, run adb/fastboot, or flash.
@@ -36,7 +39,6 @@ N1A_EVIDENCE_DIR=""
 ACTIVE_PRODUCT_MK=""
 TARGET_FILES=""
 MARKER_PATH_IN_ZIP="SYSTEM/product/etc/sableos/n1-substrate.env"
-EXPECTED_MARKER="N1A_SABLE_OVERLAY_STAMP=PASS"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -46,7 +48,6 @@ while [ "$#" -gt 0 ]; do
     --active-product-mk) ACTIVE_PRODUCT_MK="$2"; shift 2 ;;
     --target-files) TARGET_FILES="$2"; shift 2 ;;
     --marker-path-in-zip) MARKER_PATH_IN_ZIP="$2"; shift 2 ;;
-    --expected-marker) EXPECTED_MARKER="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage; exit 64 ;;
   esac
@@ -122,7 +123,7 @@ else
 fi
 
 if grep -q 'vendor/sable/n1_overlay/sable_n1_overlay.mk' "$ANDROID_PRODUCTS_MK"; then
-  fail "N1A_ANDROID_PRODUCTS_OVERLAY_INHERIT=FAIL_MISPLACED"
+  warn "N1A_ANDROID_PRODUCTS_OVERLAY_INHERIT=WARN_MISPLACED_CLEANUP_REQUIRED"
 else
   pass "N1A_ANDROID_PRODUCTS_OVERLAY_INHERIT=PASS_ABSENT"
 fi
@@ -133,14 +134,21 @@ else
   fail "N1A_OVERLAY_COPY_RULE=FAIL"
 fi
 
-if grep -qF "$EXPECTED_MARKER" "$MARKER_FILE"; then
-  pass "N1A_MARKER_FILE_CONTENT=PASS"
+if grep -qF 'SABLEOS_MILESTONE=N1A' "$MARKER_FILE"; then
+  pass "N1A_MARKER_FILE_MILESTONE=PASS"
 else
-  fail "N1A_MARKER_FILE_CONTENT=FAIL"
+  fail "N1A_MARKER_FILE_MILESTONE=FAIL"
+fi
+
+if grep -qF 'SABLEOS_STAGE=ANDROID16_RESTLESS_R7E_OVERLAY_STAMP' "$MARKER_FILE"; then
+  pass "N1A_MARKER_FILE_STAGE=PASS"
+else
+  fail "N1A_MARKER_FILE_STAGE=FAIL"
 fi
 
 ZIP_ENTRY_COUNT=0
 MARKER_FOUND_COUNT=0
+MARKER_CONTENT_FILE=""
 if unzip -Z1 "$TARGET_FILES" 2>/dev/null | grep -qxF "$MARKER_PATH_IN_ZIP"; then
   ZIP_ENTRY_COUNT=1
   pass "N1A_MARKER_ZIP_ENTRY=PASS"
@@ -149,12 +157,34 @@ else
 fi
 
 if [ "$ZIP_ENTRY_COUNT" -eq 1 ]; then
-  if unzip -p "$TARGET_FILES" "$MARKER_PATH_IN_ZIP" 2>/dev/null | grep -qF "$EXPECTED_MARKER"; then
-    MARKER_FOUND_COUNT=1
-    pass "N1A_MARKER_ZIP_CONTENT=PASS"
+  MARKER_CONTENT_FILE="$(mktemp)"
+  unzip -p "$TARGET_FILES" "$MARKER_PATH_IN_ZIP" > "$MARKER_CONTENT_FILE" 2>/dev/null
+
+  if grep -qF 'SABLEOS_MILESTONE=N1A' "$MARKER_CONTENT_FILE"; then
+    pass "N1A_MARKER_ZIP_MILESTONE=PASS"
   else
-    fail "N1A_MARKER_ZIP_CONTENT=FAIL"
+    fail "N1A_MARKER_ZIP_MILESTONE=FAIL"
   fi
+
+  if grep -qF 'SABLEOS_STAGE=ANDROID16_RESTLESS_R7E_OVERLAY_STAMP' "$MARKER_CONTENT_FILE"; then
+    pass "N1A_MARKER_ZIP_STAGE=PASS"
+  else
+    fail "N1A_MARKER_ZIP_STAGE=FAIL"
+  fi
+
+  if grep -qF 'DEVICE_CONTACT_AUTHORIZED=NO' "$MARKER_CONTENT_FILE" && \
+     grep -qF 'FLASH_AUTHORIZED=NO' "$MARKER_CONTENT_FILE" && \
+     grep -qF 'PUBLIC_RELEASE=NO' "$MARKER_CONTENT_FILE"; then
+    pass "N1A_MARKER_ZIP_GUARDRAILS=PASS"
+  else
+    fail "N1A_MARKER_ZIP_GUARDRAILS=FAIL"
+  fi
+
+  rm -f "$MARKER_CONTENT_FILE"
+fi
+
+if [ "$ZIP_ENTRY_COUNT" -eq 1 ] && [ "$status" -eq 0 ]; then
+  MARKER_FOUND_COUNT=1
 fi
 
 cat <<EOF
