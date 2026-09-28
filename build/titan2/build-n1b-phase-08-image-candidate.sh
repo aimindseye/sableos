@@ -154,8 +154,19 @@ bash "$ROOT/build/titan2/qualify-n1b-phase-08-image-build-candidate-readiness.sh
   fi
 
   export OUT_DIR="$OUT_DIR"
+  # AOSP/Restless envsetup.sh is not nounset-safe. Keep the driver strict, but
+  # source envsetup with nounset disabled, then restore strict mode before lunch.
+  set +e +u
   # shellcheck source=/dev/null
   source build/envsetup.sh
+  envsetup_rc=$?
+  set -euo pipefail
+  if [[ "$envsetup_rc" -ne 0 ]]; then
+    echo "N1B_PHASE_08_IMAGE_BUILD=FAIL_ENVSETUP_SOURCE rc=$envsetup_rc"
+    exit "$envsetup_rc"
+  fi
+  echo "N1B_PHASE_08_ENVSETUP_SOURCE=PASS_NOUNSET_COMPAT"
+
   lunch "$LUNCH_TARGET"
 
   echo "N1B_PHASE_08_BUILD_GOALS=systemimage,target-files-package,otatools"
