@@ -104,6 +104,10 @@ require_marker "DRIVER_N1A_EVIDENCE_BINDING" "$DRIVER" \
   "N1B_STAGE_A_N1A_EVIDENCE_BOUND"
 require_marker "DRIVER_N1A_SOONG_NOTE" "$DRIVER" \
   "AOSP_Soong_build_success_does_not_imply_standalone_Gradle_SDK"
+require_marker "DRIVER_SABLE_R8_A2_SDK_ROOT" "$DRIVER" \
+  "/srv/data/sable-build/toolchains/r8-a2/android-sdk"
+require_marker "DRIVER_SABLE_HOST_TOOLS_R8_SDK_ROOT" "$DRIVER" \
+  "/srv/data/sable-host-tools/android/r8/sdk"
 require_marker "DRIVER_SDK_PRECONDITION_SKIP" "$DRIVER" \
   "N1B_STAGE_A_GRADLE_BUILDS=SKIPPED_ANDROID_SDK_PRECONDITION"
 
