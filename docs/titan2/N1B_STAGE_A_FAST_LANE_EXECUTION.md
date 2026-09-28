@@ -63,6 +63,29 @@ The first fast-lane PR must not invent modules for Setup Wizard, Launcher3,
 SystemUI, Reader/Text Reader source import, or Camera if those owners are not yet
 present in this Gradle root.
 
+## Android SDK preflight
+
+When `RUN_GRADLE_BUILDS=YES`, the fast-lane driver must prove the Android SDK
+before invoking module builds. The driver may use any of these read-only inputs:
+
+```text
+ANDROID_HOME
+ANDROID_SDK_ROOT
+apps/r8/android/local.properties sdk.dir
+known local SDK roots
+```
+
+If no SDK is found, the driver must fail once with:
+
+```text
+N1B_STAGE_A_ANDROID_SDK=FAIL
+N1B_STAGE_A_GRADLE_BUILDS=SKIPPED_ANDROID_SDK_PRECONDITION
+```
+
+It must not run every Gradle module and produce ten duplicate `SDK location not
+found` failures. The driver must not create or modify `local.properties` because
+Stage A fast-lane execution is read-only with respect to the local source tree.
+
 ## Combined Stage A surfaces
 
 The fast lane groups these surfaces into one execution stream:
