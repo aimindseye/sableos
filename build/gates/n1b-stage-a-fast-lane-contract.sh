@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+
+ROOT="${1:-.}"
+FAILURES=0
+
+say() {
+  printf '%s\n' "$1"
+}
+
+pass() {
+  say "$1=PASS"
+}
+
+fail() {
+  say "$1=FAIL"
+  FAILURES=$((FAILURES + 1))
+}
+
+require_file() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  if [ -f "$ROOT/$PATH_VALUE" ]; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_PATH=$PATH_VALUE"
+  fi
+}
+
+require_marker() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  MARKER="$3"
+  if grep -Fq "$MARKER" "$ROOT/$PATH_VALUE" 2>/dev/null; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_MARKER=$MARKER"
+    say "IN_FILE=$PATH_VALUE"
+  fi
+}
+
+say "===== N1B STAGE A FAST-LANE CONTRACT ====="
+say "ROOT=$ROOT"
+say "DOCUMENTATION_AND_DRIVER_ONLY=YES"
+say "IMAGE_BUILD_AUTHORIZED=NO"
+say "DEVICE_CONTACT_AUTHORIZED=NO"
+say "FLASH_AUTHORIZED=NO"
+say "ADB_COMMANDS_RUN=NO"
+say "FASTBOOT_COMMANDS_RUN=NO"
+say "PUBLIC_RELEASE=NO"
+
+DOC="docs/titan2/N1B_STAGE_A_FAST_LANE_EXECUTION.md"
+MATRIX="docs/titan2/N1B_STAGE_A_FAST_LANE_MODULE_MATRIX.md"
+DRIVER="build/titan2/qualify-n1b-stage-a-fast-lane.sh"
+SELF="build/gates/n1b-stage-a-fast-lane-contract.sh"
+
+require_file "N1B_FAST_LANE_EXECUTION_DOC" "$DOC"
+require_file "N1B_FAST_LANE_MODULE_MATRIX_DOC" "$MATRIX"
+require_file "N1B_FAST_LANE_DRIVER" "$DRIVER"
+require_file "N1B_FAST_LANE_GATE_SCRIPT" "$SELF"
+
+require_marker "FAST_LANE_EXECUTION_MARKER" "$DOC" \
+  "N1B_STAGE_A_FAST_LANE_EXECUTION=YES"
+require_marker "FAST_LANE_COMBINED_PR_MARKER" "$DOC" \
+  "N1B_STAGE_A_COMBINED_PR_ALLOWED=YES"
+require_marker "FAST_LANE_APP_ROOT_MARKER" "$DOC" \
+  "N1B_STAGE_A_APP_BUILD_ROOT=apps/r8/android"
+require_marker "FAST_LANE_SETUPWIZARD_MARKER" "$DOC" \
+  "GRAPHENEOS_SETUPWIZARD2_UPSTREAM_OWNER_FOUND=YES"
+require_marker "FAST_LANE_PANTHER_MARKER" "$DOC" \
+  "PANTHER_TOUCH_FIRST_REFERENCE_PROTECTED=YES"
+require_marker "FAST_LANE_IMAGE_BLOCK_MARKER" "$DOC" \
+  "N1B_SKIP_TO_IMAGE_BUILD=NO"
+require_marker "FAST_LANE_NO_DEVICE_MARKER" "$DOC" \
+  "DEVICE_CONTACT_AUTHORIZED=NO"
+
+require_marker "MODULE_MATRIX_MARKER" "$MATRIX" \
+  "N1B_STAGE_A_FAST_LANE_MODULE_MATRIX=YES"
+require_marker "MODULE_MATRIX_SOURCE_MARKER" "$MATRIX" \
+  "N1B_STAGE_A_MODULE_INVENTORY_SOURCE=apps/r8/android/settings.gradle.kts"
+require_marker "MODULE_HUB_MARKER" "$MATRIX" \
+  "MODULE_hub=BUILD"
+require_marker "MODULE_SABLESTART_VISUAL_MARKER" "$MATRIX" \
+  "MODULE_sablestart_visual_review=BUILD"
+require_marker "MODULE_NO_FAKE_SETUP_MARKER" "$MATRIX" \
+  "N1B_FAST_LANE_NO_FAKE_SETUPWIZARD_MODULE=PASS"
+
+require_marker "DRIVER_GUARDRAIL_IMAGE" "$DRIVER" \
+  "IMAGE_BUILD_AUTHORIZED=NO"
+require_marker "DRIVER_GUARDRAIL_DEVICE" "$DRIVER" \
+  "DEVICE_CONTACT_AUTHORIZED=NO"
+require_marker "DRIVER_MODULE_HUB" "$DRIVER" \
+  "hub"
+require_marker "DRIVER_SETUPWIZARD_BINDING" "$DRIVER" \
+  "GRAPHENEOS_SETUPWIZARD2_SOURCE_BOUND"
+
+if [ "$FAILURES" -eq 0 ]; then
+  say "N1B_STAGE_A_FAST_LANE_CONTRACT=PASS"
+  exit 0
+fi
+
+say "N1B_STAGE_A_FAST_LANE_CONTRACT=FAIL"
+say "FAILURES=$FAILURES"
+exit 1
