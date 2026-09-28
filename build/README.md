@@ -88,6 +88,19 @@ post-boot acceptance.
 implementation behind the common entry point. It is not the desired cross-device
 operator contract.
 
+Legacy implementation syntax retained for the Panther build-driver contract:
+
+```text
+build/panther/run-release.sh <release-version>
+```
+
+Do not create a new build driver for Panther release work. Use the canonical
+operator command instead:
+
+```bash
+bash build/sable.sh panther R9 build --tmux
+```
+
 Current R8-named files remain implementation details while the product baseline
 is incrementally generalized:
 
