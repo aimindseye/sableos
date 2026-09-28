@@ -11,7 +11,9 @@ Phase 10 is split into two explicit read-only scripts:
 10B = bootloader/fastboot or fastbootd read-only metadata collection
 ```
 
-These scripts do not flash, erase, unlock, reboot, change slots, patch AVB, mutate logical partitions, or make a public-release or production-signing claim.
+The default posture is no mode switching. Phase 10B can optionally perform Android -> bootloader and bootloader -> fastbootd transitions only when explicit command-line flags are supplied. Those mode-switch commands are audited separately from read-only getvar collection.
+
+These scripts do not flash, erase, unlock, change slots, patch AVB, mutate logical partitions, or make a public-release or production-signing claim.
 
 ## Authorization boundary
 
@@ -20,8 +22,10 @@ DEVICE=titan2
 RELEASE=N1B
 DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
 ADB_COMMANDS_AUTHORIZED=YES_READ_ONLY_FOR_10A
-FASTBOOT_COMMANDS_AUTHORIZED=YES_READ_ONLY_FOR_10B_IF_ALREADY_IN_FASTBOOT_OR_FASTBOOTD
-REBOOT_AUTHORIZED=NO
+FASTBOOT_COMMANDS_AUTHORIZED=YES_READ_ONLY_FOR_10B
+MODE_SWITCH_AUTHORIZED=NO_BY_DEFAULT
+MODE_SWITCH_AUTHORIZED_ADB_REBOOT_BOOTLOADER=YES_ONLY_WITH_EXPLICIT_FLAG
+MODE_SWITCH_AUTHORIZED_FASTBOOT_REBOOT_FASTBOOTD=YES_ONLY_WITH_EXPLICIT_FLAG
 FLASH_AUTHORIZED=NO
 ERASE_AUTHORIZED=NO
 UNLOCK_AUTHORIZED=NO
@@ -72,9 +76,9 @@ adb shell settings put
 
 ## Phase 10B: fastboot/fastbootd read-only metadata
 
-10B assumes the Titan2 is already in bootloader fastboot or fastbootd. The script does not reboot the device into either mode.
+10B collects read-only fastboot metadata. By default, it expects the Titan2 to already be in bootloader fastboot or fastbootd.
 
-10B may run only read-only fastboot commands such as:
+10B may run read-only fastboot commands such as:
 
 ```text
 fastboot devices
@@ -91,13 +95,22 @@ fastboot getvar partition-size:system_b
 fastboot getvar partition-size:super
 ```
 
+10B supports explicit mode-switch flags for the practical Titan2 workflow:
+
+```text
+--adb-reboot-bootloader-if-android
+--fastboot-reboot-fastbootd-if-bootloader
+--require-fastbootd
+```
+
+The first flag may run `adb reboot bootloader` only when no fastboot device is visible and an Android device is visible. The second flag may run `fastboot reboot fastboot` only after bootloader fastboot is visible and `is-userspace=no`. Both transitions are explicit and logged.
+
 10B must not run:
 
 ```text
 fastboot flash
 fastboot erase
 fastboot format
-fastboot reboot
 fastboot flashing
 fastboot oem
 fastboot set_active
@@ -133,11 +146,24 @@ N1B_PHASE_09_FLASH_PLAN_ALLOWED=NO
 FLASH_AUTHORIZED=NO
 ```
 
-## Expected result after 10A and 10B
+## Expected result after bootloader-only 10B
 
-After both scripts have been run, a later merge step may combine the read-only evidence into a complete physical-preflight metadata record. Even then, the output can authorize only flash-plan generation, not flash execution.
+Bootloader fastboot may report `is-userspace=no` and may not expose logical system partition sizing. In that case `system_current_bytes` may remain `0`, and Phase 09 should remain blocked.
 
 ```text
+N1B_PHASE_10B_FASTBOOT_READONLY_PREFLIGHT=PASS
+IS_USERSPACE=no
+SYSTEM_CURRENT_BYTES=0
+N1B_PHASE_09_FLASH_PLAN_ALLOWED=NO
+```
+
+## Expected result after 10B reaches fastbootd
+
+For GSI deployment planning, userspace fastbootd is expected to expose logical partition metadata. A later merge step may combine 10A and 10B read-only evidence into a complete physical-preflight metadata record. Even then, the output can authorize only flash-plan generation, not flash execution.
+
+```text
+N1B_PHASE_10B_FASTBOOT_READONLY_PREFLIGHT=PASS
+IS_USERSPACE=yes
 N1B_PHASE_10_READONLY_PREFLIGHT=PASS_METADATA_COLLECTED
 N1B_PHASE_09_FLASH_PLAN_ALLOWED=YES_PLAN_ONLY
 FLASH_AUTHORIZED=NO
