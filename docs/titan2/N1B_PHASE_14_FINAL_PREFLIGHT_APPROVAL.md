@@ -22,6 +22,7 @@ BUILD_REPO_REVIEWED=SCOPE_LIMITED_TO_CANONICAL_SOURCE_MAP_REFERENCE
 CURRENT_SABLEOS_REPO_REVIEWED=YES
 CURRENT_DEVICE_EVIDENCE_REVIEWED=YES_PHASE_10_11_12_13_OUTPUTS
 JINN_LINEAGEOS22_ISSUES_REVIEWED=YES_SCOPE_LIMITED
+ATLASOS_REVIEWED=YES_SCOPE_LIMITED
 ```
 
 ## jinn_lineageos22 issue review
@@ -45,6 +46,31 @@ Implications for SableOS Titan2:
 3. Package/component changes can break Settings, telephony, Wi-Fi, storage, OTA, Safety Center, WebView, Bluetooth, NFC, external storage, SystemUI, and other core surfaces.
 4. Phase 14 must not claim user-facing readiness just because LP sizing and flash-plan proposal evidence pass.
 5. Post-change acceptance must include keyboard, shortcut/trackpad behavior, Settings, storage, telephony/SIM, Wi-Fi, Bluetooth, NFC, WebView/app launch, update/restore path, and Sable app smoke checks.
+```
+
+## AtlasOS / LineageOS reference review
+
+The `Abyss-c0re/atlasos` repository and the linked Titan2 community references were reviewed as external reference material. They are useful as architectural and process evidence, not as a SableOS product path.
+
+Findings folded into Phase 14:
+
+```text
+ATLASOS_REVIEWED=YES_SCOPE_LIMITED
+ATLASOS_PHASE14_USAGE=REFERENCE_ONLY_NOT_PRODUCT_PATH
+ATLASOS_HYBRID_SUPER_APPROACH_REVIEWED=YES
+ATLASOS_REGION_MATCHED_STOCK_VENDOR_BOOT_REQUIREMENT_REVIEWED=YES
+ATLASOS_PRODUCT_LOCK_GATE_STYLE_REVIEWED=YES
+ATLASOS_PUBLISH_HYGIENE_REVIEWED=YES
+```
+
+Implications for SableOS Titan2:
+
+```text
+1. AtlasOS validates that Titan2 hybrid-super work is possible in the community, but SableOS must not inherit its flash workflow automatically.
+2. Region-matched stock vendor/boot inputs remain important evidence before mutation.
+3. A product-lock style gate is useful: no invented PASS and no certification from a dirty keep-data flash.
+4. Public-source hygiene matters: no stock/vendor images, proprietary blobs, serials, keys, or third-party binaries should be placed in public repos.
+5. AtlasOS features such as Debian/OpenWrt LPs, Cube Flasher, HID, and touchpad forks are reference ideas only and are not part of N1B deployment authorization.
 ```
 
 ## Inputs
@@ -72,6 +98,13 @@ PHASE_10B_FASTBOOTD_PREFLIGHT=PASS_READ_ONLY
 PHASE_11_LP_SUPER_SIZING=PASS_PLAN_REQUIRED
 PHASE_12_LP_RESIZE_PLAN_DESIGN=PASS_REVIEW_REQUIRED
 PHASE_13_FLASH_PLAN_PROPOSAL=PASS_REVIEW_REQUIRED
+```
+
+Phase 14 must accept the real emitted schemas:
+
+```text
+PHASE_12_RESULT_SOURCE=sizing_decision.plan_record
+PHASE_13_RESULT_SOURCE=status
 ```
 
 ## Authorization boundary
