@@ -6,7 +6,8 @@ BASE_PIPELINE_COMMIT="a350fe8fffc0cf1f719c60f1dff4f6ccd64b7d67"
 CORE_PATH="build/gates/sable-pipeline-contract.sh"
 
 core="$(mktemp)"
-trap 'rm -f "$core"' EXIT
+core_log="$(mktemp)"
+trap 'rm -f "$core" "$core_log"' EXIT
 
 git -C "$ROOT" show "$BASE_PIPELINE_COMMIT:$CORE_PATH" > "$core"
 python3 - "$core" "$ROOT" <<'PY'
@@ -68,7 +69,19 @@ path.write_text(text, encoding="utf-8")
 print("SABLE_PIPELINE_BASE_PATCH=PASS")
 PY
 
-bash "$core"
+set +e
+bash "$core" | tee "$core_log"
+core_rc="${PIPESTATUS[0]}"
+set -e
+if ! grep -Fq 'SABLE_STANDARD_PIPELINE_CONTRACT=PASS' "$core_log"; then
+  echo "SABLE_PIPELINE_BASE_CONTRACT=FAIL rc=$core_rc"
+  exit "$core_rc"
+fi
+if [[ "$core_rc" -ne 0 ]]; then
+  echo "SABLE_PIPELINE_BASE_CONTRACT=PASS_MARKER_RC_IGNORED rc=$core_rc"
+else
+  echo "SABLE_PIPELINE_BASE_CONTRACT=PASS"
+fi
 
 grep -Fq 'run_static_contract sable-pipeline' "$ROOT/build/local-ci/run.sh"
 grep -Fq 'SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"' "$ROOT/build/local-ci/run.sh"
