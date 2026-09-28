@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+REPO="${REPO:-$(pwd)}"
+DOC="$REPO/docs/titan2/N1B_BRANDING_DEFAULTS_READINESS.md"
+FAILURES=0
+FIRST_FAILURE=""
+
+say() {
+  printf '%s\n' "$1"
+}
+
+record_failure() {
+  NAME="$1"
+  DETAIL="$2"
+  FAILURES=$((FAILURES + 1))
+  if [ -z "$FIRST_FAILURE" ]; then
+    FIRST_FAILURE="$NAME"
+  fi
+  say "$NAME=FAIL"
+  say "$DETAIL"
+}
+
+pass() {
+  say "$1=PASS"
+}
+
+require_marker() {
+  NAME="$1"
+  MARKER="$2"
+  if grep -Fq "$MARKER" "$DOC" 2>/dev/null; then
+    pass "$NAME"
+  else
+    record_failure "$NAME" "MISSING_MARKER=$MARKER"
+  fi
+}
+
+say "===== N1B BRANDING DEFAULTS QUALIFIER ====="
+say "REPO=$REPO"
+say "DOC=$DOC"
+say "SOURCE_MUTATION_AUTHORIZED=NO"
+say "BUILD_AUTHORIZED=NO"
+say "IMAGE_BUILD_AUTHORIZED=NO"
+say "DEVICE_CONTACT_AUTHORIZED=NO"
+say "FLASH_AUTHORIZED=NO"
+say "ADB_COMMANDS_RUN=NO"
+say "FASTBOOT_COMMANDS_RUN=NO"
+say "PUBLIC_RELEASE=NO"
+
+if [ ! -f "$DOC" ]; then
+  record_failure "N1B_BRANDING_DEFAULTS_DOC" "MISSING_PATH=$DOC"
+else
+  pass "N1B_BRANDING_DEFAULTS_DOC"
+fi
+
+if [ "$FAILURES" -eq 0 ]; then
+  require_marker "N1B_BRANDING_DEFAULTS_READINESS" \
+    "N1B_BRANDING_DEFAULTS_READINESS=YES"
+  require_marker "N1B_PANTHER_PROTECTION" \
+    "PANTHER_TOUCH_FIRST_REFERENCE_PROTECTED=YES"
+  require_marker "N1B_KEYBOARD_PROFILE_GATED" \
+    "TITAN2_KEYBOARD_FIRST_PROFILE_GATED=YES"
+  require_marker "N1B_APP_LABEL_REVIEW" \
+    "SABLE_APP_LABELS_REVIEW_REQUIRED=YES"
+  require_marker "N1B_THEME_REVIEW" \
+    "SABLE_THEME_PROPAGATION_REVIEW_REQUIRED=YES"
+  require_marker "N1B_NO_IMAGE" \
+    "N1B_PHASE_04_DOES_NOT_AUTHORIZE_IMAGE_BUILD=YES"
+  require_marker "N1B_NO_FLASH" \
+    "N1B_PHASE_04_DOES_NOT_AUTHORIZE_FLASH=YES"
+fi
+
+say "===== N1B BRANDING DEFAULTS RESULT ====="
+say "FAILURES=$FAILURES"
+if [ -n "$FIRST_FAILURE" ]; then
+  say "FIRST_FAILURE=$FIRST_FAILURE"
+fi
+
+if [ "$FAILURES" -eq 0 ]; then
+  say "N1B_BRANDING_DEFAULTS=PASS"
+  exit 0
+fi
+
+say "N1B_BRANDING_DEFAULTS=FAIL"
+exit 1
