@@ -9,6 +9,7 @@ SABLE_HOME_MODULE="${SABLE_HOME_MODULE:-SableStart}"
 ALLOW_MISSING_SABLE_HOME="${ALLOW_MISSING_SABLE_HOME:-NO}"
 PROFILE_REL="vendor/sable/n1b2/sable_n1b2_product_profile.mk"
 MARKERS_REL="vendor/sable/n1b2/product-closure.env"
+UX_READINESS_REL="vendor/sable/n1b2/ux-testbed-readiness.env"
 
 fail() {
   echo "N1B2_PRODUCT_PROFILE_FAILURE=$*" >&2
@@ -62,6 +63,8 @@ done
 [[ -n "$ACTIVE_PRODUCT_MK" ]] || fail "--active-product-mk is required"
 [[ "$ACTIVE_PRODUCT_MK" != /* ]] || fail "--active-product-mk must be relative to android root"
 
+bash "$ROOT/build/gates/n1b2-titan2-ux-testbed-readiness-contract.sh" "$ROOT"
+
 ANDROID_ROOT="$(cd "$ANDROID_ROOT" && pwd)"
 ACTIVE_PRODUCT_PATH="$ANDROID_ROOT/$ACTIVE_PRODUCT_MK"
 [[ -f "$ACTIVE_PRODUCT_PATH" ]] || fail "active product makefile not found: $ACTIVE_PRODUCT_PATH"
@@ -69,6 +72,7 @@ ACTIVE_PRODUCT_PATH="$ANDROID_ROOT/$ACTIVE_PRODUCT_MK"
 OUT_DIR="$ANDROID_ROOT/vendor/sable/n1b2"
 PROFILE_PATH="$ANDROID_ROOT/$PROFILE_REL"
 MARKERS_PATH="$ANDROID_ROOT/$MARKERS_REL"
+UX_READINESS_PATH="$ANDROID_ROOT/$UX_READINESS_REL"
 
 module_present() {
   local module="$1"
@@ -136,11 +140,24 @@ N1B2_SABLE_HOME_MODULE=$SABLE_HOME_MODULE
 N1B2_SABLE_HOME_MODULE_PRESENT=$HOME_PRESENT
 N1B2_TITAN2_INPUT_PROFILE_REQUIRED=YES
 N1B2_MOBILE_NETWORK_TRIAGE_REQUIRED=YES
+N1B2_UX_TESTBED_READINESS_MATRIX_REQUIRED=YES
 N1B2_FLASH_ALLOWED=NO_SEPARATE_GATE_REQUIRED
 USERDATA_WIPE_IMPLICIT_ALLOWED=NO
 BOOTLOADER_RELOCK_ALLOWED=NO
 AVB_MUTATION_ALLOWED=NO_UNLESS_SEPARATE_REVIEW
 PUBLIC_RELEASE_WITH_STOCK_BLOBS=NO_UNLESS_SEPARATE_LICENSE_REVIEW
+EOF
+
+cat > "$UX_READINESS_PATH" <<EOF
+# SableOS Titan2 N1B2 UX testbed readiness marker.
+N1B2_TITAN2_UX_TESTBED_READINESS_MATRIX=PASS
+N1B2_UX_TESTBED_ALLOWED_STATUS_SET=PASS_POLICY_PRESENT_EXPLICIT_BOUNDED_DEFERRAL
+N1B2_UX_TESTBED_PACKAGING_GATE=PASS
+N1B2_UX_TESTBED_TARGET_FILES_MARKER=REQUIRED
+N1B2_UX_TESTBED_ROWS=32
+N1B2_FLASH_ALLOWED=NO_SEPARATE_GATE_REQUIRED
+PUBLIC_RELEASE=NO
+PRODUCTION_SIGNING=NO
 EOF
 
 cat > "$PROFILE_PATH" <<EOF
@@ -152,14 +169,16 @@ PRODUCT_PACKAGES += \\
     $SABLE_HOME_MODULE
 
 PRODUCT_COPY_FILES += \\
-    vendor/sable/n1b2/product-closure.env:system/etc/sableos/n1b2/product-closure.env
+    vendor/sable/n1b2/product-closure.env:system/etc/sableos/n1b2/product-closure.env \\
+    vendor/sable/n1b2/ux-testbed-readiness.env:system/etc/sableos/n1b2/ux-testbed-readiness.env
 
 PRODUCT_SYSTEM_PROPERTIES += \\
     ro.sableos.device=titan2 \\
     ro.sableos.release=N1B2 \\
     ro.sableos.factory_reset_first_boot_required=true \\
     ro.sableos.setup_wizard_required=true \\
-    ro.sableos.mobile_network_triage_required=true
+    ro.sableos.mobile_network_triage_required=true \\
+    ro.sableos.ux_testbed_readiness_required=true
 
 PRODUCT_PRODUCT_PROPERTIES += \\
     ro.sableos.product.name=SableOS_Titan2 \\
@@ -196,6 +215,7 @@ N1B2_SABLE_HOME_MODULE=$SABLE_HOME_MODULE
 N1B2_SABLE_HOME_MODULE_PRESENT=$HOME_PRESENT
 N1B2_PROFILE_MK=$PROFILE_PATH
 N1B2_MARKERS=$MARKERS_PATH
+N1B2_UX_READINESS_MARKERS=$UX_READINESS_PATH
 DEVICE_CONTACT_AUTHORIZED=NO_OFFLINE_ONLY
 ADB_COMMANDS_RUN=NO
 FASTBOOT_COMMANDS_RUN=NO
