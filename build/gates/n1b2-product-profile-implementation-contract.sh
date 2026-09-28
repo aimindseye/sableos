@@ -21,13 +21,13 @@ require_file() {
 require_text() {
   local pattern="$1"
   local path="$2"
-  grep -Fq "$pattern" "$path" || fail "missing required marker '$pattern' in $path"
+  grep -Fq -- "$pattern" "$path" || fail "missing required marker '$pattern' in $path"
 }
 
 forbid_text() {
   local pattern="$1"
   local path="$2"
-  if grep -Fq "$pattern" "$path"; then
+  if grep -Fq -- "$pattern" "$path"; then
     fail "forbidden marker '$pattern' present in $path"
   fi
 }
