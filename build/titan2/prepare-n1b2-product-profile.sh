@@ -6,6 +6,7 @@ ANDROID_ROOT=""
 ACTIVE_PRODUCT_MK=""
 PATCH_ACTIVE_PRODUCT="NO"
 SABLE_HOME_MODULE="${SABLE_HOME_MODULE:-SableStart}"
+ALLOW_MISSING_SABLE_HOME="${ALLOW_MISSING_SABLE_HOME:-NO}"
 PROFILE_REL="vendor/sable/n1b2/sable_n1b2_product_profile.mk"
 MARKERS_REL="vendor/sable/n1b2/product-closure.env"
 
@@ -23,7 +24,9 @@ Usage:
     [--patch-active-product]
 
 Environment:
-  SABLE_HOME_MODULE=<module>    Default: SableStart
+  SABLE_HOME_MODULE=<module>         Default: SableStart
+  ALLOW_MISSING_SABLE_HOME=YES      Escape hatch for investigation only.
+                                    Default: NO. Do not use for N1B2 candidates.
 
 This prepares an N1B2 Sable product-profile overlay in an Android workspace.
 It does not contact a device and does not authorize flashing.
@@ -105,6 +108,16 @@ fi
 HOME_PRESENT="NO"
 if module_present "$SABLE_HOME_MODULE"; then
   HOME_PRESENT="YES"
+fi
+
+if [[ "$HOME_PRESENT" != "YES" ]]; then
+  echo "N1B2_SABLE_HOME_MODULE=$SABLE_HOME_MODULE"
+  echo "N1B2_SABLE_HOME_MODULE_PRESENT=BLOCKED_NOT_FOUND"
+  echo "Searched Android.bp / Android.mk for SABLE_HOME_MODULE=$SABLE_HOME_MODULE"
+  if [[ "$ALLOW_MISSING_SABLE_HOME" != "YES" ]]; then
+    fail "required Sable HOME module is missing from Android workspace"
+  fi
+  echo "N1B2_SABLE_HOME_MODULE_MISSING_OVERRIDE=YES_INVESTIGATION_ONLY"
 fi
 
 mkdir -p "$OUT_DIR"
