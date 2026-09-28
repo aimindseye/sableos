@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+ROOT="${1:-.}"
+FAILURES=0
+
+say() {
+  printf '%s\n' "$1"
+}
+
+pass() {
+  say "$1=PASS"
+}
+
+fail() {
+  say "$1=FAIL"
+  FAILURES=$((FAILURES + 1))
+}
+
+require_file() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  if [ -f "$ROOT/$PATH_VALUE" ]; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_PATH=$PATH_VALUE"
+  fi
+}
+
+require_marker() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  MARKER="$3"
+  if grep -Fq "$MARKER" "$ROOT/$PATH_VALUE" 2>/dev/null; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_MARKER=$MARKER"
+    say "IN_FILE=$PATH_VALUE"
+  fi
+}
+
+say "===== N1B SETUP LAUNCHER BINDING CONTRACT ====="
+say "ROOT=$ROOT"
+say "SOURCE_MUTATION_AUTHORIZED=NO"
+say "BUILD_AUTHORIZED=NO"
+say "IMAGE_BUILD_AUTHORIZED=NO"
+say "DEVICE_CONTACT_AUTHORIZED=NO"
+say "FLASH_AUTHORIZED=NO"
+say "ADB_COMMANDS_RUN=NO"
+say "FASTBOOT_COMMANDS_RUN=NO"
+say "PUBLIC_RELEASE=NO"
+
+DOC="docs/titan2/N1B_SETUP_LAUNCHER_BINDING_READINESS.md"
+QUALIFIER="build/titan2/qualify-n1b-setup-launcher-binding.sh"
+SELF="build/gates/n1b-setup-launcher-binding-contract.sh"
+
+require_file "N1B_SETUP_LAUNCHER_BINDING_DOC" "$DOC"
+require_file "N1B_SETUP_LAUNCHER_BINDING_QUALIFIER" "$QUALIFIER"
+require_file "N1B_SETUP_LAUNCHER_BINDING_CONTRACT" "$SELF"
+
+require_marker "DOC_READINESS_MARKER" "$DOC" \
+  "N1B_SETUP_LAUNCHER_BINDING_READINESS=YES"
+require_marker "DOC_SETUPWIZARD2_MARKER" "$DOC" \
+  "GRAPHENEOS_SETUPWIZARD2_UPSTREAM_OWNER_FOUND=YES"
+require_marker "DOC_CRITICAL_TEXT_MARKER" "$DOC" \
+  "CRITICAL_TEXT_ENTRY_TEST_REQUIRED=YES"
+require_marker "DOC_SABLE_START_MARKER" "$DOC" \
+  "SABLE_START_KEYBOARD_FIRST_BINDING_REQUIRED=YES"
+require_marker "DOC_NO_IMAGE_MARKER" "$DOC" \
+  "N1B_PHASE_05_DOES_NOT_AUTHORIZE_IMAGE_BUILD=YES"
+require_marker "DOC_NO_FLASH_MARKER" "$DOC" \
+  "N1B_PHASE_05_DOES_NOT_AUTHORIZE_FLASH=YES"
+require_marker "QUALIFIER_NO_BUILD" "$QUALIFIER" \
+  "BUILD_AUTHORIZED=NO"
+require_marker "QUALIFIER_NO_DEVICE" "$QUALIFIER" \
+  "DEVICE_CONTACT_AUTHORIZED=NO"
+require_marker "QUALIFIER_PASS_MARKER" "$QUALIFIER" \
+  "N1B_SETUP_LAUNCHER_BINDING=PASS"
+
+if [ "$FAILURES" -eq 0 ]; then
+  say "N1B_SETUP_LAUNCHER_BINDING_CONTRACT=PASS"
+  exit 0
+fi
+
+say "N1B_SETUP_LAUNCHER_BINDING_CONTRACT=FAIL"
+say "FAILURES=$FAILURES"
+exit 1
