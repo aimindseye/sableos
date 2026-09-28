@@ -39,6 +39,7 @@ data class ConnectedAppPolicy(
     val allowQuickReply: Boolean = false,
     val hideFromLauncher: Boolean = false,
     val retention: HistoryRetention = HistoryRetention.ThirtyDays,
+    val favorite: Boolean = false,
 ) {
     fun normalized(): ConnectedAppPolicy =
         if (includeInMessages) {
@@ -55,19 +56,23 @@ data class ConnectedAppPolicy(
         return !value.includeInMessages &&
             !value.allowQuickReply &&
             !value.hideFromLauncher &&
-            value.retention == HistoryRetention.ThirtyDays
+            value.retention == HistoryRetention.ThirtyDays &&
+            !value.favorite
     }
 }
 
 object ConnectedAppPolicyCodec {
-    private const val VERSION = "1"
-    private const val FIELD_COUNT = 7
+    private const val VERSION = "2"
+    private const val VERSION_1 = "1"
+    private const val VERSION_1_FIELD_COUNT = 7
+    private const val VERSION_2_FIELD_COUNT = 8
     private const val USER_SERIAL_INDEX = 1
     private const val PACKAGE_INDEX = 2
     private const val INCLUDE_INDEX = 3
     private const val REPLY_INDEX = 4
     private const val HIDE_INDEX = 5
     private const val RETENTION_INDEX = 6
+    private const val FAVORITE_INDEX = 7
     private const val SEPARATOR = "|"
 
     fun encode(policy: ConnectedAppPolicy): String {
@@ -80,13 +85,18 @@ object ConnectedAppPolicyCodec {
             value.allowQuickReply.asDigit(),
             value.hideFromLauncher.asDigit(),
             value.retention.name,
+            value.favorite.asDigit(),
         ).joinToString(SEPARATOR)
     }
 
     fun decode(encoded: String): ConnectedAppPolicy? =
         runCatching {
             val fields = encoded.split(SEPARATOR)
-            require(fields.size == FIELD_COUNT && fields[0] == VERSION)
+            val version = fields.firstOrNull().orEmpty()
+            require(
+                (version == VERSION_1 && fields.size == VERSION_1_FIELD_COUNT) ||
+                    (version == VERSION && fields.size == VERSION_2_FIELD_COUNT),
+            )
 
             ConnectedAppPolicy(
                 key =
@@ -98,6 +108,9 @@ object ConnectedAppPolicyCodec {
                 allowQuickReply = parseBooleanDigit(fields[REPLY_INDEX]),
                 hideFromLauncher = parseBooleanDigit(fields[HIDE_INDEX]),
                 retention = HistoryRetention.valueOf(fields[RETENTION_INDEX]),
+                favorite =
+                    version == VERSION &&
+                        parseBooleanDigit(fields[FAVORITE_INDEX]),
             ).normalized()
         }.getOrNull()
 
