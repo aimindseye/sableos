@@ -28,18 +28,43 @@ value_for() {
   printf '%s\n' "${line#*=}"
 }
 
+is_allowed_status() {
+  case "$1" in
+    PASS|POLICY_PRESENT|EXPLICIT_BOUNDED_DEFERRAL)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
 require_status() {
   local key="$1"
   local value
   value="$(value_for "$key")"
-  case "$value" in
-    PASS|POLICY_PRESENT|EXPLICIT_BOUNDED_DEFERRAL)
-      printf 'N1B2_UX_ROW=%s STATUS=%s\n' "$key" "$value"
-      ;;
-    *)
+  if is_allowed_status "$value"; then
+    printf 'N1B2_UX_ROW=%s STATUS=%s\n' "$key" "$value"
+  else
+    fail "invalid status for $key: $value"
+  fi
+}
+
+reject_unlisted_matrix_rows() {
+  local known_rows_file="$1"
+  local line key value
+
+  while IFS= read -r line; do
+    [[ "$line" =~ ^(UX_|POLICY_)[A-Z0-9_]+= ]] || continue
+    key="${line%%=*}"
+    value="${line#*=}"
+
+    grep -Fxq "$key" "$known_rows_file" || \
+      fail "unlisted matrix row present: $key"
+
+    is_allowed_status "$value" || \
       fail "invalid status for $key: $value"
-      ;;
-  esac
+  done < "$DOC"
 }
 
 echo "===== N1B2 TITAN2 UX TESTBED READINESS CONTRACT ====="
@@ -47,15 +72,6 @@ echo "ROOT=$ROOT"
 echo "DOC=$DOC"
 
 require_file "$DOC"
-
-require_text "N1B2_TITAN2_UX_TESTBED_READINESS_MATRIX=YES" "$DOC"
-require_text "N1B2_UX_TESTBED_ALLOWED_STATUS_SET=PASS|POLICY_PRESENT|EXPLICIT_BOUNDED_DEFERRAL" "$DOC"
-require_text "N1B2_UX_TESTBED_FAIL_ON_UNDECIDED_ROW=YES" "$DOC"
-require_text "N1B2_UX_TESTBED_PACKAGING_GATE_REQUIRED=YES" "$DOC"
-require_text "N1B2_UX_TESTBED_TARGET_FILES_MARKER_REQUIRED=YES" "$DOC"
-require_text "N1B2_FLASH_ALLOWED=NO_SEPARATE_GATE_REQUIRED" "$DOC"
-require_text "PUBLIC_RELEASE=NO" "$DOC"
-require_text "PRODUCTION_SIGNING=NO" "$DOC"
 
 required_rows=(
   UX_SETUP_WIZARD_FIRST_BOOT_PHYSICAL_KEYBOARD_CHECK
@@ -92,16 +108,27 @@ required_rows=(
   POLICY_FM_RADIO_IR_HARDWARE_UTILITIES_GATED
 )
 
+known_rows_file="$(mktemp)"
+trap 'rm -f "$known_rows_file"' EXIT
+printf '%s\n' "${required_rows[@]}" > "$known_rows_file"
+
+require_text "N1B2_TITAN2_UX_TESTBED_READINESS_MATRIX=YES" "$DOC"
+require_text "N1B2_UX_TESTBED_ALLOWED_STATUS_SET=PASS|POLICY_PRESENT|EXPLICIT_BOUNDED_DEFERRAL" "$DOC"
+require_text "N1B2_UX_TESTBED_FAIL_ON_UNDECIDED_ROW=YES" "$DOC"
+require_text "N1B2_UX_TESTBED_PACKAGING_GATE_REQUIRED=YES" "$DOC"
+require_text "N1B2_UX_TESTBED_TARGET_FILES_MARKER_REQUIRED=YES" "$DOC"
+require_text "N1B2_FLASH_ALLOWED=NO_SEPARATE_GATE_REQUIRED" "$DOC"
+require_text "PUBLIC_RELEASE=NO" "$DOC"
+require_text "PRODUCTION_SIGNING=NO" "$DOC"
+
 for row in "${required_rows[@]}"; do
   require_status "$row"
 done
 
-# Explicitly rejected unresolved statuses anywhere in the matrix document.
-for forbidden in '=TODO' '=UNKNOWN' '=PENDING' '=FAIL' '=NO' '=BLOCKED' '=TBD' '=UNDECIDED' '=MISSING'; do
-  if grep -Fq "$forbidden" "$DOC"; then
-    fail "forbidden unresolved marker present: $forbidden"
-  fi
-done
+# Only UX_/POLICY_ matrix rows are status rows. Safety boundary markers such as
+# FLASH_AUTHORIZED_BY_THIS_MATRIX=NO are intentionally allowed outside the
+# matrix-row namespace and must not be rejected by this status check.
+reject_unlisted_matrix_rows "$known_rows_file"
 
 require_text "CONTACTS_PHONE_ALPHABET_RAIL_DEFERRAL_BOUND=" "$DOC"
 require_text "READER_THEME_VAACHAK_DEFERRAL_BOUND=" "$DOC"
