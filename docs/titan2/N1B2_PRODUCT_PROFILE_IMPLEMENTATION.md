@@ -121,9 +121,21 @@ QUICKSTEP_AS_PRIMARY_HOME=NO_UNLESS_EXPLICITLY_APPROVED
 
 The preparation script defaults the Sable HOME module to `SableStart`; operators
 may override it with `SABLE_HOME_MODULE=<module>` when the Android workspace uses
-a different module name. If the module is absent, the generated marker still
-records the intended module and the post-boot collector must catch any fallback
-to generic Quickstep.
+a different module name.
+
+Missing Sable HOME is a hard blocker for an N1B2 candidate. The preparation
+script must not report `N1B2_PRODUCT_PROFILE_PREPARED=PASS` when the HOME module
+is absent.
+
+```text
+N1B2_SABLE_HOME_MODULE_PRESENT=YES_REQUIRED
+N1B2_SABLE_HOME_MISSING_BEHAVIOR=FAIL_CLOSED
+ALLOW_MISSING_SABLE_HOME=YES_INVESTIGATION_ONLY_NOT_CANDIDATE
+```
+
+If `SableStart` is missing, the next valid action is to import or generate a
+buildable Sable HOME module in the Android workspace, not to ship with Quickstep
+as primary HOME.
 
 ## Titan2 input rule
 
