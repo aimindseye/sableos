@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+
+ROOT="${1:-.}"
+FAILURES=0
+
+say() {
+  printf '%s\n' "$1"
+}
+
+pass() {
+  say "$1=PASS"
+}
+
+fail() {
+  say "$1=FAIL"
+  FAILURES=$((FAILURES + 1))
+}
+
+require_file() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  if [ -f "$ROOT/$PATH_VALUE" ]; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_PATH=$PATH_VALUE"
+  fi
+}
+
+require_marker() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  MARKER="$3"
+  if grep -Fq "$MARKER" "$ROOT/$PATH_VALUE" 2>/dev/null; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_MARKER=$MARKER"
+    say "IN_FILE=$PATH_VALUE"
+  fi
+}
+
+say "===== N1B SABLE IDENTITY STATIC CONTRACT ====="
+say "ROOT=$ROOT"
+say "SOURCE_MUTATION_AUTHORIZED=NO"
+say "BUILD_AUTHORIZED=NO"
+say "IMAGE_BUILD_AUTHORIZED=NO"
+say "DEVICE_CONTACT_AUTHORIZED=NO"
+say "FLASH_AUTHORIZED=NO"
+say "ADB_COMMANDS_RUN=NO"
+say "FASTBOOT_COMMANDS_RUN=NO"
+say "PUBLIC_RELEASE=NO"
+
+DOC="docs/titan2/N1B_SABLE_IDENTITY_STATIC_GATE.md"
+QUALIFIER="build/titan2/qualify-n1b-sable-identity-static.sh"
+SELF="build/gates/n1b-sable-identity-static-contract.sh"
+
+require_file "N1B_SABLE_IDENTITY_STATIC_DOC" "$DOC"
+require_file "N1B_SABLE_IDENTITY_STATIC_QUALIFIER" "$QUALIFIER"
+require_file "N1B_SABLE_IDENTITY_STATIC_CONTRACT" "$SELF"
+
+require_marker "DOC_GATE_MARKER" "$DOC" \
+  "N1B_SABLE_IDENTITY_STATIC_GATE=YES"
+require_marker "DOC_NO_GRAPHENE_MARKER" "$DOC" \
+  "NO_USER_FACING_GRAPHENEOS_BRANDING_ON_SABLE_SURFACES=YES"
+require_marker "DOC_NO_CHROME_MARKER" "$DOC" \
+  "NO_USER_FACING_CHROME_LABEL_ON_SABLE_SURFACES=YES"
+require_marker "DOC_HUB_AGGREGATOR_MARKER" "$DOC" \
+  "SABLE_HUB_AGGREGATOR_ONLY=YES"
+require_marker "DOC_BROWSER_POLICY_MARKER" "$DOC" \
+  "SABLE_BROWSER_LABEL_POLICY_BOUND=YES"
+require_marker "QUALIFIER_NO_BUILD" "$QUALIFIER" \
+  "BUILD_AUTHORIZED=NO"
+require_marker "QUALIFIER_NO_DEVICE" "$QUALIFIER" \
+  "DEVICE_CONTACT_AUTHORIZED=NO"
+require_marker "QUALIFIER_DENY_GRAPHENEOS" "$QUALIFIER" \
+  "N1B_IDENTITY_NO_GRAPHENEOS_BRANDING"
+require_marker "QUALIFIER_DENY_CHROME" "$QUALIFIER" \
+  "N1B_IDENTITY_NO_CHROME_LABEL"
+require_marker "QUALIFIER_PASS_MARKER" "$QUALIFIER" \
+  "N1B_SABLE_IDENTITY_STATIC=PASS"
+
+if [ "$FAILURES" -eq 0 ]; then
+  say "N1B_SABLE_IDENTITY_STATIC_CONTRACT=PASS"
+  exit 0
+fi
+
+say "N1B_SABLE_IDENTITY_STATIC_CONTRACT=FAIL"
+say "FAILURES=$FAILURES"
+exit 1
