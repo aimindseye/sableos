@@ -71,14 +71,14 @@ PY
 bash "$core"
 
 grep -Fq 'run_static_contract sable-pipeline' "$ROOT/build/local-ci/run.sh"
-grep -Fq 'SABLEOS_DEVICE="$SABLEOS_DEVICE"' "$ROOT/build/local-ci/run.sh"
-grep -Fq 'SABLEOS_RELEASE_VERSION="$SABLEOS_RELEASE_VERSION"' "$ROOT/build/local-ci/run.sh"
-grep -Fq 'n1b-titan2-local-ci-static-contracts.sh' \
-  "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
+grep -Fq 'SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"' "$ROOT/build/local-ci/run.sh"
+grep -Fq 'SABLEOS_RELEASE_VERSION="${SABLEOS_RELEASE_VERSION:-R9}"' "$ROOT/build/local-ci/run.sh"
 grep -Fq 'N1B_LOCAL_CI_STATIC_CONTRACT_FULL_CI_READINESS=PASS' \
   "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
 echo "SABLE_PIPELINE_N1B_LOCAL_CI_BINDING=PASS"
 
-bash "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
+SABLEOS_DEVICE=titan2 \
+SABLEOS_RELEASE_VERSION=N1B \
+  bash "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"
