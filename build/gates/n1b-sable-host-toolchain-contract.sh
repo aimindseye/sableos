@@ -82,6 +82,8 @@ require_marker "WRAPPER_SOURCES_ENV" "$WRAPPER" \
   "n1b-sable-host-toolchain-env.sh"
 require_marker "WRAPPER_EXECUTES_FAST_LANE" "$WRAPPER" \
   "qualify-n1b-stage-a-fast-lane.sh"
+require_marker "WRAPPER_EXECUTES_FAST_LANE_WITH_BASH" "$WRAPPER" \
+  "exec bash"
 
 if [ "$FAILURES" -eq 0 ]; then
   say "N1B_SABLE_HOST_TOOLCHAIN_CONTRACT=PASS"
