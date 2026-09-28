@@ -14,6 +14,7 @@ import android.telephony.PhoneNumberUtils
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import org.sableos.hub.notifications.ConnectedReplyRegistry
+import java.util.Locale
 
 class HubRepository(
     private val context: Context,
@@ -338,11 +339,13 @@ class HubRepository(
     }
 
     private fun loadPeople(maxPeople: Int = MAX_CONTACT_PEOPLE): List<HubPerson> {
+        val locale = Locale.getDefault()
         val projection =
             arrayOf(
                 ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
                 ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
                 ContactsContract.CommonDataKinds.Phone.NUMBER,
+                CONTACT_STARRED_COLUMN,
             )
         val result = linkedMapOf<String, HubPerson>()
 
@@ -354,7 +357,7 @@ class HubRepository(
                     projection,
                     null,
                     null,
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " COLLATE LOCALIZED ASC",
+                    CONTACTS_FAVORITES_FIRST_SORT,
                 )?.use { cursor ->
                     val idIndex =
                         cursor.getColumnIndexOrThrow(
@@ -368,6 +371,7 @@ class HubRepository(
                         cursor.getColumnIndexOrThrow(
                             ContactsContract.CommonDataKinds.Phone.NUMBER,
                         )
+                    val favoriteIndex = cursor.getColumnIndex(CONTACT_STARRED_COLUMN)
 
                     while (cursor.moveToNext() && result.size < maxPeople) {
                         val number = cursor.getString(numberIndex).orEmpty()
@@ -385,12 +389,24 @@ class HubRepository(
                                         ?.takeIf { it.isNotBlank() }
                                         ?: number,
                                 phoneNumber = number,
+                                favorite =
+                                    favoriteIndex >= 0 &&
+                                        cursor.getInt(favoriteIndex) != 0,
                             )
                     }
                 }
         }
 
-        return result.values.toList()
+        return result.values
+            .sortedWith(
+                compareByDescending<HubPerson> {
+                    it.favorite
+                }.thenBy {
+                    it.displayName.lowercase(locale)
+                }.thenBy {
+                    normalizeAddress(it.phoneNumber)
+                },
+            )
     }
 
     private fun lookupContactName(address: String): String? {
@@ -440,6 +456,11 @@ class HubRepository(
         const val MAX_SMS_MESSAGES = 1200
         const val MAX_CONTACT_PEOPLE = 300
         const val SABLE_MAIL_PACKAGE = "org.sableos.mail"
+        private const val CONTACT_STARRED_COLUMN = "starred"
+        private const val CONTACTS_FAVORITES_FIRST_SORT =
+            "$CONTACT_STARRED_COLUMN DESC, " +
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME +
+                " COLLATE LOCALIZED ASC"
         val SABLE_MAIL_SNAPSHOT_URI: Uri =
             Uri.parse("content://org.sableos.mail.snapshot/current")
     }

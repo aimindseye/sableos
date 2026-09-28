@@ -37,6 +37,7 @@ data class HubPerson(
     val id: Long,
     val displayName: String,
     val phoneNumber: String,
+    val favorite: Boolean = false,
 )
 
 data class HubMailSnapshot(
@@ -131,7 +132,9 @@ object HubConnectedConversationReducer {
         )
     }
 
-    private fun deduplicateRecords(records: List<ConnectedNotificationRecord>): List<ConnectedNotificationRecord> {
+    private fun deduplicateRecords(
+        records: List<ConnectedNotificationRecord>,
+    ): List<ConnectedNotificationRecord> {
         val deduplicated = mutableListOf<ConnectedNotificationRecord>()
         records
             .sortedWith(

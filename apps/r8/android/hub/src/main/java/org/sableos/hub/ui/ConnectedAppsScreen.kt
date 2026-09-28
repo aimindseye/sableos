@@ -29,8 +29,10 @@ import org.sableos.design.SableSpacing
 import org.sableos.hub.ConnectedAppCandidate
 import org.sableos.hub.ConnectedAppKey
 import org.sableos.hub.ConnectedAppPolicy
+import java.util.Locale
 
 private enum class ConnectedAppsPivot {
+    Favorites,
     Enabled,
     Available,
 }
@@ -46,7 +48,7 @@ internal fun ConnectedAppsScreen(
     onPolicyChanged: (ConnectedAppPolicy) -> Unit,
 ) {
     var pivot by remember {
-        mutableStateOf(ConnectedAppsPivot.Enabled)
+        mutableStateOf(ConnectedAppsPivot.Favorites)
     }
     var search by remember {
         mutableStateOf("")
@@ -69,7 +71,8 @@ internal fun ConnectedAppsScreen(
                         if (notificationAccessGranted) {
                             "Notification access is enabled."
                         } else {
-                            "Notification access is required before connected apps can contribute messages."
+                            "Notification access is required before connected apps can " +
+                                "contribute messages."
                         },
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -87,7 +90,8 @@ internal fun ConnectedAppsScreen(
 
             Text(
                 text =
-                    "Sable does not sign into these services. The installed app keeps networking, " +
+                    "Sable does not sign into these services. The installed app keeps " +
+                        "networking, " +
                         "encryption, account state and complete history.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -108,7 +112,7 @@ internal fun ConnectedAppsScreen(
                     },
                 )
 
-                if (pivot == ConnectedAppsPivot.Available) {
+                if (pivot != ConnectedAppsPivot.Enabled) {
                     OutlinedTextField(
                         value = search,
                         onValueChange = { search = it },
@@ -119,28 +123,25 @@ internal fun ConnectedAppsScreen(
                 }
 
                 val visibleCandidates =
-                    candidates.filter { candidate ->
-                        val enabled =
-                            policies[candidate.key]
-                                ?.normalized()
-                                ?.includeInMessages == true
-                        val belongsToPivot =
-                            when (pivot) {
-                                ConnectedAppsPivot.Enabled -> enabled
-                                ConnectedAppsPivot.Available -> !enabled
-                            }
-                        val matchesSearch =
-                            search.isBlank() ||
-                                candidate.label.contains(search, ignoreCase = true) ||
-                                candidate.key.packageName.contains(search, ignoreCase = true)
-
-                        belongsToPivot && matchesSearch
-                    }
+                    visibleCandidates(
+                        candidates = candidates,
+                        policies = policies,
+                        pivot = pivot,
+                        search = search,
+                    )
 
                 if (visibleCandidates.isEmpty()) {
                     Text(
                         text =
                             when (pivot) {
+                                ConnectedAppsPivot.Favorites -> {
+                                    if (search.isBlank()) {
+                                        "No favorite apps are set."
+                                    } else {
+                                        "No favorite apps match this search."
+                                    }
+                                }
+
                                 ConnectedAppsPivot.Enabled -> {
                                     "No connected apps are enabled."
                                 }
@@ -182,6 +183,43 @@ internal fun ConnectedAppsScreen(
             }
         }
     }
+}
+
+private fun visibleCandidates(
+    candidates: List<ConnectedAppCandidate>,
+    policies: Map<ConnectedAppKey, ConnectedAppPolicy>,
+    pivot: ConnectedAppsPivot,
+    search: String,
+): List<ConnectedAppCandidate> {
+    val locale = Locale.getDefault()
+    return candidates
+        .filter { candidate ->
+            val policy = policies[candidate.key]?.normalized()
+            val enabled = policy?.includeInMessages == true
+            val favorite = policy?.favorite == true
+            val belongsToPivot =
+                when (pivot) {
+                    ConnectedAppsPivot.Favorites -> favorite
+                    ConnectedAppsPivot.Enabled -> enabled
+                    ConnectedAppsPivot.Available -> !enabled
+                }
+            val matchesSearch =
+                search.isBlank() ||
+                    candidate.label.contains(search, ignoreCase = true) ||
+                    candidate.key.packageName.contains(search, ignoreCase = true)
+
+            belongsToPivot && matchesSearch
+        }.sortedWith(
+            compareByDescending<ConnectedAppCandidate> { candidate ->
+                policies[candidate.key]?.normalized()?.favorite == true
+            }.thenBy {
+                it.label.lowercase(locale)
+            }.thenBy {
+                it.key.packageName
+            }.thenBy {
+                it.key.userSerial
+            },
+        )
 }
 
 @Composable
@@ -255,6 +293,15 @@ private fun ConnectedAppRow(
                 },
             )
         }
+
+        PolicySwitchRow(
+            label = "Favorite app",
+            checked = policy.favorite,
+            enabled = true,
+            onCheckedChange = { enabled ->
+                onPolicyChanged(policy.copy(favorite = enabled).normalized())
+            },
+        )
 
         if (policy.includeInMessages) {
             PolicySwitchRow(
