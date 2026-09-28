@@ -53,11 +53,17 @@ The packaged target-files artifact must contain:
 SYSTEM/product/etc/sableos/n1-substrate.env
 ```
 
-The marker file must contain:
+The marker file is a semantic substrate stamp. It must contain at least:
 
 ```text
-N1A_SABLE_OVERLAY_STAMP=PASS
+SABLEOS_MILESTONE=N1A
+SABLEOS_STAGE=ANDROID16_RESTLESS_R7E_OVERLAY_STAMP
+DEVICE_CONTACT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+PUBLIC_RELEASE=NO
 ```
+
+Do not require the file itself to contain the result-line string `N1A_SABLE_OVERLAY_STAMP=PASS`. That result belongs to the qualification result, while `sableos_n1_substrate.env` is the packaged substrate identity stamp.
 
 ## Required N1A reporting fields
 
@@ -72,6 +78,15 @@ N1A_SABLE_OVERLAY_STAMP=PASS
 ```
 
 Any future N1A script that reports only `PRODUCT_MK=AndroidProducts.mk` is incomplete because it hides the product graph owner that determines whether `PRODUCT_COPY_FILES` participates in target-files packaging.
+
+If the active product makefile contains the overlay inherit and `AndroidProducts.mk` also contains a stale overlay inherit, report the latter as cleanup debt instead of failing the artifact:
+
+```text
+N1A_ACTIVE_PRODUCT_OVERLAY_INHERIT=PASS
+N1A_ANDROID_PRODUCTS_OVERLAY_INHERIT=WARN_MISPLACED_CLEANUP_REQUIRED
+```
+
+Fail only when the active product makefile does not own the overlay inherit.
 
 ## Failure classification
 
