@@ -137,9 +137,8 @@ object HubConnectedConversationReducer {
     ): List<ConnectedNotificationRecord> {
         val deduplicated = mutableListOf<ConnectedNotificationRecord>()
         records
-            .sortedWith(
-                compareBy<ConnectedNotificationRecord>(ConnectedNotificationRecord::timestampMillis, ConnectedNotificationRecord::id),
-            ).forEach { candidate ->
+            .sortedWith(notificationRecordOrder())
+            .forEach { candidate ->
                 val duplicateIndex =
                     deduplicated.indexOfLast { existing ->
                         semanticallyDuplicates(
@@ -159,6 +158,13 @@ object HubConnectedConversationReducer {
             }
         return deduplicated
     }
+
+    private fun notificationRecordOrder(): Comparator<ConnectedNotificationRecord> =
+        compareBy<ConnectedNotificationRecord> { record ->
+            record.timestampMillis
+        }.thenBy { record ->
+            record.id
+        }
 
     private fun semanticallyDuplicates(
         first: ConnectedNotificationRecord,
