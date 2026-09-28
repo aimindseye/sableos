@@ -2,144 +2,27 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+BASE_PIPELINE_COMMIT="a350fe8fffc0cf1f719c60f1dff4f6ccd64b7d67"
+CORE_PATH="build/gates/sable-pipeline-contract.sh"
 
-echo "===== SABLE STANDARD PIPELINE CONTRACT ====="
+core="$(mktemp)"
+trap 'rm -f "$core"' EXIT
 
-for f in \
-  "$ROOT/build/sable.sh" \
-  "$ROOT/build/console.sh" \
-  "$ROOT/build/deploy/common.sh" \
-  "$ROOT/build/deploy/flash.sh" \
-  "$ROOT/build/panther/qualify-r9-physical-ux.sh" \
-  "$ROOT/build/panther/qualify-r9-media-flow.sh" \
-  "$ROOT/build/panther/qualify-r9-messages.sh" \
-  "$ROOT/build/panther/qualify-r9-textreader.sh" \
-  "$ROOT/build/panther/prepare-r8-final-ui.sh" \
-  "$ROOT/build/panther/run-r8-release-candidate.sh" \
-  "$ROOT/build/panther/run-release.sh" \
-  "$ROOT/build/gates/r8-build-driver-contract.sh" \
-  "$ROOT/build/host/verify-r8-host-tools.sh" \
-  "$ROOT/tests/systemui/device/r9_identity_audit.sh" \
-  "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh" \
-  "$ROOT/tests/systemui/device/r9_final_ui_runtime_audit.sh" \
-  "$ROOT/tests/systemui/device/r9_appstore_third_party_compat_audit.sh" \
-  "$ROOT/build/check-repo-layout.sh" \
-  "$ROOT/build/devices/panther.sh" \
-  "$ROOT/build/devices/titan2.sh" \
-  "$ROOT/build/devices/titan2-elite.sh" \
-  "$ROOT/build/devices/q27.sh"
-do
-  bash -n "$f"
-done
-echo "SABLE_PIPELINE_SHELL_SYNTAX=PASS"
+git -C "$ROOT" show "$BASE_PIPELINE_COMMIT:$CORE_PATH" > "$core"
+python3 - "$core" "$ROOT" <<'PY'
+from __future__ import annotations
+import pathlib
+import sys
 
-grep -Fq 'sable_console_capture_color' "$ROOT/build/console.sh"
-grep -Fq 'sable_checkpoint_pass' "$ROOT/build/console.sh"
-grep -Fq 'sable_checkpoint_pass "CI stage $name"' "$ROOT/build/local-ci/run.sh"
-grep -Fq 'sable_checkpoint_fail "CI stage $name"' "$ROOT/build/local-ci/run.sh"
-grep -Fq 'sable_checkpoint_pass "R9 physical UX static contracts"' \
-  "$ROOT/build/panther/qualify-r9-physical-ux.sh"
-grep -Fq 'sable_checkpoint_pass "Source-bound full CI attestation"' \
-  "$ROOT/build/panther/run-r8-release-candidate.sh"
-echo "SABLE_PIPELINE_HUMAN_COLOR_CHECKPOINTS=PASS"
-
-grep -Fq 'Path("core/java/android/debug/AdbNotifications.java")' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
-grep -Fq 'core/java/android/debug/AdbNotifications.java' \
-  "$ROOT/build/panther/prepare-r8-final-ui.sh"
-grep -Fq 'core/java/android/debug/AdbNotifications.java' \
-  "$ROOT/build/gates/r8-final-product-composition.sh"
-echo "SABLE_PIPELINE_UI5C_ADB_LATER_SCOPE=PASS"
-
-python3 -m py_compile \
-  "$ROOT/build/deploy/target_files_plan.py" \
-  "$ROOT/build/deploy/artifact_registry.py" \
-  "$ROOT/apps/r8/reader/apply_sable_flavor.py" \
-  "$ROOT/apps/r8/textreader/apply_sable_flavor.py" \
-  "$ROOT/apps/r8/textreader/verify_sable_textreader.py" \
-  "$ROOT/build/gates/r9-textreader-standalone-contract.py" \
-  "$ROOT/apps/r8/mail/apply_sable_flavor.py" \
-  "$ROOT/apps/r8/mail/verify_sable_mail.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_systemui_coherence.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py" \
-  "$ROOT/build/gates/r9-launcher3-foundation-contract.py" \
-  "$ROOT/build/gates/r9-media-flow-contract.py" \
-  "$ROOT/build/gates/r9-messages-native-first-contract.py" \
-  "$ROOT/build/gates/r9-messages-local-conversation-contract.py" \
-  "$ROOT/build/gates/r9-messages-source-style.py" \
-  "$ROOT/build/gates/r9-system-cohesion-contract.py"
-echo "SABLE_PIPELINE_PYTHON_SYNTAX=PASS"
-
-python3 "$ROOT/build/deploy/target_files_plan.py" --self-test
-python3 "$ROOT/build/deploy/artifact_registry.py" self-test
-python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_settings_cohesion.py" --self-test
-python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_launcher3_foundation.py" --self-test
-python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py" --self-test
-python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py" --self-test
-python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py" --self-test
-python3 "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py" --self-test
-python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
-echo "SABLE_PIPELINE_FASTBOOT_PLAN_SELF_TEST=PASS"
-echo "SABLE_PIPELINE_ARTIFACT_REGISTRY_SELF_TEST=PASS"
-echo "SABLE_PIPELINE_SETTINGS_COHESION_SELF_TEST=PASS"
-echo "SABLE_PIPELINE_LAUNCHER3_FOUNDATION_SELF_TEST=PASS"
-grep -Fq 'R9_QUICKSTEP_RECENTS_ONLY_SOURCE_RESOLUTION_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
-echo "SABLE_PIPELINE_QUICKSTEP_SOURCE_RESOLUTION=PASS"
-grep -Fq 'R9_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
-grep -Fq 'R9_QUICKSTEP_RECENTS_FINAL_SCOPE_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
-grep -Fq 'R9_QUICKSTEP_STALE_FINAL_IMPORT_REPAIR_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_quickstep_recents_only.py"
-grep -Fq 'upgrade-final' "$ROOT/build/panther/prepare-r8-final-ui.sh"
-grep -Fq 'upgrade-final' "$ROOT/build/panther/qualify-r9-launcher3-foundation.sh"
-echo "SABLE_PIPELINE_QUICKSTEP_RESOLVEINFO_SECONDARY_HOME=PASS"
-echo "SABLE_PIPELINE_QUICKSTEP_STALE_FINAL_UPGRADE=PASS"
-echo "SABLE_PIPELINE_QUICKSTEP_RECENTS_ONLY_SELF_TEST=PASS"
-grep -Fq 'R9_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
-grep -Fq 'R9_PHONE_CONTACTS_CONTAINMENT_AWARE_VERIFY_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_phone_contacts_presentation.py"
-echo "SABLE_PIPELINE_PHONE_CONTACTS_PARTIAL_CONVERGENCE_SELF_TEST=PASS"
-echo "SABLE_PIPELINE_PHONE_CONTACTS_CONTAINMENT_VERIFY_SELF_TEST=PASS"
-grep -Fq 'R9_DAILY_DRIVER_PARTIAL_CONVERGENCE_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_r9_daily_driver_core_presentation.py"
-echo "SABLE_PIPELINE_DAILY_DRIVER_PARTIAL_CONVERGENCE_SELF_TEST=PASS"
-grep -Fq 'SABLE_UI5C_UI6_MIXED_LATER_SCOPE_SELF_TEST=PASS' \
-  "$ROOT/patches/android-17-grapheneos-2026081300/apply_ui5c_ui6_system_surfaces.py"
-echo "SABLE_PIPELINE_UI5C_MIXED_LATER_SCOPE_SELF_TEST=PASS"
-echo "SABLE_PIPELINE_LAUNCHER3_FOUNDATION_CONTRACT_SELF_TEST=PASS"
-
-grep -Fq 'usage:' "$ROOT/build/sable.sh"
-grep -Fq 'build/sable.sh <device> <release> <function>' "$ROOT/build/sable.sh"
-for fn in ci qualify build register-artifact show-artifact flash-plan flash accept; do
-  grep -Fq "$fn)" "$ROOT/build/sable.sh"
-done
-echo "SABLE_PIPELINE_CANONICAL_ENTRYPOINT=PASS"
-
-grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
-grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
-grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
-grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS="target-files"' "$ROOT/build/devices/panther.sh"
-grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=fastboot-ab-target-files' "$ROOT/build/devices/panther.sh"
-for callback in   sable_device_flash_plan   sable_device_flash_prepare_artifact   sable_device_flash_preflight   sable_device_flash_execute   sable_device_flash_postboot   sable_device_flash_recover_prewrite
-do
-  grep -Fq "$callback()" "$ROOT/build/devices/panther.sh"
-done
-grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
-grep -Fq 'sable_device_qualify' "$ROOT/build/devices/panther.sh"
-grep -Fq 'qualify-r9-physical-ux.sh' "$ROOT/build/devices/panther.sh"
-grep -Fq 'R9:appstore-baseline|r9:appstore-baseline' "$ROOT/build/devices/panther.sh"
-grep -Fq 'R9:appstore-play|r9:appstore-play' "$ROOT/build/devices/panther.sh"
-grep -Fq 'R9:third-party|r9:third-party' "$ROOT/build/devices/panther.sh"
-grep -Fq 'sable_device_artifact_gate' "$ROOT/build/devices/panther.sh"
-for d in titan2 titan2-elite q27; do
+path = pathlib.Path(sys.argv[1])
+root = sys.argv[2]
+text = path.read_text(encoding="utf-8")
+text = text.replace(
+    'ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"',
+    f'ROOT={root!r}',
+    1,
+)
+old = '''for d in titan2 titan2-elite q27; do
   f="$ROOT/build/devices/$d.sh"
   grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$f"
   grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=NO' "$f"
@@ -149,243 +32,53 @@ for d in titan2 titan2-elite q27; do
   grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=NO' "$f"
   grep -Fq 'SABLE_DEVICE_QUALIFY=BLOCKED_UNQUALIFIED' "$f"
   grep -Fq 'BLOCKED_UNQUALIFIED' "$f"
-done
-test ! -e "$ROOT/build/devices/q25.sh"
-echo "SABLE_PIPELINE_DEVICE_ADAPTER_POLICY=PASS"
+done'''
+new = '''TITAN2="$ROOT/build/devices/titan2.sh"
+grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=YES' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS="gsi-system-image"' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=titan2-fastbootd-ledger-only' "$TITAN2"
+grep -Fq 'TITAN2_FLASH_EXECUTION_SUPPORTED=NO' "$TITAN2"
+grep -Fq 'TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE=PASS_TITAN2_GSI' "$TITAN2"
+grep -Fq 'TITAN2_N0_N1_FLASH_PLAN_REQUIRED=YES' "$TITAN2"
+grep -Fq 'prepare-n0-n1-flash-plan.sh' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=NO' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_QUALIFY=BLOCKED_UNQUALIFIED' "$TITAN2"
+grep -Fq 'BLOCKED_UNQUALIFIED' "$TITAN2"
+echo "SABLE_PIPELINE_TITAN2_GSI_LEDGER_ADAPTER=PASS"
 
-REGISTRY="$ROOT/build/deploy/artifact_registry.py"
-grep -Fq 'SCHEMA_VERSION = 2' "$REGISTRY"
-grep -Fq '"gsi-system-image"' "$REGISTRY"
-grep -Fq 'SABLE_ARTIFACT_REGISTRY_SCHEMA=PASS_V2_BACKWARD_COMPATIBLE' "$REGISTRY"
-grep -Fq 'SABLE_ARTIFACT_REGISTRY_GENERIC_GSI_SELF_TEST=PASS' "$REGISTRY"
-grep -Fq 'SABLE_ARTIFACT_MANIFEST_VERIFY=PASS' "$REGISTRY"
-grep -Fq 'SABLE_ARTIFACT_REGISTER=BLOCKED_UNQUALIFIED' "$ROOT/build/sable.sh"
-grep -Fq -- '--artifact-kind' "$ROOT/build/sable.sh"
-grep -Fq -- '--primary-artifact' "$ROOT/build/sable.sh"
-grep -Fq -- '--expected-sha256' "$ROOT/build/sable.sh"
-echo "SABLE_PIPELINE_MULTI_DEVICE_ARTIFACT_SCHEMA=PASS"
+for d in titan2-elite q27; do
+  f="$ROOT/build/devices/$d.sh"
+  grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$f"
+  grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=NO' "$f"
+  grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=NO' "$f"
+  grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS=""' "$f"
+  grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=UNQUALIFIED' "$f"
+  grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=NO' "$f"
+  grep -Fq 'SABLE_DEVICE_QUALIFY=BLOCKED_UNQUALIFIED' "$f"
+  grep -Fq 'BLOCKED_UNQUALIFIED' "$f"
+done'''
+if old not in text:
+    print("SABLE_PIPELINE_BASE_PATCH=FAIL_TITAN2_ADAPTER_BLOCK")
+    raise SystemExit(1)
+text = text.replace(old, new, 1)
+path.write_text(text, encoding="utf-8")
+print("SABLE_PIPELINE_BASE_PATCH=PASS")
+PY
 
-FLASH="$ROOT/build/deploy/flash.sh"
-PANTHER="$ROOT/build/devices/panther.sh"
-COMMON="$ROOT/build/deploy/common.sh"
-grep -Fq -- '--preserve-data' "$FLASH"
-grep -Fq -- '--authorize' "$FLASH"
-grep -Fq 'USERDATA_OR_METADATA_WIPE_AUTHORIZED=NO' "$FLASH"
-grep -Fq 'BOOTLOADER_UNLOCK_AUTHORIZED=NO' "$FLASH"
-grep -Fq 'INACTIVE_SLOT_FLASH_AUTHORIZED=NO' "$FLASH"
-grep -Fq 'FASTBOOT_WIPE_FLAG=ABSENT' "$FLASH"
-grep -Fq 'SABLE_BLOCKER_ISSUE_REQUIRED=YES' "$FLASH"
-grep -Fq 'PREWRITE_FAILURE_RECOVERY=PASS_ANDROID' "$FLASH"
-grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE' "$FLASH"
-grep -Fq 'SABLE_DEVICE_FLASH_CALLBACK_CONTRACT=PASS' "$FLASH"
-grep -Fq 'sable_device_flash_prepare_artifact' "$FLASH"
-grep -Fq 'sable_device_flash_preflight' "$FLASH"
-grep -Fq 'sable_device_flash_execute' "$FLASH"
-grep -Fq 'sable_device_flash_postboot' "$FLASH"
-if grep -Fq 'flashall' "$FLASH" || grep -Fq '"has-slot:$part"' "$FLASH"; then
-  echo "SABLE_PIPELINE_COMMON_FLASH_DEVICE_SEMANTICS=FAIL_PANTHER_LEAK"
-  exit 1
-fi
-echo "SABLE_PIPELINE_COMMON_FLASH_DEVICE_SEMANTICS=PASS_ISOLATED"
+bash "$core"
 
-grep -Fq -- '--skip-secondary' "$PANTHER"
-grep -Fq -- '--skip-reboot' "$PANTHER"
-grep -Fq 'flashall' "$PANTHER"
-grep -Fq '"has-slot:$part"' "$PANTHER"
-grep -Fq 'sable_wait_fastboot_ready' "$PANTHER"
-grep -Fq 'sable_require_fastboot_serial_exact_once' "$PANTHER"
-grep -Fq '"$ADB_BIN" -s "$SERIAL" reboot bootloader' "$PANTHER"
-grep -Fq '"$FASTBOOT_BIN" -s "$SERIAL"' "$PANTHER"
-if grep -Fq '"partition-size:$part"' "$PANTHER"; then
-  echo "SABLE_PIPELINE_PARTITION_EXISTS_SEMANTICS=FAIL_PARTITION_SIZE"
-  exit 1
-fi
-echo "SABLE_PIPELINE_PARTITION_EXISTS_SEMANTICS=PASS"
+grep -Fq 'run_static_contract sable-pipeline' "$ROOT/build/local-ci/run.sh"
+grep -Fq 'SABLEOS_DEVICE="$SABLEOS_DEVICE"' "$ROOT/build/local-ci/run.sh"
+grep -Fq 'SABLEOS_RELEASE_VERSION="$SABLEOS_RELEASE_VERSION"' "$ROOT/build/local-ci/run.sh"
+grep -Fq 'n1b-titan2-local-ci-static-contracts.sh' \
+  "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
+grep -Fq 'N1B_LOCAL_CI_STATIC_CONTRACT_FULL_CI_READINESS=PASS' \
+  "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
+echo "SABLE_PIPELINE_N1B_LOCAL_CI_BINDING=PASS"
 
-for script in "$FLASH" "$PANTHER"; do
-  if grep -Eq '(^|[[:space:]])-w([[:space:]]|$)' "$script"; then
-    echo "SABLE_PIPELINE_NO_WIPE_FLAG=FAIL path=$script"
-    exit 1
-  fi
-  if grep -Eq '(flashing unlock|flashing lock|erase userdata|erase metadata)' "$script"; then
-    echo "SABLE_PIPELINE_NO_UNLOCK_ERASE=FAIL path=$script"
-    exit 1
-  fi
-done
-echo "SABLE_PIPELINE_MUTATION_POLICY=PASS"
-
-grep -Fq 'sable_require_adb_serial_exact_once' "$FLASH"
-grep -Fq 'SABLE_ADB_TARGET_SERIAL=PASS' "$COMMON"
-grep -Fq 'SABLE_FASTBOOT_TARGET_SERIAL=PASS' "$COMMON"
-grep -Fq 'SABLE_ADB_OTHER_READY_COUNT=' "$COMMON"
-grep -Fq 'SABLE_FASTBOOT_OTHER_READY_COUNT=' "$COMMON"
-grep -Fq 'FASTBOOT_GETVAR_READY=PASS' "$COMMON"
-grep -Fq '</dev/null' "$COMMON"
-grep -Fq '</dev/null' "$FLASH"
-grep -Fq '</dev/null' "$PANTHER"
-if grep -Fq 'SABLE_ADB_SINGLE_DEVICE' "$FLASH" || grep -Fq 'SABLE_FASTBOOT_SINGLE_DEVICE' "$PANTHER"; then
-  echo "SABLE_PIPELINE_MULTI_DEVICE_SERIAL_SCOPE=FAIL_LEGACY_SINGLE_DEVICE_GATE"
-  exit 1
-fi
-echo "SABLE_PIPELINE_MULTI_DEVICE_SERIAL_SCOPE=PASS"
-
-grep -Fq 'IMAGES/' "$ROOT/build/deploy/target_files_plan.py"
-grep -Fq 'unconditional_erase_forbidden' "$ROOT/build/deploy/target_files_plan.py"
-grep -Fq 'inactive_slot_directive_forbidden' "$ROOT/build/deploy/target_files_plan.py"
-grep -Fq 'unsupported_flash_option' "$ROOT/build/deploy/target_files_plan.py"
-echo "SABLE_PIPELINE_PANTHER_TARGET_FILES_POLICY=PASS"
-echo "SABLE_PIPELINE_DEVICE_DEPLOYMENT_CALLBACK_BOUNDARY=PASS"
-
-QUAL="$ROOT/build/panther/qualify-r9-physical-ux.sh"
-FINAL_BUILD="$ROOT/build/panther/build-r8-final-ui.sh"
-RC_DRIVER="$ROOT/build/panther/run-r8-release-candidate.sh"
-RELEASE_DRIVER="$ROOT/build/panther/run-release.sh"
-grep -Fq 'FULL_TARGET_FILES_BUILD_AUTHORIZED=NO' "$QUAL"
-grep -Fq 'SABLE_QUALIFICATION_ONLY=YES' "$QUAL"
-grep -Fq 'r9-sms-mms-blocking-contract.py' "$QUAL"
-grep -Fq 'r9-first-party-app-icon-contract.py' "$QUAL"
-grep -Fq 'r9-media-flow-contract.py' "$QUAL"
-grep -Fq 'r9-messages-native-first-contract.py' "$QUAL"
-grep -Fq 'r9-messages-local-conversation-contract.py' "$QUAL"
-grep -Fq 'r9-system-cohesion-contract.py' "$QUAL"
-MEDIA_QUAL="$ROOT/build/panther/qualify-r9-media-flow.sh"
-grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MEDIA_QUAL"
-grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MEDIA_QUAL"
-grep -Fq 'set -euo pipefail' "$MEDIA_QUAL"
-grep -Fq 'R9_MEDIA_FLOW_FOCUSED_QUALIFICATION=PASS' "$MEDIA_QUAL"
-TEXTREADER_QUAL="$ROOT/build/panther/qualify-r9-textreader.sh"
-grep -Fq 'set -euo pipefail' "$TEXTREADER_QUAL"
-grep -Fq 'NETWORK_FETCH_AUTHORIZED=NO' "$TEXTREADER_QUAL"
-grep -Fq 'R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO' "$TEXTREADER_QUAL"
-grep -Fq 'WORKSPACE_PRODUCT_INVENTORY_REQUIRED=NO_PRESTAGING' "$TEXTREADER_QUAL"
-grep -Fq 'r9-textreader-standalone-contract.py' "$TEXTREADER_QUAL"
-grep -Fq 'testDebugUnitTest' "$TEXTREADER_QUAL"
-grep -Fq 'lintDebug' "$TEXTREADER_QUAL"
-grep -Fq 'assembleDebug' "$TEXTREADER_QUAL"
-grep -Fq 'R9_TEXT_READER_FOCUSED_QUALIFICATION=PASS' "$TEXTREADER_QUAL"
-grep -Fq 'R9:textreader|r9:textreader' "$ROOT/build/devices/panther.sh"
-echo "SABLE_PIPELINE_TEXT_READER_FOCUSED_QUALIFIER=PASS"
-
-MESSAGES_QUAL="$ROOT/build/panther/qualify-r9-messages.sh"
-grep -Fq 'source "$ROOT/build/config/r8-host-tools.env"' "$MESSAGES_QUAL"
-grep -Fq 'export ANDROID_HOME="$SABLE_ANDROID_SDK"' "$MESSAGES_QUAL"
-grep -Fq 'set -euo pipefail' "$MESSAGES_QUAL"
-grep -Fq 'r9-messages-local-conversation-contract.py' "$MESSAGES_QUAL"
-grep -Fq ':hub:detekt' "$MESSAGES_QUAL"
-grep -Fq ':hub:ktlintCheck' "$MESSAGES_QUAL"
-grep -Fq 'R9_MESSAGES_WARNINGS_AS_ERRORS=PASS' "$MESSAGES_QUAL"
-grep -Fq 'R9_MESSAGES_LOCAL_CONVERSATION_QUALIFICATION=PASS' "$MESSAGES_QUAL"
-grep -Fq 'R9_MESSAGES_FOCUSED_QUALIFICATION=PASS' "$MESSAGES_QUAL"
-
-LOCAL_CI="$ROOT/build/local-ci/run.sh"
-for gate in \
-  'r9-media-flow-contract.py' \
-  'r9-messages-native-first-contract.py' \
-  'r9-messages-local-conversation-contract.py' \
-  'r9-messages-source-style.py' \
-  'r9-textreader-standalone-contract.py'
-do
-  grep -Fq "$gate" "$LOCAL_CI"
-done
-echo "SABLE_PIPELINE_LOCAL_CI_MEDIA_MESSAGES_SOURCE_GATES=PASS"
-grep -Fq 'R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=NO' "$LOCAL_CI"
-echo "SABLE_PIPELINE_LOCAL_CI_TEXT_READER_SOURCE_GATE=PASS"
-echo "SABLE_PIPELINE_PRESTAGING_WORKSPACE_INVENTORY_POLICY=PASS"
-
-grep -Fq 'SABLE_LOCAL_CI_PYTHON_SYNTAX=PASS' "$LOCAL_CI"
-grep -Fq 'PYTHON_SYNTAX_FAILURE=' "$LOCAL_CI"
-if grep -Fq 'python3 -m py_compile "$ROOT/$py"' "$LOCAL_CI"; then
-  echo "SABLE_PIPELINE_LOCAL_CI_PYTHON_SYNTAX_AGGREGATION=FAIL_PER_FILE_FAIL_FAST"
-  exit 1
-fi
-echo "SABLE_PIPELINE_LOCAL_CI_PYTHON_SYNTAX_AGGREGATION=PASS"
-
-grep -Fq 'SABLE_LOCAL_CI_APPLICATOR_SELF_TEST_FAILURE=' "$LOCAL_CI"
-grep -Fq 'SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=PASS' "$LOCAL_CI"
-grep -Fq 'SABLE_LOCAL_CI_APPLICATOR_SELF_TESTS=FAIL' "$LOCAL_CI"
-echo "SABLE_PIPELINE_LOCAL_CI_APPLICATOR_SELF_TEST_AGGREGATION=PASS"
-
-grep -Fq 'SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE=' "$LOCAL_CI"
-grep -Fq 'SABLE_LOCAL_CI_STATIC_CONTRACT_FAILURE_NAMES=' "$LOCAL_CI"
-grep -Fq 'SABLE_LOCAL_CI_STATIC_CONTRACTS=FAIL' "$LOCAL_CI"
-grep -Fq 'SABLE_LOCAL_CI_STATIC_CONTRACTS=PASS' "$LOCAL_CI"
-echo "SABLE_PIPELINE_LOCAL_CI_STATIC_CONTRACT_AGGREGATION=PASS"
-
-BUILD_DRIVER_CONTRACT="$ROOT/build/gates/r8-build-driver-contract.sh"
-for marker in \
-  'R9_BUILD_DRIVER_ELEVEN_APK_INVENTORY=PASS' \
-  'R9_BUILD_DRIVER_STANDALONE_HOME_CONTRACT=PASS' \
-  'R9_SABLE_TEXT_READER_TARGET_POLICY_CONTRACT=PASS' \
-  'R9_SABLE_HOME_TARGET_POLICY_CONTRACT=PASS' \
-  'R9_SABLE_HOME_QUICKSTEP_PREFLIGHT_CONTRACT=PASS' \
-  'R9_BUILD_DRIVER_HOME_DOC_CONTRACT=PASS' \
-  'R9_SABLESTART_PRESENTATION_GRADLE_SCOPE=PASS_EXACT_PRESENTATION_FILEGROUP' \
-  'R9_SABLESTART_PRESENTATION_LINT_SOURCE_MIRROR=PASS' \
-  'R9_SABLELAUNCHER_SDK_BOUNDARY=PASS_SYSTEM_CURRENT' \
-  'R8_BUILD_DRIVER_CONTRACT=FAIL_UNEXPECTED'
-do
-  grep -Fq "$marker" "$BUILD_DRIVER_CONTRACT"
-done
-echo "SABLE_PIPELINE_STANDALONE_HOME_BUILD_DRIVER_CONTRACT=PASS"
-
-grep -Fq 'AUTO_REGISTER="${SABLE_AUTO_REGISTER_ARTIFACT:-NO}"' "$RELEASE_DRIVER"
-grep -Fq "SABLE_AUTO_REGISTER_ARTIFACT='\$AUTO_REGISTER'" "$RELEASE_DRIVER"
-grep -Fq 'SABLE_AUTO_REGISTER_ARTIFACT=YES' "$ROOT/build/devices/panther.sh"
-echo "SABLE_PIPELINE_TMUX_ARTIFACT_AUTO_REGISTER=PASS"
-
-grep -Fq 'R9_SYSTEM_COHESION_STATIC_CONTRACT=PASS' "$QUAL"
-grep -Fq 'SABLE_BUILD_STAGE' "$FINAL_BUILD"
-grep -Fq 'R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS' "$FINAL_BUILD"
-grep -Fq 'framework-minus-apex' "$FINAL_BUILD"
-grep -Fq 'R9_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS' "$FINAL_BUILD"
-grep -Fq 'R9_APPSTORE_MODULE_BUILD=PASS' "$FINAL_BUILD"
-grep -Fq 'AppStore' "$ROOT/product/r8/panther/r8-product.mk"
-grep -Fq 'R9_APPSTORE_PRODUCT_MODULE=PASS' "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'R9_GOOGLE_PLAY_PREINSTALLED=PASS_ABSENT_FROM_SABLE_PRODUCT' "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'R9_APPSTORE_TARGET_FILES=PASS_PRESENT_PINNED_SHA256' "$ROOT/build/gates/r8-final-target-files.sh"
-grep -Fq 'R9_GOOGLE_PLAY_PREINSTALLED_TARGET_FILES=PASS_ABSENT' "$ROOT/build/gates/r8-final-target-files.sh"
-echo "SABLE_PIPELINE_APPSTORE_OPTIONAL_PLAY_POLICY=PASS"
-echo "SABLE_PIPELINE_FRAMEWORK_ADB_NOTIFICATION_MODULE_BUILD=PASS"
-grep -Fq 'FULL_TARGET_FILES_BUILD_PERFORMED=NO' "$FINAL_BUILD"
-grep -Fq 'SABLE_QUALIFICATION_ONLY' "$RC_DRIVER"
-grep -Fq 'R9_SOURCE_BOUND_FULL_CI=PASS' "$RC_DRIVER"
-grep -Fq "grep -Fxq 'PROFILE=full'" "$RC_DRIVER"
-grep -Fq 'sable-local-ci/$EXPECTED_SOURCE_COMMIT.pass' "$RC_DRIVER"
-echo "SABLE_PIPELINE_SOURCE_BOUND_FULL_CI_GATE=PASS"
-grep -Fq 'R8_NO_STALE_WORKSPACE_INVENTORY_REQUIRED=YES' \
-  "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'R8_RELEASE_CANDIDATE=NOT_RUN' "$RC_DRIVER"
-echo "SABLE_PIPELINE_POSTSTAGING_WORKSPACE_INVENTORY_POLICY=PASS"
-echo "SABLE_PIPELINE_MODULE_QUALIFICATION_POLICY=PASS"
-echo "SABLE_PIPELINE_SMS_MMS_BLOCKING_GATE=PASS"
-echo "SABLE_PIPELINE_FIRST_PARTY_ICON_GATE=PASS"
-echo "SABLE_PIPELINE_MEDIA_FLOW_GATE=PASS"
-echo "SABLE_PIPELINE_MEDIA_FLOW_FOCUSED_QUALIFIER=PASS"
-echo "SABLE_PIPELINE_TEXT_READER_GATE=PASS"
-echo "SABLE_PIPELINE_MESSAGES_NATIVE_FIRST_GATE=PASS"
-echo "SABLE_PIPELINE_MESSAGES_LOCAL_CONVERSATION_GATE=PASS"
-echo "SABLE_PIPELINE_MESSAGES_STRICT_QUALITY_GATE=PASS"
-echo "SABLE_PIPELINE_MESSAGES_FOCUSED_QUALIFIER=PASS"
-echo "SABLE_PIPELINE_SYSTEM_COHESION_GATE=PASS"
-
-grep -Fq 'SableSettingsPrivappPermissions' "$ROOT/product/r8/panther/Android.bp"
-grep -Fq 'system_ext_specific: true' "$ROOT/product/r8/panther/Android.bp"
-grep -Fq 'android.permission.MODIFY_DAY_NIGHT_MODE' \
-  "$ROOT/product/r8/panther/permissions/sable-privapp-permissions-com.android.settings.xml"
-grep -Fq 'R9_SETTINGS_PRIVAPP_ALLOWLIST_PRODUCT=PASS_SYSTEM_EXT' \
-  "$ROOT/build/gates/r8-final-product-composition.sh"
-grep -Fq 'R9_SETTINGS_PRIVAPP_ALLOWLIST_TARGET=PASS_SYSTEM_EXT' \
-  "$ROOT/build/gates/r8-final-target-files.sh"
-echo "SABLE_PIPELINE_SETTINGS_PRIVAPP_ALLOWLIST=PASS_SYSTEM_EXT_EXACT"
-
-grep -Fq 'R9:identity|r9:identity' "$ROOT/build/devices/panther.sh"
-grep -Fq 'DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
-grep -Fq 'R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
-grep -Fq 'R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
-grep -Fq 'R9_PERMISSION_ALLOWLIST_RUNTIME=FAIL_NOTIFICATION_PRESENT' "$ROOT/tests/systemui/device/r9_identity_audit.sh"
-grep -Fq 'DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY' "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh"
-grep -Fq 'R9_BRANDING_SURFACE_AUDIT=PASS_CAPTURED' "$ROOT/tests/systemui/device/r9_branding_surface_audit.sh"
-echo "SABLE_PIPELINE_READ_ONLY_IDENTITY_AUDIT=PASS"
-echo "SABLE_PIPELINE_READ_ONLY_BRANDING_AUDIT=PASS"
+bash "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"

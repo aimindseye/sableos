@@ -88,6 +88,19 @@ post-boot acceptance.
 implementation behind the common entry point. It is not the desired cross-device
 operator contract.
 
+Legacy implementation syntax retained for the Panther build-driver contract:
+
+```text
+build/panther/run-release.sh <release-version>
+```
+
+Do not create a new build driver for Panther release work. Use the canonical
+operator command instead:
+
+```bash
+bash build/sable.sh panther R9 build --tmux
+```
+
 Current R8-named files remain implementation details while the product baseline
 is incrementally generalized:
 
@@ -117,6 +130,19 @@ Host tools live outside the build farm under:
 
 GitHub remains source/review/issues/documentation infrastructure. Release-critical
 qualification is local-direct on the controlled build host.
+
+For Titan 2 N1B, full local CI must be run with explicit device/release context:
+
+```bash
+SABLEOS_DEVICE=titan2 \
+SABLEOS_RELEASE_VERSION=N1B \
+bash build/local-ci/run.sh full
+```
+
+The STATIC stage runs `build/gates/sable-pipeline-contract.sh`. That contract is
+now responsible for binding the Titan2/N1B static contract family through
+`build/gates/n1b-titan2-local-ci-static-contracts.sh`, while preserving no image,
+no device-contact, no flash and no public-release scope.
 
 ## Validation discipline
 
