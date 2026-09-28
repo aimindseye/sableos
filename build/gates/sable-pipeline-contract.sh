@@ -128,7 +128,13 @@ grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=YES' "$ROOT/build/devices
 grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES' "$ROOT/build/devices/panther.sh"
 grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS="target-files"' "$ROOT/build/devices/panther.sh"
 grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=fastboot-ab-target-files' "$ROOT/build/devices/panther.sh"
-for callback in   sable_device_flash_plan   sable_device_flash_prepare_artifact   sable_device_flash_preflight   sable_device_flash_execute   sable_device_flash_postboot   sable_device_flash_recover_prewrite
+for callback in \
+  sable_device_flash_plan \
+  sable_device_flash_prepare_artifact \
+  sable_device_flash_preflight \
+  sable_device_flash_execute \
+  sable_device_flash_postboot \
+  sable_device_flash_recover_prewrite
 do
   grep -Fq "$callback()" "$ROOT/build/devices/panther.sh"
 done
@@ -139,7 +145,24 @@ grep -Fq 'R9:appstore-baseline|r9:appstore-baseline' "$ROOT/build/devices/panthe
 grep -Fq 'R9:appstore-play|r9:appstore-play' "$ROOT/build/devices/panther.sh"
 grep -Fq 'R9:third-party|r9:third-party' "$ROOT/build/devices/panther.sh"
 grep -Fq 'sable_device_artifact_gate' "$ROOT/build/devices/panther.sh"
-for d in titan2 titan2-elite q27; do
+
+TITAN2="$ROOT/build/devices/titan2.sh"
+grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=YES' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_KINDS="gsi-system-image"' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_FLASH_TRANSPORT=titan2-fastbootd-ledger-only' "$TITAN2"
+grep -Fq 'TITAN2_FLASH_EXECUTION_SUPPORTED=NO' "$TITAN2"
+grep -Fq 'TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_ARTIFACT_GATE=PASS_TITAN2_GSI' "$TITAN2"
+grep -Fq 'TITAN2_N0_N1_FLASH_PLAN_REQUIRED=YES' "$TITAN2"
+grep -Fq 'prepare-n0-n1-flash-plan.sh' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_QUALIFY_SUPPORTED=NO' "$TITAN2"
+grep -Fq 'SABLE_DEVICE_QUALIFY=BLOCKED_UNQUALIFIED' "$TITAN2"
+grep -Fq 'BLOCKED_UNQUALIFIED' "$TITAN2"
+echo "SABLE_PIPELINE_TITAN2_GSI_LEDGER_ADAPTER=PASS"
+
+for d in titan2-elite q27; do
   f="$ROOT/build/devices/$d.sh"
   grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$f"
   grep -Fq 'SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=NO' "$f"
