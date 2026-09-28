@@ -3,8 +3,8 @@
 Status: **N1B2 image-packaging gate input**
 
 This matrix is not an audit note. It is a release-build input for N1B2 GSI image
-packaging. The N1B2 image-candidate build path must fail unless every row below
-is one of:
+packaging. The N1B2 image-candidate build path must fail unless every status row
+below is one of:
 
 ```text
 PASS
@@ -12,8 +12,14 @@ POLICY_PRESENT
 EXPLICIT_BOUNDED_DEFERRAL
 ```
 
-No row may be `TODO`, `UNKNOWN`, `PENDING`, `FAIL`, `NO`, or left blank when
-building an N1B2 image candidate.
+A status row is a row whose key starts with `UX_` or `POLICY_`. No status row may
+be `TODO`, `UNKNOWN`, `PENDING`, `FAIL`, `NO`, `BLOCKED`, `TBD`, `UNDECIDED`,
+`MISSING`, or blank when building an N1B2 image candidate.
+
+Safety boundary markers outside the `UX_` / `POLICY_` status-row namespace may
+and should use `NO` where the boundary is intentionally denying an action, such
+as flash, public release, production signing, factory reset, or stock-vendor
+repack authorization.
 
 ```text
 N1B2_TITAN2_UX_TESTBED_READINESS_MATRIX=YES
