@@ -20,6 +20,36 @@ SYSTEM_CURRENT_BYTES=756441088
 
 The canonical N1B GSI system image is larger than the observed current system logical partition, so Phase 11 must collect and compare LP/super sizing before any flash-plan work is allowed.
 
+## Titan2-specific deployment constraints
+
+Phase 11 is intentionally not modeled like a generic Android phone flashing flow. It is bound to the Titan2 evidence collected during N0/N1 work:
+
+```text
+TITAN2_DYNAMIC_PARTITIONS=YES
+TITAN2_VIRTUAL_AB=YES
+TITAN2_FASTBOOTD_SUPPORTED=YES
+TITAN2_DSU_AVAILABLE=NO
+TITAN2_FASTBOOT_BOOT_SUPPORTED=NO
+TITAN2_STANDALONE_RECOVERY_PARTITION=NO_OBSERVED
+TITAN2_RECOVERY_LOCATION=vendor_boot_recovery_vendor_ramdisk
+TITAN2_AVB_CHAINED_BOOT_VBMETA_SYSTEM_VBMETA_VENDOR=YES
+TITAN2_BOOTLOADER_UNLOCKED_ORANGE_STATE_ALLOWED_FOR_INTERNAL_PREFLIGHT=YES
+TITAN2_GSI_DEPLOYMENT_REQUIRES_FASTBOOTD_LP_CONTEXT=YES
+```
+
+Practical impact:
+
+```text
+DO_NOT_USE_DSU_FOR_N1B_GSI=YES
+DO_NOT_USE_FASTBOOT_BOOT_FOR_N1B_GSI=YES
+DO_NOT_ASSUME_STANDALONE_RECOVERY_FLASH_PATH=YES
+DO_NOT_TREAT_SYSTEM_AS_FIXED_RAW_PARTITION=YES
+DO_NOT_TREAT_BOOTLOADER_FASTBOOT_AS_SUFFICIENT_FOR_LP_SIZING=YES
+USE_FASTBOOTD_READONLY_GETVAR_FOR_LP_SUPER_SIZING=YES
+```
+
+This differs from many regular Android-phone GSI instructions because Titan2 deployment planning must be driven from dynamic-partition and fastbootd evidence, not from DSU, `fastboot boot`, recovery-side assumptions, or a simple fixed-size raw `system` partition.
+
 ## Scope
 
 Phase 11 is a plan-only sizing gate.
