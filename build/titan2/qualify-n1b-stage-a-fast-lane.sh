@@ -12,6 +12,8 @@ FAILURES=0
 FIRST_FAILURE=""
 ANDROID_SDK_READY=NO
 ANDROID_HOME_EFFECTIVE=""
+RUST_CARGO_READY=NO
+SABLE_CARGO_EFFECTIVE=""
 
 say() {
   printf '%s\n' "$1"
@@ -85,6 +87,44 @@ try_sdk_candidate() {
     export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
     say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
     ANDROID_SDK_READY=YES
+    return 0
+  fi
+
+  return 1
+}
+
+cargo_candidate_status() {
+  CANDIDATE="$1"
+  if [ -z "$CANDIDATE" ]; then
+    printf '%s\n' "UNSET"
+    return 1
+  fi
+  if [ ! -e "$CANDIDATE" ]; then
+    printf '%s\n' "MISSING_FILE"
+    return 1
+  fi
+  if [ ! -x "$CANDIDATE" ]; then
+    printf '%s\n' "NOT_EXECUTABLE"
+    return 1
+  fi
+
+  printf '%s\n' "PASS"
+  return 0
+}
+
+try_cargo_candidate() {
+  LABEL="$1"
+  CANDIDATE="$2"
+  STATUS="$(cargo_candidate_status "$CANDIDATE")"
+
+  say "N1B_STAGE_A_CARGO_CANDIDATE_${LABEL}_PATH=${CANDIDATE:-UNSET}"
+  say "N1B_STAGE_A_CARGO_CANDIDATE_${LABEL}=$STATUS"
+
+  if [ "$STATUS" = "PASS" ]; then
+    SABLE_CARGO_EFFECTIVE="$CANDIDATE"
+    export SABLE_CARGO="$SABLE_CARGO_EFFECTIVE"
+    say "SABLE_CARGO_EFFECTIVE=$SABLE_CARGO_EFFECTIVE"
+    RUST_CARGO_READY=YES
     return 0
   fi
 
@@ -209,6 +249,52 @@ resolve_android_sdk() {
   return 1
 }
 
+resolve_rust_cargo() {
+  say "===== N1B STAGE A RUST CARGO PREFLIGHT ====="
+
+  if try_cargo_candidate "SABLE_CARGO" "${SABLE_CARGO:-}"; then
+    return 0
+  fi
+
+  if try_cargo_candidate "CARGO" "${CARGO:-}"; then
+    return 0
+  fi
+
+  if try_cargo_candidate "SABLE_CARGO_HOME" "${SABLE_CARGO_HOME:-}/bin/cargo"; then
+    return 0
+  fi
+
+  if try_cargo_candidate "CARGO_HOME" "${CARGO_HOME:-}/bin/cargo"; then
+    return 0
+  fi
+
+  PATH_CARGO="$(command -v cargo 2>/dev/null || true)"
+  if try_cargo_candidate "PATH" "$PATH_CARGO"; then
+    return 0
+  fi
+
+  for CANDIDATE_ENTRY in \
+    "HOME_CARGO=$HOME/.cargo/bin/cargo" \
+    "SABLE_R8_A2_TOOLCHAIN_RUST=/srv/data/sable-build/toolchains/r8-a2/rust/bin/cargo" \
+    "SABLE_HOST_TOOLS_R8_RUST=/srv/data/sable-host-tools/rust/r8/bin/cargo" \
+    "USR_LOCAL_CARGO=/usr/local/bin/cargo" \
+    "USR_BIN_CARGO=/usr/bin/cargo"
+  do
+    LABEL="${CANDIDATE_ENTRY%%=*}"
+    CANDIDATE="${CANDIDATE_ENTRY#*=}"
+    if try_cargo_candidate "$LABEL" "$CANDIDATE"; then
+      return 0
+    fi
+  done
+
+  say "N1B_STAGE_A_RUST_CARGO_FAILURE_CLASS=RUST_JNI_PRECONDITION"
+  record_failure "N1B_STAGE_A_RUST_CARGO" \
+    "No cargo executable was found for Rust JNI modules; set SABLE_CARGO, CARGO, SABLE_CARGO_HOME, or CARGO_HOME"
+  say "N1B_STAGE_A_RUST_MODULE_BUILDS=SKIPPED_RUST_CARGO_PRECONDITION"
+  RUST_CARGO_READY=NO
+  return 1
+}
+
 run_cmd() {
   NAME="$1"
   shift
@@ -289,6 +375,10 @@ if [ "$RUN_GRADLE_BUILDS" = "YES" ]; then
   resolve_android_sdk
 
   if [ "$ANDROID_SDK_READY" = "YES" ]; then
+    resolve_rust_cargo
+  fi
+
+  if [ "$ANDROID_SDK_READY" = "YES" ] && [ "$RUST_CARGO_READY" = "YES" ]; then
     if [ -x "$APP_ROOT/gradlew" ]; then
       cd "$APP_ROOT" || {
         record_failure "N1B_STAGE_A_APP_ROOT_CD" "CD_FAILED=$APP_ROOT"
