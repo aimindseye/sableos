@@ -49,6 +49,32 @@ identity_allowed_protocol_line() {
   return 1
 }
 
+identity_user_facing_label_path() {
+  PATH_VALUE="$1"
+
+  case "$PATH_VALUE" in
+    */build/*|*/.gradle/*) return 1 ;;
+    *.png|*.webp|*.jpg|*.jpeg|*.gif) return 1 ;;
+    */assets/*|*/res/raw/*|*/androidTest/*|*/androidUnitTest/*) return 1 ;;
+    */src/test/*|*/src/*Test/*|*/src/*/data/*) return 1 ;;
+    */src/*/repository/*|*/src/*/network/*) return 1 ;;
+  esac
+
+  case "$PATH_VALUE" in
+    */AndroidManifest.xml) return 0 ;;
+    */src/*/res/values/*.xml) return 0 ;;
+    */src/*/res/xml/*.xml) return 0 ;;
+    */src/*/ui/*.kt|*/src/*/ui/*.java) return 0 ;;
+    */src/*/ui/*/*.kt|*/src/*/ui/*/*.java) return 0 ;;
+    */src/*/presentation/*.kt|*/src/*/presentation/*.java) return 0 ;;
+    */src/*/presentation/*/*.kt|*/src/*/presentation/*/*.java) return 0 ;;
+    */src/*/*Activity.kt|*/src/*/*Activity.java) return 0 ;;
+    */src/*/*Fragment.kt|*/src/*/*Fragment.java) return 0 ;;
+  esac
+
+  return 1
+}
+
 deny_source_term() {
   LABEL="$1"
   TERM="$2"
@@ -85,6 +111,45 @@ deny_source_term() {
   rm -f "$RAW_SCAN" "$FILTERED_SCAN"
 }
 
+deny_chrome_user_facing_label() {
+  LABEL="$1"
+  RAW_SCAN="/tmp/n1b-identity-chrome-raw.$$"
+  FILTERED_SCAN="/tmp/n1b-identity-chrome-scan.$$"
+
+  if grep -R -n -I \
+      --exclude-dir=build \
+      --exclude-dir=.gradle \
+      --exclude='*.png' \
+      --exclude='*.webp' \
+      --exclude='*.jpg' \
+      --exclude='*.jpeg' \
+      --exclude='*.gif' \
+      -F "Chrome" "$APP_ROOT" >"$RAW_SCAN" 2>/dev/null; then
+    : >"$FILTERED_SCAN"
+    while IFS= read -r LINE; do
+      PATH_VALUE="${LINE%%:*}"
+      if ! identity_user_facing_label_path "$PATH_VALUE"; then
+        continue
+      fi
+      if identity_allowed_protocol_line "Chrome" "$LINE"; then
+        continue
+      fi
+      printf '%s\n' "$LINE" >>"$FILTERED_SCAN"
+    done <"$RAW_SCAN"
+
+    if [ -s "$FILTERED_SCAN" ]; then
+      record_failure "$LABEL" "FORBIDDEN_USER_FACING_LABEL=Chrome"
+      sed -n '1,20p' "$FILTERED_SCAN"
+    else
+      pass "$LABEL"
+    fi
+  else
+    pass "$LABEL"
+  fi
+
+  rm -f "$RAW_SCAN" "$FILTERED_SCAN"
+}
+
 say "===== N1B SABLE IDENTITY STATIC QUALIFIER ====="
 say "REPO=$REPO"
 say "APP_ROOT=$APP_ROOT"
@@ -97,6 +162,7 @@ say "ADB_COMMANDS_RUN=NO"
 say "FASTBOOT_COMMANDS_RUN=NO"
 say "PUBLIC_RELEASE=NO"
 say "N1B_IDENTITY_CHROME_USER_AGENT_COMPATIBILITY_EXEMPTION=YES"
+say "N1B_IDENTITY_CHROME_UI_LABEL_SCOPE=YES"
 
 if [ ! -f "$APP_ROOT/settings.gradle.kts" ]; then
   record_failure "N1B_IDENTITY_GRADLE_SETTINGS" \
@@ -121,7 +187,7 @@ fi
 if [ -d "$APP_ROOT" ]; then
   deny_source_term "N1B_IDENTITY_NO_GRAPHENEOS_BRANDING" "GrapheneOS"
   deny_source_term "N1B_IDENTITY_NO_GRAPHENE_OS_BRANDING" "Graphene OS"
-  deny_source_term "N1B_IDENTITY_NO_CHROME_LABEL" "Chrome"
+  deny_chrome_user_facing_label "N1B_IDENTITY_NO_CHROME_LABEL"
 fi
 
 say "===== N1B SABLE IDENTITY STATIC RESULT ====="
