@@ -1,76 +1,107 @@
 # N1B Setup Wizard module ownership
 
-Status: **owner required before implementation claim**
+Status: **dual-lane owner required before implementation claim**
 
 This document defines how PR #140 hands off N1B Setup Wizard work to the next
-implementation PR. It does not add a Setup Wizard module by itself.
+implementation PR. It does not add or modify a Setup Wizard module by itself.
+
+The ownership model is now split by lane:
 
 ```text
 N1B_SETUP_WIZARD_MODULE_OWNERSHIP=YES
-SETUP_WIZARD_OWNER_REQUIRED=YES
-SETUP_WIZARD_OWNER_DISCOVERY_DONE=YES
-SETUP_WIZARD_IMPLEMENTATION_ABSENT=YES
-SETUP_WIZARD_NEXT_PR_MUST_ADD_OR_BIND_OWNER=YES
+SETUP_WIZARD_PIXEL_GRAPHENE_OWNER=GRAPHENEOS_SETUPWIZARD2
+SETUP_WIZARD_PIXEL_GRAPHENE_OWNER_FOUND=YES
+SETUP_WIZARD_PIXEL_MODULE_NAME=SetupWizard2
+SETUP_WIZARD_PIXEL_PACKAGE_NAME=app.grapheneos.setupwizard
+PANTHER_SETUP_WIZARD_BEHAVIOR_PRESERVED=YES
+SABLE_PRIVATE_SETUPWIZARD_CODE_OWNER_FOUND=NO
+SABLE_SETUPWIZARD_LOCAL_OWNER_REQUIRED_FOR_TITAN_EXTENSION=YES
+TITAN2_KEYBOARD_FIRST_SETUP_EXTENSION_REQUIRED=YES
+SETUP_WIZARD_NEXT_PR_MUST_BIND_GRAPHENEOS_BASE_OR_ADD_PROFILE_EXTENSION_OWNER=YES
 ```
 
-## Required owner record
+## Pixel / Graphene owner record
 
-The implementation PR must add a machine-readable owner block to this file or a
-successor implementation document:
+Pixel / Graphene-supported devices should continue to use the GrapheneOS
+SetupWizard2 base unless a separate explicit Panther/Pixel PR changes that.
 
 ```text
-SETUP_WIZARD_OWNER_STATUS=IMPLEMENTED
-SETUP_WIZARD_MODULE_PATH=<path>
-SETUP_WIZARD_BUILD_TARGET=<target>
-SETUP_WIZARD_BUILD_COMMAND=<exact_command>
-SETUP_WIZARD_PROFILE_GATE=<profile_gate>
-SETUP_WIZARD_PANTHER_DEFAULTS_CHANGED=<YES|NO>
-SETUP_WIZARD_TITAN2_KEYBOARD_CHECK=<YES|NO>
+PIXEL_SETUP_OWNER_STATUS=UPSTREAM_GRAPHENEOS
+PIXEL_SETUP_OWNER_REPO=GrapheneOS/platform_packages_apps_SetupWizard2
+PIXEL_SETUP_MODULE=SetupWizard2
+PIXEL_SETUP_PACKAGE=app.grapheneos.setupwizard
+PIXEL_SETUP_ENTRY=WelcomeActivity
+PIXEL_SETUP_PROVISION_OVERRIDE=Provision
+PIXEL_SETUP_SECURITY_SEMANTICS_PRESERVED=YES
+PIXEL_SETUP_BRANDING_OVERLAY_ONLY_WHERE_VALIDATED=YES
+PIXEL_SETUP_KEYBOARD_FIRST_EXTENSION_DEFAULT=NO
+```
+
+## Titan extension owner record
+
+The implementation PR must add a machine-readable Titan extension owner block to
+this file or a successor implementation document:
+
+```text
+TITAN_SETUP_EXTENSION_OWNER_STATUS=IMPLEMENTED
+TITAN_SETUP_EXTENSION_MODULE_PATH=<path>
+TITAN_SETUP_EXTENSION_BUILD_TARGET=<target>
+TITAN_SETUP_EXTENSION_BUILD_COMMAND=<exact_command>
+TITAN_SETUP_EXTENSION_PROFILE_GATE=<profile_gate>
+TITAN_SETUP_EXTENSION_GRAPHENE_BASE_BINDING=<wrapped|derived|not_used_with_reason>
+TITAN_SETUP_EXTENSION_PANTHER_DEFAULTS_CHANGED=<YES|NO>
+TITAN_SETUP_EXTENSION_KEYBOARD_CHECK=<YES|NO>
 ```
 
 Until that block exists, N1B image composition is blocked.
 
 ## Candidate implementation shapes
 
-### Option A — wrap an existing platform SetupWizard
+### Option A — profile-gate a GrapheneOS SetupWizard2 extension
 
-Use this only if the Android/Restless/AOSP workspace exposes a SetupWizard owner
-that can be safely overlaid or extended without destabilizing platform setup.
+Preferred when the Android/Restless workspace can consume or carry the
+GrapheneOS SetupWizard2 module.
 
 Required checks:
 
 ```text
-EXISTING_SETUPWIZARD_OWNER_CONFIRMED=YES
-OVERLAY_OR_EXTENSION_PATH_DEFINED=YES
+GRAPHENEOS_SETUPWIZARD2_BASE_BOUND=YES
+PROFILE_GATED_KEYBOARD_SCREEN_ADDED=YES
 PANTHER_TOUCH_DEFAULTS_UNCHANGED=YES
+PIXEL_GRAPHENE_SETUP_SECURITY_SEMANTICS_PRESERVED=YES
 KEYBOARD_FIRST_SCREEN_PROFILE_GATED=YES
 ```
 
-### Option B — add a Sable-owned setup wizard module
+### Option B — derive a Sable setup wizard from GrapheneOS SetupWizard2 for Titan
 
-Use this if no safe platform owner exists in the integration repo.
+Use this if a direct extension is too risky for the Titan / Restless substrate,
+but the GrapheneOS setup/security semantics can still be preserved.
 
 Required checks:
 
 ```text
+SABLE_DERIVED_SETUPWIZARD_MODULE_ADDED=YES
+GRAPHENEOS_SETUPWIZARD2_PROVENANCE_RECORDED=YES
+LICENSE_AND_NOTICE_PRESERVED=YES
+PIXEL_GRAPHENE_SETUPWIZARD2_UNCHANGED=YES
+TITAN_PROFILE_EXTENSION_ONLY=YES
+SABLE_SETUPWIZARD_BUILD_COMMAND_DEFINED=YES
+```
+
+### Option C — add a Sable-owned setup wizard module only if the base cannot be used
+
+Use this only if the Titan / Restless substrate cannot safely consume
+GrapheneOS SetupWizard2 directly or as a derived module.
+
+Required checks:
+
+```text
+GRAPHENEOS_BASE_NOT_USABLE_REASON_RECORDED=YES
 SABLE_SETUPWIZARD_MODULE_ADDED=YES
 SABLE_SETUPWIZARD_MANIFEST_VALID=YES
 SABLE_SETUPWIZARD_BUILD_COMMAND_DEFINED=YES
 SABLE_SETUPWIZARD_NOT_ENABLED_ON_PANTHER_BY_ACCIDENT=YES
-```
-
-### Option C — profile-gate an existing first-run surface
-
-Use this only if the existing first-run surface is already product-owned and can
-host a keyboard-check screen without pretending to be full device provisioning.
-
-Required checks:
-
-```text
-FIRST_RUN_SURFACE_OWNER_CONFIRMED=YES
-KEYBOARD_CHECK_SCREEN_ADDED=YES
-LIMITATIONS_DOCUMENTED=YES
-N1B_FULL_SETUPWIZARD_GAP_RECORDED=YES
+SETUP_PARITY_GAPS_RECORDED=YES
 ```
 
 ## Required compile gates
@@ -83,6 +114,8 @@ SETUP_WIZARD_EXACT_BUILD_COMMAND_REQUIRED=YES
 SETUP_WIZARD_COMPILE_REQUIRED=YES
 SETUP_WIZARD_LINT_REQUIRED_WHERE_AVAILABLE=YES
 SETUP_WIZARD_UNIT_TESTS_REQUIRED_WHERE_AVAILABLE=YES
+PIXEL_GRAPHENE_SETUP_BUILD_REGRESSION_GATE_REQUIRED=YES
+TITAN_SETUP_EXTENSION_BUILD_GATE_REQUIRED=YES
 ```
 
 The implementation PR may add temporary per-module commands, but the command
