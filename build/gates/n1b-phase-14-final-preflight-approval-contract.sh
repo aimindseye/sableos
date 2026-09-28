@@ -90,11 +90,17 @@ if [[ -f "$QUALIFIER" ]]; then
   require_grep "DEVICE_CONTACT_AUTHORIZED=NO_OFFLINE_ONLY" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_OFFLINE_MARKER"
   require_grep "COMMAND_OUTPUTS_EXECUTABLE_COMMANDS=NO" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_NO_EXEC_MARKER"
   require_grep "JINN_LINEAGEOS22_ISSUES_REVIEWED=YES_SCOPE_LIMITED" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_JINN_MARKER"
+  require_grep "ATLASOS_REVIEWED=YES_SCOPE_LIMITED" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_ATLAS_MARKER"
+  require_grep "plan_record" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_PHASE12_SCHEMA_MARKER"
+  require_grep "status" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_PHASE13_SCHEMA_MARKER"
   require_grep "N1B_PHASE_14_FINAL_PREFLIGHT_APPROVAL" "$QUALIFIER" "N1B_PHASE_14_QUALIFIER_RESULT_MARKER"
 fi
 
 if [[ -f "$DOC" ]]; then
   require_grep "JINN_LINEAGEOS22_ISSUES_REVIEWED=YES_SCOPE_LIMITED" "$DOC" "N1B_PHASE_14_DOC_JINN_REVIEW_MARKER"
+  require_grep "ATLASOS_REVIEWED=YES_SCOPE_LIMITED" "$DOC" "N1B_PHASE_14_DOC_ATLAS_REVIEW_MARKER"
+  require_grep "PHASE_12_RESULT_SOURCE=sizing_decision.plan_record" "$DOC" "N1B_PHASE_14_DOC_PHASE12_SCHEMA_MARKER"
+  require_grep "PHASE_13_RESULT_SOURCE=status" "$DOC" "N1B_PHASE_14_DOC_PHASE13_SCHEMA_MARKER"
   require_grep "APPROVAL_READY_FOR_MANUAL_AUTHORIZATION" "$DOC" "N1B_PHASE_14_DOC_READY_STATE_MARKER"
   require_grep "APPROVAL_BLOCKED" "$DOC" "N1B_PHASE_14_DOC_BLOCKED_STATE_MARKER"
   require_grep "COMMAND_OUTPUTS_EXECUTABLE_COMMANDS=NO" "$DOC" "N1B_PHASE_14_DOC_NO_EXEC_MARKER"
@@ -131,21 +137,39 @@ JSON
 {"phase_result":"PASS_PLAN_REQUIRED"}
 JSON
   cat > "$FIXTURE_DIR/phase12.json" <<'JSON'
-{"phase_result":"PASS_REVIEW_REQUIRED"}
+{
+  "phase":"N1B_PHASE_12_LP_RESIZE_PLAN_DESIGN",
+  "sizing_decision": {
+    "plan_record":"PASS_REVIEW_REQUIRED",
+    "required_system_bytes":4096,
+    "system_current_bytes":1024,
+    "system_target_bytes":1048576,
+    "system_growth_bytes":1047552,
+    "super_headroom_estimate_bytes":4194304,
+    "remaining_super_headroom_estimate_bytes":3145728,
+    "flash_allowed":"NO",
+    "lp_mutation_allowed":"NO"
+  }
+}
 JSON
   cat > "$FIXTURE_DIR/phase13.json" <<'JSON'
 {
-  "phase_result":"PASS_REVIEW_REQUIRED",
-  "required_system_bytes":4096,
-  "system_current_bytes":1024,
-  "system_target_bytes":1048576,
-  "system_growth_bytes":1047552,
-  "super_headroom_estimate_bytes":4194304,
-  "remaining_super_headroom_estimate_bytes":3145728,
+  "phase":"N1B_PHASE_13_FLASH_PLAN_PROPOSAL",
+  "status":"PASS_REVIEW_REQUIRED",
+  "sizing": {
+    "required_system_bytes":4096,
+    "system_current_bytes":1024,
+    "system_target_bytes":1048576,
+    "system_growth_bytes":1047552,
+    "super_headroom_estimate_bytes":4194304,
+    "remaining_super_headroom_estimate_bytes":3145728
+  },
   "flash_allowed":"NO",
   "lp_mutation_allowed":"NO",
   "avb_mutation_allowed":"NO",
-  "command_outputs_executable_commands":"NO"
+  "authorization_boundary": {
+    "command_outputs_executable_commands":"NO"
+  }
 }
 JSON
   cat > "$FIXTURE_DIR/artifact.json" <<JSON
@@ -167,6 +191,18 @@ JSON
       echo "N1B_PHASE_14_FIXTURE_READY_RESULT=PASS"
     else
       echo "N1B_PHASE_14_FIXTURE_READY_RESULT=FAIL"
+      failures=$((failures + 1))
+    fi
+    if grep -Fq "N1B_PHASE_14_PHASE12_RESULT_DETECTED=PASS_REVIEW_REQUIRED" "$FIXTURE_DIR/fixture.log"; then
+      echo "N1B_PHASE_14_FIXTURE_PHASE12_SCHEMA=PASS"
+    else
+      echo "N1B_PHASE_14_FIXTURE_PHASE12_SCHEMA=FAIL"
+      failures=$((failures + 1))
+    fi
+    if grep -Fq "N1B_PHASE_14_PHASE13_RESULT_DETECTED=PASS_REVIEW_REQUIRED" "$FIXTURE_DIR/fixture.log"; then
+      echo "N1B_PHASE_14_FIXTURE_PHASE13_SCHEMA=PASS"
+    else
+      echo "N1B_PHASE_14_FIXTURE_PHASE13_SCHEMA=FAIL"
       failures=$((failures + 1))
     fi
   else
