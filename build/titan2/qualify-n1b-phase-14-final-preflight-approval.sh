@@ -65,6 +65,8 @@ echo "CURRENT_SABLEOS_REPO_REVIEWED=YES"
 echo "CURRENT_DEVICE_EVIDENCE_REVIEWED=YES_PHASE_10_11_12_13_OUTPUTS"
 echo "JINN_LINEAGEOS22_ISSUES_REVIEWED=YES_SCOPE_LIMITED"
 echo "JINN_PHASE14_USAGE=POST_CHANGE_ACCEPTANCE_RISK_SOURCE"
+echo "ATLASOS_REVIEWED=YES_SCOPE_LIMITED"
+echo "ATLASOS_PHASE14_USAGE=REFERENCE_ONLY_NOT_PRODUCT_PATH"
 echo "DEVICE_CONTACT_AUTHORIZED=NO_OFFLINE_ONLY"
 echo "ADB_COMMANDS_RUN=NO"
 echo "FASTBOOT_COMMANDS_RUN=NO"
@@ -186,12 +188,40 @@ def find_int(obj: Any, keys: list[str]) -> int:
     except ValueError:
         return 0
 
+
+def phase12_status(obj: Any) -> str:
+    # Actual Phase 12 schema stores the pass marker under sizing_decision.plan_record.
+    return find_value(
+        obj,
+        [
+            "n1b_phase_12_lp_resize_plan",
+            "phase_result",
+            "result",
+            "status",
+            "plan_record",
+        ],
+    )
+
+
+def phase13_status(obj: Any) -> str:
+    # Actual Phase 13 schema stores the pass marker under top-level status.
+    return find_value(
+        obj,
+        [
+            "n1b_phase_13_flash_plan_proposal",
+            "phase_result",
+            "result",
+            "status",
+            "proposal_status",
+        ],
+    )
+
 phase10a_contact = find_value(phase10a, ["device_contact_authorized"])
 phase10b_fastboot = find_value(phase10b, ["fastboot_commands_run"])
 phase10b_is_userspace = find_value(phase10b, ["fastbootd_preflight", "is_userspace"])
-phase11_result = find_value(phase11, ["n1b_phase_11_lp_super_sizing", "phase_result", "result"])
-phase12_result = find_value(phase12, ["n1b_phase_12_lp_resize_plan", "phase_result", "result"])
-phase13_result = find_value(phase13, ["n1b_phase_13_flash_plan_proposal", "phase_result", "result"])
+phase11_result = find_value(phase11, ["n1b_phase_11_lp_super_sizing", "phase_result", "result", "status"])
+phase12_result = phase12_status(phase12)
+phase13_result = phase13_status(phase13)
 
 required_system_bytes = find_int(phase13, ["required_system_bytes", "n1b_phase_13_required_system_bytes"])
 system_current_bytes = find_int(phase13, ["system_current_bytes", "n1b_phase_13_system_current_bytes"])
@@ -219,11 +249,10 @@ if system_image_path is not None and system_image_path.is_file():
     system_image_sha256 = h.hexdigest()
     system_image_bytes = system_image_path.stat().st_size
 
-# Conservative readiness checks. These are intentionally redundant: if a generated
-# JSON schema changes, a missing value blocks rather than guessing readiness.
-if "PASS" not in phase12_result and "REVIEW_REQUIRED" not in phase12_result:
+# Conservative readiness checks. Missing values block rather than guessing.
+if not ("PASS" in phase12_result and "REVIEW_REQUIRED" in phase12_result):
     failures.append("PHASE12_RESULT_NOT_PASS_REVIEW_REQUIRED")
-if "PASS" not in phase13_result and "REVIEW_REQUIRED" not in phase13_result:
+if not ("PASS" in phase13_result and "REVIEW_REQUIRED" in phase13_result):
     failures.append("PHASE13_RESULT_NOT_PASS_REVIEW_REQUIRED")
 if required_system_bytes <= 0:
     failures.append("REQUIRED_SYSTEM_BYTES_MISSING")
@@ -268,9 +297,7 @@ post_change_acceptance = [
     "ota_update_surface_not_claimed",
 ]
 
-final_state = (
-    "APPROVAL_BLOCKED" if failures else "APPROVAL_READY_FOR_MANUAL_AUTHORIZATION"
-)
+final_state = "APPROVAL_BLOCKED" if failures else "APPROVAL_READY_FOR_MANUAL_AUTHORIZATION"
 
 result = {
     "phase": "N1B_PHASE_14_FINAL_PREFLIGHT_APPROVAL",
@@ -279,6 +306,8 @@ result = {
     "source_map_reviewed": "YES",
     "jinn_lineageos22_issues_reviewed": "YES_SCOPE_LIMITED",
     "jinn_phase14_usage": "POST_CHANGE_ACCEPTANCE_RISK_SOURCE",
+    "atlasos_reviewed": "YES_SCOPE_LIMITED",
+    "atlasos_phase14_usage": "REFERENCE_ONLY_NOT_PRODUCT_PATH",
     "device_contact_authorized": "NO_OFFLINE_ONLY",
     "adb_commands_run": "NO",
     "fastboot_commands_run": "NO",
@@ -299,6 +328,14 @@ result = {
         "build_source": manifest_build_source,
         "primary_artifact": manifest_primary_artifact,
     },
+    "phase_results_detected": {
+        "phase10a_device_contact": phase10a_contact,
+        "phase10b_fastboot_commands_run": phase10b_fastboot,
+        "phase10b_fastbootd_preflight": phase10b_is_userspace,
+        "phase11_result": phase11_result,
+        "phase12_result": phase12_result,
+        "phase13_result": phase13_result,
+    },
     "computed": {
         "required_system_bytes": required_system_bytes,
         "system_current_bytes": system_current_bytes,
@@ -317,6 +354,8 @@ result = {
 
 json_out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
 
+print(f"N1B_PHASE_14_PHASE12_RESULT_DETECTED={phase12_result}")
+print(f"N1B_PHASE_14_PHASE13_RESULT_DETECTED={phase13_result}")
 print(f"N1B_PHASE_14_REQUIRED_SYSTEM_BYTES={required_system_bytes}")
 print(f"N1B_PHASE_14_SYSTEM_CURRENT_BYTES={system_current_bytes}")
 print(f"N1B_PHASE_14_SYSTEM_TARGET_BYTES={system_target_bytes}")
