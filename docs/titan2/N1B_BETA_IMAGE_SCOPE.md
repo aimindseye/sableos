@@ -1,0 +1,154 @@
+# N1B Titan 2 beta image scope
+
+Status: **approved planning contract / documentation-only**
+
+N1B is the first image intended to evaluate the keyboard-first SableOS UX on
+Titan 2. It is not a production release, not a public reproducibility claim, and
+not a flash authorization.
+
+```text
+N1B_TITAN2_BETA_IMAGE_SCOPE=YES
+DOCUMENTATION_ONLY=YES
+BUILD_CODE_CHANGED=NO
+DEVICE_CODE_CHANGED=NO
+IMAGE_BUILD_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+PUBLIC_RELEASE=NO
+PRODUCTION_SIGNING=NO
+```
+
+## Definition
+
+```text
+N1B = Android 16 Restless R7E substrate
+    + approved platform_sable keyboard-first system UX contracts
+    + current SableOS app/product implementation
+    + Titan 2 device gates
+    + issue-bound acceptance matrix
+    + artifact qualification
+```
+
+N1B is a **keyboard-first SableOS system experience candidate**, not just a
+launcher or app bundle.
+
+## Required system surfaces
+
+```text
+Setup Wizard / First Boot
+Lockscreen / Secure Entry
+Quick Settings / Notification Shade
+Sable Start / Home
+All Apps / app privacy summaries
+Sable Command / Search
+Sable Hub / Priority / Messages / Calls / Mail / Notifications / People
+Phone / Dialer
+Contacts / People
+Messages / Conversations
+Browser / WebView
+Mail / Calendar
+Reader / Text Reader
+Media / Gallery
+Camera
+Weather and bounded utilities where included
+Settings / profile-aware policy surfaces
+```
+
+## Required first-run and input behavior
+
+```text
+KEYBOARD_FIRST_ONBOARDING=YES
+PHYSICAL_KEYBOARD_VERIFICATION=YES
+CRITICAL_TEXT_ENTRY_GATE=YES
+SOFTWARE_KEYBOARD_FALLBACK=YES
+ALT_SYM_FN_TEXT_ENTRY=YES
+WIFI_PASSWORD_ENTRY=YES
+LOCK_METHOD_SETUP=YES
+NO_SETUP_DEAD_ENDS=YES
+```
+
+## Required product UX behavior
+
+```text
+SABLE_START_KEYBOARD_FIRST=YES
+VISIBLE_FOCUS_REQUIRED=YES
+TYPE_TO_LAUNCH=YES
+SABLE_COMMAND_SEARCH=YES
+ALL_APPS_PRIVACY_SUMMARY=YES
+APP_FAVORITES_SORTING=YES
+HUB_PEOPLE_FAVORITES=YES
+HUB_APP_FAVORITES=YES
+DUPLICATE_MESSAGES_VISIBLE=NO
+BROWSER_LABEL_ACCURATE=YES
+VANADIUM_LABEL_IF_VANADIUM_BACKED=YES
+CHROME_LABEL_FOR_VANADIUM=NO
+SABLE_APPS_FOLLOW_SYSTEM_THEME=YES
+```
+
+## Required substrate and device posture
+
+```text
+ANDROID_RELEASE=16
+ANDROID_VERSION_TAG=bp4a
+BUILD_ID=BP4A.251205.006
+BASELINE=N0B_R7E_RESTLESS_INTERNAL_CANDIDATE
+N0C_ANDROID17_PARALLEL_RESEARCH=YES
+ANDROID17_BASELINE_PIVOT=NO
+FIRST_SABLE_BOOT=NOT_RUN_UNTIL_EXPLICIT_DEVICE_ACTION
+```
+
+## Included only as gates/policy in N1B
+
+```text
+SABLE_KEYBOARD_IME_BOUNDARY
+KF1_DEVICE_PROFILE
+KF2_KEYBOARD_POLICY
+TITAN2_KEYBOARD_DEFAULTS
+DEVELOPER_WORK_PROFILE_TOOLS_POLICY
+SABLE_TOOLS_READ_ONLY_DIAGNOSTICS_POSTURE
+APP_DISPLAY_COMPATIBILITY_PROFILES
+NETWORK_MANAGER_AUTHORITY
+PRIVATE_SPACE_WORK_PROFILE_BOUNDARY
+CAMERA2_FIRST_CAMERA_POLICY
+SUBSCREEN_POLICY
+FM_RADIO_HARDWARE_GATE
+IR_REMOTE_HARDWARE_GATE
+```
+
+## Explicitly not included by default in N1B
+
+```text
+TITAN_TOUCHPAD_DAEMON_ENABLED=NO
+UNVALIDATED_KEYLAYOUT_MUTATION=NO
+KEYBOARD_BACKLIGHT_RUNTIME_CONTROL_UNLESS_VALIDATED=NO
+SUBSCREEN_ACTIVE_RUNTIME_UNLESS_VALIDATED=NO
+SABLE_TERMINAL_DEFAULT_PERSONAL_PROFILE=NO
+SABLE_SSH_DEFAULT_PERSONAL_PROFILE=NO
+OPAQUE_GCAM_BINARY_IMPORT=NO
+ANDROID17_BASELINE_PIVOT=NO
+PUBLIC_FLASH_SCRIPT=NO
+PRODUCTION_SIGNING=NO
+```
+
+## Image readiness rule
+
+N1B image build is blocked unless:
+
+```text
+N1B_STAGE_A_CODE_BUILD=PASS
+N1B_STAGE_B_PHYSICAL_UX=PASS
+N1B_STAGE_C_FULL_CI=PASS
+```
+
+## Acceptance
+
+```text
+SETUP_WIZARD_FIRST_BOOT=REQUIRED
+N1B_TITAN2_BETA_IMAGE_SCOPE=PASS
+N1B_SYSTEM_SURFACES_BOUND=YES
+N1B_KEYBOARD_FIRST_REQUIREMENTS_BOUND=YES
+N1B_APP_PRODUCT_REQUIREMENTS_BOUND=YES
+N1B_DEVICE_GATES_BOUND=YES
+PUBLIC_RELEASE=NO
+FLASH_AUTHORIZED=NO
+```
