@@ -131,6 +131,19 @@ Host tools live outside the build farm under:
 GitHub remains source/review/issues/documentation infrastructure. Release-critical
 qualification is local-direct on the controlled build host.
 
+For Titan 2 N1B, full local CI must be run with explicit device/release context:
+
+```bash
+SABLEOS_DEVICE=titan2 \
+SABLEOS_RELEASE_VERSION=N1B \
+bash build/local-ci/run.sh full
+```
+
+The STATIC stage runs `build/gates/sable-pipeline-contract.sh`. That contract is
+now responsible for binding the Titan2/N1B static contract family through
+`build/gates/n1b-titan2-local-ci-static-contracts.sh`, while preserving no image,
+no device-contact, no flash and no public-release scope.
+
 ## Validation discipline
 
 Before providing or accepting a build/script deliverable, validate at minimum:
