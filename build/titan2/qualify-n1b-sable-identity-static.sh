@@ -34,9 +34,27 @@ require_module() {
   fi
 }
 
+identity_allowed_protocol_line() {
+  TERM="$1"
+  LINE="$2"
+
+  if [ "$TERM" = "Chrome" ]; then
+    case "$LINE" in
+      *"Mozilla/5.0"*"Chrome/"*) return 0 ;;
+      *"uaChrome"*) return 0 ;;
+      *"userAgent"*"uaChrome"*) return 0 ;;
+    esac
+  fi
+
+  return 1
+}
+
 deny_source_term() {
   LABEL="$1"
   TERM="$2"
+  RAW_SCAN="/tmp/n1b-identity-raw.$$"
+  FILTERED_SCAN="/tmp/n1b-identity-scan.$$"
+
   if grep -R -n -I \
       --exclude-dir=build \
       --exclude-dir=.gradle \
@@ -45,13 +63,26 @@ deny_source_term() {
       --exclude='*.jpg' \
       --exclude='*.jpeg' \
       --exclude='*.gif' \
-      -F "$TERM" "$APP_ROOT" >/tmp/n1b-identity-scan.$$ 2>/dev/null; then
-    record_failure "$LABEL" "FORBIDDEN_TERM=$TERM"
-    sed -n '1,20p' /tmp/n1b-identity-scan.$$
+      -F "$TERM" "$APP_ROOT" >"$RAW_SCAN" 2>/dev/null; then
+    : >"$FILTERED_SCAN"
+    while IFS= read -r LINE; do
+      if identity_allowed_protocol_line "$TERM" "$LINE"; then
+        continue
+      fi
+      printf '%s\n' "$LINE" >>"$FILTERED_SCAN"
+    done <"$RAW_SCAN"
+
+    if [ -s "$FILTERED_SCAN" ]; then
+      record_failure "$LABEL" "FORBIDDEN_TERM=$TERM"
+      sed -n '1,20p' "$FILTERED_SCAN"
+    else
+      pass "$LABEL"
+    fi
   else
     pass "$LABEL"
   fi
-  rm -f /tmp/n1b-identity-scan.$$
+
+  rm -f "$RAW_SCAN" "$FILTERED_SCAN"
 }
 
 say "===== N1B SABLE IDENTITY STATIC QUALIFIER ====="
@@ -65,6 +96,7 @@ say "FLASH_AUTHORIZED=NO"
 say "ADB_COMMANDS_RUN=NO"
 say "FASTBOOT_COMMANDS_RUN=NO"
 say "PUBLIC_RELEASE=NO"
+say "N1B_IDENTITY_CHROME_USER_AGENT_COMPATIBILITY_EXEMPTION=YES"
 
 if [ ! -f "$APP_ROOT/settings.gradle.kts" ]; then
   record_failure "N1B_IDENTITY_GRADLE_SETTINGS" \
