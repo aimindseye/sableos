@@ -41,7 +41,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions(),
         ) {
-            refreshGeneration.value += 1
+            refreshLiveSurface()
         }
 
     private lateinit var launcherApps: LauncherApps
@@ -102,6 +102,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 onOpenSystemSettings = ::openSettings,
                 onOpenAppInfo = ::openAppInfo,
                 onRequestLivePermissions = ::requestLivePermissions,
+                onRefreshLive = ::refreshLiveSurface,
             )
         }
     }
@@ -111,8 +112,12 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         if (::launcherApps.isInitialized) {
             refreshInventory()
             applyCurrentSystemBars()
-            refreshGeneration.value += 1
+            refreshLiveSurface()
         }
+    }
+
+    private fun refreshLiveSurface() {
+        refreshGeneration.value += 1
     }
 
     private fun applyCurrentSystemBars() {
