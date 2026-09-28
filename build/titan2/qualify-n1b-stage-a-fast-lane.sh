@@ -186,6 +186,8 @@ resolve_android_sdk() {
   fi
 
   for CANDIDATE_ENTRY in \
+    "SABLE_R8_A2_TOOLCHAIN_ANDROID_SDK=/srv/data/sable-build/toolchains/r8-a2/android-sdk" \
+    "SABLE_HOST_TOOLS_R8_ANDROID_SDK=/srv/data/sable-host-tools/android/r8/sdk" \
     "SRV_DATA_ANDROID_SDK=/srv/data/android-sdk" \
     "SABLE_BUILD_ANDROID_SDK=/srv/data/sable-build/android-sdk" \
     "OPT_ANDROID_SDK=/opt/android-sdk" \
