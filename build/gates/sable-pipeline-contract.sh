@@ -84,10 +84,14 @@ else
 fi
 
 grep -Fq 'run_static_contract sable-pipeline' "$ROOT/build/local-ci/run.sh"
+echo "SABLE_PIPELINE_LOCAL_CI_RUNS_SABLE_PIPELINE=PASS"
 grep -Fq 'SABLEOS_DEVICE="${SABLEOS_DEVICE:-panther}"' "$ROOT/build/local-ci/run.sh"
+echo "SABLE_PIPELINE_LOCAL_CI_DEVICE_VARIABLE=PASS"
 grep -Fq 'SABLEOS_RELEASE_VERSION="${SABLEOS_RELEASE_VERSION:-R9}"' "$ROOT/build/local-ci/run.sh"
-grep -Fq 'N1B_LOCAL_CI_STATIC_CONTRACT_FULL_CI_READINESS=PASS' \
+echo "SABLE_PIPELINE_LOCAL_CI_RELEASE_VARIABLE=PASS"
+grep -Fq 'run_n1b_contract FULL_CI_READINESS' \
   "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
+echo "SABLE_PIPELINE_N1B_FULL_CI_SOURCE_BINDING=PASS"
 echo "SABLE_PIPELINE_N1B_LOCAL_CI_BINDING=PASS"
 
 SABLEOS_DEVICE=titan2 \
