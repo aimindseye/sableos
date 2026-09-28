@@ -55,9 +55,16 @@ HTTP protocol compatibility strings are not user-facing labels. OPDS and other
 network code may retain browser-shaped User-Agent strings when required for
 server compatibility, provided those strings are not exposed as Sable UI labels.
 
+Bundled data assets, dictionaries, fixture corpora, test data, protocol code, and
+repository/network implementation code are not Sable browser labels. The Chrome
+identity check is scoped to user-facing label surfaces such as manifests,
+`res/values`, UI/presentation source, activities, and fragments.
+
 ```text
 CHROME_HTTP_USER_AGENT_COMPATIBILITY_EXEMPTION=YES
 N1B_IDENTITY_CHROME_USER_AGENT_COMPATIBILITY_EXEMPTION=YES
+CHROME_STATIC_SCAN_SCOPE=USER_FACING_LABEL_SURFACES_ONLY
+N1B_IDENTITY_CHROME_UI_LABEL_SCOPE=YES
 ```
 
 This is a static source gate. It does not prove runtime labels, launcher icons,
