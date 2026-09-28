@@ -167,10 +167,28 @@ bash "$ROOT/build/titan2/qualify-n1b-phase-08-image-build-candidate-readiness.sh
   fi
   echo "N1B_PHASE_08_ENVSETUP_SOURCE=PASS_NOUNSET_COMPAT"
 
+  # AOSP/Restless lunch and m are shell functions from envsetup and are not
+  # nounset-safe. Keep the driver strict, but invoke those functions with
+  # nounset disabled and restore strict mode after each call.
+  set +e +u
   lunch "$LUNCH_TARGET"
+  lunch_rc=$?
+  set -euo pipefail
+  if [[ "$lunch_rc" -ne 0 ]]; then
+    echo "N1B_PHASE_08_IMAGE_BUILD=FAIL_LUNCH rc=$lunch_rc"
+    exit "$lunch_rc"
+  fi
+  echo "N1B_PHASE_08_LUNCH=PASS_NOUNSET_COMPAT target=$LUNCH_TARGET"
 
   echo "N1B_PHASE_08_BUILD_GOALS=systemimage,target-files-package,otatools"
+  set +e +u
   m -j"$JOBS" systemimage target-files-package otatools
+  build_rc=$?
+  set -euo pipefail
+  if [[ "$build_rc" -ne 0 ]]; then
+    echo "N1B_PHASE_08_IMAGE_BUILD=FAIL_BUILD rc=$build_rc"
+    exit "$build_rc"
+  fi
 )
 
 PRODUCT_OUT="$OUT_DIR/$DEFAULT_PRODUCT_OUT_REL"
