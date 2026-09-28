@@ -51,6 +51,15 @@ NO_USER_FACING_CHROME_LABEL_ON_SABLE_SURFACES=YES
 SABLE_APP_IDENTITY_STATIC_SCAN=REQUIRED
 ```
 
+HTTP protocol compatibility strings are not user-facing labels. OPDS and other
+network code may retain browser-shaped User-Agent strings when required for
+server compatibility, provided those strings are not exposed as Sable UI labels.
+
+```text
+CHROME_HTTP_USER_AGENT_COMPATIBILITY_EXEMPTION=YES
+N1B_IDENTITY_CHROME_USER_AGENT_COMPATIBILITY_EXEMPTION=YES
+```
+
 This is a static source gate. It does not prove runtime labels, launcher icons,
 role resolution, browser provider identity, or physical UX.
 
