@@ -6,6 +6,7 @@ EVIDENCE_DIR="${EVIDENCE_DIR:-$REPO/out/n1b-stage-a-fast-lane-evidence}"
 RUN_GRADLE_BUILDS="${RUN_GRADLE_BUILDS:-YES}"
 REQUIRE_SETUPWIZARD_SOURCE="${REQUIRE_SETUPWIZARD_SOURCE:-NO}"
 SETUPWIZARD2_SOURCE="${SETUPWIZARD2_SOURCE:-}"
+N1A_EVIDENCE_DIR="${N1A_EVIDENCE_DIR:-}"
 
 FAILURES=0
 FIRST_FAILURE=""
@@ -31,10 +32,6 @@ pass() {
   say "$1=PASS"
 }
 
-warn() {
-  say "$1=WARN"
-}
-
 require_file() {
   NAME="$1"
   PATH_VALUE="$2"
@@ -45,13 +42,53 @@ require_file() {
   fi
 }
 
-sdk_candidate_valid() {
+sdk_candidate_status() {
   CANDIDATE="$1"
-  [ -n "$CANDIDATE" ] || return 1
-  [ -d "$CANDIDATE" ] || return 1
-  [ -d "$CANDIDATE/platforms" ] || return 1
-  [ -d "$CANDIDATE/build-tools" ] || return 1
+  if [ -z "$CANDIDATE" ]; then
+    printf '%s\n' "UNSET"
+    return 1
+  fi
+  if [ ! -d "$CANDIDATE" ]; then
+    printf '%s\n' "MISSING_DIR"
+    return 1
+  fi
+
+  MISSING=""
+  if [ ! -d "$CANDIDATE/platforms" ]; then
+    MISSING="${MISSING}platforms,"
+  fi
+  if [ ! -d "$CANDIDATE/build-tools" ]; then
+    MISSING="${MISSING}build-tools,"
+  fi
+
+  if [ -n "$MISSING" ]; then
+    MISSING="${MISSING%,}"
+    printf '%s\n' "MISSING_$MISSING"
+    return 1
+  fi
+
+  printf '%s\n' "PASS"
   return 0
+}
+
+try_sdk_candidate() {
+  LABEL="$1"
+  CANDIDATE="$2"
+  STATUS="$(sdk_candidate_status "$CANDIDATE")"
+
+  say "N1B_STAGE_A_SDK_CANDIDATE_${LABEL}_PATH=${CANDIDATE:-UNSET}"
+  say "N1B_STAGE_A_SDK_CANDIDATE_${LABEL}=$STATUS"
+
+  if [ "$STATUS" = "PASS" ]; then
+    ANDROID_HOME_EFFECTIVE="$CANDIDATE"
+    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
+    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
+    ANDROID_SDK_READY=YES
+    return 0
+  fi
+
+  return 1
 }
 
 local_properties_sdk_dir() {
@@ -64,60 +101,107 @@ local_properties_sdk_dir() {
     | tail -1
 }
 
-resolve_android_sdk() {
-  say "===== N1B STAGE A ANDROID SDK PREFLIGHT ====="
+n1a_result_file() {
+  if [ -z "$N1A_EVIDENCE_DIR" ] || [ ! -d "$N1A_EVIDENCE_DIR" ]; then
+    return 1
+  fi
+  find "$N1A_EVIDENCE_DIR" \
+    -maxdepth 1 \
+    -type f \
+    \( -name '*result*.txt' -o -name '99-*.txt' \) \
+    -print \
+    | sort \
+    | tail -1
+}
 
-  if sdk_candidate_valid "${ANDROID_HOME:-}"; then
-    ANDROID_HOME_EFFECTIVE="$ANDROID_HOME"
-    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
-    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
-    pass "N1B_STAGE_A_ANDROID_HOME"
-    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
-    ANDROID_SDK_READY=YES
+n1a_result_field() {
+  KEY="$1"
+  RESULT_FILE="$2"
+  if [ -z "$RESULT_FILE" ] || [ ! -f "$RESULT_FILE" ]; then
+    return 1
+  fi
+  awk -F= -v key="$KEY" '$1 == key {print substr($0, index($0, "=") + 1)}' \
+    "$RESULT_FILE" \
+    | tail -1
+}
+
+probe_n1a_sdk_candidates() {
+  RESULT_FILE="$(n1a_result_file 2>/dev/null || true)"
+  if [ -z "$RESULT_FILE" ]; then
+    say "N1B_STAGE_A_N1A_EVIDENCE_BOUND=NO"
+    return 1
+  fi
+
+  say "N1B_STAGE_A_N1A_EVIDENCE_BOUND=YES"
+  say "N1B_STAGE_A_N1A_RESULT_FILE=$RESULT_FILE"
+  say "N1B_STAGE_A_N1A_BUILD_ENVIRONMENT_NOTE=AOSP_Soong_build_success_does_not_imply_standalone_Gradle_SDK"
+
+  SRC_DIR_FROM_N1A="$(n1a_result_field SRC_DIR "$RESULT_FILE" 2>/dev/null || true)"
+  R7_ROOT_FROM_N1A="$(n1a_result_field R7_ROOT "$RESULT_FILE" 2>/dev/null || true)"
+  OUT_DIR_FROM_N1A="$(n1a_result_field OUT_DIR "$RESULT_FILE" 2>/dev/null || true)"
+
+  [ -n "$SRC_DIR_FROM_N1A" ] && say "N1B_STAGE_A_N1A_SRC_DIR=$SRC_DIR_FROM_N1A"
+  [ -n "$R7_ROOT_FROM_N1A" ] && say "N1B_STAGE_A_N1A_R7_ROOT=$R7_ROOT_FROM_N1A"
+  [ -n "$OUT_DIR_FROM_N1A" ] && say "N1B_STAGE_A_N1A_OUT_DIR=$OUT_DIR_FROM_N1A"
+
+  if try_sdk_candidate "N1A_SRC_PREBUILTS_SDK" "$SRC_DIR_FROM_N1A/prebuilts/sdk"; then
+    return 0
+  fi
+  if try_sdk_candidate "N1A_SRC_PREBUILTS_FULLSDK" "$SRC_DIR_FROM_N1A/prebuilts/fullsdk/linux"; then
+    return 0
+  fi
+  if try_sdk_candidate "N1A_OUT_HOST_SDK" "$OUT_DIR_FROM_N1A/host/linux-x86/sdk"; then
+    return 0
+  fi
+  if try_sdk_candidate "N1A_R7_ROOT_ANDROID_SDK" "$R7_ROOT_FROM_N1A/android-sdk"; then
     return 0
   fi
 
-  if sdk_candidate_valid "${ANDROID_SDK_ROOT:-}"; then
-    ANDROID_HOME_EFFECTIVE="$ANDROID_SDK_ROOT"
-    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
-    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
-    pass "N1B_STAGE_A_ANDROID_SDK_ROOT"
-    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
-    ANDROID_SDK_READY=YES
+  return 1
+}
+
+resolve_android_sdk() {
+  say "===== N1B STAGE A ANDROID SDK PREFLIGHT ====="
+
+  if try_sdk_candidate "ANDROID_HOME" "${ANDROID_HOME:-}"; then
+    return 0
+  fi
+
+  if try_sdk_candidate "ANDROID_SDK_ROOT" "${ANDROID_SDK_ROOT:-}"; then
     return 0
   fi
 
   SDK_DIR_FROM_LOCAL="$(local_properties_sdk_dir 2>/dev/null || true)"
-  if sdk_candidate_valid "$SDK_DIR_FROM_LOCAL"; then
-    ANDROID_HOME_EFFECTIVE="$SDK_DIR_FROM_LOCAL"
-    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
-    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
-    pass "N1B_STAGE_A_LOCAL_PROPERTIES_SDK"
-    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
-    ANDROID_SDK_READY=YES
+  if try_sdk_candidate "LOCAL_PROPERTIES" "$SDK_DIR_FROM_LOCAL"; then
     return 0
   fi
 
-  for CANDIDATE in \
-    /srv/data/android-sdk \
-    /srv/data/sable-build/android-sdk \
-    /opt/android-sdk \
-    "$HOME/Android/Sdk" \
-    "$HOME/Library/Android/sdk"
+  if [ -n "$N1A_EVIDENCE_DIR" ]; then
+    say "N1B_STAGE_A_N1A_EVIDENCE_DIR=$N1A_EVIDENCE_DIR"
+    if probe_n1a_sdk_candidates; then
+      return 0
+    fi
+  else
+    say "N1B_STAGE_A_N1A_EVIDENCE_BOUND=NO"
+  fi
+
+  for CANDIDATE_ENTRY in \
+    "SRV_DATA_ANDROID_SDK=/srv/data/android-sdk" \
+    "SABLE_BUILD_ANDROID_SDK=/srv/data/sable-build/android-sdk" \
+    "OPT_ANDROID_SDK=/opt/android-sdk" \
+    "HOME_ANDROID_SDK=$HOME/Android/Sdk" \
+    "HOME_LIBRARY_ANDROID_SDK=$HOME/Library/Android/sdk"
   do
-    if sdk_candidate_valid "$CANDIDATE"; then
-      ANDROID_HOME_EFFECTIVE="$CANDIDATE"
-      export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
-      export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
-      pass "N1B_STAGE_A_ANDROID_SDK_AUTO_DETECTED"
-      say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
-      ANDROID_SDK_READY=YES
+    LABEL="${CANDIDATE_ENTRY%%=*}"
+    CANDIDATE="${CANDIDATE_ENTRY#*=}"
+    if try_sdk_candidate "$LABEL" "$CANDIDATE"; then
       return 0
     fi
   done
 
+  say "N1B_STAGE_A_ANDROID_SDK_FAILURE_CLASS=GRADLE_SDK_PRECONDITION"
   record_failure "N1B_STAGE_A_ANDROID_SDK" \
-    "Define ANDROID_HOME, ANDROID_SDK_ROOT, or $APP_ROOT/local.properties sdk.dir before RUN_GRADLE_BUILDS=YES"
+    "No standalone Android SDK with platforms/ and build-tools/ was found; N1A AOSP/Soong build evidence is not sufficient for Gradle app builds"
   say "N1B_STAGE_A_GRADLE_BUILDS=SKIPPED_ANDROID_SDK_PRECONDITION"
   ANDROID_SDK_READY=NO
   return 1
@@ -144,6 +228,7 @@ say "APP_ROOT=$APP_ROOT"
 say "EVIDENCE_DIR=$EVIDENCE_DIR"
 say "RUN_GRADLE_BUILDS=$RUN_GRADLE_BUILDS"
 say "REQUIRE_SETUPWIZARD_SOURCE=$REQUIRE_SETUPWIZARD_SOURCE"
+say "N1A_EVIDENCE_DIR=${N1A_EVIDENCE_DIR:-NOT_PROVIDED}"
 say "SOURCE_MUTATION_AUTHORIZED=NO"
 say "BUILD_AUTHORIZED=YES_APPS_AND_STATIC_GATES_ONLY"
 say "IMAGE_BUILD_AUTHORIZED=NO"
