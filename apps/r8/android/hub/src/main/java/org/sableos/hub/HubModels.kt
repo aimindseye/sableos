@@ -138,10 +138,7 @@ object HubConnectedConversationReducer {
         val deduplicated = mutableListOf<ConnectedNotificationRecord>()
         records
             .sortedWith(
-                compareBy<ConnectedNotificationRecord>(
-                    ConnectedNotificationRecord::timestampMillis,
-                    ConnectedNotificationRecord::id,
-                ),
+                compareBy<ConnectedNotificationRecord>(ConnectedNotificationRecord::timestampMillis, ConnectedNotificationRecord::id),
             ).forEach { candidate ->
                 val duplicateIndex =
                     deduplicated.indexOfLast { existing ->
