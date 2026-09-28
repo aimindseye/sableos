@@ -6,6 +6,7 @@ import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.provider.ContactsContract
@@ -340,74 +341,107 @@ class HubRepository(
 
     private fun loadPeople(maxPeople: Int = MAX_CONTACT_PEOPLE): List<HubPerson> {
         val locale = Locale.getDefault()
-        val projection =
-            arrayOf(
-                ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                ContactsContract.CommonDataKinds.Phone.NUMBER,
-                CONTACT_STARRED_COLUMN,
-            )
         val result = linkedMapOf<String, HubPerson>()
 
         runCatching {
-            context
-                .contentResolver
-                .query(
-                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                    projection,
-                    null,
-                    null,
-                    CONTACTS_FAVORITES_FIRST_SORT,
-                )?.use { cursor ->
-                    val idIndex =
-                        cursor.getColumnIndexOrThrow(
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
-                        )
-                    val nameIndex =
-                        cursor.getColumnIndexOrThrow(
-                            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                        )
-                    val numberIndex =
-                        cursor.getColumnIndexOrThrow(
-                            ContactsContract.CommonDataKinds.Phone.NUMBER,
-                        )
-                    val favoriteIndex = cursor.getColumnIndex(CONTACT_STARRED_COLUMN)
-
-                    while (cursor.moveToNext() && result.size < maxPeople) {
-                        val number = cursor.getString(numberIndex).orEmpty()
-                        val normalized = normalizeAddress(number)
-                        if (normalized.isBlank() || result.containsKey(normalized)) {
-                            continue
-                        }
-
-                        result[normalized] =
-                            HubPerson(
-                                id = cursor.getLong(idIndex),
-                                displayName =
-                                    cursor
-                                        .getString(nameIndex)
-                                        ?.takeIf { it.isNotBlank() }
-                                        ?: number,
-                                phoneNumber = number,
-                                favorite =
-                                    favoriteIndex >= 0 &&
-                                        cursor.getInt(favoriteIndex) != 0,
-                            )
-                    }
-                }
+            queryContactPeople(maxPeople, result)
         }
 
-        return result.values
-            .sortedWith(
-                compareByDescending<HubPerson> {
-                    it.favorite
-                }.thenBy {
-                    it.displayName.lowercase(locale)
-                }.thenBy {
-                    normalizeAddress(it.phoneNumber)
-                },
+        return sortPeople(result.values, locale)
+    }
+
+    private fun queryContactPeople(
+        maxPeople: Int,
+        result: MutableMap<String, HubPerson>,
+    ) {
+        context
+            .contentResolver
+            .query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                contactPeopleProjection(),
+                null,
+                null,
+                CONTACTS_FAVORITES_FIRST_SORT,
+            )?.use { cursor ->
+                loadPeopleFromCursor(cursor, maxPeople, result)
+            }
+    }
+
+    private fun contactPeopleProjection(): Array<String> =
+        arrayOf(
+            ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+            ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+            ContactsContract.CommonDataKinds.Phone.NUMBER,
+            CONTACT_STARRED_COLUMN,
+        )
+
+    private fun loadPeopleFromCursor(
+        cursor: Cursor,
+        maxPeople: Int,
+        result: MutableMap<String, HubPerson>,
+    ) {
+        val indexes = contactColumnIndexes(cursor)
+        while (cursor.moveToNext() && result.size < maxPeople) {
+            addPersonFromCursor(cursor, indexes, result)
+        }
+    }
+
+    private fun contactColumnIndexes(cursor: Cursor): ContactColumnIndexes =
+        ContactColumnIndexes(
+            id =
+                cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Phone.CONTACT_ID,
+                ),
+            name =
+                cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ),
+            number =
+                cursor.getColumnIndexOrThrow(
+                    ContactsContract.CommonDataKinds.Phone.NUMBER,
+                ),
+            favorite = cursor.getColumnIndex(CONTACT_STARRED_COLUMN),
+        )
+
+    private fun addPersonFromCursor(
+        cursor: Cursor,
+        indexes: ContactColumnIndexes,
+        result: MutableMap<String, HubPerson>,
+    ) {
+        val number = cursor.getString(indexes.number).orEmpty()
+        val normalized = normalizeAddress(number)
+        if (normalized.isBlank() || result.containsKey(normalized)) {
+            return
+        }
+
+        result[normalized] =
+            HubPerson(
+                id = cursor.getLong(indexes.id),
+                displayName =
+                    cursor
+                        .getString(indexes.name)
+                        ?.takeIf { it.isNotBlank() }
+                        ?: number,
+                phoneNumber = number,
+                favorite =
+                    indexes.favorite >= 0 &&
+                        cursor.getInt(indexes.favorite) != 0,
             )
     }
+
+    private fun sortPeople(
+        people: Collection<HubPerson>,
+        locale: Locale,
+    ): List<HubPerson> =
+        people.sortedWith(
+            compareByDescending<HubPerson> {
+                it.favorite
+            }.thenBy {
+                it.displayName.lowercase(locale)
+            }.thenBy {
+                normalizeAddress(it.phoneNumber)
+            },
+        )
 
     private fun lookupContactName(address: String): String? {
         if (!hasPermission(Manifest.permission.READ_CONTACTS)) {
@@ -451,6 +485,13 @@ class HubRepository(
         PhoneNumberUtils
             .normalizeNumber(value)
             .ifBlank { value.trim() }
+
+    private data class ContactColumnIndexes(
+        val id: Int,
+        val name: Int,
+        val number: Int,
+        val favorite: Int,
+    )
 
     private companion object {
         const val MAX_SMS_MESSAGES = 1200
