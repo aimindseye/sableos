@@ -56,12 +56,49 @@ else
   CARGO_NETWORK_ARGS=(--offline)
 fi
 
+stage_failure_scan() {
+  local name="$1"
+  local start_line="$2"
+  local log="$EVIDENCE_DIR/local-ci.log"
+  local failures
+
+  [[ -f "$log" ]] || return 0
+
+  failures="$(
+    tail -n +"$start_line" "$log" \
+      | grep -nE \
+          'BUILD FAILED|FAILURE: Build failed|Execution failed for task|> Task .* FAILED|Compilation failed|MaxIssuesReached|Analysis failed with [0-9]+ weighted issues' \
+      || true
+  )"
+
+  if [[ -n "$failures" ]]; then
+    echo "SABLE_LOCAL_CI_STAGE_${name}_LOG_SCAN=FAIL"
+    printf '%s\n' "$failures"
+    return 1
+  fi
+
+  echo "SABLE_LOCAL_CI_STAGE_${name}_LOG_SCAN=PASS"
+}
+
 stage() {
   local name="$1"
   shift
+  local stage_start_line=1
+  local log="$EVIDENCE_DIR/local-ci.log"
+
+  if [[ -f "$log" ]]; then
+    stage_start_line="$(($(wc -l < "$log") + 1))"
+  fi
+
   echo
   echo "===== $name ====="
   if "$@"; then
+    if ! stage_failure_scan "$name" "$stage_start_line"; then
+      local scan_rc=$?
+      echo "SABLE_LOCAL_CI_STAGE_$name=FAIL rc=$scan_rc"
+      sable_checkpoint_fail "CI stage $name"
+      return "$scan_rc"
+    fi
     echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
     sable_checkpoint_pass "CI stage $name"
   else
@@ -294,10 +331,18 @@ run_quality() {
   export JAVA_HOME="$SABLE_JDK17"
   export PATH="$JAVA_HOME/bin:$PATH"
 
+  local android_quality_rc=0
   (
+    set -euo pipefail
     cd "$ROOT/apps/r8/android"
     ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :weather:detekt       :calendar:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :weather:ktlintCheck       :calendar:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
-  )
+  ) || android_quality_rc=$?
+
+  if [[ "$android_quality_rc" -ne 0 ]]; then
+    echo "SABLE_LOCAL_CI_QUALITY_ANDROID=FAIL rc=$android_quality_rc"
+    return "$android_quality_rc"
+  fi
+  echo "SABLE_LOCAL_CI_QUALITY_ANDROID=PASS"
 
   verify_shared_security_tools
   (
