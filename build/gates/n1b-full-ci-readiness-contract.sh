@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+
+ROOT="${1:-.}"
+FAILURES=0
+
+say() {
+  printf '%s\n' "$1"
+}
+
+pass() {
+  say "$1=PASS"
+}
+
+fail() {
+  say "$1=FAIL"
+  FAILURES=$((FAILURES + 1))
+}
+
+require_file() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  if [ -f "$ROOT/$PATH_VALUE" ]; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_PATH=$PATH_VALUE"
+  fi
+}
+
+require_marker() {
+  NAME="$1"
+  PATH_VALUE="$2"
+  MARKER="$3"
+  if grep -Fq "$MARKER" "$ROOT/$PATH_VALUE" 2>/dev/null; then
+    pass "$NAME"
+  else
+    fail "$NAME"
+    say "MISSING_MARKER=$MARKER"
+    say "IN_FILE=$PATH_VALUE"
+  fi
+}
+
+say "===== N1B FULL CI READINESS CONTRACT ====="
+say "ROOT=$ROOT"
+say "SOURCE_MUTATION_AUTHORIZED=NO"
+say "BUILD_AUTHORIZED=NO"
+say "IMAGE_BUILD_AUTHORIZED=NO"
+say "DEVICE_CONTACT_AUTHORIZED=NO"
+say "FLASH_AUTHORIZED=NO"
+say "ADB_COMMANDS_RUN=NO"
+say "FASTBOOT_COMMANDS_RUN=NO"
+say "PUBLIC_RELEASE=NO"
+say "PRODUCTION_SIGNING=NO"
+
+DOC="docs/titan2/N1B_FULL_CI_READINESS.md"
+QUALIFIER="build/titan2/qualify-n1b-full-ci-readiness.sh"
+SELF="build/gates/n1b-full-ci-readiness-contract.sh"
+
+require_file "N1B_FULL_CI_DOC" "$DOC"
+require_file "N1B_FULL_CI_QUALIFIER" "$QUALIFIER"
+require_file "N1B_FULL_CI_CONTRACT" "$SELF"
+
+require_marker "DOC_READINESS_MARKER" "$DOC" \
+  "N1B_FULL_CI_READINESS=YES"
+require_marker "DOC_PHASE_07_MARKER" "$DOC" \
+  "N1B_PHASE=07"
+require_marker "DOC_PREDECESSOR_PHASES" "$DOC" \
+  "N1B_PHASE_06_PHYSICAL_UX_READINESS_REQUIRED=YES"
+require_marker "DOC_REQUIRED_GATE_INVENTORY" "$DOC" \
+  "N1B_REQUIRED_GATE_FULL_CI=build/gates/n1b-full-ci-readiness-contract.sh"
+require_marker "DOC_REQUIRED_QUALIFIER_INVENTORY" "$DOC" \
+  "N1B_REQUIRED_QUALIFIER_FULL_CI=build/titan2/qualify-n1b-full-ci-readiness.sh"
+require_marker "DOC_N1A_SUBSTRATE" "$DOC" \
+  "N1B_FULL_CI_REQUIRES_N1A_SUBSTRATE_EVIDENCE=YES"
+require_marker "DOC_R7E_SUBSTRATE" "$DOC" \
+  "N1B_FULL_CI_REQUIRES_R7E_ANDROID16_RESTLESS_SUBSTRATE=YES"
+require_marker "DOC_N0B_DEVIATIONS" "$DOC" \
+  "N1B_FULL_CI_REQUIRES_N0B_DEVIATIONS_RECORDED=YES"
+require_marker "DOC_STAGE_A_SCOPE" "$DOC" \
+  "N1B_STAGE_A_FAST_LANE_BUILD_SCOPE=YES_APPS_AND_STATIC_GATES_ONLY"
+require_marker "DOC_NO_IMAGE" "$DOC" \
+  "N1B_PHASE_07_DOES_NOT_AUTHORIZE_IMAGE_BUILD=YES"
+require_marker "DOC_NO_DEVICE" "$DOC" \
+  "N1B_PHASE_07_DOES_NOT_CONTACT_DEVICE=YES"
+require_marker "DOC_NO_FLASH" "$DOC" \
+  "N1B_PHASE_07_DOES_NOT_AUTHORIZE_FLASH=YES"
+require_marker "DOC_PASS_MARKER" "$DOC" \
+  "N1B_FULL_CI_READINESS=PASS"
+
+require_marker "QUALIFIER_NO_BUILD" "$QUALIFIER" \
+  "BUILD_AUTHORIZED=NO"
+require_marker "QUALIFIER_NO_IMAGE" "$QUALIFIER" \
+  "IMAGE_BUILD_AUTHORIZED=NO"
+require_marker "QUALIFIER_NO_DEVICE" "$QUALIFIER" \
+  "DEVICE_CONTACT_AUTHORIZED=NO"
+require_marker "QUALIFIER_NO_FLASH" "$QUALIFIER" \
+  "FLASH_AUTHORIZED=NO"
+require_marker "QUALIFIER_REQUIRES_STAGE_A_WRAPPER" "$QUALIFIER" \
+  "N1B_QUALIFIER_STAGE_A_FAST_LANE_SABLE_HOST"
+require_marker "QUALIFIER_REQUIRES_PHYSICAL_UX" "$QUALIFIER" \
+  "N1B_QUALIFIER_PHYSICAL_UX"
+require_marker "QUALIFIER_PASS_MARKER" "$QUALIFIER" \
+  "N1B_FULL_CI_READINESS=PASS"
+
+if [ "$FAILURES" -eq 0 ]; then
+  say "N1B_FULL_CI_READINESS_CONTRACT=PASS"
+  exit 0
+fi
+
+say "N1B_FULL_CI_READINESS_CONTRACT=FAIL"
+say "FAILURES=$FAILURES"
+exit 1
