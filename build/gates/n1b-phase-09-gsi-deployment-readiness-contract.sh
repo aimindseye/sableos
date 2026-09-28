@@ -93,7 +93,7 @@ cat > "$TEST_MANIFEST" <<'JSON'
 }
 JSON
 
-if "$QUALIFIER" --manifest "$TEST_MANIFEST" > "$TMPDIR/qualifier.log"; then
+if bash "$QUALIFIER" --manifest "$TEST_MANIFEST" > "$TMPDIR/qualifier.log"; then
   if grep -Fq "N1B_PHASE_09_GSI_DEPLOYMENT_READINESS=BLOCKED" "$TMPDIR/qualifier.log" &&
      grep -Fq "N1B_PHASE_09_FLASH_PLAN_ALLOWED=NO" "$TMPDIR/qualifier.log"; then
     echo "N1B_PHASE_09_EXPECTED_BLOCKED_FIXTURE=PASS"
@@ -108,7 +108,7 @@ else
   failures=$((failures + 1))
 fi
 
-if "$QUALIFIER" --manifest "$TEST_MANIFEST" --require-ready > "$TMPDIR/require-ready.log"; then
+if bash "$QUALIFIER" --manifest "$TEST_MANIFEST" --require-ready > "$TMPDIR/require-ready.log"; then
   echo "N1B_PHASE_09_REQUIRE_READY_BLOCKS_MISSING_PREFLIGHT=FAIL"
   cat "$TMPDIR/require-ready.log"
   failures=$((failures + 1))
