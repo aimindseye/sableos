@@ -9,6 +9,8 @@ SETUPWIZARD2_SOURCE="${SETUPWIZARD2_SOURCE:-}"
 
 FAILURES=0
 FIRST_FAILURE=""
+ANDROID_SDK_READY=NO
+ANDROID_HOME_EFFECTIVE=""
 
 say() {
   printf '%s\n' "$1"
@@ -29,6 +31,10 @@ pass() {
   say "$1=PASS"
 }
 
+warn() {
+  say "$1=WARN"
+}
+
 require_file() {
   NAME="$1"
   PATH_VALUE="$2"
@@ -37,6 +43,84 @@ require_file() {
   else
     record_failure "$NAME" "MISSING_PATH=$PATH_VALUE"
   fi
+}
+
+sdk_candidate_valid() {
+  CANDIDATE="$1"
+  [ -n "$CANDIDATE" ] || return 1
+  [ -d "$CANDIDATE" ] || return 1
+  [ -d "$CANDIDATE/platforms" ] || return 1
+  [ -d "$CANDIDATE/build-tools" ] || return 1
+  return 0
+}
+
+local_properties_sdk_dir() {
+  LOCAL_PROPERTIES="$APP_ROOT/local.properties"
+  if [ ! -f "$LOCAL_PROPERTIES" ]; then
+    return 1
+  fi
+  awk -F= '/^sdk\.dir=/{print substr($0, index($0, "=") + 1)}' \
+    "$LOCAL_PROPERTIES" \
+    | tail -1
+}
+
+resolve_android_sdk() {
+  say "===== N1B STAGE A ANDROID SDK PREFLIGHT ====="
+
+  if sdk_candidate_valid "${ANDROID_HOME:-}"; then
+    ANDROID_HOME_EFFECTIVE="$ANDROID_HOME"
+    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
+    pass "N1B_STAGE_A_ANDROID_HOME"
+    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
+    ANDROID_SDK_READY=YES
+    return 0
+  fi
+
+  if sdk_candidate_valid "${ANDROID_SDK_ROOT:-}"; then
+    ANDROID_HOME_EFFECTIVE="$ANDROID_SDK_ROOT"
+    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
+    pass "N1B_STAGE_A_ANDROID_SDK_ROOT"
+    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
+    ANDROID_SDK_READY=YES
+    return 0
+  fi
+
+  SDK_DIR_FROM_LOCAL="$(local_properties_sdk_dir 2>/dev/null || true)"
+  if sdk_candidate_valid "$SDK_DIR_FROM_LOCAL"; then
+    ANDROID_HOME_EFFECTIVE="$SDK_DIR_FROM_LOCAL"
+    export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
+    export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
+    pass "N1B_STAGE_A_LOCAL_PROPERTIES_SDK"
+    say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
+    ANDROID_SDK_READY=YES
+    return 0
+  fi
+
+  for CANDIDATE in \
+    /srv/data/android-sdk \
+    /srv/data/sable-build/android-sdk \
+    /opt/android-sdk \
+    "$HOME/Android/Sdk" \
+    "$HOME/Library/Android/sdk"
+  do
+    if sdk_candidate_valid "$CANDIDATE"; then
+      ANDROID_HOME_EFFECTIVE="$CANDIDATE"
+      export ANDROID_HOME="$ANDROID_HOME_EFFECTIVE"
+      export ANDROID_SDK_ROOT="$ANDROID_HOME_EFFECTIVE"
+      pass "N1B_STAGE_A_ANDROID_SDK_AUTO_DETECTED"
+      say "ANDROID_HOME_EFFECTIVE=$ANDROID_HOME_EFFECTIVE"
+      ANDROID_SDK_READY=YES
+      return 0
+    fi
+  done
+
+  record_failure "N1B_STAGE_A_ANDROID_SDK" \
+    "Define ANDROID_HOME, ANDROID_SDK_ROOT, or $APP_ROOT/local.properties sdk.dir before RUN_GRADLE_BUILDS=YES"
+  say "N1B_STAGE_A_GRADLE_BUILDS=SKIPPED_ANDROID_SDK_PRECONDITION"
+  ANDROID_SDK_READY=NO
+  return 1
 }
 
 run_cmd() {
@@ -115,30 +199,34 @@ else
 fi
 
 if [ "$RUN_GRADLE_BUILDS" = "YES" ]; then
-  if [ -x "$APP_ROOT/gradlew" ]; then
-    cd "$APP_ROOT" || {
-      record_failure "N1B_STAGE_A_APP_ROOT_CD" "CD_FAILED=$APP_ROOT"
-    }
+  resolve_android_sdk
 
-    if [ "$FAILURES" -eq 0 ]; then
-      for MODULE in \
-        design \
-        calculator \
-        convert \
-        games \
-        media \
-        hub \
-        sablestart-presentation-check \
-        sablestart-visual-review \
-        weather \
-        calendar
-      do
-        run_cmd "N1B_STAGE_A_BUILD_${MODULE}" ./gradlew ":$MODULE:assembleDebug"
-      done
+  if [ "$ANDROID_SDK_READY" = "YES" ]; then
+    if [ -x "$APP_ROOT/gradlew" ]; then
+      cd "$APP_ROOT" || {
+        record_failure "N1B_STAGE_A_APP_ROOT_CD" "CD_FAILED=$APP_ROOT"
+      }
+
+      if [ "$FAILURES" -eq 0 ]; then
+        for MODULE in \
+          design \
+          calculator \
+          convert \
+          games \
+          media \
+          hub \
+          sablestart-presentation-check \
+          sablestart-visual-review \
+          weather \
+          calendar
+        do
+          run_cmd "N1B_STAGE_A_BUILD_${MODULE}" ./gradlew ":$MODULE:assembleDebug"
+        done
+      fi
+    else
+      record_failure "N1B_STAGE_A_GRADLEW_EXECUTABLE" \
+        "gradlew is missing or not executable at $APP_ROOT/gradlew"
     fi
-  else
-    record_failure "N1B_STAGE_A_GRADLEW_EXECUTABLE" \
-      "gradlew is missing or not executable at $APP_ROOT/gradlew"
   fi
 else
   say "N1B_STAGE_A_GRADLE_BUILDS=SKIPPED_BY_REQUEST"
