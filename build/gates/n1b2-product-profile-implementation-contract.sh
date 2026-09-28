@@ -5,6 +5,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DOC="$ROOT/docs/titan2/N1B2_PRODUCT_PROFILE_IMPLEMENTATION.md"
 PREP="$ROOT/build/titan2/prepare-n1b2-product-profile.sh"
 COLLECT="$ROOT/build/titan2/collect-n1b2-postboot-acceptance.sh"
+UX_GATE="$ROOT/build/gates/n1b2-titan2-ux-testbed-readiness-contract.sh"
+IMAGE_BUILD="$ROOT/build/titan2/build-n1b2-image-candidate.sh"
 
 fail() {
   echo "N1B2_PRODUCT_PROFILE_IMPLEMENTATION_CONTRACT_FAILURE=$*" >&2
@@ -35,13 +37,19 @@ echo "ROOT=$ROOT"
 echo "DOC=$DOC"
 echo "PREP=$PREP"
 echo "COLLECT=$COLLECT"
+echo "UX_GATE=$UX_GATE"
+echo "IMAGE_BUILD=$IMAGE_BUILD"
 
 require_file "$DOC"
 require_file "$PREP"
 require_file "$COLLECT"
+require_file "$UX_GATE"
+require_file "$IMAGE_BUILD"
 
 bash -n "$PREP"
 bash -n "$COLLECT"
+bash -n "$UX_GATE"
+bash -n "$IMAGE_BUILD"
 
 # Document must bind this implementation to the proven N1B evidence and the N1B2 contract.
 require_text "N1B_FIRST_BOOT=PASS" "$DOC"
@@ -83,6 +91,15 @@ require_text "ALLOW_MISSING_SABLE_HOME" "$PREP"
 require_text "YES_INVESTIGATION_ONLY" "$PREP"
 require_text "ro.sableos.release=N1B2" "$PREP"
 require_text "ro.sableos.setup_wizard_required=true" "$PREP"
+
+# N1B2 UX readiness and image packaging gates must be part of the build path.
+require_text "n1b2-titan2-ux-testbed-readiness-contract.sh" "$PREP"
+require_text "N1B2_TITAN2_UX_TESTBED_READINESS_MATRIX=PASS" "$PREP"
+require_text "N1B2_UX_TESTBED_ALLOWED_STATUS_SET=PASS|POLICY_PRESENT|EXPLICIT_BOUNDED_DEFERRAL" "$UX_GATE"
+require_text "reject_unlisted_matrix_rows" "$UX_GATE"
+require_text "SYSTEM/etc/sableos/n1b2/ux-testbed-readiness.env" "$IMAGE_BUILD"
+require_text "N1B2_TARGET_FILES_UX_TESTBED_MARKER=PASS" "$IMAGE_BUILD"
+require_text "SABLEOS_RELEASE_VERSION=N1B2" "$IMAGE_BUILD"
 
 # Titan2 input and mobile network triage.
 require_text "N1B2_TITAN2_INPUT_PROFILE_REQUIRED=YES" "$DOC"
@@ -133,6 +150,8 @@ require_text "COMMIT_EXTRACTED_PROPRIETARY_BINARIES=NO" "$DOC"
 echo "N1B2_PRODUCT_PROFILE_DOC=PASS"
 echo "N1B2_PRODUCT_PROFILE_PREP_SCRIPT=PASS"
 echo "N1B2_POSTBOOT_ACCEPTANCE_SCRIPT=PASS"
+echo "N1B2_UX_TESTBED_GATE_SCRIPT=PASS"
+echo "N1B2_IMAGE_BUILD_SCRIPT=PASS"
 echo "N1B2_SETUP_WIZARD_REQUIREMENT=PASS"
 echo "N1B2_SABLE_IDENTITY_HOME_REQUIREMENT=PASS"
 echo "N1B2_SABLE_HOME_MISSING_FAIL_CLOSED=PASS"
