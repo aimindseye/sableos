@@ -1,5 +1,7 @@
 package org.sableos.hub
 
+private typealias NotificationRecords = List<ConnectedNotificationRecord>
+
 enum class HubConversationSource {
     Sms,
     ConnectedApp,
@@ -132,9 +134,7 @@ object HubConnectedConversationReducer {
         )
     }
 
-    private fun deduplicateRecords(
-        records: List<ConnectedNotificationRecord>,
-    ): List<ConnectedNotificationRecord> {
+    private fun deduplicateRecords(records: NotificationRecords): NotificationRecords {
         val deduplicated = mutableListOf<ConnectedNotificationRecord>()
         records
             .sortedWith(notificationRecordOrder())
