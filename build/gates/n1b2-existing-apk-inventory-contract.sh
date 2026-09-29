@@ -188,6 +188,7 @@ core_modules=(
   games
   media
   hub
+  messages
   sablestart-presentation-check
   sablestart-visual-review
   weather
@@ -201,6 +202,7 @@ build_tasks=(
   :games:assembleDebug
   :media:assembleDebug
   :hub:assembleDebug
+  :messages:assembleDebug
   :weather:assembleDebug
   :calendar:assembleDebug
   :sablestart-visual-review:assembleDebug
@@ -240,7 +242,7 @@ for module in "${core_modules[@]}"; do
   require_module_layout "$module"
 done
 
-for missing in mail messages people reader textreader command browser settings systemui phone contacts; do
+for missing in mail people reader textreader command browser settings systemui phone contacts; do
   if grep -Fq "include(\":$missing\")" "$APP_ROOT/settings.gradle.kts"; then
     emit WARN "N1B2_UNPLANNED_EXISTING_MODULE_${missing^^}" "unexpected_existing_module=$missing"
   else
