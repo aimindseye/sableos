@@ -2,8 +2,8 @@
 
 Status: **N1B2 implementation helper**
 
-This document records the first implementation step after the N1B first-boot
-ledger and the N1B2 product-closure contract.
+This document records the implementation step after the N1B first-boot ledger and
+the N1B2 product-closure contract.
 
 The successful N1B boot proved the Titan2 can boot the Android 16
 Treble/RestlessOS-derived system image after explicit factory reset. N1B2 must
@@ -41,22 +41,28 @@ PUBLIC_RELEASE_WITH_STOCK_BLOBS=NO_UNLESS_SEPARATE_LICENSE_REVIEW
 
 ## Implementation files
 
-This PR adds two scripts:
+This PR adds/updates these scripts:
 
 ```text
 build/titan2/prepare-n1b2-product-profile.sh
 build/titan2/collect-n1b2-postboot-acceptance.sh
+build/titan2/build-n1b2-image-candidate.sh
 ```
 
 `prepare-n1b2-product-profile.sh` is an Android-workspace preparation script. It
-creates a Sable-owned N1B2 product profile under `vendor/sable/n1b2/` and, only
-when explicitly requested, appends an `inherit-product-if-exists` line to a
-provided active product makefile. It does not contact a device.
+now syncs repository-owned SableLauncher source into the Android workspace,
+creates a Sable-owned N1B2 product profile under `vendor/sable/n1b2/`, packages
+Titan2 profile artifacts, and only when explicitly requested appends an
+`inherit-product-if-exists` line to a provided active product makefile. It does
+not contact a device.
 
 `collect-n1b2-postboot-acceptance.sh` is a read-only ADB evidence collector for
 the future N1B2 boot after explicit factory reset. It records Setup Wizard,
 product identity, HOME resolution, Titan2 input enumeration, display topology,
 and a timed radio triage capture.
+
+`build-n1b2-image-candidate.sh` rejects image registration unless target-files
+contains the N1B2 markers and the Titan2 profile artifacts.
 
 ## Required N1B2 profile markers
 
@@ -68,6 +74,7 @@ N1B2_SETUP_WIZARD_REASON=factory_reset_required_for_first_boot
 N1B2_SABLE_PRODUCT_IDENTITY_REQUIRED=YES
 N1B2_SABLE_HOME_REQUIRED=YES
 N1B2_TITAN2_INPUT_PROFILE_REQUIRED=YES
+N1B2_PLATFORM_PROFILE_PACKAGING_REQUIRED=YES
 N1B2_MOBILE_NETWORK_TRIAGE_REQUIRED=YES
 N1B2_FLASH_ALLOWED=NO_SEPARATE_GATE_REQUIRED
 ```
@@ -119,23 +126,88 @@ QUICKSTEP_ALLOWED_FOR_RECENTS=YES
 QUICKSTEP_AS_PRIMARY_HOME=NO_UNLESS_EXPLICITLY_APPROVED
 ```
 
-The preparation script defaults the Sable HOME module to `SableStart`; operators
-may override it with `SABLE_HOME_MODULE=<module>` when the Android workspace uses
-a different module name.
-
-Missing Sable HOME is a hard blocker for an N1B2 candidate. The preparation
-script must not report `N1B2_PRODUCT_PROFILE_PREPARED=PASS` when the HOME module
-is absent.
+The preparation script now defaults the Sable HOME module to `SableLauncher`, the
+actual repository-owned module declared under `src/android/packages/apps/SableStart`.
+It syncs that source into the Treble/Restless Android workspace at
+`packages/apps/SableStart` and syncs shared Sable design sources into
+`packages/apps/SableDesign`.
 
 ```text
+N1B2_SABLE_HOME_MODULE=SableLauncher
+N1B2_HOME_PACKAGE=org.sableos.launcher
+N1B2_QUICKSTEP_ROLE=RECENTS_ONLY
 N1B2_SABLE_HOME_MODULE_PRESENT=YES_REQUIRED
 N1B2_SABLE_HOME_MISSING_BEHAVIOR=FAIL_CLOSED
 ALLOW_MISSING_SABLE_HOME=YES_INVESTIGATION_ONLY_NOT_CANDIDATE
 ```
 
-If `SableStart` is missing, the next valid action is to import or generate a
-buildable Sable HOME module in the Android workspace, not to ship with Quickstep
-as primary HOME.
+If `SableLauncher` is missing after sync, the next valid action is to fix the
+workspace sync or module definition, not to ship with Quickstep as primary HOME.
+
+## Titan2 platform profile packaging rule
+
+N1B2 must package the profile-first artifacts required by `platform_sable` before
+any flash-readiness claim.
+
+The preparation script generates these source-workspace files:
+
+```text
+vendor/sable/n1b2/profiles/titan2/hardware.env
+vendor/sable/n1b2/profiles/titan2/display.env
+vendor/sable/n1b2/profiles/titan2/panel-power.env
+vendor/sable/n1b2/profiles/titan2/attention.env
+vendor/sable/n1b2/profiles/titan2/keyboard.env
+vendor/sable/n1b2/profiles/titan2/pointer.env
+vendor/sable/n1b2/profiles/titan2/critical-text-entry.env
+vendor/sable/n1b2/profiles/titan2/app-layout.env
+```
+
+The active product profile copies them into target-files as:
+
+```text
+SYSTEM/etc/sableos/profiles/titan2/hardware.env
+SYSTEM/etc/sableos/profiles/titan2/display.env
+SYSTEM/etc/sableos/profiles/titan2/panel-power.env
+SYSTEM/etc/sableos/profiles/titan2/attention.env
+SYSTEM/etc/sableos/profiles/titan2/keyboard.env
+SYSTEM/etc/sableos/profiles/titan2/pointer.env
+SYSTEM/etc/sableos/profiles/titan2/critical-text-entry.env
+SYSTEM/etc/sableos/profiles/titan2/app-layout.env
+```
+
+Required packaged markers:
+
+```text
+TITAN2_HARDWARE_PROFILE_PACKAGED=YES
+TITAN2_DISPLAY_PROFILE_PACKAGED=YES
+TITAN2_PANEL_POWER_PROFILE_PACKAGED=YES
+TITAN2_ATTENTION_PROFILE_PACKAGED=YES
+TITAN2_KEYBOARD_PROFILE_PACKAGED=YES
+TITAN2_POINTER_PROFILE_PACKAGED=YES
+TITAN2_CRITICAL_TEXT_ENTRY_PROFILE_PACKAGED=YES
+TITAN2_APP_LAYOUT_PROFILE_PACKAGED=YES
+N1B2_TARGET_FILES_PROFILE_MARKERS=PASS
+```
+
+## Critical text-entry rule
+
+The image must carry a Titan2 critical-text-entry profile before flash. Runtime
+PASS remains post-flash evidence, but the image cannot be built as an N1B2 UX
+candidate without the policy and marker payload.
+
+```text
+SETUP_WIZARD_KEYBOARD_SAFE=REQUIRED
+WIFI_PASSWORD_ENTRY=REQUIRED
+LOCKSCREEN_PIN_PASSWORD=REQUIRED
+ACCOUNT_SIGN_IN=REQUIRED
+EMERGENCY_TEXT_ENTRY=REQUIRED
+INPUT_METHOD_SWITCHING=REQUIRED
+HARDWARE_KEYBOARD_TEXT_ENTRY=REQUIRED
+SOFTWARE_KEYBOARD_FALLBACK=REQUIRED
+ALT_SYM_FN_TEXT_ENTRY=REQUIRED
+NO_SETUP_DEAD_ENDS=REQUIRED
+NO_FOCUS_TRAPS=REQUIRED
+```
 
 ## Titan2 input rule
 
@@ -214,8 +286,8 @@ bash build/titan2/prepare-n1b2-product-profile.sh \
   --patch-active-product
 ```
 
-Then build N1B2 through the normal image-candidate path. Flashing N1B2 remains
-blocked until a separate flash-readiness gate is reviewed.
+Then build N1B2 through the image-candidate path. Flashing N1B2 remains blocked
+until a separate flash-readiness gate is reviewed.
 
 After the future N1B2 flash and explicit factory reset, collect acceptance:
 
