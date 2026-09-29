@@ -1,6 +1,6 @@
 # Titan 2 N1B2 cellular PR208 handoff
 
-Status: PR208 restoration scaffold
+Status: PR208 restoration implementation scaffold
 Date: 2026-09-29
 
 ## Conclusion
@@ -30,8 +30,24 @@ scripts=yes
 docs=yes
 hash manifests=yes
 gates=yes
+product build wiring scripts=yes
 proprietary payload binaries=no
 ```
+
+## Implemented PR208 flow
+
+PR208 now wires the stock-derived MTK telephony/IMS payload into the local N1B2
+image build path without committing proprietary binaries:
+
+1. Stage payload files from the local stock firmware tree.
+2. Generate `vendor/sable/n1b2/mtk-telephony-payload/sable_n1b2_mtk_telephony_payload.mk` in the Android build tree.
+3. Add that generated makefile to `vendor/sable/n1b2/sable_n1b2_product_profile.mk` using `inherit-product-if-exists`.
+4. Build the N1B2 GSI with the existing `build-n1b2-image-candidate.sh` entrypoint.
+5. Verify every expected MTK telephony/IMS payload file is present in target_files with matching SHA-256 values.
+
+The flow does not modify flash scripts because the output remains the N1B2 GSI
+system image / target_files artifact. Flash script changes are not required
+unless a later artifact format or packaging contract changes.
 
 ## Initial stock-derived payload candidates
 
@@ -76,10 +92,26 @@ PR208_FULL_VENDOR_COPY=NO
 PR208_PAYLOAD_HASH_GATE=YES
 PR208_LOCAL_STOCK_INPUT_REQUIRED=YES
 PR208_SYSTEM_EXT_MTK_IMS_PAYLOAD=YES
-PR208_PRODUCT_OR_IMAGE_MUTATION_IN_FIRST_PR=NO
+PR208_PRODUCT_COPY_FILES_WIRING=YES
+PR208_BUILD_WIRING=YES
+PR208_IMAGE_PAYLOAD_VERIFICATION=YES
+PR208_FLASH_SCRIPT_MUTATION=NO_NOT_REQUIRED
 ```
 
-## Runtime validation targets after a later image build
+## Build entrypoint
+
+Use the MTK telephony wrapper for the implementation build:
+
+```bash
+bash build/titan2/build-n1b2-image-candidate-with-mtk-telephony.sh \
+  --android-src <android-src> \
+  --stock-root <stock-2026041315-root> \
+  --full-ci-evidence-dir <full-local-ci-evidence-dir> \
+  --out-dir <out-dir> \
+  --jobs <n>
+```
+
+## Runtime validation targets after flashing a verified image
 
 ```text
 dumpsys phone
