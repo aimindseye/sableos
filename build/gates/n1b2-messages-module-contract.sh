@@ -14,9 +14,10 @@ usage:
   bash build/gates/n1b2-messages-module-contract.sh [--build YES|NO]
 
 Restored Sable Messages module gate. This gate validates the module against the
-existing Hub/Messages reference and platform_sable Messages UX without Android
-image builds, Soong builds, device contact, adb, fastboot, flash, public release,
-or production signing.
+existing Hub/Messages reference, platform_sable Messages UX, visual confirmation
+checklist, and source-controlled Titan2 Messages/Hub visual artifacts without
+Android image builds, Soong builds, device contact, adb, fastboot, flash, public
+release, or production signing.
 USAGE
 }
 
@@ -130,6 +131,10 @@ source_canonical_host_tools() {
 
 manifest="$MODULE_DIR/src/main/AndroidManifest.xml"
 activity="$MODULE_DIR/src/main/java/org/sableos/messages/MainActivity.kt"
+ux_doc="$PLATFORM_SABLE_ROOT/docs/design/MESSAGES_CONVERSATION_UX.md"
+visual_doc="$PLATFORM_SABLE_ROOT/docs/design/MESSAGES_CONVERSATION_VISUAL_CONFIRMATION.md"
+messages_svg="$PLATFORM_SABLE_ROOT/docs/design/artifacts/sable-messages-conversation-titan2.svg"
+hub_svg="$PLATFORM_SABLE_ROOT/docs/design/artifacts/sable-hub-titan2.svg"
 
 cat <<EOF
 ===== N1B2 MESSAGES MODULE CONTRACT =====
@@ -160,8 +165,11 @@ require_dir N1B2_MESSAGES_HUB_REFERENCE_PRESENT "$APP_ROOT/hub"
 require_dir N1B2_PLATFORM_SABLE_ROOT_PRESENT "$PLATFORM_SABLE_ROOT"
 require_file N1B2_PLATFORM_SABLE_APP_REUSE_PRESENT \
   "$PLATFORM_SABLE_ROOT/docs/SABLE_APP_REUSE_AND_INTEGRATION_PLAN.md"
-require_file N1B2_PLATFORM_SABLE_MESSAGES_UX_PRESENT \
-  "$PLATFORM_SABLE_ROOT/docs/design/MESSAGES_CONVERSATION_UX.md"
+require_file N1B2_PLATFORM_SABLE_MESSAGES_UX_PRESENT "$ux_doc"
+require_file N1B2_PLATFORM_SABLE_MESSAGES_VISUAL_CONFIRMATION_PRESENT \
+  "$visual_doc"
+require_file N1B2_PLATFORM_SABLE_MESSAGES_ARTIFACT_PRESENT "$messages_svg"
+require_file N1B2_PLATFORM_SABLE_HUB_ARTIFACT_PRESENT "$hub_svg"
 require_file N1B2_PANTHER_NO_REGRESSION_GATE_PRESENT \
   "$ROOT/build/gates/n1b2-panther-no-regression-contract.sh"
 
@@ -187,9 +195,41 @@ require_text N1B2_MESSAGES_PROVIDER_HANDOFF_SCHEME 'android:scheme="smsto"' \
   "$manifest"
 require_text N1B2_MESSAGES_INTENT_HANDOFF 'Intent.ACTION_SENDTO' "$activity"
 require_text N1B2_MESSAGES_SMSTO_HANDOFF 'smsto:' "$activity"
-require_text N1B2_MESSAGES_LATEST_ANCHOR_COPY \
-  'latest message always visible' "$activity"
-require_text N1B2_MESSAGES_NO_CUSTOM_STACK_COPY \
+
+require_text N1B2_MESSAGES_UX_LATEST_REQUIREMENT \
+  'LATEST_MESSAGE_ALWAYS_VISIBLE=YES' "$ux_doc"
+require_text N1B2_MESSAGES_UX_CUSTOM_STACK_EXCLUSION \
+  'CUSTOM_SMS_STACK=NO' "$ux_doc"
+require_text N1B2_MESSAGES_VISUAL_ARTIFACT_BINDING \
+  'sable-messages-conversation-titan2.svg' "$visual_doc"
+require_text N1B2_MESSAGES_VISUAL_LATEST_REQUIREMENT \
+  'LATEST_MESSAGE_ALWAYS_VISIBLE=PASS' "$visual_doc"
+require_text N1B2_MESSAGES_ARTIFACT_TITLE \
+  'Sable Messages / Conversation UX for Titan 2' "$messages_svg"
+require_text N1B2_MESSAGES_ARTIFACT_LATEST_VISIBLE \
+  'Latest message is always visible' "$messages_svg"
+require_text N1B2_MESSAGES_ARTIFACT_HISTORY_INDICATOR \
+  'New message' "$messages_svg"
+require_text N1B2_HUB_ARTIFACT_MESSAGES_REFERENCE \
+  'Sable Hub — Keyboard-First Communications UX' "$hub_svg"
+
+require_text N1B2_MESSAGES_UI_VISUAL_TARGET \
+  'Titan 2 visual target' "$activity"
+require_text N1B2_MESSAGES_UI_SQUARE_KEYBOARD \
+  'square display + physical keyboard' "$activity"
+require_text N1B2_MESSAGES_UI_LATEST_VISIBLE \
+  'LATEST_MESSAGE_ALWAYS_VISIBLE' "$activity"
+require_text N1B2_MESSAGES_UI_HISTORY_INDICATOR \
+  'New message — Enter to latest' "$activity"
+require_text N1B2_MESSAGES_UI_CONVERSATION_LIST \
+  'Conversation list · latest first' "$activity"
+require_text N1B2_MESSAGES_UI_HUB_REFERENCE \
+  'Hub handoff compatible' "$activity"
+require_text N1B2_MESSAGES_UI_ONSCREEN_FALLBACK \
+  'Onscreen keyboard fallback' "$activity"
+require_text N1B2_MESSAGES_UI_PRIVACY_REDACTION \
+  'Message body hidden when locked' "$activity"
+require_text N1B2_MESSAGES_UI_NO_CUSTOM_STACK \
   'custom SMS/RCS/MMS stack: no' "$activity"
 
 for forbidden in \
