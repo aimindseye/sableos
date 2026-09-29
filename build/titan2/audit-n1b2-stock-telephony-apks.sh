@@ -23,7 +23,6 @@ The audit is intentionally conservative:
 USAGE
 }
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STOCK_ROOT="${STOCK_ROOT:-}"
 ANDROID_SRC="${ANDROID_SRC:-}"
 EVIDENCE_DIR="${EVIDENCE_DIR:-/tmp/SABLE_N1B2_STOCK_APK_AUDIT_$(date -u +%Y%m%dT%H%M%SZ)}"
@@ -158,35 +157,35 @@ classify_apk() {
 
   case "$rel" in
     system/priv-app/MtkTeleService/MtkTeleService.apk)
-      echo "BLOCKED\tBOOT_FATAL_DUPLICATES_COM_ANDROID_PHONE_SHARED_UID_ANDROID_UID_PHONE"
+      printf 'BLOCKED\tBOOT_FATAL_DUPLICATES_COM_ANDROID_PHONE_SHARED_UID_ANDROID_UID_PHONE\n'
       return 0
       ;;
     system/priv-app/MtkTelephonyProvider/MtkTelephonyProvider.apk)
-      echo "BLOCKED\tDUPLICATES_COM_ANDROID_PROVIDERS_TELEPHONY_EXPECTED_SHARED_UID_PHONE"
+      printf 'BLOCKED\tDUPLICATES_COM_ANDROID_PROVIDERS_TELEPHONY_EXPECTED_SHARED_UID_PHONE\n'
       return 0
       ;;
     system/priv-app/MtkMmsService/MtkMmsService.apk)
-      echo "BLOCKED\tDUPLICATES_COM_ANDROID_MMS_SERVICE_EXPECTED_SHARED_UID_PHONE"
+      printf 'BLOCKED\tDUPLICATES_COM_ANDROID_MMS_SERVICE_EXPECTED_SHARED_UID_PHONE\n'
       return 0
       ;;
     system/priv-app/MtkTelecom/MtkTelecom.apk)
-      echo "BLOCKED\tDUPLICATES_COM_ANDROID_SERVER_TELECOM_EXPECTED_SYSTEM_SIGNATURE_SPACE"
+      printf 'BLOCKED\tDUPLICATES_COM_ANDROID_SERVER_TELECOM_EXPECTED_SYSTEM_SIGNATURE_SPACE\n'
       return 0
       ;;
   esac
 
   if [[ -n "$shared_uid" ]]; then
-    echo "BLOCKED\tDECLARES_SHARED_USER_ID_$shared_uid"
+    printf 'BLOCKED\tDECLARES_SHARED_USER_ID_%s\n' "$shared_uid"
     return 0
   fi
 
   case "$pkg" in
     com.android.phone|com.android.providers.telephony|com.android.mms.service|com.android.server.telecom)
-      echo "BLOCKED\tDUPLICATES_CORE_AOSP_TELEPHONY_PACKAGE_$pkg"
+      printf 'BLOCKED\tDUPLICATES_CORE_AOSP_TELEPHONY_PACKAGE_%s\n' "$pkg"
       return 0
       ;;
-    com.mediatek.ims|*)
-      echo "CONDITIONAL\tNO_SHARED_UID_NO_CORE_AOSP_DUPLICATE_REQUIRES_RUNTIME_CONSUMER_TEST"
+    *)
+      printf 'CONDITIONAL\tNO_SHARED_UID_NO_CORE_AOSP_DUPLICATE_REQUIRES_RUNTIME_CONSUMER_TEST\n'
       return 0
       ;;
   esac
@@ -202,6 +201,7 @@ blocked_count=0
 conditional_count=0
 parse_failures=0
 ims_class="MISSING"
+ims_reason="MISSING"
 
 while IFS= read -r rel; do
   [[ -n "$rel" ]] || continue
@@ -232,8 +232,8 @@ while IFS= read -r rel; do
       reason="PACKAGE_NAME_PARSE_FAILED"
     else
       class_reason="$(classify_apk "$rel" "$pkg" "$shared_uid")"
-      class="$(printf '%s' "$class_reason" | cut -f1)"
-      reason="$(printf '%s' "$class_reason" | cut -f2-)"
+      class="$(printf '%s\n' "$class_reason" | cut -f1)"
+      reason="$(printf '%s\n' "$class_reason" | cut -f2-)"
     fi
   fi
 
@@ -269,8 +269,15 @@ while IFS= read -r rel; do
 
   if [[ "$rel" == "system_ext/priv-app/ImsService/ImsService.apk" ]]; then
     ims_class="$class"
+    ims_reason="$reason"
   fi
 done < <(apk_list)
+
+if [[ "$conditional_count" -eq 0 ]]; then
+  safe_conditional_apks="NO"
+else
+  safe_conditional_apks="YES_REVIEW_REQUIRED"
+fi
 
 log_marker "N1B2_STOCK_APK_AUDIT=PASS"
 log_marker "N1B2_STOCK_APK_AUDIT_STATIC_ONLY=YES"
@@ -284,6 +291,8 @@ log_marker "N1B2_STOCK_APK_AUDIT_BLOCKED_COUNT=$blocked_count"
 log_marker "N1B2_STOCK_APK_AUDIT_CONDITIONAL_COUNT=$conditional_count"
 log_marker "N1B2_STOCK_APK_AUDIT_PARSE_FAILURES=$parse_failures"
 log_marker "N1B2_STOCK_APK_AUDIT_IMSSERVICE_CLASS=$ims_class"
+log_marker "N1B2_STOCK_APK_AUDIT_IMSSERVICE_REASON=$ims_reason"
+log_marker "N1B2_STOCK_APK_AUDIT_SAFE_CONDITIONAL_APKS=$safe_conditional_apks"
 log_marker "N1B2_STOCK_APK_AUDIT_REPORT=$REPORT"
 log_marker "N1B2_STOCK_APK_AUDIT_BLOCKED=$BLOCKED"
 log_marker "N1B2_STOCK_APK_AUDIT_CONDITIONAL=$CONDITIONAL"
