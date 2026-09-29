@@ -129,10 +129,17 @@ private fun Header() {
         )
         Text(
             text =
-                "Titan 2 target · latest anchored · keyboard first · " +
-                    "provider-safe actions",
+                "Titan 2 visual target · square display + physical keyboard · " +
+                    "latest message always visible",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text =
+                "MESSAGES_CONVERSATION_UX · " +
+                    "MESSAGES_CONVERSATION_VISUAL_CONFIRMATION",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
