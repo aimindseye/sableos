@@ -2,14 +2,11 @@
 
 Status: **restored Gradle APK module / not product-selected / not image-selected**
 
-This restores `:messages` as a standalone Gradle APK module under the common
-Sable app tree. It does not add Android product selection, image membership, role
-ownership, default SMS ownership, flash enablement, or runtime device evidence.
+This restores `:messages` as a standalone Gradle APK module under the common Sable app tree. It does not add Android product selection, image membership, role ownership, default SMS ownership, flash enablement, or runtime device evidence.
 
 ## Source references
 
-This restoration is bound to the already-merged app restoration reference
-contract:
+This restoration is bound to the already-merged app restoration reference contract:
 
 ```text
 docs/titan2/N1B2_APP_RESTORATION_REFERENCE.tsv
@@ -47,47 +44,63 @@ PROVIDER_OWNERSHIP_RETAINED=YES
 PROVIDER_SAFE_HANDOFF=YES
 ```
 
-The restored APK is intentionally a provider-safe handoff surface. It uses Android
-provider handoff through `Intent.ACTION_SENDTO` with `smsto:`. It does not request
-`READ_SMS`, `SEND_SMS`, or `RECEIVE_SMS` in this PR.
+The restored APK is intentionally a provider-safe handoff surface. It uses Android provider handoff through `Intent.ACTION_SENDTO` with `smsto:`. It does not request `READ_SMS`, `SEND_SMS`, or `RECEIVE_SMS` in this PR.
 
-## Visual and UX alignment
+## UX and keyboard coverage
 
-The first restored UI intentionally mirrors the source-controlled Titan2 Messages
-and Hub artifacts within the limits of a normal Android APK module:
+The restored module implements the platform_sable Messages / Conversation UX that can be implemented before provider ownership:
 
 ```text
-TITAN2_VISUAL_TARGET=YES
-SQUARE_DISPLAY_PLUS_PHYSICAL_KEYBOARD_REFERENCE=YES
-HUB_MESSAGES_REFERENCE=YES
 LATEST_ANCHORED_CONVERSATION=YES
 LATEST_MESSAGE_ALWAYS_VISIBLE=YES
 COMPOSER_VISIBLE_WITH_LATEST=YES
-ONSCREEN_KEYBOARD_FALLBACK=YES
 HISTORY_ACCESS_EXPLICIT=YES
-RETURN_TO_LATEST_INDICATOR=YES
-CONVERSATION_LIST_LATEST_FIRST=YES
-LOCKED_MODE_REDACTION=YES
-PRIVATE_MODE_REDACTION=YES
-SOURCE_RESTRICTED_MODE=YES
-PROVIDER_OWNERSHIP_RETAINED=YES
+SEARCH_IN_CONVERSATION=YES
+JUMP_TO_DATE=YES
+JUMP_TO_UNREAD=YES
+JUMP_TO_ATTACHMENT=YES
+PAGE_UP_HISTORY=OPTIONAL
+PAGE_DOWN_TOWARD_LATEST=OPTIONAL
+LATEST_KEY=REQUIRED
 CUSTOM_SMS_STACK=NO
+PROVIDER_OWNERSHIP_RETAINED=YES
+```
+
+Keyboard operations implemented in the restored activity:
+
+```text
+/                 Search in conversation
+Ctrl+L or End      Return to latest
+PageUp             Older discrete history slice
+PageDown           Newer history slice / latest direction
+N                  Next unread/new item
+D                  Jump to date slice
+A                  Jump to attachment slice
+Back/Esc           Leave history/search and return to latest
+Enter              Return to latest from history/search, or provider-safe handoff from latest
+Shift+Enter        Reserved for newline text entry
+```
+
+History is modeled as discrete slices, not a precision touchpad scroll dependency. Every history/search view keeps visible focus and exposes `New message — Enter to latest` or an equivalent direct return-to-latest affordance.
+
+## Visual confirmation coverage
+
+The restored module follows the Titan2 visual confirmation artifacts by exposing:
+
+```text
+TITAN2_HARDWARE_TEMPLATE=PASS
+SQUARE_DISPLAY_PLUS_PHYSICAL_KEYBOARD=PASS
+LATEST_MESSAGE_ALWAYS_VISIBLE=PASS
+ONSCREEN_KEYBOARD_FALLBACK=PASS
+HISTORY_MODE_SHOWS_NEW_MESSAGE_INDICATOR=PASS
+CONVERSATION_LIST_LATEST_FIRST=PASS
+LOCKED_MODE_REDACTION=PASS
+PRIVATE_MODE_REDACTION=PASS
+MESSAGE_ACTIONS_KEYBOARD_ACCESSIBLE=PASS
 UNSUPPORTED_PROVIDER_ACTIONS=NO
 ```
 
-The UI includes these visible contract elements:
-
-- latest-anchored conversation panel;
-- newest message marked `Latest msg` and kept with the composer;
-- composer with physical-keyboard-primary copy;
-- onscreen keyboard fallback copy;
-- explicit `New message — Enter to latest` history indicator;
-- latest-first Hub-style conversation list;
-- locked/private redaction panel with message body hidden;
-- provider-safe `smsto:` handoff.
-
-This is still a buildable module restoration step, not a full SMS provider
-replacement and not product/image selection.
+This is a buildable module restoration step, not a full SMS provider replacement.
 
 ## Gate
 
@@ -118,5 +131,4 @@ N1B2_MESSAGES_MODULE_BUILD=PASS
 
 ## Safety posture
 
-This PR does not authorize Android image builds, Soong builds, device contact,
-adb, fastboot, flashing, factory reset, public release, or production signing.
+This PR does not authorize Android image builds, Soong builds, device contact, adb, fastboot, flashing, factory reset, public release, or production signing.
