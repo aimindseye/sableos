@@ -77,20 +77,18 @@ target_for_rel() {
   esac
 }
 
-module_path_for_apk_rel() {
-  local rel="$1"
-  local dir
-  dir="$(dirname "$rel")"
-  case "$rel" in
-    system_ext/*) printf '$(TARGET_OUT_SYSTEM_EXT)/%s' "${dir#system_ext/}" ;;
-    product/*) printf '$(TARGET_OUT_PRODUCT)/%s' "${dir#product/}" ;;
-    system/*) printf '$(TARGET_OUT)/%s' "${dir#system/}" ;;
-    *) echo "UNSUPPORTED_APK_REL=$rel" >&2; return 1 ;;
-  esac
-}
-
 module_name_for_apk_rel() {
   basename "$1" .apk
+}
+
+emit_partition_flag_for_apk_rel() {
+  local rel="$1"
+  case "$rel" in
+    system_ext/*) echo "LOCAL_SYSTEM_EXT_MODULE := true" ;;
+    product/*) echo "LOCAL_PRODUCT_MODULE := true" ;;
+    system/*) return 0 ;;
+    *) echo "UNSUPPORTED_APK_REL=$rel" >&2; return 1 ;;
+  esac
 }
 
 mapfile -t product_copy_entries < <(
@@ -159,15 +157,13 @@ fi
   echo ""
   for rel in "${apk_payload_rels[@]}"; do
     module="$(module_name_for_apk_rel "$rel")"
-    module_path="$(module_path_for_apk_rel "$rel")"
     echo 'include $(CLEAR_VARS)'
     echo "LOCAL_MODULE := $module"
     echo "LOCAL_MODULE_TAGS := optional"
     echo "LOCAL_MODULE_CLASS := APPS"
     echo 'LOCAL_MODULE_SUFFIX := $(COMMON_ANDROID_PACKAGE_SUFFIX)'
     echo "LOCAL_SRC_FILES := files/$rel"
-    echo "LOCAL_MODULE_PATH := $module_path"
-    echo "LOCAL_MODULE_STEM := $module"
+    emit_partition_flag_for_apk_rel "$rel"
     echo "LOCAL_CERTIFICATE := PRESIGNED"
     echo "LOCAL_PRIVILEGED_MODULE := true"
     echo "LOCAL_DEX_PREOPT := false"
@@ -198,6 +194,7 @@ MARKERS="$EVIDENCE_DIR/n1b2-mtk-build-payload-markers.txt"
   echo "N1B2_MTK_BUILD_PAYLOAD_PRODUCT_COPY_FILES=YES"
   echo "N1B2_MTK_BUILD_PAYLOAD_PRODUCT_COPY_ENTRIES=${#product_copy_entries[@]}"
   echo "N1B2_MTK_BUILD_PAYLOAD_APK_PREBUILT_MODULES=YES"
+  echo "N1B2_MTK_BUILD_PAYLOAD_APK_PREBUILT_PARTITION_FLAGS=YES"
   echo "N1B2_MTK_BUILD_PAYLOAD_APK_MODULE_COUNT=${#apk_payload_rels[@]}"
   echo "N1B2_MTK_BUILD_PAYLOAD_VENDOR_PARTITION_COPY=NO"
   echo "N1B2_MTK_BUILD_PAYLOAD_PROPRIETARY_PAYLOAD_COMMITTED=NO"
