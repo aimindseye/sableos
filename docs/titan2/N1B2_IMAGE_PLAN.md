@@ -55,12 +55,14 @@ The binding ledger is taken from `sableos-project/platform_sable` branch `main` 
 ```text
 PLATFORM_SABLE_MAIN_SHA=de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c
 TOP_LEVEL_DOCS=17
-DESIGN_DOCS=52
+DESIGN_DOCS=53
 DESIGN_ARTIFACTS_SVG=23
 DEVICE_CAPABILITY_DOCS_IN_SCOPE=1
+PLANNED_DESIGN_DOCS=2
+PLANNED_DESIGN_ARTIFACTS=2
 ```
 
-The gate fails if the local `platform_sable` checkout changes these source file counts or SHA without updating the binding TSV.
+The gate fails if the local `platform_sable` checkout changes these source file counts or SHA without updating the binding TSV. Planned Weather and App Display Compatibility artifacts/docs are tracked separately and do not reduce the current source count.
 
 ## Product composition rule
 
