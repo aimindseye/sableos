@@ -10,9 +10,13 @@ Usage:
     [--stage-dir DIR] \
     [--copy-payload YES|NO]
 
-This script stages/verifies a local Titan 2 stock-derived MTK telephony/IMS
-payload manifest. It does not modify source, build images, flash, use adb,
-use fastboot, or commit proprietary payload files to Git.
+This script stages/verifies the current PR208 boot-safe Titan 2 stock-derived
+payload manifest. It classifies the larger stock MTK telephony/IMS candidate set
+into:
+
+  CLASS_A_BOOT_SAFE_CONFIG     copied into the image candidate
+  CLASS_B_SIGNATURE_BLOCKED    never copied; shared UID / duplicate package risk
+  CLASS_C_CONDITIONAL          never copied in the control image; layer later
 
 Default:
   COPY_PAYLOAD=NO
@@ -123,53 +127,46 @@ resolve_stock_path() {
   return 1
 }
 
-excluded_payload_list() {
-  cat <<'EXCLUDED_PAYLOAD'
-system/priv-app/MtkTeleService/MtkTeleService.apk	BOOT_FATAL_SHARED_UID_SIGNATURE_MISMATCH	Physical validation 20260929T205519Z: system_server crashed with Signature mismatch on system package com.android.phone for shared user android.uid.phone/1001.
-EXCLUDED_PAYLOAD
+boot_safe_payload_list() {
+  cat <<'PAYLOAD'
+system/etc/apns-conf.xml
+system/etc/permissions/privapp-permissions-mediatek.xml
+system_ext/etc/sysconfig/com.mediatek.ims.config.xml
+PAYLOAD
 }
 
-payload_list() {
+excluded_payload_list() {
   cat <<'PAYLOAD'
-system/etc/permissions/privapp-permissions-mediatek.xml
-system/etc/apns-conf.xml
-system/priv-app/MtkMmsService/MtkMmsService.apk
-system/priv-app/MtkTelecom/MtkTelecom.apk
-system/priv-app/MtkTelephonyProvider/MtkTelephonyProvider.apk
-system_ext/etc/sysconfig/com.mediatek.ims.config.xml
-system_ext/framework/mediatek-carrier-config-manager.jar
-system_ext/framework/mediatek-ims-base.jar
-system_ext/framework/mediatek-ims-common.jar
-system_ext/framework/mediatek-ims-extension-plugin.jar
-system_ext/framework/mediatek-telecom-common.jar
-system_ext/lib64/libimsma.so
-system_ext/lib64/libimsma_adapt.so
-system_ext/lib64/libimsma_rtp.so
-system_ext/lib64/libimsma_socketwrapper.so
-system_ext/priv-app/ImsService/ImsService.apk
-system_ext/lib64/libsink.so
-system_ext/lib64/libsource.so
-system_ext/lib64/libvcodec_cap.so
-system_ext/lib64/libcomutils.so
-system_ext/lib64/libsignal.so
+system/priv-app/MtkMmsService/MtkMmsService.apk	CLASS_B_SIGNATURE_BLOCKED	android.uid.phone shared UID / duplicate GSI package risk
+system/priv-app/MtkTelecom/MtkTelecom.apk	CLASS_B_SIGNATURE_BLOCKED	android.uid.system or platform shared UID / duplicate GSI package risk
+system/priv-app/MtkTelephonyProvider/MtkTelephonyProvider.apk	CLASS_B_SIGNATURE_BLOCKED	android.uid.phone shared UID / duplicate GSI package risk
+system/priv-app/MtkTeleService/MtkTeleService.apk	CLASS_B_SIGNATURE_BLOCKED	boot-fatal com.android.phone android.uid.phone signature mismatch
+system_ext/priv-app/ImsService/ImsService.apk	CLASS_C_CONDITIONAL_APK	manifest/shared UID must be audited before inclusion
+system_ext/framework/mediatek-carrier-config-manager.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
+system_ext/framework/mediatek-ims-base.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
+system_ext/framework/mediatek-ims-common.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
+system_ext/framework/mediatek-ims-extension-plugin.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
+system_ext/framework/mediatek-telecom-common.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
+system_ext/lib64/libimsma.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
+system_ext/lib64/libimsma_adapt.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
+system_ext/lib64/libimsma_rtp.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
+system_ext/lib64/libimsma_socketwrapper.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
+system_ext/lib64/libsink.so	CLASS_C_CONDITIONAL_NATIVE	dependency closure held until IMS/native consumer audit
+system_ext/lib64/libsource.so	CLASS_C_CONDITIONAL_NATIVE	dependency closure held until IMS/native consumer audit
+system_ext/lib64/libvcodec_cap.so	CLASS_C_CONDITIONAL_NATIVE	dependency closure held until IMS/native consumer audit
+system_ext/lib64/libcomutils.so	CLASS_C_CONDITIONAL_NATIVE	dependency closure held until IMS/native consumer audit
+system_ext/lib64/libsignal.so	CLASS_C_CONDITIONAL_NATIVE	dependency closure held until IMS/native consumer audit
 PAYLOAD
 }
 
 printf 'target_path\tsource_path\tkind\tsha256\tsize\tcopied\n' > "$MANIFEST"
 printf 'target_path\n' > "$MISSING"
-printf 'target_path\treason\tevidence\n' > "$EXCLUDED"
+printf 'target_path\tclass\treason\tsource_path\tsha256\tsize\tpresent\n' > "$EXCLUDED"
 printf 'object\tneeded_library\n' > "$NATIVE_DEPS"
 
 missing_count=0
 copied_count=0
 present_count=0
-excluded_count=0
-
-while IFS=$'\t' read -r rel reason evidence; do
-  [[ -n "$rel" ]] || continue
-  printf '%s\t%s\t%s\n' "$rel" "$reason" "$evidence" >> "$EXCLUDED"
-  excluded_count=$((excluded_count + 1))
-done < <(excluded_payload_list)
 
 while IFS= read -r rel; do
   [[ -n "$rel" ]] || continue
@@ -190,33 +187,64 @@ while IFS= read -r rel; do
       "$rel" "$src" "$kind" "$sha" "$size" "$copied" >> "$MANIFEST"
 
     present_count=$((present_count + 1))
-
-    if [[ "$rel" == *.so ]] && command -v readelf >/dev/null 2>&1; then
-      readelf -d "$src" 2>/dev/null \
-        | awk -v object="$rel" '/NEEDED/ {
-            gsub(/.*\[/, "", $0)
-            gsub(/\].*/, "", $0)
-            print object "\t" $0
-          }' >> "$NATIVE_DEPS" || true
-    fi
   else
     printf '%s\n' "$rel" >> "$MISSING"
     missing_count=$((missing_count + 1))
   fi
-done < <(payload_list)
+done < <(boot_safe_payload_list)
+
+excluded_total_count=0
+excluded_present_count=0
+excluded_missing_count=0
+excluded_signature_blocked_count=0
+excluded_conditional_count=0
+
+while IFS=$'\t' read -r rel class reason; do
+  [[ -n "$rel" ]] || continue
+  excluded_total_count=$((excluded_total_count + 1))
+
+  case "$class" in
+    CLASS_B_SIGNATURE_BLOCKED*) excluded_signature_blocked_count=$((excluded_signature_blocked_count + 1)) ;;
+    CLASS_C_CONDITIONAL*) excluded_conditional_count=$((excluded_conditional_count + 1)) ;;
+  esac
+
+  if src="$(resolve_stock_path "$rel")"; then
+    sha="$(sha256sum "$src" | awk '{print $1}')"
+    size="$(stat -c '%s' "$src")"
+    present="YES"
+    excluded_present_count=$((excluded_present_count + 1))
+  else
+    src=""
+    sha=""
+    size=""
+    present="NO"
+    excluded_missing_count=$((excluded_missing_count + 1))
+  fi
+
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$rel" "$class" "$reason" "$src" "$sha" "$size" "$present" >> "$EXCLUDED"
+done < <(excluded_payload_list)
 
 log_marker "N1B2_MTK_PAYLOAD_STATIC_ONLY=YES"
+log_marker "N1B2_MTK_PAYLOAD_PROFILE=BOOT_SAFE_CONFIG_ONLY"
 log_marker "N1B2_MTK_PAYLOAD_STOCK_ROOT=$STOCK_ROOT"
 log_marker "N1B2_MTK_PAYLOAD_EVIDENCE_DIR=$EVIDENCE_DIR"
 log_marker "N1B2_MTK_PAYLOAD_STAGE_DIR=$STAGE_DIR"
 log_marker "N1B2_MTK_PAYLOAD_COPY_PAYLOAD=$COPY_PAYLOAD"
 log_marker "N1B2_MTK_PAYLOAD_PRESENT_COUNT=$present_count"
 log_marker "N1B2_MTK_PAYLOAD_MISSING_COUNT=$missing_count"
-log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_BOOT_FATAL_COUNT=$excluded_count"
 log_marker "N1B2_MTK_PAYLOAD_COPIED_COUNT=$copied_count"
 log_marker "N1B2_MTK_PAYLOAD_MANIFEST=$MANIFEST"
-log_marker "N1B2_MTK_PAYLOAD_EXCLUDED=$EXCLUDED"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_MANIFEST=$EXCLUDED"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_TOTAL_COUNT=$excluded_total_count"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_PRESENT_COUNT=$excluded_present_count"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_MISSING_COUNT=$excluded_missing_count"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_SIGNATURE_BLOCKED_COUNT=$excluded_signature_blocked_count"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_CONDITIONAL_COUNT=$excluded_conditional_count"
 log_marker "N1B2_MTK_PAYLOAD_NATIVE_DEPS=$NATIVE_DEPS"
+log_marker "N1B2_MTK_PAYLOAD_STOCK_APKS_IN_BOOT_SAFE=NO"
+log_marker "N1B2_MTK_PAYLOAD_STOCK_JARS_IN_BOOT_SAFE=NO"
+log_marker "N1B2_MTK_PAYLOAD_STOCK_NATIVE_LIBS_IN_BOOT_SAFE=NO"
 log_marker "N1B2_MTK_PAYLOAD_VENDOR_PARTITION_COPY=NO"
 log_marker "N1B2_MTK_PAYLOAD_FASTBOOT_USED=NO"
 log_marker "N1B2_MTK_PAYLOAD_ADB_USED=NO"
