@@ -1,15 +1,22 @@
 # Titan 2 N1B2 cellular PR208 handoff
 
-Status: PR208 restoration implementation, package-verified; first physical validation failed boot due stock phone APK signature mismatch
+Status: PR208 restoration implementation, package-verified; first physical validation failed boot due stock phone APK signature mismatch; N1B1 no-flash diagnosis shows AOSP telephony present but cellular registration failing
 Date: 2026-09-29
 
 ## Conclusion
 
 Restless/Treble/Sable GSI is not sufficient by itself for Titan 2 cellular
-stability. PR207/N1B1 evidence points to an Android framework telephony gap:
-key services such as `phone`, `isub`, and `carrier_config` were absent or not
-stable, while vendor-side MediaTek radio/IMS pieces were present enough to emit
-radio logs.
+stability. Initial PR207/N1B1 evidence appeared to point to an Android framework
+telephony gap. Follow-up no-flash diagnosis on the recovered N1B/N1B1 image
+proved the core AOSP telephony stack is present: `phone`, `isub`,
+`carrier_config`, SIM subscription loading, and Telecom phone account
+registration are available.
+
+The remaining N1B1 cellular failure is therefore not simply missing TeleService.
+It is a vendor radio / MediaTek framework add-on / IMS-registration compatibility
+problem: the SIM loads, T-Mobile/310240 is identified, vendor RIL initializes,
+AOSP radio AIDL services and MTK radio extension services are present, but the
+network remains IWLAN/no cellular operator registration.
 
 PR208 must not be APN-only, 5G-only, or a full vendor copy.
 
@@ -27,8 +34,9 @@ Build-engineering review agreed that the stock `MtkTeleService.apk` cannot be
 imported as-is. It also warned that removing only that APK may expose the next
 shared-UID stock APK boot loop. Therefore PR208 now splits the stock-derived
 payload into boot-safe config, signature-blocked APKs, and conditional MTK/IMS
-pieces. The next candidate is a conservative boot-safe config-only image, not a
-claim of cellular restoration.
+pieces. PR208 also adds an offline stock APK manifest/certificate classifier so
+conditional items such as `ImsService.apk` are audited before any image build or
+flash.
 
 ## Source boundary
 
@@ -59,11 +67,12 @@ path without committing proprietary binaries:
 
 1. Stage boot-safe payload files from the local stock firmware tree.
 2. Emit an excluded-payload report for signature-blocked and conditional MTK/IMS pieces.
-3. Generate `vendor/sable/n1b2/mtk-telephony-payload/sable_n1b2_mtk_telephony_payload.mk` in the Android build tree.
-4. Add that generated makefile to `vendor/sable/n1b2/sable_n1b2_product_profile.mk` using `inherit-product-if-exists`.
-5. Build the N1B2 GSI with the existing `build-n1b2-image-candidate.sh` entrypoint.
-6. Verify every staged boot-safe payload file is present in target_files with matching SHA-256 values.
-7. Keep stock shared-UID APKs, MTK framework JARs, IMS APK, and native IMS libraries excluded until the base AOSP telephony stack is proven and each conditional item has a consumer/signature/duplicate audit.
+3. Audit stock telephony APK manifests/certificates before any conditional APK can be considered.
+4. Generate `vendor/sable/n1b2/mtk-telephony-payload/sable_n1b2_mtk_telephony_payload.mk` in the Android build tree.
+5. Add that generated makefile to `vendor/sable/n1b2/sable_n1b2_product_profile.mk` using `inherit-product-if-exists`.
+6. Build the N1B2 GSI with the existing `build-n1b2-image-candidate.sh` entrypoint.
+7. Verify every staged boot-safe payload file is present in target_files with matching SHA-256 values.
+8. Keep stock shared-UID APKs, MTK framework JARs, IMS APK, and native IMS libraries excluded until the base AOSP telephony stack is proven and each conditional item has a consumer/signature/duplicate audit.
 
 The flow does not modify flash scripts because the output remains the N1B2 GSI
 system image / target_files artifact. Flash script changes are not required
@@ -127,6 +136,38 @@ system_ext/lib64/libcomutils.so
 system_ext/lib64/libsignal.so
 ```
 
+## Current no-flash diagnosis
+
+Recovered N1B/N1B1 evidence shows:
+
+```text
+AOSP_TELESERVICE_PRESENT=YES
+PHONE_SERVICE_PRESENT=YES
+ISUB_SERVICE_PRESENT=YES
+CARRIER_CONFIG_PRESENT=YES
+SIM_SLOT_1_STATE=LOADED
+SIM_SLOT_1_MCCMNC=310240
+CARRIER=T-Mobile
+AOSP_RADIO_AIDL_SERVICES_PRESENT=YES
+MTK_RADIO_EXTENSION_SERVICES_PRESENT=YES
+MTK_IMS_TELEPHONY_OVERLAY_ENABLED=YES
+CELLULAR_OPERATOR_REGISTRATION=FAIL_EMPTY_OPERATOR_NUMERIC
+NETWORK_TYPE=IWLAN,IWLAN
+```
+
+Important runtime clues:
+
+```text
+RILC: isMtkFwkAddonNotExisted(1) -1
+RilOpProxy: dlopen failed: library "libmtkmipc-rilop.so" not found
+```
+
+The enabled PHH MTK IMS overlay maps AOSP `TeleService` IMS MMTEL config to
+`com.mediatek.ims`, but the package list from N1B1 does not show an installed
+`com.mediatek.ims` implementation. That makes `system_ext/priv-app/ImsService`
+a conditional candidate, but only after the stock APK audit confirms it has no
+shared UID / duplicate AOSP package risk.
+
 ## Required PR208 markers
 
 ```text
@@ -140,6 +181,7 @@ PR208_PRODUCT_COPY_FILES_WIRING=YES
 PR208_BUILD_WIRING=YES
 PR208_IMAGE_PAYLOAD_VERIFICATION=YES
 PR208_FLASH_SCRIPT_MUTATION=NO_NOT_REQUIRED
+PR208_STOCK_APK_AUDIT=YES
 ```
 
 Current payload markers expected from staging/build:
@@ -151,6 +193,31 @@ N1B2_MTK_PAYLOAD_STOCK_JARS_IN_BOOT_SAFE=NO
 N1B2_MTK_PAYLOAD_STOCK_NATIVE_LIBS_IN_BOOT_SAFE=NO
 N1B2_MTK_BUILD_PAYLOAD_PROFILE=BOOT_SAFE_CONFIG_ONLY
 ```
+
+Current stock APK audit markers expected:
+
+```text
+N1B2_STOCK_APK_AUDIT=PASS
+N1B2_STOCK_APK_AUDIT_BLOCKED_COUNT=4
+N1B2_STOCK_APK_AUDIT_CONDITIONAL_COUNT=1
+N1B2_STOCK_APK_AUDIT_IMSSERVICE_CLASS=CONDITIONAL
+N1B2_STOCK_APK_AUDIT_RESULT=PASS
+```
+
+## Stock APK audit entrypoint
+
+Run the offline APK audit before any conditional APK is added to the image:
+
+```bash
+bash build/titan2/audit-n1b2-stock-telephony-apks.sh \
+  --stock-root <stock-2026041315-root> \
+  --android-src <android-src> \
+  --evidence-dir <evidence-dir>
+```
+
+The audit uses `aapt2` to read `AndroidManifest.xml` and optionally uses
+`apksigner` to record certificate digests. It does not use adb, fastboot, image
+builds, or source mutation.
 
 ## Build entrypoint
 
@@ -199,5 +266,5 @@ FIRST_PR208_PHYSICAL_FLASH=PASS
 FIRST_PR208_BOOT_RESULT=FAIL_BOOT_ANIMATION_STUCK
 FIRST_PR208_FAILURE_CAUSE=BOOT_FATAL_SHARED_UID_SIGNATURE_MISMATCH_ON_COM_ANDROID_PHONE
 ROLLBACK_TO_N1B1=PASS
-NEXT_PR208_CANDIDATE=BOOT_SAFE_CONFIG_ONLY_AFTER_N1B1_NO_FLASH_DIAGNOSIS
+NEXT_PR208_STEP=RUN_STOCK_APK_AUDIT_THEN_DECIDE_IF_IMSSERVICE_CAN_BE_ISOLATED_CONDITIONAL_TEST
 ```
