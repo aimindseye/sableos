@@ -13,6 +13,7 @@ Options:
   --serial SERIAL           adb serial to target a specific device.
   --evidence-dir DIR        Output directory. Default: /tmp/SABLE_N1B2_CELLULAR_RUNTIME_<label>_<UTC>.
   --duration SECONDS        Logcat capture duration. Default: 180.
+  --command-timeout SECONDS Per-command timeout for adb shell/dumpsys reads. Default: 60.
   --transition-note TEXT    Optional operator note.
 
 Android mode with adb is required. Do not use fastboot or fastbootd for PR 207
@@ -24,30 +25,83 @@ USAGE
 LABEL=""
 SERIAL="${ADB_SERIAL:-}"
 DURATION="${DURATION:-180}"
+COMMAND_TIMEOUT="${COMMAND_TIMEOUT:-60}"
 EVIDENCE_DIR=""
 TRANSITION_NOTE=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --label)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--label" >&2
+        exit 2
+      fi
       LABEL="$2"
       shift 2
       ;;
+    --label=*)
+      LABEL="${1#*=}"
+      shift
+      ;;
     --serial)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--serial" >&2
+        exit 2
+      fi
       SERIAL="$2"
       shift 2
       ;;
+    --serial=*)
+      SERIAL="${1#*=}"
+      shift
+      ;;
     --evidence-dir)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--evidence-dir" >&2
+        exit 2
+      fi
       EVIDENCE_DIR="$2"
       shift 2
       ;;
+    --evidence-dir=*)
+      EVIDENCE_DIR="${1#*=}"
+      shift
+      ;;
     --duration)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--duration" >&2
+        exit 2
+      fi
       DURATION="$2"
       shift 2
       ;;
+    --duration=*)
+      DURATION="${1#*=}"
+      shift
+      ;;
+    --command-timeout)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--command-timeout" >&2
+        exit 2
+      fi
+      COMMAND_TIMEOUT="$2"
+      shift 2
+      ;;
+    --command-timeout=*)
+      COMMAND_TIMEOUT="${1#*=}"
+      shift
+      ;;
     --transition-note)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--transition-note" >&2
+        exit 2
+      fi
       TRANSITION_NOTE="$2"
       shift 2
+      ;;
+    --transition-note=*)
+      TRANSITION_NOTE="${1#*=}"
+      shift
       ;;
     -h|--help)
       usage
@@ -80,6 +134,11 @@ if [[ ! "$DURATION" =~ ^[0-9]+$ || "$DURATION" -lt 1 ]]; then
   exit 2
 fi
 
+if [[ ! "$COMMAND_TIMEOUT" =~ ^[0-9]+$ || "$COMMAND_TIMEOUT" -lt 1 ]]; then
+  echo "COMMAND_TIMEOUT_INVALID=FAIL command_timeout=$COMMAND_TIMEOUT" >&2
+  exit 2
+fi
+
 if [[ -z "$EVIDENCE_DIR" ]]; then
   EVIDENCE_DIR="/tmp/SABLE_N1B2_CELLULAR_RUNTIME_${LABEL}_$(date -u +%Y%m%dT%H%M%SZ)"
 fi
@@ -100,7 +159,18 @@ run_host() {
   local output="$2"
   shift 2
   echo "RUN_HOST=$label output=$output"
-  if "$@" > "$output" 2>&1; then
+  if [[ "$label" == "LOGCAT_TIMED_WINDOW" ]]; then
+    if "$@" > "$output" 2>&1; then
+      printf '%s\t%s\t%s\tPASS\n' "$LABEL" "$label" "$output" >> "$COMMANDS"
+      echo "N1B2_CELLULAR_RUNTIME_${label}=PASS output=$output" >> "$MARKERS"
+    else
+      printf '%s\t%s\t%s\tWARN\n' "$LABEL" "$label" "$output" >> "$COMMANDS"
+      echo "N1B2_CELLULAR_RUNTIME_${label}=WARN output=$output" >> "$MARKERS"
+    fi
+    return 0
+  fi
+
+  if timeout "$COMMAND_TIMEOUT" "$@" > "$output" 2>&1; then
     printf '%s\t%s\t%s\tPASS\n' "$LABEL" "$label" "$output" >> "$COMMANDS"
     echo "N1B2_CELLULAR_RUNTIME_${label}=PASS output=$output" >> "$MARKERS"
   else
@@ -114,7 +184,7 @@ run_shell() {
   local output="$2"
   shift 2
   echo "RUN_ADB_SHELL=$label output=$output"
-  if "${ADB[@]}" shell "$@" > "$output" 2>&1; then
+  if timeout "$COMMAND_TIMEOUT" "${ADB[@]}" shell "$@" > "$output" 2>&1; then
     printf '%s\tadb shell %s\t%s\tPASS\n' "$LABEL" "$*" "$output" >> "$COMMANDS"
     echo "N1B2_CELLULAR_RUNTIME_${label}=PASS output=$output" >> "$MARKERS"
   else
@@ -130,6 +200,7 @@ echo "ANDROID_MODE_REQUIRED=YES"
 echo "ADB_USED=YES"
 echo "FASTBOOT_USED=NO"
 echo "FASTBOOTD_USED=NO"
+echo "COMMAND_TIMEOUT=$COMMAND_TIMEOUT"
 echo "SETTINGS_MUTATION=NO"
 echo "RADIO_TOGGLE=NO"
 echo "REBOOT=NO"
@@ -142,6 +213,7 @@ echo "N1B2_CELLULAR_RUNTIME_ANDROID_MODE_REQUIRED=YES" >> "$MARKERS"
 echo "N1B2_CELLULAR_RUNTIME_READ_ONLY=YES" >> "$MARKERS"
 echo "N1B2_CELLULAR_RUNTIME_FASTBOOT_USED=NO" >> "$MARKERS"
 echo "N1B2_CELLULAR_RUNTIME_FASTBOOTD_USED=NO" >> "$MARKERS"
+echo "N1B2_CELLULAR_RUNTIME_COMMAND_TIMEOUT=$COMMAND_TIMEOUT" >> "$MARKERS"
 echo "TRANSITION_NOTE=$TRANSITION_NOTE" > "$EVIDENCE_DIR/transition-note.txt"
 
 run_host "ADB_DEVICES" "$EVIDENCE_DIR/adb-devices.txt" "${ADB[@]}" devices -l
@@ -177,6 +249,7 @@ N1B2 cellular runtime capture evidence
 
 Label: $LABEL
 Duration: ${DURATION}s
+Command timeout: ${COMMAND_TIMEOUT}s
 Transition note: $TRANSITION_NOTE
 
 Android mode is required for PR 207. Do not use fastboot or fastbootd unless a
