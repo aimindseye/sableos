@@ -64,6 +64,9 @@ class MessagesInteractionModelTest {
         var state = MessagesInteractionModel.initialState()
         assertLatest(state)
 
+        state = MessagesInteractionModel.reduce(state, MessagesAction.OpenThread)
+        assertLatest(state)
+
         state = MessagesInteractionModel.reduce(state, MessagesAction.RestoreThread)
         assertLatest(state)
         assertEquals("RETURN_TO_LATEST_KEY", state.lastEvent)
@@ -144,10 +147,26 @@ class MessagesInteractionModelTest {
         state =
             MessagesInteractionModel.reduce(
                 state,
+                MessagesAction.ConversationListUp,
+                threadCount = threads.size,
+            )
+        assertEquals(0, state.focusedConversationRow)
+
+        state =
+            MessagesInteractionModel.reduce(
+                state.copy(focusedConversationRow = 2),
                 MessagesAction.ConversationListHome,
                 threadCount = threads.size,
             )
         assertEquals(0, state.focusedConversationRow)
+
+        state =
+            MessagesInteractionModel.reduce(
+                state,
+                MessagesAction.ConversationListEnd,
+                threadCount = threads.size,
+            )
+        assertEquals(threads.lastIndex, state.focusedConversationRow)
 
         state = MessagesInteractionModel.reduce(state, MessagesAction.TypeToFilter)
         assertEquals(MessagesMode.Search, state.mode)
@@ -174,6 +193,10 @@ class MessagesInteractionModelTest {
         assertTrue(state.draft.startsWith(typed))
         assertTrue(state.draft.contains("\n"))
 
+        state = MessagesInteractionModel.reduce(state, MessagesAction.ComposerBackspace)
+        state = MessagesInteractionModel.reduce(state, MessagesAction.ComposerDelete)
+        assertEquals(MessagesMode.Composer, state.mode)
+
         state = MessagesInteractionModel.reduce(state, MessagesAction.OnscreenKeyboardFallback)
         assertTrue(state.onscreenKeyboardFallback)
         assertTrue(state.physicalAndOnscreenDraftShareState)
@@ -181,6 +204,13 @@ class MessagesInteractionModelTest {
 
         state = MessagesInteractionModel.reduce(state, MessagesAction.AltSymFnTextEntry)
         assertTrue(state.altSymFnTextEntry)
+
+        state = MessagesInteractionModel.reduce(state, MessagesAction.ComposerMenuActions)
+        assertEquals(MessagesMode.MessageActions, state.mode)
+
+        state = MessagesInteractionModel.reduce(state, MessagesAction.ComposerEnterSend)
+        assertLatest(state)
+        assertTrue(state.autoAdvancedOnSend)
 
         state = MessagesInteractionModel.reduce(state, MessagesAction.ComposerAltEnterProviderSend)
         assertLatest(state)
@@ -191,6 +221,8 @@ class MessagesInteractionModelTest {
     fun messageAndAttachmentActionsAreKeyboardReachableAndProviderSafe() {
         var state = MessagesInteractionModel.initialState()
         state = MessagesInteractionModel.reduce(state, MessagesAction.MessageFocusUp)
+        assertEquals(MessagesFocus.LatestMessage, state.focus)
+        state = MessagesInteractionModel.reduce(state, MessagesAction.MessageFocusDown)
         assertEquals(MessagesFocus.LatestMessage, state.focus)
 
         listOf(
