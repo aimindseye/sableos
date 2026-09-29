@@ -1,0 +1,18 @@
+# Existing common-app device identity checks allowed by PR 201.
+#
+# This is a temporary baseline for pre-existing Reader/Eink code only.
+# New entries must not be added silently. Future Reader remediation should
+# replace these Build.* checks with profile/capability facts and then remove
+# this baseline.
+#
+# Format:
+# relative/path:trimmed source line
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/ui/login/LoginViewModel.kt:val manufacturer = android.os.Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/ui/login/LoginViewModel.kt:val model = android.os.Build.MODEL
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/utils/EinkHelper.kt:val brand = Build.BRAND.lowercase()
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/utils/EinkHelper.kt:val manufacturer = Build.MANUFACTURER.lowercase()
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/utils/EinkHelper.kt:val hardware = Build.HARDWARE.lowercase()
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/utils/EinkHelper.kt:val product = Build.PRODUCT.lowercase()
+apps/r8/android/reader/leisure/src/main/java/org/vaachak/reader/leisure/utils/EinkHelper.kt:val brand = Build.BRAND.lowercase()
+apps/r8/android/reader/core/src/androidMain/kotlin/org/vaachak/reader/core/data/repository/SettingsRepository.kt:val manufacturer = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+apps/r8/android/reader/core/src/androidMain/kotlin/org/vaachak/reader/core/data/repository/SettingsRepository.kt:val model = Build.MODEL
