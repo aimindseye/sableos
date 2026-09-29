@@ -107,14 +107,11 @@ module_in_gradle() {
 }
 
 android_module_present() {
-  local module="$1"
-  grep -R --include='Android.bp' --include='Android.mk' -Fq -- "name: ""$module" "$ANDROID_ROOT" 2>/dev/null || \
-    grep -R --include='Android.bp' --include='Android.mk' -Fq -- "LOCAL_MODULE := $module" "$ANDROID_ROOT" 2>/dev/null
+  grep -R --include='Android.bp' --include='Android.mk' -Fq -- "$1" "$ANDROID_ROOT" 2>/dev/null
 }
 
 product_selects() {
-  [[ -f "$ANDROID_ROOT/vendor/sable/n1b2/sable_n1b2_product_profile.mk" ]] && \
-    grep -Eq "(^|[[:space:]])$1([[:space:]]|\\\\|$)" "$ANDROID_ROOT/vendor/sable/n1b2/sable_n1b2_product_profile.mk"
+  [[ -f "$ANDROID_ROOT/vendor/sable/n1b2/sable_n1b2_product_profile.mk" ]] && grep -Fq -- "$1" "$ANDROID_ROOT/vendor/sable/n1b2/sable_n1b2_product_profile.mk"
 }
 
 cat <<EOF | tee -a "$REPORT"
@@ -135,7 +132,6 @@ PUBLIC_RELEASE=NO
 PRODUCTION_SIGNING=NO
 EOF
 
-# Canonical operator and artifact class coverage.
 require_file COMPOSITION_BUILD_README_PRESENT "$ROOT/build/README.md"
 for kind in target-files full-device-images gsi-system-image system-product-bundle boot-recovery-bundle; do
   require_text "COMPOSITION_ARTIFACT_KIND_${kind//-/_}" "$kind" "$ROOT/build/README.md"
@@ -145,7 +141,6 @@ require_text COMPOSITION_ENTRYPOINT_REGISTER_GENERIC_ARTIFACTS "--artifact-kind"
 require_text COMPOSITION_ENTRYPOINT_SHOW_ARTIFACT "show-artifact" "$ROOT/build/sable.sh"
 require_text COMPOSITION_ENTRYPOINT_FLASH_PLAN "flash-plan" "$ROOT/build/sable.sh"
 
-# Device adapter isolation and release support.
 require_file COMPOSITION_PANTHER_ADAPTER_PRESENT "$ROOT/build/devices/panther.sh"
 require_text COMPOSITION_PANTHER_TARGET_FILES_ONLY "target-files" "$ROOT/build/devices/panther.sh"
 require_text COMPOSITION_PANTHER_BUILD_SUPPORTED "SABLE_DEVICE_BUILD_SUPPORTED=YES" "$ROOT/build/devices/panther.sh"
@@ -162,7 +157,6 @@ else
   emit FAIL COMPOSITION_TITAN2_N1B2_RELEASE_GATE "Titan2 adapter does not explicitly gate/register N1B2"
 fi
 
-# Private app/source graph.
 require_file COMPOSITION_GRADLE_SETTINGS_PRESENT "$ROOT/apps/r8/android/settings.gradle.kts"
 for module in design calculator games media hub weather calendar; do
   module_in_gradle "$module" && emit PASS "COMPOSITION_GRADLE_MODULE_${module^^}" "module=$module" || emit FAIL "COMPOSITION_GRADLE_MODULE_${module^^}" "missing_module=$module"
@@ -171,7 +165,6 @@ for module in mail messages people reader textreader browser settings systemui p
   module_in_gradle "$module" && emit PASS "COMPOSITION_GRADLE_EXPECTED_MODULE_${module^^}" "module=$module" || emit NOT_PROVEN "COMPOSITION_GRADLE_EXPECTED_MODULE_${module^^}" "not_listed_in_apps_gradle module=$module"
 done
 
-# Repository-owned SableLauncher source.
 require_file COMPOSITION_REPO_SABLELAUNCHER_BP "$ROOT/src/android/packages/apps/SableStart/Android.bp"
 require_text COMPOSITION_REPO_SABLELAUNCHER_MODULE "SableLauncher" "$ROOT/src/android/packages/apps/SableStart/Android.bp"
 require_file COMPOSITION_REPO_SABLELAUNCHER_MANIFEST "$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
@@ -179,7 +172,6 @@ require_text COMPOSITION_REPO_SABLELAUNCHER_PACKAGE "org.sableos.launcher" "$ROO
 require_text COMPOSITION_REPO_SABLELAUNCHER_HOME "android.intent.category.HOME" "$ROOT/src/android/packages/apps/SableStart/AndroidManifest.xml"
 require_file COMPOSITION_REPO_SABLE_DESIGN_BP "$ROOT/src/android/shared/sabledesign/Android.bp"
 
-# Android workspace product composition.
 PROFILE_MK="$ANDROID_ROOT/vendor/sable/n1b2/sable_n1b2_product_profile.mk"
 PRODUCT_CLOSURE_ENV="$ANDROID_ROOT/vendor/sable/n1b2/product-closure.env"
 UX_READINESS_ENV="$ANDROID_ROOT/vendor/sable/n1b2/ux-testbed-readiness.env"
@@ -204,35 +196,22 @@ require_file COMPOSITION_ANDROID_SABLE_DESIGN_BP "$ANDROID_ROOT/packages/apps/Sa
 android_module_present SableLauncher && emit PASS COMPOSITION_ANDROID_MODULE_SABLELAUNCHER_PRESENT "module=SableLauncher" || emit FAIL COMPOSITION_ANDROID_MODULE_SABLELAUNCHER_PRESENT "module=SableLauncher"
 product_selects SableLauncher && emit PASS COMPOSITION_ANDROID_PRODUCT_SELECTS_SABLELAUNCHER "module=SableLauncher" || emit FAIL COMPOSITION_ANDROID_PRODUCT_SELECTS_SABLELAUNCHER "module=SableLauncher"
 
-# Design-driven product surfaces. These are image-composition checks, not policy-doc checks.
 for module in SableHub SableMail SableCalendar SableWeather SableMedia SableMessages SablePeople SableReader SableTextReader SableCommand SableSettings SablePhone SableContacts; do
   android_module_present "$module" && emit PASS "COMPOSITION_ANDROID_MODULE_${module^^}_PRESENT" "module=$module" || emit NOT_PROVEN "COMPOSITION_ANDROID_MODULE_${module^^}_PRESENT" "module_not_found=$module"
   product_selects "$module" && emit PASS "COMPOSITION_ANDROID_PRODUCT_SELECTS_${module^^}" "module=$module" || emit NOT_PROVEN "COMPOSITION_ANDROID_PRODUCT_SELECTS_${module^^}" "not_selected_in_n1b2_product_profile module=$module"
 done
 
-# Optional platform_sable local-doc verification.
 if [[ -n "$PLATFORM_SABLE_ROOT" ]]; then
-  for doc in \
-    docs/ARCHITECTURE.md \
-    docs/design/KEYBOARD_FIRST_SYSTEM_IMG_COVERAGE_AUDIT.md \
-    docs/design/SETUP_WIZARD_FIRST_BOOT_UX.md \
-    docs/design/SABLE_START_KEYBOARD_FIRST_UX.md \
-    docs/design/SABLE_HUB_KEYBOARD_FIRST_UX.md \
-    docs/design/QUICK_SETTINGS_NOTIFICATION_SHADE_UX.md \
-    docs/design/KEYBOARD_FIRST_SETTINGS_UX.md \
-    docs/design/BROWSER_WEBVIEW_UX.md; do
+  for doc in docs/ARCHITECTURE.md docs/design/KEYBOARD_FIRST_SYSTEM_IMG_COVERAGE_AUDIT.md docs/design/SETUP_WIZARD_FIRST_BOOT_UX.md docs/design/SABLE_START_KEYBOARD_FIRST_UX.md docs/design/SABLE_HUB_KEYBOARD_FIRST_UX.md docs/design/QUICK_SETTINGS_NOTIFICATION_SHADE_UX.md docs/design/KEYBOARD_FIRST_SETTINGS_UX.md docs/design/BROWSER_WEBVIEW_UX.md; do
     require_file "COMPOSITION_PLATFORM_${doc//[^A-Za-z0-9]/_}" "$PLATFORM_SABLE_ROOT/$doc"
   done
 else
   emit NOT_CHECKED COMPOSITION_PLATFORM_SABLE_DOCS "--platform-sable-root not supplied"
 fi
 
-# Panther taint check.
 for path in "$ROOT/apps" "$ROOT/src/android/shared" "$ROOT/build/panther" "$ROOT/tests"; do
   [[ -d "$path" ]] || continue
-  grep -R -n -E "titan2|Titan2|Titan 2|N1B|N1B2|tdgsi|Restless|g71v78c2k|MT6878|vendor/sable/n1b2" "$path" \
-    --exclude-dir=.git --exclude='*.png' --exclude='*.jpg' --exclude='*.webp' --exclude='*.mp4' \
-    >> "$TAINT_REPORT" 2>/dev/null || true
+  grep -R -n -E "titan2|Titan2|Titan 2|N1B|N1B2|tdgsi|Restless|g71v78c2k|MT6878|vendor/sable/n1b2" "$path" --exclude-dir=.git --exclude='*.png' --exclude='*.jpg' --exclude='*.webp' --exclude='*.mp4' >> "$TAINT_REPORT" 2>/dev/null || true
 done
 if [[ -s "$TAINT_REPORT" ]]; then
   [[ "$FAIL_ON_PANTHER_TAINT" == YES ]] && emit FAIL COMPOSITION_PANTHER_TAINT_CHECK "taint_report=$TAINT_REPORT" || emit WARN COMPOSITION_PANTHER_TAINT_CHECK "taint_report=$TAINT_REPORT"
