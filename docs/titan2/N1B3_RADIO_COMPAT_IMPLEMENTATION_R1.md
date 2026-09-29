@@ -2,9 +2,9 @@
 
 ## Status
 
-N1B3 is the first implementation-prep branch after PR209.
+N1B3 is the first implementation-prep checkpoint after PR209. PR209 superseded PR208 and preserved the clean evidence path for Titan 2 radio compatibility work.
 
-PR209 superseded PR208 and preserved the clean evidence path for Titan 2 radio compatibility work. This branch intentionally starts with source/static audit tooling before any runtime-affecting change.
+PR210 initially added standalone source-audit tooling. That direction is retired. SableOS already has repository-owned build, host-tool, device, release and local-CI orchestration under `build/`. Titan 2 radio work must use those existing entry points and gates instead of ad hoc source-discovery or audit scripts.
 
 ## Contract markers
 
@@ -17,7 +17,9 @@ N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_STOCK_APK_IMPORT=YES
 N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_MTK_JAR_SO_PAYLOAD=YES
 N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_VENDOR_COPY=YES
 N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_FLASH=YES
-N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_SOURCE_AUDIT_FIRST=YES
+N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_STANDALONE_AUDIT_SCRIPTS=YES
+N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_USE_CANONICAL_BUILD_PROCESS=YES
+N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_USE_LOCAL_CI=YES
 N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_MTK_INDICATION=YES
 N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_IMS_BINDING=YES
 N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_WWAN_DROP=YES
@@ -33,25 +35,27 @@ PR209 local evidence showed:
 - MTK indication callbacks and IMS binding remain the high-signal suspects.
 - Stock telephony APK payload import remains blocked and is not part of this path.
 
-## Implementation-prep scope
+## Required process
 
-This PR adds only:
+Use the existing SableOS build and CI entry points in `build/`.
 
-- a N1B3 implementation handoff document;
-- a bounded source/static audit script;
-- a contract gate that blocks the old PR208 payload direction.
+Canonical local CI for Titan 2 N1B:
 
-The source audit searches only explicit source roots and summarizes:
+```bash
+SABLEOS_DEVICE=titan2 \
+SABLEOS_RELEASE_VERSION=N1B \
+bash build/local-ci/run.sh full
+```
 
-- MTK indication surfaces;
-- IMS binding surfaces;
-- PHH / MTK IMS overlay wiring;
-- WWAN drop/data-call terms;
-- QNS/IWLAN terms;
-- SELinux radio service terms.
+Do not add or run milestone-specific standalone source-discovery/audit scripts for Android source roots, host tools, SDK, NDK, Java, Gradle, Rust, repo workspace discovery, or build graph inspection. The repository build layer owns those responsibilities.
+
+For implementation work, use targeted source changes and existing repository gates. If a new gate is needed, it must be integrated into the canonical build/local-CI flow rather than introduced as a separate exploratory audit script.
 
 ## Explicit non-goals
 
+- No standalone Android source audit scripts
+- No milestone-specific source-root discovery scripts
+- No milestone-specific host-tool discovery scripts
 - No `MtkTeleService.apk`
 - No `MtkTelephonyProvider.apk`
 - No `MtkMmsService.apk`
@@ -63,30 +67,11 @@ The source audit searches only explicit source roots and summarizes:
 - No full vendor copy
 - No flash script mutation
 
-## Validation
+## Next implementation direction
 
-Static contract:
+N1B4 should be an implementation branch based on existing SableOS build/process knowledge. It should not start with another audit or discovery script. The expected path is:
 
-```bash
-bash build/gates/n1b3-radio-compat-implementation-contract.sh
-```
-
-Expected marker:
-
-```text
-N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_CONTRACT=PASS
-```
-
-Source audit:
-
-```bash
-bash build/titan2/audit-n1b3-radio-compat-source.sh \
-  --android-src /srv/data/sable-build/workspaces/r8-a4-panther-base-2026081300 \
-  --evidence-dir /srv/data/sable-build/evidence/titan2/n1b3-radio-compat-implementation-r1/source-audit
-```
-
-Expected marker:
-
-```text
-N1B3_RADIO_COMPAT_SOURCE_AUDIT=PASS
-```
+1. Select the targeted radio/IMS compatibility change.
+2. Add the smallest source/build integration patch required.
+3. Validate through existing local CI and release gates.
+4. Use device contact only through an explicitly authorized runtime validation step.
