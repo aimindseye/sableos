@@ -107,8 +107,14 @@ check_token \
 
 check_token \
   build/titan2/apply-n1b3-radio-compat-product-delta.sh \
-  "persist.sys.phh.ims.mtk=false" \
+  'MTK_IMS_PROPERTY="persist.sys.phh.ims.mtk"' \
   "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_TOKEN"
+
+check_token \
+  build/titan2/apply-n1b3-radio-compat-product-delta.sh \
+  'MTK_IMS_VALUE="false"' \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_TOKEN"
+
 
 check_token \
   build/titan2/apply-n1b3-radio-compat-product-delta.sh \
