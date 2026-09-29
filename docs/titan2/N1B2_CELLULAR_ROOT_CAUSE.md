@@ -3,6 +3,10 @@
 Status: PR 207 evidence report template
 Date: 2026-09-29
 
+PR 207 is read-only evidence collection. It does not fix cellular and does not
+authorize module, overlay, sepolicy, permission, product package, image, or
+flash changes.
+
 ## Current state
 
 ```text
