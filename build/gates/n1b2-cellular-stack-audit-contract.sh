@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# PR 207 is an audit-only, read-only gate. It validates evidence plumbing and
+# explicitly blocks implementation, image build, and flash enablement changes.
 ROOT="${ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 STATIC_SCRIPT="$ROOT/build/titan2/audit-n1b2-cellular-stack.sh"
 RUNTIME_SCRIPT="$ROOT/build/titan2/capture-n1b2-cellular-runtime.sh"
@@ -103,6 +105,7 @@ echo "FLASH_ENABLEMENT=NO"
 echo "FASTBOOT_REQUIRED=NO"
 echo "FASTBOOTD_REQUIRED=NO"
 echo "ANDROID_MODE_RUNTIME_CAPTURE=YES"
+echo "READ_ONLY_AUDIT=YES"
 
 require_file "N1B2_CELLULAR_STATIC_SCRIPT_PRESENT" "$STATIC_SCRIPT"
 require_file "N1B2_CELLULAR_RUNTIME_SCRIPT_PRESENT" "$RUNTIME_SCRIPT"
@@ -173,9 +176,10 @@ for class_marker in \
   require_pattern "N1B2_CELLULAR_ROOT_CAUSE_CLASS_${class_marker//[^A-Za-z0-9]/_}" "$class_marker" "$ROOT_CAUSE_DOC"
 done
 
-# Block accidental implementation in this audit PR.
+# Block accidental implementation in this audit PR. Allow documentation that says
+# fastboot/fastbootd are not required; block executable mutating command forms.
 for path in "$STATIC_SCRIPT" "$RUNTIME_SCRIPT" "$AUDIT_DOC" "$ROOT_CAUSE_DOC" "$SELF"; do
-  require_absent_pattern "N1B2_CELLULAR_NO_FASTBOOT_COMMAND_${path//[^A-Za-z0-9]/_}" '(^|[[:space:]])fastboot([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_FASTBOOT_FLASH_${path//[^A-Za-z0-9]/_}" 'fastboot[[:space:]].*(flash|erase|format|reboot|boot|update|set_active)' "$path"
   require_absent_pattern "N1B2_CELLULAR_NO_ADB_REBOOT_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]reboot' "$path"
   require_absent_pattern "N1B2_CELLULAR_NO_ADB_ROOT_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]root' "$path"
   require_absent_pattern "N1B2_CELLULAR_NO_ADB_REMOUNT_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]remount' "$path"
@@ -184,7 +188,7 @@ for path in "$STATIC_SCRIPT" "$RUNTIME_SCRIPT" "$AUDIT_DOC" "$ROOT_CAUSE_DOC" "$
   require_absent_pattern "N1B2_CELLULAR_NO_SVC_DATA_${path//[^A-Za-z0-9]/_}" 'svc[[:space:]]+data' "$path"
   require_absent_pattern "N1B2_CELLULAR_NO_SVC_WIFI_${path//[^A-Za-z0-9]/_}" 'svc[[:space:]]+wifi' "$path"
   require_absent_pattern "N1B2_CELLULAR_NO_SETENFORCE_${path//[^A-Za-z0-9]/_}" 'setenforce' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_MKBOOTIMG_${path//[^A-Za-z0-9]/_}" 'mkbootimg|avbtool|lpmake|fastbootd' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_IMAGE_TOOLS_${path//[^A-Za-z0-9]/_}" 'mkbootimg|avbtool|lpmake' "$path"
 done
 
 if [[ "$RUN_STATIC_SMOKE" == "YES" ]]; then
