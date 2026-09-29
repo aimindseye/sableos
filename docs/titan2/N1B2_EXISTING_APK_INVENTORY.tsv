@@ -1,0 +1,11 @@
+module	role	n1b2_product_candidate	build_task	expected_debug_apk_glob	notes
+design	shared_library	NO	:design:assemble		SableDesign shared library; required by app modules but does not produce a product APK
+calculator	product_apk	YES	:calculator:assembleDebug	calculator/build/outputs/apk/debug/*.apk	Existing utility app APK; converter functionality should fold into calculator in a later remediation PR
+convert	legacy_product_apk	NO	:convert:assembleDebug	convert/build/outputs/apk/debug/*.apk	Existing legacy converter APK; tracked here so current code keeps building until calculator consolidation removes it intentionally
+games	product_apk	YES	:games:assembleDebug	games/build/outputs/apk/debug/*.apk	Existing Sable Games APK
+media	product_apk	YES	:media:assembleDebug	media/build/outputs/apk/debug/*.apk	Existing Sable Media APK
+hub	product_apk	YES	:hub:assembleDebug	hub/build/outputs/apk/debug/*.apk	Existing Sable Hub APK
+weather	product_apk	YES	:weather:assembleDebug	weather/build/outputs/apk/debug/*.apk	Existing Sable Weather APK
+calendar	product_apk	YES	:calendar:assembleDebug	calendar/build/outputs/apk/debug/*.apk	Existing Sable Calendar APK
+sablestart-presentation-check	validation_module	NO	:sablestart-presentation-check:assemble		Validation/support module, not an N1B2 product APK candidate
+sablestart-visual-review	validation_apk	NO	:sablestart-visual-review:assembleDebug	sablestart-visual-review/build/outputs/apk/debug/*.apk	Visual review APK; not an N1B2 product APK candidate
