@@ -5,6 +5,7 @@ convert	legacy_shared_library	NO	:convert:assembleDebug	NONE	Existing legacy con
 games	product_apk_flavored	YES	:games:assembleDebug	games/build/outputs/apk/*/debug/*.apk	Existing Sable Games APK; product flavors emit one debug APK per game flavor
 media	product_apk	YES	:media:assembleDebug	media/build/outputs/apk/debug/*.apk	Existing Sable Media APK
 hub	product_apk	YES	:hub:assembleDebug	hub/build/outputs/apk/debug/*.apk	Existing Sable Hub APK
+messages	restored_product_apk	YES	:messages:assembleDebug	messages/build/outputs/apk/debug/*.apk	Restored Sable Messages APK; provider-safe handoff surface based on Hub/Messages reference and platform_sable conversation UX
 weather	product_apk	YES	:weather:assembleDebug	weather/build/outputs/apk/debug/*.apk	Existing Sable Weather APK
 calendar	product_apk	YES	:calendar:assembleDebug	calendar/build/outputs/apk/debug/*.apk	Existing Sable Calendar APK
 sablestart-presentation-check	validation_module	NO	:sablestart-presentation-check:assemble	NONE	Validation/support module, not an N1B2 product APK candidate
