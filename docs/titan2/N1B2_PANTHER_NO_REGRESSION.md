@@ -31,7 +31,7 @@ build/devices/titan2.sh
 
 ## Device branching rule
 
-Common app code must not branch on Android device identity, model, product, brand, manufacturer, or raw system property checks.
+Common app code must not add new branches on Android device identity, model, product, brand, manufacturer, or raw system property checks.
 
 Bad examples:
 
@@ -49,6 +49,16 @@ val appLayoutProfile = SableProfiles.appLayout(context)
 ```
 
 Apps may adapt focus order, shortcuts, layout density, command behavior, and input handling only through profile facts/capability flags, not retail names or Build fields.
+
+## Existing Reader baseline
+
+Current Reader/Eink code has pre-existing `Build.*` identity checks. PR 201 records those exact occurrences in:
+
+```text
+docs/titan2/N1B2_COMMON_APP_DEVICE_IDENTITY_BRANCHING_BASELINE.txt
+```
+
+The gate permits only that explicit baseline and fails on any new or changed device-identity branching. Future Reader remediation should replace the baseline with profile/capability facts and then remove the baseline file.
 
 ## Gate
 
