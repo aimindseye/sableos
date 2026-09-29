@@ -1,0 +1,99 @@
+source_repo	source_ref	source_sha	source_path	source_kind	owner_pr	binding_status	n1b2_blocking	notes
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/ARCHITECTURE.md	top_level_doc	210	BOUND	YES	Common product/profile architecture
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/CAMERA_ENHANCEMENT_MODEL.md	top_level_doc	222	BOUND	YES	Camera enhancement model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/CRITICAL_TEXT_ENTRY_GATES.md	top_level_doc	211	BOUND	YES	Critical text-entry release blockers
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/DEVICE_SUPPORT_LEVELS.md	top_level_doc	210	BOUND	YES	Device role vocabulary
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/DISPLAY_AND_ATTENTION_PROFILE_MODEL.md	top_level_doc	210,228	BOUND	YES	Display and attention profile model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/KEYBOARD_AND_POINTER_PROFILE_MODEL.md	top_level_doc	210,211	BOUND	YES	Keyboard and pointer profile model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/KEYBOARD_DEVICE_TOOLS.md	top_level_doc	210	BOUND	YES	Keyboard device tools model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/KEYBOARD_FIRST_DEVICE_PROFILE_MODEL.md	top_level_doc	210,211	BOUND	YES	Profile-first target model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/KEYBOARD_FIRST_REFERENCE_INTAKE.md	top_level_doc	210	BOUND	YES	Reference intake model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/PORTABILITY_RULES.md	top_level_doc	210	BOUND	YES	Portability rules
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/R8_DESIGN_SYSTEM_AND_CUSTOMIZATION.md	top_level_doc	210	BOUND	YES	Design system source
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/R9_CALCULATOR_REQUIREMENTS_DRAFT.md	top_level_doc	DEFERRED	BOUND	NO	Calculator deferred by D4
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/R9_SABLE_UTILITY_APP_MODEL.md	top_level_doc	224	BOUND	YES	Utilities app model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/RELEASE_MODEL.md	top_level_doc	206,210	BOUND	YES	Release/support posture
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/SABLE_APP_REUSE_AND_INTEGRATION_PLAN.md	top_level_doc	210,219	BOUND	YES	Common app reuse plan
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/SABLE_READER_TEXT_ACCESSIBILITY_CAPABILITY.md	top_level_doc	227	BOUND	YES	Reader/Text Reader accessibility
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/ZINWA_Q27_FUTURE_PORTABILITY_NOTES.md	top_level_doc	NOT_APPLICABLE	BOUND	NO	Q27 device; Titan 2 must not share profile
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/device-capabilities/TITAN2.md	device_capability_doc	206,210,211,228	BOUND	YES	Titan 2 capability profile
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/ALL_APPS_PRIVACY_UX.md	design_doc	212	BOUND	YES	All Apps privacy UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/ALL_APPS_VISUAL_CONFIRMATION.md	design_doc	212	BOUND	YES	All Apps visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/APP_DISPLAY_COMPATIBILITY_PROFILES_UX.md	design_doc	225	BOUND	YES	Display compatibility profiles UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/APP_DISPLAY_COMPATIBILITY_PROFILES_VISUAL_CONFIRMATION.md	design_doc	225	BOUND	YES	Display compatibility visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/BROWSER_WEBVIEW_UX.md	design_doc	220	BOUND	YES	Browser/WebView UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/BROWSER_WEBVIEW_VISUAL_CONFIRMATION.md	design_doc	220	BOUND	YES	Browser/WebView visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/CAMERA_CAPTURE_UX.md	design_doc	222	BOUND	YES	Camera capture UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/CAMERA_CAPTURE_VISUAL_CONFIRMATION.md	design_doc	222	BOUND	YES	Camera visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/COMMAND_SEARCH_VISUAL_CONFIRMATION.md	design_doc	213	BOUND	YES	Command Search visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/CONNECTIVITY_OTG_NFC_CAST_COMPATIBILITY_UX.md	design_doc	223	BOUND	YES	Connectivity UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/CONNECTIVITY_OTG_NFC_CAST_COMPATIBILITY_VISUAL_CONFIRMATION.md	design_doc	223	BOUND	YES	Connectivity visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/CONTACTS_PEOPLE_UX.md	design_doc	218	BOUND	YES	Contacts/People UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/CONTACTS_PEOPLE_VISUAL_CONFIRMATION.md	design_doc	218	BOUND	YES	Contacts/People visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/FILES_DOCUMENTS_UX.md	design_doc	220	BOUND	YES	Files/Documents UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/FILES_DOCUMENTS_VISUAL_CONFIRMATION.md	design_doc	220	BOUND	YES	Files/Documents visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/HARDWARE_DIAGNOSTICS_AND_DIALER_CODES.md	design_doc	218	BOUND	YES	Dialer codes and hardware diagnostics
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/KEYBOARD_FIRST_SETTINGS_UX.md	design_doc	214	BOUND	YES	Keyboard-first Settings UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/KEYBOARD_FIRST_SYSTEM_IMG_COVERAGE_AUDIT.md	design_doc	209,229	BOUND	YES	System image coverage audit
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/LOCKSCREEN_SECURE_ENTRY_UX.md	design_doc	221	BOUND	YES	Lockscreen secure entry UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/LOCKSCREEN_VISUAL_CONFIRMATION.md	design_doc	221	BOUND	YES	Lockscreen visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MAIL_CALENDAR_PRODUCTIVITY_UX.md	design_doc	219	BOUND	YES	Mail/Calendar productivity UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MAIL_CALENDAR_VISUAL_CONFIRMATION.md	design_doc	219	BOUND	YES	Mail/Calendar visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MEDIA_GALLERY_UX.md	design_doc	217	BOUND	YES	Media/Gallery UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MEDIA_GALLERY_VISUAL_CONFIRMATION.md	design_doc	217	BOUND	YES	Media/Gallery visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MESSAGES_CONVERSATION_UX.md	design_doc	Baseline PR205	BOUND	YES	Messages implemented and validated
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MESSAGES_CONVERSATION_VISUAL_CONFIRMATION.md	design_doc	Baseline PR205	BOUND	YES	Messages visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MOBILE_MANAGER_APP_CONTROLS_UX.md	design_doc	214	BOUND	YES	Mobile Manager/App Controls UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/MOBILE_MANAGER_APP_CONTROLS_VISUAL_CONFIRMATION.md	design_doc	214	BOUND	YES	Mobile Manager visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/PHONE_DIALER_VISUAL_CONFIRMATION.md	design_doc	218	BOUND	YES	Phone/Dialer visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/PRIVATE_SPACE_DUAL_APPS_WORK_PROFILE_UX.md	design_doc	215	BOUND	YES	Private Space/Dual Apps/Work Profile UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/PRIVATE_SPACE_DUAL_APPS_WORK_PROFILE_VISUAL_CONFIRMATION.md	design_doc	215	BOUND	YES	Private Space visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/QUICK_SETTINGS_NOTIFICATION_SHADE_UX.md	design_doc	221	BOUND	YES	Quick Settings/Notification Shade UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/QUICK_SETTINGS_VISUAL_CONFIRMATION.md	design_doc	221	BOUND	YES	Quick Settings visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_COMMAND_SEARCH_UX.md	design_doc	213	BOUND	YES	Command Search UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_HUB_KEYBOARD_FIRST_UX.md	design_doc	216	BOUND	YES	Sable Hub UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_HUB_VISUAL_CONFIRMATION.md	design_doc	216	BOUND	YES	Sable Hub visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_PHONE_DIALER_UX.md	design_doc	218	BOUND	YES	Phone/Dialer UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_START_KEYBOARD_FIRST_UX.md	design_doc	212	BOUND	YES	Sable Start keyboard-first UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_START_REFERENCES.md	design_doc	212	BOUND	YES	Sable Start references
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_START_SCREEN_DESIGN.md	design_doc	212	BOUND	YES	Sable Start screen design
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_START_THREE_PAGE_MODEL.md	design_doc	212	BOUND	YES	Sable Start three-page model
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SABLE_START_VISUAL_CONFIRMATION.md	design_doc	212	BOUND	YES	Sable Start visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SETTINGS_SEARCH_UX.md	design_doc	214	BOUND	YES	Settings Search UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SETTINGS_VISUAL_CONFIRMATION.md	design_doc	214	BOUND	YES	Settings visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SETUP_WIZARD_FIRST_BOOT_UX.md	design_doc	221	BOUND	YES	Setup Wizard first boot UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SETUP_WIZARD_VISUAL_CONFIRMATION.md	design_doc	221	BOUND	YES	Setup Wizard visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SUBSCREEN_SHORTCUT_KEYBOARD_UX.md	design_doc	228	BOUND	NO	Shortcut portions deferred; SubScreen evidence gated
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/SUBSCREEN_SHORTCUT_KEYBOARD_VISUAL_CONFIRMATION.md	design_doc	228	BOUND	NO	Shortcut portions deferred; SubScreen evidence gated
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	design_doc	206,210	BOUND	YES	Titan-family capability matrix
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/TOOLBOX_HARDWARE_UTILITIES_UX.md	design_doc	224	BOUND	YES	Toolbox hardware utilities UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/TOOLBOX_HARDWARE_UTILITIES_VISUAL_CONFIRMATION.md	design_doc	224	BOUND	YES	Toolbox visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/UTILITIES_NOTES_RECORDER_UX.md	design_doc	224	BOUND	YES	Utilities/Notes/Recorder UX
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/UTILITIES_NOTES_RECORDER_VISUAL_CONFIRMATION.md	design_doc	224	BOUND	YES	Utilities visual confirmation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-all-apps-titan2.svg	design_artifact_svg	212	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-browser-webview-titan2.svg	design_artifact_svg	220	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-camera-capture-titan2.svg	design_artifact_svg	222	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-command-titan2.svg	design_artifact_svg	213	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-connectivity-otg-nfc-cast-titan2.svg	design_artifact_svg	223	BOUND	YES	Exists; PR223 adds VC citation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-contacts-people-titan2.svg	design_artifact_svg	218	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-files-documents-titan2.svg	design_artifact_svg	220	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-hub-titan2.svg	design_artifact_svg	216	BOUND	YES	Cited in Hub VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-lockscreen-titan2.svg	design_artifact_svg	221	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-mail-calendar-titan2.svg	design_artifact_svg	219	BOUND	YES	Exists; PR219 adds VC citation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-media-gallery-titan2.svg	design_artifact_svg	217	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-messages-conversation-titan2.svg	design_artifact_svg	Baseline PR205	BOUND	YES	Messages baseline
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-mobile-manager-app-controls-titan2.svg	design_artifact_svg	214	BOUND	YES	Exists; PR214 adds VC citation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-phone-dialer-titan2.svg	design_artifact_svg	218	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-private-space-dual-work-titan2.svg	design_artifact_svg	215	BOUND	YES	Exists; PR215 adds VC citation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-quick-settings-titan2.svg	design_artifact_svg	221	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-settings-titan2-approved.svg	design_artifact_svg	214	BOUND	YES	Approved Settings artifact
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-settings-titan2.svg	design_artifact_svg	SUPERSEDED	BOUND	NO	Superseded by sable-settings-titan2-approved.svg
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-setup-wizard-titan2.svg	design_artifact_svg	221	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-start-titan2-3page.svg	design_artifact_svg	212	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-subscreen-shortcut-keyboard-titan2.svg	design_artifact_svg	228	BOUND	NO	Exists; PR228 adds VC citation; not N1B2 blocking
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-toolbox-hardware-titan2.svg	design_artifact_svg	224	BOUND	YES	Exists; PR224 adds VC citation
+sableos-project/platform_sable	main	de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c	docs/design/artifacts/sable-utilities-notes-recorder-titan2.svg	design_artifact_svg	224	BOUND	YES	Cited in VC doc
+sableos-project/platform_sable	main	PLANNED	docs/design/WEATHER_UX.md	planned_design_doc	226	TO_BE_CREATED	YES	Created by PR226
+sableos-project/platform_sable	main	PLANNED	docs/design/WEATHER_VISUAL_CONFIRMATION.md	planned_design_doc	226	TO_BE_CREATED	YES	Created by PR226
+sableos-project/platform_sable	main	PLANNED	docs/design/artifacts/sable-weather-titan2.svg	planned_design_artifact	226	TO_BE_CREATED	YES	Created by PR226
+sableos-project/platform_sable	main	PLANNED	docs/design/artifacts/sable-app-display-compatibility-titan2.svg	planned_design_artifact	225	TO_BE_CREATED	YES	Created by PR225
