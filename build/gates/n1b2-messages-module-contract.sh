@@ -15,9 +15,9 @@ usage:
 
 Restored Sable Messages module gate. This gate validates the module against the
 existing Hub/Messages reference, platform_sable Messages UX, visual confirmation
-checklist, and source-controlled Titan2 Messages/Hub visual artifacts without
-Android image builds, Soong builds, device contact, adb, fastboot, flash, public
-release, or production signing.
+checklist, interaction/keyboard contract, and source-controlled Titan2 visual
+artifacts without Android image builds, Soong builds, device contact, adb,
+fastboot, flash, public release, or production signing.
 USAGE
 }
 
@@ -196,8 +196,16 @@ require_text N1B2_MESSAGES_PROVIDER_HANDOFF_SCHEME 'android:scheme="smsto"' \
 require_text N1B2_MESSAGES_INTENT_HANDOFF 'Intent.ACTION_SENDTO' "$activity"
 require_text N1B2_MESSAGES_SMSTO_HANDOFF 'smsto:' "$activity"
 
-require_text N1B2_MESSAGES_UX_LATEST_REQUIREMENT \
-  'LATEST_MESSAGE_ALWAYS_VISIBLE=YES' "$ux_doc"
+require_text N1B2_MESSAGES_UX_HISTORY_SEARCH \
+  'SEARCH_IN_CONVERSATION=YES' "$ux_doc"
+require_text N1B2_MESSAGES_UX_JUMP_TO_DATE \
+  'JUMP_TO_DATE=YES' "$ux_doc"
+require_text N1B2_MESSAGES_UX_JUMP_TO_UNREAD \
+  'JUMP_TO_UNREAD=YES' "$ux_doc"
+require_text N1B2_MESSAGES_UX_JUMP_TO_ATTACHMENT \
+  'JUMP_TO_ATTACHMENT=YES' "$ux_doc"
+require_text N1B2_MESSAGES_UX_LATEST_KEY \
+  'LATEST_KEY=REQUIRED' "$ux_doc"
 require_text N1B2_MESSAGES_UX_CUSTOM_STACK_EXCLUSION \
   'CUSTOM_SMS_STACK=NO' "$ux_doc"
 require_text N1B2_MESSAGES_VISUAL_ARTIFACT_BINDING \
@@ -206,8 +214,6 @@ require_text N1B2_MESSAGES_VISUAL_LATEST_REQUIREMENT \
   'LATEST_MESSAGE_ALWAYS_VISIBLE=PASS' "$visual_doc"
 require_text N1B2_MESSAGES_ARTIFACT_TITLE \
   'Sable Messages / Conversation UX for Titan 2' "$messages_svg"
-require_text N1B2_MESSAGES_ARTIFACT_LATEST_VISIBLE \
-  'Latest message is always visible' "$messages_svg"
 require_text N1B2_MESSAGES_ARTIFACT_HISTORY_INDICATOR \
   'New message' "$messages_svg"
 require_text N1B2_HUB_ARTIFACT_MESSAGES_REFERENCE \
@@ -216,21 +222,44 @@ require_text N1B2_HUB_ARTIFACT_MESSAGES_REFERENCE \
 require_text N1B2_MESSAGES_UI_VISUAL_TARGET \
   'Titan 2 visual target' "$activity"
 require_text N1B2_MESSAGES_UI_SQUARE_KEYBOARD \
-  'square display + physical keyboard' "$activity"
+  'square display plus physical keyboard' "$activity"
 require_text N1B2_MESSAGES_UI_LATEST_VISIBLE \
   'LATEST_MESSAGE_ALWAYS_VISIBLE' "$activity"
 require_text N1B2_MESSAGES_UI_HISTORY_INDICATOR \
   'New message — Enter to latest' "$activity"
 require_text N1B2_MESSAGES_UI_CONVERSATION_LIST \
   'Conversation list · latest first' "$activity"
-require_text N1B2_MESSAGES_UI_HUB_REFERENCE \
-  'Hub handoff compatible' "$activity"
 require_text N1B2_MESSAGES_UI_ONSCREEN_FALLBACK \
-  'Onscreen keyboard fallback' "$activity"
+  'ONSCREEN_KEYBOARD_FALLBACK' "$activity"
 require_text N1B2_MESSAGES_UI_PRIVACY_REDACTION \
-  'Message body hidden when locked' "$activity"
+  'LOCKED_MODE_REDACTION' "$activity"
 require_text N1B2_MESSAGES_UI_NO_CUSTOM_STACK \
-  'custom SMS/RCS/MMS stack: no' "$activity"
+  'CUSTOM_SMS_STACK=NO' "$activity"
+
+require_text N1B2_MESSAGES_KEY_HANDLER_SLASH \
+  'KEYCODE_SLASH' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_CTRL_L \
+  'KEYCODE_L' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_END \
+  'KEYCODE_MOVE_END' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_PAGE_UP \
+  'KEYCODE_PAGE_UP' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_PAGE_DOWN \
+  'KEYCODE_PAGE_DOWN' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_NEXT_UNREAD \
+  'KEYCODE_N' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_JUMP_DATE \
+  'KEYCODE_D' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_JUMP_ATTACHMENT \
+  'KEYCODE_A' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_BACK \
+  'KEYCODE_BACK' "$activity"
+require_text N1B2_MESSAGES_KEY_HANDLER_ESCAPE \
+  'KEYCODE_ESCAPE' "$activity"
+require_text N1B2_MESSAGES_HISTORY_DISCRETE_SLICES \
+  'History pages are discrete slices' "$activity"
+require_text N1B2_MESSAGES_NO_SCROLL_DEPENDENCY_COPY \
+  'No precision pointer scroll required' "$activity"
 
 for forbidden in \
   'android.permission.READ_SMS' \
