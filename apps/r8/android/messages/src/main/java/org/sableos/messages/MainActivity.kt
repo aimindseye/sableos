@@ -238,7 +238,7 @@ private fun Header() {
     )
     Text(
         text =
-            "Titan 2 visual target · square display + physical keyboard · " +
+            "Titan 2 visual target · square display plus physical keyboard · " +
                 "Android Messages mental model",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
