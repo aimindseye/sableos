@@ -91,6 +91,7 @@ mkdir -p "$EVIDENCE_DIR" "$STAGE_DIR"
 
 MANIFEST="$EVIDENCE_DIR/pr208-stock-mtk-telephony-payload-manifest.tsv"
 MISSING="$EVIDENCE_DIR/pr208-stock-mtk-telephony-payload-missing.tsv"
+EXCLUDED="$EVIDENCE_DIR/pr208-stock-mtk-telephony-payload-excluded.tsv"
 NATIVE_DEPS="$EVIDENCE_DIR/pr208-stock-mtk-native-deps.tsv"
 MARKERS="$EVIDENCE_DIR/pr208-stock-mtk-payload-markers.txt"
 
@@ -122,6 +123,12 @@ resolve_stock_path() {
   return 1
 }
 
+excluded_payload_list() {
+  cat <<'EXCLUDED_PAYLOAD'
+system/priv-app/MtkTeleService/MtkTeleService.apk	BOOT_FATAL_SHARED_UID_SIGNATURE_MISMATCH	Physical validation 20260929T205519Z: system_server crashed with Signature mismatch on system package com.android.phone for shared user android.uid.phone/1001.
+EXCLUDED_PAYLOAD
+}
+
 payload_list() {
   cat <<'PAYLOAD'
 system/etc/permissions/privapp-permissions-mediatek.xml
@@ -129,7 +136,6 @@ system/etc/apns-conf.xml
 system/priv-app/MtkMmsService/MtkMmsService.apk
 system/priv-app/MtkTelecom/MtkTelecom.apk
 system/priv-app/MtkTelephonyProvider/MtkTelephonyProvider.apk
-system/priv-app/MtkTeleService/MtkTeleService.apk
 system_ext/etc/sysconfig/com.mediatek.ims.config.xml
 system_ext/framework/mediatek-carrier-config-manager.jar
 system_ext/framework/mediatek-ims-base.jar
@@ -151,11 +157,19 @@ PAYLOAD
 
 printf 'target_path\tsource_path\tkind\tsha256\tsize\tcopied\n' > "$MANIFEST"
 printf 'target_path\n' > "$MISSING"
+printf 'target_path\treason\tevidence\n' > "$EXCLUDED"
 printf 'object\tneeded_library\n' > "$NATIVE_DEPS"
 
 missing_count=0
 copied_count=0
 present_count=0
+excluded_count=0
+
+while IFS=$'\t' read -r rel reason evidence; do
+  [[ -n "$rel" ]] || continue
+  printf '%s\t%s\t%s\n' "$rel" "$reason" "$evidence" >> "$EXCLUDED"
+  excluded_count=$((excluded_count + 1))
+done < <(excluded_payload_list)
 
 while IFS= read -r rel; do
   [[ -n "$rel" ]] || continue
@@ -198,8 +212,10 @@ log_marker "N1B2_MTK_PAYLOAD_STAGE_DIR=$STAGE_DIR"
 log_marker "N1B2_MTK_PAYLOAD_COPY_PAYLOAD=$COPY_PAYLOAD"
 log_marker "N1B2_MTK_PAYLOAD_PRESENT_COUNT=$present_count"
 log_marker "N1B2_MTK_PAYLOAD_MISSING_COUNT=$missing_count"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED_BOOT_FATAL_COUNT=$excluded_count"
 log_marker "N1B2_MTK_PAYLOAD_COPIED_COUNT=$copied_count"
 log_marker "N1B2_MTK_PAYLOAD_MANIFEST=$MANIFEST"
+log_marker "N1B2_MTK_PAYLOAD_EXCLUDED=$EXCLUDED"
 log_marker "N1B2_MTK_PAYLOAD_NATIVE_DEPS=$NATIVE_DEPS"
 log_marker "N1B2_MTK_PAYLOAD_VENDOR_PARTITION_COPY=NO"
 log_marker "N1B2_MTK_PAYLOAD_FASTBOOT_USED=NO"
@@ -216,5 +232,6 @@ fi
 
 echo "MANIFEST=$MANIFEST"
 echo "MISSING=$MISSING"
+echo "EXCLUDED=$EXCLUDED"
 echo "NATIVE_DEPS=$NATIVE_DEPS"
 echo "MARKERS=$MARKERS"
