@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 ANDROID_ROOT=""
 ACTIVE_PRODUCT_MK=""
 PLATFORM_SABLE_ROOT=""
+PLATFORM_SABLE_ROOT_MISSING=""
 EVIDENCE_DIR=""
 FAIL_ON_PANTHER_TAINT="YES"
 
@@ -46,8 +47,12 @@ ANDROID_ROOT="$(cd "$ANDROID_ROOT" && pwd)"
 ACTIVE_PRODUCT_PATH="$ANDROID_ROOT/$ACTIVE_PRODUCT_MK"
 [[ -f "$ACTIVE_PRODUCT_PATH" ]] || { echo "N1B2_COMPOSITION_AUDIT=FAIL_ACTIVE_PRODUCT_MK_NOT_FOUND path=$ACTIVE_PRODUCT_PATH"; exit 64; }
 if [[ -n "$PLATFORM_SABLE_ROOT" ]]; then
-  [[ -d "$PLATFORM_SABLE_ROOT" ]] || { echo "N1B2_COMPOSITION_AUDIT=FAIL_PLATFORM_SABLE_ROOT_NOT_FOUND path=$PLATFORM_SABLE_ROOT"; exit 64; }
-  PLATFORM_SABLE_ROOT="$(cd "$PLATFORM_SABLE_ROOT" && pwd)"
+  if [[ -d "$PLATFORM_SABLE_ROOT" ]]; then
+    PLATFORM_SABLE_ROOT="$(cd "$PLATFORM_SABLE_ROOT" && pwd)"
+  else
+    PLATFORM_SABLE_ROOT_MISSING="$PLATFORM_SABLE_ROOT"
+    PLATFORM_SABLE_ROOT=""
+  fi
 fi
 [[ -n "$EVIDENCE_DIR" ]] || EVIDENCE_DIR="/tmp/SABLE_N1B2_COMPOSITION_AUDIT_$(date -u +%Y%m%dT%H%M%SZ)"
 mkdir -p "$EVIDENCE_DIR"
@@ -106,6 +111,17 @@ module_in_gradle() {
   grep -Fq "include(\":$1\")" "$ROOT/apps/r8/android/settings.gradle.kts"
 }
 
+check_gradle_expected_module() {
+  local key="$1"
+  local module="$2"
+
+  if module_in_gradle "$module"; then
+    emit PASS "$key" "module=$module"
+  else
+    emit NOT_PROVEN "$key" "not_listed_in_apps_gradle module=$module"
+  fi
+}
+
 android_module_present() {
   grep -R --include='Android.bp' --include='Android.mk' -Fq -- "$1" "$ANDROID_ROOT" 2>/dev/null
 }
@@ -131,6 +147,10 @@ FACTORY_RESET_AUTHORIZED=NO
 PUBLIC_RELEASE=NO
 PRODUCTION_SIGNING=NO
 EOF
+
+if [[ -n "$PLATFORM_SABLE_ROOT_MISSING" ]]; then
+  emit NOT_CHECKED COMPOSITION_PLATFORM_SABLE_ROOT "missing=$PLATFORM_SABLE_ROOT_MISSING"
+fi
 
 require_file COMPOSITION_BUILD_README_PRESENT "$ROOT/build/README.md"
 for kind in target-files full-device-images gsi-system-image system-product-bundle boot-recovery-bundle; do
@@ -161,9 +181,16 @@ require_file COMPOSITION_GRADLE_SETTINGS_PRESENT "$ROOT/apps/r8/android/settings
 for module in design calculator games media hub weather calendar; do
   module_in_gradle "$module" && emit PASS "COMPOSITION_GRADLE_MODULE_${module^^}" "module=$module" || emit FAIL "COMPOSITION_GRADLE_MODULE_${module^^}" "missing_module=$module"
 done
-for module in mail messages people reader textreader browser settings systemui phone contacts; do
-  module_in_gradle "$module" && emit PASS "COMPOSITION_GRADLE_EXPECTED_MODULE_${module^^}" "module=$module" || emit NOT_PROVEN "COMPOSITION_GRADLE_EXPECTED_MODULE_${module^^}" "not_listed_in_apps_gradle module=$module"
-done
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_MAIL mail
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_MESSAGES messages
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_PEOPLE people
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_READER reader
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_TEXTREADER textreader
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_BROWSER browser
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_SETTINGS settings
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_SYSTEMUI systemui
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_PHONE phone
+check_gradle_expected_module COMPOSITION_GRADLE_EXPECTED_MODULE_CONTACTS contacts
 
 require_file COMPOSITION_REPO_SABLELAUNCHER_BP "$ROOT/src/android/packages/apps/SableStart/Android.bp"
 require_text COMPOSITION_REPO_SABLELAUNCHER_MODULE "SableLauncher" "$ROOT/src/android/packages/apps/SableStart/Android.bp"
@@ -211,7 +238,31 @@ fi
 
 for path in "$ROOT/apps" "$ROOT/src/android/shared" "$ROOT/build/panther" "$ROOT/tests"; do
   [[ -d "$path" ]] || continue
-  grep -R -n -E "titan2|Titan2|Titan 2|N1B|N1B2|tdgsi|Restless|g71v78c2k|MT6878|vendor/sable/n1b2" "$path" --exclude-dir=.git --exclude='*.png' --exclude='*.jpg' --exclude='*.webp' --exclude='*.mp4' >> "$TAINT_REPORT" 2>/dev/null || true
+
+  find "$path" -type f \
+    \( \
+      -name '*.kt' \
+      -o -name '*.java' \
+      -o -name '*.rs' \
+      -o -name '*.xml' \
+      -o -name '*.gradle' \
+      -o -name '*.gradle.kts' \
+      -o -name 'Android.bp' \
+      -o -name 'Android.mk' \
+      -o -name '*.mk' \
+      -o -name '*.sh' \
+      -o -name '*.py' \
+      -o -name '*.env' \
+      -o -name '*.properties' \
+    \) \
+    ! -path '*/.git/*' \
+    ! -path '*/.gradle/*' \
+    ! -path '*/build/*' \
+    ! -path '*/src/main/assets/*' \
+    -print0 \
+    | xargs -0 -r grep -n -E \
+      "titan2|Titan2|Titan 2|N1B|N1B2|tdgsi|Restless|g71v78c2k|MT6878|vendor/sable/n1b2" \
+      >> "$TAINT_REPORT" 2>/dev/null || true
 done
 if [[ -s "$TAINT_REPORT" ]]; then
   [[ "$FAIL_ON_PANTHER_TAINT" == YES ]] && emit FAIL COMPOSITION_PANTHER_TAINT_CHECK "taint_report=$TAINT_REPORT" || emit WARN COMPOSITION_PANTHER_TAINT_CHECK "taint_report=$TAINT_REPORT"

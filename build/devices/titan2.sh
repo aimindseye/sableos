@@ -16,6 +16,14 @@ SABLE_DEVICE_ARTIFACT_KINDS="gsi-system-image"
 SABLE_DEVICE_FLASH_TRANSPORT=titan2-fastbootd-ledger-only
 SABLE_DEVICE_REQUIRES_FASTBOOT=NO
 
+# N1B2 is registered as an audit/composition gate only.
+# This does not authorize build, qualify, flash, fastboot, adb, or write-capable flows.
+TITAN2_N1B2_RELEASE_GATE=AUDIT_ONLY_FAIL_CLOSED
+TITAN2_N1B2_BUILD_SUPPORTED=NO
+TITAN2_N1B2_QUALIFY_SUPPORTED=NO
+TITAN2_N1B2_FLASH_EXECUTION_SUPPORTED=NO
+TITAN2_N1B2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO
+
 TITAN2_FASTBOOT_BOOT_SUPPORTED=NO
 TITAN2_DSU_AVAILABLE=NO
 TITAN2_DYNAMIC_PARTITIONS=YES
@@ -59,7 +67,7 @@ sable_device_artifact_gate() {
   local evidence_dir="$5"
 
   case "$release" in
-    N0|N0_A16|N1|N1B|n0|n0_a16|n1|n1b) ;;
+    N0|N0_A16|N1|N1B|N1B2|n0|n0_a16|n1|n1b|n1b2) ;;
     *)
       echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_UNQUALIFIED_TITAN_RELEASE release=$release"
       return 1
@@ -83,6 +91,7 @@ sable_device_artifact_gate() {
 
   echo "SABLE_DEVICE_ARTIFACT_GATE=PASS_TITAN2_GSI"
   echo "TITAN2_FLASH_EXECUTION_SUPPORTED=NO"
+  echo "TITAN2_N1B2_RELEASE_GATE=AUDIT_ONLY_FAIL_CLOSED"
   echo "TITAN2_N0_N1_FLASH_PLAN_REQUIRED=YES"
 }
 
