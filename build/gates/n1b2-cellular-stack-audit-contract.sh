@@ -17,13 +17,17 @@ RUN_STATIC_SMOKE=NO
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --static-smoke YES)
-      RUN_STATIC_SMOKE=YES
-      shift 2
-      ;;
     --static-smoke)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--static-smoke" >&2
+        exit 2
+      fi
       RUN_STATIC_SMOKE="$2"
       shift 2
+      ;;
+    --static-smoke=*)
+      RUN_STATIC_SMOKE="${1#*=}"
+      shift
       ;;
     *)
       echo "UNKNOWN_ARG=$1" >&2
@@ -31,6 +35,14 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+case "$RUN_STATIC_SMOKE" in
+  YES|NO) ;;
+  *)
+    echo "STATIC_SMOKE_INVALID=$RUN_STATIC_SMOKE expected=YES_OR_NO" >&2
+    exit 2
+    ;;
+esac
 
 pass() {
   echo "$1=PASS${2:+ $2}"
@@ -132,6 +144,9 @@ require_pattern "N1B2_CELLULAR_RUNTIME_FASTBOOT_NO_SCRIPT" "FASTBOOT_USED=NO" "$
 require_pattern "N1B2_CELLULAR_RUNTIME_FASTBOOTD_NO_SCRIPT" "FASTBOOTD_USED=NO" "$RUNTIME_SCRIPT"
 require_pattern "N1B2_CELLULAR_STATIC_FASTBOOT_NO_SCRIPT" "FASTBOOT_USED=NO" "$STATIC_SCRIPT"
 require_pattern "N1B2_CELLULAR_STATIC_FASTBOOTD_NO_SCRIPT" "FASTBOOTD_USED=NO" "$STATIC_SCRIPT"
+require_pattern "N1B2_CELLULAR_STATIC_SINGLE_PASS" "SINGLE_PASS_ROOT_INDEX=YES" "$STATIC_SCRIPT"
+require_pattern "N1B2_CELLULAR_STATIC_FIND_TIMEOUT" "FIND_TIMEOUT_SECONDS" "$STATIC_SCRIPT"
+require_pattern "N1B2_CELLULAR_RUNTIME_COMMAND_TIMEOUT" "COMMAND_TIMEOUT" "$RUNTIME_SCRIPT"
 
 for marker in \
   STOCK_ROOT \
