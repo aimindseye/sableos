@@ -50,6 +50,9 @@ fail() {
 required_files=(
   "docs/titan2/N1B2_CELLULAR_PR208_HANDOFF.md"
   "build/titan2/stage-n1b2-mtk-telephony-payload.sh"
+  "build/titan2/prepare-n1b2-mtk-telephony-build-payload.sh"
+  "build/titan2/verify-n1b2-mtk-telephony-target-files.sh"
+  "build/titan2/build-n1b2-image-candidate-with-mtk-telephony.sh"
   "build/gates/n1b2-cellular-restoration-contract.sh"
 )
 
@@ -63,6 +66,9 @@ done
 
 for f in \
   build/titan2/stage-n1b2-mtk-telephony-payload.sh \
+  build/titan2/prepare-n1b2-mtk-telephony-build-payload.sh \
+  build/titan2/verify-n1b2-mtk-telephony-target-files.sh \
+  build/titan2/build-n1b2-image-candidate-with-mtk-telephony.sh \
   build/gates/n1b2-cellular-restoration-contract.sh
 do
   if bash -n "$f"; then
@@ -79,7 +85,10 @@ for marker in \
   "PR208_PAYLOAD_HASH_GATE=YES" \
   "PR208_LOCAL_STOCK_INPUT_REQUIRED=YES" \
   "PR208_SYSTEM_EXT_MTK_IMS_PAYLOAD=YES" \
-  "PR208_PRODUCT_OR_IMAGE_MUTATION_IN_FIRST_PR=NO"
+  "PR208_PRODUCT_COPY_FILES_WIRING=YES" \
+  "PR208_BUILD_WIRING=YES" \
+  "PR208_IMAGE_PAYLOAD_VERIFICATION=YES" \
+  "PR208_FLASH_SCRIPT_MUTATION=NO_NOT_REQUIRED"
 do
   if grep -Fq "$marker" docs/titan2/N1B2_CELLULAR_PR208_HANDOFF.md; then
     pass "N1B2_CELLULAR_PR208_DOC_MARKER" "marker=$marker"
@@ -87,6 +96,42 @@ do
     fail "N1B2_CELLULAR_PR208_DOC_MARKER" "missing=$marker"
   fi
 done
+
+check_token() {
+  local file="$1"
+  local token="$2"
+  local label="$3"
+  if grep -Fq "$token" "$file"; then
+    pass "$label" "file=$file token=$token"
+  else
+    fail "$label" "file=$file missing_token=$token"
+  fi
+}
+
+check_token \
+  build/titan2/prepare-n1b2-mtk-telephony-build-payload.sh \
+  "PRODUCT_COPY_FILES" \
+  "N1B2_CELLULAR_PR208_BUILD_WIRING_TOKEN"
+check_token \
+  build/titan2/prepare-n1b2-mtk-telephony-build-payload.sh \
+  "sable_n1b2_product_profile.mk" \
+  "N1B2_CELLULAR_PR208_BUILD_WIRING_TOKEN"
+check_token \
+  build/titan2/prepare-n1b2-mtk-telephony-build-payload.sh \
+  "TARGET_COPY_OUT_SYSTEM_EXT" \
+  "N1B2_CELLULAR_PR208_BUILD_WIRING_TOKEN"
+check_token \
+  build/titan2/build-n1b2-image-candidate-with-mtk-telephony.sh \
+  "build-n1b2-image-candidate.sh" \
+  "N1B2_CELLULAR_PR208_BUILD_WRAPPER_TOKEN"
+check_token \
+  build/titan2/build-n1b2-image-candidate-with-mtk-telephony.sh \
+  "verify-n1b2-mtk-telephony-target-files.sh" \
+  "N1B2_CELLULAR_PR208_BUILD_WRAPPER_TOKEN"
+check_token \
+  build/titan2/verify-n1b2-mtk-telephony-target-files.sh \
+  "SYSTEM/system_ext/" \
+  "N1B2_CELLULAR_PR208_TARGET_FILES_VERIFY_TOKEN"
 
 if git ls-files \
   | grep -Ei '(^|/)(MtkMmsService|MtkTelecom|MtkTelephonyProvider|MtkTeleService|ImsService)\.apk$|(^|/)mediatek-.*\.jar$|(^|/)lib(imsma|sink|source|vcodec_cap|comutils|signal).*\.so$' \
@@ -106,7 +151,7 @@ changed_files="$(
   } | sort -u
 )"
 
-allowed_regex='^(docs/titan2/N1B2_CELLULAR_PR208_HANDOFF\.md|build/titan2/stage-n1b2-mtk-telephony-payload\.sh|build/gates/n1b2-cellular-restoration-contract\.sh)$'
+allowed_regex='^(docs/titan2/N1B2_CELLULAR_PR208_HANDOFF\.md|build/titan2/stage-n1b2-mtk-telephony-payload\.sh|build/titan2/prepare-n1b2-mtk-telephony-build-payload\.sh|build/titan2/verify-n1b2-mtk-telephony-target-files\.sh|build/titan2/build-n1b2-image-candidate-with-mtk-telephony\.sh|build/gates/n1b2-cellular-restoration-contract\.sh)$'
 
 unexpected="$(
   printf '%s\n' "$changed_files" \
