@@ -75,14 +75,24 @@ require_tsv_kind_count() {
   fi
 }
 
-require_tsv_row() {
+require_binding_path_row() {
   local label="$1"
   local path="$2"
-  local tsv="$3"
-  if [[ -f "$tsv" ]] && awk -F '\t' -v path="$path" 'NR > 1 && $4 == path { found=1 } END { exit found ? 0 : 1 }' "$tsv"; then
+  if [[ -f "$BINDING" ]] && awk -F '\t' -v path="$path" 'NR > 1 && $4 == path { found=1 } END { exit found ? 0 : 1 }' "$BINDING"; then
     pass "$label" "path=$path"
   else
-    fail "$label" "missing_row=$path tsv=$tsv"
+    fail "$label" "missing_binding_path=$path tsv=$BINDING"
+  fi
+}
+
+require_tsv_key_row() {
+  local label="$1"
+  local key="$2"
+  local tsv="$3"
+  if [[ -f "$tsv" ]] && awk -F '\t' -v key="$key" 'NR > 1 && $1 == key { found=1 } END { exit found ? 0 : 1 }' "$tsv"; then
+    pass "$label" "key=$key"
+  else
+    fail "$label" "missing_key=$key tsv=$tsv"
   fi
 }
 
@@ -91,18 +101,18 @@ check_platform_sable_rows() {
   local rel
 
   while IFS= read -r rel; do
-    require_tsv_row "N1B2_BINDING_TOP_LEVEL_${rel//[^A-Za-z0-9]/_}" "$rel" "$BINDING"
+    require_binding_path_row "N1B2_BINDING_TOP_LEVEL_${rel//[^A-Za-z0-9]/_}" "$rel"
   done < <(cd "$source_root" && find docs -maxdepth 1 -type f -name '*.md' -printf '%p\n' | sort)
 
   while IFS= read -r rel; do
-    require_tsv_row "N1B2_BINDING_DESIGN_DOC_${rel//[^A-Za-z0-9]/_}" "$rel" "$BINDING"
+    require_binding_path_row "N1B2_BINDING_DESIGN_DOC_${rel//[^A-Za-z0-9]/_}" "$rel"
   done < <(cd "$source_root" && find docs/design -maxdepth 1 -type f -name '*.md' -printf '%p\n' | sort)
 
   while IFS= read -r rel; do
-    require_tsv_row "N1B2_BINDING_ARTIFACT_${rel//[^A-Za-z0-9]/_}" "$rel" "$BINDING"
+    require_binding_path_row "N1B2_BINDING_ARTIFACT_${rel//[^A-Za-z0-9]/_}" "$rel"
   done < <(cd "$source_root" && find docs/design/artifacts -maxdepth 1 -type f -name '*.svg' -printf '%p\n' | sort)
 
-  require_tsv_row "N1B2_BINDING_TITAN2_PROFILE" "docs/device-capabilities/TITAN2.md" "$BINDING"
+  require_binding_path_row "N1B2_BINDING_TITAN2_PROFILE" "docs/device-capabilities/TITAN2.md"
 }
 
 echo "===== N1B2 IMAGE PLAN CONTRACT ====="
@@ -165,7 +175,7 @@ for capability in \
   SUBSCREEN \
   FM_RADIO \
   WORK_PROFILE; do
-  require_tsv_row "N1B2_CAPABILITY_${capability}" "$capability" "$CAPABILITY"
+  require_tsv_key_row "N1B2_CAPABILITY_${capability}" "$capability" "$CAPABILITY"
 done
 
 for deferred in \
@@ -177,7 +187,7 @@ for deferred in \
   AOD \
   PER_APP_CELLULAR_WIFI_TOGGLES \
   FM_RADIO; do
-  require_tsv_row "N1B2_DEFERRED_${deferred}" "$deferred" "$DEFERRED"
+  require_tsv_key_row "N1B2_DEFERRED_${deferred}" "$deferred" "$DEFERRED"
 done
 
 require_absent_pattern "N1B2_DEFERRED_NO_MESSAGES" "MESSAGES" "$DEFERRED"
