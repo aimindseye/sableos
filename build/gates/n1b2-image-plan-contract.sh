@@ -4,6 +4,12 @@ set -euo pipefail
 ROOT="${ROOT:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 PLATFORM_SABLE_ROOT="${PLATFORM_SABLE_ROOT:-/srv/data/sable-build/platform_sable}"
 EXPECTED_PLATFORM_SABLE_SHA="de9d4362f6779ddd0108fbd5804ebb25bdf4dc4c"
+EXPECTED_TOP_LEVEL_DOCS=17
+EXPECTED_DESIGN_DOCS=53
+EXPECTED_ARTIFACTS=23
+EXPECTED_DEVICE_CAPABILITY_DOCS=1
+EXPECTED_PLANNED_DOCS=2
+EXPECTED_PLANNED_ARTIFACTS=2
 
 PLAN="$ROOT/docs/titan2/N1B2_IMAGE_PLAN.md"
 BINDING="$ROOT/docs/titan2/N1B2_PLATFORM_SABLE_DOC_BINDING.tsv"
@@ -137,6 +143,7 @@ require_file "N1B2_IMAGE_PLAN_GATE_PRESENT" "$SELF"
 require_pattern "N1B2_IMAGE_PLAN_SOURCE_SHA" "$EXPECTED_PLATFORM_SABLE_SHA" "$PLAN"
 require_pattern "N1B2_BINDING_SOURCE_SHA" "$EXPECTED_PLATFORM_SABLE_SHA" "$BINDING"
 require_pattern "N1B2_IMAGE_READY_RULE" "Existing APK builds != N1B2 image-ready" "$PLAN"
+require_pattern "N1B2_DESIGN_DOC_COUNT_DECLARED" "DESIGN_DOCS=$EXPECTED_DESIGN_DOCS" "$PLAN"
 require_pattern "N1B2_NO_APP_PROMOTION_BY_BUILD_ONLY" "APP_PROMOTION_BY_BUILD_ONLY=NO" "$PLAN"
 require_pattern "N1B2_FLASH_FAIL_CLOSED" "FLASH_ENABLEMENT=NO" "$PLAN"
 require_pattern "N1B2_PUBLIC_RELEASE_FAIL_CLOSED" "PUBLIC_RELEASE=NO" "$PLAN"
@@ -144,12 +151,12 @@ require_pattern "N1B2_PRODUCTION_SIGNING_FAIL_CLOSED" "PRODUCTION_SIGNING=NO" "$
 require_pattern "N1B2_CELLULAR_RUNTIME_BAR" "CELLULAR_DATA_STABLE_30_MIN=PASS" "$PLAN"
 require_pattern "N1B2_MESSAGES_BASELINE_DECLARED" "Messages implemented and validated" "$BINDING"
 
-require_tsv_kind_count "N1B2_BINDING_TOP_LEVEL_DOC_COUNT" "top_level_doc" "17"
-require_tsv_kind_count "N1B2_BINDING_DESIGN_DOC_COUNT" "design_doc" "52"
-require_tsv_kind_count "N1B2_BINDING_ARTIFACT_COUNT" "design_artifact_svg" "23"
-require_tsv_kind_count "N1B2_BINDING_DEVICE_CAPABILITY_COUNT" "device_capability_doc" "1"
-require_tsv_kind_count "N1B2_BINDING_PLANNED_DOC_COUNT" "planned_design_doc" "2"
-require_tsv_kind_count "N1B2_BINDING_PLANNED_ARTIFACT_COUNT" "planned_design_artifact" "2"
+require_tsv_kind_count "N1B2_BINDING_TOP_LEVEL_DOC_COUNT" "top_level_doc" "$EXPECTED_TOP_LEVEL_DOCS"
+require_tsv_kind_count "N1B2_BINDING_DESIGN_DOC_COUNT" "design_doc" "$EXPECTED_DESIGN_DOCS"
+require_tsv_kind_count "N1B2_BINDING_ARTIFACT_COUNT" "design_artifact_svg" "$EXPECTED_ARTIFACTS"
+require_tsv_kind_count "N1B2_BINDING_DEVICE_CAPABILITY_COUNT" "device_capability_doc" "$EXPECTED_DEVICE_CAPABILITY_DOCS"
+require_tsv_kind_count "N1B2_BINDING_PLANNED_DOC_COUNT" "planned_design_doc" "$EXPECTED_PLANNED_DOCS"
+require_tsv_kind_count "N1B2_BINDING_PLANNED_ARTIFACT_COUNT" "planned_design_artifact" "$EXPECTED_PLANNED_ARTIFACTS"
 
 for capability in \
   TITAN_FAMILY_BASE_CAPABILITY_MATRIX \
@@ -209,16 +216,15 @@ if [[ -d "$PLATFORM_SABLE_ROOT/docs" ]]; then
   design_doc_count=$(find "$PLATFORM_SABLE_ROOT/docs/design" -maxdepth 1 -type f -name '*.md' | wc -l | tr -d ' ')
   artifact_count=$(find "$PLATFORM_SABLE_ROOT/docs/design/artifacts" -maxdepth 1 -type f -name '*.svg' | wc -l | tr -d ' ')
 
-  [[ "$top_level_count" == "17" ]] && pass "N1B2_PLATFORM_SABLE_TOP_LEVEL_DOCS" "count=$top_level_count" || fail "N1B2_PLATFORM_SABLE_TOP_LEVEL_DOCS" "expected=17 actual=$top_level_count"
-  [[ "$design_doc_count" == "52" ]] && pass "N1B2_PLATFORM_SABLE_DESIGN_DOCS" "count=$design_doc_count" || fail "N1B2_PLATFORM_SABLE_DESIGN_DOCS" "expected=52 actual=$design_doc_count"
-  [[ "$artifact_count" == "23" ]] && pass "N1B2_PLATFORM_SABLE_ARTIFACTS" "count=$artifact_count" || fail "N1B2_PLATFORM_SABLE_ARTIFACTS" "expected=23 actual=$artifact_count"
+  [[ "$top_level_count" == "$EXPECTED_TOP_LEVEL_DOCS" ]] && pass "N1B2_PLATFORM_SABLE_TOP_LEVEL_DOCS" "count=$top_level_count" || fail "N1B2_PLATFORM_SABLE_TOP_LEVEL_DOCS" "expected=$EXPECTED_TOP_LEVEL_DOCS actual=$top_level_count"
+  [[ "$design_doc_count" == "$EXPECTED_DESIGN_DOCS" ]] && pass "N1B2_PLATFORM_SABLE_DESIGN_DOCS" "count=$design_doc_count" || fail "N1B2_PLATFORM_SABLE_DESIGN_DOCS" "expected=$EXPECTED_DESIGN_DOCS actual=$design_doc_count"
+  [[ "$artifact_count" == "$EXPECTED_ARTIFACTS" ]] && pass "N1B2_PLATFORM_SABLE_ARTIFACTS" "count=$artifact_count" || fail "N1B2_PLATFORM_SABLE_ARTIFACTS" "expected=$EXPECTED_ARTIFACTS actual=$artifact_count"
 
   check_platform_sable_rows "$PLATFORM_SABLE_ROOT"
 else
   warn "N1B2_PLATFORM_SABLE_ROOT_PRESENT" "missing=$PLATFORM_SABLE_ROOT docs_binding_only"
 fi
 
-# Guard PR 206 scope when the repository has a git base available.
 if git -C "$ROOT" rev-parse --verify origin/main >/dev/null 2>&1; then
   changed=$(git -C "$ROOT" diff --name-only origin/main...HEAD || true)
   if [[ -n "$changed" ]]; then
