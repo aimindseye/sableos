@@ -14,6 +14,18 @@ The machine-readable inventory is:
 docs/titan2/N1B2_EXISTING_APK_INVENTORY.tsv
 ```
 
+## Canonical host tools
+
+Build mode must use the existing SableOS host-tool profile:
+
+```text
+build/config/r8-host-tools.env
+```
+
+The gate sources that file and derives Android SDK, Rust, Cargo, Rustup, Gradle, and Java paths from it. It must not rediscover SDK, NDK, Rust, Java, or Gradle paths from `$HOME`, `/opt`, or unrelated host defaults.
+
+This preserves the same host-tool model used by earlier R8/R9/N1A/N1B validation instead of creating a parallel APK-build environment.
+
 ## Current product APK candidates
 
 Current product APK modules are:
@@ -47,19 +59,10 @@ Inventory-only mode verifies the Gradle settings and module layout without compi
 bash build/gates/n1b2-existing-apk-inventory-contract.sh
 ```
 
-APK build mode compiles current APK modules only:
+APK build mode compiles current APK modules only, after sourcing the canonical host-tool profile:
 
 ```text
 bash build/gates/n1b2-existing-apk-inventory-contract.sh --build YES
-```
-
-APK build mode requires `ANDROID_SDK_ROOT` or `ANDROID_HOME`. This is required because the Rust/JNI Gradle tasks require an Android SDK environment variable, not only Gradle `local.properties`.
-
-When the variable is missing, the expected failure is:
-
-```text
-N1B2_ANDROID_SDK_ENV=FAIL
-N1B2_EXISTING_APK_BUILD=FAIL_ENV_ANDROID_SDK_ROOT_OR_ANDROID_HOME
 ```
 
 ## Expected markers
@@ -70,11 +73,12 @@ Inventory-only mode:
 N1B2_EXISTING_APK_INVENTORY=PASS
 ```
 
-Build mode with a valid Android SDK environment:
+Build mode:
 
 ```text
 N1B2_EXISTING_APK_INVENTORY=PASS
-N1B2_ANDROID_SDK_ENV=PASS
+N1B2_CANONICAL_HOST_TOOLS_ENV_SOURCED=PASS
+N1B2_CANONICAL_BUILD_ENV_READY=PASS
 N1B2_EXISTING_APK_BUILD=PASS
 ```
 
