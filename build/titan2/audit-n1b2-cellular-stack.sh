@@ -13,18 +13,30 @@ Optional environment inputs:
   RESTLESS_ROOT    RestlessOS source or extracted image tree, candidate source.
   AOSP_ROOT        AOSP/Treble GSI source or extracted image tree, candidate source.
 
+Performance controls:
+  FIND_TIMEOUT_SECONDS  Max seconds per sample root scan. Default: 180.
+
 This script is static/read-only. It does not build images, modify sources,
 contact devices, use adb, use fastboot, or use fastbootd.
 USAGE
 }
 
 EVIDENCE_DIR="${EVIDENCE_DIR:-/tmp/SABLE_N1B2_CELLULAR_STATIC_$(date -u +%Y%m%dT%H%M%SZ)}"
+FIND_TIMEOUT_SECONDS="${FIND_TIMEOUT_SECONDS:-180}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --evidence-dir)
+      if [[ $# -lt 2 ]]; then
+        echo "ARG_VALUE_REQUIRED=--evidence-dir" >&2
+        exit 2
+      fi
       EVIDENCE_DIR="$2"
       shift 2
+      ;;
+    --evidence-dir=*)
+      EVIDENCE_DIR="${1#*=}"
+      shift
       ;;
     -h|--help)
       usage
@@ -38,7 +50,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$EVIDENCE_DIR"
+mkdir -p "$EVIDENCE_DIR" "$EVIDENCE_DIR/indexes"
 SUMMARY="$EVIDENCE_DIR/summary.tsv"
 CANDIDATES="$EVIDENCE_DIR/cellular-candidate-files.tsv"
 DIFF_REPORT="$EVIDENCE_DIR/common-failure-vs-stock-candidates.tsv"
@@ -71,19 +83,46 @@ record_sample() {
   return 1
 }
 
-emit_matches() {
-  local name="$1"
+build_index() {
+  local sample="$1"
   local root="$2"
-  local category="$3"
-  shift 3
+  local index="$EVIDENCE_DIR/indexes/${sample}.paths"
+
   [[ -d "$root" ]] || return 0
-  find "$root" \
-    \( -type f -o -type l \) \
-    \( "$@" \) \
-    -printf '%P\n' 2>/dev/null \
-    | sort -u \
-    | awk -v sample="$name" -v category="$category" 'BEGIN { OFS="\t" } { print sample, category, $0 }' \
-    >> "$CANDIDATES"
+
+  if command -v timeout >/dev/null 2>&1; then
+    if ! timeout "$FIND_TIMEOUT_SECONDS" find "$root" \
+      \( -path '*/.git' -o -path '*/.repo' -o -path '*/out' -o -path '*/.gradle' -o -path '*/node_modules' \) -prune -o \
+      \( -type f -o -type l \) -printf '%P\n' \
+      > "$index" 2> "$EVIDENCE_DIR/indexes/${sample}.find.stderr"; then
+      log_marker "N1B2_CELLULAR_STATIC_${sample}_INDEX=WARN timeout_or_find_error path=$index seconds=$FIND_TIMEOUT_SECONDS"
+      return 0
+    fi
+  else
+    if ! find "$root" \
+      \( -path '*/.git' -o -path '*/.repo' -o -path '*/out' -o -path '*/.gradle' -o -path '*/node_modules' \) -prune -o \
+      \( -type f -o -type l \) -printf '%P\n' \
+      > "$index" 2> "$EVIDENCE_DIR/indexes/${sample}.find.stderr"; then
+      log_marker "N1B2_CELLULAR_STATIC_${sample}_INDEX=WARN find_error path=$index"
+      return 0
+    fi
+  fi
+
+  sort -u "$index" -o "$index"
+  log_marker "N1B2_CELLULAR_STATIC_${sample}_INDEX=PASS path=$index"
+}
+
+emit_category_from_index() {
+  local sample="$1"
+  local category="$2"
+  local pattern="$3"
+  local index="$EVIDENCE_DIR/indexes/${sample}.paths"
+
+  [[ -f "$index" ]] || return 0
+
+  grep -Ei -- "$pattern" "$index" \
+    | awk -v sample="$sample" -v category="$category" 'BEGIN { OFS="\t" } { print sample, category, $0 }' \
+    >> "$CANDIDATES" || true
 }
 
 sample_present() {
@@ -113,6 +152,8 @@ stock_missing_in_failures() {
 echo "===== N1B2 CELLULAR STATIC AUDIT ====="
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "STATIC_ONLY=YES"
+echo "FIND_TIMEOUT_SECONDS=$FIND_TIMEOUT_SECONDS"
+echo "SINGLE_PASS_ROOT_INDEX=YES"
 echo "DEVICE_CONTACT=NO"
 echo "ADB_USED=NO"
 echo "FASTBOOT_USED=NO"
@@ -132,25 +173,19 @@ for sample in stock n1b1 n1b2 restless aosp; do
   root="${!var:-}"
   [[ -d "$root" ]] || continue
 
-  emit_matches "$sample" "$root" "telephony_packages" \
-    -iname '*TeleService*' -o -iname '*TelephonyProvider*' -o -iname '*Telecom*' \
-    -o -iname '*CarrierConfig*' -o -iname '*CellBroadcast*' -o -iname '*Stk*' \
-    -o -iname '*Euicc*' -o -iname '*Lpa*' -o -iname '*MmsService*' \
-    -o -iname '*Ims*' -o -iname '*Rcs*' -o -iname '*Mbms*' -o -iname 'ims.apk'
+  build_index "$sample" "$root"
 
-  emit_matches "$sample" "$root" "privapp_permissions" \
-    -path '*/etc/permissions/*privapp*' -o -path '*/etc/permissions/privapp-permissions*' \
-    -o -path '*/etc/sysconfig/*'
+  emit_category_from_index "$sample" "telephony_packages" \
+    'TeleService|TelephonyProvider|Telecom|CarrierConfig|CellBroadcast|(^|/)Stk|Euicc|(^|/)Lpa|MmsService|Ims|Rcs|Mbms|ims\.apk'
 
-  emit_matches "$sample" "$root" "telephony_overlays_configs" \
-    -path '*/overlay/*' -o -path '*/product/overlay/*' -o -path '*/vendor/overlay/*' \
-    -o -iname '*apns*' -o -iname '*carrier*config*' -o -iname '*telephony*xml' \
-    -o -iname '*mms*' -o -iname '*mbn*'
+  emit_category_from_index "$sample" "privapp_permissions" \
+    '(^|/)etc/permissions/.*privapp|(^|/)etc/permissions/privapp-permissions|(^|/)etc/sysconfig/'
 
-  emit_matches "$sample" "$root" "radio_vendor_init_vintf" \
-    -path '*/etc/init/*radio*' -o -path '*/etc/init/*ril*' -o -path '*/etc/init/*ims*' \
-    -o -path '*/etc/vintf/*' -o -iname '*radio*.so' -o -iname '*ims*.so' \
-    -o -iname '*ril*.so' -o -iname '*mtk*radio*' -o -iname '*vendor*radio*'
+  emit_category_from_index "$sample" "telephony_overlays_configs" \
+    '(^|/)overlay/|(^|/)product/overlay/|(^|/)vendor/overlay/|apns|carrier.*config|telephony.*xml|mms|mbn'
+
+  emit_category_from_index "$sample" "radio_vendor_init_vintf" \
+    '(^|/)etc/init/.*(radio|ril|ims)|(^|/)etc/vintf/|radio.*\.so|ims.*\.so|ril.*\.so|mtk.*radio|vendor.*radio'
 done
 
 for category in telephony_packages privapp_permissions telephony_overlays_configs radio_vendor_init_vintf; do
