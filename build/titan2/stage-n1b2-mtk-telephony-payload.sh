@@ -141,12 +141,12 @@ system/priv-app/MtkMmsService/MtkMmsService.apk	CLASS_B_SIGNATURE_BLOCKED	androi
 system/priv-app/MtkTelecom/MtkTelecom.apk	CLASS_B_SIGNATURE_BLOCKED	android.uid.system or platform shared UID / duplicate GSI package risk
 system/priv-app/MtkTelephonyProvider/MtkTelephonyProvider.apk	CLASS_B_SIGNATURE_BLOCKED	android.uid.phone shared UID / duplicate GSI package risk
 system/priv-app/MtkTeleService/MtkTeleService.apk	CLASS_B_SIGNATURE_BLOCKED	boot-fatal com.android.phone android.uid.phone signature mismatch
-system_ext/priv-app/ImsService/ImsService.apk	CLASS_C_CONDITIONAL_APK	manifest/shared UID must be audited before inclusion
-system_ext/framework/mediatek-carrier-config-manager.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
-system_ext/framework/mediatek-ims-base.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
-system_ext/framework/mediatek-ims-common.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
-system_ext/framework/mediatek-ims-extension-plugin.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
-system_ext/framework/mediatek-telecom-common.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without MTK TeleService
+system_ext/priv-app/ImsService/ImsService.apk	CLASS_B_SIGNATURE_BLOCKED	com.mediatek.ims declares android.uid.phone and is signed outside GSI phone shared UID lineage
+system_ext/framework/mediatek-carrier-config-manager.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without signing-compatible MTK phone/IMS app
+system_ext/framework/mediatek-ims-base.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without signing-compatible MTK phone/IMS app
+system_ext/framework/mediatek-ims-common.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without signing-compatible MTK phone/IMS app
+system_ext/framework/mediatek-ims-extension-plugin.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without signing-compatible MTK phone/IMS app
+system_ext/framework/mediatek-telecom-common.jar	CLASS_C_CONDITIONAL_JAR	no proven boot-safe consumer without signing-compatible MTK phone/IMS app
 system_ext/lib64/libimsma.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
 system_ext/lib64/libimsma_adapt.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
 system_ext/lib64/libimsma_rtp.so	CLASS_C_CONDITIONAL_NATIVE	stage only after duplicate-lib and consumer audit
