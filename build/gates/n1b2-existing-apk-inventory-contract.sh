@@ -164,7 +164,7 @@ check_artifact_output() {
   local key
   key="$(module_key "$module" N1B2_EXISTING_ARTIFACT_OUTPUT)"
 
-  if [[ -z "$rel_glob" ]]; then
+  if [[ -z "$rel_glob" || "$rel_glob" == NONE ]]; then
     emit NOT_APPLICABLE "$key" "no_expected_debug_artifact module=$module"
     return
   fi
