@@ -15,6 +15,9 @@ usage:
 Inventory and optional Gradle APK build gate for existing R8 Android modules.
 This gate does not run image builds, Soong builds, adb, fastboot, flash, device
 contact, public release, or production signing.
+
+Build mode requires ANDROID_SDK_ROOT or ANDROID_HOME because Rust/JNI build
+logic requires an Android SDK environment, not only Gradle local.properties.
 USAGE
 }
 
@@ -135,6 +138,26 @@ check_apk_output() {
   fi
 }
 
+require_android_sdk_env_for_build() {
+  local sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+
+  if [[ -z "$sdk_root" ]]; then
+    emit FAIL N1B2_ANDROID_SDK_ENV "set_ANDROID_SDK_ROOT_or_ANDROID_HOME_required_for_build_mode"
+    echo "N1B2_EXISTING_APK_BUILD=FAIL_ENV_ANDROID_SDK_ROOT_OR_ANDROID_HOME"
+    exit 1
+  fi
+
+  if [[ ! -d "$sdk_root" ]]; then
+    emit FAIL N1B2_ANDROID_SDK_ENV "missing_dir=$sdk_root"
+    echo "N1B2_EXISTING_APK_BUILD=FAIL_ENV_ANDROID_SDK_ROOT_OR_ANDROID_HOME"
+    exit 1
+  fi
+
+  export ANDROID_SDK_ROOT="$sdk_root"
+  export ANDROID_HOME="$sdk_root"
+  emit PASS N1B2_ANDROID_SDK_ENV "path=$sdk_root"
+}
+
 core_modules=(
   design
   calculator
@@ -231,6 +254,8 @@ if [[ "$BUILD_MODE" == NO ]]; then
   echo "N1B2_EXISTING_APK_BUILD=NOT_RUN use=--build YES"
   exit 0
 fi
+
+require_android_sdk_env_for_build
 
 (
   cd "$APP_ROOT"
