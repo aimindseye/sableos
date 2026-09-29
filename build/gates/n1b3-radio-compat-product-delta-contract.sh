@@ -83,6 +83,12 @@ require_text N1B3_RADIO_COMPAT_SCRIPT_IDEMPOTENCE \
   "SABLE_N1B3_RADIO_COMPAT_START" "$APPLY"
 require_text N1B3_RADIO_COMPAT_SCRIPT_RESULT \
   "N1B3_RADIO_COMPAT_PRODUCT_DELTA=PASS" "$APPLY"
+require_text N1B3_RADIO_COMPAT_SCRIPT_STALE_PAYLOAD_PATH \
+  "STALE_MTK_PAYLOAD_DIR_REL=\"vendor/sable/n1b2/mtk-telephony-payload\"" "$APPLY"
+require_text N1B3_RADIO_COMPAT_SCRIPT_STALE_PAYLOAD_FAIL \
+  "stale_mtk_payload_present" "$APPLY"
+require_text N1B3_RADIO_COMPAT_SCRIPT_STALE_PAYLOAD_PASS_MARKER \
+  "N1B3_STALE_MTK_PAYLOAD_ABSENT=PASS" "$APPLY"
 
 for forbidden in \
   "adb " \
@@ -135,6 +141,8 @@ require_text N1B3_RADIO_COMPAT_FIXTURE_MARKERS \
   "N1B3_MTK_IMS_DEFAULT_DISABLED=YES" "$markers"
 require_text N1B3_RADIO_COMPAT_FIXTURE_ENV \
   "TITAN2_RADIO_COMPAT_PROFILE_PACKAGED=YES" "$radio_env"
+require_text N1B3_RADIO_COMPAT_FIXTURE_STALE_PAYLOAD_ABSENT \
+  "N1B3_STALE_MTK_PAYLOAD_ABSENT=PASS" "$fixture/apply-first.log"
 
 if bash "$APPLY" --android-root "$fixture" > "$fixture/apply-second.log"; then
   pass N1B3_RADIO_COMPAT_PRODUCT_DELTA_FIXTURE_SECOND "log=$fixture/apply-second.log"
@@ -148,6 +156,31 @@ if [[ "$patch_count" == "1" ]]; then
   pass N1B3_RADIO_COMPAT_PRODUCT_DELTA_IDEMPOTENT "patch_count=$patch_count"
 else
   fail N1B3_RADIO_COMPAT_PRODUCT_DELTA_IDEMPOTENT "patch_count=$patch_count"
+fi
+
+stale_fixture="$(mktemp -d)"
+mkdir -p "$stale_fixture/vendor/sable/n1b2/mtk-telephony-payload"
+mkdir -p "$stale_fixture/vendor/sable/n1b2/profiles/titan2"
+cat > "$stale_fixture/vendor/sable/n1b2/sable_n1b2_product_profile.mk" <<'EOF'
+# stale fixture profile
+PRODUCT_SYSTEM_PROPERTIES += \
+    ro.sableos.release=N1B2
+EOF
+cat > "$stale_fixture/vendor/sable/n1b2/product-closure.env" <<'EOF'
+N1B2_PRODUCT_PROFILE=YES
+N1B2_MOBILE_NETWORK_TRIAGE_REQUIRED=YES
+EOF
+
+if bash "$APPLY" --android-root "$stale_fixture" > "$stale_fixture/apply-stale.log" 2>&1; then
+  cat "$stale_fixture/apply-stale.log" || true
+  fail N1B3_RADIO_COMPAT_PRODUCT_DELTA_STALE_PAYLOAD_FIXTURE "unexpected_success"
+else
+  if grep -Fq "stale_mtk_payload_present" "$stale_fixture/apply-stale.log"; then
+    pass N1B3_RADIO_COMPAT_PRODUCT_DELTA_STALE_PAYLOAD_FIXTURE "fail_closed=YES"
+  else
+    cat "$stale_fixture/apply-stale.log" || true
+    fail N1B3_RADIO_COMPAT_PRODUCT_DELTA_STALE_PAYLOAD_FIXTURE "missing_fail_closed_marker"
+  fi
 fi
 
 echo "N1B3_RADIO_COMPAT_PRODUCT_DELTA_CONTRACT_PASSES=$passes"
