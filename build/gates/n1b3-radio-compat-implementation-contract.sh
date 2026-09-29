@@ -140,12 +140,30 @@ else
   fail "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_SCOPE_ONLY" "unexpected_files_present"
 fi
 
-if git diff origin/main...HEAD -- . 2>/dev/null \
-  | grep -E 'mtk-telephony-payload|build-n1b2-image-candidate-with-mtk-telephony|PRODUCT_COPY_FILES.*Mtk|MtkTeleService\.apk|MtkTelephonyProvider\.apk|MtkMmsService\.apk|MtkTelecom\.apk' \
-  >/tmp/n1b3_radio_compat_payload_wiring_tokens.txt
-then
-  cat /tmp/n1b3_radio_compat_payload_wiring_tokens.txt
-  fail "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_PAYLOAD_WIRING_TOKENS" "see=/tmp/n1b3_radio_compat_payload_wiring_tokens.txt"
+payload_wiring_hits="/tmp/n1b3_radio_compat_payload_wiring_tokens.txt"
+: >"$payload_wiring_hits"
+
+while IFS= read -r f; do
+  if [[ -z "$f" ]]; then
+    continue
+  fi
+
+  case "$f" in
+    docs/titan2/N1B3_RADIO_COMPAT_IMPLEMENTATION_R1.md|\
+    build/titan2/audit-n1b3-radio-compat-source.sh|\
+    build/gates/n1b3-radio-compat-implementation-contract.sh)
+      continue
+      ;;
+  esac
+
+  git diff origin/main...HEAD -- "$f" 2>/dev/null \
+    | grep -E 'mtk-telephony-payload|build-n1b2-image-candidate-with-mtk-telephony|PRODUCT_COPY_FILES.*Mtk|MtkTeleService\.apk|MtkTelephonyProvider\.apk|MtkMmsService\.apk|MtkTelecom\.apk' \
+    >>"$payload_wiring_hits" || true
+done <<<"$changed_files"
+
+if [[ -s "$payload_wiring_hits" ]]; then
+  cat "$payload_wiring_hits"
+  fail "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_PAYLOAD_WIRING_TOKENS" "see=$payload_wiring_hits"
 else
   pass "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_NO_PAYLOAD_WIRING_TOKENS" "clean"
 fi
