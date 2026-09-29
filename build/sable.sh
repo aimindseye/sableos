@@ -23,6 +23,7 @@ functions:
   register-artifact --build-source SHA [legacy target-files options | generic artifact options]
   show-artifact --build-source SHA
   flash-plan --build-source SHA
+  product-composition --android-root PATH [--active-product-mk RELPATH]
   flash --build-source SHA --serial SERIAL --preserve-data --authorize
   accept --serial SERIAL [--suite NAME]
 
@@ -32,6 +33,7 @@ examples:
   bash build/sable.sh panther R9 build --tmux
   bash build/sable.sh panther R9 register-artifact --build-source <sha> --target-files <zip> --sha256 <sha256> --android-info <path>
   bash build/sable.sh titan2 R10 register-artifact --build-source <sha> --artifact-kind gsi-system-image --primary-artifact system --artifact system=<system.img> --expected-sha256 system=<sha256>
+  bash build/sable.sh titan2 N1B2 product-composition --android-root <android-root> --active-product-mk device/phh/treble/treble_arm64_bvN.mk
   bash build/sable.sh panther R9 flash --build-source <sha> --serial <serial> --preserve-data --authorize
   bash build/sable.sh panther R9 accept --serial <serial> --suite launcher
 EOF
@@ -247,6 +249,18 @@ case "$FUNCTION" in
     echo "EVIDENCE_DIR=$EVIDENCE_DIR"
     echo "EVIDENCE_SEAL_SHA256=$(sha256sum "$EVIDENCE_DIR/SHA256SUMS.txt" | awk '{print $1}')"
     echo "SABLE_FLASH_PLAN=PASS"
+    ;;
+
+  product-composition)
+    [[ "${SABLE_DEVICE_PRODUCT_COMPOSITION_SUPPORTED:-NO}" == YES ]] || {
+      echo "SABLE_PRODUCT_COMPOSITION=BLOCKED_UNQUALIFIED device=$DEVICE"
+      exit 78
+    }
+    declare -F sable_device_product_composition >/dev/null 2>&1 || {
+      echo "SABLE_PRODUCT_COMPOSITION=FAIL_ADAPTER_FUNCTION_MISSING device=$DEVICE"
+      exit 78
+    }
+    sable_device_product_composition "$RELEASE" "$@"
     ;;
   flash)
     exec bash "$ROOT/build/deploy/flash.sh" \

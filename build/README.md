@@ -165,3 +165,21 @@ Historical R8/R9 build-driver, v4 signature, stale product-code, vendor/sable
 retirement and presigned APK details remain in Git history and milestone docs.
 They are evidence for why the current canonical entry point is strict, but they
 are not the current operator workflow.
+
+## Titan2 N1B2 product composition
+
+Titan2/N1B2 product composition is routed through the canonical engineering
+entrypoint, not a device-specific standalone workflow:
+
+    bash build/sable.sh titan2 N1B2 product-composition \
+      --android-root <android source root> \
+      --active-product-mk device/phh/treble/treble_arm64_bvN.mk
+
+The command is offline and fail-closed. It does not build, contact a device, run
+adb or fastboot, flash, erase userdata, authorize public release, or authorize
+production signing.
+
+For Phase 1, the allowed selected product module is `SableLauncher`.
+`SableDesign` must exist as source/dependency support. Other Sable app modules
+remain blocked from N1B2 product selection until their Android modules, product
+wiring, and validation evidence exist.

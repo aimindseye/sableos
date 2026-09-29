@@ -10,6 +10,7 @@ SABLE_DEVICE_DEFAULT_QUALIFICATION_SUITE=none
 SABLE_DEVICE_FLASH_SUPPORTED=NO
 SABLE_DEVICE_ARTIFACT_REGISTRATION_SUPPORTED=YES
 SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES
+SABLE_DEVICE_PRODUCT_COMPOSITION_SUPPORTED=YES
 SABLE_DEVICE_PRESERVED_DATA_FLASH_SUPPORTED=NO
 SABLE_DEVICE_DEFAULT_ACCEPTANCE_SUITE=none
 SABLE_DEVICE_ARTIFACT_KINDS="gsi-system-image"
@@ -93,6 +94,208 @@ sable_device_artifact_gate() {
   echo "TITAN2_FLASH_EXECUTION_SUPPORTED=NO"
   echo "TITAN2_N1B2_RELEASE_GATE=AUDIT_ONLY_FAIL_CLOSED"
   echo "TITAN2_N0_N1_FLASH_PLAN_REQUIRED=YES"
+}
+
+titan2_n1b2_product_composition_emit() {
+  local status="$1"
+  local key="$2"
+  local detail="${3:-}"
+
+  printf '%s=%s' "$key" "$status"
+  [[ -z "$detail" ]] || printf ' %s' "$detail"
+  printf '\n'
+
+  case "$status" in
+    PASS) composition_passes=$((composition_passes + 1)) ;;
+    FAIL) composition_failures=$((composition_failures + 1)) ;;
+  esac
+}
+
+titan2_n1b2_product_composition_require_file() {
+  local key="$1"
+  local path="$2"
+
+  [[ -f "$path" ]] \
+    && titan2_n1b2_product_composition_emit PASS "$key" "path=$path" \
+    || titan2_n1b2_product_composition_emit FAIL "$key" "missing=$path"
+}
+
+titan2_n1b2_product_composition_require_text() {
+  local key="$1"
+  local pattern="$2"
+  local path="$3"
+
+  if [[ -f "$path" ]] && grep -Fq -- "$pattern" "$path"; then
+    titan2_n1b2_product_composition_emit PASS "$key" "pattern=$(printf '%q' "$pattern") path=$path"
+  else
+    titan2_n1b2_product_composition_emit FAIL "$key" "missing_pattern=$(printf '%q' "$pattern") path=$path"
+  fi
+}
+
+sable_device_product_composition() {
+  local release="$1"
+  shift
+
+  local android_root=""
+  local active_product_mk="device/phh/treble/treble_arm64_bvN.mk"
+  local active_product_path=""
+  local profile_mk=""
+  local composition_passes=0
+  local composition_failures=0
+
+  case "$release" in
+    N1B2|n1b2) ;;
+    *)
+      echo "SABLE_PRODUCT_COMPOSITION=BLOCKED_UNQUALIFIED_TITAN_RELEASE release=$release"
+      return 78
+      ;;
+  esac
+
+  while (($#)); do
+    case "$1" in
+      --android-root) android_root="${2:-}"; shift 2 ;;
+      --active-product-mk) active_product_mk="${2:-}"; shift 2 ;;
+      -h|--help)
+        cat <<'USAGE'
+usage:
+  bash build/sable.sh titan2 N1B2 product-composition \
+    --android-root <android source root> \
+    [--active-product-mk <path relative to android root>]
+USAGE
+        return 0
+        ;;
+      *)
+        echo "SABLE_PRODUCT_COMPOSITION=FAIL_UNKNOWN_ARG arg=$1"
+        return 64
+        ;;
+    esac
+  done
+
+  [[ -n "$android_root" ]] || {
+    echo "SABLE_PRODUCT_COMPOSITION=FAIL_ANDROID_ROOT_REQUIRED"
+    return 64
+  }
+  [[ "$active_product_mk" != /* ]] || {
+    echo "SABLE_PRODUCT_COMPOSITION=FAIL_ACTIVE_PRODUCT_MK_ABSOLUTE"
+    return 64
+  }
+  [[ -d "$android_root" ]] || {
+    echo "SABLE_PRODUCT_COMPOSITION=FAIL_ANDROID_ROOT_NOT_FOUND path=$android_root"
+    return 64
+  }
+
+  android_root="$(cd "$android_root" && pwd)"
+  active_product_path="$android_root/$active_product_mk"
+  profile_mk="$android_root/vendor/sable/n1b2/sable_n1b2_product_profile.mk"
+
+  titan2_n1b2_product_composition_profile_has_module() {
+    local module="$1"
+
+    sed -E 's/#.*$//' "$profile_mk" \
+      | grep -Eq "(^|[^A-Za-z0-9_])${module}([^A-Za-z0-9_]|$)"
+  }
+
+  cat <<EOF
+===== TITAN2 N1B2 PRODUCT COMPOSITION =====
+ROOT=$ROOT
+RELEASE=$release
+ANDROID_ROOT=$android_root
+ACTIVE_PRODUCT_MK=$active_product_mk
+ACTIVE_PRODUCT_PATH=$active_product_path
+PROFILE_MK=$profile_mk
+DEVICE_CONTACT_AUTHORIZED=NO
+ADB_COMMANDS_RUN=NO
+FASTBOOT_COMMANDS_RUN=NO
+BUILD_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+FACTORY_RESET_AUTHORIZED=NO
+PUBLIC_RELEASE=NO
+PRODUCTION_SIGNING=NO
+TITAN2_N1B2_RELEASE_GATE=AUDIT_ONLY_FAIL_CLOSED
+TITAN2_N1B2_BUILD_SUPPORTED=NO
+TITAN2_N1B2_QUALIFY_SUPPORTED=NO
+TITAN2_N1B2_FLASH_EXECUTION_SUPPORTED=NO
+TITAN2_N1B2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO
+EOF
+
+  titan2_n1b2_product_composition_require_file \
+    TITAN2_N1B2_ACTIVE_PRODUCT_PRESENT \
+    "$active_product_path"
+  titan2_n1b2_product_composition_require_file \
+    TITAN2_N1B2_PRODUCT_PROFILE_PRESENT \
+    "$profile_mk"
+  titan2_n1b2_product_composition_require_text \
+    TITAN2_N1B2_ACTIVE_PRODUCT_INHERITS_PROFILE \
+    "vendor/sable/n1b2/sable_n1b2_product_profile.mk" \
+    "$active_product_path"
+
+  titan2_n1b2_product_composition_require_file \
+    TITAN2_N1B2_REQUIRED_SOURCE_SABLELAUNCHER_BP \
+    "$android_root/packages/apps/SableStart/Android.bp"
+  titan2_n1b2_product_composition_require_file \
+    TITAN2_N1B2_REQUIRED_SOURCE_SABLELAUNCHER_MANIFEST \
+    "$android_root/packages/apps/SableStart/AndroidManifest.xml"
+  titan2_n1b2_product_composition_require_file \
+    TITAN2_N1B2_REQUIRED_SOURCE_SABLEDESIGN_BP \
+    "$android_root/packages/apps/SableDesign/Android.bp"
+
+  if titan2_n1b2_product_composition_profile_has_module SableLauncher; then
+    titan2_n1b2_product_composition_emit \
+      PASS \
+      TITAN2_N1B2_ALLOWED_MODULE_SABLELAUNCHER_SELECTED \
+      "module=SableLauncher"
+  else
+    titan2_n1b2_product_composition_emit \
+      FAIL \
+      TITAN2_N1B2_ALLOWED_MODULE_SABLELAUNCHER_SELECTED \
+      "module_not_selected=SableLauncher"
+  fi
+
+  local blocked_modules=(
+    SableHub
+    SableMail
+    SableCalendar
+    SableWeather
+    SableMedia
+    SableMessages
+    SablePeople
+    SableReader
+    SableTextReader
+    SableCommand
+    SableSettings
+    SablePhone
+    SableContacts
+    SableBrowser
+    SableSystemUI
+  )
+
+  local module
+  local key_module
+  for module in "${blocked_modules[@]}"; do
+    key_module="${module^^}"
+    if titan2_n1b2_product_composition_profile_has_module "$module"; then
+      titan2_n1b2_product_composition_emit \
+        FAIL \
+        "TITAN2_N1B2_BLOCKED_MODULE_${key_module}_NOT_SELECTED" \
+        "unexpected_selected_module=$module"
+    else
+      titan2_n1b2_product_composition_emit \
+        PASS \
+        "TITAN2_N1B2_BLOCKED_MODULE_${key_module}_NOT_SELECTED" \
+        "module_not_selected=$module"
+    fi
+  done
+
+  echo "TITAN2_N1B2_PRODUCT_COMPOSITION_PASSES=$composition_passes"
+  echo "TITAN2_N1B2_PRODUCT_COMPOSITION_FAILURES=$composition_failures"
+
+  if (( composition_failures == 0 )); then
+    echo "SABLE_PRODUCT_COMPOSITION=PASS"
+    return 0
+  fi
+
+  echo "SABLE_PRODUCT_COMPOSITION=FAIL failures=$composition_failures"
+  return 1
 }
 
 sable_device_flash_plan() {
