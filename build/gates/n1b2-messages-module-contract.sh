@@ -15,9 +15,10 @@ usage:
 
 Restored Sable Messages module gate. This gate validates the module against the
 existing Hub/Messages reference, platform_sable Messages UX, visual confirmation
-checklist, interaction/keyboard contract, and source-controlled Titan2 visual
-artifacts without Android image builds, Soong builds, device contact, adb,
-fastboot, flash, public release, or production signing.
+checklist, full interaction/keyboard contract, release validation block, and
+source-controlled Titan2 visual artifacts without Android image builds, Soong
+builds, device contact, adb, fastboot, flash, public release, or production
+signing.
 USAGE
 }
 
@@ -94,6 +95,15 @@ forbid_text() {
   fi
 }
 
+require_release_marker() {
+  local marker="$1"
+  local value="$2"
+  local path="$3"
+  local key="N1B2_MESSAGES_RELEASE_${marker}"
+
+  require_text "$key" "\"$marker\" to \"$value\"" "$path"
+}
+
 source_canonical_host_tools() {
   require_file N1B2_CANONICAL_HOST_TOOLS_ENV_PRESENT "$HOST_TOOLS_ENV"
   (( failures == 0 )) || {
@@ -131,6 +141,8 @@ source_canonical_host_tools() {
 
 manifest="$MODULE_DIR/src/main/AndroidManifest.xml"
 activity="$MODULE_DIR/src/main/java/org/sableos/messages/MainActivity.kt"
+model="$MODULE_DIR/src/main/java/org/sableos/messages/MessagesInteractionModel.kt"
+test_file="$MODULE_DIR/src/test/java/org/sableos/messages/MessagesInteractionModelTest.kt"
 ux_doc="$PLATFORM_SABLE_ROOT/docs/design/MESSAGES_CONVERSATION_UX.md"
 visual_doc="$PLATFORM_SABLE_ROOT/docs/design/MESSAGES_CONVERSATION_VISUAL_CONFIRMATION.md"
 messages_svg="$PLATFORM_SABLE_ROOT/docs/design/artifacts/sable-messages-conversation-titan2.svg"
@@ -146,7 +158,7 @@ BUILD_MODE=$BUILD_MODE
 DEVICE_CONTACT_AUTHORIZED=NO
 ADB_COMMANDS_RUN=NO
 FASTBOOT_COMMANDS_RUN=NO
-BUILD_AUTHORIZED=$([[ "$BUILD_MODE" == YES ]] && echo YES_GRADLE_APK_ONLY || echo NO)
+BUILD_AUTHORIZED=$([[ "$BUILD_MODE" == YES ]] && echo YES_GRADLE_APK_AND_TEST_ONLY || echo NO)
 IMAGE_BUILD_AUTHORIZED=NO
 SOONG_BUILD_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
@@ -177,6 +189,8 @@ require_dir N1B2_MESSAGES_MODULE_DIR_PRESENT "$MODULE_DIR"
 require_file N1B2_MESSAGES_BUILD_GRADLE_PRESENT "$MODULE_DIR/build.gradle.kts"
 require_file N1B2_MESSAGES_MANIFEST_PRESENT "$manifest"
 require_file N1B2_MESSAGES_MAIN_ACTIVITY_PRESENT "$activity"
+require_file N1B2_MESSAGES_INTERACTION_MODEL_PRESENT "$model"
+require_file N1B2_MESSAGES_INTERACTION_TEST_PRESENT "$test_file"
 require_file N1B2_MESSAGES_ICON_PRESENT \
   "$MODULE_DIR/src/main/res/drawable/ic_sable_messages.xml"
 
@@ -188,6 +202,8 @@ require_text N1B2_MESSAGES_APP_ID 'applicationId = "org.sableos.messages"' \
   "$MODULE_DIR/build.gradle.kts"
 require_text N1B2_MESSAGES_DESIGN_DEPENDENCY 'implementation(project(":design"))' \
   "$MODULE_DIR/build.gradle.kts"
+require_text N1B2_MESSAGES_JUNIT_DEPENDENCY 'testImplementation("junit:junit:4.13.2")' \
+  "$MODULE_DIR/build.gradle.kts"
 require_text N1B2_MESSAGES_LABEL 'android:label="Sable Messages"' "$manifest"
 require_text N1B2_MESSAGES_PROVIDER_HANDOFF_QUERY \
   'android.intent.action.SENDTO' "$manifest"
@@ -196,28 +212,152 @@ require_text N1B2_MESSAGES_PROVIDER_HANDOFF_SCHEME 'android:scheme="smsto"' \
 require_text N1B2_MESSAGES_INTENT_HANDOFF 'Intent.ACTION_SENDTO' "$activity"
 require_text N1B2_MESSAGES_SMSTO_HANDOFF 'smsto:' "$activity"
 
-require_text N1B2_MESSAGES_UX_HISTORY_SEARCH \
-  'SEARCH_IN_CONVERSATION=YES' "$ux_doc"
-require_text N1B2_MESSAGES_UX_JUMP_TO_DATE \
-  'JUMP_TO_DATE=YES' "$ux_doc"
-require_text N1B2_MESSAGES_UX_JUMP_TO_UNREAD \
-  'JUMP_TO_UNREAD=YES' "$ux_doc"
-require_text N1B2_MESSAGES_UX_JUMP_TO_ATTACHMENT \
-  'JUMP_TO_ATTACHMENT=YES' "$ux_doc"
-require_text N1B2_MESSAGES_UX_LATEST_KEY \
-  'LATEST_KEY=REQUIRED' "$ux_doc"
-require_text N1B2_MESSAGES_UX_CUSTOM_STACK_EXCLUSION \
-  'CUSTOM_SMS_STACK=NO' "$ux_doc"
+require_text N1B2_MESSAGES_UX_RELEASE_BLOCK \
+  '## Validation' "$ux_doc"
+require_text N1B2_MESSAGES_VISUAL_RELEASE_BLOCK \
+  '## Release validation block' "$visual_doc"
 require_text N1B2_MESSAGES_VISUAL_ARTIFACT_BINDING \
   'sable-messages-conversation-titan2.svg' "$visual_doc"
-require_text N1B2_MESSAGES_VISUAL_LATEST_REQUIREMENT \
-  'LATEST_MESSAGE_ALWAYS_VISIBLE=PASS' "$visual_doc"
 require_text N1B2_MESSAGES_ARTIFACT_TITLE \
   'Sable Messages / Conversation UX for Titan 2' "$messages_svg"
 require_text N1B2_MESSAGES_ARTIFACT_HISTORY_INDICATOR \
   'New message' "$messages_svg"
 require_text N1B2_HUB_ARTIFACT_MESSAGES_REFERENCE \
   'Sable Hub — Keyboard-First Communications UX' "$hub_svg"
+
+release_pairs=(
+  'MESSAGES_CONVERSATION_UX:PASS'
+  'MESSAGES_CONVERSATION_VISUAL_ARTIFACT_SOURCE_CONTROLLED:PASS'
+  'TITAN2_MESSAGES_VISUAL_TARGET:PASS'
+  'ANDROID_MESSAGES_MENTAL_MODEL:PASS'
+  'KEYBOARD_FIRST_COMPOSITION:PASS'
+  'PHYSICAL_KEYBOARD_COMPOSITION:PASS'
+  'ONSCREEN_KEYBOARD_FALLBACK:PASS'
+  'ALT_SYM_FN_TEXT_ENTRY:PASS'
+  'LATEST_ANCHORED_CONVERSATION:PASS'
+  'LATEST_MESSAGE_ALWAYS_VISIBLE:PASS'
+  'OPEN_THREAD_AT_LATEST:PASS'
+  'RESTORE_THREAD_AT_LATEST:PASS'
+  'AUTO_ADVANCE_TO_LATEST_ON_INCOMING:PASS'
+  'AUTO_ADVANCE_TO_LATEST_ON_SEND:PASS'
+  'SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE:NO'
+  'CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED:NO'
+  'HISTORY_ACCESS_EXPLICIT:PASS'
+  'SEARCH_IN_CONVERSATION:PASS'
+  'JUMP_TO_UNREAD:PASS'
+  'RETURN_TO_LATEST_KEY:PASS'
+  'CONVERSATION_LIST_LATEST_FIRST:PASS'
+  'MESSAGE_ACTIONS_KEYBOARD_ACCESSIBLE:PASS'
+  'CONTACTS_HANDOFF:PASS'
+  'PHONE_HANDOFF:PASS'
+  'HUB_HANDOFF:PASS'
+  'COMMAND_SEARCH_HANDOFF:PASS'
+  'NOTIFICATION_SHADE_HANDOFF:PASS'
+  'LOCKSCREEN_PRIVACY_COMPATIBLE:PASS'
+  'LOCKED_MODE_REDACTION:PASS'
+  'PRIVATE_MODE_REDACTION:PASS'
+  'SOURCE_RESTRICTED_MODE:PASS'
+  'NO_FOCUS_TRAPS:PASS'
+  'NO_MESSAGE_DEAD_ENDS:PASS'
+  'CUSTOM_SMS_STACK:NO'
+  'CUSTOM_RCS_STACK:NO'
+  'CUSTOM_MMS_STACK:NO'
+  'UNSUPPORTED_PROVIDER_ACTIONS:NO'
+  'TITAN2_HARDWARE_TEMPLATE:PASS'
+  'SQUARE_DISPLAY_PLUS_PHYSICAL_KEYBOARD:PASS'
+  'NO_SLAB_PHONE_VISUAL_TARGET:PASS'
+  'NO_STRETCHED_SCREEN_TARGET:PASS'
+  'BUILD_CODE_CHANGED:NO'
+  'DEVICE_CODE_CHANGED:NO'
+  'FLASH_ENABLEMENT:NO'
+)
+
+for pair in "${release_pairs[@]}"; do
+  marker="${pair%%:*}"
+  value="${pair##*:}"
+  require_release_marker "$marker" "$value" "$model"
+  require_text "N1B2_MESSAGES_RELEASE_TEST_${marker}" "$marker" "$test_file"
+done
+
+model_actions=(
+  SearchInConversation
+  JumpToDate
+  JumpToUnread
+  JumpToAttachment
+  PageUpHistory
+  PageDownTowardLatest
+  ReturnToLatest
+  NextUnread
+  BackOrEsc
+  ConversationListUp
+  ConversationListDown
+  ConversationListHome
+  ConversationListEnd
+  TypeToFilter
+  OpenFocusedConversation
+  ComposerTyping
+  ComposerBackspace
+  ComposerDelete
+  ComposerEnterSend
+  ComposerShiftEnterNewline
+  ComposerAltEnterProviderSend
+  ComposerMenuActions
+  OnscreenKeyboardFallback
+  AltSymFnTextEntry
+  MessageFocusUp
+  MessageFocusDown
+  MessageEnterDetails
+  MessageSpacePreview
+  MessageMenuActions
+  CopyText
+  ReplyIfProviderSafe
+  ForwardIfProviderSafe
+  DeleteIfProviderSafe
+  DetailsIfProviderSafe
+  AttachmentActions
+  CameraHandoff
+  MediaPicker
+  ContactsHandoff
+  PhoneHandoff
+  HubHandoff
+  CommandSearchHandoff
+  NotificationShadeHandoff
+  LockscreenHandoff
+  LockedModeRedaction
+  PrivateModeRedaction
+  SourceRestrictedMode
+)
+
+for action in "${model_actions[@]}"; do
+  require_text "N1B2_MESSAGES_ACTION_${action^^}" "$action" "$model"
+  require_text "N1B2_MESSAGES_ACTION_TEST_${action^^}" "$action" "$test_file"
+done
+
+key_handlers=(
+  KEYCODE_SLASH
+  KEYCODE_L
+  KEYCODE_MOVE_END
+  KEYCODE_PAGE_UP
+  KEYCODE_PAGE_DOWN
+  KEYCODE_N
+  KEYCODE_D
+  KEYCODE_A
+  KEYCODE_BACK
+  KEYCODE_ESCAPE
+  KEYCODE_DPAD_UP
+  KEYCODE_DPAD_DOWN
+  KEYCODE_MOVE_HOME
+  KEYCODE_ENTER
+  KEYCODE_NUMPAD_ENTER
+  KEYCODE_SPACE
+  KEYCODE_DEL
+  KEYCODE_FORWARD_DEL
+  KEYCODE_MENU
+)
+
+for key_handler in "${key_handlers[@]}"; do
+  require_text "N1B2_MESSAGES_KEY_HANDLER_$key_handler" "$key_handler" "$activity"
+done
 
 require_text N1B2_MESSAGES_UI_VISUAL_TARGET \
   'Titan 2 visual target' "$activity"
@@ -234,32 +374,13 @@ require_text N1B2_MESSAGES_UI_ONSCREEN_FALLBACK \
 require_text N1B2_MESSAGES_UI_PRIVACY_REDACTION \
   'LOCKED_MODE_REDACTION' "$activity"
 require_text N1B2_MESSAGES_UI_NO_CUSTOM_STACK \
-  'CUSTOM_SMS_STACK=NO' "$activity"
-
-require_text N1B2_MESSAGES_KEY_HANDLER_SLASH \
-  'KEYCODE_SLASH' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_CTRL_L \
-  'KEYCODE_L' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_END \
-  'KEYCODE_MOVE_END' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_PAGE_UP \
-  'KEYCODE_PAGE_UP' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_PAGE_DOWN \
-  'KEYCODE_PAGE_DOWN' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_NEXT_UNREAD \
-  'KEYCODE_N' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_JUMP_DATE \
-  'KEYCODE_D' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_JUMP_ATTACHMENT \
-  'KEYCODE_A' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_BACK \
-  'KEYCODE_BACK' "$activity"
-require_text N1B2_MESSAGES_KEY_HANDLER_ESCAPE \
-  'KEYCODE_ESCAPE' "$activity"
+  'CUSTOM_SMS_STACK' "$activity"
 require_text N1B2_MESSAGES_HISTORY_DISCRETE_SLICES \
   'History pages are discrete slices' "$activity"
 require_text N1B2_MESSAGES_NO_SCROLL_DEPENDENCY_COPY \
-  'No precision pointer scroll required' "$activity"
+  'no precision touchpad scrolling is required' "$activity"
+require_text N1B2_MESSAGES_NO_FOCUS_TRAPS_TEST \
+  'allModesHaveReturnToLatestAndNoDeadEnds' "$test_file"
 
 for forbidden in \
   'android.permission.READ_SMS' \
@@ -289,7 +410,7 @@ fi
 source_canonical_host_tools
 (
   cd "$APP_ROOT"
-  ./gradlew --no-daemon :messages:assembleDebug
+  ./gradlew --no-daemon :messages:testDebugUnitTest :messages:assembleDebug
 )
 
 shopt -s nullglob
