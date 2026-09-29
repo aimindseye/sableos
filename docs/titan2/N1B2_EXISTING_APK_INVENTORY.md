@@ -2,7 +2,7 @@
 
 This is the first APK/code-closure gate after the `platform_sable` binding and Panther no-regression guards.
 
-This contract intentionally does not restore missing app modules, does not relax Android product composition, does not build a system image, does not contact a device, and does not authorize adb, fastboot, flash, public release, or production signing.
+This contract intentionally does not relax Android product composition, does not build a system image, does not contact a device, and does not authorize adb, fastboot, flash, public release, or production signing.
 
 ## Purpose
 
@@ -37,9 +37,12 @@ calculator
 games
 media
 hub
+messages
 weather
 calendar
 ```
+
+`messages` is a restored provider-safe handoff APK. It is buildable as a Gradle module, but this inventory does not product-select it into an Android image.
 
 `games` is a flavored Android application. Its debug APK outputs are flavor-scoped under:
 
