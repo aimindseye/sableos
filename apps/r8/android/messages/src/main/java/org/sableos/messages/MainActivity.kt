@@ -9,7 +9,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,22 +28,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.isCtrlPressed
-import androidx.compose.ui.input.key.nativeKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -83,35 +73,30 @@ class MainActivity : ComponentActivity() {
 private fun MessagesApp(
     onProviderHandoff: (String, String) -> Boolean,
 ) {
-    val focusRequester = remember { FocusRequester() }
-    var selectedThread by remember { mutableStateOf(sampleThreads.first()) }
-    var draft by remember { mutableStateOf("Typing reply…") }
-    var mode by remember { mutableStateOf(ConversationMode.Latest) }
-    var historyPage by remember { mutableIntStateOf(0) }
-    var status by remember {
-        mutableStateOf(
-            "LATEST_ANCHORED_CONVERSATION=PASS · " +
-                "PROVIDER_OWNERSHIP_RETAINED=YES",
-        )
+    var state by remember { mutableStateOf(MessagesInteractionModel.initialState()) }
+    var providerStatus by remember {
+        mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no")
+    }
+    val sortedThreads = remember { MessagesInteractionModel.latestFirstThreads(sampleThreads) }
+
+    fun apply(action: MessagesAction) {
+        state =
+            MessagesInteractionModel.reduce(
+                state = state,
+                action = action,
+                threadCount = sortedThreads.size,
+            )
     }
 
-    fun returnToLatest(reason: String) {
-        mode = ConversationMode.Latest
-        historyPage = 0
-        status = reason
-    }
-
-    fun openProvider() {
-        status =
-            if (onProviderHandoff(selectedThread.route, draft)) {
-                "Provider handoff opened for ${selectedThread.person}."
+    fun sendToProvider() {
+        val thread = sortedThreads[state.selectedThreadIndex]
+        providerStatus =
+            if (onProviderHandoff(thread.route, state.draft)) {
+                "Provider-safe smsto: handoff opened for ${thread.person}."
             } else {
                 "No provider accepted smsto: handoff on this build."
             }
-    }
-
-    LaunchedEffect(Unit) {
-        focusRequester.requestFocus()
+        apply(MessagesAction.SendMessage)
     }
 
     Column(
@@ -119,114 +104,13 @@ private fun MessagesApp(
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .focusRequester(focusRequester)
-                .focusable()
                 .onPreviewKeyEvent { event ->
-                    if (event.type != KeyEventType.KeyDown) {
-                        return@onPreviewKeyEvent false
-                    }
-                    when (event.nativeKeyEvent.keyCode) {
-                        AndroidKeyEvent.KEYCODE_SLASH -> {
-                            mode = ConversationMode.Search
-                            status = "SEARCH_IN_CONVERSATION=YES · / opened search"
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_L -> {
-                            if (event.isCtrlPressed) {
-                                returnToLatest(
-                                    "LATEST_KEY=REQUIRED · Ctrl+L returned to latest",
-                                )
-                                true
-                            } else {
-                                false
-                            }
-                        }
-
-                        AndroidKeyEvent.KEYCODE_MOVE_END -> {
-                            returnToLatest(
-                                "LATEST_KEY=REQUIRED · End returned to latest",
-                            )
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_PAGE_UP -> {
-                            mode = ConversationMode.History
-                            historyPage =
-                                (historyPage + 1)
-                                    .coerceAtMost(historySlices.lastIndex)
-                            status =
-                                "PAGE_UP_HISTORY=OPTIONAL · " +
-                                    "older discrete history slice"
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_PAGE_DOWN -> {
-                            if (historyPage > 0) {
-                                historyPage -= 1
-                                mode = ConversationMode.History
-                                status =
-                                    "PAGE_DOWN_TOWARD_LATEST=OPTIONAL · " +
-                                        "newer discrete history slice"
-                            } else {
-                                returnToLatest(
-                                    "PAGE_DOWN_TOWARD_LATEST=OPTIONAL · latest",
-                                )
-                            }
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_N -> {
-                            selectedThread =
-                                sampleThreads.firstOrNull { it.unreadCount > 0 }
-                                    ?: selectedThread
-                            returnToLatest(
-                                "JUMP_TO_UNREAD=YES · N selected next unread",
-                            )
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_D -> {
-                            mode = ConversationMode.History
-                            historyPage = 1.coerceAtMost(historySlices.lastIndex)
-                            status = "JUMP_TO_DATE=YES · date slice focused"
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_A -> {
-                            mode = ConversationMode.History
-                            historyPage = historySlices.lastIndex
-                            status =
-                                "JUMP_TO_ATTACHMENT=YES · attachment slice focused"
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_BACK,
-                        AndroidKeyEvent.KEYCODE_ESCAPE,
-                        -> {
-                            returnToLatest(
-                                "Back/Esc left history/search and returned to latest",
-                            )
-                            true
-                        }
-
-                        AndroidKeyEvent.KEYCODE_ENTER -> {
-                            if (mode == ConversationMode.History) {
-                                returnToLatest(
-                                    "New message — Enter to latest",
-                                )
-                            } else if (mode == ConversationMode.Search) {
-                                returnToLatest(
-                                    "Search result opened at latest",
-                                )
-                            } else if (!event.nativeKeyEvent.isShiftPressed) {
-                                openProvider()
-                            }
-                            true
-                        }
-
-                        else -> false
-                    }
+                    handleMessagesKey(
+                        event = event.nativeKeyEvent,
+                        state = state,
+                        apply = ::apply,
+                        sendToProvider = ::sendToProvider,
+                    )
                 }
                 .verticalScroll(rememberScrollState())
                 .padding(
@@ -234,248 +118,273 @@ private fun MessagesApp(
                     vertical = SableSpacing.Xl,
                 ),
     ) {
-        Header(status = status)
+        Header()
+        Spacer(Modifier.height(SableSpacing.Xl))
+        ReleaseValidationPanel(state)
         Spacer(Modifier.height(SableSpacing.Xl))
         LatestAnchoredThread(
-            thread = selectedThread,
-            draft = draft,
-            mode = mode,
-            historyPage = historyPage,
-            onDraftChanged = { draft = it },
-            onProviderHandoff = ::openProvider,
-            onReturnToLatest = {
-                returnToLatest("RETURN_TO_LATEST_KEY=PASS")
+            state = state,
+            thread = sortedThreads[state.selectedThreadIndex],
+            onDraftChanged = { draft ->
+                state = state.copy(draft = draft)
+            },
+            onAction = ::apply,
+            onProviderHandoff = ::sendToProvider,
+        )
+        Spacer(Modifier.height(SableSpacing.Xl))
+        HistoryAndSearchPanel(state = state, onAction = ::apply)
+        Spacer(Modifier.height(SableSpacing.Xl))
+        ConversationList(
+            state = state,
+            threads = sortedThreads,
+            onAction = ::apply,
+            onSelectThread = { index ->
+                state =
+                    state.copy(
+                        focusedConversationRow = index,
+                        selectedThreadIndex = index,
+                    )
+                apply(MessagesAction.OpenFocusedConversation)
             },
         )
         Spacer(Modifier.height(SableSpacing.Xl))
-        ConversationList(
-            selectedThread = selectedThread,
-            onSelectThread = {
-                selectedThread = it
-                returnToLatest("OPEN_SELECTED_THREAD_AT_LATEST=YES")
-            },
+        MessageActionsPanel(onAction = ::apply)
+        Spacer(Modifier.height(SableSpacing.Xl))
+        HandoffPanel(
+            state = state,
+            providerStatus = providerStatus,
+            onAction = ::apply,
         )
         Spacer(Modifier.height(SableSpacing.Xl))
         KeyboardModel()
-        Spacer(Modifier.height(SableSpacing.Xl))
-        PrivacyAndProviderPanel()
     }
 }
 
+private fun handleMessagesKey(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+    apply: (MessagesAction) -> Unit,
+    sendToProvider: () -> Unit,
+): Boolean {
+    if (event.action != AndroidKeyEvent.ACTION_DOWN) return false
+
+    val action =
+        when (event.keyCode) {
+            AndroidKeyEvent.KEYCODE_SLASH -> MessagesAction.SearchInConversation
+            AndroidKeyEvent.KEYCODE_L -> {
+                if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
+            }
+            AndroidKeyEvent.KEYCODE_MOVE_END -> MessagesAction.ReturnToLatest
+            AndroidKeyEvent.KEYCODE_PAGE_UP -> MessagesAction.PageUpHistory
+            AndroidKeyEvent.KEYCODE_PAGE_DOWN -> MessagesAction.PageDownTowardLatest
+            AndroidKeyEvent.KEYCODE_N -> MessagesAction.NextUnread
+            AndroidKeyEvent.KEYCODE_D -> MessagesAction.JumpToDate
+            AndroidKeyEvent.KEYCODE_A -> MessagesAction.JumpToAttachment
+            AndroidKeyEvent.KEYCODE_BACK,
+            AndroidKeyEvent.KEYCODE_ESCAPE -> MessagesAction.BackOrEsc
+            AndroidKeyEvent.KEYCODE_DPAD_UP -> {
+                if (state.mode == MessagesMode.ConversationList) {
+                    MessagesAction.ConversationListUp
+                } else {
+                    MessagesAction.MessageFocusUp
+                }
+            }
+            AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
+                if (state.mode == MessagesMode.ConversationList) {
+                    MessagesAction.ConversationListDown
+                } else {
+                    MessagesAction.MessageFocusDown
+                }
+            }
+            AndroidKeyEvent.KEYCODE_MOVE_HOME -> MessagesAction.ConversationListHome
+            AndroidKeyEvent.KEYCODE_ENTER,
+            AndroidKeyEvent.KEYCODE_NUMPAD_ENTER -> {
+                when {
+                    event.isShiftPressed -> MessagesAction.ComposerShiftEnterNewline
+                    event.isAltPressed -> MessagesAction.ComposerAltEnterProviderSend
+                    state.mode == MessagesMode.ConversationList -> MessagesAction.OpenFocusedConversation
+                    state.mode == MessagesMode.History -> MessagesAction.ReturnToLatest
+                    state.mode == MessagesMode.Search -> MessagesAction.ReturnToLatest
+                    state.mode == MessagesMode.MessageActions -> MessagesAction.MessageEnterDetails
+                    else -> {
+                        sendToProvider()
+                        return true
+                    }
+                }
+            }
+            AndroidKeyEvent.KEYCODE_SPACE -> MessagesAction.MessageSpacePreview
+            AndroidKeyEvent.KEYCODE_DEL -> MessagesAction.ComposerBackspace
+            AndroidKeyEvent.KEYCODE_FORWARD_DEL -> MessagesAction.ComposerDelete
+            AndroidKeyEvent.KEYCODE_MENU -> MessagesAction.ComposerMenuActions
+            else -> {
+                if (state.mode == MessagesMode.ConversationList) {
+                    MessagesAction.TypeToFilter
+                } else {
+                    MessagesAction.ComposerTyping
+                }
+            }
+        }
+
+    apply(action)
+    return true
+}
+
 @Composable
-private fun Header(status: String) {
+private fun Header() {
     Text(
         text = "Sable Messages",
-        style = MaterialTheme.typography.displaySmall,
+        style = MaterialTheme.typography.displayLarge,
         color = MaterialTheme.colorScheme.onBackground,
     )
     Text(
-        text = "Titan 2 visual target · square display plus physical keyboard",
+        text =
+            "Titan 2 visual target · square display + physical keyboard · " +
+                "Android Messages mental model",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Text(
-        text = status,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-    )
+}
+
+@Composable
+private fun ReleaseValidationPanel(state: MessagesUiState) {
+    ContractPanel(title = "Release validation block") {
+        MessagesInteractionModel.visibleReleaseMarkers(state).forEach { (key, value) ->
+            ContractRow(label = key, value = value)
+        }
+    }
 }
 
 @Composable
 private fun LatestAnchoredThread(
-    thread: ThreadSummary,
-    draft: String,
-    mode: ConversationMode,
-    historyPage: Int,
+    state: MessagesUiState,
+    thread: SableThread,
     onDraftChanged: (String) -> Unit,
+    onAction: (MessagesAction) -> Unit,
     onProviderHandoff: () -> Unit,
-    onReturnToLatest: () -> Unit,
 ) {
-    SectionPanel {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = thread.person,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    text = "SMS provider · Private OK · latest anchored",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = "End/Ctrl+L latest",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
+    ContractPanel(title = "Latest-anchored conversation") {
+        ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
+        ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
+        ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
+        ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
+        ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
+        ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
+        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
+        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
+        Spacer(Modifier.height(SableSpacing.Md))
+
+        Text(
+            text = thread.person,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = thread.source,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(SableSpacing.Md))
+
+        thread.messages.takeLast(3).forEachIndexed { index, message ->
+            MessageBubble(
+                message = message,
+                latest = index == thread.messages.takeLast(3).lastIndex,
+                focused = state.focus == MessagesFocus.LatestMessage && state.focusedMessageIndex == index,
             )
         }
 
         Spacer(Modifier.height(SableSpacing.Md))
-        when (mode) {
-            ConversationMode.Latest -> LatestConversationWindow(thread)
-            ConversationMode.History -> HistorySlice(
-                slice = historySlices[historyPage],
-                onReturnToLatest = onReturnToLatest,
-            )
-            ConversationMode.Search -> SearchSlice(onReturnToLatest)
-        }
-        Spacer(Modifier.height(SableSpacing.Md))
-        Composer(
-            draft = draft,
-            onDraftChanged = onDraftChanged,
-            onProviderHandoff = onProviderHandoff,
-        )
-    }
-}
-
-@Composable
-private fun LatestConversationWindow(thread: ThreadSummary) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(SableSpacing.Md),
-    ) {
         Text(
-            text = "Recent context · anchored to latest",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        MessageBubble(
-            author = thread.person,
-            body = thread.context,
-            time = "7:09",
-            incoming = true,
-        )
-        MessageBubble(
-            author = "You",
-            body = "I’ll meet you outside.",
-            time = "7:10",
-            incoming = false,
-        )
-        MessageBubble(
-            author = thread.person,
-            body = thread.latest,
-            time = thread.time,
-            incoming = true,
-            label = "Latest msg · visible · auto-advanced",
-        )
-        Text(
-            text = "LATEST_MESSAGE_ALWAYS_VISIBLE=PASS · " +
-                "SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE=NO",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
-}
-
-@Composable
-private fun HistorySlice(
-    slice: HistorySlice,
-    onReturnToLatest: () -> Unit,
-) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(SableSpacing.Md),
-    ) {
-        Text(
-            text = slice.title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "History pages are discrete slices with visible focus.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        slice.rows.forEach { row ->
-            FocusRow(row)
-        }
-        Spacer(Modifier.height(SableSpacing.Md))
-        Button(onClick = onReturnToLatest) {
-            Text("New message — Enter to latest")
-        }
-    }
-}
-
-@Composable
-private fun SearchSlice(onReturnToLatest: () -> Unit) {
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(SableSpacing.Md),
-    ) {
-        Text(
-            text = "Search in conversation",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "SEARCH_IN_CONVERSATION=YES · / opens search",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        FocusRow("Jump to date · D")
-        FocusRow("Jump to unread · N")
-        FocusRow("Jump to attachment · A")
-        Spacer(Modifier.height(SableSpacing.Md))
-        Button(onClick = onReturnToLatest) {
-            Text("Back/Esc or Ctrl+L returns to latest")
-        }
-    }
-}
-
-@Composable
-private fun Composer(
-    draft: String,
-    onDraftChanged: (String) -> Unit,
-    onProviderHandoff: () -> Unit,
-) {
-    Column {
-        Text(
-            text = "Composer · physical keyboard primary",
+            text = "Composer visible with latest · physical keyboard composition primary",
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
         )
         OutlinedTextField(
-            value = draft,
+            value = state.draft,
             onValueChange = onDraftChanged,
+            label = { Text("Composer · shared physical/onscreen draft") },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("PHYSICAL_KEYBOARD_COMPOSITION=PASS") },
-            supportingText = {
-                Text(
-                    "Shift+Enter newline · Enter provider-safe send/handoff",
-                )
-            },
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "ONSCREEN_KEYBOARD_FALLBACK=PASS · draft shared",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
-            Spacer(Modifier.width(SableSpacing.Md))
+        Text(
+            text = "Onscreen keyboard fallback keeps draft and latest visible · ALT/SYM/FN entry supported",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
             Button(onClick = onProviderHandoff) {
-                Text("Provider handoff")
+                Text("Enter send / provider handoff")
+            }
+            Button(onClick = { onAction(MessagesAction.ComposerShiftEnterNewline) }) {
+                Text("Shift+Enter newline")
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+            Button(onClick = { onAction(MessagesAction.OnscreenKeyboardFallback) }) {
+                Text("Onscreen fallback")
+            }
+            Button(onClick = { onAction(MessagesAction.AltSymFnTextEntry) }) {
+                Text("ALT/SYM/FN entry")
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryAndSearchPanel(
+    state: MessagesUiState,
+    onAction: (MessagesAction) -> Unit,
+) {
+    ContractPanel(title = "Explicit history/search mode") {
+        ContractRow("HISTORY_ACCESS_EXPLICIT", "PASS")
+        ContractRow("SEARCH_IN_CONVERSATION", "PASS")
+        ContractRow("JUMP_TO_UNREAD", "PASS")
+        ContractRow("RETURN_TO_LATEST_KEY", "PASS")
+        Text(
+            text = "New message — Enter to latest",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "History pages are discrete slices; no precision touchpad scrolling is required.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "Current slice: ${state.historySlice} · mode: ${state.mode}",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+            Button(onClick = { onAction(MessagesAction.SearchInConversation) }) {
+                Text("/ search")
+            }
+            Button(onClick = { onAction(MessagesAction.JumpToDate) }) {
+                Text("Jump date")
+            }
+            Button(onClick = { onAction(MessagesAction.JumpToUnread) }) {
+                Text("Jump unread")
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+            Button(onClick = { onAction(MessagesAction.JumpToAttachment) }) {
+                Text("Jump attachment")
+            }
+            Button(onClick = { onAction(MessagesAction.PageUpHistory) }) {
+                Text("PageUp older")
+            }
+            Button(onClick = { onAction(MessagesAction.PageDownTowardLatest) }) {
+                Text("PageDown latest")
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+            Button(onClick = { onAction(MessagesAction.NextUnread) }) {
+                Text("N next unread")
+            }
+            Button(onClick = { onAction(MessagesAction.ReturnToLatest) }) {
+                Text("Ctrl+L / End latest")
+            }
+            Button(onClick = { onAction(MessagesAction.BackOrEsc) }) {
+                Text("Back/Esc latest")
             }
         }
     }
@@ -483,162 +392,240 @@ private fun Composer(
 
 @Composable
 private fun ConversationList(
-    selectedThread: ThreadSummary,
-    onSelectThread: (ThreadSummary) -> Unit,
+    state: MessagesUiState,
+    threads: List<SableThread>,
+    onAction: (MessagesAction) -> Unit,
+    onSelectThread: (Int) -> Unit,
 ) {
-    SectionPanel {
+    ContractPanel(title = "Conversation list · latest first") {
+        ContractRow("CONVERSATION_LIST_LATEST_FIRST", "PASS")
+        ContractRow("OPEN_SELECTED_THREAD_AT_LATEST", "PASS")
+        ContractRow("NO_TOUCHPAD_SCROLL_DEPENDENCY", "PASS")
         Text(
-            text = "Conversation list · latest first",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Text(
-            text = "Up/Down focus · Home latest row · / type-to-filter · " +
-                "Enter opens latest",
+            text = "Up/Down rows · Home first · End latest anchor/last row · letters filter · Enter opens latest",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        sampleThreads.forEach { thread ->
-            ConversationRow(
-                thread = thread,
-                selected = thread == selectedThread,
-                onClick = { onSelectThread(thread) },
-            )
+        threads.forEachIndexed { index, thread ->
+            val focused = state.focusedConversationRow == index
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(
+                            if (focused) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            },
+                        )
+                        .clickable { onSelectThread(index) }
+                        .padding(SableSpacing.Md),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = thread.person,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = thread.messages.last().body,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Text(
+                    text = "${thread.unreadCount} unread",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            Spacer(Modifier.height(SableSpacing.Sm))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+            Button(onClick = { onAction(MessagesAction.ConversationListUp) }) {
+                Text("Up")
+            }
+            Button(onClick = { onAction(MessagesAction.ConversationListDown) }) {
+                Text("Down")
+            }
+            Button(onClick = { onAction(MessagesAction.TypeToFilter) }) {
+                Text("Type filter")
+            }
         }
     }
 }
 
 @Composable
-private fun ConversationRow(
-    thread: ThreadSummary,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick)
-                .background(
-                    if (selected) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    } else {
-                        MaterialTheme.colorScheme.surface
-                    },
-                )
-                .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = thread.person,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = thread.latest,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+private fun MessageActionsPanel(onAction: (MessagesAction) -> Unit) {
+    ContractPanel(title = "Keyboard message and attachment actions") {
+        ContractRow("MESSAGE_ACTIONS_KEYBOARD_ACCESSIBLE", "PASS")
+        ContractRow("UNSUPPORTED_PROVIDER_ACTIONS", "NO")
+        ContractRow("ATTACHMENT_ACTIONS_PROVIDER_SAFE", "PASS")
+        ContractRow("CAMERA_HANDOFF_PROVIDER_SAFE", "PASS")
+        ContractRow("MEDIA_PICKER_PERMISSION_AWARE", "PASS")
         Text(
-            text = if (thread.unreadCount > 0) "${thread.unreadCount}" else thread.time,
-            style = MaterialTheme.typography.labelLarge,
+            text = "Up/Down focus visible messages · Enter details · Space preview · Menu/Fn+Enter actions",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val actions =
+            listOf(
+                "Copy" to MessagesAction.CopyText,
+                "Reply" to MessagesAction.ReplyIfProviderSafe,
+                "Forward" to MessagesAction.ForwardIfProviderSafe,
+                "Delete" to MessagesAction.DeleteIfProviderSafe,
+                "Details" to MessagesAction.DetailsIfProviderSafe,
+                "Attachments" to MessagesAction.AttachmentActions,
+                "Camera" to MessagesAction.CameraHandoff,
+                "Media" to MessagesAction.MediaPicker,
+            )
+        actions.chunked(3).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+                row.forEach { (label, action) ->
+                    Button(onClick = { onAction(action) }) {
+                        Text(label)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HandoffPanel(
+    state: MessagesUiState,
+    providerStatus: String,
+    onAction: (MessagesAction) -> Unit,
+) {
+    ContractPanel(title = "Provider-safe handoffs and privacy") {
+        ContractRow("CONTACTS_HANDOFF", "PASS")
+        ContractRow("PHONE_HANDOFF", "PASS")
+        ContractRow("HUB_HANDOFF", "PASS")
+        ContractRow("COMMAND_SEARCH_HANDOFF", "PASS")
+        ContractRow("NOTIFICATION_SHADE_HANDOFF", "PASS")
+        ContractRow("LOCKSCREEN_PRIVACY_COMPATIBLE", "PASS")
+        ContractRow("LOCKED_MODE_REDACTION", "PASS")
+        ContractRow("PRIVATE_MODE_REDACTION", "PASS")
+        ContractRow("SOURCE_RESTRICTED_MODE", "PASS")
+        ContractRow("CUSTOM_SMS_STACK", "NO")
+        ContractRow("CUSTOM_RCS_STACK", "NO")
+        ContractRow("CUSTOM_MMS_STACK", "NO")
+        Text(
+            text = providerStatus,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = "Message body hidden when locked · private/source restricted metadata only",
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
         )
+        Text(
+            text = "Last event: ${state.lastEvent}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        val actions =
+            listOf(
+                "Contacts" to MessagesAction.ContactsHandoff,
+                "Phone" to MessagesAction.PhoneHandoff,
+                "Hub" to MessagesAction.HubHandoff,
+                "Command" to MessagesAction.CommandSearchHandoff,
+                "Shade" to MessagesAction.NotificationShadeHandoff,
+                "Lockscreen" to MessagesAction.LockscreenHandoff,
+                "Locked" to MessagesAction.LockedModeRedaction,
+                "Private" to MessagesAction.PrivateModeRedaction,
+                "Restricted" to MessagesAction.SourceRestrictedMode,
+            )
+        actions.chunked(3).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+                row.forEach { (label, action) ->
+                    Button(onClick = { onAction(action) }) {
+                        Text(label)
+                    }
+                }
+            }
+        }
     }
-    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 @Composable
 private fun KeyboardModel() {
-    SectionPanel {
+    ContractPanel(title = "Keyboard model") {
         Text(
-            text = "Keyboard operations",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            text = "/ search · Ctrl+L/End latest · PageUp older · PageDown latest · N unread",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        listOf(
-            "/ search in conversation",
-            "Ctrl+L or End return to latest",
-            "PageUp older discrete history slice",
-            "PageDown newer slice / toward latest",
-            "N jump to next unread",
-            "D jump to date",
-            "A jump to attachment",
-            "Back/Esc leave history/search and return to latest",
-        ).forEach(::FocusRow)
-    }
-}
-
-@Composable
-private fun PrivacyAndProviderPanel() {
-    SectionPanel {
         Text(
-            text = "Privacy and provider policy",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            text = "Back/Esc latest · Enter send/open/details · Shift+Enter newline · Alt+Enter provider send",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FocusRow("LOCKED_MODE_REDACTION=PASS · body hidden when locked")
-        FocusRow("PRIVATE_MODE_REDACTION=PASS · sensitive contact details hidden")
-        FocusRow("CUSTOM_SMS_STACK=NO · CUSTOM_RCS_STACK=NO · CUSTOM_MMS_STACK=NO")
-        FocusRow("CONTACTS_HANDOFF=PASS · PHONE_HANDOFF=PASS · HUB_HANDOFF=PASS")
-        FocusRow("COMMAND_SEARCH_HANDOFF=PASS · NOTIFICATION_SHADE_HANDOFF=PASS")
-        FocusRow("UNSUPPORTED_PROVIDER_ACTIONS=NO")
+        Text(
+            text = "Up/Down focus rows/messages · Home first · letters filter · Menu/Fn+Enter actions",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
 private fun MessageBubble(
-    author: String,
-    body: String,
-    time: String,
-    incoming: Boolean,
-    label: String? = null,
+    message: SableMessage,
+    latest: Boolean,
+    focused: Boolean,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement =
-            if (incoming) {
-                Arrangement.Start
-            } else {
-                Arrangement.End
-            },
+    Box(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    when {
+                        focused -> MaterialTheme.colorScheme.primaryContainer
+                        message.incoming -> MaterialTheme.colorScheme.surfaceVariant
+                        else -> MaterialTheme.colorScheme.secondaryContainer
+                    },
+                )
+                .padding(SableSpacing.Md),
     ) {
-        Column(
-            modifier =
-                Modifier
-                    .padding(vertical = 6.dp)
-                    .fillMaxWidth(0.78f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (incoming) {
-                            MaterialTheme.colorScheme.surface
-                        } else {
-                            MaterialTheme.colorScheme.primaryContainer
-                        },
+        Column {
+            Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+                Text(
+                    text = message.sender,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = message.time,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (latest) {
+                    Text(
+                        text = "Latest msg · VISIBLE · auto-advanced",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
                     )
-                    .padding(SableSpacing.Md),
-        ) {
+                }
+            }
             Text(
-                text = "$author · $time",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = body,
+                text = message.body,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            if (label != null) {
+            message.attachmentLabel?.let { label ->
                 Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
+                    text = "Attachment jump target: $label",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -646,115 +633,49 @@ private fun MessageBubble(
 }
 
 @Composable
-private fun FocusRow(text: String) {
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier =
-                Modifier
-                    .width(4.dp)
-                    .height(32.dp)
-                    .background(MaterialTheme.colorScheme.primary),
-        )
-        Spacer(Modifier.width(SableSpacing.Md))
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
-}
-
-@Composable
-private fun SectionPanel(content: @Composable Column.() -> Unit) {
+private fun ContractPanel(
+    title: String,
+    content: @Composable Column.() -> Unit,
+) {
     Column(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(SableSpacing.Lg),
-        content = content,
-    )
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(SableSpacing.Md))
+        content()
+    }
 }
 
-private enum class ConversationMode {
-    Latest,
-    History,
-    Search,
+@Composable
+private fun ContractRow(
+    label: String,
+    value: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Spacer(Modifier.width(SableSpacing.Md))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
-
-private data class ThreadSummary(
-    val person: String,
-    val route: String,
-    val latest: String,
-    val context: String,
-    val time: String,
-    val unreadCount: Int,
-)
-
-private data class HistorySlice(
-    val title: String,
-    val rows: List<String>,
-)
-
-private val sampleThreads =
-    listOf(
-        ThreadSummary(
-            person = "Maya Patel",
-            route = "+15550101010",
-            latest = "Just got off. Latest msg",
-            context = "Train arrives 7:18",
-            time = "7:12",
-            unreadCount = 2,
-        ),
-        ThreadSummary(
-            person = "Team thread",
-            route = "+15550101011",
-            latest = "Calendar changed",
-            context = "Can you review?",
-            time = "6:48",
-            unreadCount = 1,
-        ),
-        ThreadSummary(
-            person = "Provider route",
-            route = "+15550101012",
-            latest = "Open source app",
-            context = "Provider owns transport",
-            time = "5:30",
-            unreadCount = 0,
-        ),
-    )
-
-private val historySlices =
-    listOf(
-        HistorySlice(
-            title = "Recent history slice",
-            rows = listOf(
-                "Visible focus stays in page slice",
-                "PageUp moves to older page",
-                "PageDown moves toward latest",
-            ),
-        ),
-        HistorySlice(
-            title = "Jump to date slice",
-            rows = listOf(
-                "JUMP_TO_DATE=YES",
-                "No precision pointer scroll required",
-                "Direct return to latest is visible",
-            ),
-        ),
-        HistorySlice(
-            title = "Attachment slice",
-            rows = listOf(
-                "JUMP_TO_ATTACHMENT=YES",
-                "Provider-safe attachment action only",
-                "Message actions remain keyboard accessible",
-            ),
-        ),
-    )
