@@ -20,12 +20,8 @@ Stages the local stock-derived Titan 2 MTK telephony/IMS payload into the
 Android source tree under vendor/sable/n1b2/mtk-telephony-payload and injects a
 generated product makefile include into vendor/sable/n1b2/sable_n1b2_product_profile.mk.
 
-APK payloads are imported as generated BUILD_PREBUILT privileged app modules;
-non-APK payloads are copied with PRODUCT_COPY_FILES. This avoids Android make's
-PRODUCT_COPY_FILES APK ban while keeping proprietary payload files local to the
-Android build workspace.
-
-This script does not commit payload binaries to Git, does not flash, does not
+This script copies proprietary payload files only into the local Android build
+workspace. It does not commit payload binaries to Git, does not flash, does not
 use adb, and does not use fastboot.
 EOF
 }
@@ -94,13 +90,6 @@ module_path_for_apk_rel() {
 }
 
 module_name_for_apk_rel() {
-  local rel="$1"
-  local base
-  base="$(basename "$rel" .apk)"
-  printf 'SableN1B2%s' "$base"
-}
-
-module_stem_for_apk_rel() {
   basename "$1" .apk
 }
 
@@ -170,15 +159,15 @@ fi
   echo ""
   for rel in "${apk_payload_rels[@]}"; do
     module="$(module_name_for_apk_rel "$rel")"
-    stem="$(module_stem_for_apk_rel "$rel")"
     module_path="$(module_path_for_apk_rel "$rel")"
     echo 'include $(CLEAR_VARS)'
     echo "LOCAL_MODULE := $module"
+    echo "LOCAL_MODULE_TAGS := optional"
     echo "LOCAL_MODULE_CLASS := APPS"
     echo 'LOCAL_MODULE_SUFFIX := $(COMMON_ANDROID_PACKAGE_SUFFIX)'
     echo "LOCAL_SRC_FILES := files/$rel"
     echo "LOCAL_MODULE_PATH := $module_path"
-    echo "LOCAL_MODULE_STEM := $stem"
+    echo "LOCAL_MODULE_STEM := $module"
     echo "LOCAL_CERTIFICATE := PRESIGNED"
     echo "LOCAL_PRIVILEGED_MODULE := true"
     echo "LOCAL_DEX_PREOPT := false"
