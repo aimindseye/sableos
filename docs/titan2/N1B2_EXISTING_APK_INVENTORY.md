@@ -55,6 +55,12 @@ games/build/outputs/apk/*/debug/*.apk
 
 `sablestart-visual-review` is a validation APK, not an N1B2 product APK candidate.
 
+## Inventory artifact sentinel
+
+The TSV uses `NONE` in `expected_debug_artifact_glob` for rows that intentionally do not produce a debug APK or checked artifact.
+
+Do not leave that field blank. Bash treats tab as IFS whitespace and can collapse empty TSV fields, shifting notes into the artifact-glob column. The gate treats `NONE` as `NOT_APPLICABLE`.
+
 ## Gate
 
 The gate is:
