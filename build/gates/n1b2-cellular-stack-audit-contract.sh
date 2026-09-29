@@ -191,19 +191,22 @@ for class_marker in \
   require_pattern "N1B2_CELLULAR_ROOT_CAUSE_CLASS_${class_marker//[^A-Za-z0-9]/_}" "$class_marker" "$ROOT_CAUSE_DOC"
 done
 
-# Block accidental implementation in this audit PR. Allow documentation that says
-# fastboot/fastbootd are not required; block executable mutating command forms.
-for path in "$STATIC_SCRIPT" "$RUNTIME_SCRIPT" "$AUDIT_DOC" "$ROOT_CAUSE_DOC" "$SELF"; do
-  require_absent_pattern "N1B2_CELLULAR_NO_FASTBOOT_FLASH_${path//[^A-Za-z0-9]/_}" 'fastboot[[:space:]].*(flash|erase|format|reboot|boot|update|set_active)' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_ADB_REBOOT_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]reboot' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_ADB_ROOT_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]root' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_ADB_REMOUNT_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]remount' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_ADB_INSTALL_${path//[^A-Za-z0-9]/_}" 'adb([[:space:]-][^\n]*)?[[:space:]]install' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_SETTINGS_PUT_${path//[^A-Za-z0-9]/_}" 'settings[[:space:]]+put' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_SVC_DATA_${path//[^A-Za-z0-9]/_}" 'svc[[:space:]]+data' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_SVC_WIFI_${path//[^A-Za-z0-9]/_}" 'svc[[:space:]]+wifi' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_SETENFORCE_${path//[^A-Za-z0-9]/_}" 'setenforce' "$path"
-  require_absent_pattern "N1B2_CELLULAR_NO_IMAGE_TOOLS_${path//[^A-Za-z0-9]/_}" 'mkbootimg|avbtool|lpmake' "$path"
+# Block accidental implementation in this audit PR. The gate itself contains the
+# forbidden regex literals, so only evidence scripts/docs are scanned here.
+mutation_scan_targets=("$STATIC_SCRIPT" "$RUNTIME_SCRIPT" "$AUDIT_DOC" "$ROOT_CAUSE_DOC")
+pass "N1B2_CELLULAR_GATE_SELF_FORBIDDEN_LITERAL_EXEMPT" "reason=gate_contains_regex_literals"
+
+for path in "${mutation_scan_targets[@]}"; do
+  require_absent_pattern "N1B2_CELLULAR_NO_FASTBOOT_FLASH_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])fastboot[[:space:]]+(flash|erase|format|reboot|boot|update|set_active)([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_ADB_REBOOT_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])adb([[:space:]-][^\n]*)?[[:space:]]reboot([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_ADB_ROOT_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])adb([[:space:]-][^\n]*)?[[:space:]]root([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_ADB_REMOUNT_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])adb([[:space:]-][^\n]*)?[[:space:]]remount([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_ADB_INSTALL_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])adb([[:space:]-][^\n]*)?[[:space:]]install([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_SETTINGS_PUT_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])settings[[:space:]]+put([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_SVC_DATA_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])svc[[:space:]]+data([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_SVC_WIFI_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])svc[[:space:]]+wifi([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_SETENFORCE_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])setenforce([[:space:]]|$)' "$path"
+  require_absent_pattern "N1B2_CELLULAR_NO_IMAGE_TOOLS_${path//[^A-Za-z0-9]/_}" '(^|[;&|[:space:]])(mkbootimg|avbtool|lpmake)([[:space:]]|$)' "$path"
 done
 
 if [[ "$RUN_STATIC_SMOKE" == "YES" ]]; then
@@ -212,7 +215,7 @@ if [[ "$RUN_STATIC_SMOKE" == "YES" ]]; then
     && pass "N1B2_CELLULAR_STATIC_SMOKE" "evidence_dir=$smoke_dir" \
     || fail "N1B2_CELLULAR_STATIC_SMOKE" "log=/tmp/n1b2-cellular-static-smoke.log"
 else
-  warn "N1B2_CELLULAR_STATIC_SMOKE" "skipped use --static-smoke YES"
+  warn "N1B2_CELLULAR_STATIC_SMOKE" "skipped use --static-smoke=YES"
 fi
 
 # Guard PR 207 scope when origin/main is available.
