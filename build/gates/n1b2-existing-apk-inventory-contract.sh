@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_ROOT="$ROOT/apps/r8/android"
 MANIFEST="$ROOT/docs/titan2/N1B2_EXISTING_APK_INVENTORY.tsv"
 DOC="$ROOT/docs/titan2/N1B2_EXISTING_APK_INVENTORY.md"
+HOST_TOOLS_ENV="$ROOT/build/config/r8-host-tools.env"
 BUILD_MODE="NO"
 
 usage() {
@@ -13,11 +14,11 @@ usage:
   bash build/gates/n1b2-existing-apk-inventory-contract.sh [--build YES|NO]
 
 Inventory and optional Gradle APK build gate for existing R8 Android modules.
+Build mode sources the canonical SableOS host-tool profile instead of
+rediscovering SDK, NDK, Rust, Java or Gradle paths.
+
 This gate does not run image builds, Soong builds, adb, fastboot, flash, device
 contact, public release, or production signing.
-
-Build mode requires ANDROID_SDK_ROOT or ANDROID_HOME because Rust/JNI build
-logic requires an Android SDK environment, not only Gradle local.properties.
 USAGE
 }
 
@@ -138,24 +139,59 @@ check_apk_output() {
   fi
 }
 
-require_android_sdk_env_for_build() {
-  local sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
+source_canonical_host_tools_for_build() {
+  local before_failures="$failures"
 
-  if [[ -z "$sdk_root" ]]; then
-    emit FAIL N1B2_ANDROID_SDK_ENV "set_ANDROID_SDK_ROOT_or_ANDROID_HOME_required_for_build_mode"
-    echo "N1B2_EXISTING_APK_BUILD=FAIL_ENV_ANDROID_SDK_ROOT_OR_ANDROID_HOME"
+  require_file N1B2_CANONICAL_HOST_TOOLS_ENV_PRESENT "$HOST_TOOLS_ENV"
+  if (( failures > before_failures )); then
+    echo "N1B2_EXISTING_APK_BUILD=FAIL_CANONICAL_HOST_TOOLS_ENV"
     exit 1
   fi
 
-  if [[ ! -d "$sdk_root" ]]; then
-    emit FAIL N1B2_ANDROID_SDK_ENV "missing_dir=$sdk_root"
-    echo "N1B2_EXISTING_APK_BUILD=FAIL_ENV_ANDROID_SDK_ROOT_OR_ANDROID_HOME"
+  # shellcheck source=/dev/null
+  source "$HOST_TOOLS_ENV"
+  emit PASS N1B2_CANONICAL_HOST_TOOLS_ENV_SOURCED "path=$HOST_TOOLS_ENV"
+
+  export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-${SABLE_ANDROID_SDK:-}}"
+  export ANDROID_HOME="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+  export GRADLE_USER_HOME="${GRADLE_USER_HOME:-${SABLE_GRADLE_USER_HOME:-}}"
+  export CARGO_HOME="${CARGO_HOME:-${SABLE_CARGO_HOME:-}}"
+  export RUSTUP_HOME="${RUSTUP_HOME:-${SABLE_RUSTUP_HOME:-}}"
+
+  if [[ -n "${SABLE_JDK17:-}" && -d "$SABLE_JDK17" ]]; then
+    export JAVA_HOME="${JAVA_HOME:-$SABLE_JDK17}"
+    emit PASS N1B2_CANONICAL_JAVA_HOME "path=$JAVA_HOME"
+  else
+    emit NOT_PROVEN N1B2_CANONICAL_JAVA_HOME "jdk17_not_found current_java_home=${JAVA_HOME:-unset}"
+  fi
+
+  PATH_ENTRIES=(
+    "${SABLE_RUST_TOOLCHAIN_ROOT:-}/bin"
+    "${SABLE_CARGO_HOME:-}/bin"
+    "${SABLE_ANDROID_SDK:-}/platform-tools"
+    "${SABLE_ANDROID_SDK:-}/cmdline-tools/latest/bin"
+    "${SABLE_ANDROID_SDK:-}/build-tools/${SABLE_ANDROID_BUILD_TOOLS_VERSION:-}"
+  )
+  for entry in "${PATH_ENTRIES[@]}"; do
+    [[ -n "$entry" && -d "$entry" ]] && PATH="$entry:$PATH"
+  done
+  export PATH
+
+  before_failures="$failures"
+  require_dir N1B2_CANONICAL_HOST_TOOLS_ROOT "${SABLE_HOST_TOOLS_ROOT:-}"
+  require_dir N1B2_ANDROID_SDK_ENV "$ANDROID_SDK_ROOT"
+  require_dir N1B2_GRADLE_USER_HOME "$GRADLE_USER_HOME"
+  require_dir N1B2_CARGO_HOME "$CARGO_HOME"
+  require_dir N1B2_RUSTUP_HOME "$RUSTUP_HOME"
+  require_file N1B2_CANONICAL_CARGO "${SABLE_CARGO:-}"
+  require_file N1B2_CANONICAL_RUSTC "${SABLE_RUSTC:-}"
+  if (( failures > before_failures )); then
+    echo "N1B2_EXISTING_APK_BUILD=FAIL_CANONICAL_HOST_TOOLS"
     exit 1
   fi
 
-  export ANDROID_SDK_ROOT="$sdk_root"
-  export ANDROID_HOME="$sdk_root"
-  emit PASS N1B2_ANDROID_SDK_ENV "path=$sdk_root"
+  emit PASS N1B2_CANONICAL_BUILD_ENV_READY \
+    "android_sdk=$ANDROID_SDK_ROOT gradle_user_home=$GRADLE_USER_HOME cargo_home=$CARGO_HOME rustup_home=$RUSTUP_HOME"
 }
 
 core_modules=(
@@ -203,6 +239,7 @@ ROOT=$ROOT
 APP_ROOT=$APP_ROOT
 MANIFEST=$MANIFEST
 DOC=$DOC
+HOST_TOOLS_ENV=$HOST_TOOLS_ENV
 BUILD_MODE=$BUILD_MODE
 DEVICE_CONTACT_AUTHORIZED=NO
 ADB_COMMANDS_RUN=NO
@@ -255,7 +292,7 @@ if [[ "$BUILD_MODE" == NO ]]; then
   exit 0
 fi
 
-require_android_sdk_env_for_build
+source_canonical_host_tools_for_build
 
 (
   cd "$APP_ROOT"
