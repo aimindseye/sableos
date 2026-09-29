@@ -14,6 +14,8 @@ The machine-readable inventory is:
 docs/titan2/N1B2_EXISTING_APK_INVENTORY.tsv
 ```
 
+The inventory is the source of truth for each module's role, build task, and expected debug artifact glob.
+
 ## Canonical host tools
 
 Build mode must use the existing SableOS host-tool profile:
@@ -39,11 +41,19 @@ weather
 calendar
 ```
 
-`convert` is tracked as a legacy APK because it exists in the current Gradle graph, but it is not an N1B2 product candidate. Its functionality should be consolidated into Calculator in a later cleanup PR.
+`games` is a flavored Android application. Its debug APK outputs are flavor-scoped under:
+
+```text
+games/build/outputs/apk/*/debug/*.apk
+```
+
+`convert` exists in the current Gradle graph as a legacy shared library module, not as an APK-producing product module. Its functionality should be consolidated into Calculator in a later cleanup PR.
 
 `design` is a shared library, not a product APK.
 
-`sablestart-presentation-check` and `sablestart-visual-review` are validation/support modules, not N1B2 product APK candidates.
+`sablestart-presentation-check` is a validation/support module and does not produce a product APK.
+
+`sablestart-visual-review` is a validation APK, not an N1B2 product APK candidate.
 
 ## Gate
 
@@ -59,7 +69,7 @@ Inventory-only mode verifies the Gradle settings and module layout without compi
 bash build/gates/n1b2-existing-apk-inventory-contract.sh
 ```
 
-APK build mode compiles current APK modules only, after sourcing the canonical host-tool profile:
+APK build mode compiles current modules and validates only the debug artifacts declared by the inventory:
 
 ```text
 bash build/gates/n1b2-existing-apk-inventory-contract.sh --build YES
