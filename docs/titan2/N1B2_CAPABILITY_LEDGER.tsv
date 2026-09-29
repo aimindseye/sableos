@@ -1,0 +1,62 @@
+capability_id	source_path	source_group	owner_pr	status	n1b2_blocking	evidence_required	notes
+TITAN_FAMILY_BASE_CAPABILITY_MATRIX	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	acceptance	206,210	REQUIRED	YES	static_gate	Capability matrix bound
+TITAN2_PROFILE	docs/device-capabilities/TITAN2.md	profile	206,210	REQUIRED	YES	profile_manifest	Titan 2 profile source
+KEYBOARD_SHORTCUT_BASE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	keyboard	210	DEFERRED	NO	flag_off_gate	D3 deferred: programmable key, PTT, remap, shortcuts, gestures, scroll/cursor assistant
+MINI_MODE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	keyboard/display	210,225	DEFERRED	NO	flag_off_gate_and_assessment	D3/D5 deferred pending app display compatibility assessment
+TEXT_INPUT_ALWAYS_WINS	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	keyboard	211	REQUIRED	YES	runtime_gate	Text input must win even while shortcut base is deferred
+TITAN2_BT_PAIRING_TEXT_ENTRY	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Bluetooth pairing code entry
+TITAN2_ALT_ENTRY_SYSTEM_DIALOG	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Alt entry in system dialogs
+TITAN2_SYM_ENTRY_SYSTEM_DIALOG	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	SYM entry in system dialogs
+TITAN2_SOFTWARE_KEYBOARD_FALLBACK	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Software keyboard fallback
+TITAN2_SETUP_WIZARD_TEXT_ENTRY	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Setup Wizard text fields
+TITAN2_LOCKSCREEN_TEXT_ENTRY	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Lockscreen PIN/password
+TITAN2_WIFI_PASSWORD_TEXT_ENTRY	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Wi-Fi password
+TITAN2_ACCOUNT_SIGNIN_TEXT_ENTRY	docs/device-capabilities/TITAN2.md	critical_text_entry	211	REQUIRED	YES	runtime_gate	Account sign-in
+SQUARE_DISPLAY_PROFILE	docs/device-capabilities/TITAN2.md	display	210	REQUIRED	YES	profile_gate	1440x1440 square keyboard display
+AOD_DEFAULT_OFF	docs/device-capabilities/TITAN2.md	attention	210	REQUIRED	YES	profile_gate	AOD off by default
+PULSE_TEST_ONLY	docs/device-capabilities/TITAN2.md	attention	210	REQUIRED	YES	profile_gate	Pulse test-only pending evidence
+LAYOUT_ACCEPTANCE_START	docs/device-capabilities/TITAN2.md	layout	212	REQUIRED	YES	implementation_gate	Start keyboard-first square layout
+LAYOUT_ACCEPTANCE_HUB	docs/device-capabilities/TITAN2.md	layout	216	REQUIRED	YES	implementation_gate	Hub dense keyboard list/square cards
+LAYOUT_ACCEPTANCE_SETTINGS	docs/device-capabilities/TITAN2.md	layout	214	REQUIRED	YES	implementation_gate	Settings list-first square
+LAYOUT_ACCEPTANCE_MEDIA	docs/device-capabilities/TITAN2.md	layout	217	REQUIRED	YES	implementation_gate	Media square-safe controls
+LAYOUT_ACCEPTANCE_READER	docs/device-capabilities/TITAN2.md	layout	227	REQUIRED	YES	implementation_gate	Reader square text layout and keyboard scroll
+TOOLBOX_NOISE_TEST	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Noise test
+TOOLBOX_COMPASS	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Compass
+TOOLBOX_FLASHLIGHT	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Flashlight
+TOOLBOX_BUBBLE_LEVEL	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Bubble level
+TOOLBOX_PIC_HANGING	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Picture hanging
+TOOLBOX_HEIGHT_MEASURE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Height measure
+TOOLBOX_MAGNIFIER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Magnifier
+TOOLBOX_ALARM_TOOL	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Alarm tool
+TOOLBOX_PLUMB_BOB	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Plumb bob
+TOOLBOX_PROTRACTOR	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Protractor
+TOOLBOX_PEDOMETER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Pedometer
+TOOLBOX_SPEEDOMETER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox	224	SENSOR_GATED	YES	runtime_sensor_gate	Speedometer
+IR_REMOTE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	toolbox_ir	224	HAL_GATED	YES	hal_and_database_gate	IR transmitter and remote database gate; local-only default
+PRIVATE_SPACE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	identity_isolation	215	REQUIRED	YES	implementation_gate	Encrypted file/folder vault
+SECURE_VAULT	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	identity_isolation	215	REQUIRED	YES	implementation_gate	Secure Vault
+DUAL_APPS	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	identity_isolation	215	REQUIRED	YES	platform_gate	Android clone profile first
+APP_LOCK	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	identity_isolation	215	REQUIRED	YES	implementation_gate	User-selected default
+FREEZER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	mobile_manager	214	REQUIRED	YES	implementation_gate	Hide selected apps
+STUDENT_MODE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	mobile_manager	214	REQUIRED	YES	implementation_gate	Password/time/network/app/site limits
+MOBILE_MANAGER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	mobile_manager	214	REQUIRED	YES	implementation_gate	Settings-owned controls
+APP_BLOCKER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	mobile_manager	214	REQUIRED	YES	implementation_gate	App blocker
+NETWORK_MANAGER_AUTHORITY	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	network_manager	214	REQUIRED	YES	implementation_gate	Settings-owned Sable Network Manager
+PER_APP_CELLULAR_WIFI_TOGGLES	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	network_manager	214	DEFERRED	NO	blocked_unless_enforcement_proven	No fake cellular/Wi-Fi split
+ESIM	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	cellular	208,223	CARRIER_GATED	YES	runtime_gate	eSIM management and LPA path
+DUAL_SIM_5G	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	cellular	208,223	CARRIER_GATED	YES	runtime_gate	Dual-SIM 5G with carrier/network gate
+CELLULAR_STABLE_RUNTIME	user_plan	cellular	207,208	REQUIRED	YES	runtime_gate	30m stable, 3 reboots, airplane toggle, voice/SMS/MMS/LTE/5G
+USB_OTG	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	USB OTG
+REVERSE_CHARGING	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	Reverse charging
+NFC	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	NFC
+CAST	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	Cast
+BLUETOOTH_FILE_TRANSFER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	Bluetooth file transfer
+USB_TETHERING	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	USB tethering
+BLUETOOTH_TETHERING	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	Bluetooth tethering
+WIFI_HOTSPOT	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	223	HAL_GATED	YES	runtime_gate	Wi-Fi hotspot
+CAMERA_BASE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	camera	222	HAL_GATED	YES	camera_hal_gate	Camera HAL validation required
+CAMERA_MODES	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	camera	222	HAL_GATED	YES	camera_hal_gate	1x/telephoto/pro/mono/super-resolution/QR/burst/mode edit/watermark/GPS tag
+CALL_RECORDER	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	phone_privacy	218	REQUIRED	YES	policy_and_runtime_gate	Default off, region gate, visible state/storage path
+SUBSCREEN	docs/device-capabilities/TITAN2.md	attention	228	EVIDENCE_GATED	NO	runtime_evidence_gate	Rear SubScreen candidate; disabled if unproven
+FM_RADIO	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	connectivity	224	HAL_GATED	NO	absent_or_hal_gate	Off unless hardware path proven
+WORK_PROFILE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	identity_isolation	215	PLATFORM_POLICY_GATED	YES	platform_policy_gate	Android platform policy gated
