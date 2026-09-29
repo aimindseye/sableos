@@ -198,8 +198,10 @@ record_command() {
   local command="$1"
   local output="$2"
   local status="$3"
+  local safe_command
+  safe_command="${command//[^A-Za-z0-9]/_}"
   printf '%s\t%s\t%s\t%s\t%s\n' "$LABEL" "$CAPTURE_MODE" "$command" "$output" "$status" >> "$COMMANDS"
-  echo "N1B2_CELLULAR_RUNTIME_${command}=\$status output=$output" >> "$MARKERS"
+  echo "N1B2_CELLULAR_RUNTIME_${safe_command}=$status output=$output" >> "$MARKERS"
 }
 
 run_host() {
@@ -229,9 +231,9 @@ run_shell() {
   shift 2
   echo "RUN_ADB_SHELL=$label output=$output"
   if timeout "$COMMAND_TIMEOUT" "${ADB[@]}" shell "$@" > "$output" 2>&1; then
-    record_command "adb shell $*" "$output" "PASS"
+    record_command "$label" "$output" "PASS"
   else
-    record_command "adb shell $*" "$output" "WARN"
+    record_command "$label" "$output" "WARN"
   fi
 }
 
