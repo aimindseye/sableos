@@ -131,6 +131,12 @@ sample_present() {
   awk -F '\t' -v sample="$sample" -v rel="$rel" '$1 == sample && $3 == rel { found=1 } END { exit found ? 0 : 1 }' "$CANDIDATES"
 }
 
+sample_index_available() {
+  local sample="$1"
+  local index="$EVIDENCE_DIR/indexes/${sample}.paths"
+  [[ -s "$index" ]]
+}
+
 stock_missing_in_failures() {
   local category="$1"
   awk -F '\t' -v category="$category" '$1 == "stock" && $2 == category { print $3 }' "$CANDIDATES" \
@@ -188,9 +194,14 @@ for sample in stock n1b1 n1b2 restless aosp; do
     '(^|/)etc/init/.*(radio|ril|ims)|(^|/)etc/vintf/|radio.*\.so|ims.*\.so|ril.*\.so|mtk.*radio|vendor.*radio'
 done
 
-for category in telephony_packages privapp_permissions telephony_overlays_configs radio_vendor_init_vintf; do
-  stock_missing_in_failures "$category"
-done
+if sample_index_available stock && sample_index_available n1b1 && sample_index_available n1b2; then
+  log_marker "N1B2_CELLULAR_STATIC_FAILURE_DIFF_INPUTS=PASS stock_n1b1_n1b2_indexes_present"
+  for category in telephony_packages privapp_permissions telephony_overlays_configs radio_vendor_init_vintf; do
+    stock_missing_in_failures "$category"
+  done
+else
+  log_marker "N1B2_CELLULAR_STATIC_FAILURE_DIFF_INPUTS=WARN stock_n1b1_n1b2_required_for_high_priority_diff"
+fi
 
 if [[ -s "$CANDIDATES" ]]; then
   log_marker "N1B2_CELLULAR_STATIC_CANDIDATE_SCAN=PASS path=$CANDIDATES"
@@ -200,8 +211,10 @@ fi
 
 if grep -Fq 'HIGH_STOCK_PRESENT_MISSING_BOTH_FAILURES' "$DIFF_REPORT"; then
   log_marker "N1B2_CELLULAR_STATIC_STOCK_VS_COMMON_FAILURE_DIFF=PASS path=$DIFF_REPORT"
-else
+elif sample_index_available stock && sample_index_available n1b1 && sample_index_available n1b2; then
   log_marker "N1B2_CELLULAR_STATIC_STOCK_VS_COMMON_FAILURE_DIFF=WARN no_high_priority_static_diff_yet"
+else
+  log_marker "N1B2_CELLULAR_STATIC_STOCK_VS_COMMON_FAILURE_DIFF=WARN insufficient_failure_inputs"
 fi
 
 log_marker "N1B2_CELLULAR_STATIC_AUDIT=PASS evidence_dir=$EVIDENCE_DIR"
