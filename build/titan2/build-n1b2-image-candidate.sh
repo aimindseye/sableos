@@ -25,8 +25,8 @@ usage:
     [--no-register]
 
 This builds and optionally registers the Titan2/N1B2 GSI system.img candidate.
-It fails before build/packaging unless the N1B2 UX testbed readiness matrix and
-product profile gates pass.
+It fails before build/packaging unless the N1B2 UX matrix, SableLauncher HOME,
+Titan2 platform profiles, and product-profile gates pass.
 
 It does not contact devices, does not run bootloader tooling, does not flash,
 does not erase userdata, and does not make a public-release or production-signing
@@ -93,19 +93,70 @@ grep -Fq 'vendor/sable/n1b2/sable_n1b2_product_profile.mk' "$ACTIVE_PRODUCT_MK" 
 PROFILE_MK="$ANDROID_SRC/vendor/sable/n1b2/sable_n1b2_product_profile.mk"
 PRODUCT_CLOSURE_ENV="$ANDROID_SRC/vendor/sable/n1b2/product-closure.env"
 UX_READINESS_ENV="$ANDROID_SRC/vendor/sable/n1b2/ux-testbed-readiness.env"
+PROFILE_DIR="$ANDROID_SRC/vendor/sable/n1b2/profiles/titan2"
+SABLELAUNCHER_BP="$ANDROID_SRC/packages/apps/SableStart/Android.bp"
+SABLELAUNCHER_MANIFEST="$ANDROID_SRC/packages/apps/SableStart/AndroidManifest.xml"
+SABLE_DESIGN_BP="$ANDROID_SRC/packages/apps/SableDesign/Android.bp"
 
 [[ -f "$PROFILE_MK" ]] || { echo "N1B2_IMAGE_BUILD=FAIL_PROFILE_MK path=$PROFILE_MK"; exit 66; }
 [[ -f "$PRODUCT_CLOSURE_ENV" ]] || { echo "N1B2_IMAGE_BUILD=FAIL_PRODUCT_CLOSURE_ENV path=$PRODUCT_CLOSURE_ENV"; exit 66; }
 [[ -f "$UX_READINESS_ENV" ]] || { echo "N1B2_IMAGE_BUILD=FAIL_UX_READINESS_ENV path=$UX_READINESS_ENV"; exit 66; }
+[[ -f "$SABLELAUNCHER_BP" ]] || { echo "N1B2_IMAGE_BUILD=FAIL_SABLELAUNCHER_BP path=$SABLELAUNCHER_BP"; exit 66; }
+[[ -f "$SABLELAUNCHER_MANIFEST" ]] || { echo "N1B2_IMAGE_BUILD=FAIL_SABLELAUNCHER_MANIFEST path=$SABLELAUNCHER_MANIFEST"; exit 66; }
+[[ -f "$SABLE_DESIGN_BP" ]] || { echo "N1B2_IMAGE_BUILD=FAIL_SABLE_DESIGN_BP path=$SABLE_DESIGN_BP"; exit 66; }
 
+grep -Fq "N1B2_SABLE_HOME_MODULE=SableLauncher" "$PRODUCT_CLOSURE_ENV" || {
+  echo "N1B2_IMAGE_BUILD=FAIL_SABLE_HOME_MODULE marker=$PRODUCT_CLOSURE_ENV"
+  exit 66
+}
 grep -Fq "N1B2_SABLE_HOME_MODULE_PRESENT=YES" "$PRODUCT_CLOSURE_ENV" || {
   echo "N1B2_IMAGE_BUILD=FAIL_SABLE_HOME_NOT_PRESENT marker=$PRODUCT_CLOSURE_ENV"
+  exit 66
+}
+grep -Fq "N1B2_HOME_PACKAGE=org.sableos.launcher" "$PRODUCT_CLOSURE_ENV" || {
+  echo "N1B2_IMAGE_BUILD=FAIL_HOME_PACKAGE marker=$PRODUCT_CLOSURE_ENV"
+  exit 66
+}
+grep -Fq "N1B2_QUICKSTEP_ROLE=RECENTS_ONLY" "$PRODUCT_CLOSURE_ENV" || {
+  echo "N1B2_IMAGE_BUILD=FAIL_QUICKSTEP_ROLE marker=$PRODUCT_CLOSURE_ENV"
+  exit 66
+}
+grep -Fq 'name: "SableLauncher"' "$SABLELAUNCHER_BP" || {
+  echo "N1B2_IMAGE_BUILD=FAIL_SABLELAUNCHER_MODULE path=$SABLELAUNCHER_BP"
+  exit 66
+}
+grep -Fq 'package="org.sableos.launcher"' "$SABLELAUNCHER_MANIFEST" || {
+  echo "N1B2_IMAGE_BUILD=FAIL_SABLELAUNCHER_PACKAGE path=$SABLELAUNCHER_MANIFEST"
   exit 66
 }
 grep -Fq "N1B2_TITAN2_UX_TESTBED_READINESS_MATRIX=PASS" "$UX_READINESS_ENV" || {
   echo "N1B2_IMAGE_BUILD=FAIL_UX_READINESS_MARKER path=$UX_READINESS_ENV"
   exit 66
 }
+
+PROFILE_FILES=(
+  hardware.env
+  display.env
+  panel-power.env
+  attention.env
+  keyboard.env
+  pointer.env
+  critical-text-entry.env
+  app-layout.env
+)
+for profile in "${PROFILE_FILES[@]}"; do
+  [[ -f "$PROFILE_DIR/$profile" ]] || {
+    echo "N1B2_IMAGE_BUILD=FAIL_TITAN2_PROFILE_SOURCE profile=$profile path=$PROFILE_DIR/$profile"
+    exit 66
+  }
+done
+
+grep -Fq "TITAN2_HARDWARE_PROFILE_PACKAGED=YES" "$PROFILE_DIR/hardware.env" || exit 66
+grep -Fq "TITAN2_DISPLAY_PROFILE_PACKAGED=YES" "$PROFILE_DIR/display.env" || exit 66
+grep -Fq "TITAN2_KEYBOARD_PROFILE_PACKAGED=YES" "$PROFILE_DIR/keyboard.env" || exit 66
+grep -Fq "TITAN2_POINTER_PROFILE_PACKAGED=YES" "$PROFILE_DIR/pointer.env" || exit 66
+grep -Fq "TITAN2_CRITICAL_TEXT_ENTRY_PROFILE_PACKAGED=YES" "$PROFILE_DIR/critical-text-entry.env" || exit 66
+grep -Fq "TITAN2_APP_LAYOUT_PROFILE_PACKAGED=YES" "$PROFILE_DIR/app-layout.env" || exit 66
 
 for forbidden in titan2-touchpadd 'uinput' 'SELINUX_IGNORE_NEVERALLOWS := true' 'BOARD_KERNEL_CMDLINE'; do
   if grep -Fq "$forbidden" "$ACTIVE_PRODUCT_MK"; then
@@ -148,6 +199,10 @@ echo "ACTIVE_PRODUCT_MK=$DEFAULT_ACTIVE_PRODUCT_MK"
 echo "REGISTER_ARTIFACT=$REGISTER_ARTIFACT"
 echo "N1B2_UX_TESTBED_MATRIX_GATE=PASS"
 echo "N1B2_PRODUCT_PROFILE_GATE=PASS"
+echo "N1B2_SABLE_HOME_MODULE=SableLauncher"
+echo "N1B2_HOME_PACKAGE=org.sableos.launcher"
+echo "N1B2_QUICKSTEP_ROLE=RECENTS_ONLY"
+echo "N1B2_PLATFORM_PROFILE_SOURCE_GATE=PASS"
 
 (
   cd "$ANDROID_SRC"
@@ -214,19 +269,77 @@ target_files = sys.argv[1]
 required = {
     "SYSTEM/etc/sableos/n1b2/product-closure.env",
     "SYSTEM/etc/sableos/n1b2/ux-testbed-readiness.env",
+    "SYSTEM/etc/sableos/profiles/titan2/hardware.env",
+    "SYSTEM/etc/sableos/profiles/titan2/display.env",
+    "SYSTEM/etc/sableos/profiles/titan2/panel-power.env",
+    "SYSTEM/etc/sableos/profiles/titan2/attention.env",
+    "SYSTEM/etc/sableos/profiles/titan2/keyboard.env",
+    "SYSTEM/etc/sableos/profiles/titan2/pointer.env",
+    "SYSTEM/etc/sableos/profiles/titan2/critical-text-entry.env",
+    "SYSTEM/etc/sableos/profiles/titan2/app-layout.env",
 }
 with zipfile.ZipFile(target_files) as zf:
     names = set(zf.namelist())
+    missing = sorted(required - names)
+    if missing:
+        print("N1B2_TARGET_FILES_MARKERS=FAIL")
+        for item in missing:
+            print(f"N1B2_TARGET_FILES_MISSING={item}")
+        raise SystemExit(1)
 
-missing = sorted(required - names)
-if missing:
-    print("N1B2_TARGET_FILES_MARKERS=FAIL")
-    for item in missing:
-        print(f"N1B2_TARGET_FILES_MISSING={item}")
-    raise SystemExit(1)
+    payloads = {
+        name: zf.read(name).decode("utf-8", errors="replace")
+        for name in required
+    }
+
+required_tokens = {
+    "SYSTEM/etc/sableos/n1b2/product-closure.env": [
+        "N1B2_SABLE_HOME_MODULE=SableLauncher",
+        "N1B2_SABLE_HOME_MODULE_PRESENT=YES",
+        "N1B2_HOME_PACKAGE=org.sableos.launcher",
+        "N1B2_QUICKSTEP_ROLE=RECENTS_ONLY",
+    ],
+    "SYSTEM/etc/sableos/profiles/titan2/hardware.env": [
+        "TITAN2_HARDWARE_PROFILE_PACKAGED=YES",
+    ],
+    "SYSTEM/etc/sableos/profiles/titan2/display.env": [
+        "TITAN2_DISPLAY_PROFILE_PACKAGED=YES",
+    ],
+    "SYSTEM/etc/sableos/profiles/titan2/keyboard.env": [
+        "TITAN2_KEYBOARD_PROFILE_PACKAGED=YES",
+        "GENERIC_KL_KCM_AS_FINAL_POLICY=NO",
+    ],
+    "SYSTEM/etc/sableos/profiles/titan2/pointer.env": [
+        "TITAN2_POINTER_PROFILE_PACKAGED=YES",
+    ],
+    "SYSTEM/etc/sableos/profiles/titan2/critical-text-entry.env": [
+        "TITAN2_CRITICAL_TEXT_ENTRY_PROFILE_PACKAGED=YES",
+        "SOFTWARE_KEYBOARD_FALLBACK=REQUIRED",
+        "LOCKSCREEN_PIN_PASSWORD=REQUIRED",
+        "WIFI_PASSWORD_ENTRY=REQUIRED",
+    ],
+    "SYSTEM/etc/sableos/profiles/titan2/app-layout.env": [
+        "TITAN2_APP_LAYOUT_PROFILE_PACKAGED=YES",
+    ],
+}
+for path, tokens in required_tokens.items():
+    text = payloads[path]
+    for token in tokens:
+        if token not in text:
+            print("N1B2_TARGET_FILES_PROFILE_TOKEN=FAIL")
+            print(f"N1B2_TARGET_FILES_PROFILE_PATH={path}")
+            print(f"N1B2_TARGET_FILES_PROFILE_TOKEN_MISSING={token}")
+            raise SystemExit(1)
 
 print("N1B2_TARGET_FILES_PRODUCT_CLOSURE_MARKER=PASS")
 print("N1B2_TARGET_FILES_UX_TESTBED_MARKER=PASS")
+print("N1B2_TARGET_FILES_PROFILE_MARKERS=PASS")
+print("TITAN2_HARDWARE_PROFILE_PACKAGED=YES")
+print("TITAN2_DISPLAY_PROFILE_PACKAGED=YES")
+print("TITAN2_KEYBOARD_PROFILE_PACKAGED=YES")
+print("TITAN2_POINTER_PROFILE_PACKAGED=YES")
+print("TITAN2_CRITICAL_TEXT_ENTRY_PROFILE_PACKAGED=YES")
+print("TITAN2_APP_LAYOUT_PROFILE_PACKAGED=YES")
 PY
 
 SYSTEM_SHA256="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
@@ -273,8 +386,18 @@ TARGET_FILES_BYTES=$TARGET_FILES_BYTES
 ARTIFACT_KIND=gsi-system-image
 PRIMARY_ARTIFACT=system
 N1B2_UX_TESTBED_MATRIX_GATE=PASS
+N1B2_SABLE_HOME_MODULE=SableLauncher
+N1B2_HOME_PACKAGE=org.sableos.launcher
+N1B2_QUICKSTEP_ROLE=RECENTS_ONLY
 N1B2_TARGET_FILES_PRODUCT_CLOSURE_MARKER=PASS
 N1B2_TARGET_FILES_UX_TESTBED_MARKER=PASS
+N1B2_TARGET_FILES_PROFILE_MARKERS=PASS
+TITAN2_HARDWARE_PROFILE_PACKAGED=YES
+TITAN2_DISPLAY_PROFILE_PACKAGED=YES
+TITAN2_KEYBOARD_PROFILE_PACKAGED=YES
+TITAN2_POINTER_PROFILE_PACKAGED=YES
+TITAN2_CRITICAL_TEXT_ENTRY_PROFILE_PACKAGED=YES
+TITAN2_APP_LAYOUT_PROFILE_PACKAGED=YES
 DEVICE_CONTACT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ADB_COMMANDS_RUN=NO
@@ -306,8 +429,18 @@ if [[ "$REGISTER_ARTIFACT" == YES ]]; then
     --metadata "n1b2_full_local_ci_evidence_dir=$FULL_CI_EVIDENCE_DIR" \
     --metadata "n1b2_full_local_ci_profile=full" \
     --metadata "n1b2_ux_testbed_matrix_gate=PASS" \
+    --metadata "n1b2_sable_home_module=SableLauncher" \
+    --metadata "n1b2_home_package=org.sableos.launcher" \
+    --metadata "n1b2_quickstep_role=RECENTS_ONLY" \
     --metadata "n1b2_target_files_product_closure_marker=PASS" \
     --metadata "n1b2_target_files_ux_testbed_marker=PASS" \
+    --metadata "n1b2_target_files_profile_markers=PASS" \
+    --metadata "titan2_hardware_profile_packaged=YES" \
+    --metadata "titan2_display_profile_packaged=YES" \
+    --metadata "titan2_keyboard_profile_packaged=YES" \
+    --metadata "titan2_pointer_profile_packaged=YES" \
+    --metadata "titan2_critical_text_entry_profile_packaged=YES" \
+    --metadata "titan2_app_layout_profile_packaged=YES" \
     --metadata "active_product_mk=$DEFAULT_ACTIVE_PRODUCT_MK" \
     --metadata "lunch_target=$LUNCH_TARGET" \
     --metadata "device_contact_authorized=NO" \
