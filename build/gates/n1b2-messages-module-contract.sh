@@ -370,7 +370,7 @@ require_text N1B2_MESSAGES_UI_HISTORY_INDICATOR \
 require_text N1B2_MESSAGES_UI_CONVERSATION_LIST \
   'Conversation list · latest first' "$activity"
 require_text N1B2_MESSAGES_UI_ONSCREEN_FALLBACK \
-  'ONSCREEN_KEYBOARD_FALLBACK' "$activity"
+  'Onscreen keyboard fallback' "$activity"
 require_text N1B2_MESSAGES_UI_PRIVACY_REDACTION \
   'LOCKED_MODE_REDACTION' "$activity"
 require_text N1B2_MESSAGES_UI_NO_CUSTOM_STACK \
