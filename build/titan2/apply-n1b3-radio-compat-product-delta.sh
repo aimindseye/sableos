@@ -5,6 +5,7 @@ ANDROID_ROOT=""
 PROFILE_REL="vendor/sable/n1b2/sable_n1b2_product_profile.mk"
 MARKERS_REL="vendor/sable/n1b2/product-closure.env"
 PROFILE_DIR_REL="vendor/sable/n1b2/profiles/titan2"
+STALE_MTK_PAYLOAD_DIR_REL="vendor/sable/n1b2/mtk-telephony-payload"
 RADIO_PROFILE="n1b3_r1"
 MTK_IMS_PROPERTY="persist.sys.phh.ims.mtk"
 MTK_IMS_VALUE="false"
@@ -34,6 +35,7 @@ Safety:
   - no reboot
   - no setprop/runtime mutation
   - no stock APK/JAR/SO payload import
+  - fail closed if stale PR208 MTK payload residue is present
 USAGE
 }
 
@@ -61,9 +63,19 @@ PROFILE_MK="$ANDROID_ROOT/$PROFILE_REL"
 MARKERS_PATH="$ANDROID_ROOT/$MARKERS_REL"
 PROFILE_DIR="$ANDROID_ROOT/$PROFILE_DIR_REL"
 RADIO_ENV="$PROFILE_DIR/radio-compat.env"
+STALE_MTK_PAYLOAD_DIR="$ANDROID_ROOT/$STALE_MTK_PAYLOAD_DIR_REL"
 
 [[ -f "$PROFILE_MK" ]] || fail "profile_mk_missing path=$PROFILE_MK"
 [[ -f "$MARKERS_PATH" ]] || fail "product_closure_missing path=$MARKERS_PATH"
+
+if [[ -e "$STALE_MTK_PAYLOAD_DIR" ]]; then
+  echo "N1B3_STALE_MTK_PAYLOAD_PRESENT=FAIL path=$STALE_MTK_PAYLOAD_DIR" >&2
+  echo "N1B3_STALE_MTK_PAYLOAD_ACTION=QUARANTINE_OR_REMOVE_FROM_ANDROID_WORKSPACE_BEFORE_APPLY" >&2
+  fail "stale_mtk_payload_present path=$STALE_MTK_PAYLOAD_DIR_REL"
+fi
+
+echo "N1B3_STALE_MTK_PAYLOAD_ABSENT=PASS path=$STALE_MTK_PAYLOAD_DIR_REL"
+
 mkdir -p "$PROFILE_DIR"
 
 cat > "$RADIO_ENV" <<EOF
@@ -134,6 +146,7 @@ RADIO_COMPAT_ENV=$RADIO_ENV
 N1B3_RADIO_COMPAT_PROFILE=$RADIO_PROFILE
 N1B3_MTK_IMS_PROPERTY_DEFAULT=$MTK_IMS_PROPERTY=$MTK_IMS_VALUE
 N1B3_MTK_IMS_DEFAULT_DISABLED=PASS
+N1B3_STALE_MTK_PAYLOAD_ABSENT=PASS
 TITAN2_RADIO_COMPAT_PROFILE_PACKAGED=YES
 STOCK_TELEPHONY_APK_IMPORT=NO
 STOCK_IMS_APK_IMPORT=NO
