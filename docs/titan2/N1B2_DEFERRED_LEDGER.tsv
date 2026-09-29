@@ -1,0 +1,9 @@
+item	source_path	owner_pr	reason	proof_in_image	n1b2_blocking	post_n1b2_action
+KEYBOARD_SHORTCUT_BASE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	210	D3 deferred	Flags report DEFERRED; no shortcut handlers active	NO	Revisit after critical text entry and Start/Search are stable
+MINI_MODE	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	210,225	D3/D5 deferred	Flag reports DEFERRED; PR225 records need assessment	NO	Open post-N1B2 PR if MINI_MODE_NEEDED=YES
+SUBSCREEN_SHORTCUT_KEYBOARD_PTT	docs/design/SUBSCREEN_SHORTCUT_KEYBOARD_UX.md	228	D3 deferred	Flags report DEFERRED; SubScreen shortcut/PTT handlers inactive	NO	Revisit after SubScreen evidence passes
+CALCULATOR	docs/R9_CALCULATOR_REQUIREMENTS_DRAFT.md	DEFERRED	D4 deferred	Package absent from N1B2 product packages	NO	Create later UX/VC/artifact or reclassify when required
+GAMES	apps/r8/android/games	DEFERRED	D4 deferred	Package absent from N1B2 product packages	NO	Create later UX/VC/artifact or reclassify when required
+AOD	docs/device-capabilities/TITAN2.md	210	Titan2 AOD default off	AOD_DEFAULT=NO and no AOD release claim	NO	Revisit only with panel/power evidence
+PER_APP_CELLULAR_WIFI_TOGGLES	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	214	Blocked unless platform enforcement is proven	No duplicate policy store; no fake cellular/Wi-Fi split	NO	Enable only with real platform enforcement proof
+FM_RADIO	docs/design/TITAN_FAMILY_BASE_CAPABILITY_MATRIX.md	224	Hardware/HAL/vendor path unproven	FM radio package/feature absent or explicitly disabled	NO	Enable only with hardware HAL and vendor path proof
