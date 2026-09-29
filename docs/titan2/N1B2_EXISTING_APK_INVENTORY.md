@@ -11,7 +11,7 @@ Before adding or restoring missing apps for Titan2/N1B2, the current Gradle app 
 The machine-readable inventory is:
 
 ```text
- docs/titan2/N1B2_EXISTING_APK_INVENTORY.tsv
+docs/titan2/N1B2_EXISTING_APK_INVENTORY.tsv
 ```
 
 ## Current product APK candidates
@@ -53,6 +53,15 @@ APK build mode compiles current APK modules only:
 bash build/gates/n1b2-existing-apk-inventory-contract.sh --build YES
 ```
 
+APK build mode requires `ANDROID_SDK_ROOT` or `ANDROID_HOME`. This is required because the Rust/JNI Gradle tasks require an Android SDK environment variable, not only Gradle `local.properties`.
+
+When the variable is missing, the expected failure is:
+
+```text
+N1B2_ANDROID_SDK_ENV=FAIL
+N1B2_EXISTING_APK_BUILD=FAIL_ENV_ANDROID_SDK_ROOT_OR_ANDROID_HOME
+```
+
 ## Expected markers
 
 Inventory-only mode:
@@ -61,10 +70,11 @@ Inventory-only mode:
 N1B2_EXISTING_APK_INVENTORY=PASS
 ```
 
-Build mode:
+Build mode with a valid Android SDK environment:
 
 ```text
 N1B2_EXISTING_APK_INVENTORY=PASS
+N1B2_ANDROID_SDK_ENV=PASS
 N1B2_EXISTING_APK_BUILD=PASS
 ```
 
