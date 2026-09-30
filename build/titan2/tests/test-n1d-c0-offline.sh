@@ -20,6 +20,11 @@ bash -n "$CAPTURE" || fail capture_bash_n
 python3 -m py_compile "$HELPER" "$CLASSIFIER" || fail python_compile
 pass syntax
 
+grep -Fq 'bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e' "$DRIVER" || fail n1b_control_hash_default
+grep -Fq 'device/phh/treble/treble_arm64_bvN.mk' "$DRIVER" || fail active_product_autodiscovery
+grep -Fq 'sealed known-booting N1B/Restless-derived system compared to N1C' "$DRIVER" || fail n1b_control_c0_10
+pass control_autodiscovery
+
 # Reviewed Engineer-2 tool hashes are immutable inputs to C0_12.
 [[ "$(sha256sum "$AUDIT" | awk '{print $1}')" == "b02d0da22de0f0cecca8a0793acd216ddecebafd9a51fae9c708936832c17c28" ]] || fail audit_hash
 [[ "$(sha256sum "$CAPTURE" | awk '{print $1}')" == "50344ffe5de82986299175587e152b493add8e930a90aa9dd55aba89351b721a" ]] || fail capture_hash

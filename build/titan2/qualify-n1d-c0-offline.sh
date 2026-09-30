@@ -36,7 +36,7 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 [[ -n "$CONFIG" && -f "$CONFIG" ]] || { echo "ERROR: --config FILE is required" >&2; exit 2; }
-[[ -x "$HELPER" ]] || { echo "ERROR: missing helper $HELPER" >&2; exit 3; }
+[[ -f "$HELPER" ]] || { echo "ERROR: missing helper $HELPER" >&2; exit 3; }
 
 # shellcheck disable=SC1090
 source "$CONFIG"
@@ -119,12 +119,23 @@ record OUTPUT "$OUT"
 : "${STOCK_VBMETA_SYSTEM_IMG:=$STOCK_REF_DIR/vbmeta_system.img}"
 : "${STOCK_VBMETA_VENDOR_IMG:=$STOCK_REF_DIR/vbmeta_vendor.img}"
 : "${RESTLESS_SYSTEM_IMG:=}"
-: "${N1B_CONTROL_SYSTEM_IMG:=}"
-: "${N1B_CONTROL_EXPECTED_SHA256:=}"
-: "${N1B_BOOT_PROOF:=}"
+: "${N1B_CONTROL_SYSTEM_IMG:=/srv/data/sable-build/workspaces/titan2-n1b/out_sable_t2_n1_sable_gsi/target/product/tdgsi_arm64_ab/system.img}"
+: "${N1B_CONTROL_EXPECTED_SHA256:=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e}"
+: "${N1B_BOOT_PROOF:=$SABLE_REPO/docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md}"
 : "${N1B1_INPUT:=}"
 : "${N1B2_INPUT:=}"
 : "${N1D_PRODUCT_FILE:=}"
+
+if [[ -z "$N1D_PRODUCT_FILE" ]]; then
+  mapfile -t N1D_PRODUCT_CANDIDATES < <(
+    find /srv/data/sable-build/workspaces/titan2-n1b \
+         /srv/data/sable-build/workspaces/titan2-n1c-android16-hybrid-super-* \
+      -type f -path '*/device/phh/treble/treble_arm64_bvN.mk' -print 2>/dev/null | sort -u
+  )
+  if [[ ${#N1D_PRODUCT_CANDIDATES[@]} -eq 1 ]]; then
+    N1D_PRODUCT_FILE="${N1D_PRODUCT_CANDIDATES[0]}"
+  fi
+fi
 : "${STOCK_FIRST_STAGE_TREE:=}"
 : "${SEPOLICY_VERSION:=30}"
 : "${VINTF_FIRST_API_LEVEL:=}"
@@ -268,7 +279,11 @@ log "C0_01 historical N1B evidence search"
 } > "$OUT/reports/C0_01_N1B_CANDIDATES.txt"
 if [[ -n "$N1B_CONTROL_SYSTEM_IMG" && -f "$N1B_CONTROL_SYSTEM_IMG" ]]; then
   n1bh="$(sha "$N1B_CONTROL_SYSTEM_IMG")"; record N1B_CONTROL_SYSTEM_SHA256 "$n1bh"
-  if [[ -n "$N1B_CONTROL_EXPECTED_SHA256" && "$n1bh" == "$N1B_CONTROL_EXPECTED_SHA256" && -f "$N1B_BOOT_PROOF" ]] && grep -q 'sys.boot_completed=1' "$N1B_BOOT_PROOF"; then
+  if [[ -n "$N1B_CONTROL_EXPECTED_SHA256" && "$n1bh" == "$N1B_CONTROL_EXPECTED_SHA256" && -f "$N1B_BOOT_PROOF" ]] \
+    && grep -Fq "SYSTEM_SHA256=$N1B_CONTROL_EXPECTED_SHA256" "$N1B_BOOT_PROOF" \
+    && grep -Fq 'BOOT_COMPLETED=PASS' "$N1B_BOOT_PROOF" \
+    && grep -Fq 'FIRST_N1B_BOOT=PASS' "$N1B_BOOT_PROOF" \
+    && grep -Fq 'ro.boot.verifiedbootstate=orange' "$N1B_BOOT_PROOF"; then
     gate C0_01_N1B_CONTROL PASS "QUALIFIED_HISTORICAL"
     record N1B_CONTROL_CLASS QUALIFIED_HISTORICAL
   else
@@ -515,12 +530,30 @@ if [[ -z "$RESTLESS_SYSTEM_IMG" ]]; then
   find /srv/data/sable-build -maxdepth 6 -type f \( -iname '*restless*.img' -o -iname '*Restless*.img' \) -size +500M -print 2>/dev/null | head -200 > "$RESTLESS_CAND" || true
 fi
 REPORTS=("$OUT/inventory/n1c-system.env"); LABELS=(n1c)
-if [[ -n "$N1B_CONTROL_SYSTEM_IMG" && -f "$N1B_CONTROL_SYSTEM_IMG" ]]; then
-  N1B_EX="$WORK/n1b-control"; if extract_fs "$N1B_CONTROL_SYSTEM_IMG" "$N1B_EX"; then python3 "$HELPER" system-report --root "$N1B_EX" --label n1b-control --out "$OUT/inventory/n1b-control.env"; REPORTS+=("$OUT/inventory/n1b-control.env"); LABELS+=(n1b-control); fi
+CONTROL_PASS=NO
+if [[ "${GDETAIL[C0_01_N1B_CONTROL]:-}" == QUALIFIED_HISTORICAL ]]; then
+  if [[ -n "$N1B_CONTROL_SYSTEM_IMG" && -f "$N1B_CONTROL_SYSTEM_IMG" ]]; then
+    N1B_EX="$WORK/n1b-control"
+    if extract_fs "$N1B_CONTROL_SYSTEM_IMG" "$N1B_EX"; then
+      python3 "$HELPER" system-report --root "$N1B_EX" --label n1b-control --out "$OUT/inventory/n1b-control.env"
+      REPORTS+=("$OUT/inventory/n1b-control.env"); LABELS+=(n1b-control)
+      gate C0_10_CONTROL_DIFF PASS "sealed known-booting N1B/Restless-derived system compared to N1C"
+      CONTROL_PASS=YES
+    fi
+  fi
 fi
-if [[ -n "$RESTLESS_SYSTEM_IMG" && -f "$RESTLESS_SYSTEM_IMG" ]]; then
-  REST_EX="$WORK/restless"; if extract_fs "$RESTLESS_SYSTEM_IMG" "$REST_EX"; then python3 "$HELPER" system-report --root "$REST_EX" --label restless --out "$OUT/inventory/restless.env"; REPORTS+=("$OUT/inventory/restless.env"); LABELS+=(restless); gate C0_10_CONTROL_DIFF PASS "known-booting Restless system compared to N1C"; else gate C0_10_CONTROL_DIFF FAIL "Restless image extraction failed"; fi
-else gate C0_10_CONTROL_DIFF FAIL "RESTLESS_SYSTEM_IMG not supplied; candidate list generated"; fi
+if [[ "$CONTROL_PASS" != YES && -n "$RESTLESS_SYSTEM_IMG" && -f "$RESTLESS_SYSTEM_IMG" ]]; then
+  REST_EX="$WORK/restless"
+  if extract_fs "$RESTLESS_SYSTEM_IMG" "$REST_EX"; then
+    python3 "$HELPER" system-report --root "$REST_EX" --label restless --out "$OUT/inventory/restless.env"
+    REPORTS+=("$OUT/inventory/restless.env"); LABELS+=(restless)
+    gate C0_10_CONTROL_DIFF PASS "known-booting Restless system compared to N1C"
+    CONTROL_PASS=YES
+  fi
+fi
+if [[ "$CONTROL_PASS" != YES ]]; then
+  gate C0_10_CONTROL_DIFF FAIL "no qualified known-booting control available"
+fi
 if [[ ${#REPORTS[@]} -gt 1 ]]; then
   args=(compare-system-reports --out-md "$OUT/reports/C0_10_system_control_comparison.md")
   for i in "${!REPORTS[@]}"; do args+=(--report "${REPORTS[$i]}" --label "${LABELS[$i]}"); done
