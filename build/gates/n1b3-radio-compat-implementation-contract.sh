@@ -23,7 +23,9 @@ fail() {
 required_files=(
   "docs/titan2/N1B3_RADIO_COMPAT_IMPLEMENTATION_R1.md"
   "build/titan2/audit-n1b3-radio-compat-source.sh"
+  "build/titan2/apply-n1b3-radio-compat-product-delta.sh"
   "build/gates/n1b3-radio-compat-implementation-contract.sh"
+  "build/gates/n1b3-radio-compat-product-delta-contract.sh"
 )
 
 for f in "${required_files[@]}"; do
@@ -36,7 +38,9 @@ done
 
 for f in \
   build/titan2/audit-n1b3-radio-compat-source.sh \
-  build/gates/n1b3-radio-compat-implementation-contract.sh
+  build/titan2/apply-n1b3-radio-compat-product-delta.sh \
+  build/gates/n1b3-radio-compat-implementation-contract.sh \
+  build/gates/n1b3-radio-compat-product-delta-contract.sh
 do
   if bash -n "$f"; then
     pass "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_BASH_N" "path=$f"
@@ -57,7 +61,10 @@ for marker in \
   "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_SOURCE_AUDIT_FIRST=YES" \
   "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_MTK_INDICATION=YES" \
   "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_IMS_BINDING=YES" \
-  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_WWAN_DROP=YES"
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_TARGETS_WWAN_DROP=YES" \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA=YES" \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_MTK_IMS_DEFAULT_DISABLED=YES" \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_APPLIES_TO_N1B2_PRODUCT_PROFILE=YES"
 do
   if grep -Fq "$marker" docs/titan2/N1B3_RADIO_COMPAT_IMPLEMENTATION_R1.md; then
     pass "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_DOC_MARKER" "marker=$marker"
@@ -98,6 +105,32 @@ check_token \
   "UNSOL_DATA_CALL_LIST_CHANGED" \
   "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_AUDIT_TOKEN"
 
+check_token \
+  build/titan2/apply-n1b3-radio-compat-product-delta.sh \
+  'MTK_IMS_PROPERTY="persist.sys.phh.ims.mtk"' \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_TOKEN"
+
+check_token \
+  build/titan2/apply-n1b3-radio-compat-product-delta.sh \
+  'MTK_IMS_VALUE="false"' \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_TOKEN"
+
+
+check_token \
+  build/titan2/apply-n1b3-radio-compat-product-delta.sh \
+  "radio-compat.env:system/etc/sableos/profiles/titan2/radio-compat.env" \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_TOKEN"
+
+check_token \
+  build/titan2/apply-n1b3-radio-compat-product-delta.sh \
+  "SABLE_N1B3_RADIO_COMPAT_START" \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_TOKEN"
+
+check_token \
+  build/gates/n1b3-radio-compat-product-delta-contract.sh \
+  "N1B3_RADIO_COMPAT_PRODUCT_DELTA_CONTRACT=PASS" \
+  "N1B3_RADIO_COMPAT_IMPLEMENTATION_R1_PRODUCT_DELTA_CONTRACT_TOKEN"
+
 all_files="$(
   {
     git ls-files
@@ -124,7 +157,7 @@ changed_files="$(
   } | sort -u
 )"
 
-allowed_regex='^(docs/titan2/N1B3_RADIO_COMPAT_IMPLEMENTATION_R1\.md|build/titan2/audit-n1b3-radio-compat-source\.sh|build/gates/n1b3-radio-compat-implementation-contract\.sh)$'
+allowed_regex='^(docs/titan2/N1B3_RADIO_COMPAT_IMPLEMENTATION_R1\.md|build/titan2/audit-n1b3-radio-compat-source\.sh|build/titan2/apply-n1b3-radio-compat-product-delta\.sh|build/gates/n1b3-radio-compat-implementation-contract\.sh|build/gates/n1b3-radio-compat-product-delta-contract\.sh)$'
 
 unexpected="$(
   printf '%s\n' "$changed_files" \
@@ -151,7 +184,9 @@ while IFS= read -r f; do
   case "$f" in
     docs/titan2/N1B3_RADIO_COMPAT_IMPLEMENTATION_R1.md|\
     build/titan2/audit-n1b3-radio-compat-source.sh|\
-    build/gates/n1b3-radio-compat-implementation-contract.sh)
+    build/titan2/apply-n1b3-radio-compat-product-delta.sh|\
+    build/gates/n1b3-radio-compat-implementation-contract.sh|\
+    build/gates/n1b3-radio-compat-product-delta-contract.sh)
       continue
       ;;
   esac
