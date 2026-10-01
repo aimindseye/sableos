@@ -15,7 +15,9 @@ fail() {
 for f in "$BOUNDARY" "$PRODUCT" "$PROFILE" "$DOC"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
-bash -n "$BOUNDARY" "$PRODUCT" "$PROFILE"
+for f in "$BOUNDARY" "$PRODUCT" "$PROFILE"; do
+    bash -n "$f" || fail "syntax=$f"
+done
 
 require_line() {
     local file="$1" line="$2"
