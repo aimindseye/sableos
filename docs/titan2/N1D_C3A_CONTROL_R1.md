@@ -190,8 +190,11 @@ final `PRODUCT_OUT/system.img` is classified as
 `FAILED_SYSTEMIMAGE_PRE_ARTIFACT`. Intermediate files named `system.img`
 under other output subtrees do not constitute a completed system-image
 artifact. Resume uses the sealed prior `product-out.txt` to identify the exact
-final image path and rejects the resume if that file already exists. Target-files
-and OTA archives remain prohibited.
+final image path and rejects the resume if that file already exists. Target-files archives and actual OTA package outputs remain prohibited. Normal
+system payload files such as `otacerts.zip` are not OTA packages and do not
+block resume. The driver reports the number of `otacerts.zip` payloads seen
+for audit visibility and prints the exact path of any packaging candidate before
+failing.
 
 
 
