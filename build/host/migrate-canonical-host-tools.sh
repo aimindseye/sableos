@@ -50,23 +50,70 @@ else
     echo "ANDROID_SDK=MOVED destination=$SABLE_ANDROID_SDK"
 fi
 
-copy_tree_once() {
-    local src="$1" dst="$2" key="$3"
-    if [[ -d "$dst" ]]; then
-        echo "$key=ALREADY_CANONICAL path=$dst"
+jdk_tree_valid() {
+    local root="$1" major="$2"
+    [[ -d "$root" && -x "$root/bin/java" ]] || return 1
+    "$root/bin/java" -version 2>&1 | head -n1 | grep -Eq "\"$major\\."
+}
+
+copy_jdk_transactional() {
+    local src="$1" dst="$2" key="$3" major="$4"
+    local parent base stage quarantine stamp
+
+    if jdk_tree_valid "$dst" "$major"; then
+        echo "$key=ALREADY_CANONICAL_VERIFIED path=$dst"
         return 0
     fi
+
     [[ -d "$src" ]] || {
         echo "$key=FAIL_SOURCE_MISSING path=$src"
         exit 3
     }
-    mkdir -p "$(dirname "$dst")"
-    cp -aL --reflink=auto "$src" "$dst"
-    echo "$key=COPIED destination=$dst"
+    [[ -x "$src/bin/java" ]] || {
+        echo "$key=FAIL_SOURCE_JAVA_MISSING path=$src/bin/java"
+        exit 3
+    }
+    "$src/bin/java" -version 2>&1 | head -n1 | grep -Eq "\"$major\\." || {
+        echo "$key=FAIL_SOURCE_VERSION path=$src expected_major=$major"
+        exit 3
+    }
+
+    parent="$(dirname "$dst")"
+    base="$(basename "$dst")"
+    mkdir -p "$parent"
+    stage="$(mktemp -d "$parent/.${base}.stage.XXXXXX")"
+
+    cleanup_stage() {
+        if [[ -n "${stage:-}" && -d "$stage" ]]; then
+            rm -rf --one-file-system -- "$stage"
+        fi
+    }
+    trap cleanup_stage RETURN
+
+    # Preserve symlinks exactly. Do not dereference optional links such as
+    # lib/src.zip, which may legitimately point to an uninstalled source package.
+    cp -a --reflink=auto "$src/." "$stage/"
+
+    jdk_tree_valid "$stage" "$major" || {
+        echo "$key=FAIL_STAGED_VERIFICATION path=$stage"
+        exit 4
+    }
+
+    if [[ -e "$dst" || -L "$dst" ]]; then
+        stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+        quarantine="$parent/.${base}.incomplete-$stamp"
+        mv "$dst" "$quarantine"
+        echo "$key=QUARANTINED_INCOMPLETE path=$quarantine"
+    fi
+
+    mv "$stage" "$dst"
+    stage=""
+    trap - RETURN
+    echo "$key=COPIED_VERIFIED destination=$dst"
 }
 
-copy_tree_once "$LEGACY_JDK17" "$SABLE_JDK17" JDK17
-copy_tree_once "$LEGACY_JDK21" "$SABLE_JDK21" JDK21
+copy_jdk_transactional "$LEGACY_JDK17" "$SABLE_JDK17" JDK17 17
+copy_jdk_transactional "$LEGACY_JDK21" "$SABLE_JDK21" JDK21 21
 
 if [[ -x "$SABLE_REPO_TOOL" ]]; then
     echo "REPO_TOOL=ALREADY_CANONICAL path=$SABLE_REPO_TOOL"
