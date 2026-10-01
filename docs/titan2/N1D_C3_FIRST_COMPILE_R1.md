@@ -64,10 +64,35 @@ NETWORK_FETCH_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 PRODUCTION_SIGNING_AUTHORIZED=NO
+N1D_C3_BUILD_SANDBOX_REQUIRED=YES
 ```
 
 Normal development/test-key signing performed intrinsically by the Android
-build system is not a production-signing authorization. No release-key or
+build system is not a production-signing authorization.
+
+## Build sandbox requirement
+
+The product-parse qualification reported:
+
+```text
+Build sandboxing disabled due to nsjail error.
+```
+
+That warning is accepted as parse-stage diagnostic evidence only. The first
+target compilation is stricter: before invoking `systemimage`, the driver runs
+an Android `soong_ui --dumpvars-mode` sandbox probe and fails if Android emits
+the nsjail-disabled warning. The `systemimage` command output is checked again
+after the build and the qualification fails if sandboxing was disabled there.
+
+Therefore a passing first C3 compile must emit:
+
+```text
+N1D_C3_BUILD_SANDBOX_PREFLIGHT=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL
+```
+
+This does not replace Android's sandbox implementation; it makes Android's own
+sandbox-health signal a fail-closed Sable qualification requirement. No release-key or
 production-key custody is introduced by this gate.
 
 ## Output isolation
@@ -172,6 +197,8 @@ bash build/titan2/build-n1d-c3-first-systemimage.sh \
 ```text
 N1D_C3_COMPILE_ENVSETUP=PASS
 N1D_C3_COMPILE_LUNCH=PASS
+N1D_C3_BUILD_SANDBOX_PREFLIGHT=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL
 N1D_C3_SYSTEMIMAGE_BUILD=PASS
 N1D_C3_POST_BUILD_PROJECT_COUNT=PASS value=1033
 N1D_C3_POST_BUILD_DIRTY_PROJECT_COUNT=PASS_ZERO
