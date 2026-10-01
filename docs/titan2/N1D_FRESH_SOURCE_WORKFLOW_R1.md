@@ -137,9 +137,12 @@ fresh Graphene/AOSP Android 16 base
   -> use C3A evidence to peel toward minimal C3B Sable baseline
 ```
 
-The C2-to-C3 transition has now been completed: partial C2 source worktrees
-were retired and the checkout was restored to the exact sealed 1,033-project
-base. The fresh-source preparation driver itself still performs no build.
+The C2-to-C3 transition begins from the exact sealed 1,033-project base.
+C3A then applies the pinned Restless remove manifest and public add manifest.
+Because the base is already synchronized, the 54 removed working trees are
+moved to a reversible artifact archive rather than deleted. The resulting C3A
+managed graph contains 991 projects. The fresh-source preparation driver itself
+still performs no build.
 
 ## Driver actions
 
