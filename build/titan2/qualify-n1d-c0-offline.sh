@@ -540,18 +540,36 @@ if [[ ! -f "$N1D_PRODUCT_CONTRACT_FILE" ]]; then
 else
   cp "$N1D_PRODUCT_CONTRACT_FILE" "$OUT/reports/C0_04_n1d_product_contract.env"
   for required in \
+    'N1D_PRODUCT_CONTRACT_VERSION=2' \
+    'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
+    'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_DIAGNOSTIC_CONTROL' \
+    'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
+    'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
+    'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
+    'N1D_TREBLE_COMPAT_REFERENCE=device/phh/treble' \
+    'N1D_TREBLE_COMPAT_DELTA=vendor/sable/n1d/treble_compat.mk' \
+    'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
+    'N1D_DIRECT_DEVICE_PHH_TREBLE_BASE_INHERIT=NO' \
+    'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=NO' \
+    'N1D_RESTLESS_ROM_MK_DIRECT_INHERIT=NO' \
+    'N1D_INITIAL_RESTLESS_PATCH_ALLOWLIST_COUNT=0' \
+    'N1D_RUNTIME_PRODUCT_OWNER=GSI_SYSTEM_IMAGE' \
+    'N1D_RUNTIME_SYSTEM_EXT_OWNER=GSI_SYSTEM_IMAGE' \
+    'N1D_SELINUX_ENFORCING_REQUIRED=YES' \
+    'N1D_NEVERALLOW_ENFORCEMENT_REQUIRED=YES' \
+    'N1D_ADB_AUTH_REQUIRED=YES' \
+    'N1D_PRODUCT_CONTRACT=PASS'; do
+    grep -Fxq "$required" "$N1D_PRODUCT_CONTRACT_FILE" || PRODUCT_CONTRACT_OK=NO
+  done
+
+  for forbidden in \
     'N1D_BASE_PRODUCT=treble_arm64_bvN' \
     'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
     'N1D_GENERATED_ARCH_INCLUDE=build/make/target/product/aosp_arm64.mk' \
     'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
     'N1D_GSI_RELEASE_OWNER=device/phh/treble/base.mk' \
-    'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
-    'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk' \
-    'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
-    'N1D_RUNTIME_PRODUCT_OWNER=GSI_SYSTEM_IMAGE' \
-    'N1D_RUNTIME_SYSTEM_EXT_OWNER=GSI_SYSTEM_IMAGE' \
-    'N1D_PRODUCT_CONTRACT=PASS'; do
-    grep -Fxq "$required" "$N1D_PRODUCT_CONTRACT_FILE" || PRODUCT_CONTRACT_OK=NO
+    'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk'; do
+    grep -Fxq "$forbidden" "$N1D_PRODUCT_CONTRACT_FILE" && PRODUCT_CONTRACT_OK=NO
   done
 fi
 
@@ -560,8 +578,8 @@ if [[ -f "$AOSP_GSI_RELEASE" ]]; then
   for p in "${SABLE_CANDIDATES[@]:-}"; do [[ -f "$p" ]] && args+=(--sable "$p"); done
   python3 "$HELPER" "${args[@]}"
   if [[ "$PRODUCT_CONTRACT_OK" == YES && "${GSTAT[C0_02_MOUNT_MODEL]:-}" == PASS ]]; then
-    gate C0_04_GSI_CONTRACT PASS "N1D contract binds generated treble_arm64_bvN -> PHH base -> AOSP gsi_release with Sable delta; runtime skip_mount ownership already proven"
-    record N1D_PRODUCT_CHAIN_MODE GENERATED_TREBLE_PLUS_SABLE_DELTA
+    gate C0_04_GSI_CONTRACT PASS "N1D contract binds Sable-owned generic_system_arm64 -> AOSP gsi_release -> Sable treble_compat -> Sable delta; runtime skip_mount ownership already proven"
+    record N1D_PRODUCT_CHAIN_MODE SABLE_OWNED_GSI_PLUS_EVIDENCE_ADMITTED_TREBLE_COMPAT
   else
     gate C0_04_GSI_CONTRACT FAIL "N1D product-chain contract missing/incomplete or runtime GSI ownership not proven"
   fi
