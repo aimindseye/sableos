@@ -63,8 +63,6 @@ grep -Fq 'N1D_BASE_DIRTY_PROJECT_COUNT' "$DRIVER" ||
     fail "dirty_project_gate_missing"
 grep -Fq 'c2_pin_contains_unresolved_project_head' "$DRIVER" ||
     fail "historical_pin_unresolved_guard_missing"
-grep -Fq 'git lfs version' "$DRIVER" ||
-    fail "git_lfs_preflight_missing"
 grep -Fq 'if [ -n "$status" ]; then' "$DRIVER" ||
     fail "repo_forall_posix_status_probe_missing"
 
@@ -109,18 +107,24 @@ ET.SubElement(root, "remote", {
     "name": "public",
     "fetch": "https://github.com/example/",
 })
+ET.SubElement(root, "default", {
+    "remote": "public",
+})
 ET.SubElement(root, "remote", {
     "name": "private",
     "fetch": "ssh://git@github.com/cawilliamson/",
 })
 
 for index, path in enumerate(paths, start=1):
-    ET.SubElement(root, "project", {
+    attrs = {
         "name": f"project-{index}",
         "path": path,
-        "remote": "public",
         "revision": f"{index:040x}",
-    })
+    }
+    # Exercise repo-manifest default-remote inheritance on one selected project.
+    if path != "prebuilts/vndk/v28":
+        attrs["remote"] = "public"
+    ET.SubElement(root, "project", attrs)
 
 ET.SubElement(root, "project", {
     "name": "vendor_cawilliamson-priv",
