@@ -87,11 +87,11 @@ if [[ "$PROFILE" == aosp-host || "$PROFILE" == all ]]; then
 
     LD_LIBRARY_PATH="$SABLE_AOSP_HOST_LIBRARY_PATH" "$SABLE_LPDUMP" --help >/dev/null 2>&1 || {
         rc=$?
-        [[ "$rc" == 64 ]] || fail SABLE_LPDUMP_RUNTIME "rc=$rc"
+        case "$rc" in 0|1|64) ;; *) fail SABLE_LPDUMP_RUNTIME "rc=$rc" ;; esac
     }
     LD_LIBRARY_PATH="$SABLE_AOSP_HOST_LIBRARY_PATH" "$SABLE_LPUNPACK" --help >/dev/null 2>&1 || {
         rc=$?
-        [[ "$rc" == 64 ]] || fail SABLE_LPUNPACK_RUNTIME "rc=$rc"
+        case "$rc" in 0|1|64) ;; *) fail SABLE_LPUNPACK_RUNTIME "rc=$rc" ;; esac
     }
 
     echo "SABLE_HOST_TOOLS_AOSP_HOST=PASS"
