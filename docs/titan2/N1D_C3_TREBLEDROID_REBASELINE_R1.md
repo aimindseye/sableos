@@ -4,9 +4,10 @@ Date: 2026-10-01
 
 ## Purpose
 
-C3A reproduces the exact public build topology that successfully produced the
-RestlessOS Android 16 ARM64 A/B GSI, while separating build reproducibility from
-SableOS release-runtime acceptance.
+C3A reproduces the public functional build topology that successfully produced
+the RestlessOS Android 16 ARM64 A/B GSI, while separating build reproducibility
+from SableOS release-runtime acceptance. It does not claim bit-identical source
+or output.
 
 ## Known-good recipe
 
@@ -47,8 +48,19 @@ device/phh/treble:
   39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
 ```
 
-The remaining companion projects and exact commits are declared in
-`n1d-c3a-trebledroid-add.xml and `n1d-c3a-trebledroid-remove.xml``.
+The public companion projects and exact commits are declared in
+`build/titan2/n1d-c3a-trebledroid-add.xml`. Restless's exact 54-project
+removal set is pinned in `build/titan2/n1d-c3a-trebledroid-remove.xml`.
+
+The source graph is therefore:
+
+```text
+1033 sealed Graphene projects
+ -54 Restless remove.xml projects
+ +12 pinned public Treble projects
+ ---
+ 991 managed C3A projects
+```
 
 Restless did not publish a pinned repo manifest with this release. Those
 companion SHAs are therefore reconstructed from the branch tips that existed
