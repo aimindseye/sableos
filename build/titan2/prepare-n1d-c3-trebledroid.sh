@@ -19,7 +19,7 @@ TIER_FILE="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
 BUILD_AUDIT_SET="$ROOT/build/titan2/n1d-c3a-build-make-audit-set.txt"
 C3B_RUNTIME_ALLOWLIST="$ROOT/build/titan2/n1d-c3b-runtime-patch-allowlist.txt"
 BUILD_PATCH_DIR="$ROOT/patches/android-16-n1d-trebledroid/build-make"
-HOST_LAYOUT_PATCH="$ROOT/$N1D_C3A_HOST_LAYOUT_PATCH_PATH"
+HOST_LAYOUT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci-tests-skip-out-of-tree-host-paths.patch"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 SOURCE_GATE="$ROOT/build/gates/n1d-source-lock-contract.sh"
 
