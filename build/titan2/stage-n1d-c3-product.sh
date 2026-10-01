@@ -221,4 +221,3 @@ case "$ACTION" in
     verify) verify ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
-
