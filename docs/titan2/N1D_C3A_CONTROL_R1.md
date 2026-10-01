@@ -185,9 +185,13 @@ have exactly two dirty files:
 `dexpreopt/dexpreopt_gen/dexpreopt_gen.go`. Any byte difference from either
 expected post-patch blob fails closed.
 
-A build that reached `make systemimage` but failed before producing
-`system.img` is classified as `FAILED_SYSTEMIMAGE_PRE_ARTIFACT`. It may be
-resumed only when no system image, target-files package, or OTA artifact exists.
+A build that reached `make systemimage` but failed before producing the
+final `PRODUCT_OUT/system.img` is classified as
+`FAILED_SYSTEMIMAGE_PRE_ARTIFACT`. Intermediate files named `system.img`
+under other output subtrees do not constitute a completed system-image
+artifact. Resume uses the sealed prior `product-out.txt` to identify the exact
+final image path and rejects the resume if that file already exists. Target-files
+and OTA archives remain prohibited.
 
 
 
