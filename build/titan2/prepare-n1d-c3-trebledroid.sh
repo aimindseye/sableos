@@ -235,6 +235,274 @@ verify_scaffold_base_heads() {
     echo "N1D_C3_TREBLEDROID_SCAFFOLD_BASE_HEADS=PASS_EXACT count=${#scaffold_paths[@]}"
 }
 
+verify_control_patch_targets() {
+    local tier expected_count project project_dir missing=0
+    while IFS=
+    while IFS=$'\t' read -r tier expected_count; do
+        [[ -z "$tier" || "$tier" == #* ]] && continue
+        echo "N1D_C3_CONTROL_PATCH_TIER=START tier=$tier expected=$expected_count"
+        while IFS= read -r project; do
+            [[ -z "$project" ]] && continue
+            project_dir="$(map_patch_project "$project")"
+            [[ -d "$ANDROID_ROOT/$project_dir" ]]                 || fail "control_patch_project_missing tier=$tier project=$project path=$project_dir"
+
+            while IFS= read -r patch; do
+                [[ -z "$patch" ]] && continue
+                if [[ -d "$ANDROID_ROOT/$project_dir/.git" ]]; then
+                    (
+                        cd "$ANDROID_ROOT/$project_dir"
+                        git am "$patch"
+                    ) || {
+                        git -C "$ANDROID_ROOT/$project_dir" am --abort >/dev/null 2>&1 || true
+                        fail "control_patch_git_am tier=$tier project=$project patch=$(basename "$patch")"
+                    }
+                else
+                    (
+                        cd "$ANDROID_ROOT/$project_dir"
+                        patch -p1 --no-backup-if-mismatch < "$patch"
+                    ) || fail "control_patch_patch_p1 tier=$tier project=$project patch=$(basename "$patch")"
+                fi
+                applied=$((applied + 1))
+            done < <(
+                find "$RECIPE_ROOT/patches/$tier/$project"                     -maxdepth 1 -type f -name '*.patch' -print | LC_ALL=C sort
+            )
+        done < <(
+            find "$RECIPE_ROOT/patches/$tier"                 -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | LC_ALL=C sort
+        )
+        echo "N1D_C3_CONTROL_PATCH_TIER=PASS tier=$tier"
+    done < "$TIER_FILE"
+
+    [[ "$applied" == "$N1D_C3_CONTROL_PATCH_COUNT" ]]         || fail "control_patch_applied expected=$N1D_C3_CONTROL_PATCH_COUNT actual=$applied"
+    echo "N1D_C3_CONTROL_PATCH_STACK=PASS count=$applied"
+}
+
+verify_postpatch_clean_and_count() {
+    local heads="$1" dirty="$2" count dirty_count
+    capture_heads "$heads"
+    capture_dirty_projects "$dirty"
+    count="$(grep -cve '^$' "$heads" || true)"
+    dirty_count="$(grep -cve '^$' "$dirty" || true)"
+    [[ "$count" == 1045 ]] || fail "postpatch_project_count expected=1045 actual=$count"
+    [[ "$dirty_count" == 0 ]] || { cat "$dirty"; fail "postpatch_dirty_count=$dirty_count"; }
+    echo "N1D_C3_POSTPATCH_PROJECT_COUNT=PASS value=1045"
+    echo "N1D_C3_POSTPATCH_DIRTY_PROJECT_COUNT=PASS_ZERO"
+}
+
+verify_build_make_patch_count() {
+    local before="$1" base count
+    base="$(awk -F '\t' '$1=="build/make"{print $2}' "$before")"
+    [[ -n "$base" ]] || fail build_make_prepatch_head_missing
+    count="$(git -C "$BUILD_MAKE" rev-list --count "$base..HEAD")"
+    [[ "$count" == "$N1D_C3_BUILD_MAKE_PATCH_COUNT" ]]         || fail "build_make_patch_count expected=$N1D_C3_BUILD_MAKE_PATCH_COUNT actual=$count"
+    echo "N1D_C3_BUILD_MAKE_PATCH_STACK=PASS count=$count"
+}
+
+verify_generated_product() {
+    local product="$TD_ROOT/treble_arm64_bvN.mk"
+    [[ -f "$TD_ROOT/AndroidProducts.mk" ]] || fail generated_android_products_missing
+    [[ -f "$product" ]] || fail generated_product_missing
+    grep -Fq 'include build/make/target/product/aosp_arm64.mk' "$product"         || fail generated_aosp_arm64_base_missing
+    grep -Fq '$(call inherit-product, device/phh/treble/base.mk)' "$product"         || fail generated_phh_base_missing
+    grep -Fq '$(call inherit-product, device/phh/treble/rom.mk)' "$product"         || fail generated_rom_config_missing
+    grep -Fq 'PRODUCT_NAME := treble_arm64_bvN' "$product"         || fail generated_product_name_missing
+    grep -Fq 'PRODUCT_DEVICE := tdgsi_arm64_ab' "$product"         || fail generated_product_device_missing
+    echo "N1D_C3_GENERATED_PRODUCT=PASS product=treble_arm64_bvN"
+}
+
+verify_td_generated_dirty_scope() {
+    local line path
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        path="${line:3}"
+        case "$path" in
+            AndroidProducts.mk|rom.mk|treble_*.mk) ;;
+            *) fail "unexpected_device_phh_dirty_path=$path" ;;
+        esac
+    done < <(git -C "$TD_ROOT" status --porcelain --untracked-files=all)
+    echo "N1D_C3_DEVICE_PHH_GENERATED_DIRTY_SCOPE=PASS"
+}
+
+latest_stage_evidence() {
+    find "$EVIDENCE_ROOT"         -mindepth 1 -maxdepth 1 -type d -name '*-trebledroid-stage'         -print 2>/dev/null | LC_ALL=C sort | tail -1
+}
+
+preflight() {
+    echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL PREFLIGHT ====="
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    echo "BUILD_AUTHORIZED=NO"
+    echo "DEVICE_CONTACT_AUTHORIZED=NO"
+    echo "FLASH_AUTHORIZED=NO"
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_contract_inputs
+    verify_graphene_base_pre_stage
+    if [[ -e "$OLD_PRODUCT" ]]; then
+        echo "N1D_C3_HANDCRAFTED_PRODUCT=PRESENT_WILL_ARCHIVE"
+    else
+        echo "N1D_C3_HANDCRAFTED_PRODUCT=ABSENT"
+    fi
+    echo "N1D_C3A_TREBLEDROID_REBASELINE_PREFLIGHT=PASS"
+}
+
+stage() {
+    echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL STAGE ====="
+    [[ "$SOURCE_MUTATION_AUTHORIZED" == YES ]]         || fail stage_requires_--authorize-source-mutation
+    [[ "$NETWORK_FETCH_AUTHORIZED" == YES ]]         || fail stage_requires_--authorize-network
+
+    echo "SOURCE_MUTATION_AUTHORIZED=YES_PINNED_RESTLESS_CONTROL_RECIPE_ONLY"
+    echo "NETWORK_FETCH_AUTHORIZED=YES_PINNED_RECIPE_AND_SCAFFOLD_ONLY"
+    echo "BUILD_AUTHORIZED=NO"
+    echo "DEVICE_CONTACT_AUTHORIZED=NO"
+    echo "FLASH_AUTHORIZED=NO"
+    echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+    echo "C3A_RELEASE_ELIGIBLE=NO"
+    echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
+    echo "RELEASE_ELIGIBLE=NO"
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_contract_inputs
+    verify_graphene_base_pre_stage
+    fetch_recipe
+    verify_recipe_inventory
+
+    local stamp evidence retired
+    stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    evidence="$EVIDENCE_ROOT/$stamp-trebledroid-stage"
+    mkdir -p "$evidence"
+
+    if [[ -e "$OLD_PRODUCT" ]]; then
+        retired="$evidence/retired-handcrafted-vendor-sable-n1d"
+        mv "$OLD_PRODUCT" "$retired"
+        echo "N1D_C3_HANDCRAFTED_PRODUCT_RETIREMENT=PASS path=$retired"
+    fi
+
+    mkdir -p "$LOCAL_MANIFEST_DIR"
+    cp -a "$MANIFEST_SRC" "$LOCAL_MANIFEST"
+
+    (
+        cd "$ANDROID_ROOT"
+        "$SABLE_REPO_TOOL" sync             --force-sync             --no-clone-bundle             --no-tags             --jobs=4             "${scaffold_paths[@]}"
+    )
+
+    verify_scaffold_base_heads
+    capture_heads "$evidence/prepatch-project-heads.tsv"
+    capture_dirty_projects "$evidence/prepatch-dirty-projects.txt"
+    [[ ! -s "$evidence/prepatch-dirty-projects.txt" ]] || fail prepatch_dirty
+
+    verify_control_patch_targets
+    apply_control_patch_stack
+    verify_postpatch_clean_and_count         "$evidence/postpatch-project-heads.tsv"         "$evidence/postpatch-dirty-projects.txt"
+    verify_build_make_patch_count "$evidence/prepatch-project-heads.tsv"
+
+    cp -a "$ROM_SRC" "$TD_ROOT/rom.mk"
+    (
+        cd "$TD_ROOT"
+        bash generate.sh rom
+    )
+
+    verify_generated_product
+    verify_td_generated_dirty_scope
+
+    cp -a "$MANIFEST_SRC" "$evidence/n1d-c3-trebledroid-manifest.xml"
+    cp -a "$ROM_SRC" "$evidence/rom.mk"
+    cp -a "$TIER_FILE" "$evidence/control-patch-tiers.tsv"
+    cp -a "$BUILD_ALLOWLIST" "$evidence/build-make-patch-allowlist.txt"
+    cp -a "$RUNTIME_ALLOWLIST" "$evidence/release-runtime-patch-allowlist.txt"
+    git -C "$TD_ROOT" status --porcelain --untracked-files=all         > "$evidence/device-phh-generated-status.txt"
+
+    {
+        echo "N1D_C3A_TREBLEDROID_STAGE=PASS"
+        echo "N1D_C3_RESTLESS_RECIPE_COMMIT=$N1D_RESTLESS_COMMIT"
+        echo "N1D_C3_CONTROL_PATCH_COUNT=$N1D_C3_CONTROL_PATCH_COUNT"
+        echo "N1D_C3_CONTROL_PATCH_TIER_COUNT=$N1D_C3_CONTROL_PATCH_TIER_COUNT"
+        echo "N1D_C3_GENERATED_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
+        echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
+        echo "N1D_C3_FIRST_VARIANT=$N1D_C3_FIRST_VARIANT"
+        echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3_RUNTIME_PATCH_ALLOWLIST_COUNT"
+        echo "N1D_C3_RELEASE_ELIGIBLE=NO"
+    } > "$evidence/stage-state.env"
+
+    (
+        cd "$evidence"
+        find . -type f ! -name SHA256SUMS.txt -print0             | LC_ALL=C sort -z             | xargs -0 sha256sum > SHA256SUMS.txt
+        sha256sum -c SHA256SUMS.txt >/dev/null
+    )
+
+    echo "N1D_C3A_TREBLEDROID_STAGE=PASS"
+    echo "EVIDENCE_DIR=$evidence"
+}
+
+verify() {
+    echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL VERIFY ====="
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    echo "BUILD_AUTHORIZED=NO"
+    echo "DEVICE_CONTACT_AUTHORIZED=NO"
+    echo "FLASH_AUTHORIZED=NO"
+    echo "RELEASE_ELIGIBLE=NO"
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_contract_inputs
+
+    [[ -d "$RECIPE_ROOT/.git" ]] || fail recipe_missing
+    [[ "$(git -C "$RECIPE_ROOT" rev-parse HEAD)" == "$N1D_RESTLESS_COMMIT" ]]         || fail recipe_head_mismatch
+    verify_recipe_inventory
+
+    cmp -s "$MANIFEST_SRC" "$LOCAL_MANIFEST" || fail local_manifest_mismatch
+
+    local evidence count current_heads
+    evidence="$(latest_stage_evidence)"
+    [[ -n "$evidence" ]] || fail stage_evidence_missing
+    (
+        cd "$evidence"
+        sha256sum -c SHA256SUMS.txt >/dev/null
+    ) || fail stage_evidence_invalid
+
+    current_heads="$(mktemp)"
+    capture_heads "$current_heads"
+    count="$(grep -cve '^$' "$current_heads" || true)"
+    [[ "$count" == 1045 ]] || { rm -f "$current_heads"; fail "current_project_count=$count"; }
+    LC_ALL=C sort "$current_heads" > "$current_heads.sorted"
+    LC_ALL=C sort "$evidence/postpatch-project-heads.tsv" > "$current_heads.expected"
+    cmp -s "$current_heads.sorted" "$current_heads.expected"         || { diff -u "$current_heads.expected" "$current_heads.sorted" || true; rm -f "$current_heads" "$current_heads.sorted" "$current_heads.expected"; fail postpatch_heads_mismatch; }
+    rm -f "$current_heads" "$current_heads.sorted" "$current_heads.expected"
+
+    verify_generated_product
+    verify_td_generated_dirty_scope
+
+    echo "N1D_C3_POSTPATCH_HEADS=PASS_EXACT value=1045"
+    echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
+}
+
+case "$ACTION" in
+    preflight) preflight ;;
+    stage) stage ;;
+    verify) verify ;;
+    *) fail "unknown_action=$ACTION" ;;
+esac
+\t' read -r tier expected_count; do
+        [[ -z "$tier" || "$tier" == \#* ]] && continue
+        while IFS= read -r project; do
+            [[ -z "$project" ]] && continue
+            project_dir="$(map_patch_project "$project")"
+            if [[ ! -d "$ANDROID_ROOT/$project_dir" ]]; then
+                echo "N1D_C3A_CONTROL_PATCH_TARGET=FAIL tier=$tier project=$project path=$project_dir" >&2
+                missing=$((missing + 1))
+            fi
+        done < <(
+            find "$RECIPE_ROOT/patches/$tier" \
+                -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | LC_ALL=C sort
+        )
+    done < "$TIER_FILE"
+
+    [[ "$missing" == 0 ]] || fail "control_patch_target_missing_count=$missing"
+    echo "N1D_C3A_CONTROL_PATCH_TARGETS=PASS"
+}
+
 apply_control_patch_stack() {
     local tier expected_count project project_dir patch applied=0
     while IFS=$'\t' read -r tier expected_count; do
