@@ -9,6 +9,7 @@ HOST_PROFILE="$ROOT/build/config/host-tools.env"
 SOURCE_LOCK="$ROOT/build/titan2/n1d-source-lock.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
+PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 MANIFEST_SRC="$ROOT/build/titan2/n1d-c3-trebledroid-manifest.xml"
 ROM_SRC="$ROOT/build/titan2/n1d-c3-sable-rom.mk"
 TIER_FILE="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
@@ -23,7 +24,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE" "$HOST_PROFILE" "$SOURCE_LOCK" "$FRESH_PROFILE"     "$TD_PROFILE" "$MANIFEST_SRC" "$ROM_SRC" "$TIER_FILE"     "$BUILD_ALLOWLIST" "$RUNTIME_ALLOWLIST" "$STORAGE_VERIFY" "$SOURCE_GATE"
+for f in     "$STORAGE_PROFILE" "$HOST_PROFILE" "$SOURCE_LOCK" "$FRESH_PROFILE"     "$TD_PROFILE" "$PHASE_PROFILE" "$MANIFEST_SRC" "$ROM_SRC" "$TIER_FILE"     "$BUILD_ALLOWLIST" "$RUNTIME_ALLOWLIST" "$STORAGE_VERIFY" "$SOURCE_GATE"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -39,6 +40,10 @@ source "$SOURCE_LOCK"
 source "$FRESH_PROFILE"
 # shellcheck source=/dev/null
 source "$TD_PROFILE"
+# shellcheck source=/dev/null
+source "$PHASE_PROFILE"
+[[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] || fail c3a_role_mismatch
+[[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
 
 ACTION="${1:-preflight}"
 if (($#)); then shift; fi
@@ -329,7 +334,7 @@ preflight() {
     else
         echo "N1D_C3_HANDCRAFTED_PRODUCT=ABSENT"
     fi
-    echo "N1D_C3_TREBLEDROID_REBASELINE_PREFLIGHT=PASS"
+    echo "N1D_C3A_TREBLEDROID_REBASELINE_PREFLIGHT=PASS"
 }
 
 stage() {
@@ -342,6 +347,9 @@ stage() {
     echo "BUILD_AUTHORIZED=NO"
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
+    echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+    echo "C3A_RELEASE_ELIGIBLE=NO"
+    echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
     echo "RELEASE_ELIGIBLE=NO"
 
     bash "$STORAGE_VERIFY" runtime
@@ -396,7 +404,7 @@ stage() {
     git -C "$TD_ROOT" status --porcelain --untracked-files=all         > "$evidence/device-phh-generated-status.txt"
 
     {
-        echo "N1D_C3_TREBLEDROID_STAGE=PASS"
+        echo "N1D_C3A_TREBLEDROID_STAGE=PASS"
         echo "N1D_C3_RESTLESS_RECIPE_COMMIT=$N1D_RESTLESS_COMMIT"
         echo "N1D_C3_CONTROL_PATCH_COUNT=$N1D_C3_CONTROL_PATCH_COUNT"
         echo "N1D_C3_CONTROL_PATCH_TIER_COUNT=$N1D_C3_CONTROL_PATCH_TIER_COUNT"
@@ -413,7 +421,7 @@ stage() {
         sha256sum -c SHA256SUMS.txt >/dev/null
     )
 
-    echo "N1D_C3_TREBLEDROID_STAGE=PASS"
+    echo "N1D_C3A_TREBLEDROID_STAGE=PASS"
     echo "EVIDENCE_DIR=$evidence"
 }
 
@@ -458,7 +466,7 @@ verify() {
 
     echo "N1D_C3_POSTPATCH_HEADS=PASS_EXACT value=1045"
     echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
-    echo "N1D_C3_TREBLEDROID_REBASELINE_VERIFY=PASS"
+    echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
 }
 
 case "$ACTION" in
