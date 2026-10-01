@@ -3,7 +3,7 @@
 # Host-only. No adb, no fastboot, no build, no flash, no network fetch.
 set -euo pipefail
 
-SCRIPT_VERSION="1.0.0"
+SCRIPT_VERSION="1.1.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HELPER="$SCRIPT_DIR/n1d-c0-inspect.py"
 CONFIG=""
@@ -125,10 +125,12 @@ record OUTPUT "$OUT"
 : "${RESTLESS_SYSTEM_IMG:=}"
 : "${N1B_CONTROL_SYSTEM_IMG:=$N1B_OUT_DIR/target/product/tdgsi_arm64_ab/system.img}"
 : "${N1B_CONTROL_EXPECTED_SHA256:=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e}"
+: "${N1B_CONTROL_EXPECTED_BYTES:=3180666880}"
 : "${N1B_BOOT_PROOF:=$SABLE_REPO/docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md}"
 : "${N1B1_INPUT:=}"
 : "${N1B2_INPUT:=}"
 : "${N1D_PRODUCT_FILE:=}"
+: "${N1D_PRODUCT_CONTRACT_FILE:=$SABLE_REPO/build/titan2/n1d-product-contract.env}"
 
 if [[ -z "$N1D_PRODUCT_FILE" ]]; then
   mapfile -t N1D_PRODUCT_CANDIDATES < <(
@@ -220,7 +222,7 @@ PY
       return 0
     fi
   fi
-  local candidate
+  local candidate tf extracted
   while IFS= read -r candidate; do
     [[ -f "$candidate" ]] || continue
     if [[ "$(sha "$candidate")" == "$N1B_CONTROL_EXPECTED_SHA256" ]]; then
@@ -228,7 +230,32 @@ PY
       return 0
     fi
   done < <(
-    find /srv/data/sable-build/workspaces /srv/data/sable-build/evidence/titan2       -type f -name system.img -size 3180666880c -path '*titan2*' -print 2>/dev/null | sort -u
+    find /srv/data/sable-build/workspaces \
+         /srv/data/sable-build/evidence/titan2 \
+         /srv/data/sable-build/titan2/artifacts \
+         /srv/data/sable-build/artifacts/titan2 \
+      -type f -size "${N1B_CONTROL_EXPECTED_BYTES}c" \
+      \( -name '*.img' -o -name 'system' \) -path '*titan2*' -print 2>/dev/null | sort -u
+  )
+
+  command -v unzip >/dev/null || return 1
+  while IFS= read -r tf; do
+    [[ -f "$tf" ]] || continue
+    if unzip -Z1 "$tf" 2>/dev/null | grep -Fxq 'IMAGES/system.img'; then
+      extracted="$WORK/n1b-control-from-target-files.img"
+      rm -f "$extracted"
+      unzip -p "$tf" IMAGES/system.img > "$extracted" || { rm -f "$extracted"; continue; }
+      if [[ "$(stat -c '%s' "$extracted")" == "$N1B_CONTROL_EXPECTED_BYTES" ]] \
+        && [[ "$(sha "$extracted")" == "$N1B_CONTROL_EXPECTED_SHA256" ]]; then
+        record N1B_CONTROL_TARGET_FILES_SOURCE "$tf"
+        printf '%s\n' "$extracted"
+        return 0
+      fi
+      rm -f "$extracted"
+    fi
+  done < <(
+    find /srv/data/sable-build/workspaces /srv/data/sable-build/evidence/titan2 /srv/data/sable-build/titan2/artifacts \
+      -type f \( -iname '*target_files*.zip' -o -iname '*target-files*.zip' \) -path '*n1b*' -print 2>/dev/null | sort -u
   )
   return 1
 }
@@ -241,8 +268,43 @@ STOCK_VBMETA_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_IMG" "$TEE14_BOOT_AVB_
 STOCK_VBMETA_SYSTEM_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_SYSTEM_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta_system.img || printf '%s' "$STOCK_VBMETA_SYSTEM_IMG")"
 STOCK_VBMETA_VENDOR_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_VENDOR_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta_vendor.img || printf '%s' "$STOCK_VBMETA_VENDOR_IMG")"
 
-# Resolve Android host tools, preferring the exact N1C OUT host set and then
-# the sealed N1B output / other Titan 2 Android OUT trees.
+# Resolve Android host tools, preferring direct OUT binaries. If a partial
+# systemimage OUT omitted otatools, recover the host binaries from an existing
+# local otatools.zip without building or fetching anything.
+resolve_otatools_zip() {
+  command -v unzip >/dev/null || return 1
+  local z
+  while IFS= read -r z; do
+    [[ -f "$z" ]] || continue
+    if unzip -Z1 "$z" 2>/dev/null | grep -Fxq 'bin/checkvintf' \
+      && unzip -Z1 "$z" 2>/dev/null | grep -Fxq 'bin/lpdump' \
+      && unzip -Z1 "$z" 2>/dev/null | grep -Fxq 'bin/lpunpack'; then
+      printf '%s\n' "$z"
+      return 0
+    fi
+  done < <(
+    {
+      find "$N1B_OUT_DIR" -type f -iname 'otatools*.zip' -print 2>/dev/null || true
+      find /srv/data/sable-build/evidence/titan2 -type f -iname 'otatools*.zip' -path '*n1b*' -print 2>/dev/null || true
+      find "$N1C_OUT_DIR" -type f -iname 'otatools*.zip' -print 2>/dev/null || true
+      find /srv/data/sable-build/workspaces -maxdepth 10 -type f -iname 'otatools*.zip' -print 2>/dev/null || true
+    } | sort -u
+  )
+  return 1
+}
+
+OTATOOLS_ZIP="$(resolve_otatools_zip || true)"
+OTATOOLS_ROOT=""
+if [[ -n "$OTATOOLS_ZIP" ]]; then
+  OTATOOLS_ROOT="$WORK/otatools"
+  mkdir -p "$OTATOOLS_ROOT"
+  unzip -q "$OTATOOLS_ZIP" \
+    'bin/checkvintf' 'bin/lpdump' 'bin/lpunpack' \
+    'lib64/*' 'lib/*' -d "$OTATOOLS_ROOT" 2>"$OUT/logs/otatools-extract.log" || true
+  chmod +x "$OTATOOLS_ROOT"/bin/checkvintf "$OTATOOLS_ROOT"/bin/lpdump "$OTATOOLS_ROOT"/bin/lpunpack 2>/dev/null || true
+fi
+record OTATOOLS_ZIP_RESOLVED "${OTATOOLS_ZIP:--}"
+
 HOST_BIN="$N1C_OUT_DIR/host/linux-x86/bin"
 resolve_tool() {
   local n override p root
@@ -251,6 +313,7 @@ resolve_tool() {
   if [[ -n "$override" && -x "$override" ]]; then printf '%s\n' "$override"; return 0; fi
   if [[ -x "$HOST_BIN/$n" ]]; then printf '%s\n' "$HOST_BIN/$n"; return 0; fi
   if [[ -x "$N1B_OUT_DIR/host/linux-x86/bin/$n" ]]; then printf '%s\n' "$N1B_OUT_DIR/host/linux-x86/bin/$n"; return 0; fi
+  if [[ -n "$OTATOOLS_ROOT" && -x "$OTATOOLS_ROOT/bin/$n" ]]; then printf '%s\n' "$OTATOOLS_ROOT/bin/$n"; return 0; fi
   while IFS= read -r root; do
     [[ -x "$root" ]] || continue
     printf '%s\n' "$root"
@@ -284,12 +347,12 @@ record STOCK_VBMETA_SYSTEM_IMG_RESOLVED "${STOCK_VBMETA_SYSTEM_IMG:--}"
 record STOCK_VBMETA_VENDOR_IMG_RESOLVED "${STOCK_VBMETA_VENDOR_IMG:--}"
 
 run_host_tool() {
-  local exe host_root
+  local exe tool_root
   exe="$1"
   shift
-  if [[ "$exe" == */host/linux-x86/bin/* ]]; then
-    host_root="${exe%/bin/*}"
-    LD_LIBRARY_PATH="$host_root/lib64:$host_root/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$exe" "$@"
+  tool_root="${exe%/bin/*}"
+  if [[ "$tool_root" != "$exe" && ( -d "$tool_root/lib64" || -d "$tool_root/lib" ) ]]; then
+    LD_LIBRARY_PATH="$tool_root/lib64:$tool_root/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$exe" "$@"
   else
     "$exe" "$@"
   fi
@@ -510,19 +573,42 @@ if [[ ! -f "$AOSP_GSI_RELEASE" ]]; then
 fi
 record AOSP_GSI_RELEASE_RESOLVED "${AOSP_GSI_RELEASE:--}"
 record N1D_PRODUCT_FILE_RESOLVED "${N1D_PRODUCT_FILE:--}"
+record N1D_PRODUCT_CONTRACT_FILE_RESOLVED "${N1D_PRODUCT_CONTRACT_FILE:--}"
 SABLE_CANDIDATES=()
 if [[ -n "$N1D_PRODUCT_FILE" && -f "$N1D_PRODUCT_FILE" ]]; then SABLE_CANDIDATES+=("$N1D_PRODUCT_FILE"); fi
 if [[ -d "$SABLE_REPO" ]]; then
   while IFS= read -r p; do SABLE_CANDIDATES+=("$p"); done < <(find "$SABLE_REPO" -maxdepth 6 -type f \( -iname '*titan2*.mk' -o -iname '*gsi*arm64*.mk' -o -iname '*n1c*.mk' \) 2>/dev/null | head -100)
 fi
+PRODUCT_CONTRACT_OK=YES
+if [[ ! -f "$N1D_PRODUCT_CONTRACT_FILE" ]]; then
+  PRODUCT_CONTRACT_OK=NO
+else
+  cp "$N1D_PRODUCT_CONTRACT_FILE" "$OUT/reports/C0_04_n1d_product_contract.env"
+  for required in \
+    'N1D_BASE_PRODUCT=treble_arm64_bvN' \
+    'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
+    'N1D_GENERATED_ARCH_INCLUDE=build/make/target/product/aosp_arm64.mk' \
+    'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
+    'N1D_GSI_RELEASE_OWNER=device/phh/treble/base.mk' \
+    'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
+    'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk' \
+    'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
+    'N1D_RUNTIME_PRODUCT_OWNER=GSI_SYSTEM_IMAGE' \
+    'N1D_RUNTIME_SYSTEM_EXT_OWNER=GSI_SYSTEM_IMAGE' \
+    'N1D_PRODUCT_CONTRACT=PASS'; do
+    grep -Fxq "$required" "$N1D_PRODUCT_CONTRACT_FILE" || PRODUCT_CONTRACT_OK=NO
+  done
+fi
+
 if [[ -f "$AOSP_GSI_RELEASE" ]]; then
   args=(gsi-contract --aosp "$AOSP_GSI_RELEASE" --out-json "$OUT/reports/C0_04_gsi_contract.json" --out-md "$OUT/reports/C0_04_gsi_contract.md")
   for p in "${SABLE_CANDIDATES[@]:-}"; do [[ -f "$p" ]] && args+=(--sable "$p"); done
   python3 "$HELPER" "${args[@]}"
-  if [[ ${#SABLE_CANDIDATES[@]} -gt 0 ]] && grep -Eq 'gsi_release\.mk|gsi_skip_mount\.cfg' "${SABLE_CANDIDATES[@]}" 2>/dev/null; then
-    gate C0_04_GSI_CONTRACT PASS "AOSP gsi_release reference bound; Sable candidate carries explicit GSI contract signal"
+  if [[ "$PRODUCT_CONTRACT_OK" == YES && "${GSTAT[C0_02_MOUNT_MODEL]:-}" == PASS ]]; then
+    gate C0_04_GSI_CONTRACT PASS "N1D contract binds generated treble_arm64_bvN -> PHH base -> AOSP gsi_release with Sable delta; runtime skip_mount ownership already proven"
+    record N1D_PRODUCT_CHAIN_MODE GENERATED_TREBLE_PLUS_SABLE_DELTA
   else
-    gate C0_04_GSI_CONTRACT FAIL "no Sable N1D product file inheriting/expressing GSI release contract found"
+    gate C0_04_GSI_CONTRACT FAIL "N1D product-chain contract missing/incomplete or runtime GSI ownership not proven"
   fi
 else gate C0_04_GSI_CONTRACT FAIL "AOSP gsi_release.mk unresolved from N1C/N1B source roots"; fi
 

@@ -44,6 +44,25 @@ grep -Fq 'AOSP_GSI_CANDIDATES' "$DRIVER" || fail gsi_release_source_discovery
 grep -Fq 'TOOL_CHECKVINTF' "$DRIVER" || fail tool_resolution_evidence
 pass c0_discovery_contract
 
+CONTRACT="$ROOT/build/titan2/n1d-product-contract.env"
+[[ -f "$CONTRACT" ]] || fail n1d_product_contract_missing
+for required in \
+  'N1D_BASE_PRODUCT=treble_arm64_bvN' \
+  'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
+  'N1D_GENERATED_ARCH_INCLUDE=build/make/target/product/aosp_arm64.mk' \
+  'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
+  'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
+  'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk' \
+  'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
+  'N1D_PRODUCT_CONTRACT=PASS'; do
+  grep -Fxq "$required" "$CONTRACT" || fail "n1d_product_contract token=$required"
+done
+grep -Fq "OTATOOLS_ZIP_RESOLVED" "$DRIVER" || fail otatools_resolution_evidence
+grep -Fq "'bin/checkvintf' 'bin/lpdump' 'bin/lpunpack'" "$DRIVER" || fail otatools_required_tools
+grep -Fq "IMAGES/system.img" "$DRIVER" || fail n1b_target_files_control_recovery
+grep -Fq "N1B_CONTROL_TARGET_FILES_SOURCE" "$DRIVER" || fail n1b_target_files_provenance
+pass c0_closure_contract
+
 # Reviewed Engineer-2 tool hashes are immutable inputs to C0_12.
 [[ "$(sha256sum "$AUDIT" | awk '{print $1}')" == "b02d0da22de0f0cecca8a0793acd216ddecebafd9a51fae9c708936832c17c28" ]] || fail audit_hash
 [[ "$(sha256sum "$CAPTURE" | awk '{print $1}')" == "50344ffe5de82986299175587e152b493add8e930a90aa9dd55aba89351b721a" ]] || fail capture_hash
