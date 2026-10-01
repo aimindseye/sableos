@@ -121,7 +121,7 @@ def main() -> int:
         attrs = {
             key: value
             for key, value in remote.attrib.items()
-            if key in {"name", "fetch", "review", "revision"}
+            if key in {"name", "fetch", "review"}
         }
         ET.SubElement(out_root, "remote", attrs)
 
@@ -137,8 +137,6 @@ def main() -> int:
                 "revision",
                 "groups",
                 "clone-depth",
-                "upstream",
-                "dest-branch",
             }
         }
         attrs["revision"] = project.attrib["revision"]
