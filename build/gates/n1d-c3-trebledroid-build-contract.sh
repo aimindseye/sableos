@@ -24,6 +24,8 @@ for token in \
     'failed_build_evidence_missing_for_resume' \
     'prior_build_reached_systemimage_resume_not_allowed' \
     'N1D_C3A_BUILD_RESUME=PASS' \
+    'bash "$PREP" verify --allow-treble-app-build-residue' \
+    'treble-app-resume-status.txt' \
     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY' \
     'NETWORK_FETCH_AUTHORIZED=YES_TREBLE_APP_GRADLE_ONLY' \
     'TARGET_FILES_BUILD_AUTHORIZED=NO' \
@@ -56,7 +58,8 @@ for token in \
     'N1D_C3_TREBLE_APP_BUILD_COMMAND=bash_build.sh_release' \
     'N1D_C3_TREBLE_APP_NETWORK_REQUIRES_EXPLICIT_AUTH=YES' \
     'N1D_C3_TREBLE_APP_JDK_MAJOR=17' \
-    'N1D_C3_TREBLE_APP_JDK_SOURCE=SABLE_JDK17'
+    'N1D_C3_TREBLE_APP_JDK_SOURCE=SABLE_JDK17' \
+    'N1D_C3_TREBLE_APP_BUILD_RESIDUE_POLICY=UNTRACKED_SDK_LICENSES_ONLY'
 do
     grep -Fxq "$token" "$PROFILE" || fail "profile_missing=$token"
 done
