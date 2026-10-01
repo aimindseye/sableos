@@ -21,7 +21,9 @@ C2 diagnostic control
 
 C3A build/compatibility control
   pinned GrapheneOS 2026061600 base
+  - 54 exact Restless remove.xml projects
   + 12 pinned public TrebleDroid/PHH companion projects
+  = 991 managed projects
   + exact RestlessOS 16.0.0-202606230923 patch tiers
   + device/phh/treble/generate.sh rom
   + generated treble_arm64_bvN-bp4a-user
@@ -109,7 +111,7 @@ PHH OTA release allowed: NO
 
 ## Public-source boundary
 
-The rebaseline uses only public source. The Restless private vendor repository
+The C3A control is a public functional reproduction, not a bit-identical Restless release. The rebaseline uses only public source. The Restless private vendor repository
 is deliberately omitted. The optional Pixel GSans include remains unresolved
 because the source is absent and is not required to generate the control
 product.
