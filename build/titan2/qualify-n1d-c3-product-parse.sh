@@ -6,12 +6,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STORAGE_PROFILE="$ROOT/build/config/storage.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
+PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
 fail() { echo "N1D_C3_PRODUCT_PARSE=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -21,6 +22,10 @@ source "$STORAGE_PROFILE"
 source "$FRESH_PROFILE"
 # shellcheck source=/dev/null
 source "$TD_PROFILE"
+# shellcheck source=/dev/null
+source "$PHASE_PROFILE"
+[[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] || fail c3a_role_mismatch
+[[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
 
 PARSE_AUTHORIZED=NO
 while (($#)); do
@@ -32,7 +37,7 @@ done
 [[ "$PARSE_AUTHORIZED" == YES ]] || fail product_parse_requires_--authorize-product-parse
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
-PARSE_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-c3-td-parse"
+PARSE_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-c3a-td-parse"
 EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3-trebledroid-parse"
 LUNCH_TARGET="${N1D_C3_GENERATED_PRODUCT}-${N1D_C3_RELEASE_CONFIG}-${N1D_C3_FIRST_VARIANT}"
 
@@ -43,6 +48,8 @@ echo "ANDROID_TARGET_COMPILATION_AUTHORIZED=NO"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
+echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
@@ -91,7 +98,7 @@ then
 fi
 
 {
-    echo "N1D_C3_TREBLEDROID_PARSE=PASS"
+    echo "N1D_C3A_TREBLEDROID_PARSE=PASS"
     echo "N1D_C3_LUNCH_TARGET=$LUNCH_TARGET"
     echo "N1D_C3_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
     echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
@@ -108,8 +115,8 @@ fi
     sha256sum -c SHA256SUMS.txt >/dev/null
 )
 
-echo "N1D_C3_TREBLEDROID_PARSE_IDENTITY=PASS"
-echo "N1D_C3_TREBLEDROID_PARSE_NO_TARGET_ARTIFACTS=PASS"
-echo "N1D_C3_TREBLEDROID_PARSE=PASS"
+echo "N1D_C3A_TREBLEDROID_PARSE_IDENTITY=PASS"
+echo "N1D_C3A_TREBLEDROID_PARSE_NO_TARGET_ARTIFACTS=PASS"
+echo "N1D_C3A_TREBLEDROID_PARSE=PASS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
 echo "PARSE_OUT=$PARSE_OUT"
