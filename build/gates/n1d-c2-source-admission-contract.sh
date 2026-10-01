@@ -55,6 +55,8 @@ grep -Fq -- '--preserve-upstream' "$DRIVER" || fail upstream_preserve_binding_mi
 grep -Fq 'N1D_C2_UPSTREAM_IDENTITY_ROLE=TRANSPORT_ONLY' "$DRIVER" || fail upstream_transport_role_missing
 grep -Fq 'verify_base_subset_exact() {' "$DRIVER" || fail resume_base_verifier_missing
 grep -Fq 'verify_partial_c2_safe() {' "$DRIVER" || fail resume_partial_c2_verifier_missing
+grep -Fq 'resume_preflight() {' "$DRIVER" || fail resume_preflight_action_missing
+grep -Fq 'N1D_C2_SOURCE_ADMISSION_RESUME_PREFLIGHT=PASS' "$DRIVER" || fail resume_preflight_pass_marker_missing
 grep -Fq 'resume() {' "$DRIVER" || fail resume_action_missing
 grep -Fq 'N1D_C2_SOURCE_ADMISSION_RESUME=PASS' "$DRIVER" || fail resume_pass_marker_missing
 
@@ -177,6 +179,7 @@ echo "N1D_C2_SOURCE_ADMISSION_COLLISION_SAFE_REMOTES=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_AUDIT_UPSTREAM_STRIPPING=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_INSTALL_UPSTREAM_PRESERVE=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_RESUME_POLICY=PASS"
+echo "N1D_C2_SOURCE_ADMISSION_RESUME_PREFLIGHT_CONTRACT=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_EXACT_HEAD_VERIFY=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_MISMATCH_REJECTION=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_CONTRACT=PASS"
