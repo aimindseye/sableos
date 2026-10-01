@@ -37,12 +37,17 @@ source "$C3_PROFILE"
 source "$COMPILE_PROFILE"
 
 COMPILE_AUTHORIZED=NO
+FAILED_OUT_RETIREMENT_AUTHORIZED=NO
 JOBS="$(nproc --all)"
 
 while (($#)); do
     case "$1" in
         --authorize-c3-compile)
             COMPILE_AUTHORIZED=YES
+            shift
+            ;;
+        --authorize-failed-out-retirement)
+            FAILED_OUT_RETIREMENT_AUTHORIZED=YES
             shift
             ;;
         --jobs)
@@ -68,6 +73,8 @@ SOURCE_BUNDLE="$ROOT/$N1D_C3_SOURCE_BUNDLE_REL"
 STAGE_TARGET="$ANDROID_ROOT/$N1D_C3_STAGE_TARGET_REL"
 PARSE_EVIDENCE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3_PARSE_EVIDENCE_REL"
 COMPILE_EVIDENCE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3_COMPILE_EVIDENCE_REL"
+FAILED_OUT_ARCHIVE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3_FAILED_OUT_ARCHIVE_REL"
+FAILED_OUT_RETIREMENT_EVIDENCE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3_FAILED_OUT_RETIREMENT_EVIDENCE_REL"
 LUNCH_TARGET="${N1D_C3_COMPILE_PRODUCT}-${N1D_C3_COMPILE_RELEASE_CONFIG}-${N1D_C3_COMPILE_VARIANT}"
 
 echo "===== TITAN 2 N1D C3 FIRST SYSTEMIMAGE COMPILE ====="
@@ -80,6 +87,7 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
+echo "FAILED_OUT_RETIREMENT_AUTHORIZED=$FAILED_OUT_RETIREMENT_AUTHORIZED"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 echo "BUILD_GOAL=$N1D_C3_FIRST_COMPILE_GOAL"
 echo "JOBS=$JOBS"
@@ -87,6 +95,8 @@ echo "JOBS=$JOBS"
 [[ "$N1D_C3_COMPILE_PRODUCT" == "$N1D_C3_PRODUCT_NAME" ]]     || fail "compile_product_profile_mismatch"
 [[ "$N1D_C3_COMPILE_RELEASE_CONFIG" == "$N1D_C3_RELEASE_CONFIG" ]]     || fail "compile_release_profile_mismatch"
 [[ "$N1D_C3_COMPILE_VARIANT" == "$N1D_C3_FIRST_BUILD_VARIANT" ]]     || fail "compile_variant_profile_mismatch"
+[[ "$N1D_C3_COMPILE_PRODUCT_DEVICE" == "$N1D_C3_PRODUCT_DEVICE" ]]     || fail "compile_device_profile_mismatch"
+[[ "$N1D_C3_COMPILE_BUILDING_GSI" == "$N1D_C3_BUILDING_GSI_VALUE" ]]     || fail "compile_building_gsi_profile_mismatch"
 [[ "$N1D_C3_FIRST_COMPILE_GOAL" == systemimage ]]     || fail "unexpected_compile_goal=$N1D_C3_FIRST_COMPILE_GOAL"
 [[ "$N1D_C3_BUILD_SANDBOX_POLICY" == ADVISORY_HOST_DEPENDENT ]]     || fail "unexpected_build_sandbox_policy=$N1D_C3_BUILD_SANDBOX_POLICY"
 
@@ -97,7 +107,6 @@ bash "$STAGE_DRIVER" verify
 [[ -d "$ANDROID_ROOT" ]] || fail "android_root_missing=$ANDROID_ROOT"
 [[ -f "$ANDROID_ROOT/build/envsetup.sh" ]] || fail "envsetup_missing=$ANDROID_ROOT/build/envsetup.sh"
 [[ ! -e "$OUT_C2" ]] || fail "unexpected_c2_out=$OUT_C2"
-[[ ! -e "$OUT_C3" ]] || fail "c3_out_already_exists=$OUT_C3"
 
 mapfile -t parse_candidates < <(
     find "$PARSE_EVIDENCE_ROOT"         -mindepth 1         -maxdepth 1         -type d         -name '*-c3-product-parse'         -print 2>/dev/null | LC_ALL=C sort
@@ -111,10 +120,58 @@ PARSE_EVIDENCE="${parse_candidates[-1]}"
     sha256sum -c SHA256SUMS.txt >/dev/null
 ) || fail "parse_evidence_seal_invalid=$PARSE_EVIDENCE"
 
-for required in     'N1D_C3_PRODUCT_PARSE=PASS'     "N1D_C3_PRODUCT_NAME=$N1D_C3_COMPILE_PRODUCT"     "N1D_C3_RELEASE_CONFIG=$N1D_C3_COMPILE_RELEASE_CONFIG"     "N1D_C3_BUILD_VARIANT=$N1D_C3_COMPILE_VARIANT"     'ANDROID_TARGET_COMPILATION_AUTHORIZED=NO'     'NINJA_BUILD_AUTHORIZED=NO'     'TARGET_ARTIFACT_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'
+for required in     'N1D_C3_PRODUCT_PARSE=PASS'     "N1D_C3_PRODUCT_NAME=$N1D_C3_COMPILE_PRODUCT"     "N1D_C3_PRODUCT_DEVICE=$N1D_C3_COMPILE_PRODUCT_DEVICE"     "N1D_C3_BUILDING_GSI=$N1D_C3_COMPILE_BUILDING_GSI"     'N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO'     "N1D_C3_RELEASE_CONFIG=$N1D_C3_COMPILE_RELEASE_CONFIG"     "N1D_C3_BUILD_VARIANT=$N1D_C3_COMPILE_VARIANT"     'ANDROID_TARGET_COMPILATION_AUTHORIZED=NO'     'NINJA_BUILD_AUTHORIZED=NO'     'TARGET_ARTIFACT_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'
 do
     grep -Fxq "$required" "$PARSE_EVIDENCE/parse-state.env"         || fail "parse_state_missing=$required"
 done
+
+RETIRED_OUT=NONE
+if [[ -e "$OUT_C3" ]]; then
+    [[ "$FAILED_OUT_RETIREMENT_AUTHORIZED" == YES ]]         || fail "c3_out_exists_retry_requires_--authorize-failed-out-retirement"
+
+    active_builds="$(
+        ps -eo pid=,args=             | grep -E 'soong_ui|soong_build|ninja'             | grep -F "$OUT_C3"             | grep -v grep             || true
+    )"
+    if [[ -n "$active_builds" ]]; then
+        printf '%s\n' "$active_builds" >&2
+        fail "c3_out_has_active_build_process"
+    fi
+
+    retire_stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    RETIRED_OUT="$FAILED_OUT_ARCHIVE_ROOT/$retire_stamp-first-compile-failed"
+    RETIRE_EVIDENCE="$FAILED_OUT_RETIREMENT_EVIDENCE_ROOT/$retire_stamp-first-compile-failed"
+
+    [[ ! -e "$RETIRED_OUT" ]] || fail "failed_out_archive_exists=$RETIRED_OUT"
+    mkdir -p "$FAILED_OUT_ARCHIVE_ROOT" "$RETIRE_EVIDENCE"
+
+    mv "$OUT_C3" "$RETIRED_OUT"
+
+    retired_bytes="$(du -sb "$RETIRED_OUT" | awk '{print $1}')"
+    {
+        echo "N1D_C3_FAILED_OUT_RETIREMENT=PASS"
+        echo "N1D_C3_FAILED_OUT_ORIGINAL=$OUT_C3"
+        echo "N1D_C3_FAILED_OUT_RETIRED=$RETIRED_OUT"
+        echo "N1D_C3_FAILED_OUT_BYTES=$retired_bytes"
+        echo "N1D_C3_FAILED_OUT_REASON=GRAPHENE_GSI_SOONG_MODULE_GRAPH_MISMATCH"
+        echo "SOURCE_MUTATION_AUTHORIZED=NO"
+        echo "NETWORK_FETCH_AUTHORIZED=NO"
+        echo "DEVICE_CONTACT_AUTHORIZED=NO"
+        echo "FLASH_AUTHORIZED=NO"
+    } > "$RETIRE_EVIDENCE/retirement-state.env"
+    (
+        cd "$RETIRE_EVIDENCE"
+        sha256sum retirement-state.env > SHA256SUMS.txt
+        sha256sum -c SHA256SUMS.txt >/dev/null
+    )
+
+    echo "N1D_C3_FAILED_OUT_RETIREMENT=PASS"
+    echo "RETIRED_OUT=$RETIRED_OUT"
+    echo "RETIREMENT_EVIDENCE=$RETIRE_EVIDENCE"
+else
+    echo "N1D_C3_FAILED_OUT_RETIREMENT=NOT_REQUIRED"
+fi
+
+[[ ! -e "$OUT_C3" ]] || fail "c3_out_not_clean_after_retirement=$OUT_C3"
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$COMPILE_EVIDENCE_ROOT/$stamp-c3-first-compile"
@@ -257,6 +314,7 @@ verify_post_build_source
     echo "N1D_C3_COMPILE_VARIANT=$N1D_C3_COMPILE_VARIANT"
     echo "N1D_C3_FIRST_COMPILE_GOAL=$N1D_C3_FIRST_COMPILE_GOAL"
     echo "N1D_C3_PARSE_EVIDENCE=$PARSE_EVIDENCE"
+    echo "N1D_C3_RETIRED_FAILED_OUT=$RETIRED_OUT"
     echo "N1D_C3_OUT_DIR=$OUT_C3"
     echo "N1D_C3_PRODUCT_OUT=$PRODUCT_OUT"
     echo "N1D_C3_SYSTEM_IMG=$SYSTEM_IMG"
