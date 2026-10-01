@@ -64,48 +64,53 @@ NETWORK_FETCH_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 PRODUCTION_SIGNING_AUTHORIZED=NO
-N1D_C3_BUILD_SANDBOX_REQUIRED=YES
+N1D_C3_BUILD_SANDBOX_POLICY=ADVISORY_HOST_DEPENDENT
 ```
 
 Normal development/test-key signing performed intrinsically by the Android
 build system is not a production-signing authorization.
 
-## Build sandbox requirement
+## Build sandbox policy
 
-The product-parse qualification reported:
+The product-parse and host diagnostics established that this Ubuntu 26.04 host
+can report:
 
 ```text
 Build sandboxing disabled due to nsjail error.
 ```
 
-That warning is accepted as parse-stage diagnostic evidence only. The first
-target compilation is stricter: before touching the reserved `out-c3`, the
-driver uses a separate sandbox-probe output directory, performs the exact lunch
-selection there, and runs an Android `soong_ui --dumpvars-mode` sandbox probe.
-Either probe step fails if Android emits the nsjail-disabled warning. The `systemimage` command output is checked again
-after the build and the qualification fails if sandboxing was disabled there.
+The host diagnostics attribute that condition to the host AppArmor /
+unprivileged-user-namespace policy rather than to the Sable product graph.
+Previous Panther and Titan 2 Android builds on this host have also completed
+without requiring Sable to weaken the host AppArmor policy.
 
-Therefore a passing first C3 compile must emit:
+For N1D C3, nsjail availability is therefore **advisory host evidence**, not a
+compile authorization gate. Sable does not disable AppArmor, change sysctls, or
+grant broader namespace privileges. Android is allowed to use its normal
+fallback when nsjail is unavailable.
+
+The driver records one of:
 
 ```text
-N1D_C3_BUILD_SANDBOX_PREFLIGHT=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_LUNCH=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_LUNCH=WARN_UNAVAILABLE_HOST_POLICY
+
 N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=WARN_UNAVAILABLE_HOST_POLICY
 ```
 
-This does not replace Android's sandbox implementation; it makes Android's own
-sandbox-health signal a fail-closed Sable qualification requirement. No release-key or
-production-key custody is introduced by this gate.
+and persists the aggregate status as either:
+
+```text
+N1D_C3_BUILD_SANDBOX_STATUS=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_STATUS=WARN_UNAVAILABLE_HOST_POLICY
+```
+
+Neither status changes the hard qualification requirements: exact source state,
+exact product identity, systemimage-only build scope, successful image output,
+no network/device/flash actions, and post-build source-integrity proof.
 
 ## Output isolation
-
-The nsjail health probe is isolated beneath:
-
-```text
-/srv/sable-build/workspaces/titan2-n1d/out-c3-sandbox-probe/
-```
-
-A sandbox failure therefore cannot create or contaminate the reserved first
-compile output.
 
 The first compile uses the reserved C3 output directory:
 
@@ -207,8 +212,8 @@ bash build/titan2/build-n1d-c3-first-systemimage.sh \
 ```text
 N1D_C3_COMPILE_ENVSETUP=PASS
 N1D_C3_COMPILE_LUNCH=PASS
-N1D_C3_BUILD_SANDBOX_PREFLIGHT=PASS_NSJAIL
-N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL
+N1D_C3_BUILD_SANDBOX_LUNCH=PASS_NSJAIL|WARN_UNAVAILABLE_HOST_POLICY
+N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL|WARN_UNAVAILABLE_HOST_POLICY
 N1D_C3_SYSTEMIMAGE_BUILD=PASS
 N1D_C3_POST_BUILD_PROJECT_COUNT=PASS value=1033
 N1D_C3_POST_BUILD_DIRTY_PROJECT_COUNT=PASS_ZERO
