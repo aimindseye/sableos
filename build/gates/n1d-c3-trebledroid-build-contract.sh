@@ -29,7 +29,8 @@ for token in \
     'prior_build_resume_state_inconsistent' \    'prior_systemimage_build_product_out_evidence_missing' \
     'prior_product_out_outside_c3_out' \
     'prior_final_system_img_exists_resume_not_allowed' \
-    'N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT' \
+    'N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT' \    'N1D_C3A_RESUME_INTERMEDIATE_SYSTEM_IMAGES=INFO' \
+
     'prior_output_contains_packaging_artifact_resume_not_allowed' \
 
     'failed_build_evidence_missing_for_resume' \
