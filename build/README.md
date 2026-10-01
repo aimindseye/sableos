@@ -116,6 +116,50 @@ build/gates/r8-build-driver-contract.sh
 Do not recommend `run-r8-release-candidate.sh` directly as the operator command.
 Use `bash build/sable.sh panther R9 build --tmux`.
 
+## Canonical build storage
+
+The dedicated SableOS build filesystem is canonically addressed as:
+
+```text
+/srv/sable-build
+```
+
+Historical scripts may temporarily continue to use:
+
+```text
+/srv/data/sable-build
+```
+
+During migration, the two paths must resolve to the same filesystem. New build
+logic must source `build/config/storage.env` and use `SABLE_BUILD_ROOT` or
+one of its derived variables. Do not add new hard-coded
+`/srv/data/sable-build` paths.
+
+The canonical profile defines:
+
+```text
+SABLE_BUILD_ROOT=/srv/sable-build
+SABLE_BUILD_LEGACY_ROOT=/srv/data/sable-build
+SABLE_WORKSPACES_ROOT=/srv/sable-build/workspaces
+SABLE_EVIDENCE_ROOT=/srv/sable-build/evidence
+SABLE_ARTIFACTS_ROOT=/srv/sable-build/artifacts
+SABLE_RELEASE_REGISTRY_ROOT=/srv/sable-build/release-registry
+SABLE_BUILD_FS_LABEL_EXPECTED=sable-build
+SABLE_BUILD_FS_TYPE_EXPECTED=ext4
+SABLE_BUILD_MIN_FREE_GIB=250
+```
+
+Runtime verification:
+
+```bash
+bash build/host/verify-storage-root.sh runtime
+```
+
+Migration is staged. The live transition creates a bind mount at the canonical
+path without unmounting the existing filesystem or disturbing nested evidence
+mounts. `build/host/migrate-storage-root.sh fstab-plan` only prints the
+persistent target state; it never edits `/etc/fstab`.
+
 ## Host tools and CI
 
 SableOS local builds use repository-owned orchestration and one canonical,
