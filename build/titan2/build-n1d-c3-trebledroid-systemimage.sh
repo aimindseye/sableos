@@ -96,6 +96,12 @@ treble_jdk_spec="$("$SABLE_JDK17/bin/java" -XshowSettings:properties -version 2>
     || fail "canonical_jdk17_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${treble_jdk_spec:-unset}"
 echo "N1D_C3_TREBLE_APP_JDK=PASS source=$N1D_C3_TREBLE_APP_JDK_SOURCE major=$treble_jdk_spec home=$SABLE_JDK17"
 
+find_c3a_packaging_artifacts() {
+    find "$OUT_C3" -type f \
+        \( -name '*target_files*.zip' -o -name '*-ota-*.zip' -o -name '*-ota.zip' \) \
+        -print 2>/dev/null | LC_ALL=C sort
+}
+
 check_host_layout_patch_state() {
     local target="$1"
     local patch="$2"
@@ -254,11 +260,7 @@ if [[ -e "$OUT_C3" ]]; then
         fail prior_build_resume_state_inconsistent
     fi
 
-    mapfile -t packaging_artifacts < <(
-        find "$OUT_C3" -type f \
-            \( -name '*target_files*.zip' -o -name '*-ota-*.zip' -o -name '*-ota.zip' \) \
-            -print 2>/dev/null | LC_ALL=C sort
-    )
+    mapfile -t packaging_artifacts < <(find_c3a_packaging_artifacts)
     if (("${#packaging_artifacts[@]}" > 0)); then
         printf 'N1D_C3A_RESUME_PACKAGING_ARTIFACT=FOUND path=%s\n' "${packaging_artifacts[@]}"
         fail "prior_output_contains_packaging_artifact_resume_not_allowed count=${#packaging_artifacts[@]}"
@@ -369,10 +371,12 @@ PRODUCT_OUT="$(cat "$EVIDENCE_DIR/product-out.txt")"
 SYSTEM_IMG="$PRODUCT_OUT/system.img"
 [[ -f "$SYSTEM_IMG" ]] || fail "system_img_missing=$SYSTEM_IMG"
 
-if find "$OUT_C3" -type f     \( -name '*target_files*.zip' -o -name '*ota*.zip' \)     -print -quit | grep -q .
-then
-    fail unauthorized_packaging_artifact
+mapfile -t postbuild_packaging_artifacts < <(find_c3a_packaging_artifacts)
+if (("${#postbuild_packaging_artifacts[@]}" > 0)); then
+    printf 'N1D_C3A_POSTBUILD_PACKAGING_ARTIFACT=FOUND path=%s\n' "${postbuild_packaging_artifacts[@]}"
+    fail "unauthorized_packaging_artifact count=${#postbuild_packaging_artifacts[@]}"
 fi
+echo "N1D_C3A_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT"
 
 sha="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
 bytes="$(stat -c '%s' "$SYSTEM_IMG")"
