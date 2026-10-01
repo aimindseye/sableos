@@ -33,7 +33,10 @@ for token in \
     'N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT' \
     'N1D_C3A_RESUME_INTERMEDIATE_SYSTEM_IMAGES=INFO' \
     'N1D_C3A_RESUME_PACKAGING_ARTIFACT=FOUND' \
-    'N1D_C3A_RESUME_PACKAGING_ARTIFACTS=PASS_ABSENT' \
+    'N1D_C3A_RESUME_PACKAGING_ARTIFACTS=PASS_ABSENT' \    'find_c3a_packaging_artifacts()' \
+    'N1D_C3A_POSTBUILD_PACKAGING_ARTIFACT=FOUND' \
+    'N1D_C3A_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT' \
+
     'otacerts_payload_count=' \
     'prior_output_contains_packaging_artifact_resume_not_allowed' \
     'failed_build_evidence_missing_for_resume' \
@@ -133,4 +136,8 @@ echo "N1D_C3_TREBLEDROID_BUILD_NO_DEVICE_COMMANDS=PASS"
 echo "N1D_C3_TREBLEDROID_BUILD_NETWORK_SCOPE=PASS_TREBLE_APP_GRADLE_ONLY"
 echo "N1D_C3_TREBLEDROID_BUILD_NON_RELEASE=PASS"
 echo "N1D_C3A_CONTROL_BUILD_CONTRACT=PASS"
+if grep -Fq -- "*ota*.zip" "$DRIVER"; then
+    fail broad_ota_zip_pattern_present
+fi
+
 echo "N1D_C3_TREBLEDROID_BUILD_CONTRACT=PASS"
