@@ -176,6 +176,14 @@ Patch 0002 keeps Soong path validation intact. It first proves
 to an `OUT_DIR`-relative path with `filepath.Rel`, rejects any path escaping
 through `..`, and then represents the file with `android.PathForOutput()`.
 
+The first serialized form of patch 0002 had incorrect unified-diff hunk counts
+(`-187,8 +187,18`) and was rejected by `git apply --check` before source
+mutation. The corrected hunk is `-207,6 +207,16`. It applies to pinned
+GrapheneOS blob `8033b48e5cfcc2cb2f64037aca44c129f54a969b` and produces the
+same intended post-patch blob
+`7024841edac715a9bd3a81af92c42da0b302e1f0`; therefore this is a
+patch-serialization correction, not a semantic source change.
+
 Application requires the explicit
 `--authorize-host-layout-source-mutation` build-driver authorization. The
 driver and verifier pin each patch blob, each GrapheneOS base-file blob, and
