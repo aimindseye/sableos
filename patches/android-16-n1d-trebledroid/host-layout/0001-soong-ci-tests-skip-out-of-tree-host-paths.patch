@@ -1,0 +1,14 @@
+diff --git a/ci_tests/ci_test_package_zip.go b/ci_tests/ci_test_package_zip.go
+--- a/ci_tests/ci_test_package_zip.go
++++ b/ci_tests/ci_test_package_zip.go
+@@ -300,6 +300,10 @@ func extendBuilderCommand(ctx android.ModuleContext, m android.ModuleProxy, build
+ 		if strings.HasPrefix(f, "out") {
+ 			continue
+ 		}
++		// Skip host install paths that remain under an out-of-tree OUT_DIR.
++		if strings.HasPrefix(f, ctx.Config().OutDir()) {
++			continue
++		}
+ 		if strings.HasPrefix(f, "system/") {
+ 			f = strings.Replace(f, "system/", "DATA/", 1)
+ 		}
