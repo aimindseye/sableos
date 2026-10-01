@@ -74,7 +74,7 @@ done
 grep -Fq '$(call inherit-product-if-exists, vendor/pixel/gsans/common/common-vendor.mk)' "$ROM"     || fail control_rom_optional_gsans_missing
 grep -Fq 'WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY := true' "$ROM"     || fail control_rom_dexpreopt_missing
 
-for required in     'stage_requires_--authorize-source-mutation'     'stage_requires_--authorize-network'     'SOURCE_MUTATION_AUTHORIZED=YES_PINNED_RESTLESS_CONTROL_RECIPE_ONLY'     'NETWORK_FETCH_AUTHORIZED=YES_PINNED_RECIPE_AND_SCAFFOLD_ONLY'     'N1D_C3_CONTROL_PATCH_STACK=PASS count=$applied'     'bash generate.sh rom'     'N1D_C3_GENERATED_PRODUCT=PASS product=treble_arm64_bvN'     'N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO'     'N1D_C3_TREBLEDROID_STAGE=PASS'
+for required in     'stage_requires_--authorize-source-mutation'     'stage_requires_--authorize-network'     'SOURCE_MUTATION_AUTHORIZED=YES_PINNED_RESTLESS_CONTROL_RECIPE_ONLY'     'NETWORK_FETCH_AUTHORIZED=YES_PINNED_RECIPE_AND_SCAFFOLD_ONLY'     'N1D_C3_CONTROL_PATCH_STACK=PASS count=$applied'     'bash generate.sh rom'     'N1D_C3_GENERATED_PRODUCT=PASS product=treble_arm64_bvN'     'N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO'     'N1D_C3A_TREBLEDROID_STAGE=PASS'
 do
     grep -Fq -- "$required" "$DRIVER" || fail "driver_token_missing=$required"
 done
@@ -94,4 +94,5 @@ echo "N1D_C3_TREBLEDROID_RELEASE_RUNTIME_PATCHES=PASS_ZERO"
 echo "N1D_C3_TREBLEDROID_PRIVATE_VENDOR=PASS_ABSENT"
 echo "N1D_C3_TREBLEDROID_GENERATOR=PASS"
 echo "N1D_C3_TREBLEDROID_SECURITY_SEPARATION=PASS"
+echo "N1D_C3A_TREBLEDROID_CONTROL_CONTRACT=PASS"
 echo "N1D_C3_TREBLEDROID_CONTRACT=PASS"
