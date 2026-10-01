@@ -123,6 +123,10 @@ retire() {
     [[ "$N1D_C2_EXACT_SOURCE_RECONSTRUCTION" == BLOCKED_PUBLIC_SOURCE_OBJECT_UNAVAILABLE ]] || fail source_status
     [[ "$N1D_C2_SOURCE_ADMISSION_RETRY_ALLOWED" == NO ]] || fail source_retry_policy
     verify_base_subset
+    local manifest_count
+    manifest_count="$(find "$ANDROID_ROOT/.repo/local_manifests" -mindepth 1 -maxdepth 1 -type f -print 2>/dev/null | wc -l | tr -d ' ')"
+    [[ "$manifest_count" == 1 ]] || fail "local_manifest_count expected=1 actual=$manifest_count"
+    [[ -f "$LOCAL_MANIFEST" ]] || fail "expected_c2_local_manifest_missing=$LOCAL_MANIFEST"
     local stamp out tab path expected remote upstream present removed current
     stamp="$(date -u +%Y%m%dT%H%M%SZ)"
     out="$EVIDENCE_ROOT/$stamp-retirement"
@@ -181,4 +185,3 @@ case "$ACTION" in
     retire) retire ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
-
