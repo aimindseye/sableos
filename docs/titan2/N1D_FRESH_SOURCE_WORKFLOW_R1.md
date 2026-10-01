@@ -67,8 +67,10 @@ The pinned Restless Android-16 repository contains a convenience sync script
 which resolves the newest GrapheneOS stable release at runtime. That is
 incompatible with the N1D source lock.
 
-Its local manifest also contains mutable `main` / `master` revisions and a
-private SSH vendor remote. N1D therefore never copies that manifest directly.
+Restless `configs/manifests/default.xml` contains mutable `main` / `master`
+revisions and a private SSH vendor remote, so N1D never copies that add manifest
+directly. C3A separately pins the exact Restless `remove.xml`, which contains
+only deterministic project removals.
 
 ## Historical C2 public compatibility pins
 
