@@ -126,7 +126,7 @@ remove_blob="$(git hash-object "$REMOVE_MANIFEST")"
     || fail "remove_manifest_blob=$remove_blob"
 
 tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+trap 'rm -f "$tmp/remove-manifest-names.txt" "$tmp/remove-map-names.txt"; rmdir "$tmp" 2>/dev/null || true' EXIT
 
 grep -o 'remove-project name="[^"]*"' "$REMOVE_MANIFEST" \
     | sed -e 's/^remove-project name="//' -e 's/"$//' \
