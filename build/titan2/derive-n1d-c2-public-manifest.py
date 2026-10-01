@@ -37,6 +37,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--remote-prefix", default="")
+    parser.add_argument("--project-tsv", type=Path)
     return parser.parse_args()
 
 
@@ -79,7 +81,7 @@ def main() -> int:
             continue
         projects_by_path.setdefault(path, []).append(project)
 
-    selected: list[ET.Element] = []
+    selected: list[tuple[ET.Element, str]] = []
     used_remotes: set[str] = set()
 
     for path in PUBLIC_PROJECT_PATHS:
@@ -107,7 +109,7 @@ def main() -> int:
         if "vendor/cawilliamson-priv" in path:
             die("private_vendor_selected")
 
-        selected.append(project)
+        selected.append((project, remote_name))
         used_remotes.add(remote_name)
 
     if len(selected) != len(PUBLIC_PROJECT_PATHS):
@@ -128,9 +130,13 @@ def main() -> int:
             for key, value in remote.attrib.items()
             if key in {"name", "fetch", "review"}
         }
+        attrs["name"] = f"{args.remote_prefix}{remote_name}"
         ET.SubElement(out_root, "remote", attrs)
 
-    for project in sorted(selected, key=lambda item: item.attrib.get("path", "")):
+    for project, remote_name in sorted(
+        selected,
+        key=lambda item: item[0].attrib.get("path", ""),
+    ):
         attrs = {
             key: value
             for key, value in project.attrib.items()
@@ -145,23 +151,48 @@ def main() -> int:
             }
         }
         attrs["revision"] = project.attrib["revision"]
+        attrs["remote"] = f"{args.remote_prefix}{remote_name}"
         ET.SubElement(out_root, "project", attrs)
 
     ET.indent(out_root, space="  ")
     xml = ET.tostring(out_root, encoding="unicode", xml_declaration=True) + "\n"
 
     lowered = xml.lower()
-    for forbidden in ("cawilliamson", "ssh://", "git@", 'revision="main"', 'revision="master"'):
+    for forbidden in (
+        "cawilliamson",
+        "ssh://",
+        "git@",
+        'revision="main"',
+        'revision="master"',
+        "upstream=",
+        "dest-branch=",
+    ):
         if forbidden in lowered:
             die(f"forbidden_token={forbidden}")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(xml, encoding="utf-8")
 
+    if args.project_tsv is not None:
+        args.project_tsv.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for project, remote_name in sorted(
+            selected,
+            key=lambda item: item[0].attrib.get("path", ""),
+        ):
+            path = project.attrib.get("path") or project.attrib["name"]
+            rows.append(
+                f"{path}\t{project.attrib['revision']}\t"
+                f"{args.remote_prefix}{remote_name}"
+            )
+        args.project_tsv.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
     digest = hashlib.sha256(args.output.read_bytes()).hexdigest()
     print(f"N1D_C2_PUBLIC_PROJECT_COUNT={len(selected)}")
     print(f"N1D_C2_PUBLIC_MANIFEST_SHA256={digest}")
     print(f"N1D_C2_PUBLIC_MANIFEST={args.output}")
+    if args.project_tsv is not None:
+        print(f"N1D_C2_PUBLIC_PROJECT_TSV={args.project_tsv}")
     print("N1D_C2_PRIVATE_VENDOR=ABSENT")
     print("N1D_C2_MUTABLE_REVISIONS=ABSENT")
     print("N1D_C2_PUBLIC_MANIFEST=PASS")
