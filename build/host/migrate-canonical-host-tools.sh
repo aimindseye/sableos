@@ -51,14 +51,17 @@ else
 fi
 
 jdk_tree_valid() {
-    local root="$1" major="$2"
-    [[ -d "$root" && -x "$root/bin/java" ]] || return 1
+    local root="$1" major="$2" marker
+    marker="$root/.sable-canonical-jdk.env"
+    [[ -d "$root" && -x "$root/bin/java" && -f "$marker" ]] || return 1
+    grep -Fxq "SABLE_CANONICAL_JDK=YES" "$marker" || return 1
+    grep -Fxq "JAVA_MAJOR=$major" "$marker" || return 1
     "$root/bin/java" -version 2>&1 | head -n1 | grep -Eq "\"$major\\."
 }
 
 copy_jdk_transactional() {
     local src="$1" dst="$2" key="$3" major="$4"
-    local parent base stage quarantine stamp
+    local parent base stage quarantine stamp marker java_sha
 
     if jdk_tree_valid "$dst" "$major"; then
         echo "$key=ALREADY_CANONICAL_VERIFIED path=$dst"
@@ -83,19 +86,37 @@ copy_jdk_transactional() {
     mkdir -p "$parent"
     stage="$(mktemp -d "$parent/.${base}.stage.XXXXXX")"
 
-    cleanup_stage() {
-        if [[ -n "${stage:-}" && -d "$stage" ]]; then
-            rm -rf --one-file-system -- "$stage"
-        fi
-    }
-    trap cleanup_stage RETURN
-
     # Preserve symlinks exactly. Do not dereference optional links such as
     # lib/src.zip, which may legitimately point to an uninstalled source package.
-    cp -a --reflink=auto "$src/." "$stage/"
+    if ! cp -a --reflink=auto "$src/." "$stage/"; then
+        echo "$key=FAIL_COPY stage=$stage"
+        rm -rf --one-file-system -- "$stage"
+        exit 4
+    fi
+
+    [[ -x "$stage/bin/java" ]] || {
+        echo "$key=FAIL_STAGED_JAVA_MISSING stage=$stage"
+        rm -rf --one-file-system -- "$stage"
+        exit 4
+    }
+    "$stage/bin/java" -version 2>&1 | head -n1 | grep -Eq "\"$major\\." || {
+        echo "$key=FAIL_STAGED_VERSION stage=$stage expected_major=$major"
+        rm -rf --one-file-system -- "$stage"
+        exit 4
+    }
+
+    java_sha="$(sha256sum "$stage/bin/java" | awk '{print $1}')"
+    marker="$stage/.sable-canonical-jdk.env"
+    {
+        echo "SABLE_CANONICAL_JDK=YES"
+        echo "JAVA_MAJOR=$major"
+        echo "SOURCE_PATH=$src"
+        echo "JAVA_SHA256=$java_sha"
+    } > "$marker"
 
     jdk_tree_valid "$stage" "$major" || {
-        echo "$key=FAIL_STAGED_VERIFICATION path=$stage"
+        echo "$key=FAIL_STAGED_VERIFICATION stage=$stage"
+        rm -rf --one-file-system -- "$stage"
         exit 4
     }
 
@@ -107,11 +128,8 @@ copy_jdk_transactional() {
     fi
 
     mv "$stage" "$dst"
-    stage=""
-    trap - RETURN
     echo "$key=COPIED_VERIFIED destination=$dst"
 }
-
 copy_jdk_transactional "$LEGACY_JDK17" "$SABLE_JDK17" JDK17 17
 copy_jdk_transactional "$LEGACY_JDK21" "$SABLE_JDK21" JDK21 21
 
