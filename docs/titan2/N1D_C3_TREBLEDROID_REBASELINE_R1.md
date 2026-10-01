@@ -1,10 +1,10 @@
-# Titan 2 N1D C3 TrebleDroid rebaseline R1
+# Titan 2 N1D C3A Restless/Treble control rebaseline R1
 
 Date: 2026-10-01
 
 ## Purpose
 
-Reproduce the exact public build topology that successfully produced the
+C3A reproduces the exact public build topology that successfully produced the
 RestlessOS Android 16 ARM64 A/B GSI, while separating build reproducibility from
 SableOS release-runtime acceptance.
 
@@ -70,9 +70,10 @@ release runtime allowlist:      0
 control release eligible:      NO
 ```
 
-This lets C3 establish a compiling/bootable compatibility baseline first. Later
-work removes or replaces control-only runtime mechanisms and promotes only
-reviewed Titan-specific deltas.
+This lets C3A establish a compiling compatibility control first. C3B is a
+separate Sable-owned phase which starts with a zero-entry runtime patch
+allowlist and admits only evidence-backed deltas. The full 369-patch stack is
+never the C3B baseline.
 
 ## Why this supersedes the handcrafted product
 
@@ -88,9 +89,20 @@ handmade GSI product.
 
 ## First success criterion
 
-The immediate target is a successful, non-release
+The immediate C3A target is a successful, non-release
 `treble_arm64_bvN-bp4a-user` `system.img`, built after the same TrebleApp release prebuild used by Restless. Target-files, otatools and signing remain a later gate.
 
 That success does not authorize flash. The next phase is a runtime/security
 delta audit against the control image before any Sable identity or release
 claim is made.
+
+
+## C3B handoff
+
+C3B is defined separately in:
+
+```text
+docs/titan2/N1D_C3B_BASELINE_R1.md
+```
+
+C3B remains build-blocked until C3A produces sealed control evidence.
