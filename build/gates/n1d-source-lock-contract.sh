@@ -58,17 +58,23 @@ if grep -Eiq '=(latest|stable|main|master)$|resolve.*latest|current.*tag' "$LOCK
     fail "floating_source_reference"
 fi
 
-# N1D stays on the Treble product graph, but source provenance and patch
-# application are independently locked and reviewed.
+# N1D uses a Sable-owned GSI product. Restless/Treble is a pinned reference
+# and diagnostic control rather than a directly inherited C3 product base.
 for required in \
     'N1D_SOURCE_LOCK_FILE=build/titan2/n1d-source-lock.env' \
-    'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED_PLUS_REVIEWED_RESTLESS_A16' \
-    'N1D_RESTLESS_PATCH_POLICY=REVIEWED_ALLOWLIST_ONLY' \
-    'N1D_BASE_PRODUCT=treble_arm64_bvN' \
-    'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
-    'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
-    'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk' \
+    'N1D_RESTLESS_SECURITY_BOUNDARY_FILE=build/titan2/n1d-restless-security-boundary.env' \
+    'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
+    'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_DIAGNOSTIC_CONTROL' \
+    'N1D_RESTLESS_PATCH_POLICY=DENY_BY_DEFAULT_EVIDENCE_ADMIT' \
+    'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
+    'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
+    'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
+    'N1D_TREBLE_COMPAT_REFERENCE=device/phh/treble' \
+    'N1D_TREBLE_COMPAT_DELTA=vendor/sable/n1d/treble_compat.mk' \
     'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
+    'N1D_DIRECT_DEVICE_PHH_TREBLE_BASE_INHERIT=NO' \
+    'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=NO' \
+    'N1D_RESTLESS_ROM_MK_DIRECT_INHERIT=NO' \
     'N1D_STOCK_VENDOR_PRESERVE=YES' \
     'N1D_PRODUCT_CONTRACT=PASS'
 do
@@ -90,4 +96,6 @@ echo "N1D_SOURCE_LOCK_NO_FLOATING_TAG=PASS"
 echo "N1D_SOURCE_LOCK_PUBLIC_ONLY=PASS"
 echo "N1D_SOURCE_LOCK_PATCH_ALLOWLIST_POLICY=PASS"
 echo "N1D_SOURCE_LOCK_PRODUCT_GRAPH_ALIGNMENT=PASS"
+bash "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
+echo "N1D_SOURCE_LOCK_RESTLESS_SECURITY_BOUNDARY=PASS"
 echo "N1D_SOURCE_LOCK_CONTRACT=PASS"
