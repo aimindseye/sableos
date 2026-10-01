@@ -26,7 +26,7 @@ do
     grep -Fxq "$token" "$PROFILE" || fail "profile_missing=$token"
 done
 
-for token in     'N1D_PRODUCT_CONTRACT_VERSION=4'     'N1D_PRODUCT_NAME=treble_arm64_bvN'     'N1D_C3_FIRST_BUILD_VARIANT=user'     'N1D_C3_FIRST_BUILD_GOAL=systemimage'     'N1D_C3_RELEASE_ELIGIBLE=NO'
+for token in     'N1D_PRODUCT_CONTRACT_VERSION=5'     'N1D_PRODUCT_NAME=treble_arm64_bvN'     'N1D_C3_FIRST_BUILD_VARIANT=user'     'N1D_C3_FIRST_BUILD_GOAL=systemimage'     'N1D_C3A_RELEASE_ELIGIBLE=NO'     'N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE'     'N1D_C3_RELEASE_ELIGIBLE=NO'
 do
     grep -Fxq "$token" "$PRODUCT" || fail "product_missing=$token"
 done
