@@ -54,6 +54,7 @@ for required in \
   'N1D_C3_PRODUCT_DEVICE=gsi_arm64' \
   'N1D_C3_GSI_BOARD=build/make/target/board/gsi_arm64/BoardConfig.mk' \
   'N1D_C3_BUILDING_GSI_VALUE=false' \
+  'N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO' \
   'N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO' \
   'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
   'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
