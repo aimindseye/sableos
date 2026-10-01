@@ -50,6 +50,13 @@ device/phh/treble:
 The remaining companion projects and exact commits are declared in
 `n1d-c3-trebledroid-manifest.xml`.
 
+Restless did not publish a pinned repo manifest with this release. Those
+companion SHAs are therefore reconstructed from the branch tips that existed
+before the successful release build, not copied from an upstream manifest
+artifact. The relevant branches had no intervening commits in the release
+window, so the pins reproduce the public inputs available to the workflow while
+removing its original floating-branch behavior.
+
 ## Control vs release
 
 The full 369-patch Restless stack is admitted only to reproduce the known-good
