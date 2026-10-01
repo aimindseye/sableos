@@ -64,7 +64,7 @@ for required in \
     'N1D_SOURCE_LOCK_FILE=build/titan2/n1d-source-lock.env' \
     'N1D_RESTLESS_SECURITY_BOUNDARY_FILE=build/titan2/n1d-restless-security-boundary.env' \
     'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
-    'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_DIAGNOSTIC_CONTROL' \
+    'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_PREBUILT_DIAGNOSTIC_CONTROL' \
     'N1D_RESTLESS_PATCH_POLICY=DENY_BY_DEFAULT_EVIDENCE_ADMIT' \
     'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
     'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
@@ -72,6 +72,12 @@ for required in \
     'N1D_TREBLE_COMPAT_REFERENCE=device/phh/treble' \
     'N1D_TREBLE_COMPAT_DELTA=vendor/sable/n1d/treble_compat.mk' \
     'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
+    'N1D_C3_COMPOSITION_PROFILE_FILE=build/titan2/n1d-c3-composition.env' \
+    'N1D_C3_PRODUCT_SOURCE_BUNDLE=build/titan2/n1d-c3-product' \
+    'N1D_C3_PRODUCT_STAGE_TARGET=vendor/sable/n1d' \
+    'N1D_C3_STAGE_REQUIRES_BASE_SEAL=YES' \
+    'N1D_C3_STAGE_REQUIRES_C2_CONTROL_HASH=YES' \
+    'N1D_C3_BUILD_AUTHORIZED_BY_COMPOSITION_STAGE=NO' \
     'N1D_DIRECT_DEVICE_PHH_TREBLE_BASE_INHERIT=NO' \
     'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=NO' \
     'N1D_RESTLESS_ROM_MK_DIRECT_INHERIT=NO' \

@@ -324,6 +324,38 @@ The admission contract is enforced by:
 bash build/gates/n1d-c2-source-admission-contract.sh
 ```
 
+C3 product composition is repository-owned and starts only from the restored,
+sealed 1,033-project base. The source bundle is:
+
+```text
+build/titan2/n1d-c3-product/
+```
+
+and is staged to:
+
+```text
+vendor/sable/n1d/
+```
+
+with zero initial Treble compatibility items and zero Restless patch entries.
+
+```bash
+bash build/titan2/stage-n1d-c3-product.sh preflight
+
+bash build/titan2/stage-n1d-c3-product.sh \
+  stage \
+  --authorize-source-mutation
+
+bash build/titan2/stage-n1d-c3-product.sh verify
+```
+
+The staging action authorizes no build, network fetch, device contact, flash or
+signing. The composition contract is:
+
+```bash
+bash build/gates/n1d-c3-product-composition-contract.sh
+```
+
 ## Validation discipline
 
 Before providing or accepting a build/script deliverable, validate at minimum:
