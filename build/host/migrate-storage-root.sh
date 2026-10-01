@@ -121,7 +121,7 @@ live_bind() {
 fstab_plan() {
     preflight
 
-    local source uuid fstype active_options fstab_options
+    local source uuid fstype active_options fstab_options dump_field pass_field
     source="$(resolve_underlying_source "$SABLE_BUILD_LEGACY_ROOT")"
     uuid="$(lsblk -n -o UUID "$source" 2>/dev/null | head -1 | tr -d '[:space:]')"
     fstype="$(findmnt -n -o FSTYPE -M "$SABLE_BUILD_LEGACY_ROOT")"
@@ -129,34 +129,40 @@ fstab_plan() {
 
     [[ -n "$active_options" ]] || fail "active_mount_options_unresolved"
 
-    # rw/ro reflects runtime state, not the persistent fstab option set. Preserve
-    # the remaining active options (for example noatime) instead of replacing
-    # them with a generic 'defaults' line.
-    fstab_options="$(
-        tr ',' '\n' <<<"$active_options" |
-        grep -Ev '^(rw|ro)    echo
-    echo "FSTAB_MUTATION_PERFORMED=NO"
-    echo "SABLE_STORAGE_FSTAB_PLAN=PASS"
-}
+    mapfile -t existing_fstab < <(
+        awk -v target="$SABLE_BUILD_LEGACY_ROOT" '
+            $0 !~ /^[[:space:]]*#/ && NF >= 4 && $2 == target {
+                printf "%s\t%s\t%s\n", $4, (NF >= 5 ? $5 : 0), (NF >= 6 ? $6 : 0)
+            }
+        ' /etc/fstab
+    )
 
-case "$ACTION" in
-    preflight) preflight ;;
-    live-bind) live_bind ;;
-    fstab-plan) fstab_plan ;;
-    *) fail "unknown_action=$ACTION" ;;
-esac
- |
-        paste -sd, -
-    )"
-    [[ -n "$fstab_options" ]] || fstab_options=defaults
+    if ((${#existing_fstab[@]} > 1)); then
+        fail "multiple_existing_fstab_entries target=$SABLE_BUILD_LEGACY_ROOT"
+    elif ((${#existing_fstab[@]} == 1)); then
+        IFS=$'\t' read -r fstab_options dump_field pass_field <<<"${existing_fstab[0]}"
+        echo "FSTAB_EXISTING_ENTRY=YES"
+    else
+        fstab_options="$(
+            tr ',' '\n' <<<"$active_options" |
+            grep -Ev '^(rw|ro)$' |
+            paste -sd, -
+        )"
+        [[ -n "$fstab_options" ]] || fstab_options=defaults
+        dump_field=0
+        pass_field=2
+        echo "FSTAB_EXISTING_ENTRY=NO"
+    fi
 
     echo
     echo "===== PROPOSED /etc/fstab TARGET STATE ====="
     echo "# Review the existing /etc/fstab entry before applying."
     echo "ACTIVE_MOUNT_OPTIONS=$active_options"
     echo "PROPOSED_FS_OPTIONS=$fstab_options"
-    printf 'UUID=%s %s %s %s 0 2\n' \
-        "$uuid" "$SABLE_BUILD_ROOT" "$fstype" "$fstab_options"
+    echo "PROPOSED_DUMP_FIELD=$dump_field"
+    echo "PROPOSED_PASS_FIELD=$pass_field"
+    printf 'UUID=%s %s %s %s %s %s\n' \
+        "$uuid" "$SABLE_BUILD_ROOT" "$fstype" "$fstab_options" "$dump_field" "$pass_field"
     printf '%s %s none bind,x-systemd.requires-mounts-for=%s 0 0\n' \
         "$SABLE_BUILD_ROOT" \
         "$SABLE_BUILD_LEGACY_ROOT" \
