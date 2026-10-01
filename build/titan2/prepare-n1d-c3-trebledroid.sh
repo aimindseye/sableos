@@ -681,6 +681,7 @@ verify_host_layout_fix() {
     local base_blob
     local patch_blob
     local numstat
+    local expected_numstat
 
     status_file="$(mktemp)"
     git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all > "$status_file"
@@ -718,7 +719,22 @@ verify_host_layout_fix() {
     }
 
     numstat="$(git -C "$BUILD_SOONG_ROOT" diff --numstat -- "$target")"
-    [[ "$numstat" == 
+    expected_numstat="$(printf '4\t0\t%s' "$target")"
+    [[ "$numstat" == "$expected_numstat" ]] || {
+        rm -f "$status_file"
+        fail "host_layout_fix_numstat=$numstat"
+    }
+
+    grep -Fq 'strings.HasPrefix(f, ctx.Config().OutDir())' "$BUILD_SOONG_ROOT/$target" || {
+        rm -f "$status_file"
+        fail host_layout_fix_guard_missing
+    }
+
+    rm -f "$status_file"
+    echo "N1D_C3A_HOST_LAYOUT_FIX=PASS_EXACT project=$N1D_C3A_HOST_LAYOUT_TARGET_PROJECT file=$target"
+}
+
+latest_stage_evidence() {
     find "$EVIDENCE_ROOT" \
         -mindepth 1 -maxdepth 1 -type d -name '*-trebledroid-stage' \
         -print 2>/dev/null \
