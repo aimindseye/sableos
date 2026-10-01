@@ -39,6 +39,12 @@ for file in "${syntax_files[@]}"; do
     bash -n "$file" || fail "bash_n=$file"
 done
 
+for file in "${syntax_files[@]}"; do
+    if grep -Eq 'bash[[:space:]]+-n[[:space:]]+"[^"]+"[[:space:]]+"[^"]+"' "$file"; then
+        fail "multi_file_bash_n=$file"
+    fi
+done
+
 repo_sync_count="$(grep -Ec '^[[:space:]]*"?\$SABLE_REPO_TOOL"?[[:space:]]+sync|^[[:space:]]*repo[[:space:]]+sync' "$PREP" || true)"
 repo_forall_count="$(grep -c 'forall -c' "$PREP" || true)"
 systemimage_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+systemimage[[:space:]]' "$BUILD" || true)"
@@ -70,6 +76,7 @@ fi
 grep -Fq 'bash "$ROOT/build/gates/n1d-c3-script-quality-contract.sh"' "$PIPELINE"     || fail standard_pipeline_binding_missing
 
 echo "N1D_C3_SCRIPT_SYNTAX=PASS files=${#syntax_files[@]}"
+echo "N1D_C3_SCRIPT_SYNTAX_SINGLE_FILE_INVOCATION=PASS"
 echo "N1D_C3_PREP_REPO_SYNC_COUNT=PASS value=$repo_sync_count"
 echo "N1D_C3_PREP_REPO_FORALL_HELPERS=PASS value=$repo_forall_count optimized_combined_state_capture=YES"
 echo "N1D_C3_PREP_SYNC_PARALLELISM=PASS jobs=4"
