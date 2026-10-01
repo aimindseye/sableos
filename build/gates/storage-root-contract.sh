@@ -52,6 +52,10 @@ grep -Fq 'mount --bind "$SABLE_BUILD_LEGACY_ROOT" "$SABLE_BUILD_ROOT"' "$MIGRATE
     fail "live_bind_missing"
 grep -Fq 'FSTAB_MUTATION_PERFORMED=NO' "$MIGRATE" ||
     fail "fstab_plan_not_nonmutating"
+grep -Fq 'active_options="$(findmnt -n -o OPTIONS -M "$SABLE_BUILD_LEGACY_ROOT")"' "$MIGRATE" ||
+    fail "fstab_plan_does_not_capture_active_options"
+grep -Fq 'PROPOSED_FS_OPTIONS=$fstab_options' "$MIGRATE" ||
+    fail "fstab_plan_does_not_report_proposed_options"
 
 if grep -Eq 'sed .*\/etc\/fstab|>>[[:space:]]*\/etc\/fstab|tee .*\/etc\/fstab' "$MIGRATE"; then
     fail "automatic_fstab_mutation_present"
