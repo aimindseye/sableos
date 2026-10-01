@@ -49,6 +49,7 @@ if grep -Fq 'N1D_C3B_BUILD_AUTHORIZED=YES'     "$SPLIT" "$PRODUCT" "$BOUNDARY" "
     fail c3b_build_prematurely_authorized
 fi
 
+echo "N1D_C3A_SOURCE_GRAPH=PASS add=12 remove=54 managed=991"
 echo "N1D_C3A_CONTROL_BOUNDARY=PASS"
 echo "N1D_C3B_MINIMAL_BASELINE_BOUNDARY=PASS"
 echo "N1D_C3B_FULL_RESTLESS_STACK=PASS_BLOCKED"
