@@ -20,6 +20,17 @@ bash -n "$CAPTURE" || fail capture_bash_n
 python3 -m py_compile "$HELPER" "$CLASSIFIER" || fail python_compile
 pass syntax
 
+# set -u regression: never reference a local variable in the same declaration
+# statement that initializes it. Bash expands all RHS values before the new
+# locals become available, which caused C0 to abort in extract_fs().
+if grep -nE '^[[:space:]]*local[[:space:]].*raw="\$img"' "$DRIVER"; then
+  fail nounset_local_raw_dependency
+fi
+if grep -nE '^[[:space:]]*local[[:space:]].*\$part' "$DRIVER"; then
+  fail nounset_local_part_dependency
+fi
+pass nounset_local_initialization
+
 grep -Fq 'bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e' "$DRIVER" || fail n1b_control_hash_default
 grep -Fq 'device/phh/treble/treble_arm64_bvN.mk' "$DRIVER" || fail active_product_autodiscovery
 grep -Fq 'sealed known-booting N1B/Restless-derived system compared to N1C' "$DRIVER" || fail n1b_control_c0_10

@@ -202,7 +202,8 @@ normalize_raw() {
 }
 
 extract_fs() {
-  local img="$1" dest="$2" t raw="$img"
+  local img="$1" dest="$2" t raw
+  raw="$img"
   mkdir -p "$dest"
   t="$(image_type "$img")"
   if [[ "$t" == sparse ]]; then
@@ -303,7 +304,9 @@ N1C_SYS_ROOT="$(system_root "$N1C_SYS_EX")"
 python3 "$HELPER" system-report --root "$N1C_SYS_EX" --label n1c --out "$OUT/inventory/n1c-system.env" || true
 
 extract_stock_part() {
-  local part="$1" out="$WORK/stock-$part" img="$STOCK_REF_DIR/$part.img"
+  local part="$1" out img
+  out="$WORK/stock-$part"
+  img="$STOCK_REF_DIR/$part.img"
   [[ -f "$img" ]] || return 1
   extract_fs "$img" "$out" || return 1
   echo "$out"
