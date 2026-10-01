@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- automotive -->
+  <remove-project name="platform/packages/apps/Car/CalendarPrebuilt" />
+  <remove-project name="platform/packages/apps/Car/DataSubscriptionReference" />
+  <remove-project name="platform/packages/apps/Car/DebuggingRestrictionController" />
+  <remove-project name="platform/packages/apps/Car/DriverUIPrebuilt" />
+  <remove-project name="platform/packages/apps/Car/LinkViewer" />
+  <remove-project name="platform/packages/apps/Car/References" />
+  <remove-project name="platform/packages/apps/Car/RotaryImePrebuilt" />
+  <remove-project name="platform/packages/apps/Car/Templates" />
+  <remove-project name="platform/packages/apps/Car/VoiceControl" />
+
+  <!-- device: board support -->
+  <remove-project name="device/amlogic/yukawa" />
+  <remove-project name="device/amlogic/yukawa-kernel" />
+  <remove-project name="device/generic/art" />
+  <remove-project name="device/generic/car" />
+  <remove-project name="device/generic/trusty" />
+  <remove-project name="device/generic/x86" />
+  <remove-project name="device/generic/x86_64" />
+  <remove-project name="device/google_car" />
+  <remove-project name="device/linaro/dragonboard" />
+  <remove-project name="device/linaro/dragonboard-kernel" />
+  <remove-project name="device/linaro/hikey" />
+  <remove-project name="device/linaro/hikey-kernel" />
+
+  <!-- device: cuttlefish virtual device -->
+  <remove-project name="device/google/cuttlefish_vmm" />
+
+  <!-- device: pixel kernel repos -->
+  <remove-project name="device_google_akita-kernels_6.1" />
+  <remove-project name="device_google_bluejay-kernels_6.1" />
+  <remove-project name="device_google_caimito-kernels_6.1" />
+  <remove-project name="device_google_comet-kernels_6.1" />
+  <remove-project name="device_google_felix-kernels_6.1" />
+  <remove-project name="device_google_laguna-kernels_6.6" />
+  <remove-project name="device_google_lynx-kernels_6.1" />
+  <remove-project name="device_google_pantah-kernels_6.1" />
+  <remove-project name="device_google_raviole-kernels_6.1" />
+  <remove-project name="device_google_shusky-kernels_6.1" />
+  <remove-project name="device_google_tangorpro-kernels_6.1" />
+  <remove-project name="device_google_tegu-kernels_6.1" />
+
+  <!-- hardware: device-specific -->
+  <remove-project name="platform/hardware/invensense" />
+  <remove-project name="platform/hardware/samsung/nfc" />
+  <remove-project name="platform/hardware/st/secure_element" />
+  <remove-project name="platform/hardware/st/secure_element2" />
+  <remove-project name="platform/hardware/ti/am57x" />
+
+  <!-- tests -->
+  <remove-project name="kernel/tests" />
+  <remove-project name="platform/test/catbox" />
+  <remove-project name="platform/test/cts-root" />
+  <remove-project name="platform/test/dittosuite" />
+  <remove-project name="platform/test/graphics" />
+  <remove-project name="platform/test/mts" />
+  <remove-project name="platform/test/vts-testcase/nbu" />
+  <remove-project name="platform/test/vts-testcase/performance" />
+  <remove-project name="platform/test/vts-testcase/security" />
+  <remove-project name="platform/tools/test/connectivity" />
+  <remove-project name="platform/tools/test/mobly_snippets" />
+  <remove-project name="platform/tools/test/openhst" />
+
+  <!-- grapheneos apps: excluded from gsi builds -->
+  <remove-project name="platform_packages_apps_LogViewer" />
+  <remove-project name="platform_packages_apps_SetupWizard2" />
+
+  <!-- tv -->
+  <remove-project name="platform/packages/apps/TvFeedbackConsent" />
+</manifest>
