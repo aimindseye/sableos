@@ -136,8 +136,13 @@ bash build/titan2/admit-n1d-c2-source.sh \
 ```
 
 After a failed bounded admission which has already installed the C2 local
-manifest, use the guarded resume action instead of deleting or recreating the
-Android workspace:
+manifest, first run the offline resume preflight:
+
+```bash
+bash build/titan2/admit-n1d-c2-source.sh resume-preflight
+```
+
+Only after that passes should the guarded network resume be used:
 
 ```bash
 bash build/titan2/admit-n1d-c2-source.sh \
@@ -145,10 +150,14 @@ bash build/titan2/admit-n1d-c2-source.sh \
   --authorize-network
 ```
 
-Resume first proves all 1,033 sealed base project HEADs are still exact and
-clean, then verifies any existing C2 worktree is already at its pinned commit
-and clean. It replaces only the C2 local manifest with the upstream-aware
-locked manifest and retries the same 13 bounded project paths.
+Resume preflight proves all 1,033 sealed base project HEADs are still exact and
+clean, verifies any existing C2 worktree is already at its pinned commit and
+clean, and verifies the regenerated locked manifest contains the required
+transport locators. It performs no source mutation and no network fetch.
+
+The network resume repeats those checks, saves the pre-resume local manifest as
+evidence, replaces only the C2 local manifest with the upstream-aware locked
+manifest, and retries the same 13 bounded project paths.
 
 The network-authorized action may mutate only:
 
