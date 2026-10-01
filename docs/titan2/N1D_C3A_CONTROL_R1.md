@@ -14,8 +14,11 @@ C3A is not the SableOS product baseline.
 ## Exact control topology
 
 ```text
-sealed GrapheneOS 2026061600 base
+sealed GrapheneOS 2026061600 base (1,033 projects)
+  - exact Restless remove.xml set (54 projects)
+  = 979 retained Graphene projects
   + 12 pinned public TrebleDroid/PHH companion projects
+  = 991 managed C3A projects
   + RestlessOS 16.0.0-202606230923 recipe
   + exact ordered control patch tiers:
       trebledroid          198
@@ -32,7 +35,26 @@ sealed GrapheneOS 2026061600 base
   + make systemimage
 ```
 
-The private Restless vendor repository is excluded.
+The private Restless vendor repository is excluded. Pixel GSans is also
+excluded because the release did not provide an immutable source pin for that
+non-functional branding/font input. C3A is therefore classified as:
+
+```text
+N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION
+```
+
+It reproduces the public functional source/build graph, not a bit-identical
+Restless release tree.
+
+## Source-graph fidelity
+
+Restless copied both `configs/manifests/default.xml` and
+`configs/manifests/remove.xml` before sync. All 54 remove-project entries are
+present in the sealed Graphene manifest. C3A reproduces those removals
+reversibly: the existing clean working trees are archived under
+`/srv/sable-build/artifacts/titan2/n1d-c3a-retired-graphene/`, never deleted.
+
+The managed graph is sealed at 991 projects.
 
 ## Why C3A exists
 
