@@ -148,6 +148,7 @@ def main() -> int:
                 "revision",
                 "groups",
                 "clone-depth",
+                "upstream",
             }
         }
         attrs["revision"] = project.attrib["revision"]
@@ -164,7 +165,6 @@ def main() -> int:
         "git@",
         'revision="main"',
         'revision="master"',
-        "upstream=",
         "dest-branch=",
     ):
         if forbidden in lowered:
@@ -181,9 +181,10 @@ def main() -> int:
             key=lambda item: item[0].attrib.get("path", ""),
         ):
             path = project.attrib.get("path") or project.attrib["name"]
+            upstream = project.attrib.get("upstream", "")
             rows.append(
                 f"{path}\t{project.attrib['revision']}\t"
-                f"{args.remote_prefix}{remote_name}"
+                f"{args.remote_prefix}{remote_name}\t{upstream}"
             )
         args.project_tsv.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
@@ -194,7 +195,14 @@ def main() -> int:
     if args.project_tsv is not None:
         print(f"N1D_C2_PUBLIC_PROJECT_TSV={args.project_tsv}")
     print("N1D_C2_PRIVATE_VENDOR=ABSENT")
+    upstream_count = sum(
+        1
+        for project, _remote_name in selected
+        if project.attrib.get("upstream", "")
+    )
     print("N1D_C2_MUTABLE_REVISIONS=ABSENT")
+    print(f"N1D_C2_UPSTREAM_LOCATOR_COUNT={upstream_count}")
+    print("N1D_C2_UPSTREAM_IDENTITY_ROLE=TRANSPORT_ONLY")
     print("N1D_C2_PUBLIC_MANIFEST=PASS")
     return 0
 
