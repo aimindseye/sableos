@@ -11,7 +11,7 @@ PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
-HOST_LAYOUT_PATCH="$ROOT/$N1D_C3A_HOST_LAYOUT_PATCH_PATH"
+HOST_LAYOUT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci-tests-skip-out-of-tree-host-paths.patch"
 
 fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
