@@ -136,6 +136,13 @@ accepted only when sealed prior evidence proves the previous attempt reached
 TrebleApp, did not pass TrebleApp, never reached `make systemimage`, and left
 no system image, target-files, or OTA artifact.
 
+Because the pinned TrebleApp SDK layout does not ignore `sdk/licenses/`, a
+failed Gradle dependency/bootstrap pass may leave that project dirty even when
+no source file changed. Resume verification therefore permits exactly one
+additional dirty project, `treble_app`, and only when every dirty entry is an
+untracked regular file directly under `sdk/licenses/`. Tracked modifications,
+nested paths, symlinks, or any other untracked path fail verification.
+
 
 ## Exit criterion
 
