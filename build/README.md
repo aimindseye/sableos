@@ -183,6 +183,32 @@ now responsible for binding the Titan2/N1B static contract family through
 `build/gates/n1b-titan2-local-ci-static-contracts.sh`, while preserving no image,
 no device-contact, no flash and no public-release scope.
 
+## Titan 2 N1D source identity
+
+N1D is locked to Android 16 before any fresh source sync:
+
+```text
+build/titan2/n1d-source-lock.env
+```
+
+The source lock pins GrapheneOS `2026061600` / AOSP
+`android-16.0.0_r4` / release config `bp4a` and RestlessOS
+`16.0.0-202606230923`. Do not use the Restless default branch, its
+latest-Graphene resolver, or any Android 17 source for N1D.
+
+Restless source is a pinned Treble compatibility reference. N1D patch
+application must be repository-owned and allowlisted; upstream patch-tier loops
+are not a build interface.
+
+The source lock is enforced by:
+
+```bash
+bash build/gates/n1d-source-lock-contract.sh
+```
+
+Source sync, Android build and device deployment remain separate gated phases.
+The source lock by itself authorizes none of them.
+
 ## Validation discipline
 
 Before providing or accepting a build/script deliverable, validate at minimum:
