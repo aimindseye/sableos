@@ -72,6 +72,10 @@ for required in \
     'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_PREBUILT_DIAGNOSTIC_CONTROL' \
     'N1D_RESTLESS_PATCH_POLICY=DENY_BY_DEFAULT_EVIDENCE_ADMIT' \
     'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
+  'N1D_C3_PRODUCT_DEVICE=gsi_arm64' \
+  'N1D_C3_GSI_BOARD=build/make/target/board/gsi_arm64/BoardConfig.mk' \
+  'N1D_C3_BUILDING_GSI_VALUE=false' \
+  'N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO' \
     'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
     'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
     'N1D_TREBLE_COMPAT_REFERENCE=device/phh/treble' \
