@@ -34,7 +34,7 @@ zero dirty base projects
 exact staged five-file vendor/sable/n1d bundle
 successful sealed C3 product-parse evidence
 no out-c2
-no pre-existing out-c3
+pre-existing failed out-c3 is allowed only with explicit retirement authorization
 ```
 
 The parse evidence must prove:
@@ -42,6 +42,9 @@ The parse evidence must prove:
 ```text
 N1D_C3_PRODUCT_PARSE=PASS
 N1D_C3_PRODUCT_NAME=sable_titan2_n1d_arm64
+N1D_C3_PRODUCT_DEVICE=gsi_arm64
+N1D_C3_BUILDING_GSI=false
+N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO
 N1D_C3_RELEASE_CONFIG=bp4a
 N1D_C3_BUILD_VARIANT=userdebug
 ANDROID_TARGET_COMPILATION_AUTHORIZED=NO
@@ -118,14 +121,46 @@ The first compile uses the reserved C3 output directory:
 /srv/sable-build/workspaces/titan2-n1d/out-c3
 ```
 
-The directory must not exist before the first compile. A failed first compile is
-preserved for diagnosis; cleanup or retry authorization is a separate decision.
+A fresh compile still requires this path to be absent. If a previous failed
+compile created it, retry requires `--authorize-failed-out-retirement`. The
+driver verifies that no Soong/Ninja process is using the path, then moves the
+failed output (without deleting it) beneath:
+
+```text
+/srv/sable-build/workspaces/titan2-n1d/retired-out-c3/
+```
+
+and SHA-seals a retirement record beneath
+`evidence/titan2/n1d-c3-failed-out-retirement/` before creating a fresh
+`out-c3`.
 
 The earlier parse-only output remains isolated beneath:
 
 ```text
 /srv/sable-build/workspaces/titan2-n1d/out-c3-parse/
 ```
+
+## Graphene GSI module-graph remediation
+
+The first live compile reached Soong graph generation and showed that
+build/make's `aosp_system_image` expected AOSP application modules intentionally
+absent from the pinned Graphene source graph (WebView, Browser2, Camera2,
+Messaging and QuickSearchBox).
+
+Sable does not restore those removed apps and does not inherit the PHH product.
+Product contract v4 instead:
+
+```text
+PRODUCT_DEVICE=gsi_arm64
+BUILDING_GSI=false
+N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO
+```
+
+The sealed Graphene `gsi_arm64` BoardConfig supplies GSI board/copy-out
+semantics. The non-empty Make value `BUILDING_GSI=false` preserves
+`BoardConfigGsiCommon.mk`'s `ifdef BUILDING_GSI` behavior while the Soong
+config conversion, which tests specifically for literal `true`, disables the
+incompatible `aosp_system_image` module.
 
 ## Build action
 
@@ -204,6 +239,7 @@ Optional parallelism may be selected explicitly:
 ```bash
 bash build/titan2/build-n1d-c3-first-systemimage.sh \
   --authorize-c3-compile \
+  --authorize-failed-out-retirement \
   --jobs 16
 ```
 
