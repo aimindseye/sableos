@@ -27,6 +27,7 @@ for required in \
     'N1D_C3_PRODUCT_DEVICE=gsi_arm64' \
     'N1D_C3_BUILDING_GSI_VALUE=false' \
     'N1D_C3_REFRESH_FILE_COUNT=1' \
+    'N1D_C3_PREVIOUS_PRODUCT_MK_SHA256=3a24086d081541ee3c3245988be3b1418c2468f63c55115f0cf16daec65965e6' \
     'N1D_C3_REQUIRED_STAGE_FILE_COUNT=5' \
     'N1D_C3_INITIAL_TREBLE_COMPAT_ITEM_COUNT=0' \
     'N1D_C3_INITIAL_RESTLESS_PATCH_ALLOWLIST_COUNT=0' \
@@ -93,6 +94,7 @@ text = Path(sys.argv[1]).read_text(encoding="utf-8")
 ordered = [
     "$(call inherit-product, $(SRC_TARGET_DIR)/product/generic_system_arm64.mk)",
     "$(call inherit-product, $(SRC_TARGET_DIR)/product/gsi_release.mk)",
+    "BUILDING_GSI := false",
     "$(call inherit-product, vendor/sable/n1d/treble_compat.mk)",
     "$(call inherit-product, vendor/sable/n1d/sable_n1d_product_delta.mk)",
 ]
@@ -147,6 +149,11 @@ grep -Fq 'N1D_C3_C2_CONTROL_BINDING=PASS' "$DRIVER" || fail c2_control_binding_m
 grep -Fq 'N1D_C3_BASE_HEADS=PASS_EXACT' "$DRIVER" || fail base_head_binding_missing
 grep -Fq 'N1D_C3_STAGED_BUNDLE=PASS' "$DRIVER" || fail staged_bundle_verify_missing
 grep -Fq 'N1D_C3_PRODUCT_STAGE=PASS' "$DRIVER" || fail stage_pass_missing
+grep -Fq 'refresh_requires_--authorize-source-mutation' "$DRIVER" || fail refresh_mutation_guard_missing
+grep -Fq 'SOURCE_MUTATION_AUTHORIZED=YES_EXACT_C3_PRODUCT_REFRESH_ONLY' "$DRIVER" || fail refresh_mutation_scope_missing
+grep -Fq 'N1D_C3_PRODUCT_REFRESH_PRESTATE=PASS' "$DRIVER" || fail refresh_prestate_missing
+grep -Fq 'N1D_C3_PRODUCT_REFRESH=PASS' "$DRIVER" || fail refresh_pass_missing
+grep -Fq 'verify_base_exact allow-c3-out' "$DRIVER" || fail failed_build_output_tolerant_verify_missing
 
 if grep -Eq '(^|[[:space:]])(adb|fastboot|lunch|m|make)([[:space:]]|$)' "$DRIVER"; then
     fail build_or_device_command_present
@@ -162,6 +169,8 @@ echo "N1D_C3_PRODUCT_COMPOSITION_SHELL_SYNTAX=PASS"
 echo "N1D_C3_PRODUCT_COMPOSITION_BASE_BINDING=PASS"
 echo "N1D_C3_PRODUCT_COMPOSITION_C2_CONTROL_BINDING=PASS"
 echo "N1D_C3_PRODUCT_COMPOSITION_PRODUCT_REGISTRATION=PASS"
+echo "N1D_C3_PRODUCT_COMPOSITION_GRAPHENE_GSI_ADAPTATION=PASS"
+echo "N1D_C3_PRODUCT_COMPOSITION_REFRESH_CONTRACT=PASS"
 echo "N1D_C3_PRODUCT_COMPOSITION_ZERO_COMPAT_DELTA=PASS"
 echo "N1D_C3_PRODUCT_COMPOSITION_ZERO_RESTLESS_PATCHES=PASS"
 echo "N1D_C3_PRODUCT_COMPOSITION_SECURITY_EXCLUSIONS=PASS"
