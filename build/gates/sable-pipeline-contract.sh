@@ -107,5 +107,6 @@ bash "$ROOT/build/gates/n1d-c2-source-admission-contract.sh"
 bash "$ROOT/build/gates/n1d-c2-prebuilt-control-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
+bash "$ROOT/build/gates/n1d-c3-first-compile-contract.sh"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"
