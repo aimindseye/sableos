@@ -52,7 +52,7 @@ pinned C2 control binding still valid
 five staged vendor/sable/n1d files byte-identical to repository-owned sources
 sealed C3 stage evidence present
 no out-c2
-no future C3 compilation out directory
+prior failed C3 compilation output may exist but is isolated from parse OUT_DIR
 ```
 
 ## Parse output isolation
@@ -80,11 +80,14 @@ The parse must resolve:
 TARGET_PRODUCT=sable_titan2_n1d_arm64
 TARGET_RELEASE=bp4a
 TARGET_BUILD_VARIANT=userdebug
-PRODUCT_DEVICE=mainline_arm64
+PRODUCT_DEVICE=gsi_arm64
+BUILDING_GSI=false
 PRODUCT_BRAND=SableOS
 PRODUCT_MODEL=SableOS Titan 2 N1D
 PRODUCT_MANUFACTURER=SableOS
 ```
+
+`BUILDING_GSI=false` is a required Graphene-source compatibility assertion. It keeps Make-side GSI release/board semantics while preventing build/make's Soong-defined `aosp_system_image` from being enabled against Graphene's intentionally reduced AOSP app source graph.
 
 `BUILD_ID`, `PLATFORM_VERSION` and `PRODUCT_OUT` are captured as evidence but
 are not independently promoted to source-lock inputs by this gate.
@@ -109,6 +112,7 @@ N1D_C3_ENVSETUP=PASS
 N1D_C3_LUNCH=PASS
 N1D_C3_DUMPVARS=PASS
 N1D_C3_PRODUCT_PARSE_IDENTITY=PASS
+N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS
 N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS
 N1D_C3_PRODUCT_PARSE=PASS
 ```
