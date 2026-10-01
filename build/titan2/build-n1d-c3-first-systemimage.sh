@@ -88,6 +88,7 @@ echo "JOBS=$JOBS"
 [[ "$N1D_C3_COMPILE_RELEASE_CONFIG" == "$N1D_C3_RELEASE_CONFIG" ]]     || fail "compile_release_profile_mismatch"
 [[ "$N1D_C3_COMPILE_VARIANT" == "$N1D_C3_FIRST_BUILD_VARIANT" ]]     || fail "compile_variant_profile_mismatch"
 [[ "$N1D_C3_FIRST_COMPILE_GOAL" == systemimage ]]     || fail "unexpected_compile_goal=$N1D_C3_FIRST_COMPILE_GOAL"
+[[ "$N1D_C3_BUILD_SANDBOX_REQUIRED" == YES ]]     || fail "build_sandbox_requirement_disabled"
 
 bash "$STORAGE_VERIFY" runtime
 bash "$SOURCE_GATE"
@@ -203,6 +204,18 @@ verify_post_build_source() {
     [[ "${TARGET_RELEASE:-}" == "$N1D_C3_COMPILE_RELEASE_CONFIG" ]]         || fail "target_release expected=$N1D_C3_COMPILE_RELEASE_CONFIG actual=${TARGET_RELEASE:-unset}"
     [[ "${TARGET_BUILD_VARIANT:-}" == "$N1D_C3_COMPILE_VARIANT" ]]         || fail "target_variant expected=$N1D_C3_COMPILE_VARIANT actual=${TARGET_BUILD_VARIANT:-unset}"
 
+    sandbox_probe="$EVIDENCE_DIR/nsjail-probe.log"
+    set +e +u
+    build/soong/soong_ui.bash --dumpvars-mode --vars="TARGET_PRODUCT" > "$sandbox_probe" 2>&1
+    sandbox_probe_rc=$?
+    set -euo pipefail
+    cat "$sandbox_probe"
+    [[ "$sandbox_probe_rc" -eq 0 ]] || fail "sandbox_probe_rc=$sandbox_probe_rc"
+    if grep -Fq "Build sandboxing disabled due to nsjail error." "$sandbox_probe"; then
+        fail "build_sandbox_nsjail_unavailable"
+    fi
+    echo "N1D_C3_BUILD_SANDBOX_PREFLIGHT=PASS_NSJAIL"
+
     set +e +u
     product_out="$(get_build_var PRODUCT_OUT)"
     product_out_rc=$?
@@ -214,10 +227,14 @@ verify_post_build_source() {
 
     echo "N1D_C3_COMPILE_GOALS=systemimage"
     set +e +u
-    m -j"$JOBS" systemimage
-    build_rc=$?
+    m -j"$JOBS" systemimage 2>&1 | tee "$EVIDENCE_DIR/systemimage-command.log"
+    build_rc="${PIPESTATUS[0]}"
     set -euo pipefail
     [[ "$build_rc" -eq 0 ]] || fail "systemimage_build_rc=$build_rc"
+    if grep -Fq "Build sandboxing disabled due to nsjail error." "$EVIDENCE_DIR/systemimage-command.log"; then
+        fail "build_sandbox_disabled_during_systemimage"
+    fi
+    echo "N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL"
     echo "N1D_C3_SYSTEMIMAGE_BUILD=PASS"
 )
 
@@ -256,6 +273,7 @@ verify_post_build_source
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
     echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
+    echo "N1D_C3_BUILD_SANDBOX=PASS_NSJAIL"
 } > "$EVIDENCE_DIR/compile-state.env"
 
 (
