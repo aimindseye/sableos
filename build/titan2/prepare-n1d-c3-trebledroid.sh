@@ -10,6 +10,7 @@ SOURCE_LOCK="$ROOT/build/titan2/n1d-source-lock.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
 PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
+COMPOSITION_PROFILE="$ROOT/build/titan2/n1d-c3-composition.env"
 MANIFEST_SRC="$ROOT/build/titan2/n1d-c3-trebledroid-manifest.xml"
 ROM_SRC="$ROOT/build/titan2/n1d-c3-sable-rom.mk"
 TIER_FILE="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
@@ -31,6 +32,7 @@ for f in \
     "$FRESH_PROFILE" \
     "$TD_PROFILE" \
     "$PHASE_PROFILE" \
+    "$COMPOSITION_PROFILE" \
     "$MANIFEST_SRC" \
     "$ROM_SRC" \
     "$TIER_FILE" \
@@ -55,6 +57,8 @@ source "$FRESH_PROFILE"
 source "$TD_PROFILE"
 # shellcheck source=/dev/null
 source "$PHASE_PROFILE"
+# shellcheck source=/dev/null
+source "$COMPOSITION_PROFILE"
 
 [[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] \
     || fail c3a_role_mismatch
