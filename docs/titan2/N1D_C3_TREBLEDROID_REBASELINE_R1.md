@@ -57,6 +57,26 @@ artifact. The relevant branches had no intervening commits in the release
 window, so the pins reproduce the public inputs available to the workflow while
 removing its original floating-branch behavior.
 
+## Source graph
+
+Restless's successful workflow copied both its add and remove manifests before
+sync. Every one of its 54 remove-project entries exists in the sealed
+1,033-project Graphene manifest.
+
+C3A therefore uses:
+
+```text
+1033 - 54 + 12 = 991 managed projects
+```
+
+The 54 existing clean Graphene working trees are moved to a timestamped
+retirement archive rather than deleted.
+
+The private Restless vendor project is omitted. Pixel GSans is also omitted
+because its release-time immutable commit was not published/established and it
+is an optional font/branding dependency. Accordingly, C3A is a
+`PUBLIC_FUNCTIONAL_REPRODUCTION`, not a bit-identical release recreation.
+
 ## Control vs release
 
 The full 369-patch Restless stack is admitted only to reproduce the known-good
