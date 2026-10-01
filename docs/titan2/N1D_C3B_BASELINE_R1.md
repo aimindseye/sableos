@@ -1,6 +1,6 @@
 # Titan 2 N1D C3B minimal Sable baseline
 
-Status: **architecture contract only; build blocked until C3A control evidence**
+Status: **C3A evidence prerequisite satisfied; C3B transition pending separate change**
 
 Date: 2026-10-01
 
@@ -86,10 +86,22 @@ qualification.
 
 ## Current authorization state
 
+C3A has now produced sealed control evidence:
+
+```text
+N1D_C3A_CONTROL_EVIDENCE=PASS
+N1D_C3B_TRANSITION_PREREQUISITE=SATISFIED_BY_C3A_CONTROL_EVIDENCE
+```
+
+PR231 intentionally leaves the existing C3B build block in place:
+
 ```text
 N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE
 N1D_C3B_RELEASE_ELIGIBLE=NO
 ```
 
-The repository may define C3B architecture and gates now, but no C3B build is
-authorized until C3A produces sealed control evidence.
+That preserves the exact policy state under which C3A was qualified. A separate
+C3B transition change will consume
+`build/titan2/n1d-c3a-control-evidence.env`, switch the active phase to the
+minimal Sable baseline, and authorize only the C3B engineering build scope.
+Release, signing, device contact, and flash remain separate later gates.
