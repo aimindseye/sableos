@@ -67,6 +67,11 @@ def main() -> int:
             die("remote_without_name")
         remotes[name] = remote
 
+    default = root.find("default")
+    default_remote = ""
+    if default is not None:
+        default_remote = default.attrib.get("remote", "")
+
     projects_by_path: dict[str, list[ET.Element]] = {}
     for project in root.findall("project"):
         path = project.attrib.get("path") or project.attrib.get("name")
@@ -87,9 +92,9 @@ def main() -> int:
         if not HEX40.fullmatch(revision):
             die(f"path={path} revision_not_pinned={revision or '-'}")
 
-        remote_name = project.attrib.get("remote", "")
+        remote_name = project.attrib.get("remote", "") or default_remote
         if not remote_name:
-            die(f"path={path} remote_missing")
+            die(f"path={path} remote_missing_no_default")
 
         remote = remotes.get(remote_name)
         if remote is None:
