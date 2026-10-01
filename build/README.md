@@ -284,6 +284,29 @@ The fresh-source contract is enforced by:
 bash build/gates/n1d-fresh-source-contract.sh
 ```
 
+After the Graphene/AOSP base is sealed, C2 source admission is a separate
+bounded phase. It re-derives the 13 exact public Restless/Treble projects from
+the sealed historical manifest, namespaces their remote names, verifies the
+current 1,033-project base against its seal, and syncs only those 13 paths.
+
+```bash
+bash build/titan2/admit-n1d-c2-source.sh preflight
+
+bash build/titan2/admit-n1d-c2-source.sh \
+  admit \
+  --authorize-network
+```
+
+C2 remains diagnostic/control-only. This source-admission phase authorizes no
+Android build, device contact, flash, or C3 inheritance of PHH/Restless product
+policy.
+
+The admission contract is enforced by:
+
+```bash
+bash build/gates/n1d-c2-source-admission-contract.sh
+```
+
 ## Validation discipline
 
 Before providing or accepting a build/script deliverable, validate at minimum:
