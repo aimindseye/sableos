@@ -66,7 +66,7 @@ It is not the Sable release patch allowlist.
 
 ```text
 control patch count:          369
-release runtime allowlist:      0
+C3B runtime allowlist:      0
 control release eligible:      NO
 ```
 
