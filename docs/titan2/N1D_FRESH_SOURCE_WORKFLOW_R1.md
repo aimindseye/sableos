@@ -35,7 +35,11 @@ Canonical host tools remain separate:
 ## Base source identity
 
 The base checkout is initialized directly from the pinned GrapheneOS Android 16
-manifest:
+manifest. Git LFS is not a source-sync prerequisite for this stage. GrapheneOS
+documents git-lfs as an additional Vanadium/Chromium build dependency, so N1D
+does not require it unless a later workflow explicitly builds Vanadium from
+source.
+
 
 ```text
 manifest repository:
