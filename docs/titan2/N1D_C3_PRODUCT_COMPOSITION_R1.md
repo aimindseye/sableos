@@ -53,7 +53,7 @@ The **C3B Sable runtime patch allowlist** starts empty. Nothing in the
 control stack becomes accepted Sable runtime policy simply because the control
 image builds.
 
-Nine build/make patches are also vendored in SableOS as a focused audit set.
+Nine build/make patches are also vendored in SableOS as a focused C3A audit set.
 They include the Graphene-GSI dependency corrections and the ADB-authentication
 correction that are directly relevant to product composition.
 
