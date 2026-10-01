@@ -55,6 +55,7 @@ for required in \
     'N1D_C3_SCAFFOLD_PROJECT_COUNT=12' \
     'N1D_C3A_ADD_PROJECT_COUNT=12' \
     'N1D_C3A_REMOVE_PROJECT_COUNT=54' \
+    'N1D_C3A_RESTLESS_REMOVE_MANIFEST_BLOB_SHA=0bbfce1b7693e755629504fbea876ee073f2c544' \
     'N1D_C3A_RETAINED_GRAPHENE_PROJECT_COUNT=979' \
     'N1D_C3A_MANAGED_PROJECT_COUNT=991' \
     'N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION' \
@@ -116,6 +117,21 @@ map_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$REMOVE_MAP")"
 [[ "$remove_count" == 54 ]] || fail "remove_manifest_count=$remove_count"
 [[ "$map_count" == 54 ]] || fail "remove_map_count=$map_count"
 
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+grep -o 'remove-project name="[^"]*"' "$REMOVE_MANIFEST" \
+    | sed -e 's/^remove-project name="//' -e 's/"$//' \
+    | LC_ALL=C sort > "$tmp/remove-manifest-names.txt"
+awk 'NF && $1 !~ /^#/ {print $1}' "$REMOVE_MAP" \
+    | LC_ALL=C sort > "$tmp/remove-map-names.txt"
+
+cmp -s "$tmp/remove-manifest-names.txt" "$tmp/remove-map-names.txt" \
+    || {
+        diff -u "$tmp/remove-manifest-names.txt" "$tmp/remove-map-names.txt" || true
+        fail remove_manifest_map_name_mismatch
+    }
+
 if grep -Fq 'vendor/cawilliamson-priv' "$ADD_MANIFEST"; then
     fail private_restless_vendor_present
 fi
@@ -174,6 +190,7 @@ if grep -Fq 'sable_titan2_n1d_arm64' "$PROFILE" "$PRODUCT" "$DRIVER"; then
     fail retired_handcrafted_product_reintroduced
 fi
 
+echo "N1D_C3A_REMOVE_MANIFEST_MAP=PASS_EXACT_NAMES count=54"
 echo "N1D_C3A_SOURCE_GRAPH=PASS add=12 remove=54 managed=991"
 echo "N1D_C3A_CONTROL_FIDELITY=PASS_PUBLIC_FUNCTIONAL_REPRODUCTION"
 echo "N1D_C3A_CONTROL_PATCH_TIERS=PASS count=5"
