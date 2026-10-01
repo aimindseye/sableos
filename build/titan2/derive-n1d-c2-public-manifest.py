@@ -37,6 +37,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--remote-prefix", default="")
     return parser.parse_args()
 
 
@@ -79,7 +80,7 @@ def main() -> int:
             continue
         projects_by_path.setdefault(path, []).append(project)
 
-    selected: list[ET.Element] = []
+    selected: list[tuple[ET.Element, str]] = []
     used_remotes: set[str] = set()
 
     for path in PUBLIC_PROJECT_PATHS:
@@ -107,7 +108,7 @@ def main() -> int:
         if "vendor/cawilliamson-priv" in path:
             die("private_vendor_selected")
 
-        selected.append(project)
+        selected.append((project, remote_name))
         used_remotes.add(remote_name)
 
     if len(selected) != len(PUBLIC_PROJECT_PATHS):
@@ -128,9 +129,13 @@ def main() -> int:
             for key, value in remote.attrib.items()
             if key in {"name", "fetch", "review"}
         }
+        attrs["name"] = f"{args.remote_prefix}{remote_name}"
         ET.SubElement(out_root, "remote", attrs)
 
-    for project in sorted(selected, key=lambda item: item.attrib.get("path", "")):
+    for project, remote_name in sorted(
+        selected,
+        key=lambda item: item[0].attrib.get("path", ""),
+    ):
         attrs = {
             key: value
             for key, value in project.attrib.items()
@@ -145,13 +150,22 @@ def main() -> int:
             }
         }
         attrs["revision"] = project.attrib["revision"]
+        attrs["remote"] = f"{args.remote_prefix}{remote_name}"
         ET.SubElement(out_root, "project", attrs)
 
     ET.indent(out_root, space="  ")
     xml = ET.tostring(out_root, encoding="unicode", xml_declaration=True) + "\n"
 
     lowered = xml.lower()
-    for forbidden in ("cawilliamson", "ssh://", "git@", 'revision="main"', 'revision="master"'):
+    for forbidden in (
+        "cawilliamson",
+        "ssh://",
+        "git@",
+        'revision="main"',
+        'revision="master"',
+        "upstream=",
+        "dest-branch=",
+    ):
         if forbidden in lowered:
             die(f"forbidden_token={forbidden}")
 
