@@ -6,12 +6,13 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STORAGE_PROFILE="$ROOT/build/config/storage.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
+PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
-fail() { echo "N1D_C3_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
+fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -21,6 +22,10 @@ source "$STORAGE_PROFILE"
 source "$FRESH_PROFILE"
 # shellcheck source=/dev/null
 source "$TD_PROFILE"
+# shellcheck source=/dev/null
+source "$PHASE_PROFILE"
+[[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] || fail c3a_role_mismatch
+[[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
 
 BUILD_AUTHORIZED=NO
 NETWORK_FETCH_AUTHORIZED=NO
@@ -43,7 +48,7 @@ done
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || fail "invalid_jobs=$JOBS"
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
-OUT_C3="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-c3-td"
+OUT_C3="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-c3a-td"
 PARSE_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3-trebledroid-parse"
 BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3-trebledroid-build"
 LUNCH_TARGET="${N1D_C3_GENERATED_PRODUCT}-${N1D_C3_RELEASE_CONFIG}-${N1D_C3_FIRST_VARIANT}"
@@ -57,6 +62,9 @@ echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
 echo "RELEASE_ELIGIBLE=NO"
+echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+echo "C3A_RELEASE_ELIGIBLE=NO"
+echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
@@ -116,8 +124,8 @@ exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
     [[ "$product_out_rc" -eq 0 ]] || fail "product_out_rc=$product_out_rc"
     printf '%s\n' "$product_out" > "$EVIDENCE_DIR/product-out.txt"
 
-    echo "N1D_C3_TREBLEDROID_BUILD_RECIPE=TREBLE_APP_RELEASE_THEN_SYSTEMIMAGE"
-    echo "N1D_C3_TREBLEDROID_BUILD_GOAL=systemimage"
+    echo "N1D_C3A_TREBLEDROID_BUILD_RECIPE=TREBLE_APP_RELEASE_THEN_SYSTEMIMAGE"
+    echo "N1D_C3A_TREBLEDROID_BUILD_GOAL=systemimage"
     set +e +u
     make systemimage -j"$JOBS" 2>&1 | tee "$EVIDENCE_DIR/systemimage-command.log"
     build_rc="${PIPESTATUS[0]}"
@@ -138,7 +146,7 @@ sha="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
 bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 
 {
-    echo "N1D_C3_TREBLEDROID_BUILD=PASS"
+    echo "N1D_C3A_TREBLEDROID_BUILD=PASS"
     echo "N1D_C3_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
     echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
     echo "N1D_C3_VARIANT=$N1D_C3_FIRST_VARIANT"
@@ -161,6 +169,6 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 echo "SYSTEM_IMG=$SYSTEM_IMG"
 echo "SYSTEM_SHA256=$sha"
 echo "SYSTEM_BYTES=$bytes"
-echo "N1D_C3_TREBLEDROID_SYSTEMIMAGE=PASS"
+echo "N1D_C3A_TREBLEDROID_SYSTEMIMAGE=PASS"
 echo "N1D_C3_RELEASE_ELIGIBLE=NO"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
