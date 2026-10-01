@@ -217,11 +217,9 @@ preflight() {
 
     command -v git >/dev/null 2>&1 ||
         fail "git_missing"
-    git lfs version >/dev/null 2>&1 ||
-        fail "git_lfs_missing"
 
     "$SABLE_REPO_TOOL" version | head -20
-    git lfs version
+    git --version
 
     local tmp
     tmp="$(mktemp -d)"
@@ -320,7 +318,6 @@ init_base() {
         printf 'y\n' |
             "$SABLE_REPO_TOOL" init \
                 --depth="$N1D_SOURCE_SYNC_DEPTH" \
-                --git-lfs \
                 --manifest-url "$N1D_GRAPHENE_MANIFEST_URL" \
                 --manifest-branch "$N1D_GRAPHENE_MANIFEST_REF"
     )
