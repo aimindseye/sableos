@@ -214,6 +214,8 @@ PY
 
   run_static_contract sable-pipeline \
     bash "$ROOT/build/gates/sable-pipeline-contract.sh"
+  run_static_contract n1d-local-ci-scope \
+    bash "$ROOT/build/gates/n1d-local-ci-scope-contract.sh"
 
   if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then
     run_static_contract r8-build-driver \
