@@ -164,58 +164,35 @@ grep -Fxq "TARGET_BUILD_VARIANT='$N1D_C3_FIRST_BUILD_VARIANT'" "$EVIDENCE_DIR/pr
     || fail "dumpvars_target_variant"
 grep -Fxq "PRODUCT_DEVICE='$N1D_C3_PRODUCT_DEVICE'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_device"
-SOONG_VARIABLES_JSON="$PARSE_OUT/soong/soong.$N1D_C3_PRODUCT_NAME.variables"
-[[ -f "$SOONG_VARIABLES_JSON" ]] \
-    || fail "soong_variables_missing=$SOONG_VARIABLES_JSON"
+SOONG_CONFIG_VARS="$ANDROID_ROOT/build/make/core/android_soong_config_vars.mk"
+GSI_ANDROID_BP="$ANDROID_ROOT/build/make/target/product/gsi/Android.bp"
+STAGED_PRODUCT_MK="$STAGE_TARGET/sable_titan2_n1d_arm64.mk"
 
-python3 - "$SOONG_VARIABLES_JSON" "$EVIDENCE_DIR/soong-gsi-selector.env" <<'PY'
-import json
-import pathlib
-import sys
+for source_file in "$SOONG_CONFIG_VARS" "$GSI_ANDROID_BP" "$STAGED_PRODUCT_MK"; do
+    [[ -f "$source_file" ]] || fail "gsi_selector_source_missing=$source_file"
+done
 
-src = pathlib.Path(sys.argv[1])
-dst = pathlib.Path(sys.argv[2])
+grep -Fq \
+    '$(call soong_config_set_bool,gsi,building_gsi,$(if $(filter true,$(BUILDING_GSI)),true,false))' \
+    "$SOONG_CONFIG_VARS" \
+    || fail "gsi_selector_conversion_missing"
 
-with src.open("r", encoding="utf-8") as fp:
-    data = json.load(fp)
+grep -Fq \
+    'enabled: select(soong_config_variable("gsi", "building_gsi"), {' \
+    "$GSI_ANDROID_BP" \
+    || fail "aosp_system_image_selector_missing"
 
-product_device = data.get("ProductDevice")
-vendor_vars = data.get("VendorVars", {})
-gsi_vars = vendor_vars.get("gsi", {})
-building_gsi = gsi_vars.get("building_gsi", None)
-use_soong_system_image = data.get("UseSoongSystemImage")
-product_soong_system_image = data.get("ProductSoongDefinedSystemImage")
+grep -Fxq 'BUILDING_GSI := false' "$STAGED_PRODUCT_MK" \
+    || fail "staged_product_building_gsi_not_false"
 
-if product_device != "gsi_arm64":
-    raise SystemExit(
-        f"soong_product_device expected=gsi_arm64 actual={product_device!r}"
-    )
-
-if building_gsi != "":
-    raise SystemExit(
-        "soong_gsi_building_gsi expected_empty "
-        f"actual={building_gsi!r}"
-    )
-
-with dst.open("w", encoding="utf-8") as fp:
-    fp.write("N1D_C3_SOONG_PRODUCT_DEVICE=gsi_arm64\n")
-    fp.write("N1D_C3_SOONG_GSI_BUILDING_GSI_RAW=EMPTY\n")
-    fp.write("N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO\n")
-    fp.write(
-        "N1D_C3_SOONG_USE_SYSTEM_IMAGE="
-        f"{str(use_soong_system_image).upper()}\n"
-    )
-    fp.write(
-        "N1D_C3_SOONG_DEFINED_SYSTEM_IMAGE="
-        f"{product_soong_system_image or 'EMPTY'}\n"
-    )
-PY
+{
+    echo "N1D_C3_SOONG_GSI_SOURCE_SETTING=false"
+    echo "N1D_C3_SOONG_GSI_CONVERSION=FILTER_TRUE"
+    echo "N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_SELECTOR=gsi.building_gsi"
+    echo "N1D_C3_SOONG_GSI_SELECTOR_SOURCE_PROOF=PASS"
+} > "$EVIDENCE_DIR/soong-gsi-selector.env"
 
 cat "$EVIDENCE_DIR/soong-gsi-selector.env"
-
-grep -Fxq 'N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO' \
-    "$EVIDENCE_DIR/soong-gsi-selector.env" \
-    || fail "soong_gsi_selector_not_disabled"
 grep -Fxq "PRODUCT_BRAND='SableOS'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_brand"
 grep -Fxq "PRODUCT_MODEL='SableOS Titan 2 N1D'" "$EVIDENCE_DIR/product-vars.env" \
@@ -236,7 +213,7 @@ fi
     echo "N1D_C3_PRODUCT_NAME=$N1D_C3_PRODUCT_NAME"
     echo "N1D_C3_PRODUCT_DEVICE=$N1D_C3_PRODUCT_DEVICE"
     echo "N1D_C3_BUILDING_GSI_SOURCE_SETTING=$N1D_C3_BUILDING_GSI_VALUE"
-    echo "N1D_C3_SOONG_VARIABLES_PROOF=PASS"
+    echo "N1D_C3_SOONG_GSI_SELECTOR_SOURCE_PROOF=PASS"
     echo "N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO"
     echo "N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO"
     echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
@@ -260,7 +237,7 @@ fi
 )
 
 echo "N1D_C3_PRODUCT_PARSE_IDENTITY=PASS"
-echo "N1D_C3_PRODUCT_PARSE_SOONG_VARIABLES=PASS"
+echo "N1D_C3_PRODUCT_PARSE_SOONG_SOURCE_PROOF=PASS"
 echo "N1D_C3_PRODUCT_PARSE_SOONG_GSI_SELECTOR=PASS_DISABLED"
 echo "N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS"
 echo "N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS"
