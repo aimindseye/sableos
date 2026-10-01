@@ -181,6 +181,9 @@ verify_contract_inputs() {
     local tier_count
     local tier_total
     local remove_count
+    local add_blob
+    local remove_blob
+    local rom_blob
 
     audit_count="$(count_entries "$BUILD_AUDIT_SET")"
     c3b_runtime_count="$(count_entries "$C3B_RUNTIME_ALLOWLIST")"
@@ -199,6 +202,17 @@ verify_contract_inputs() {
     [[ "$remove_count" == "$N1D_C3A_REMOVE_PROJECT_COUNT" ]] \
         || fail "c3a_remove_project_count expected=$N1D_C3A_REMOVE_PROJECT_COUNT actual=$remove_count"
 
+    add_blob="$(git hash-object "$ADD_MANIFEST_SRC")"
+    remove_blob="$(git hash-object "$REMOVE_MANIFEST_SRC")"
+    rom_blob="$(git hash-object "$ROM_SRC")"
+
+    [[ "$add_blob" == "$N1D_C3A_ADD_MANIFEST_BLOB_SHA" ]] \
+        || fail "c3a_add_manifest_blob expected=$N1D_C3A_ADD_MANIFEST_BLOB_SHA actual=$add_blob"
+    [[ "$remove_blob" == "$N1D_C3A_RESTLESS_REMOVE_MANIFEST_BLOB_SHA" ]] \
+        || fail "c3a_remove_manifest_blob expected=$N1D_C3A_RESTLESS_REMOVE_MANIFEST_BLOB_SHA actual=$remove_blob"
+    [[ "$rom_blob" == "$N1D_C3A_CONTROL_ROM_BLOB_SHA" ]] \
+        || fail "c3a_control_rom_blob expected=$N1D_C3A_CONTROL_ROM_BLOB_SHA actual=$rom_blob"
+
     while IFS= read -r patch; do
         [[ -z "$patch" || "$patch" == \#* ]] && continue
         [[ -f "$BUILD_PATCH_DIR/$patch" ]] \
@@ -208,6 +222,7 @@ verify_contract_inputs() {
     echo "N1D_C3A_BUILD_MAKE_AUDIT_SET=PASS count=$audit_count"
     echo "N1D_C3A_CONTROL_PATCH_TIERS=PASS count=$tier_count patches=$tier_total"
     echo "N1D_C3A_REMOVE_PROJECT_MAP=PASS count=$remove_count"
+    echo "N1D_C3A_INPUT_BLOBS=PASS add=$add_blob remove=$remove_blob rom=$rom_blob"
     echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
 }
 
@@ -293,9 +308,12 @@ fetch_recipe() {
 
     cmp -s "$RECIPE_ROOT/configs/manifests/remove.xml" "$REMOVE_MANIFEST_SRC" \
         || fail pinned_remove_manifest_mismatch
+    cmp -s "$RECIPE_ROOT/configs/rom/rom.mk" "$ROM_SRC" \
+        || fail pinned_control_rom_mismatch
 
     echo "N1D_C3A_RESTLESS_RECIPE=PASS commit=$N1D_RESTLESS_COMMIT"
     echo "N1D_C3A_RESTLESS_REMOVE_MANIFEST=PASS_EXACT"
+    echo "N1D_C3A_RESTLESS_CONTROL_ROM=PASS_EXACT"
 }
 
 verify_recipe_inventory() {
