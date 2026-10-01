@@ -33,6 +33,15 @@ source "$ADMISSION_PROFILE"
 
 ACTION="${1:-preflight}"
 if (($#)); then shift; fi
+
+case "$ACTION" in
+    admit|resume)
+        echo "N1D_C2_EXACT_SOURCE_RECONSTRUCTION=BLOCKED_PUBLIC_SOURCE_OBJECT_UNAVAILABLE" >&2
+        echo "N1D_C2_SOURCE_ADMISSION_RETRY_ALLOWED=NO" >&2
+        echo "N1D_C2_SOURCE_ADMISSION=FAIL_CLOSED_USE_PINNED_PREBUILT_CONTROL" >&2
+        exit 1
+        ;;
+esac
 NETWORK_AUTHORIZED=NO
 while (($#)); do
     case "$1" in
