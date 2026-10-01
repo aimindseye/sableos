@@ -295,7 +295,21 @@ bash build/titan2/admit-n1d-c2-source.sh preflight
 bash build/titan2/admit-n1d-c2-source.sh \
   admit \
   --authorize-network
+
+# Only after a failed bounded admission has already installed the C2 manifest:
+bash build/titan2/admit-n1d-c2-source.sh resume-preflight
+
+bash build/titan2/admit-n1d-c2-source.sh \
+  resume \
+  --authorize-network
 ```
+
+The immutable 40-hex revision remains C2 source identity. Install/resume
+manifests preserve the `upstream` locator from the sealed
+`repo manifest -r` only as transport metadata for locating locked commits in
+the shallow checkout. Audit-only derivations continue to omit it. Resume
+revalidates all 1,033 sealed base HEADs and any existing partial C2 worktrees
+before retrying the same 13 bounded paths.
 
 C2 remains diagnostic/control-only. This source-admission phase authorizes no
 Android build, device contact, flash, or C3 inheritance of PHH/Restless product

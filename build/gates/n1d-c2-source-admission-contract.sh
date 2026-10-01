@@ -32,6 +32,9 @@ for required in \
     'N1D_C2_FLASH_AUTHORIZED=NO' \
     'N1D_C2_PRIVATE_VENDOR_ALLOWED=NO' \
     'N1D_C2_MUTABLE_REVISION_ALLOWED=NO' \
+    'N1D_C2_UPSTREAM_LOCATOR_PRESERVE=YES' \
+    'N1D_C2_UPSTREAM_LOCATOR_IDENTITY_ROLE=TRANSPORT_ONLY' \
+    'N1D_C2_RESUME_FAILED_ADMISSION_ALLOWED=YES' \
     'N1D_C2_PRODUCT_ROLE=DIAGNOSTIC_CONTROL_ONLY' \
     'N1D_C2_ADMISSION_CONTRACT=PASS'
 do
@@ -48,6 +51,14 @@ grep -Fq 'N1D_C2_DIRTY_PROJECT_COUNT=0' "$DRIVER" || fail dirty_count_gate_missi
 grep -Fq -- '--remote-prefix "$N1D_C2_REMOTE_PREFIX"' "$DRIVER" || fail remote_prefix_binding_missing
 grep -Fq -- '--project-tsv "$ledger"' "$DRIVER" || fail project_ledger_binding_missing
 grep -Fq 'N1D_C2_BASE_C2_PATH_DISJOINT=PASS' "$DRIVER" || fail base_c2_disjoint_gate_missing
+grep -Fq -- '--preserve-upstream' "$DRIVER" || fail upstream_preserve_binding_missing
+grep -Fq 'N1D_C2_UPSTREAM_IDENTITY_ROLE=TRANSPORT_ONLY' "$DRIVER" || fail upstream_transport_role_missing
+grep -Fq 'verify_base_subset_exact() {' "$DRIVER" || fail resume_base_verifier_missing
+grep -Fq 'verify_partial_c2_safe() {' "$DRIVER" || fail resume_partial_c2_verifier_missing
+grep -Fq 'resume_preflight() {' "$DRIVER" || fail resume_preflight_action_missing
+grep -Fq 'N1D_C2_SOURCE_ADMISSION_RESUME_PREFLIGHT=PASS' "$DRIVER" || fail resume_preflight_pass_marker_missing
+grep -Fq 'resume() {' "$DRIVER" || fail resume_action_missing
+grep -Fq 'N1D_C2_SOURCE_ADMISSION_RESUME=PASS' "$DRIVER" || fail resume_pass_marker_missing
 
 if grep -Fq '/srv/data/sable-build' "$PROFILE" "$DRIVER"; then
     fail legacy_build_root_hardcoded
@@ -79,6 +90,10 @@ for index, path in enumerate(paths, start=1):
         attrs["remote"] = "public-b"
     elif path != "prebuilts/vndk/v28":
         attrs["remote"] = "public-a"
+    if path == "device/phh/treble":
+        attrs["upstream"] = "refs/heads/android-16.0"
+    elif path == "prebuilts/vndk/v29":
+        attrs["upstream"] = "refs/heads/android16-qpr2-release"
     ET.SubElement(root, "project", attrs)
 ET.indent(root, space="  ")
 Path(sys.argv[1]).write_text(ET.tostring(root, encoding="unicode", xml_declaration=True) + "\n", encoding="utf-8")
@@ -97,10 +112,37 @@ grep -Fq 'N1D_C2_PUBLIC_PROJECT_COUNT=13' "$TMP/derive.log" || fail fixture_proj
 if grep '<remote ' "$TMP/output.xml" | grep -v 'name="n1d-c2-' >/dev/null; then
     fail fixture_unprefixed_remote
 fi
-while IFS=$'\t' read -r path revision remote; do
+while IFS=$'\t' read -r path revision remote upstream; do
     [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || fail "fixture_unpinned_revision path=$path"
     [[ "$remote" == n1d-c2-* ]] || fail "fixture_unprefixed_remote path=$path"
+    [[ -z "$upstream" ]] || fail "audit_fixture_upstream_leaked path=$path"
 done < "$TMP/c2.tsv"
+if grep -Fq 'upstream=' "$TMP/output.xml"; then
+    fail audit_fixture_upstream_leaked_manifest
+fi
+grep -Fq 'N1D_C2_UPSTREAM_LOCATOR_COUNT=0' "$TMP/derive.log" ||
+    fail audit_fixture_upstream_count
+
+python3 "$DERIVE" \
+    --input "$TMP/input.xml" \
+    --output "$TMP/output-install.xml" \
+    --remote-prefix n1d-c2- \
+    --project-tsv "$TMP/c2-install.tsv" \
+    --preserve-upstream \
+    > "$TMP/derive-install.log"
+
+grep -Fq 'N1D_C2_UPSTREAM_LOCATOR_COUNT=2' "$TMP/derive-install.log" ||
+    fail install_fixture_upstream_count
+grep -Fq 'N1D_C2_UPSTREAM_IDENTITY_ROLE=TRANSPORT_ONLY' "$TMP/derive-install.log" ||
+    fail install_fixture_upstream_role
+grep -Fq 'upstream="refs/heads/android-16.0"' "$TMP/output-install.xml" ||
+    fail install_fixture_phh_upstream_missing
+grep -Fq 'upstream="refs/heads/android16-qpr2-release"' "$TMP/output-install.xml" ||
+    fail install_fixture_v29_upstream_missing
+awk -F '\t' '$1 == "device/phh/treble" && $4 == "refs/heads/android-16.0" { found=1 } END { exit(found ? 0 : 1) }' "$TMP/c2-install.tsv" ||
+    fail install_fixture_phh_ledger_upstream
+awk -F '\t' '$1 == "prebuilts/vndk/v29" && $4 == "refs/heads/android16-qpr2-release" { found=1 } END { exit(found ? 0 : 1) }' "$TMP/c2-install.tsv" ||
+    fail install_fixture_v29_ledger_upstream
 
 printf 'base/a\t1111111111111111111111111111111111111111\nbase/b\t2222222222222222222222222222222222222222\n' > "$TMP/base.tsv"
 printf 'c2/a\t3333333333333333333333333333333333333333\tn1d-c2-public-a\n' > "$TMP/c2-small.tsv"
@@ -134,6 +176,10 @@ echo "N1D_C2_SOURCE_ADMISSION_PYTHON_SYNTAX=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_EXPLICIT_NETWORK_AUTH=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_BOUNDED_SYNC=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_COLLISION_SAFE_REMOTES=PASS"
+echo "N1D_C2_SOURCE_ADMISSION_AUDIT_UPSTREAM_STRIPPING=PASS"
+echo "N1D_C2_SOURCE_ADMISSION_INSTALL_UPSTREAM_PRESERVE=PASS"
+echo "N1D_C2_SOURCE_ADMISSION_RESUME_POLICY=PASS"
+echo "N1D_C2_SOURCE_ADMISSION_RESUME_PREFLIGHT_CONTRACT=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_EXACT_HEAD_VERIFY=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_MISMATCH_REJECTION=PASS"
 echo "N1D_C2_SOURCE_ADMISSION_CONTRACT=PASS"

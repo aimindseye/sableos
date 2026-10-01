@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--remote-prefix", default="")
     parser.add_argument("--project-tsv", type=Path)
+    parser.add_argument("--preserve-upstream", action="store_true")
     return parser.parse_args()
 
 
@@ -150,6 +151,8 @@ def main() -> int:
                 "clone-depth",
             }
         }
+        if args.preserve_upstream and project.attrib.get("upstream", ""):
+            attrs["upstream"] = project.attrib["upstream"]
         attrs["revision"] = project.attrib["revision"]
         attrs["remote"] = f"{args.remote_prefix}{remote_name}"
         ET.SubElement(out_root, "project", attrs)
@@ -164,7 +167,6 @@ def main() -> int:
         "git@",
         'revision="main"',
         'revision="master"',
-        "upstream=",
         "dest-branch=",
     ):
         if forbidden in lowered:
@@ -181,9 +183,14 @@ def main() -> int:
             key=lambda item: item[0].attrib.get("path", ""),
         ):
             path = project.attrib.get("path") or project.attrib["name"]
+            upstream = (
+                project.attrib.get("upstream", "")
+                if args.preserve_upstream
+                else ""
+            )
             rows.append(
                 f"{path}\t{project.attrib['revision']}\t"
-                f"{args.remote_prefix}{remote_name}"
+                f"{args.remote_prefix}{remote_name}\t{upstream}"
             )
         args.project_tsv.write_text("\n".join(rows) + "\n", encoding="utf-8")
 
@@ -194,7 +201,14 @@ def main() -> int:
     if args.project_tsv is not None:
         print(f"N1D_C2_PUBLIC_PROJECT_TSV={args.project_tsv}")
     print("N1D_C2_PRIVATE_VENDOR=ABSENT")
+    upstream_count = sum(
+        1
+        for project, _remote_name in selected
+        if args.preserve_upstream and project.attrib.get("upstream", "")
+    )
     print("N1D_C2_MUTABLE_REVISIONS=ABSENT")
+    print(f"N1D_C2_UPSTREAM_LOCATOR_COUNT={upstream_count}")
+    print("N1D_C2_UPSTREAM_IDENTITY_ROLE=TRANSPORT_ONLY")
     print("N1D_C2_PUBLIC_MANIFEST=PASS")
     return 0
 

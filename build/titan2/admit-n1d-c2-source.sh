@@ -113,19 +113,36 @@ verify_historical_c2_seal() {
 }
 
 derive_install_manifest() {
-    local manifest="$1" ledger="$2" tab
+    local manifest="$1" ledger="$2" tab upstream_count
     tab="$(printf '\t')"
-    "$SABLE_PYTHON" "$DERIVE" --input "$HISTORICAL_C2_MANIFEST" --output "$manifest" --remote-prefix "$N1D_C2_REMOTE_PREFIX" --project-tsv "$ledger"
+    "$SABLE_PYTHON" "$DERIVE" \
+        --input "$HISTORICAL_C2_MANIFEST" \
+        --output "$manifest" \
+        --remote-prefix "$N1D_C2_REMOTE_PREFIX" \
+        --project-tsv "$ledger" \
+        --preserve-upstream
     [[ "$(grep -c '<project ' "$manifest")" == "$N1D_C2_PROJECT_COUNT" ]] || fail derived_project_count
     [[ "$(grep -cve '^$' "$ledger" || true)" == "$N1D_C2_PROJECT_COUNT" ]] || fail derived_ledger_count
-    if grep -Eiq 'cawilliamson|ssh://|git@|revision="(main|master)"|upstream=|dest-branch=' "$manifest"; then fail derived_manifest_forbidden_token; fi
+    if grep -Eiq 'cawilliamson|ssh://|git@|revision="(main|master)"|dest-branch=' "$manifest"; then fail derived_manifest_forbidden_token; fi
     if grep '<remote ' "$manifest" | grep -v "name=\"$N1D_C2_REMOTE_PREFIX" >/dev/null; then fail derived_manifest_unprefixed_remote; fi
-    while IFS="$tab" read -r path revision remote; do
+    upstream_count=0
+    while IFS="$tab" read -r path revision remote upstream; do
         [[ -n "$path" && -n "$revision" && -n "$remote" ]] || fail derived_ledger_bad_row
         [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || fail "derived_revision_not_pinned path=$path revision=$revision"
         [[ "$remote" == "$N1D_C2_REMOTE_PREFIX"* ]] || fail "derived_remote_not_prefixed path=$path remote=$remote"
+        [[ -z "$upstream" || "$upstream" != *[[:space:]]* ]] || fail "invalid_upstream_locator path=$path upstream=$upstream"
+        if [[ -n "$upstream" ]]; then
+            upstream_count=$((upstream_count + 1))
+        fi
         if grep -Fq -- "$path$tab" "$BASE_HEADS"; then fail "c2_path_overlaps_sealed_base path=$path"; fi
     done < "$ledger"
+    (( upstream_count > 0 )) || fail c2_upstream_locator_count_zero
+    for required_path in device/phh/treble prebuilts/vndk/v29; do
+        awk -F '\t' -v path="$required_path" '$1 == path && $4 != "" { found=1 } END { exit(found ? 0 : 1) }' "$ledger" ||
+            fail "required_upstream_locator_missing path=$required_path"
+    done
+    echo "N1D_C2_UPSTREAM_LOCATOR_COUNT=$upstream_count"
+    echo "N1D_C2_UPSTREAM_IDENTITY_ROLE=TRANSPORT_ONLY"
     echo "N1D_C2_BASE_C2_PATH_DISJOINT=PASS"
     echo "N1D_C2_INSTALL_MANIFEST_DERIVATION=PASS"
 }
@@ -167,6 +184,47 @@ verify_current_base_exact() {
     echo "N1D_C2_CURRENT_BASE_PROJECT_COUNT=$current_count"
     echo "N1D_C2_CURRENT_BASE_DIRTY_PROJECT_COUNT=$dirty_count"
     echo "N1D_C2_CURRENT_BASE_HEADS=PASS_EXACT"
+}
+
+verify_base_subset_exact() {
+    verify_manifest_head
+    verify_no_out
+    [[ ! -e "$ANDROID_ROOT/vendor/cawilliamson-priv" ]] || fail private_vendor_present_during_resume
+    local tab path expected actual status checked
+    tab="$(printf '\t')"
+    checked=0
+    while IFS="$tab" read -r path expected; do
+        [[ -n "$path" && -n "$expected" ]] || continue
+        [[ -d "$ANDROID_ROOT/$path" ]] || fail "resume_base_path_missing=$path"
+        actual="$(git -C "$ANDROID_ROOT/$path" rev-parse HEAD)"
+        [[ "$actual" == "$expected" ]] || fail "resume_base_head path=$path expected=$expected actual=$actual"
+        status="$(git -C "$ANDROID_ROOT/$path" status --porcelain --untracked-files=all)"
+        [[ -z "$status" ]] || fail "resume_base_dirty path=$path"
+        checked=$((checked + 1))
+    done < "$BASE_HEADS"
+    [[ "$checked" == "$N1D_C2_BASE_PROJECT_COUNT" ]] || fail "resume_base_count expected=$N1D_C2_BASE_PROJECT_COUNT actual=$checked"
+    echo "N1D_C2_RESUME_BASE_PROJECT_COUNT=$checked"
+    echo "N1D_C2_RESUME_BASE_HEADS=PASS_EXACT"
+    echo "N1D_C2_RESUME_BASE_DIRTY=PASS_ZERO"
+}
+
+verify_partial_c2_safe() {
+    local ledger="$1" tab path expected remote upstream actual status present
+    tab="$(printf '\t')"
+    present=0
+    while IFS="$tab" read -r path expected remote upstream; do
+        [[ -n "$path" && -n "$expected" ]] || continue
+        if [[ -d "$ANDROID_ROOT/$path" ]]; then
+            actual="$(git -C "$ANDROID_ROOT/$path" rev-parse HEAD 2>/dev/null || true)"
+            [[ -n "$actual" ]] || fail "resume_c2_non_git_path=$path"
+            [[ "$actual" == "$expected" ]] || fail "resume_c2_head path=$path expected=$expected actual=$actual"
+            status="$(git -C "$ANDROID_ROOT/$path" status --porcelain --untracked-files=all)"
+            [[ -z "$status" ]] || fail "resume_c2_dirty path=$path"
+            present=$((present + 1))
+        fi
+    done < "$ledger"
+    echo "N1D_C2_RESUME_EXISTING_C2_PROJECTS=$present"
+    echo "N1D_C2_RESUME_EXISTING_C2_STATE=PASS"
 }
 
 verify_admitted_state() {
@@ -257,8 +315,87 @@ admit() {
     echo "EVIDENCE_DIR=$out"
 }
 
+resume_preflight() {
+    echo "===== TITAN 2 N1D C2 SOURCE ADMISSION RESUME PREFLIGHT ====="
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    assert_no_build_device_flash
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_base_seal
+    verify_historical_c2_seal
+    [[ -f "$LOCAL_MANIFEST" ]] || fail "resume_local_manifest_missing=$LOCAL_MANIFEST"
+    local manifest_count tmp
+    manifest_count="$(find "$LOCAL_MANIFEST_DIR" -mindepth 1 -maxdepth 1 -type f -print | wc -l | tr -d ' ')"
+    [[ "$manifest_count" == 1 ]] || fail "resume_local_manifest_count=$manifest_count"
+    verify_base_subset_exact
+    tmp="$(mktemp -d)"
+    derive_install_manifest "$tmp/$N1D_C2_LOCAL_MANIFEST_NAME" "$tmp/c2-projects.tsv"
+    verify_partial_c2_safe "$tmp/c2-projects.tsv"
+    rm -rf "$tmp"
+    echo "N1D_C2_SOURCE_ADMISSION_RESUME_PREFLIGHT=PASS"
+}
+
+resume() {
+    echo "===== TITAN 2 N1D C2 SOURCE ADMISSION RESUME ====="
+    require_network_authorization
+    assert_no_build_device_flash
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_base_seal
+    verify_historical_c2_seal
+    [[ -f "$LOCAL_MANIFEST" ]] || fail "resume_local_manifest_missing=$LOCAL_MANIFEST"
+    local manifest_count stamp out staged_manifest ledger rc seal
+    manifest_count="$(find "$LOCAL_MANIFEST_DIR" -mindepth 1 -maxdepth 1 -type f -print | wc -l | tr -d ' ')"
+    [[ "$manifest_count" == 1 ]] || fail "resume_local_manifest_count=$manifest_count"
+    verify_base_subset_exact
+    stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    out="$EVIDENCE_ROOT/$stamp-c2-resume"
+    mkdir -p "$out"
+    cp "$LOCAL_MANIFEST" "$out/pre-resume-local-manifest.xml"
+    staged_manifest="$out/$N1D_C2_LOCAL_MANIFEST_NAME"
+    ledger="$out/c2-projects.tsv"
+    derive_install_manifest "$staged_manifest" "$ledger"
+    verify_partial_c2_safe "$ledger"
+    cp "$staged_manifest" "$LOCAL_MANIFEST"
+    cmp -s "$LOCAL_MANIFEST" "$staged_manifest" || fail resume_manifest_install_mismatch
+    mapfile -t project_paths < <(cut -f1 "$ledger")
+    [[ "${#project_paths[@]}" == "$N1D_C2_PROJECT_COUNT" ]] || fail "resume_project_path_count expected=$N1D_C2_PROJECT_COUNT actual=${#project_paths[@]}"
+    set +e
+    (cd "$ANDROID_ROOT" && "$SABLE_REPO_TOOL" sync --jobs="$N1D_C2_SYNC_JOBS" --no-clone-bundle --no-tags "${project_paths[@]}") 2>&1 | tee "$out/repo-sync-c2-resume.log"
+    rc="${PIPESTATUS[0]}"
+    set -e
+    echo "REPO_SYNC_C2_RESUME_RC=$rc" > "$out/sync-result.env"
+    [[ "$rc" == 0 ]] || fail "c2_repo_sync_resume_rc=$rc log=$out/repo-sync-c2-resume.log"
+    verify_admitted_state "$ledger" "$out"
+    {
+        echo "N1D_C2_BASE_SEAL=$BASE_SEAL"
+        echo "N1D_C2_BASE_SEAL_SHA256=$N1D_C2_BASE_SEAL_SHA256"
+        echo "N1D_C2_HISTORICAL_SEAL=$HISTORICAL_C2_SEAL"
+        echo "N1D_C2_HISTORICAL_SEAL_SHA256=$N1D_C2_PIN_SEAL_SHA256"
+        echo "N1D_C2_LOCAL_MANIFEST=$LOCAL_MANIFEST"
+        echo "N1D_C2_PROJECT_COUNT=$N1D_C2_PROJECT_COUNT"
+        echo "N1D_C2_TOTAL_PROJECT_COUNT=$N1D_C2_EXPECTED_TOTAL_PROJECT_COUNT"
+        echo "N1D_C2_PRODUCT_ROLE=$N1D_C2_PRODUCT_ROLE"
+        echo "N1D_C2_RESUMED_FROM_FAILED_ADMISSION=YES"
+        echo "BUILD_AUTHORIZED=NO"
+        echo "DEVICE_CONTACT_AUTHORIZED=NO"
+        echo "FLASH_AUTHORIZED=NO"
+    } > "$out/source-state.env"
+    cp "$SOURCE_LOCK" "$out/n1d-source-lock.env"
+    cp "$FRESH_PROFILE" "$out/n1d-fresh-source.env"
+    cp "$ADMISSION_PROFILE" "$out/n1d-c2-source-admission.env"
+    seal="$(seal_directory "$out")"
+    echo "N1D_C2_SOURCE_ADMISSION_SEAL_SHA256=$seal"
+    echo "N1D_C2_SOURCE_ADMISSION_RESUME=PASS"
+    echo "N1D_C2_SOURCE_ADMISSION=PASS"
+    echo "EVIDENCE_DIR=$out"
+}
+
 case "$ACTION" in
     preflight) preflight ;;
     admit) admit ;;
+    resume-preflight) resume_preflight ;;
+    resume) resume ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
