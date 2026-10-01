@@ -17,7 +17,7 @@ Canonical layout:
 /srv/sable-build/workspaces/titan2-n1d/
   android/   # one fresh pinned Android 16 checkout
   out-c2/    # C2 output only
-  out-c3/    # C3 output only
+  out-c3a-td/ # C3A control output only
 ```
 
 The SableOS repository remains separate:
@@ -130,9 +130,10 @@ fresh Graphene/AOSP Android 16 base
   -> use pinned published RestlessOS GSI as C2 diagnostic control
   -> retire partial C2 source paths
   -> restore and verify the same checkout against the pinned 1033-project base
-  -> stage Sable-owned C3 product files
-  -> parse/qualify C3 product
-  -> build/seal C3
+  -> stage pinned TrebleDroid/Restless C3A control inputs
+  -> parse/qualify C3A generated product
+  -> build/seal C3A control system.img
+  -> use C3A evidence to peel toward minimal C3B Sable baseline
 ```
 
 The C2-to-C3 transition has now been completed: partial C2 source worktrees
