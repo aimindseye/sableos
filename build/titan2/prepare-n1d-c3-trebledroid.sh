@@ -733,6 +733,7 @@ verify() {
     local count
     local current_heads
     local current_dirty
+    local current_td_status
     local dirty_count
     local retired_graphene_root
     local ledger_count
@@ -801,12 +802,32 @@ verify() {
             fail "current_project_count expected=$N1D_C3A_MANAGED_PROJECT_COUNT actual=$count"
         }
 
-    [[ "$dirty_count" == 0 ]] \
+    [[ "$dirty_count" == 1 ]] \
         || {
             cat "$current_dirty"
             rm -f "$current_heads" "$current_dirty"
-            fail "current_dirty_project_count=$dirty_count"
+            fail "current_dirty_project_count expected=1_generated_device_phh actual=$dirty_count"
         }
+
+    grep -Fxq 'device/phh/treble' "$current_dirty" \
+        || {
+            cat "$current_dirty"
+            rm -f "$current_heads" "$current_dirty"
+            fail unexpected_poststage_dirty_project
+        }
+
+    current_td_status="$(mktemp)"
+    git -C "$TD_ROOT" status --porcelain --untracked-files=all \
+        > "$current_td_status"
+
+    cmp -s "$evidence/device-phh-generated-status.txt" "$current_td_status" \
+        || {
+            diff -u "$evidence/device-phh-generated-status.txt" "$current_td_status" || true
+            rm -f "$current_heads" "$current_dirty" "$current_td_status"
+            fail device_phh_generated_status_mismatch
+        }
+
+    echo "N1D_C3A_POST_STAGE_DIRTY_PROJECTS=PASS_EXPECTED_GENERATED_ONLY"
 
     LC_ALL=C sort "$current_heads" > "$current_heads.sorted"
     LC_ALL=C sort "$evidence/postpatch-project-heads.tsv" > "$current_heads.expected"
@@ -825,7 +846,8 @@ verify() {
         "$current_heads" \
         "$current_dirty" \
         "$current_heads.sorted" \
-        "$current_heads.expected"
+        "$current_heads.expected" \
+        "$current_td_status"
 
     verify_generated_product
     verify_td_generated_dirty_scope
