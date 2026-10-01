@@ -17,7 +17,9 @@ fail() {
 for f in "$LOCK" "$PRODUCT" "$PROFILE" "$ADD_MANIFEST" "$REMOVE_MANIFEST" "$REMOVE_MAP"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
-bash -n "$LOCK" "$PRODUCT" "$PROFILE"
+for f in "$LOCK" "$PRODUCT" "$PROFILE"; do
+    bash -n "$f" || fail "syntax=$f"
+done
 
 require_line() {
     local file="$1" line="$2"
