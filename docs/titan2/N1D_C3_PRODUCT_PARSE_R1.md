@@ -87,7 +87,7 @@ PRODUCT_MODEL=SableOS Titan 2 N1D
 PRODUCT_MANUFACTURER=SableOS
 ```
 
-`BUILDING_GSI=false` is a required Graphene-source compatibility assertion. It keeps Make-side GSI release/board semantics while preventing build/make's Soong-defined `aosp_system_image` from being enabled against Graphene's intentionally reduced AOSP app source graph.
+`BUILDING_GSI := false` is the required source setting. The live parse proves the converted Soong boolean via `SOONG_CONFIG_gsi_building_gsi=''`. It keeps Make-side GSI release/board semantics while preventing build/make's Soong-defined `aosp_system_image` from being enabled against Graphene's intentionally reduced AOSP app source graph.
 
 `BUILD_ID`, `PLATFORM_VERSION` and `PRODUCT_OUT` are captured as evidence but
 are not independently promoted to source-lock inputs by this gate.
@@ -112,6 +112,7 @@ N1D_C3_ENVSETUP=PASS
 N1D_C3_LUNCH=PASS
 N1D_C3_DUMPVARS=PASS
 N1D_C3_PRODUCT_PARSE_IDENTITY=PASS
+N1D_C3_PRODUCT_PARSE_SOONG_GSI_SELECTOR=PASS_DISABLED
 N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS
 N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS
 N1D_C3_PRODUCT_PARSE=PASS
