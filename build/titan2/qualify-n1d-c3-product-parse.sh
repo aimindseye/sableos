@@ -7,12 +7,13 @@ STORAGE_PROFILE="$ROOT/build/config/storage.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
 PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
+PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
 fail() { echo "N1D_C3_PRODUCT_PARSE=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -24,8 +25,12 @@ source "$FRESH_PROFILE"
 source "$TD_PROFILE"
 # shellcheck source=/dev/null
 source "$PHASE_PROFILE"
+# shellcheck source=/dev/null
+source "$PRODUCT_PROFILE"
 [[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] || fail c3a_role_mismatch
+[[ "$N1D_C3A_RELEASE_ELIGIBLE" == NO ]] || fail c3a_release_boundary_mismatch
 [[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
+[[ "$N1D_C3_RELEASE_ELIGIBLE" == NO ]] || fail c3_release_boundary_mismatch
 
 PARSE_AUTHORIZED=NO
 while (($#)); do
@@ -49,7 +54,9 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
-echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
+echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
+echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
+echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
@@ -103,7 +110,9 @@ fi
     echo "N1D_C3_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
     echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
     echo "N1D_C3_VARIANT=$N1D_C3_FIRST_VARIANT"
-    echo "N1D_C3_RELEASE_ELIGIBLE=NO"
+    echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
+    echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
+    echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
     echo "ANDROID_TARGET_COMPILATION_AUTHORIZED=NO"
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
