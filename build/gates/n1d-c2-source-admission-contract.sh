@@ -45,8 +45,9 @@ grep -Fq '"${project_paths[@]}"' "$DRIVER" || fail bounded_project_sync_missing
 grep -Fq 'current_base_heads_do_not_match_seal' "$DRIVER" || fail base_head_binding_missing
 grep -Fq '"$HEAD_VERIFY"' "$DRIVER" || fail head_verifier_binding_missing
 grep -Fq 'N1D_C2_DIRTY_PROJECT_COUNT=0' "$DRIVER" || fail dirty_count_gate_missing
-grep -Fq '--remote-prefix "$N1D_C2_REMOTE_PREFIX"' "$DRIVER" || fail remote_prefix_binding_missing
-grep -Fq '--project-tsv "$ledger"' "$DRIVER" || fail project_ledger_binding_missing
+grep -Fq -- '--remote-prefix "$N1D_C2_REMOTE_PREFIX"' "$DRIVER" || fail remote_prefix_binding_missing
+grep -Fq -- '--project-tsv "$ledger"' "$DRIVER" || fail project_ledger_binding_missing
+grep -Fq 'N1D_C2_BASE_C2_PATH_DISJOINT=PASS' "$DRIVER" || fail base_c2_disjoint_gate_missing
 
 if grep -Fq '/srv/data/sable-build' "$PROFILE" "$DRIVER"; then
     fail legacy_build_root_hardcoded
