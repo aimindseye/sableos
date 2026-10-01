@@ -78,6 +78,7 @@ fi
 
 SOURCE_MUTATION_AUTHORIZED=NO
 NETWORK_FETCH_AUTHORIZED=NO
+TREBLE_APP_BUILD_RESIDUE_ALLOWED=NO
 
 while (($#)); do
     case "$1" in
@@ -89,11 +90,19 @@ while (($#)); do
             NETWORK_FETCH_AUTHORIZED=YES
             shift
             ;;
+        --allow-treble-app-build-residue)
+            TREBLE_APP_BUILD_RESIDUE_ALLOWED=YES
+            shift
+            ;;
         *)
             fail "unknown_arg=$1"
             ;;
     esac
 done
+
+if [[ "$TREBLE_APP_BUILD_RESIDUE_ALLOWED" == YES && "$ACTION" != verify ]]; then
+    fail treble_app_build_residue_allowance_verify_only
+fi
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 BASE_SEAL="$SABLE_BUILD_ROOT/evidence/titan2/n1d-source-prep/20261001T045509Z-graphene-base"
@@ -102,6 +111,7 @@ LOCAL_MANIFEST_DIR="$ANDROID_ROOT/.repo/local_manifests"
 LOCAL_ADD_MANIFEST="$LOCAL_MANIFEST_DIR/n1d-c3a-add.xml"
 LOCAL_REMOVE_MANIFEST="$LOCAL_MANIFEST_DIR/n1d-c3a-remove.xml"
 TD_ROOT="$ANDROID_ROOT/device/phh/treble"
+TREBLE_APP_ROOT="$ANDROID_ROOT/treble_app"
 BUILD_MAKE="$ANDROID_ROOT/build/make"
 OLD_PRODUCT="$ANDROID_ROOT/vendor/sable/n1d"
 RECIPE_ROOT="$SABLE_BUILD_ROOT/artifacts/titan2/n1d-c3a-restless-recipe/$N1D_RESTLESS_TAG"
@@ -571,6 +581,60 @@ verify_td_generated_dirty_scope() {
     echo "N1D_C3A_DEVICE_PHH_GENERATED_DIRTY_SCOPE=PASS"
 }
 
+verify_treble_app_build_residue() {
+    local status_file
+    local line
+    local status
+    local path
+    local count=0
+
+    status_file="$(mktemp)"
+    git -C "$TREBLE_APP_ROOT" status --porcelain --untracked-files=all > "$status_file"
+
+    [[ -s "$status_file" ]] || {
+        rm -f "$status_file"
+        fail treble_app_build_residue_expected_but_clean
+    }
+
+    while IFS= read -r line; do
+        [[ -z "$line" ]] && continue
+        status="${line:0:2}"
+        path="${line:3}"
+
+        [[ "$status" == '??' ]] || {
+            cat "$status_file"
+            rm -f "$status_file"
+            fail "treble_app_build_residue_tracked_change status=$status path=$path"
+        }
+
+        case "$path" in
+            sdk/licenses/*)
+                remainder="${path#sdk/licenses/}"
+                [[ -n "$remainder" && "$remainder" != */* ]] || {
+                    cat "$status_file"
+                    rm -f "$status_file"
+                    fail "treble_app_build_residue_nested_path=$path"
+                }
+                [[ -f "$TREBLE_APP_ROOT/$path" && ! -L "$TREBLE_APP_ROOT/$path" ]] || {
+                    cat "$status_file"
+                    rm -f "$status_file"
+                    fail "treble_app_build_residue_not_regular_file=$path"
+                }
+                ;;
+            *)
+                cat "$status_file"
+                rm -f "$status_file"
+                fail "treble_app_build_residue_unexpected_path=$path"
+                ;;
+        esac
+
+        count=$((count + 1))
+    done < "$status_file"
+
+    rm -f "$status_file"
+    echo "N1D_C3A_TREBLE_APP_BUILD_RESIDUE=PASS_UNTRACKED_SDK_LICENSES_ONLY count=$count"
+}
+
 latest_stage_evidence() {
     find "$EVIDENCE_ROOT" \
         -mindepth 1 -maxdepth 1 -type d -name '*-trebledroid-stage' \
@@ -802,11 +866,16 @@ verify() {
             fail "current_project_count expected=$N1D_C3A_MANAGED_PROJECT_COUNT actual=$count"
         }
 
-    [[ "$dirty_count" == 1 ]] \
+    expected_dirty_count=1
+    if [[ "$TREBLE_APP_BUILD_RESIDUE_ALLOWED" == YES ]]; then
+        expected_dirty_count=2
+    fi
+
+    [[ "$dirty_count" == "$expected_dirty_count" ]] \
         || {
             cat "$current_dirty"
             rm -f "$current_heads" "$current_dirty"
-            fail "current_dirty_project_count expected=1_generated_device_phh actual=$dirty_count"
+            fail "current_dirty_project_count expected=$expected_dirty_count actual=$dirty_count"
         }
 
     grep -Fxq 'device/phh/treble' "$current_dirty" \
@@ -815,6 +884,16 @@ verify() {
             rm -f "$current_heads" "$current_dirty"
             fail unexpected_poststage_dirty_project
         }
+
+    if [[ "$TREBLE_APP_BUILD_RESIDUE_ALLOWED" == YES ]]; then
+        grep -Fxq 'treble_app' "$current_dirty" \
+            || {
+                cat "$current_dirty"
+                rm -f "$current_heads" "$current_dirty"
+                fail expected_treble_app_build_residue_missing
+            }
+        verify_treble_app_build_residue
+    fi
 
     current_td_status="$(mktemp)"
     git -C "$TD_ROOT" status --porcelain --untracked-files=all \
