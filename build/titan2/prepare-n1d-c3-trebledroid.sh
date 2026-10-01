@@ -587,7 +587,12 @@ verify_treble_app_build_residue() {
     local status
     local path
     local remainder
+    local base_blob
+    local current_blob
+    local current_bytes
     local count=0
+    local metadata_count=0
+    local license_count=0
 
     status_file="$(mktemp)"
     git -C "$TREBLE_APP_ROOT" status --porcelain --untracked-files=all > "$status_file"
@@ -602,14 +607,30 @@ verify_treble_app_build_residue() {
         status="${line:0:2}"
         path="${line:3}"
 
-        [[ "$status" == '??' ]] || {
-            cat "$status_file"
-            rm -f "$status_file"
-            fail "treble_app_build_residue_tracked_change status=$status path=$path"
-        }
-
-        case "$path" in
-            sdk/licenses/*)
+        case "$status:$path" in
+            " M:sdk/.knownPackages")
+                base_blob="$(git -C "$TREBLE_APP_ROOT" rev-parse HEAD:sdk/.knownPackages)"
+                [[ "$base_blob" == "$N1D_C3_TREBLE_APP_KNOWN_PACKAGES_BASE_BLOB" ]] || {
+                    cat "$status_file"
+                    rm -f "$status_file"
+                    fail "treble_app_known_packages_base_blob expected=$N1D_C3_TREBLE_APP_KNOWN_PACKAGES_BASE_BLOB actual=$base_blob"
+                }
+                [[ -f "$TREBLE_APP_ROOT/sdk/.knownPackages" && ! -L "$TREBLE_APP_ROOT/sdk/.knownPackages" ]] || {
+                    cat "$status_file"
+                    rm -f "$status_file"
+                    fail treble_app_known_packages_not_regular_file
+                }
+                current_blob="$(git -C "$TREBLE_APP_ROOT" hash-object sdk/.knownPackages)"
+                current_bytes="$(stat -c '%s' "$TREBLE_APP_ROOT/sdk/.knownPackages")"
+                [[ "$current_blob" != "$base_blob" ]] || {
+                    cat "$status_file"
+                    rm -f "$status_file"
+                    fail treble_app_known_packages_status_without_content_change
+                }
+                metadata_count=$((metadata_count + 1))
+                echo "N1D_C3A_TREBLE_APP_SDK_METADATA=PASS path=sdk/.knownPackages base_blob=$base_blob current_blob=$current_blob bytes=$current_bytes"
+                ;;
+            "??:sdk/licenses/"*)
                 remainder="${path#sdk/licenses/}"
                 [[ -n "$remainder" && "$remainder" != */* ]] || {
                     cat "$status_file"
@@ -621,19 +642,26 @@ verify_treble_app_build_residue() {
                     rm -f "$status_file"
                     fail "treble_app_build_residue_not_regular_file=$path"
                 }
+                license_count=$((license_count + 1))
                 ;;
             *)
                 cat "$status_file"
                 rm -f "$status_file"
-                fail "treble_app_build_residue_unexpected_path=$path"
+                fail "treble_app_build_residue_unexpected_entry status=$status path=$path"
                 ;;
         esac
 
         count=$((count + 1))
     done < "$status_file"
 
+    [[ "$metadata_count" -le 1 ]] || {
+        cat "$status_file"
+        rm -f "$status_file"
+        fail "treble_app_sdk_metadata_count=$metadata_count"
+    }
+
     rm -f "$status_file"
-    echo "N1D_C3A_TREBLE_APP_BUILD_RESIDUE=PASS_UNTRACKED_SDK_LICENSES_ONLY count=$count"
+    echo "N1D_C3A_TREBLE_APP_BUILD_RESIDUE=PASS_SDK_METADATA_AND_LICENSES_ONLY count=$count metadata=$metadata_count licenses=$license_count"
 }
 
 latest_stage_evidence() {
