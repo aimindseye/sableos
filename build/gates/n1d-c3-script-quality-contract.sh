@@ -48,7 +48,14 @@ done
 repo_sync_count="$(grep -Ec '^[[:space:]]*"?\$SABLE_REPO_TOOL"?[[:space:]]+sync|^[[:space:]]*repo[[:space:]]+sync' "$PREP" || true)"
 repo_forall_count="$(grep -c 'forall -c' "$PREP" || true)"
 systemimage_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+systemimage[[:space:]]' "$BUILD" || true)"
-treble_app_count="$(grep -Ec '^[[:space:]]*bash[[:space:]]+build\.sh[[:space:]]+release[[:space:]]*
+treble_app_count="$(grep -Ec '^[[:space:]]*bash[[:space:]]+build\.sh[[:space:]]+release[[:space:]]*$' "$BUILD" || true)"
+prep_action_dispatch_count="$(grep -c '^case "\$ACTION" in$' "$PREP" || true)"
+prep_host_layout_verify_count="$(grep -c '^verify_host_layout_fix() {$' "$PREP" || true)"
+prep_latest_stage_count="$(grep -c '^latest_stage_evidence() {$' "$PREP" || true)"
+prep_preflight_count="$(grep -c '^preflight() {$' "$PREP" || true)"
+prep_stage_count="$(grep -c '^stage() {$' "$PREP" || true)"
+prep_verify_count="$(grep -c '^verify() {$' "$PREP" || true)"
+prep_last_nonempty="$(awk 'NF {line=$0} END {print line}' "$PREP")"
 
 [[ "$repo_sync_count" == 1 ]] || fail "prep_repo_sync_count=$repo_sync_count"
 [[ "$repo_forall_count" == 1 ]] || fail "prep_repo_forall_definition_count=$repo_forall_count"
