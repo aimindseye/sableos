@@ -782,7 +782,8 @@ verify() {
         || fail "retired_graphene_ledger_count expected=$N1D_C3A_REMOVE_PROJECT_COUNT actual=$ledger_count"
 
     while IFS=$'\t' read -r _project_name path archived; do
-        [[ -n "$path" && -d "$archived" ]] || fail "retired_project_archive_missing path=$path archive=$archived"
+        [[ -n "$path" && -d "$archived" ]] \
+            || fail "retired_project_archive_missing path=$path archive=$archived"
     done < "$evidence/retired-graphene-projects.tsv"
 
     verify_removed_paths_absent
@@ -791,64 +792,15 @@ verify() {
     current_dirty="$(mktemp)"
     capture_project_state "$current_heads" "$current_dirty"
 
-    count="$(grep -cve '^
-
-    verify_generated_product
-    verify_td_generated_dirty_scope
-
-    echo "N1D_C3A_POSTPATCH_HEADS=PASS_EXACT value=$N1D_C3A_MANAGED_PROJECT_COUNT"
-    echo "N1D_C3A_RETIRED_GRAPHENE_PROJECTS=PASS_ARCHIVED count=$N1D_C3A_REMOVE_PROJECT_COUNT"
-    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
-    echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
-}
-
-case "$ACTION" in
-    preflight)
-        preflight
-        ;;
-    stage)
-        stage
-        ;;
-    verify)
-        verify
-        ;;
-    *)
-        fail "unknown_action=$ACTION"
-        ;;
-esac
- "$current_heads" || true)"
-    dirty_count="$(grep -cve '^
-
-    verify_generated_product
-    verify_td_generated_dirty_scope
-
-    echo "N1D_C3A_POSTPATCH_HEADS=PASS_EXACT value=$N1D_C3A_MANAGED_PROJECT_COUNT"
-    echo "N1D_C3A_RETIRED_GRAPHENE_PROJECTS=PASS_ARCHIVED count=$N1D_C3A_REMOVE_PROJECT_COUNT"
-    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
-    echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
-}
-
-case "$ACTION" in
-    preflight)
-        preflight
-        ;;
-    stage)
-        stage
-        ;;
-    verify)
-        verify
-        ;;
-    *)
-        fail "unknown_action=$ACTION"
-        ;;
-esac
- "$current_dirty" || true)"
+    count="$(grep -cve '^$' "$current_heads" || true)"
+    dirty_count="$(grep -cve '^$' "$current_dirty" || true)"
 
     [[ "$count" == "$N1D_C3A_MANAGED_PROJECT_COUNT" ]] \
         || {
             rm -f "$current_heads" "$current_dirty"
             fail "current_project_count expected=$N1D_C3A_MANAGED_PROJECT_COUNT actual=$count"
         }
+
     [[ "$dirty_count" == 0 ]] \
         || {
             cat "$current_dirty"
@@ -861,11 +813,19 @@ esac
     cmp -s "$current_heads.sorted" "$current_heads.expected" \
         || {
             diff -u "$current_heads.expected" "$current_heads.sorted" || true
-            rm -f "$current_heads" "$current_dirty" "$current_heads.sorted" "$current_heads.expected"
+            rm -f \
+                "$current_heads" \
+                "$current_dirty" \
+                "$current_heads.sorted" \
+                "$current_heads.expected"
             fail postpatch_heads_mismatch
         }
 
-    rm -f "$current_heads" "$current_dirty" "$current_heads.sorted" "$current_heads.expected"
+    rm -f \
+        "$current_heads" \
+        "$current_dirty" \
+        "$current_heads.sorted" \
+        "$current_heads.expected"
 
     verify_generated_product
     verify_td_generated_dirty_scope
