@@ -48,7 +48,7 @@ device/phh/treble:
 ```
 
 The remaining companion projects and exact commits are declared in
-`n1d-c3-trebledroid-manifest.xml`.
+`n1d-c3a-trebledroid-add.xml and `n1d-c3a-trebledroid-remove.xml``.
 
 Restless did not publish a pinned repo manifest with this release. Those
 companion SHAs are therefore reconstructed from the branch tips that existed
