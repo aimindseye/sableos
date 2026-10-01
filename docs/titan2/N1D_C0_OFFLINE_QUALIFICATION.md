@@ -108,18 +108,19 @@ N1D recomposition should be derived mechanically from the verified stock LP cont
 
 The package defaults the known N1C paths from the public checkpoint, but C0 is fail-closed when required material is absent.
 
-At minimum, provide:
+C0 defaults the known N1C paths and now auto-binds the private N1B known-booting control when its artifact hash matches the first-boot ledger. The recorded control is:
 
 ```text
-N1C_SYSTEM_IMG
-N1C_SUPER_IMG
-STOCK_REF_DIR
-STOCK_SUPER_IMG (or a uniquely discoverable verified stock-super artifact)
-RESTLESS_SYSTEM_IMG
-N1D_PRODUCT_FILE
+SYSTEM_IMG=/srv/data/sable-build/workspaces/titan2-n1b/out_sable_t2_n1_sable_gsi/target/product/tdgsi_arm64_ab/system.img
+SYSTEM_SHA256=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e
+BOOT_PROOF=docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md
 ```
 
-The historical N1B image/hash/proof fields are optional because C0 can formally conclude `UNQUALIFIED_HISTORICAL`.
+The ledger must also contain `BOOT_COMPLETED=PASS`, `FIRST_N1B_BOOT=PASS`, and the post-boot orange verified-boot state before C0 promotes it to `QUALIFIED_HISTORICAL`.
+
+C0 also auto-discovers the active Restless/Treble product makefile `device/phh/treble/treble_arm64_bvN.mk` from the Titan 2 workspace. Manual `RESTLESS_SYSTEM_IMG` or `N1D_PRODUCT_FILE` values are fallback overrides only when local paths differ or discovery is ambiguous.
+
+The remaining required local material is therefore the already-known N1C/stock corpus plus a resolvable stock-super artifact.
 
 ## Run
 
