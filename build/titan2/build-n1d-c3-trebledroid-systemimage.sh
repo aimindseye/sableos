@@ -224,13 +224,6 @@ if [[ -e "$OUT_C3" ]]; then
     grep -Fq 'N1D_C3_TREBLE_APP_BUILD=START' "$PRIOR_BUILD_EVIDENCE/build.log" \
         || fail prior_build_did_not_reach_treble_app
 
-    if find "$OUT_C3" -type f \
-        \( -name 'system.img' -o -name '*target_files*.zip' -o -name '*ota*.zip' \) \
-        -print -quit | grep -q .
-    then
-        fail prior_output_contains_target_artifact_resume_not_allowed
-    fi
-
     treble_app_passed=NO
     [[ ! -f "$PRIOR_BUILD_EVIDENCE/treble-app.sha256" ]] \
         || treble_app_passed=YES
@@ -239,8 +232,31 @@ if [[ -e "$OUT_C3" ]]; then
         BUILD_RESUME_MODE=FAILED_TREBLE_APP_ONLY
     elif [[ "$treble_app_passed" == YES && -e "$PRIOR_BUILD_EVIDENCE/systemimage-command.log" ]]; then
         BUILD_RESUME_MODE=FAILED_SYSTEMIMAGE_PRE_ARTIFACT
+
+        [[ -f "$PRIOR_BUILD_EVIDENCE/product-out.txt" ]] \
+            || fail prior_systemimage_build_product_out_evidence_missing
+        prior_product_out="$(cat "$PRIOR_BUILD_EVIDENCE/product-out.txt")"
+        [[ -n "$prior_product_out" ]] \
+            || fail prior_systemimage_build_product_out_evidence_empty
+        case "$prior_product_out" in
+            "$OUT_C3"/target/product/*) ;;
+            *) fail "prior_product_out_outside_c3_out path=$prior_product_out" ;;
+        esac
+
+        if [[ -f "$prior_product_out/system.img" ]]; then
+            fail "prior_final_system_img_exists_resume_not_allowed path=$prior_product_out/system.img"
+        fi
+
+        echo "N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT path=$prior_product_out/system.img"
     else
         fail prior_build_resume_state_inconsistent
+    fi
+
+    if find "$OUT_C3" -type f \
+        \( -name '*target_files*.zip' -o -name '*ota*.zip' \) \
+        -print -quit | grep -q .
+    then
+        fail prior_output_contains_packaging_artifact_resume_not_allowed
     fi
 
     echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE prior_evidence=$PRIOR_BUILD_EVIDENCE"
