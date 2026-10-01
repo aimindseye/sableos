@@ -79,9 +79,10 @@ Build sandboxing disabled due to nsjail error.
 ```
 
 That warning is accepted as parse-stage diagnostic evidence only. The first
-target compilation is stricter: before invoking `systemimage`, the driver runs
-an Android `soong_ui --dumpvars-mode` sandbox probe and fails if Android emits
-the nsjail-disabled warning. The `systemimage` command output is checked again
+target compilation is stricter: before touching the reserved `out-c3`, the
+driver uses a separate sandbox-probe output directory, performs the exact lunch
+selection there, and runs an Android `soong_ui --dumpvars-mode` sandbox probe.
+Either probe step fails if Android emits the nsjail-disabled warning. The `systemimage` command output is checked again
 after the build and the qualification fails if sandboxing was disabled there.
 
 Therefore a passing first C3 compile must emit:
@@ -96,6 +97,15 @@ sandbox-health signal a fail-closed Sable qualification requirement. No release-
 production-key custody is introduced by this gate.
 
 ## Output isolation
+
+The nsjail health probe is isolated beneath:
+
+```text
+/srv/sable-build/workspaces/titan2-n1d/out-c3-sandbox-probe/
+```
+
+A sandbox failure therefore cannot create or contaminate the reserved first
+compile output.
 
 The first compile uses the reserved C3 output directory:
 
