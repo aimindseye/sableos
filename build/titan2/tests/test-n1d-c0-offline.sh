@@ -47,39 +47,38 @@ pass c0_discovery_contract
 CONTRACT="$ROOT/build/titan2/n1d-product-contract.env"
 [[ -f "$CONTRACT" ]] || fail n1d_product_contract_missing
 for required in \
-  'N1D_PRODUCT_CONTRACT_VERSION=3' \
+  'N1D_PRODUCT_CONTRACT_VERSION=4' \
   'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
-  'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_PREBUILT_DIAGNOSTIC_CONTROL' \
-  'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
-  'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
-  'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
-  'N1D_TREBLE_COMPAT_REFERENCE=device/phh/treble' \
-  'N1D_TREBLE_COMPAT_DELTA=vendor/sable/n1d/treble_compat.mk' \
-  'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
-  'N1D_DIRECT_DEVICE_PHH_TREBLE_BASE_INHERIT=NO' \
-  'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=NO' \
-  'N1D_RESTLESS_ROM_MK_DIRECT_INHERIT=NO' \
-  'N1D_INITIAL_RESTLESS_PATCH_ALLOWLIST_COUNT=0' \
-  'N1D_RUNTIME_PRODUCT_OWNER=GSI_SYSTEM_IMAGE' \
-  'N1D_RUNTIME_SYSTEM_EXT_OWNER=GSI_SYSTEM_IMAGE' \
-  'N1D_SELINUX_ENFORCING_REQUIRED=YES' \
-  'N1D_NEVERALLOW_ENFORCEMENT_REQUIRED=YES' \
-  'N1D_ADB_AUTH_REQUIRED=YES' \
+  'N1D_RESTLESS_ROLE=C2_CONTROL_AND_PINNED_C3_BUILD_RECIPE_REFERENCE' \
+  'N1D_C3_PRODUCT_GENERATION_MODE=PINNED_TREBLEDROID_GENERATOR' \
+  'N1D_PRODUCT_NAME=treble_arm64_bvN' \
+  'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
+  'N1D_TREBLE_COMPAT_SUBSTRATE=device/phh/treble/base.mk' \
+  'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=YES_PINNED' \
+  'N1D_DEVICE_PHH_TREBLE_BASE_PRESENT=YES_COMPATIBILITY_SUBSTRATE' \
+  'N1D_CONTROL_FULL_RESTLESS_PATCH_TIERS=YES_PINNED_CONTROL_ONLY' \
+  'N1D_RESTLESS_FULL_PATCH_TIERS_AUTOAPPLY_ALLOWED_FOR_RELEASE=NO' \
+  'N1D_CONTROL_PATCH_COUNT=369' \
+  'N1D_RUNTIME_PATCH_ALLOWLIST_COUNT=0' \
+  'N1D_C3_FIRST_BUILD_RELEASE_CONFIG=bp4a' \
+  'N1D_C3_FIRST_BUILD_VARIANT=user' \
+  'N1D_C3_FIRST_BUILD_GOAL=systemimage' \
+  'N1D_C3_RELEASE_ELIGIBLE=NO' \
+  'N1D_C3_RUNTIME_SECURITY_AUDIT_REQUIRED=YES' \
   'N1D_PRODUCT_CONTRACT=PASS'; do
   grep -Fxq "$required" "$CONTRACT" || fail "n1d_product_contract token=$required"
 done
 
 for forbidden in \
-  'N1D_BASE_PRODUCT=treble_arm64_bvN' \
-  'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
-  'N1D_GENERATED_ARCH_INCLUDE=build/make/target/product/aosp_arm64.mk' \
-  'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
-  'N1D_GSI_RELEASE_OWNER=device/phh/treble/base.mk' \
-  'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk'; do
+  'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
+  'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=NO' \
+  'N1D_C3_RELEASE_ELIGIBLE=YES'; do
   if grep -Fxq "$forbidden" "$CONTRACT"; then
     fail "n1d_product_contract stale_token=$forbidden"
   fi
 done
+pass n1d_product_contract_v4_trebledroid
+
 grep -Fq 'build/config/host-tools.env' "$DRIVER" || fail canonical_host_tool_profile
 grep -Fq 'SABLE_LPDUMP' "$DRIVER" || fail canonical_lpdump
 grep -Fq 'SABLE_LPUNPACK' "$DRIVER" || fail canonical_lpunpack
