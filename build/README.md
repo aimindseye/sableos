@@ -118,15 +118,54 @@ Use `bash build/sable.sh panther R9 build --tmux`.
 
 ## Host tools and CI
 
-SableOS local builds use repository-owned orchestration and a canonical host-tool
-profile. Do not create milestone-specific `/tmp` build drivers or rediscover SDK,
-NDK, Rust, Java or Gradle paths during a build.
+SableOS local builds use repository-owned orchestration and one canonical,
+device/release-independent host-tool profile:
 
-Host tools live outside the build farm under:
+```text
+build/config/host-tools.env
+```
+
+All Sable-managed tools live under:
 
 ```text
 /srv/data/sable-host-tools/
+├── android/
+│   ├── sdk/
+│   └── aosp-host/{bin,lib,lib64}/
+├── java/{jdk17,jdk21}/
+├── repo/repo
+├── rust/<tool-version>/
+├── gradle/
+└── security/
 ```
+
+Tool-version directories are allowed; device, release, milestone and build names
+are not. Do not create paths such as `android/r8`, `panther-r9`,
+`titan2-n1c` or `n1d` beneath the canonical host-tool root.
+
+`build/sable.sh` sources the global profile. Build and qualification scripts
+must consume the exported `SABLE_*` paths directly. In particular, Android
+partition/VINTF/AVB tooling uses `SABLE_LPDUMP`, `SABLE_LPUNPACK`,
+`SABLE_LPMAKE`, `SABLE_SIMG2IMG`, `SABLE_AVBTOOL`,
+`SABLE_CHECKVINTF`, `SABLE_SECILC` and `SABLE_UNPACK_BOOTIMG`.
+Normal build/qualification flows must not search historical Android OUT
+directories to discover replacement tools.
+
+The AOSP-host bundle is installed from a qualified clean build into
+`android/aosp-host`; the build that produced it is recorded as provenance, not
+encoded into the installation path. Use:
+
+```bash
+bash build/host/verify-host-tools.sh core
+bash build/host/verify-host-tools.sh aosp-host
+```
+
+The historical `build/config/r8-host-tools.env` remains only as a compatibility
+profile for accepted Panther R8/R9 scripts and delegates to the global profile.
+It is not a separate tool installation.
+
+Do not create milestone-specific `/tmp` build drivers or rediscover SDK, NDK,
+Rust, Java, Gradle, repo or AOSP host-tool paths during a build.
 
 GitHub remains source/review/issues/documentation infrastructure. Release-critical
 qualification is local-direct on the controlled build host.
