@@ -23,10 +23,12 @@ source "$FRESH_PROFILE"
 source "$TD_PROFILE"
 
 BUILD_AUTHORIZED=NO
+NETWORK_FETCH_AUTHORIZED=NO
 JOBS="$(nproc --all)"
 while (($#)); do
     case "$1" in
         --authorize-c3-compile) BUILD_AUTHORIZED=YES; shift ;;
+        --authorize-network) NETWORK_FETCH_AUTHORIZED=YES; shift ;;
         --jobs)
             [[ $# -ge 2 ]] || fail jobs_value_missing
             JOBS="$2"
@@ -37,6 +39,7 @@ while (($#)); do
 done
 
 [[ "$BUILD_AUTHORIZED" == YES ]] || fail compile_requires_--authorize-c3-compile
+[[ "$NETWORK_FETCH_AUTHORIZED" == YES ]] || fail build_requires_--authorize-network_for_treble_app
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || fail "invalid_jobs=$JOBS"
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
@@ -49,7 +52,7 @@ echo "===== N1D C3 TREBLEDROID SYSTEMIMAGE BUILD ====="
 echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
 echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
-echo "NETWORK_FETCH_AUTHORIZED=NO"
+echo "NETWORK_FETCH_AUTHORIZED=YES_TREBLE_APP_GRADLE_ONLY"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
@@ -94,6 +97,18 @@ exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
     set -euo pipefail
     [[ "$lunch_rc" -eq 0 ]] || fail "lunch_rc=$lunch_rc"
 
+    echo "N1D_C3_TREBLE_APP_BUILD=START"
+    (
+        cd treble_app
+        bash build.sh release
+    )
+    [[ -f treble_app/TrebleApp.apk ]] || fail treble_app_apk_missing
+    treble_app_sha="$(sha256sum treble_app/TrebleApp.apk | awk '{print $1}')"
+    treble_app_bytes="$(stat -c '%s' treble_app/TrebleApp.apk)"
+    printf '%s\n' "$treble_app_sha" > "$EVIDENCE_DIR/treble-app.sha256"
+    printf '%s\n' "$treble_app_bytes" > "$EVIDENCE_DIR/treble-app.bytes"
+    echo "N1D_C3_TREBLE_APP_BUILD=PASS sha256=$treble_app_sha bytes=$treble_app_bytes"
+
     set +e +u
     product_out="$(get_build_var PRODUCT_OUT)"
     product_out_rc=$?
@@ -101,6 +116,7 @@ exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
     [[ "$product_out_rc" -eq 0 ]] || fail "product_out_rc=$product_out_rc"
     printf '%s\n' "$product_out" > "$EVIDENCE_DIR/product-out.txt"
 
+    echo "N1D_C3_TREBLEDROID_BUILD_RECIPE=TREBLE_APP_RELEASE_THEN_SYSTEMIMAGE"
     echo "N1D_C3_TREBLEDROID_BUILD_GOAL=systemimage"
     set +e +u
     m -j"$JOBS" systemimage 2>&1 | tee "$EVIDENCE_DIR/systemimage-command.log"
@@ -129,6 +145,8 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3_SYSTEM_IMG=$SYSTEM_IMG"
     echo "N1D_C3_SYSTEM_SHA256=$sha"
     echo "N1D_C3_SYSTEM_BYTES=$bytes"
+    echo "N1D_C3_TREBLE_APP_SHA256=$(cat "$EVIDENCE_DIR/treble-app.sha256")"
+    echo "N1D_C3_TREBLE_APP_BYTES=$(cat "$EVIDENCE_DIR/treble-app.bytes")"
     echo "N1D_C3_RELEASE_ELIGIBLE=NO"
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
