@@ -31,7 +31,10 @@ for token in \
     'prior_product_out_outside_c3_out' \
     'prior_final_system_img_exists_resume_not_allowed' \
     'N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT' \
-    'N1D_C3A_RESUME_INTERMEDIATE_SYSTEM_IMAGES=INFO' \
+    'N1D_C3A_RESUME_INTERMEDIATE_SYSTEM_IMAGES=INFO' \    'N1D_C3A_RESUME_PACKAGING_ARTIFACT=FOUND' \
+    'N1D_C3A_RESUME_PACKAGING_ARTIFACTS=PASS_ABSENT' \
+    'otacerts_payload_count=' \
+
     'prior_output_contains_packaging_artifact_resume_not_allowed' \
     'failed_build_evidence_missing_for_resume' \
     'N1D_C3A_BUILD_RESUME=PASS' \
