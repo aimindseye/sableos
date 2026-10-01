@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Prepare the N1D C3A Restless/TrebleDroid reproduction control from the
-# sealed GrapheneOS base. This stages source only; it does not build Android.
+# Prepare the N1D C3A Restless/TrebleDroid public functional reproduction
+# control from the sealed GrapheneOS base. This stages source only.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -11,7 +11,9 @@ FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
 PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 COMPOSITION_PROFILE="$ROOT/build/titan2/n1d-c3-composition.env"
-MANIFEST_SRC="$ROOT/build/titan2/n1d-c3-trebledroid-manifest.xml"
+ADD_MANIFEST_SRC="$ROOT/build/titan2/n1d-c3a-trebledroid-add.xml"
+REMOVE_MANIFEST_SRC="$ROOT/build/titan2/n1d-c3a-trebledroid-remove.xml"
+REMOVE_PROJECT_MAP="$ROOT/build/titan2/n1d-c3a-remove-projects.tsv"
 ROM_SRC="$ROOT/build/titan2/n1d-c3-sable-rom.mk"
 TIER_FILE="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
 BUILD_AUDIT_SET="$ROOT/build/titan2/n1d-c3a-build-make-audit-set.txt"
@@ -33,7 +35,9 @@ for f in \
     "$TD_PROFILE" \
     "$PHASE_PROFILE" \
     "$COMPOSITION_PROFILE" \
-    "$MANIFEST_SRC" \
+    "$ADD_MANIFEST_SRC" \
+    "$REMOVE_MANIFEST_SRC" \
+    "$REMOVE_PROJECT_MAP" \
     "$ROM_SRC" \
     "$TIER_FILE" \
     "$BUILD_AUDIT_SET" \
@@ -62,6 +66,8 @@ source "$COMPOSITION_PROFILE"
 
 [[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] \
     || fail c3a_role_mismatch
+[[ "$N1D_C3A_CONTROL_FIDELITY" == PUBLIC_FUNCTIONAL_REPRODUCTION ]] \
+    || fail c3a_fidelity_mismatch
 [[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] \
     || fail c3b_build_boundary_mismatch
 
@@ -93,11 +99,13 @@ ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 BASE_SEAL="$SABLE_BUILD_ROOT/evidence/titan2/n1d-source-prep/20261001T045509Z-graphene-base"
 BASE_HEADS="$BASE_SEAL/all-project-heads.tsv"
 LOCAL_MANIFEST_DIR="$ANDROID_ROOT/.repo/local_manifests"
-LOCAL_MANIFEST="$LOCAL_MANIFEST_DIR/n1d-c3a-trebledroid.xml"
+LOCAL_ADD_MANIFEST="$LOCAL_MANIFEST_DIR/n1d-c3a-add.xml"
+LOCAL_REMOVE_MANIFEST="$LOCAL_MANIFEST_DIR/n1d-c3a-remove.xml"
 TD_ROOT="$ANDROID_ROOT/device/phh/treble"
 BUILD_MAKE="$ANDROID_ROOT/build/make"
 OLD_PRODUCT="$ANDROID_ROOT/vendor/sable/n1d"
 RECIPE_ROOT="$SABLE_BUILD_ROOT/artifacts/titan2/n1d-c3a-restless-recipe/$N1D_RESTLESS_TAG"
+RETIRE_ROOT="$SABLE_BUILD_ROOT/artifacts/titan2/n1d-c3a-retired-graphene"
 EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3a-trebledroid-prep"
 
 scaffold_paths=(
@@ -138,7 +146,7 @@ map_patch_project() {
     local project="$1"
     local path
 
-    # Keep this identical to RestlessOS patches/apply.sh.
+    # Identical project-name mapping to RestlessOS patches/apply.sh.
     path="$(tr '_' '/' <<<"$project" | sed -e 's;platform/;;g')"
     [[ "$path" == build ]] && path=build/make
     [[ "$path" == testing ]] && path=platform_testing
@@ -172,11 +180,13 @@ verify_contract_inputs() {
     local c3b_runtime_count
     local tier_count
     local tier_total
+    local remove_count
 
     audit_count="$(count_entries "$BUILD_AUDIT_SET")"
     c3b_runtime_count="$(count_entries "$C3B_RUNTIME_ALLOWLIST")"
     tier_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$TIER_FILE")"
     tier_total="$(awk 'NF && $1 !~ /^#/ {s+=$2} END {print s+0}' "$TIER_FILE")"
+    remove_count="$(count_entries "$REMOVE_PROJECT_MAP")"
 
     [[ "$audit_count" == "$N1D_C3_BUILD_MAKE_PATCH_COUNT" ]] \
         || fail "c3a_build_make_audit_count expected=$N1D_C3_BUILD_MAKE_PATCH_COUNT actual=$audit_count"
@@ -186,6 +196,8 @@ verify_contract_inputs() {
         || fail "c3a_control_tier_count expected=$N1D_C3_CONTROL_PATCH_TIER_COUNT actual=$tier_count"
     [[ "$tier_total" == "$N1D_C3_CONTROL_PATCH_COUNT" ]] \
         || fail "c3a_control_patch_count expected=$N1D_C3_CONTROL_PATCH_COUNT actual=$tier_total"
+    [[ "$remove_count" == "$N1D_C3A_REMOVE_PROJECT_COUNT" ]] \
+        || fail "c3a_remove_project_count expected=$N1D_C3A_REMOVE_PROJECT_COUNT actual=$remove_count"
 
     while IFS= read -r patch; do
         [[ -z "$patch" || "$patch" == \#* ]] && continue
@@ -195,6 +207,7 @@ verify_contract_inputs() {
 
     echo "N1D_C3A_BUILD_MAKE_AUDIT_SET=PASS count=$audit_count"
     echo "N1D_C3A_CONTROL_PATCH_TIERS=PASS count=$tier_count patches=$tier_total"
+    echo "N1D_C3A_REMOVE_PROJECT_MAP=PASS count=$remove_count"
     echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
 }
 
@@ -204,6 +217,7 @@ verify_graphene_base_pre_stage() {
     local dirty
     local tmp
     local path
+    local project_name
 
     [[ -d "$ANDROID_ROOT/.repo/manifests/.git" ]] || fail manifest_checkout_missing
     [[ -f "$BASE_HEADS" ]] || fail "base_heads_missing=$BASE_HEADS"
@@ -221,6 +235,14 @@ verify_graphene_base_pre_stage() {
     for path in "${scaffold_paths[@]}"; do
         [[ ! -e "$ANDROID_ROOT/$path" ]] || fail "preexisting_scaffold_path=$path"
     done
+
+    while IFS=$'\t' read -r project_name path; do
+        [[ -z "$project_name" || "$project_name" == \#* ]] && continue
+        [[ -d "$ANDROID_ROOT/$path" ]] \
+            || fail "c3a_remove_source_path_missing project=$project_name path=$path"
+        [[ -z "$(git -C "$ANDROID_ROOT/$path" status --porcelain --untracked-files=all)" ]] \
+            || fail "c3a_remove_source_path_dirty project=$project_name path=$path"
+    done < "$REMOVE_PROJECT_MAP"
 
     tmp="$(mktemp -d)"
     capture_heads "$tmp/current.tsv"
@@ -248,6 +270,7 @@ verify_graphene_base_pre_stage() {
     echo "N1D_C3A_PRE_STAGE_PROJECT_COUNT=PASS value=$count"
     echo "N1D_C3A_PRE_STAGE_DIRTY_PROJECT_COUNT=PASS_ZERO"
     echo "N1D_C3A_PRE_STAGE_HEADS=PASS_EXACT"
+    echo "N1D_C3A_REMOVE_SOURCE_PATHS=PASS_CLEAN count=$N1D_C3A_REMOVE_PROJECT_COUNT"
 }
 
 fetch_recipe() {
@@ -268,7 +291,11 @@ fetch_recipe() {
     [[ -z "$(git -C "$RECIPE_ROOT" status --porcelain --untracked-files=all)" ]] \
         || fail recipe_dirty
 
+    cmp -s "$RECIPE_ROOT/configs/manifests/remove.xml" "$REMOVE_MANIFEST_SRC" \
+        || fail pinned_remove_manifest_mismatch
+
     echo "N1D_C3A_RESTLESS_RECIPE=PASS commit=$N1D_RESTLESS_COMMIT"
+    echo "N1D_C3A_RESTLESS_REMOVE_MANIFEST=PASS_EXACT"
 }
 
 verify_recipe_inventory() {
@@ -299,6 +326,53 @@ verify_recipe_inventory() {
     echo "N1D_C3A_RESTLESS_RECIPE_PATCH_INVENTORY=PASS count=$total"
 }
 
+retire_removed_graphene_projects() {
+    local archive_root="$1"
+    local ledger="$2"
+    local project_name
+    local path
+    local src
+    local dst
+
+    mkdir -p "$archive_root"
+    : > "$ledger"
+
+    while IFS=$'\t' read -r project_name path; do
+        [[ -z "$project_name" || "$project_name" == \#* ]] && continue
+
+        src="$ANDROID_ROOT/$path"
+        dst="$archive_root/$path"
+
+        [[ -d "$src" ]] || fail "retire_source_missing project=$project_name path=$path"
+        [[ ! -e "$dst" ]] || fail "retire_destination_exists=$dst"
+        [[ -z "$(git -C "$src" status --porcelain --untracked-files=all)" ]] \
+            || fail "retire_source_dirty project=$project_name path=$path"
+
+        mkdir -p "$(dirname "$dst")"
+        mv "$src" "$dst"
+        printf '%s\t%s\t%s\n' "$project_name" "$path" "$dst" >> "$ledger"
+    done < "$REMOVE_PROJECT_MAP"
+
+    [[ "$(wc -l < "$ledger" | tr -d ' ')" == "$N1D_C3A_REMOVE_PROJECT_COUNT" ]] \
+        || fail retired_project_ledger_count
+
+    echo "N1D_C3A_GRAPHENE_PROJECT_RETIREMENT=PASS count=$N1D_C3A_REMOVE_PROJECT_COUNT"
+    echo "N1D_C3A_GRAPHENE_PROJECT_RETIREMENT_ROOT=$archive_root"
+}
+
+verify_removed_paths_absent() {
+    local project_name
+    local path
+
+    while IFS=$'\t' read -r project_name path; do
+        [[ -z "$project_name" || "$project_name" == \#* ]] && continue
+        [[ ! -e "$ANDROID_ROOT/$path" ]] \
+            || fail "removed_project_path_still_present project=$project_name path=$path"
+    done < "$REMOVE_PROJECT_MAP"
+
+    echo "N1D_C3A_REMOVED_PROJECT_PATHS=PASS_ABSENT count=$N1D_C3A_REMOVE_PROJECT_COUNT"
+}
+
 verify_scaffold_base_heads() {
     local path
     local actual
@@ -316,6 +390,27 @@ verify_scaffold_base_heads() {
     done
 
     echo "N1D_C3A_TREBLEDROID_SCAFFOLD_HEADS=PASS_EXACT count=${#scaffold_paths[@]}"
+}
+
+verify_managed_graph_count() {
+    local heads="$1"
+    local dirty="$2"
+    local count
+    local dirty_count
+
+    capture_heads "$heads"
+    capture_dirty_projects "$dirty"
+
+    count="$(grep -cve '^$' "$heads" || true)"
+    dirty_count="$(grep -cve '^$' "$dirty" || true)"
+
+    [[ "$count" == "$N1D_C3A_MANAGED_PROJECT_COUNT" ]] \
+        || fail "c3a_managed_project_count expected=$N1D_C3A_MANAGED_PROJECT_COUNT actual=$count"
+    [[ "$dirty_count" == 0 ]] \
+        || { cat "$dirty"; fail "c3a_dirty_project_count=$dirty_count"; }
+
+    echo "N1D_C3A_MANAGED_PROJECT_COUNT=PASS value=$count"
+    echo "N1D_C3A_MANAGED_DIRTY_PROJECT_COUNT=PASS_ZERO"
 }
 
 verify_control_patch_targets() {
@@ -406,27 +501,6 @@ apply_control_patch_stack() {
     echo "N1D_C3A_CONTROL_PATCH_STACK=PASS count=$applied"
 }
 
-verify_postpatch_clean_and_count() {
-    local heads="$1"
-    local dirty="$2"
-    local count
-    local dirty_count
-
-    capture_heads "$heads"
-    capture_dirty_projects "$dirty"
-
-    count="$(grep -cve '^$' "$heads" || true)"
-    dirty_count="$(grep -cve '^$' "$dirty" || true)"
-
-    [[ "$count" == 1045 ]] \
-        || fail "postpatch_project_count expected=1045 actual=$count"
-    [[ "$dirty_count" == 0 ]] \
-        || { cat "$dirty"; fail "postpatch_dirty_count=$dirty_count"; }
-
-    echo "N1D_C3A_POSTPATCH_PROJECT_COUNT=PASS value=1045"
-    echo "N1D_C3A_POSTPATCH_DIRTY_PROJECT_COUNT=PASS_ZERO"
-}
-
 verify_build_make_patch_count() {
     local before="$1"
     local base
@@ -498,6 +572,7 @@ preflight() {
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
     echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+    echo "N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION"
     echo "C3A_RELEASE_ELIGIBLE=NO"
     echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
 
@@ -519,6 +594,7 @@ stage() {
     local stamp
     local evidence
     local retired
+    local retired_graphene_root
 
     echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL STAGE ====="
 
@@ -533,6 +609,7 @@ stage() {
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
     echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+    echo "N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION"
     echo "C3A_RELEASE_ELIGIBLE=NO"
     echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
 
@@ -545,6 +622,7 @@ stage() {
 
     stamp="$(date -u +%Y%m%dT%H%M%SZ)"
     evidence="$EVIDENCE_ROOT/$stamp-trebledroid-stage"
+    retired_graphene_root="$RETIRE_ROOT/$stamp"
     mkdir -p "$evidence"
 
     if [[ -e "$OLD_PRODUCT" ]]; then
@@ -553,8 +631,13 @@ stage() {
         echo "N1D_C3_HANDCRAFTED_PRODUCT_RETIREMENT=PASS path=$retired"
     fi
 
+    retire_removed_graphene_projects \
+        "$retired_graphene_root" \
+        "$evidence/retired-graphene-projects.tsv"
+
     mkdir -p "$LOCAL_MANIFEST_DIR"
-    cp -a "$MANIFEST_SRC" "$LOCAL_MANIFEST"
+    cp -a "$ADD_MANIFEST_SRC" "$LOCAL_ADD_MANIFEST"
+    cp -a "$REMOVE_MANIFEST_SRC" "$LOCAL_REMOVE_MANIFEST"
 
     (
         cd "$ANDROID_ROOT"
@@ -566,16 +649,16 @@ stage() {
             "${scaffold_paths[@]}"
     )
 
+    verify_removed_paths_absent
     verify_scaffold_base_heads
+    verify_managed_graph_count \
+        "$evidence/prepatch-project-heads.tsv" \
+        "$evidence/prepatch-dirty-projects.txt"
     verify_control_patch_targets
-
-    capture_heads "$evidence/prepatch-project-heads.tsv"
-    capture_dirty_projects "$evidence/prepatch-dirty-projects.txt"
-    [[ ! -s "$evidence/prepatch-dirty-projects.txt" ]] || fail prepatch_dirty
 
     apply_control_patch_stack
 
-    verify_postpatch_clean_and_count \
+    verify_managed_graph_count \
         "$evidence/postpatch-project-heads.tsv" \
         "$evidence/postpatch-dirty-projects.txt"
     verify_build_make_patch_count "$evidence/prepatch-project-heads.tsv"
@@ -589,7 +672,9 @@ stage() {
     verify_generated_product
     verify_td_generated_dirty_scope
 
-    cp -a "$MANIFEST_SRC" "$evidence/n1d-c3a-trebledroid-manifest.xml"
+    cp -a "$ADD_MANIFEST_SRC" "$evidence/n1d-c3a-trebledroid-add.xml"
+    cp -a "$REMOVE_MANIFEST_SRC" "$evidence/n1d-c3a-trebledroid-remove.xml"
+    cp -a "$REMOVE_PROJECT_MAP" "$evidence/n1d-c3a-remove-projects.tsv"
     cp -a "$ROM_SRC" "$evidence/rom.mk"
     cp -a "$TIER_FILE" "$evidence/control-patch-tiers.tsv"
     cp -a "$BUILD_AUDIT_SET" "$evidence/c3a-build-make-audit-set.txt"
@@ -600,12 +685,17 @@ stage() {
     {
         echo "N1D_C3A_TREBLEDROID_STAGE=PASS"
         echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+        echo "N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION"
         echo "N1D_C3_RESTLESS_RECIPE_COMMIT=$N1D_RESTLESS_COMMIT"
+        echo "N1D_C3A_ADD_PROJECT_COUNT=$N1D_C3A_ADD_PROJECT_COUNT"
+        echo "N1D_C3A_REMOVE_PROJECT_COUNT=$N1D_C3A_REMOVE_PROJECT_COUNT"
+        echo "N1D_C3A_MANAGED_PROJECT_COUNT=$N1D_C3A_MANAGED_PROJECT_COUNT"
         echo "N1D_C3A_CONTROL_PATCH_COUNT=$N1D_C3_CONTROL_PATCH_COUNT"
         echo "N1D_C3A_CONTROL_PATCH_TIER_COUNT=$N1D_C3_CONTROL_PATCH_TIER_COUNT"
         echo "N1D_C3A_GENERATED_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
         echo "N1D_C3A_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
         echo "N1D_C3A_VARIANT=$N1D_C3_FIRST_VARIANT"
+        echo "N1D_C3A_RETIRED_GRAPHENE_ROOT=$retired_graphene_root"
         echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3_RUNTIME_PATCH_ALLOWLIST_COUNT"
         echo "N1D_C3A_RELEASE_ELIGIBLE=NO"
         echo "N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
@@ -627,6 +717,8 @@ verify() {
     local evidence
     local count
     local current_heads
+    local retired_graphene_root
+    local ledger_count
 
     echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL VERIFY ====="
     echo "SOURCE_MUTATION_AUTHORIZED=NO"
@@ -635,6 +727,7 @@ verify() {
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
     echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
+    echo "N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION"
     echo "C3A_RELEASE_ELIGIBLE=NO"
     echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
 
@@ -647,7 +740,11 @@ verify() {
         || fail recipe_head_mismatch
 
     verify_recipe_inventory
-    cmp -s "$MANIFEST_SRC" "$LOCAL_MANIFEST" || fail local_manifest_mismatch
+
+    cmp -s "$ADD_MANIFEST_SRC" "$LOCAL_ADD_MANIFEST" \
+        || fail local_add_manifest_mismatch
+    cmp -s "$REMOVE_MANIFEST_SRC" "$LOCAL_REMOVE_MANIFEST" \
+        || fail local_remove_manifest_mismatch
 
     evidence="$(latest_stage_evidence)"
     [[ -n "$evidence" ]] || fail stage_evidence_missing
@@ -656,11 +753,31 @@ verify() {
         sha256sum -c SHA256SUMS.txt >/dev/null
     ) || fail stage_evidence_invalid
 
+    retired_graphene_root="$(
+        awk -F= '$1=="N1D_C3A_RETIRED_GRAPHENE_ROOT"{print $2}' \
+            "$evidence/stage-state.env"
+    )"
+    [[ -n "$retired_graphene_root" && -d "$retired_graphene_root" ]] \
+        || fail retired_graphene_root_missing
+
+    ledger_count="$(wc -l < "$evidence/retired-graphene-projects.tsv" | tr -d ' ')"
+    [[ "$ledger_count" == "$N1D_C3A_REMOVE_PROJECT_COUNT" ]] \
+        || fail "retired_graphene_ledger_count expected=$N1D_C3A_REMOVE_PROJECT_COUNT actual=$ledger_count"
+
+    while IFS=$'\t' read -r _project_name path archived; do
+        [[ -n "$path" && -d "$archived" ]] || fail "retired_project_archive_missing path=$path archive=$archived"
+    done < "$evidence/retired-graphene-projects.tsv"
+
+    verify_removed_paths_absent
+
     current_heads="$(mktemp)"
     capture_heads "$current_heads"
     count="$(grep -cve '^$' "$current_heads" || true)"
-    [[ "$count" == 1045 ]] \
-        || { rm -f "$current_heads"; fail "current_project_count expected=1045 actual=$count"; }
+    [[ "$count" == "$N1D_C3A_MANAGED_PROJECT_COUNT" ]] \
+        || {
+            rm -f "$current_heads"
+            fail "current_project_count expected=$N1D_C3A_MANAGED_PROJECT_COUNT actual=$count"
+        }
 
     LC_ALL=C sort "$current_heads" > "$current_heads.sorted"
     LC_ALL=C sort "$evidence/postpatch-project-heads.tsv" > "$current_heads.expected"
@@ -676,7 +793,8 @@ verify() {
     verify_generated_product
     verify_td_generated_dirty_scope
 
-    echo "N1D_C3A_POSTPATCH_HEADS=PASS_EXACT value=1045"
+    echo "N1D_C3A_POSTPATCH_HEADS=PASS_EXACT value=$N1D_C3A_MANAGED_PROJECT_COUNT"
+    echo "N1D_C3A_RETIRED_GRAPHENE_PROJECTS=PASS_ARCHIVED count=$N1D_C3A_REMOVE_PROJECT_COUNT"
     echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
     echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
 }
