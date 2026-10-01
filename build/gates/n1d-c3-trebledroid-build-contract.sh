@@ -22,7 +22,9 @@ for token in \
     'build_requires_--authorize-network_for_treble_app' \
     'out_already_exists_requires_--resume-failed-c3-build' \
     'host_layout_fix_requires_--authorize-host-layout-source-mutation' \
-    'N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT' \
+    'N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT patch=2' \
+    'N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_COMPLETE' \
+    'DEXPREOPT_OUTDIR_PATCH=' \
     'FAILED_SYSTEMIMAGE_PRE_ARTIFACT' \
     'prior_build_resume_state_inconsistent' \
     'failed_build_evidence_missing_for_resume' \
@@ -67,9 +69,13 @@ for token in \
     'N1D_C3_TREBLE_APP_JDK_SOURCE=SABLE_JDK17' \
     'N1D_C3_TREBLE_APP_BUILD_RESIDUE_POLICY=SDK_METADATA_AND_LICENSES_ONLY' \
     'N1D_C3_TREBLE_APP_KNOWN_PACKAGES_BASE_BLOB=7b27183be84845e00318dbbd3aeb60b5d291216b' \
-    'N1D_C3A_HOST_LAYOUT_PATCH_COUNT=1' \
+    'N1D_C3A_HOST_LAYOUT_PATCH_COUNT=2' \
     'N1D_C3A_HOST_LAYOUT_PATCH_ROLE=BUILD_ENVIRONMENT_COMPATIBILITY_ONLY' \
-    'N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA=ce55b543e3e5ff49a9a6921ba752f6aa39d53997'
+    'N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA=ce55b543e3e5ff49a9a6921ba752f6aa39d53997' \
+    'N1D_C3A_HOST_LAYOUT_TARGET_POST_BLOB=b9bc7009d822dd811c0338c5595d14f0617d1392' \
+    'N1D_C3A_DEXPREOPT_OUTDIR_PATCH_BLOB_SHA=5c94ca71a3a932113cd5fd5e286e12a2f3617d01' \
+    'N1D_C3A_DEXPREOPT_OUTDIR_TARGET_BASE_BLOB=8033b48e5cfcc2cb2f64037aca44c129f54a969b' \
+    'N1D_C3A_DEXPREOPT_OUTDIR_TARGET_POST_BLOB=7024841edac715a9bd3a81af92c42da0b302e1f0'
 do
     grep -Fxq "$token" "$PROFILE" || fail "profile_missing=$token"
 done
