@@ -42,6 +42,7 @@ The intended product chain is exactly:
 ```text
 build/make/target/product/generic_system_arm64.mk
   -> build/make/target/product/gsi_release.mk
+  -> BUILDING_GSI := false
   -> vendor/sable/n1d/treble_compat.mk
   -> vendor/sable/n1d/sable_n1d_product_delta.mk
 ```
@@ -58,6 +59,16 @@ and named:
 sable_titan2_n1d_arm64
 ```
 
+Its resolved board device is:
+
+```text
+gsi_arm64
+```
+
+which uses the pinned Graphene/AOSP
+`build/make/target/board/gsi_arm64/BoardConfig.mk` and
+`BoardConfigGsiCommon.mk` semantics.
+
 Android 16 QPR2 uses release config `bp4a`. The first engineering build
 variant is `userdebug`; the release-security variant remains `user`. Product
 composition staging itself authorizes neither build.
@@ -70,6 +81,14 @@ build vendor, product, system_ext, userdata or super images.
 The pinned `gsi_release.mk` supplies GSI release behavior, including
 `gsi_skip_mount.cfg` and current extra VNDK support for versions 31 through
 34.
+
+The first live C3 compile also established that Graphene intentionally lacks
+several AOSP application modules referenced by build/make's Soong-defined GSI
+image. C3 therefore sets `BUILDING_GSI := false` after inheriting
+`gsi_release.mk`. The value remains non-empty for
+`BoardConfigGsiCommon.mk`'s Make-side `ifdef BUILDING_GSI` handling, while
+the Soong config conversion tests specifically for literal `true` and
+therefore does not enable the incompatible `aosp_system_image` module.
 
 Titan 2 vendor/VNDK API is 34, so C3 does not restore legacy VNDK 28/29 as a
 baseline compatibility mechanism.
@@ -157,6 +176,22 @@ Post-stage offline verification:
 bash build/titan2/stage-n1d-c3-product.sh verify
 ```
 
+After the first compile exposed the Graphene/AOSP Soong GSI mismatch, the
+already-staged product may be refreshed only through the bounded remediation
+action:
+
+```bash
+bash build/titan2/stage-n1d-c3-product.sh \
+  refresh \
+  --authorize-source-mutation
+```
+
+The refresh is limited to `sable_titan2_n1d_arm64.mk`. It requires the
+currently staged product file to match the exact pre-remediation SHA-256 and
+requires the other four staged files to remain byte-identical. Existing failed
+`out-c3` is tolerated for source verification but is neither read nor modified
+by the refresh.
+
 The stage action may create only:
 
 ```text
@@ -194,7 +229,7 @@ base project count remains 1033
 all base HEADs remain exact
 base dirty project count remains 0
 no local manifests
-no build output
+no build output for the initial stage; refresh may coexist with preserved failed out-c3
 zero active Treble compatibility items
 zero Restless patch allowlist entries
 ```
