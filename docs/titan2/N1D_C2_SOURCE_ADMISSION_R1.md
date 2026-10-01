@@ -1,6 +1,6 @@
 # Titan 2 N1D C2 source admission R1
 
-Status: source admission only; no Android build; no device contact; no flash.
+Status: historical failed exact-source admission path; retries blocked.
 
 Date: 2026-10-01
 
@@ -8,6 +8,16 @@ Date: 2026-10-01
 
 C2 is the bounded Restless/Treble diagnostic control used to distinguish
 generic Treble compatibility behavior from the Sable-owned C3 baseline.
+
+The exact-source admission path documented below is retained for audit history.
+After two bounded attempts, current public remotes could not materialize two
+required locked source objects. Further source-admission retries are blocked.
+
+The active C2 operator path is now documented in:
+
+```text
+docs/titan2/N1D_C2_PREBUILT_CONTROL_R1.md
+```
 
 The C2 source-admission phase starts only after the fresh Graphene/AOSP Android
 16 base has been synchronized and sealed.
@@ -119,7 +129,7 @@ no out-c2
 no out-c3
 ```
 
-## Admission operation
+## Historical admission operation — blocked
 
 Offline qualification:
 
