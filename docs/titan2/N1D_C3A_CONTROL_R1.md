@@ -1,6 +1,6 @@
 # Titan 2 N1D C3A Restless/Treble reproduction control
 
-Status: **control-build phase; non-release; no device contact**
+Status: **control build complete; non-release; no device contact**
 
 Date: 2026-10-01
 
@@ -122,6 +122,28 @@ C3A evidence:
 /srv/sable-build/evidence/titan2/n1d-c3a-trebledroid-*/
 ```
 
+## Successful control-build evidence
+
+The canonical build host completed the C3A `systemimage` target successfully on
+2026-10-01. The sealed result is:
+
+```text
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/n1d-c3a-trebledroid-build/20261001T214611Z-trebledroid-systemimage
+SYSTEM_IMG=/srv/sable-build/workspaces/titan2-n1d/out-c3a-td/target/product/tdgsi_arm64_ab/system.img
+SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+SYSTEM_BYTES=3146977280
+N1D_C3A_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT
+N1D_C3A_TREBLEDROID_SYSTEMIMAGE=PASS
+N1D_C3_RELEASE_ELIGIBLE=NO
+```
+
+Repository evidence is recorded in
+`build/titan2/n1d-c3a-control-evidence.env` and guarded by
+`build/gates/n1d-c3a-control-evidence-contract.sh`.
+
+This satisfies the evidence prerequisite for a separate C3B transition change.
+It does not authorize device contact, flash, signing, OTA generation, or release.
+
 ## TrebleApp Java boundary
 
 The pinned TrebleApp control source uses Android Gradle Plugin 7.4.2 with the
@@ -208,7 +230,9 @@ failing.
 
 ## Exit criterion
 
-C3A is complete when the pinned 991-project public functional graph and control
-recipe produce and seal a `treble_arm64_bvN-bp4a-user` `system.img`.
+**Satisfied.** The pinned 991-project public functional graph and control recipe
+produced and sealed a `treble_arm64_bvN-bp4a-user` `system.img` with SHA-256
+`4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16`.
 
-That result becomes comparison evidence for C3B. It does not authorize a flash.
+That result is now the comparison evidence for C3B. It does not authorize a
+flash or make C3A a SableOS release baseline.
