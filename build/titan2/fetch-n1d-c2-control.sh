@@ -104,4 +104,3 @@ case "$ACTION" in
     download) download ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
-
