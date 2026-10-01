@@ -118,8 +118,12 @@ record OUTPUT "$OUT"
 : "${STOCK_VBMETA_IMG:=$STOCK_REF_DIR/vbmeta.img}"
 : "${STOCK_VBMETA_SYSTEM_IMG:=$STOCK_REF_DIR/vbmeta_system.img}"
 : "${STOCK_VBMETA_VENDOR_IMG:=$STOCK_REF_DIR/vbmeta_vendor.img}"
+: "${STOCK_SUPER_ARTIFACT_EVID:=/srv/data/sable-build/evidence/titan2/n1c-stock-super-restore-artifact-r1c-20260930_200124}"
+: "${TEE14_BOOT_AVB_EVID:=/srv/data/sable-build/evidence/titan2/n1c-restore-tee14-boot-avb-direct-20260930_204335}"
+: "${RELEASE_REGISTRY:=/srv/data/sable-build/release-registry}"
+: "${N1B_OUT_DIR:=/srv/data/sable-build/workspaces/titan2-n1b/out_sable_t2_n1_sable_gsi}"
 : "${RESTLESS_SYSTEM_IMG:=}"
-: "${N1B_CONTROL_SYSTEM_IMG:=/srv/data/sable-build/workspaces/titan2-n1b/out_sable_t2_n1_sable_gsi/target/product/tdgsi_arm64_ab/system.img}"
+: "${N1B_CONTROL_SYSTEM_IMG:=$N1B_OUT_DIR/target/product/tdgsi_arm64_ab/system.img}"
 : "${N1B_CONTROL_EXPECTED_SHA256:=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e}"
 : "${N1B_BOOT_PROOF:=$SABLE_REPO/docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md}"
 : "${N1B1_INPUT:=}"
@@ -129,11 +133,19 @@ record OUTPUT "$OUT"
 if [[ -z "$N1D_PRODUCT_FILE" ]]; then
   mapfile -t N1D_PRODUCT_CANDIDATES < <(
     find /srv/data/sable-build/workspaces/titan2-n1b \
-         /srv/data/sable-build/workspaces/titan2-n1c-android16-hybrid-super-* \
       -type f -path '*/device/phh/treble/treble_arm64_bvN.mk' -print 2>/dev/null | sort -u
   )
   if [[ ${#N1D_PRODUCT_CANDIDATES[@]} -eq 1 ]]; then
     N1D_PRODUCT_FILE="${N1D_PRODUCT_CANDIDATES[0]}"
+  else
+    mapfile -t N1D_PRODUCT_CANDIDATES < <(
+      find /srv/data/sable-build/workspaces/titan2-n1b \
+           /srv/data/sable-build/workspaces/titan2-n1c-android16-hybrid-super-* \
+        -type f -path '*/device/phh/treble/treble_arm64_bvN.mk' -print 2>/dev/null | sort -u
+    )
+    if [[ ${#N1D_PRODUCT_CANDIDATES[@]} -eq 1 ]]; then
+      N1D_PRODUCT_FILE="${N1D_PRODUCT_CANDIDATES[0]}"
+    fi
   fi
 fi
 : "${STOCK_FIRST_STAGE_TREE:=}"
@@ -152,16 +164,103 @@ ENG2_CLASSIFIER_SHA256="7833e2235a151f4ae2f628c597624c02d93cd81ed558da5af5eaa73a
 
 sha() { sha256sum "$1" | awk '{print $1}'; }
 
-# Resolve Android host tools, preferring the exact N1C OUT host set.
+resolve_evidence_exact() {
+  local current evidence base
+  current="$1"
+  evidence="$2"
+  base="$3"
+  if [[ -f "$current" ]]; then
+    printf '%s\n' "$current"
+    return 0
+  fi
+  [[ -d "$evidence" ]] || return 1
+  local -a hits=()
+  mapfile -t hits < <(find "$evidence" -type f -name "$base" -print 2>/dev/null | sort -u)
+  if [[ ${#hits[@]} -eq 1 ]]; then
+    printf '%s\n' "${hits[0]}"
+    return 0
+  fi
+  mapfile -t hits < <(
+    grep -RhoE "/[^[:space:]\"']*/$base" "$evidence" 2>/dev/null |
+      sort -u |
+      while IFS= read -r p; do [[ -f "$p" ]] && printf '%s\n' "$p"; done
+  )
+  [[ ${#hits[@]} -eq 1 ]] || return 1
+  printf '%s\n' "${hits[0]}"
+}
+
+resolve_n1b_control() {
+  if [[ -f "$N1B_CONTROL_SYSTEM_IMG" ]] && [[ "$(sha "$N1B_CONTROL_SYSTEM_IMG")" == "$N1B_CONTROL_EXPECTED_SHA256" ]]; then
+    printf '%s\n' "$N1B_CONTROL_SYSTEM_IMG"
+    return 0
+  fi
+  if [[ -d "$RELEASE_REGISTRY/titan2/N1B" ]]; then
+    local registry_hit
+    registry_hit="$(python3 - "$RELEASE_REGISTRY/titan2/N1B" "$N1B_CONTROL_EXPECTED_SHA256" <<'PY'
+import json, pathlib, sys
+root=pathlib.Path(sys.argv[1]); expected=sys.argv[2]; hits=[]
+for manifest in sorted(root.glob("*.json")):
+    try:
+        doc=json.loads(manifest.read_text())
+    except Exception:
+        continue
+    for item in (doc.get("artifacts") or {}).values():
+        if not isinstance(item, dict) or item.get("sha256") != expected:
+            continue
+        p=pathlib.Path(str(item.get("path","")))
+        if p.is_file():
+            hits.append(str(p.resolve()))
+hits=sorted(set(hits))
+if len(hits)==1:
+    print(hits[0])
+PY
+)"
+    if [[ -n "$registry_hit" ]]; then
+      printf '%s\n' "$registry_hit"
+      return 0
+    fi
+  fi
+  local candidate
+  while IFS= read -r candidate; do
+    [[ -f "$candidate" ]] || continue
+    if [[ "$(sha "$candidate")" == "$N1B_CONTROL_EXPECTED_SHA256" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done < <(
+    find /srv/data/sable-build/workspaces /srv/data/sable-build/evidence/titan2       -type f -name system.img -size 3180666880c -path '*titan2*' -print 2>/dev/null | sort -u
+  )
+  return 1
+}
+
+if ! [[ -f "$N1B_CONTROL_SYSTEM_IMG" ]] || [[ "$(sha "$N1B_CONTROL_SYSTEM_IMG" 2>/dev/null || true)" != "$N1B_CONTROL_EXPECTED_SHA256" ]]; then
+  N1B_CONTROL_SYSTEM_IMG="$(resolve_n1b_control || true)"
+fi
+
+STOCK_VBMETA_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta.img || printf '%s' "$STOCK_VBMETA_IMG")"
+STOCK_VBMETA_SYSTEM_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_SYSTEM_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta_system.img || printf '%s' "$STOCK_VBMETA_SYSTEM_IMG")"
+STOCK_VBMETA_VENDOR_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_VENDOR_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta_vendor.img || printf '%s' "$STOCK_VBMETA_VENDOR_IMG")"
+
+# Resolve Android host tools, preferring the exact N1C OUT host set and then
+# the sealed N1B output / other Titan 2 Android OUT trees.
 HOST_BIN="$N1C_OUT_DIR/host/linux-x86/bin"
-HOST_LIB64="$N1C_OUT_DIR/host/linux-x86/lib64"
-HOST_LIB="$N1C_OUT_DIR/host/linux-x86/lib"
 resolve_tool() {
-  local n="$1" override="${2:-}" p=""
-  if [[ -n "$override" && -x "$override" ]]; then echo "$override"; return 0; fi
-  if [[ -x "$HOST_BIN/$n" ]]; then echo "$HOST_BIN/$n"; return 0; fi
+  local n override p root
+  n="$1"
+  override="${2:-}"
+  if [[ -n "$override" && -x "$override" ]]; then printf '%s\n' "$override"; return 0; fi
+  if [[ -x "$HOST_BIN/$n" ]]; then printf '%s\n' "$HOST_BIN/$n"; return 0; fi
+  if [[ -x "$N1B_OUT_DIR/host/linux-x86/bin/$n" ]]; then printf '%s\n' "$N1B_OUT_DIR/host/linux-x86/bin/$n"; return 0; fi
+  while IFS= read -r root; do
+    [[ -x "$root" ]] || continue
+    printf '%s\n' "$root"
+    return 0
+  done < <(
+    find /srv/data/sable-build/workspaces \
+      -maxdepth 8 -type f -path "*/host/linux-x86/bin/$n" -print 2>/dev/null | sort -u
+  )
   p="$(command -v "$n" 2>/dev/null || true)"
-  [[ -n "$p" ]] && { echo "$p"; return 0; }
+  if [[ -n "$p" ]]; then printf '%s\n' "$p"; return 0; fi
   return 1
 }
 SIMG2IMG="$(resolve_tool simg2img "${SIMG2IMG_TOOL:-}" || true)"
@@ -172,9 +271,28 @@ CHECKVINTF="$(resolve_tool checkvintf "${CHECKVINTF_TOOL:-}" || true)"
 SECILC="$(resolve_tool secilc "${SECILC_TOOL:-}" || true)"
 UNPACK_BOOTIMG="$(resolve_tool unpack_bootimg "${UNPACK_BOOTIMG_TOOL:-}" || true)"
 
+record TOOL_SIMG2IMG "${SIMG2IMG:--}"
+record TOOL_LPUNPACK "${LPUNPACK:--}"
+record TOOL_LPDUMP "${LPDUMP:--}"
+record TOOL_AVBTOOL "${AVBTOOL:--}"
+record TOOL_CHECKVINTF "${CHECKVINTF:--}"
+record TOOL_SECILC "${SECILC:--}"
+record TOOL_UNPACK_BOOTIMG "${UNPACK_BOOTIMG:--}"
+record N1B_CONTROL_SYSTEM_IMG_RESOLVED "${N1B_CONTROL_SYSTEM_IMG:--}"
+record STOCK_VBMETA_IMG_RESOLVED "${STOCK_VBMETA_IMG:--}"
+record STOCK_VBMETA_SYSTEM_IMG_RESOLVED "${STOCK_VBMETA_SYSTEM_IMG:--}"
+record STOCK_VBMETA_VENDOR_IMG_RESOLVED "${STOCK_VBMETA_VENDOR_IMG:--}"
+
 run_host_tool() {
-  local exe="$1"; shift
-  LD_LIBRARY_PATH="$HOST_LIB64:$HOST_LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$exe" "$@"
+  local exe host_root
+  exe="$1"
+  shift
+  if [[ "$exe" == */host/linux-x86/bin/* ]]; then
+    host_root="${exe%/bin/*}"
+    LD_LIBRARY_PATH="$host_root/lib64:$host_root/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" "$exe" "$@"
+  else
+    "$exe" "$@"
+  fi
 }
 
 # Image detection/extraction helpers. All writes are under WORK.
@@ -373,6 +491,25 @@ if [[ "$P_OK" -eq 1 && "$SE_OK" -eq 1 ]]; then gate C0_03_FRAMEWORK_VIEW PASS "G
 
 # ---------------------------- C0_04 AOSP GSI product-contract comparison
 AOSP_GSI_RELEASE="$N1C_WORKSPACE/build/make/target/product/gsi_release.mk"
+if [[ ! -f "$AOSP_GSI_RELEASE" && -n "$N1D_PRODUCT_FILE" && -f "$N1D_PRODUCT_FILE" ]]; then
+  PRODUCT_SOURCE_ROOT="$(cd "$(dirname "$N1D_PRODUCT_FILE")/../../.." && pwd)"
+  for rel in build/make/target/product/gsi_release.mk build/target/product/gsi_release.mk; do
+    if [[ -f "$PRODUCT_SOURCE_ROOT/$rel" ]]; then
+      AOSP_GSI_RELEASE="$PRODUCT_SOURCE_ROOT/$rel"
+      break
+    fi
+  done
+fi
+if [[ ! -f "$AOSP_GSI_RELEASE" ]]; then
+  mapfile -t AOSP_GSI_CANDIDATES < <(
+    find /srv/data/sable-build/workspaces/titan2-n1b          /srv/data/sable-build/workspaces/titan2-n1c-android16-hybrid-super-*       -type f \( -path '*/build/make/target/product/gsi_release.mk' -o -path '*/build/target/product/gsi_release.mk' \)       -print 2>/dev/null | sort -u
+  )
+  if [[ ${#AOSP_GSI_CANDIDATES[@]} -eq 1 ]]; then
+    AOSP_GSI_RELEASE="${AOSP_GSI_CANDIDATES[0]}"
+  fi
+fi
+record AOSP_GSI_RELEASE_RESOLVED "${AOSP_GSI_RELEASE:--}"
+record N1D_PRODUCT_FILE_RESOLVED "${N1D_PRODUCT_FILE:--}"
 SABLE_CANDIDATES=()
 if [[ -n "$N1D_PRODUCT_FILE" && -f "$N1D_PRODUCT_FILE" ]]; then SABLE_CANDIDATES+=("$N1D_PRODUCT_FILE"); fi
 if [[ -d "$SABLE_REPO" ]]; then
@@ -387,7 +524,7 @@ if [[ -f "$AOSP_GSI_RELEASE" ]]; then
   else
     gate C0_04_GSI_CONTRACT FAIL "no Sable N1D product file inheriting/expressing GSI release contract found"
   fi
-else gate C0_04_GSI_CONTRACT FAIL "AOSP gsi_release.mk missing from N1C workspace"; fi
+else gate C0_04_GSI_CONTRACT FAIL "AOSP gsi_release.mk unresolved from N1C/N1B source roots"; fi
 
 # Build runtime partition view for VINTF / SELinux. If skip_mount passed, product/system_ext come from GSI.
 RUNTIME_PRODUCT="$N1C_SYS_ROOT/product"
@@ -441,17 +578,31 @@ STOCK_SUPER_RAW="$WORK/stock-super.raw.img"
 N1C_RAW_REF=""; STOCK_RAW_REF=""
 if [[ -f "$N1C_SUPER_IMG" && -n "$LPDUMP" && -n "$LPUNPACK" ]]; then N1C_RAW_REF="$(normalize_raw "$N1C_SUPER_IMG" "$N1C_SUPER_RAW" || true)"; fi
 if [[ -f "$STOCK_SUPER_IMG" && -n "$LPDUMP" && -n "$LPUNPACK" ]]; then STOCK_RAW_REF="$(normalize_raw "$STOCK_SUPER_IMG" "$STOCK_SUPER_RAW" || true)"; fi
-if [[ -z "$STOCK_RAW_REF" ]]; then
-  # discover a likely verified restore artifact only if config default is absent
-  while IFS= read -r c; do
+if [[ -z "$STOCK_RAW_REF" && -n "$LPDUMP" && -n "$LPUNPACK" ]]; then
+  # Prefer the exact N1C stock-super restore evidence, then broaden within Titan 2 evidence.
+  mapfile -t STOCK_SUPER_CANDIDATES < <(
+    {
+      if [[ -d "$STOCK_SUPER_ARTIFACT_EVID" ]]; then
+        find "$STOCK_SUPER_ARTIFACT_EVID" -type f \( -iname '*super*.img' -o -iname '*super*.sparse.img' \) -print 2>/dev/null
+        grep -RhoE "/[^[:space:]\"']*super[^[:space:]\"']*\.img" "$STOCK_SUPER_ARTIFACT_EVID" 2>/dev/null || true
+      fi
+      find /srv/data/sable-build/evidence/titan2 -maxdepth 4 -type f \( -iname '*stock*super*.img' -o -iname '*stock*super*.sparse.img' \) -print 2>/dev/null
+    } | sort -u
+  )
+  for c in "${STOCK_SUPER_CANDIDATES[@]:-}"; do
     [[ -f "$c" ]] || continue
     cr="$WORK/stock-candidate.raw.img"
     rr="$(normalize_raw "$c" "$cr" || true)"
     [[ -n "$rr" ]] || continue
-    if run_host_tool "$LPDUMP" -j "$rr" >/dev/null 2>&1; then STOCK_SUPER_IMG="$c"; STOCK_RAW_REF="$rr"; break; fi
+    if run_host_tool "$LPDUMP" -j "$rr" >/dev/null 2>&1; then
+      STOCK_SUPER_IMG="$c"
+      STOCK_RAW_REF="$rr"
+      break
+    fi
     rm -f "$cr"
-  done < <(find /srv/data/sable-build/evidence/titan2 -maxdepth 3 -type f \( -iname '*stock*super*.img' -o -iname '*stock*super*.sparse.img' \) 2>/dev/null | sort)
+  done
 fi
+record STOCK_SUPER_IMG_RESOLVED "${STOCK_SUPER_IMG:--}"
 
 N1C_LP="$WORK/n1c-lp"; mkdir -p "$N1C_LP"
 if [[ -n "$N1C_RAW_REF" ]]; then
