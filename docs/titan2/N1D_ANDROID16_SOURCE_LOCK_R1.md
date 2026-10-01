@@ -81,8 +81,10 @@ patch tiers.
 
 ## Public-only source requirement
 
-The Restless Android-16 local manifest contains a private
+The Restless Android-16 `default.xml` add manifest contains a private
 `vendor/cawilliamson-priv` project used by upstream signing/release tooling.
+N1D does not copy that add manifest directly. C3A separately pins the exact
+Restless `remove.xml`, which contains 54 deterministic project removals.
 SableOS N1D must not depend on that project.
 
 The future N1D source-sync driver must generate/use a reviewed public-only local
