@@ -51,6 +51,34 @@ manifest `<default>`.
 This prevents local-manifest remote-name collisions with Graphene's base
 manifest.
 
+For install/resume manifests, the derivation also preserves the historical
+`upstream` locator emitted by `repo manifest -r`. The immutable 40-hex
+`revision` remains the source identity. `upstream` is transport metadata
+only: it tells repo which published ref contains the locked commit when the
+checkout is shallow. Audit-only derivations continue to omit upstream metadata.
+
+The first bounded admission attempt on 2026-10-01 failed before admission
+closure because two locked project objects were not materialized by the
+depth-1 fetch:
+
+```text
+device/phh/treble
+  db688b38d729cf33e31baea47986c3fd210b671e
+
+prebuilts/vndk/v29
+  0062f4721125d68951fba37361c8204b929ae178
+```
+
+Failure evidence:
+
+```text
+/srv/sable-build/evidence/titan2/n1d-c2-source-admission/
+  20261001T054416Z-c2-admission
+```
+
+No Android build, device contact or flash occurred. The failed attempt does not
+authorize substituting current branch tips for the locked revisions.
+
 ## Exact admission set
 
 The bounded C2 project paths are:
@@ -99,13 +127,28 @@ Offline qualification:
 bash build/titan2/admit-n1d-c2-source.sh preflight
 ```
 
-Network-authorized admission:
+Network-authorized first admission:
 
 ```bash
 bash build/titan2/admit-n1d-c2-source.sh \
   admit \
   --authorize-network
 ```
+
+After a failed bounded admission which has already installed the C2 local
+manifest, use the guarded resume action instead of deleting or recreating the
+Android workspace:
+
+```bash
+bash build/titan2/admit-n1d-c2-source.sh \
+  resume \
+  --authorize-network
+```
+
+Resume first proves all 1,033 sealed base project HEADs are still exact and
+clean, then verifies any existing C2 worktree is already at its pinned commit
+and clean. It replaces only the C2 local manifest with the upstream-aware
+locked manifest and retries the same 13 bounded project paths.
 
 The network-authorized action may mutate only:
 
