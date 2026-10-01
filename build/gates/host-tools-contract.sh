@@ -8,15 +8,16 @@ VERIFY="$ROOT/build/host/verify-host-tools.sh"
 MIGRATE="$ROOT/build/host/migrate-canonical-host-tools.sh"
 ENTRY="$ROOT/build/sable.sh"
 N1D_C0="$ROOT/build/titan2/qualify-n1d-c0-offline.sh"
+N1D_C0_SELF_TEST="$ROOT/build/titan2/tests/test-n1d-c0-offline.sh"
 
-for f in "$PROFILE" "$LEGACY_R8" "$VERIFY" "$MIGRATE" "$ENTRY" "$N1D_C0"; do
+for f in "$PROFILE" "$LEGACY_R8" "$VERIFY" "$MIGRATE" "$ENTRY" "$N1D_C0" "$N1D_C0_SELF_TEST"; do
     [[ -f "$f" ]] || {
         echo "SABLE_HOST_TOOLS_CONTRACT=FAIL_MISSING path=$f"
         exit 1
     }
 done
 
-for f in "$PROFILE" "$LEGACY_R8" "$VERIFY" "$MIGRATE" "$ENTRY" "$N1D_C0"; do
+for f in "$PROFILE" "$LEGACY_R8" "$VERIFY" "$MIGRATE" "$ENTRY" "$N1D_C0" "$N1D_C0_SELF_TEST"; do
     bash -n "$f"
 done
 
@@ -56,6 +57,9 @@ if grep -Fq 'resolve_otatools_zip' "$N1D_C0" || grep -Fq 'resolve_tool()' "$N1D_
     echo "SABLE_HOST_TOOLS_CONTRACT=FAIL_N1D_TOOL_DISCOVERY"
     exit 1
 fi
+
+bash "$N1D_C0_SELF_TEST"
+echo "SABLE_HOST_TOOLS_N1D_C0_SELF_TEST=PASS"
 
 echo "SABLE_HOST_TOOLS_GLOBAL_LAYOUT=PASS"
 echo "SABLE_HOST_TOOLS_EXPLICIT_VARIABLES=PASS"
