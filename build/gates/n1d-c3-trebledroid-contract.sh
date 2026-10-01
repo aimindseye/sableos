@@ -8,8 +8,8 @@ BOUNDARY="$ROOT/build/titan2/n1d-restless-security-boundary.env"
 MANIFEST="$ROOT/build/titan2/n1d-c3-trebledroid-manifest.xml"
 ROM="$ROOT/build/titan2/n1d-c3-sable-rom.mk"
 TIERS="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
-BUILD_ALLOW="$ROOT/build/titan2/n1d-c3-build-patch-allowlist.txt"
-RUNTIME_ALLOW="$ROOT/build/titan2/n1d-c3-runtime-patch-allowlist.txt"
+BUILD_AUDIT_SET="$ROOT/build/titan2/n1d-c3a-build-make-audit-set.txt"
+C3B_RUNTIME_ALLOWLIST="$ROOT/build/titan2/n1d-c3b-runtime-patch-allowlist.txt"
 BUILD_PATCH_DIR="$ROOT/patches/android-16-n1d-trebledroid/build-make"
 DRIVER="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 
@@ -18,7 +18,7 @@ fail() {
     exit 1
 }
 
-for f in "$PROFILE" "$PRODUCT" "$BOUNDARY" "$MANIFEST" "$ROM"     "$TIERS" "$BUILD_ALLOW" "$RUNTIME_ALLOW" "$DRIVER"
+for f in "$PROFILE" "$PRODUCT" "$BOUNDARY" "$MANIFEST" "$ROM"     "$TIERS" "$BUILD_AUDIT_SET" "$C3B_RUNTIME_ALLOWLIST" "$DRIVER"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -43,13 +43,13 @@ done
 
 tier_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$TIERS")"
 tier_total="$(awk 'NF && $1 !~ /^#/ {s+=$2} END {print s+0}' "$TIERS")"
-build_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$BUILD_ALLOW")"
-runtime_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$RUNTIME_ALLOW")"
+build_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$BUILD_AUDIT_SET")"
+runtime_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$C3B_RUNTIME_ALLOWLIST")"
 
 [[ "$tier_count" == 5 ]] || fail "tier_count=$tier_count"
 [[ "$tier_total" == 369 ]] || fail "tier_total=$tier_total"
-[[ "$build_count" == 9 ]] || fail "build_patch_count=$build_count"
-[[ "$runtime_count" == 0 ]] || fail "release_runtime_patch_count=$runtime_count"
+[[ "$build_count" == 9 ]] || fail "build_audit_count=$build_count"
+[[ "$runtime_count" == 0 ]] || fail "c3b_runtime_patch_count=$runtime_count"
 
 project_count="$(grep -c '<project ' "$MANIFEST")"
 [[ "$project_count" == 12 ]] || fail "manifest_project_count=$project_count"
@@ -63,7 +63,7 @@ done
 while IFS= read -r patch; do
     [[ -z "$patch" || "$patch" == #* ]] && continue
     [[ -f "$BUILD_PATCH_DIR/$patch" ]] || fail "focused_build_patch_missing=$patch"
-done < "$BUILD_ALLOW"
+done < "$BUILD_AUDIT_SET"
 
 grep -Fq '"TrichromeWebView"'     "$BUILD_PATCH_DIR/0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch"     || fail vanadium_webview_patch_missing
 grep -Fq '"TrichromeChrome"'     "$BUILD_PATCH_DIR/0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch"     || fail vanadium_browser_patch_missing
