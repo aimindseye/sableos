@@ -49,11 +49,11 @@ done
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 OUT_C3="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-c3a-td"
-PARSE_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3-trebledroid-parse"
-BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3-trebledroid-build"
+PARSE_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3a-trebledroid-parse"
+BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3a-trebledroid-build"
 LUNCH_TARGET="${N1D_C3_GENERATED_PRODUCT}-${N1D_C3_RELEASE_CONFIG}-${N1D_C3_FIRST_VARIANT}"
 
-echo "===== N1D C3 TREBLEDROID SYSTEMIMAGE BUILD ====="
+echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL SYSTEMIMAGE BUILD ====="
 echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
 echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
@@ -81,7 +81,7 @@ PARSE_EVIDENCE="${parses[-1]}"
     cd "$PARSE_EVIDENCE"
     sha256sum -c SHA256SUMS.txt >/dev/null
 ) || fail parse_evidence_invalid
-grep -Fxq 'N1D_C3_TREBLEDROID_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env"     || fail parse_not_passed
+grep -Fxq 'N1D_C3A_TREBLEDROID_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env"     || fail parse_not_passed
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$BUILD_EVIDENCE_ROOT/$stamp-trebledroid-systemimage"
