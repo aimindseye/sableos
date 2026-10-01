@@ -32,7 +32,7 @@ fi
 pass nounset_local_initialization
 
 grep -Fq 'bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e' "$DRIVER" || fail n1b_control_hash_default
-grep -Fq 'device/phh/treble/treble_arm64_bvN.mk' "$DRIVER" || fail active_product_autodiscovery
+grep -Fq 'device/phh/treble/treble_arm64_bvN.mk' "$DRIVER" || fail historical_c2_product_discovery
 grep -Fq 'sealed known-booting N1B/Restless-derived system compared to N1C' "$DRIVER" || fail n1b_control_c0_10
 pass control_autodiscovery
 
@@ -47,15 +47,38 @@ pass c0_discovery_contract
 CONTRACT="$ROOT/build/titan2/n1d-product-contract.env"
 [[ -f "$CONTRACT" ]] || fail n1d_product_contract_missing
 for required in \
+  'N1D_PRODUCT_CONTRACT_VERSION=2' \
+  'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
+  'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_DIAGNOSTIC_CONTROL' \
+  'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
+  'N1D_AOSP_GSI_BASE=build/make/target/product/generic_system_arm64.mk' \
+  'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
+  'N1D_TREBLE_COMPAT_REFERENCE=device/phh/treble' \
+  'N1D_TREBLE_COMPAT_DELTA=vendor/sable/n1d/treble_compat.mk' \
+  'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
+  'N1D_DIRECT_DEVICE_PHH_TREBLE_BASE_INHERIT=NO' \
+  'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=NO' \
+  'N1D_RESTLESS_ROM_MK_DIRECT_INHERIT=NO' \
+  'N1D_INITIAL_RESTLESS_PATCH_ALLOWLIST_COUNT=0' \
+  'N1D_RUNTIME_PRODUCT_OWNER=GSI_SYSTEM_IMAGE' \
+  'N1D_RUNTIME_SYSTEM_EXT_OWNER=GSI_SYSTEM_IMAGE' \
+  'N1D_SELINUX_ENFORCING_REQUIRED=YES' \
+  'N1D_NEVERALLOW_ENFORCEMENT_REQUIRED=YES' \
+  'N1D_ADB_AUTH_REQUIRED=YES' \
+  'N1D_PRODUCT_CONTRACT=PASS'; do
+  grep -Fxq "$required" "$CONTRACT" || fail "n1d_product_contract token=$required"
+done
+
+for forbidden in \
   'N1D_BASE_PRODUCT=treble_arm64_bvN' \
   'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
   'N1D_GENERATED_ARCH_INCLUDE=build/make/target/product/aosp_arm64.mk' \
   'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
-  'N1D_GSI_RELEASE_INCLUDE=build/make/target/product/gsi_release.mk' \
-  'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk' \
-  'N1D_SABLE_DELTA=vendor/sable/n1d/sable_n1d_product_delta.mk' \
-  'N1D_PRODUCT_CONTRACT=PASS'; do
-  grep -Fxq "$required" "$CONTRACT" || fail "n1d_product_contract token=$required"
+  'N1D_GSI_RELEASE_OWNER=device/phh/treble/base.mk' \
+  'N1D_RESTLESS_DELTA=device/phh/treble/rom.mk'; do
+  if grep -Fxq "$forbidden" "$CONTRACT"; then
+    fail "n1d_product_contract stale_token=$forbidden"
+  fi
 done
 grep -Fq 'build/config/host-tools.env' "$DRIVER" || fail canonical_host_tool_profile
 grep -Fq 'SABLE_LPDUMP' "$DRIVER" || fail canonical_lpdump

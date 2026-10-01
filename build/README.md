@@ -240,18 +240,28 @@ The source lock pins GrapheneOS `2026061600` / AOSP
 `16.0.0-202606230923`. Do not use the Restless default branch, its
 latest-Graphene resolver, or any Android 17 source for N1D.
 
-Restless source is a pinned Treble compatibility reference. N1D patch
-application must be repository-owned and allowlisted; upstream patch-tier loops
-are not a build interface.
+Restless source is a pinned Treble compatibility reference and C2 diagnostic
+control. The actual C3 N1D product is Sable-owned and must not directly inherit
+`device/phh/treble/base.mk` or the generated Restless product.
 
-The source lock is enforced by:
+The Android-16 PHH/Treble base intentionally carries universal-GSI compatibility
+mechanisms which are outside the Sable C3 baseline, including disabled SELinux
+neverallow enforcement, unauthenticated/default ADB behavior, PHH OTA/securize/
+remote-debug tooling, legacy VNDK compatibility, and unrelated OEM helpers.
+
+C3 therefore starts from the pinned Android-16 AOSP/Graphene GSI product and
+admits Restless/Treble compatibility changes only through
+`vendor/sable/n1d/treble_compat.mk` after evidence-based review.
+
+The source and security boundaries are enforced by:
 
 ```bash
+bash build/gates/n1d-restless-security-boundary-contract.sh
 bash build/gates/n1d-source-lock-contract.sh
 ```
 
 Source sync, Android build and device deployment remain separate gated phases.
-The source lock by itself authorizes none of them.
+These contracts authorize none of them.
 
 ## Validation discipline
 
