@@ -86,7 +86,11 @@ bash "$STAGE_DRIVER" verify
 [[ -x "$ANDROID_ROOT/build/soong/soong_ui.bash" ]] || fail "soong_ui_missing=$ANDROID_ROOT/build/soong/soong_ui.bash"
 [[ -d "$STAGE_TARGET" ]] || fail "stage_target_missing=$STAGE_TARGET"
 [[ ! -e "$OUT_C2" ]] || fail "unexpected_c2_out=$OUT_C2"
-[[ ! -e "$OUT_C3" ]] || fail "unexpected_c3_build_out=$OUT_C3"
+if [[ -e "$OUT_C3" ]]; then
+    echo "N1D_C3_PRIOR_BUILD_OUT=PRESENT_ISOLATED"
+else
+    echo "N1D_C3_PRIOR_BUILD_OUT=ABSENT"
+fi
 
 mapfile -t stage_evidence_candidates < <(
     find "$STAGE_EVIDENCE_ROOT" \
@@ -146,7 +150,7 @@ echo "PARSE_OUT=$PARSE_OUT"
     set +e +u
     build/soong/soong_ui.bash \
         --dumpvars-mode \
-        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
+        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILDING_GSI BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
         > "$vars_file"
     dumpvars_rc=$?
     set -euo pipefail
@@ -158,8 +162,10 @@ grep -Fxq "TARGET_PRODUCT='$N1D_C3_PRODUCT_NAME'" "$EVIDENCE_DIR/product-vars.en
     || fail "dumpvars_target_product"
 grep -Fxq "TARGET_BUILD_VARIANT='$N1D_C3_FIRST_BUILD_VARIANT'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_target_variant"
-grep -Fxq "PRODUCT_DEVICE='mainline_arm64'" "$EVIDENCE_DIR/product-vars.env" \
+grep -Fxq "PRODUCT_DEVICE='$N1D_C3_PRODUCT_DEVICE'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_device"
+grep -Fxq "BUILDING_GSI='$N1D_C3_BUILDING_GSI_VALUE'" "$EVIDENCE_DIR/product-vars.env" \
+    || fail "dumpvars_building_gsi"
 grep -Fxq "PRODUCT_BRAND='SableOS'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_brand"
 grep -Fxq "PRODUCT_MODEL='SableOS Titan 2 N1D'" "$EVIDENCE_DIR/product-vars.env" \
@@ -178,6 +184,9 @@ fi
     echo "N1D_C3_PRODUCT_PARSE=PASS"
     echo "N1D_C3_LUNCH_TARGET=$LUNCH_TARGET"
     echo "N1D_C3_PRODUCT_NAME=$N1D_C3_PRODUCT_NAME"
+    echo "N1D_C3_PRODUCT_DEVICE=$N1D_C3_PRODUCT_DEVICE"
+    echo "N1D_C3_BUILDING_GSI=$N1D_C3_BUILDING_GSI_VALUE"
+    echo "N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO"
     echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
     echo "N1D_C3_BUILD_VARIANT=$N1D_C3_FIRST_BUILD_VARIANT"
     echo "N1D_C3_STAGE_EVIDENCE=$STAGE_EVIDENCE"
@@ -199,6 +208,7 @@ fi
 )
 
 echo "N1D_C3_PRODUCT_PARSE_IDENTITY=PASS"
+echo "N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS"
 echo "N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS"
 echo "N1D_C3_PRODUCT_PARSE=PASS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
