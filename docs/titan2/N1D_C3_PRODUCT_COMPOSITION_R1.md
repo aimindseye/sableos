@@ -30,8 +30,19 @@ GrapheneOS 2026061600
 
 The clean Graphene base remains the previously sealed 1,033-project checkout.
 
-Twelve additional public projects are admitted by
-`build/titan2/n1d-c3-trebledroid-manifest.xml`, each by exact commit.
+C3A then reproduces Restless's source-graph shaping:
+
+```text
+1,033 sealed Graphene projects
+-   54 exact Restless remove.xml projects
+=  979 retained Graphene projects
++   12 pinned public Treble/PHH additions
+=  991 managed C3A projects
+```
+
+The add manifest is `build/titan2/n1d-c3a-trebledroid-add.xml`; the exact
+Restless removal set is `build/titan2/n1d-c3a-trebledroid-remove.xml`.
+The 54 existing clean working trees are archived reversibly before sync.
 The Restless build recipe is pinned to:
 
 ```text
@@ -39,7 +50,10 @@ tag:    16.0.0-202606230923
 commit: 4adc5766f457849ca37e0b318bced65aef5a2233
 ```
 
-The private Restless vendor repository is not admitted.
+The private Restless vendor repository is not admitted. Pixel GSans is also
+omitted because no immutable release-time pin was established for that
+non-functional font/branding input. C3A therefore claims public functional
+reproduction, not bit-identical Restless source provenance.
 
 ## Patch layers
 
@@ -94,7 +108,7 @@ bash build/titan2/prepare-n1d-c3-trebledroid.sh \
 ```
 
 The stage archives the obsolete Android-tree `vendor/sable/n1d` product,
-installs the pinned local manifest, syncs only the 12 admitted projects, fetches
+installs the pinned add and remove manifests, reversibly archives the 54 removed Graphene working trees, syncs only the 12 admitted public projects, fetches
 the exact pinned Restless recipe, applies the exact 369-patch stack, and runs
 `generate.sh rom`.
 
