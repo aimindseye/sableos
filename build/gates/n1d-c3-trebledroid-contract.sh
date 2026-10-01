@@ -11,6 +11,7 @@ REMOVE_MAP="$ROOT/build/titan2/n1d-c3a-remove-projects.tsv"
 ROM="$ROOT/build/titan2/n1d-c3a-control-rom.mk"
 TIERS="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
 BUILD_AUDIT_SET="$ROOT/build/titan2/n1d-c3a-build-make-audit-set.txt"
+BUILD_AUDIT_BLOBS="$ROOT/build/titan2/n1d-c3a-build-make-audit-blobs.tsv"
 C3B_RUNTIME_ALLOWLIST="$ROOT/build/titan2/n1d-c3b-runtime-patch-allowlist.txt"
 BUILD_PATCH_DIR="$ROOT/patches/android-16-n1d-trebledroid/build-make"
 DRIVER="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
@@ -23,7 +24,7 @@ fail() {
 for f in \
     "$PROFILE" "$PRODUCT" "$BOUNDARY" \
     "$ADD_MANIFEST" "$REMOVE_MANIFEST" "$REMOVE_MAP" \
-    "$ROM" "$TIERS" "$BUILD_AUDIT_SET" "$C3B_RUNTIME_ALLOWLIST" "$DRIVER"
+    "$ROM" "$TIERS" "$BUILD_AUDIT_SET" "$BUILD_AUDIT_BLOBS" "$C3B_RUNTIME_ALLOWLIST" "$DRIVER"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -86,6 +87,7 @@ for required in \
     'N1D_C3A_REMOVE_MANIFEST=build/titan2/n1d-c3a-trebledroid-remove.xml' \
     'N1D_C3A_REMOVE_PROJECT_MAP=build/titan2/n1d-c3a-remove-projects.tsv' \
     'N1D_C3A_BUILD_MAKE_AUDIT_SET=build/titan2/n1d-c3a-build-make-audit-set.txt' \
+    'N1D_C3A_BUILD_MAKE_AUDIT_BLOBS=build/titan2/n1d-c3a-build-make-audit-blobs.tsv' \
     'N1D_C3B_RUNTIME_PATCH_ALLOWLIST=build/titan2/n1d-c3b-runtime-patch-allowlist.txt' \
     'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=YES_PINNED' \
     'N1D_DIRECT_HANDCRAFTED_GSI_PRODUCT_ALLOWED=NO' \
@@ -153,6 +155,95 @@ while IFS= read -r patch; do
     [[ -z "$patch" || "$patch" == \#* ]] && continue
     [[ -f "$BUILD_PATCH_DIR/$patch" ]] || fail "focused_build_patch_missing=$patch"
 done < "$BUILD_AUDIT_SET"
+
+blob_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$BUILD_AUDIT_BLOBS")"
+[[ "$blob_count" == 9 ]] || fail "build_audit_blob_count=$blob_count"
+
+tmp_blob="$(mktemp -d)"
+trap 'rm -rf "$tmp" "$tmp_blob"' EXIT
+
+awk 'NF && $1 !~ /^#/ {print $1}' "$BUILD_AUDIT_BLOBS" \
+    | LC_ALL=C sort > "$tmp_blob/blob-names.txt"
+awk 'NF && $1 !~ /^#/ {print $1}' "$BUILD_AUDIT_SET" \
+    | LC_ALL=C sort > "$tmp_blob/audit-names.txt"
+cmp -s "$tmp_blob/blob-names.txt" "$tmp_blob/audit-names.txt" \
+    || {
+        diff -u "$tmp_blob/audit-names.txt" "$tmp_blob/blob-names.txt" || true
+        fail build_audit_blob_name_mismatch
+    }
+
+while IFS= \
+    "$BUILD_PATCH_DIR/0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch" \
+    || fail vanadium_webview_patch_missing
+grep -Fq '"TrichromeChrome"' \
+    "$BUILD_PATCH_DIR/0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch" \
+    || fail vanadium_browser_patch_missing
+
+for removed in Browser2 Camera2 messaging QuickSearchBox; do
+    grep -Fq -- "-        \"$removed\"" \
+        "$BUILD_PATCH_DIR/0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch" \
+        || fail "graphene_gsi_removal_missing=$removed"
+done
+
+grep -Fq '$(call inherit-product-if-exists, vendor/pixel/gsans/common/common-vendor.mk)' "$ROM" \
+    || fail control_rom_optional_gsans_missing
+grep -Fq 'WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY := true' "$ROM" \
+    || fail control_rom_dexpreopt_missing
+
+for required in \
+    'stage_requires_--authorize-source-mutation' \
+    'stage_requires_--authorize-network' \
+    'SOURCE_MUTATION_AUTHORIZED=YES_PINNED_RESTLESS_CONTROL_RECIPE_ONLY' \
+    'NETWORK_FETCH_AUTHORIZED=YES_PINNED_RECIPE_AND_SCAFFOLD_ONLY' \
+    'N1D_C3A_INPUT_BLOBS=PASS add=$add_blob remove=$remove_blob rom=$rom_blob' \
+    'N1D_C3A_RESTLESS_REMOVE_MANIFEST=PASS_EXACT' \
+    'N1D_C3A_RESTLESS_CONTROL_ROM=PASS_EXACT' \
+    'N1D_C3A_GRAPHENE_PROJECT_RETIREMENT=PASS count=$N1D_C3A_REMOVE_PROJECT_COUNT' \
+    'N1D_C3A_REMOVED_PROJECT_PATHS=PASS_ABSENT count=$N1D_C3A_REMOVE_PROJECT_COUNT' \
+    'N1D_C3A_MANAGED_PROJECT_COUNT=PASS value=$count' \
+    'N1D_C3A_CONTROL_PATCH_TARGETS=PASS' \
+    'git am "$patch"' \
+    'patch -p1 --no-backup-if-mismatch < "$patch"' \
+    'N1D_C3A_CONTROL_PATCH_STACK=PASS count=$applied' \
+    'bash generate.sh rom' \
+    'N1D_C3A_GENERATED_PRODUCT=PASS product=treble_arm64_bvN' \
+    'N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO' \
+    'N1D_C3A_TREBLEDROID_STAGE=PASS'
+do
+    grep -Fq -- "$required" "$DRIVER" || fail "driver_token_missing=$required"
+done
+
+if grep -Eq '^[[:space:]]*(m|make|adb|fastboot)([[:space:]]|$)' "$DRIVER"; then
+    fail build_or_device_command_in_prep
+fi
+
+if grep -Fq 'sable_titan2_n1d_arm64' "$PROFILE" "$PRODUCT" "$DRIVER"; then
+    fail retired_handcrafted_product_reintroduced
+fi
+
+echo "N1D_C3A_INPUT_BLOBS=PASS_EXACT add=$add_blob remove=$remove_blob rom=$rom_blob"
+echo "N1D_C3A_REMOVE_MANIFEST_MAP=PASS_EXACT_NAMES count=54"
+echo "N1D_C3A_SOURCE_GRAPH=PASS add=12 remove=54 managed=991"
+echo "N1D_C3A_CONTROL_FIDELITY=PASS_PUBLIC_FUNCTIONAL_REPRODUCTION"
+echo "N1D_C3A_CONTROL_PATCH_TIERS=PASS count=5"
+echo "N1D_C3A_CONTROL_PATCH_STACK=PASS count=369"
+echo "N1D_C3A_BUILD_MAKE_AUDIT_SET=PASS count=9"
+echo "N1D_C3A_BUILD_MAKE_AUDIT_BLOBS=PASS_EXACT count=9"
+echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+echo "N1D_C3A_PRIVATE_VENDOR=PASS_ABSENT"
+echo "N1D_C3A_PIXEL_GSANS=PASS_OMITTED_UNPINNED_NONFUNCTIONAL"
+echo "N1D_C3A_GENERATOR=PASS"
+echo "N1D_C3A_SECURITY_SEPARATION=PASS"
+echo "N1D_C3A_TREBLEDROID_CONTROL_CONTRACT=PASS"
+echo "N1D_C3_TREBLEDROID_CONTRACT=PASS"
+\t' read -r patch upstream_path expected_blob; do
+    [[ -z "$patch" || "$patch" == \#* ]] && continue
+    [[ "$upstream_path" == patches/*/platform_build/*.patch ]] \
+        || fail "build_audit_upstream_path=$upstream_path"
+    actual_blob="$(git hash-object "$BUILD_PATCH_DIR/$patch")"
+    [[ "$actual_blob" == "$expected_blob" ]] \
+        || fail "build_audit_blob patch=$patch expected=$expected_blob actual=$actual_blob"
+done < "$BUILD_AUDIT_BLOBS"
 
 grep -Fq '"TrichromeWebView"' \
     "$BUILD_PATCH_DIR/0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch" \
