@@ -16,7 +16,9 @@ for f in "$SPLIT" "$PRODUCT" "$BOUNDARY" "$COMPOSITION"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
-bash -n "$SPLIT" "$PRODUCT" "$BOUNDARY" "$COMPOSITION"
+for f in "$SPLIT" "$PRODUCT" "$BOUNDARY" "$COMPOSITION"; do
+    bash -n "$f" || fail "syntax=$f"
+done
 
 require_line() {
     local file="$1"
