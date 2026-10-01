@@ -1,6 +1,6 @@
 # SableOS current status
 
-Last updated: 2026-09-25
+Last updated: 2026-10-01
 
 This file is the private integration repository's current execution authority.
 Historical R5-R10 status files, issue bodies and PR descriptions remain evidence
@@ -87,6 +87,25 @@ Reader propagation, large-media-library performance, duplicate visible Messages,
 production icons/launch timing, first-run crash evidence and All Apps permission
 summaries are tracked as open follow-ups rather than blockers to the current
 Panther freeze.
+
+## Current HOME / Titan 2 C3B authority
+
+Current HOME architecture after the R9L8 cutover:
+
+```text
+HOME_RUNTIME=Launcher3QuickStep
+SABLESTART_ROLE=Launcher3-hosted presentation/state source
+STANDALONE_SABLELAUNCHER_RUNTIME=RETIRED
+```
+
+Titan 2 active engineering has moved to the N1D C3A/C3B strategy. C3A is the
+sealed public-functional build control; C3B is the Sable-owned minimal baseline.
+The canonical current integration boundary is documented in
+`docs/CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md`.
+
+Parallel product development in `aimindseye/titan2-temp` is source input only;
+canonical product identity remains `sable_titan2_n1d_arm64` staged under
+`vendor/sable/n1d`. Canonical CI remains operator-owned.
 
 ## Active development
 
