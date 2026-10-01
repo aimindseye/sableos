@@ -31,6 +31,7 @@ syntax_files=(
     "$ROOT/build/gates/n1d-c3-trebledroid-build-contract.sh"
     "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
     "$ROOT/build/gates/n1d-source-lock-contract.sh"
+    "$PIPELINE"
 )
 
 for file in "${syntax_files[@]}"; do
