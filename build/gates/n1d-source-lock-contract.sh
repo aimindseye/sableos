@@ -48,6 +48,7 @@ if grep -Fq 'vendor/cawilliamson-priv' "$MANIFEST"; then
     fail private_restless_vendor_present
 fi
 
+bash "$ROOT/build/gates/n1d-c3-phase-split-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-trebledroid-contract.sh"
 bash "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
 
@@ -59,5 +60,6 @@ echo "N1D_SOURCE_LOCK_NO_FLOATING_TAG=PASS"
 echo "N1D_SOURCE_LOCK_PUBLIC_ONLY=PASS"
 echo "N1D_SOURCE_LOCK_CONTROL_PATCH_STACK=PASS_PINNED"
 echo "N1D_SOURCE_LOCK_RELEASE_RUNTIME_ADMISSION=PASS_ZERO"
+echo "N1D_SOURCE_LOCK_C3A_C3B_SPLIT=PASS"
 echo "N1D_SOURCE_LOCK_PRODUCT_GRAPH_ALIGNMENT=PASS"
 echo "N1D_SOURCE_LOCK_CONTRACT=PASS"
