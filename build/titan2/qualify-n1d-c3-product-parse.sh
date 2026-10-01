@@ -164,13 +164,19 @@ grep -Fxq "TARGET_BUILD_VARIANT='$N1D_C3_FIRST_BUILD_VARIANT'" "$EVIDENCE_DIR/pr
     || fail "dumpvars_target_variant"
 grep -Fxq "PRODUCT_DEVICE='$N1D_C3_PRODUCT_DEVICE'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_device"
+SOONG_CONFIG_HELPERS="$ANDROID_ROOT/build/make/core/config.mk"
 SOONG_CONFIG_VARS="$ANDROID_ROOT/build/make/core/android_soong_config_vars.mk"
 GSI_ANDROID_BP="$ANDROID_ROOT/build/make/target/product/gsi/Android.bp"
 STAGED_PRODUCT_MK="$STAGE_TARGET/sable_titan2_n1d_arm64.mk"
 
-for source_file in "$SOONG_CONFIG_VARS" "$GSI_ANDROID_BP" "$STAGED_PRODUCT_MK"; do
+for source_file in "$SOONG_CONFIG_HELPERS" "$SOONG_CONFIG_VARS" "$GSI_ANDROID_BP" "$STAGED_PRODUCT_MK"; do
     [[ -f "$source_file" ]] || fail "gsi_selector_source_missing=$source_file"
 done
+
+grep -Fq \
+    '$(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(filter true,$3))' \
+    "$SOONG_CONFIG_HELPERS" \
+    || fail "soong_config_set_bool_filter_true_missing"
 
 grep -Fq \
     '$(call soong_config_set_bool,gsi,building_gsi,$(if $(filter true,$(BUILDING_GSI)),true,false))' \
@@ -187,6 +193,7 @@ grep -Fxq 'BUILDING_GSI := false' "$STAGED_PRODUCT_MK" \
 
 {
     echo "N1D_C3_SOONG_GSI_SOURCE_SETTING=false"
+    echo "N1D_C3_SOONG_BOOL_HELPER=FILTER_TRUE"
     echo "N1D_C3_SOONG_GSI_CONVERSION=FILTER_TRUE"
     echo "N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_SELECTOR=gsi.building_gsi"
     echo "N1D_C3_SOONG_GSI_SELECTOR_SOURCE_PROOF=PASS"
