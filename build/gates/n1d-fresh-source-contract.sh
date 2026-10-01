@@ -63,6 +63,10 @@ grep -Fq 'N1D_BASE_DIRTY_PROJECT_COUNT' "$DRIVER" ||
     fail "dirty_project_gate_missing"
 grep -Fq 'c2_pin_contains_unresolved_project_head' "$DRIVER" ||
     fail "historical_pin_unresolved_guard_missing"
+grep -Fq 'git lfs version' "$DRIVER" ||
+    fail "git_lfs_preflight_missing"
+grep -Fq 'if [ -n "$status" ]; then' "$DRIVER" ||
+    fail "repo_forall_posix_status_probe_missing"
 
 if grep -Fq '/srv/data/sable-build' "$PROFILE" "$DRIVER"; then
     fail "legacy_build_root_hardcoded"
@@ -149,7 +153,7 @@ grep -Fq 'N1D_C2_PUBLIC_MANIFEST=PASS' "$TMP/derive.log" ||
 [[ "$(grep -c '<project ' "$TMP/output.xml")" == 13 ]] ||
     fail "fixture_output_project_count"
 
-if grep -Eiq 'cawilliamson|ssh://|git@|revision="(main|master)"' "$TMP/output.xml"; then
+if grep -Eiq 'cawilliamson|ssh://|git@|revision="(main|master)"|upstream=|dest-branch=' "$TMP/output.xml"; then
     fail "fixture_output_forbidden_token"
 fi
 
