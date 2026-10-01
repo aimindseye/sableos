@@ -1,224 +1,138 @@
 # Titan 2 N1D C3 product composition R1
 
-Status: source-staging contract; no Android build; no device contact; no flash.
+Status: **rebaselined on pinned TrebleDroid-generated control product**
 
 Date: 2026-10-01
 
-## Purpose
+## Architecture correction
 
-C3 is the actual SableOS N1D system image. It starts from the accepted clean
-GrapheneOS/AOSP Android 16 base and does not inherit the Restless/PHH universal
-product hierarchy.
+The earlier handcrafted product `sable_titan2_n1d_arm64` is retired.
 
-Prerequisites already established:
+Live compilation proved that the handcrafted
+`generic_system_arm64 + gsi_release` path enabled an AOSP
+`aosp_system_image` dependency graph incompatible with the pinned GrapheneOS
+source set.
 
-```text
-GrapheneOS manifest commit:
-  5d82aa9610855bc0b43b9eb7ca4470d30455cfeb
-
-AOSP:
-  android-16.0.0_r4
-
-release config:
-  bp4a
-
-accepted base project count:
-  1033
-
-accepted base dirty project count:
-  0
-
-accepted base seal:
-  365780be847eba999a72603c501a0f3afcac30dc61f71ce35165d8271dfbf830
-```
-
-The C2 diagnostic control is the separately pinned published RestlessOS GSI.
-C2 source worktrees have been retired from the Android checkout before C3.
-
-## C3 product chain
-
-The intended product chain is exactly:
+C3 now follows the known-successful Restless/TrebleDroid topology:
 
 ```text
-build/make/target/product/generic_system_arm64.mk
-  -> build/make/target/product/gsi_release.mk
-  -> vendor/sable/n1d/treble_compat.mk
-  -> vendor/sable/n1d/sable_n1d_product_delta.mk
+GrapheneOS 2026061600
+  + pinned public TrebleDroid/PHH scaffold
+  + exact pinned Restless release patch stack
+  + device/phh/treble/rom.mk
+  + device/phh/treble/generate.sh rom
+  -> treble_arm64_bvN
+  -> lunch treble_arm64_bvN-bp4a-user
+  -> systemimage
 ```
 
-The product is registered by:
+## Source pins
+
+The clean Graphene base remains the previously sealed 1,033-project checkout.
+
+Twelve additional public projects are admitted by
+`build/titan2/n1d-c3-trebledroid-manifest.xml`, each by exact commit.
+The Restless build recipe is pinned to:
 
 ```text
-vendor/sable/n1d/AndroidProducts.mk
+tag:    16.0.0-202606230923
+commit: 4adc5766f457849ca37e0b318bced65aef5a2233
 ```
 
-and named:
+The private Restless vendor repository is not admitted.
+
+## Patch layers
+
+Two patch concepts are deliberately separate.
+
+The **control patch stack** reproduces the successful Restless release build:
+five ordered tiers and 369 patches. It is allowed only for the non-release
+compatibility control.
+
+The **Sable release runtime patch allowlist** starts empty. Nothing in the
+control stack becomes accepted Sable runtime policy simply because the control
+image builds.
+
+Nine build/make patches are also vendored in SableOS as a focused audit set.
+They include the Graphene-GSI dependency corrections and the ADB-authentication
+correction that are directly relevant to product composition.
+
+## Generator config
+
+The repository-owned
+`build/titan2/n1d-c3-sable-rom.mk` mirrors the successful Restless
+`configs/rom/rom.mk` control configuration and is copied to
+`device/phh/treble/rom.mk` before generation.
+
+The expected generated product is:
 
 ```text
-sable_titan2_n1d_arm64
+PRODUCT_NAME   = treble_arm64_bvN
+PRODUCT_DEVICE = tdgsi_arm64_ab
+PRODUCT_BRAND  = google
+PRODUCT_MODEL  = TrebleDroid vanilla
 ```
 
-Android 16 QPR2 uses release config `bp4a`. The first engineering build
-variant is `userdebug`; the release-security variant remains `user`. Product
-composition staging itself authorizes neither build.
+Branding is intentionally not changed during this control phase. Sable product
+identity is a later release-runtime concern.
 
-## Why this base is sufficient
-
-The pinned Android 16 `generic_system_arm64.mk` is system-only. It does not
-build vendor, product, system_ext, userdata or super images.
-
-The pinned `gsi_release.mk` supplies GSI release behavior, including
-`gsi_skip_mount.cfg` and current extra VNDK support for versions 31 through
-34.
-
-Titan 2 vendor/VNDK API is 34, so C3 does not restore legacy VNDK 28/29 as a
-baseline compatibility mechanism.
-
-## Initial compatibility state
-
-C3 intentionally begins with:
-
-```text
-N1D_C3_INITIAL_TREBLE_COMPAT_ITEM_COUNT=0
-N1D_C3_INITIAL_RESTLESS_PATCH_ALLOWLIST_COUNT=0
-```
-
-Therefore:
-
-```text
-vendor/sable/n1d/treble_compat.mk
-```
-
-contains no active compatibility declarations, and:
-
-```text
-vendor/sable/n1d/restless-patch-allowlist.txt
-```
-
-is empty.
-
-A compatibility change may be admitted only after a reproduced build/runtime
-failure or a separately reviewed Titan-specific requirement.
-
-## Hard exclusions
-
-The staged C3 bundle must not contain or directly inherit:
-
-```text
-device/phh/treble/base.mk
-device/phh/treble/rom.mk
-SELinux neverallow bypasses
-unauthenticated/default USB ADB policy
-PHH root/securize/OTA/remote-debug tooling
-TrebleApp
-legacy VNDK 28/29 additions
-vendor Magisk
-QcRilAm
-private Restless vendor content
-```
-
-The existing N1D Restless security-boundary contract remains authoritative.
-
-## Repository-owned source bundle
-
-The canonical bundle is:
-
-```text
-build/titan2/n1d-c3-product/
-  AndroidProducts.mk
-  sable_titan2_n1d_arm64.mk
-  treble_compat.mk
-  sable_n1d_product_delta.mk
-  restless-patch-allowlist.txt
-```
-
-It is copied into the Android checkout only by the repository-owned staging
-driver.
-
-## Staging workflow
+## Preparation
 
 Offline preflight:
 
 ```bash
-bash build/titan2/stage-n1d-c3-product.sh preflight
+bash build/titan2/prepare-n1d-c3-trebledroid.sh preflight
 ```
 
-Source mutation requires explicit authorization:
+Pinned scaffold/recipe staging requires both explicit permissions:
 
 ```bash
-bash build/titan2/stage-n1d-c3-product.sh \
+bash build/titan2/prepare-n1d-c3-trebledroid.sh \
   stage \
-  --authorize-source-mutation
+  --authorize-source-mutation \
+  --authorize-network
 ```
 
-Post-stage offline verification:
+The stage archives the obsolete Android-tree `vendor/sable/n1d` product,
+installs the pinned local manifest, syncs only the 12 admitted projects, fetches
+the exact pinned Restless recipe, applies the exact 369-patch stack, and runs
+`generate.sh rom`.
+
+No Android target build occurs during this stage.
+
+## Parse and first build
+
+Product parse:
 
 ```bash
-bash build/titan2/stage-n1d-c3-product.sh verify
+bash build/titan2/qualify-n1d-c3-product-parse.sh \
+  --authorize-product-parse
 ```
 
-The stage action may create only:
+First compile:
+
+```bash
+bash build/titan2/build-n1d-c3-trebledroid-systemimage.sh \
+  --authorize-c3-compile \
+  --jobs 16
+```
+
+The first compile uses a fresh output directory:
 
 ```text
-/srv/sable-build/workspaces/titan2-n1d/android/vendor/sable/n1d/
+/srv/sable-build/workspaces/titan2-n1d/out-c3-td
 ```
 
-with the five files listed above.
+and authorizes only `systemimage`.
 
-## Pre-stage requirements
+## Release status
 
-The driver requires:
+This phase proves reproducible build topology and compatibility, not release
+security.
 
 ```text
-canonical storage verified
-accepted base seal verified
-all 1033 base project HEADs exactly equal the sealed ledger
-base dirty project count = 0
-Graphene manifest HEAD = pinned manifest commit
-no local manifests
-all retired C2 source paths absent
-no Android out
-no out-c2
-no out-c3
-pinned C2 control artifact present at exact size and SHA-256
-stage target absent
+N1D_C3_RELEASE_ELIGIBLE=NO
+N1D_C3_RUNTIME_SECURITY_AUDIT_REQUIRED=YES
 ```
 
-## Post-stage requirements
-
-After copying the bundle, the driver requires:
-
-```text
-all five staged files byte-identical to repository-owned sources
-base project count remains 1033
-all base HEADs remain exact
-base dirty project count remains 0
-no local manifests
-no build output
-zero active Treble compatibility items
-zero Restless patch allowlist entries
-```
-
-The stage evidence is sealed under:
-
-```text
-/srv/sable-build/evidence/titan2/n1d-c3-product-composition/
-```
-
-## Next phase
-
-A successful stage does not prove the product parses or builds.
-
-The next gate is a separate product-parse qualification using the staged
-product and `bp4a`, still with no device contact or flash. Only after product
-parse succeeds should C3 compilation be authorized.
-
-## Authorization boundary
-
-```text
-NETWORK_FETCH_AUTHORIZED=NO
-BUILD_AUTHORIZED=NO
-DEVICE_CONTACT_AUTHORIZED=NO
-FLASH_AUTHORIZED=NO
-SIGNING_AUTHORIZED=NO
-```
+No device contact or flash is authorized.
