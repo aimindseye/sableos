@@ -43,7 +43,9 @@ The parse evidence must prove:
 N1D_C3_PRODUCT_PARSE=PASS
 N1D_C3_PRODUCT_NAME=sable_titan2_n1d_arm64
 N1D_C3_PRODUCT_DEVICE=gsi_arm64
-N1D_C3_BUILDING_GSI=false
+N1D_C3_BUILDING_GSI source setting=false
+SOONG_CONFIG_gsi_building_gsi=<empty>
+N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO
 N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO
 N1D_C3_RELEASE_CONFIG=bp4a
 N1D_C3_BUILD_VARIANT=userdebug
@@ -152,15 +154,15 @@ Product contract v4 instead:
 
 ```text
 PRODUCT_DEVICE=gsi_arm64
-BUILDING_GSI=false
+BUILDING_GSI source setting=false
+SOONG_CONFIG_gsi_building_gsi=<empty>
+N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO
 N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO
 ```
 
 The sealed Graphene `gsi_arm64` BoardConfig supplies GSI board/copy-out
 semantics. The non-empty Make value `BUILDING_GSI=false` preserves
-`BoardConfigGsiCommon.mk`'s `ifdef BUILDING_GSI` behavior while the Soong
-config conversion, which tests specifically for literal `true`, disables the
-incompatible `aosp_system_image` module.
+`BoardConfigGsiCommon.mk`'s `ifdef BUILDING_GSI` behavior while the Soong config conversion uses `filter true`, so the resolved boolean is empty rather than the string `false`; the incompatible `aosp_system_image` module is therefore disabled.
 
 ## Build action
 
