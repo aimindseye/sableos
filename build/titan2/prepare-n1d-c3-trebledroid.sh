@@ -586,6 +586,7 @@ verify_treble_app_build_residue() {
     local line
     local status
     local path
+    local remainder
     local count=0
 
     status_file="$(mktemp)"
@@ -799,6 +800,7 @@ verify() {
     local current_dirty
     local current_td_status
     local dirty_count
+    local expected_dirty_count
     local retired_graphene_root
     local ledger_count
 
@@ -906,7 +908,11 @@ verify() {
             fail device_phh_generated_status_mismatch
         }
 
-    echo "N1D_C3A_POST_STAGE_DIRTY_PROJECTS=PASS_EXPECTED_GENERATED_ONLY"
+    if [[ "$TREBLE_APP_BUILD_RESIDUE_ALLOWED" == YES ]]; then
+        echo "N1D_C3A_POST_STAGE_DIRTY_PROJECTS=PASS_EXPECTED_GENERATED_PLUS_BUILD_RESIDUE"
+    else
+        echo "N1D_C3A_POST_STAGE_DIRTY_PROJECTS=PASS_EXPECTED_GENERATED_ONLY"
+    fi
 
     LC_ALL=C sort "$current_heads" > "$current_heads.sorted"
     LC_ALL=C sort "$evidence/postpatch-project-heads.tsv" > "$current_heads.expected"
