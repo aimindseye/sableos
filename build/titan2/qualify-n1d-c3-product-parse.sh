@@ -150,7 +150,7 @@ echo "PARSE_OUT=$PARSE_OUT"
     set +e +u
     build/soong/soong_ui.bash \
         --dumpvars-mode \
-        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILDING_GSI BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
+        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILDING_GSI SOONG_CONFIG_gsi_building_gsi BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
         > "$vars_file"
     dumpvars_rc=$?
     set -euo pipefail
@@ -164,8 +164,11 @@ grep -Fxq "TARGET_BUILD_VARIANT='$N1D_C3_FIRST_BUILD_VARIANT'" "$EVIDENCE_DIR/pr
     || fail "dumpvars_target_variant"
 grep -Fxq "PRODUCT_DEVICE='$N1D_C3_PRODUCT_DEVICE'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_device"
-grep -Fxq "BUILDING_GSI='$N1D_C3_BUILDING_GSI_VALUE'" "$EVIDENCE_DIR/product-vars.env" \
-    || fail "dumpvars_building_gsi"
+grep -Fxq "SOONG_CONFIG_gsi_building_gsi=''" "$EVIDENCE_DIR/product-vars.env" \
+    || fail "dumpvars_soong_gsi_building_gsi"
+if grep -Fxq "SOONG_CONFIG_gsi_building_gsi='true'" "$EVIDENCE_DIR/product-vars.env"; then
+    fail "dumpvars_soong_gsi_building_gsi_enabled"
+fi
 grep -Fxq "PRODUCT_BRAND='SableOS'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_brand"
 grep -Fxq "PRODUCT_MODEL='SableOS Titan 2 N1D'" "$EVIDENCE_DIR/product-vars.env" \
@@ -185,7 +188,8 @@ fi
     echo "N1D_C3_LUNCH_TARGET=$LUNCH_TARGET"
     echo "N1D_C3_PRODUCT_NAME=$N1D_C3_PRODUCT_NAME"
     echo "N1D_C3_PRODUCT_DEVICE=$N1D_C3_PRODUCT_DEVICE"
-    echo "N1D_C3_BUILDING_GSI=$N1D_C3_BUILDING_GSI_VALUE"
+    echo "N1D_C3_BUILDING_GSI_SOURCE_SETTING=$N1D_C3_BUILDING_GSI_VALUE"
+    echo "N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO"
     echo "N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO"
     echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
     echo "N1D_C3_BUILD_VARIANT=$N1D_C3_FIRST_BUILD_VARIANT"
@@ -208,6 +212,7 @@ fi
 )
 
 echo "N1D_C3_PRODUCT_PARSE_IDENTITY=PASS"
+echo "N1D_C3_PRODUCT_PARSE_SOONG_GSI_SELECTOR=PASS_DISABLED"
 echo "N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS"
 echo "N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS"
 echo "N1D_C3_PRODUCT_PARSE=PASS"
