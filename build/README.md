@@ -395,3 +395,16 @@ For Phase 1, the allowed selected product module is `SableLauncher`.
 `SableDesign` must exist as source/dependency support. Other Sable app modules
 remain blocked from N1B2 product selection until their Android modules, product
 wiring, and validation evidence exist.
+
+
+## Titan 2 N1D local-CI scope
+
+For `bash build/sable.sh titan2 N1D ci full`, Panther-R9-only launcher and
+physical-acceptance contracts are not N1D requirements. Shared application,
+Rust, security, supply-chain and N1D product contracts remain active.
+
+The boundary is guarded by:
+
+```text
+build/gates/n1d-local-ci-scope-contract.sh
+```
