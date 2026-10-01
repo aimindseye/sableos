@@ -23,6 +23,7 @@ patch tiers:
   release-builds
 copy configs/rom/rom.mk -> device/phh/treble/rom.mk
 device/phh/treble/generate.sh rom
+treble_app/build.sh release
 lunch treble_arm64_bvN-bp4a-user
 make systemimage
 ```
@@ -81,7 +82,7 @@ handmade GSI product.
 ## First success criterion
 
 The immediate target is a successful, non-release
-`treble_arm64_bvN-bp4a-user` `system.img`.
+`treble_arm64_bvN-bp4a-user` `system.img`, built after the same TrebleApp release prebuild used by Restless. Target-files, otatools and signing remain a later gate.
 
 That success does not authorize flash. The next phase is a runtime/security
 delta audit against the control image before any Sable identity or release
