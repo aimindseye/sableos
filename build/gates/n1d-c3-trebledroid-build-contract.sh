@@ -20,6 +20,10 @@ done
 for token in \
     'compile_requires_--authorize-c3-compile' \
     'build_requires_--authorize-network_for_treble_app' \
+    'out_already_exists_requires_--resume-failed-c3-build' \
+    'failed_build_evidence_missing_for_resume' \
+    'prior_build_reached_systemimage_resume_not_allowed' \
+    'N1D_C3A_BUILD_RESUME=PASS' \
     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY' \
     'NETWORK_FETCH_AUTHORIZED=YES_TREBLE_APP_GRADLE_ONLY' \
     'TARGET_FILES_BUILD_AUTHORIZED=NO' \
@@ -27,6 +31,11 @@ for token in \
     'DEVICE_CONTACT_AUTHORIZED=NO' \
     'FLASH_AUTHORIZED=NO' \
     'PRODUCTION_SIGNING_AUTHORIZED=NO' \
+    'bash "$HOST_VERIFY" core' \
+    'N1D_C3_TREBLE_APP_JDK=PASS' \
+    'export JAVA_HOME="$SABLE_JDK17"' \
+    'export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"' \
+    'N1D_C3_TREBLE_APP_JAVA=PASS' \
     'bash "$PREP" verify' \
     'bash build.sh release' \
     'N1D_C3_TREBLE_APP_BUILD=PASS' \
@@ -45,7 +54,9 @@ for token in \
     'N1D_C3_FIRST_VARIANT=user' \
     'N1D_C3_TREBLE_APP_BUILD_REQUIRED=YES_RELEASE_PREBUILD' \
     'N1D_C3_TREBLE_APP_BUILD_COMMAND=bash_build.sh_release' \
-    'N1D_C3_TREBLE_APP_NETWORK_REQUIRES_EXPLICIT_AUTH=YES'
+    'N1D_C3_TREBLE_APP_NETWORK_REQUIRES_EXPLICIT_AUTH=YES' \
+    'N1D_C3_TREBLE_APP_JDK_MAJOR=17' \
+    'N1D_C3_TREBLE_APP_JDK_SOURCE=SABLE_JDK17'
 do
     grep -Fxq "$token" "$PROFILE" || fail "profile_missing=$token"
 done
