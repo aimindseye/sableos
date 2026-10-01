@@ -30,14 +30,14 @@ for token in \
     'bash "$STAGE_DRIVER" verify' \
     'lunch "$LUNCH_TARGET"' \
     '--dumpvars-mode' \
-    'SOONG_VARIABLES_JSON="$PARSE_OUT/soong/soong.$N1D_C3_PRODUCT_NAME.variables"' \
-    'data.get("VendorVars", {})' \
-    'gsi_vars.get("building_gsi", None)' \
-    'if building_gsi != "":' \
-    'N1D_C3_SOONG_VARIABLES_PROOF=PASS' \
-    'N1D_C3_PRIOR_BUILD_OUT=PRESENT_ISOLATED' \
+    'android_soong_config_vars.mk' \
+    'target/product/gsi/Android.bp' \
+    'BUILDING_GSI := false' \
+    'soong_config_set_bool,gsi,building_gsi' \
+    'soong_config_variable("gsi", "building_gsi")' \
+    'N1D_C3_SOONG_GSI_SELECTOR_SOURCE_PROOF=PASS' \
+        'N1D_C3_PRIOR_BUILD_OUT=PRESENT_ISOLATED' \
     'N1D_C3_PRODUCT_PARSE_IDENTITY=PASS' \
-    'N1D_C3_PRODUCT_PARSE_SOONG_VARIABLES=PASS' \
     'N1D_C3_PRODUCT_PARSE_SOONG_GSI_SELECTOR=PASS_DISABLED' \
     'N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS' \
     'N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS' \
@@ -83,7 +83,7 @@ echo "N1D_C3_PRODUCT_PARSE_EXPLICIT_AUTH=PASS"
 echo "N1D_C3_PRODUCT_PARSE_STAGE_BINDING=PASS"
 echo "N1D_C3_PRODUCT_PARSE_RELEASE_BINDING=PASS"
 echo "N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_BINDING=PASS"
-echo "N1D_C3_PRODUCT_PARSE_SOONG_VARIABLES_BINDING=PASS"
+echo "N1D_C3_PRODUCT_PARSE_SOONG_SOURCE_BINDING=PASS"
 echo "N1D_C3_PRODUCT_PARSE_NO_TARGET_BUILD=PASS"
 echo "N1D_C3_PRODUCT_PARSE_NO_DEVICE_NETWORK=PASS"
 echo "N1D_C3_PRODUCT_PARSE_CONTRACT=PASS"
