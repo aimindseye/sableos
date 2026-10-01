@@ -119,7 +119,7 @@ exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
     echo "N1D_C3_TREBLEDROID_BUILD_RECIPE=TREBLE_APP_RELEASE_THEN_SYSTEMIMAGE"
     echo "N1D_C3_TREBLEDROID_BUILD_GOAL=systemimage"
     set +e +u
-    m -j"$JOBS" systemimage 2>&1 | tee "$EVIDENCE_DIR/systemimage-command.log"
+    make systemimage -j"$JOBS" 2>&1 | tee "$EVIDENCE_DIR/systemimage-command.log"
     build_rc="${PIPESTATUS[0]}"
     set -euo pipefail
     [[ "$build_rc" -eq 0 ]] || fail "systemimage_build_rc=$build_rc"
