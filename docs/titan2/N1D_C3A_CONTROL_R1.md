@@ -30,7 +30,7 @@ sealed GrapheneOS 2026061600 base (1,033 projects)
                             369
   + configs/rom/rom.mk-equivalent
   + device/phh/treble/generate.sh rom
-  + treble_app/build.sh release
+  + treble_app/build.sh release under canonical SABLE_JDK17
   + lunch treble_arm64_bvN-bp4a-user
   + make systemimage
 ```
@@ -121,6 +121,21 @@ C3A evidence:
 ```text
 /srv/sable-build/evidence/titan2/n1d-c3a-trebledroid-*/
 ```
+
+## TrebleApp Java boundary
+
+The pinned TrebleApp control source uses Android Gradle Plugin 7.4.2 with the
+Gradle 7.5 wrapper and its upstream build script prefers Java 17 when available.
+C3A therefore runs only the TrebleApp prebuild under the canonical
+`SABLE_JDK17` host tool. The surrounding AOSP Android 16 build remains free to
+use its source-tree JDK selected by `envsetup.sh`.
+
+A failed TrebleApp-only attempt may be resumed without deleting the C3A output
+tree only through the explicit `--resume-failed-c3-build` path. That path is
+accepted only when sealed prior evidence proves the previous attempt reached
+TrebleApp, did not pass TrebleApp, never reached `make systemimage`, and left
+no system image, target-files, or OTA artifact.
+
 
 ## Exit criterion
 
