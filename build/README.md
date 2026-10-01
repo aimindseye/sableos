@@ -297,6 +297,8 @@ bash build/titan2/admit-n1d-c2-source.sh \
   --authorize-network
 
 # Only after a failed bounded admission has already installed the C2 manifest:
+bash build/titan2/admit-n1d-c2-source.sh resume-preflight
+
 bash build/titan2/admit-n1d-c2-source.sh \
   resume \
   --authorize-network
