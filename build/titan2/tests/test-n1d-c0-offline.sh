@@ -47,7 +47,7 @@ pass c0_discovery_contract
 CONTRACT="$ROOT/build/titan2/n1d-product-contract.env"
 [[ -f "$CONTRACT" ]] || fail n1d_product_contract_missing
 for required in \
-  'N1D_PRODUCT_CONTRACT_VERSION=3' \
+  'N1D_PRODUCT_CONTRACT_VERSION=4' \
   'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
   'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_PREBUILT_DIAGNOSTIC_CONTROL' \
   'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
