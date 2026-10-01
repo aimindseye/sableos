@@ -34,7 +34,7 @@ Replacing a Sable-facing experience does not imply replacing the underlying Andr
 Examples:
 
 - Sable Hub may replace notification/communication presentation while retaining Android NotificationManager, conversation semantics and application-authored actions.
-- Standalone SableLauncher owns the intended HOME experience while retaining ActivityManager, PackageManager and normal Android application semantics; Launcher3QuickStep remains only as the qualified Recents/Quickstep substrate.
+- Launcher3/Launcher3QuickStep owns the Android HOME runtime after the R9L8 cutover while Sable Start presentation/state remains Sable-owned and hosted inside Launcher3; ActivityManager, PackageManager and normal Android application semantics remain authoritative.
 - Sable Phone/Messages presentation may evolve while retaining Telecom/Telephony/carrier SMS/MMS machinery.
 - Sable Security & Privacy may provide a new application-transparency experience while retaining PackageManager, PermissionController and AppOps as enforcement authorities.
 - Sable AOD may own ambient presentation while retaining Android display/doze/power infrastructure.
@@ -86,7 +86,7 @@ SOCIAL      CALENDAR
 SETTINGS    CLOCK
 ```
 
-Standalone `org.sableos.launcher` is the R9 HOME product architecture. Launcher3QuickStep remains installed only for Recents/Quickstep integration and is not a user-facing launcher fallback.
+R9L8 retired the standalone `org.sableos.launcher` HOME runtime. Launcher3QuickStep is the current HOME process and hosts the Sable Start presentation while continuing to provide the qualified Recents/Quickstep substrate.
 
 ### Sable Hub
 

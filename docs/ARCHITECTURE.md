@@ -1,5 +1,7 @@
 # SableOS architecture
 
+> **Current HOME authority:** R9L8 Launcher3-hosted Sable Start. See `CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md`. Older standalone-SableLauncher records are historical.
+
 SableOS is one common OS architecture with device-specific hardware adaptation and form-factor-specific interaction profiles.
 
 The project should not become a collection of unrelated ROMs. Hardware changes adapters. Form factor changes interaction. Application and service semantics remain common wherever practical.
@@ -30,12 +32,13 @@ Exact S1.7 source, AIDL, image, device-binary and runtime seals are recorded in 
 The active Android 17 / Panther product architecture is newer than the S1.7
 bramble service baseline above. Current R9 source/module closure establishes:
 
-- standalone `org.sableos.launcher` / `SableLauncher` as the intended HOME
-  product; Launcher3 no longer hosts Sable UI or advertises HOME;
-- SableLauncher compiled against the narrow Android `system_current` SDK for
-  cross-profile permission-summary access, while host Gradle presentation
-  qualification is limited to the canonical presentation filegroup;
-- `Launcher3QuickStep` retained only for Android Quickstep/Recents task and
+- R9L8 Launcher3/Launcher3QuickStep as the sole HOME runtime;
+- SableStart retained as reusable presentation/state source compiled into
+  Launcher3 rather than a standalone `org.sableos.launcher` application;
+- host Gradle presentation qualification limited to the canonical SableStart
+  presentation filegroup, with authoritative product compilation through
+  Launcher3/Soong;
+- `Launcher3QuickStep` also retains Android Quickstep/Recents task and
   gesture integration;
 - Settings as the persisted global appearance authority at
   `content://org.sableos.appearance/appearance`, with Sable apps as clients;
