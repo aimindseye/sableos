@@ -248,6 +248,8 @@ if [[ -e "$OUT_C3" ]]; then
         fi
 
         echo "N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT path=$prior_product_out/system.img"
+        intermediate_system_img_count="$(find "$OUT_C3" -type f -name 'system.img' ! -path "$prior_product_out/system.img" -print | wc -l | tr -d ' ')"
+        echo "N1D_C3A_RESUME_INTERMEDIATE_SYSTEM_IMAGES=INFO count=$intermediate_system_img_count"
     else
         fail prior_build_resume_state_inconsistent
     fi
