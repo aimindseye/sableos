@@ -38,7 +38,7 @@ done
 
 grep -Fq 'network_action_requires_--authorize-network' "$FETCHER" || fail fetch_network_guard_missing
 grep -Fq 'curl --fail --location --retry 5' "$FETCHER" || fail resilient_fetch_missing
-grep -Fq '--continue-at -' "$FETCHER" || fail resumable_fetch_missing
+grep -Fq -- '--continue-at -' "$FETCHER" || fail resumable_fetch_missing
 grep -Fq 'N1D_C2_CONTROL_ASSET_SHA256=PASS' "$FETCHER" || fail asset_sha_gate_missing
 grep -Fq 'N1D_C2_CONTROL_ASSET_SIZE=PASS' "$FETCHER" || fail asset_size_gate_missing
 grep -Fq 'SOURCE_MUTATION_AUTHORIZED=YES_C2_LOCAL_MANIFEST_AND_EXACT_C2_WORKTREES_ONLY' "$RETIRE" || fail retirement_scope_missing
