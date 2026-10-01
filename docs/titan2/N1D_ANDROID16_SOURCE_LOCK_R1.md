@@ -105,10 +105,14 @@ personal
 release-builds
 ```
 
-N1D must not automatically reproduce that loop.
+N1D must not automatically reproduce that loop for the Sable baseline.
 
-Compatibility changes are imported only through a Sable-owned reviewed
-allowlist. Patch pairs which form one compatibility contract must be applied
+C3A is the explicit exception: it reproduces the exact pinned Restless patch
+loop as a non-release control so C3B can stop guessing about compatibility.
+C3B continues to prohibit wholesale tier inheritance.
+
+For C3B, compatibility changes are imported only through a Sable-owned reviewed
+allowlist. C3A control patches do not become C3B policy automatically. Patch pairs which form one compatibility contract must be applied
 atomically. For example, v28 SELinux compatibility requires both the build-side
 `PLATFORM_SEPOLICY_COMPAT_VERSIONS` change and the matching restored 28.0 CIL
 policy.
@@ -119,7 +123,8 @@ implicitly acceptable to SableOS and is blocked by the N1D source policy.
 
 ```text
 N1D_PATCH_APPLICATION_MODE=REPO_OWNED_REVIEWED_ALLOWLIST
-N1D_PATCH_TIER_AUTOAPPLY_ALLOWED=NO
+N1D_PATCH_TIER_AUTOAPPLY_ALLOWED=NO_FOR_C3B
+N1D_C3A_PINNED_CONTROL_PATCH_TIERS_ALLOWED=YES_CONTROL_ONLY
 N1D_SELINUX_PERMISSIVE_DOMAINS_ALLOWED=NO
 ```
 
