@@ -155,21 +155,35 @@ product output. With an absolute out-of-tree `OUT_DIR`, host test outputs can
 remain absolute and fail Soong path validation before the system image graph is
 generated.
 
-C3A carries exactly one Sable-owned build-environment compatibility patch:
+C3A carries exactly two Sable-owned build-environment compatibility patches:
 
 ```text
 patches/android-16-n1d-trebledroid/host-layout/
   0001-soong-ci-tests-skip-out-of-tree-host-paths.patch
+  0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch
 ```
 
-This patch is not part of the 369 Restless control patches and does not change
-runtime Android behavior. It adds the out-of-tree `OUT_DIR` guard used by the
-known Soong fix for this failure class. Application requires the explicit
+Neither patch is part of the 369 Restless control patches and neither changes
+runtime Android behavior. Patch 0001 adds the out-of-tree `OUT_DIR` guard used
+by the known Soong test-package fix. After that correction, the C3A build
+advanced to action 171584/180790 (94%) and exposed a second path-model mismatch:
+`dexpreopt_gen` received an absolute
+`.../TrebleApp_intermediates/product_packages.txt` path but wrapped it with
+`android.PathForTesting()`, which only accepts safe source-relative paths.
+
+Patch 0002 keeps Soong path validation intact. It first proves
+`product_packages.txt` is inside the configured `OUT_DIR`, converts the path
+to an `OUT_DIR`-relative path with `filepath.Rel`, rejects any path escaping
+through `..`, and then represents the file with `android.PathForOutput()`.
+
+Application requires the explicit
 `--authorize-host-layout-source-mutation` build-driver authorization. The
-driver requires the exact pinned patch blob and exact pinned base blob before
-mutation. Verification then requires `build/soong` to have exactly one dirty
-file, `ci_tests/ci_test_package_zip.go`, with exactly the four expected added
-lines and a successful reverse-apply check.
+driver and verifier pin each patch blob, each GrapheneOS base-file blob, and
+each exact expected post-patch blob. Verification requires `build/soong` to
+have exactly two dirty files:
+`ci_tests/ci_test_package_zip.go` and
+`dexpreopt/dexpreopt_gen/dexpreopt_gen.go`. Any byte difference from either
+expected post-patch blob fails closed.
 
 A build that reached `make systemimage` but failed before producing
 `system.img` is classified as `FAILED_SYSTEMIMAGE_PRE_ARTIFACT`. It may be
