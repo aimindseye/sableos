@@ -13,8 +13,8 @@ PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 MANIFEST_SRC="$ROOT/build/titan2/n1d-c3-trebledroid-manifest.xml"
 ROM_SRC="$ROOT/build/titan2/n1d-c3-sable-rom.mk"
 TIER_FILE="$ROOT/build/titan2/n1d-c3-control-patch-tiers.tsv"
-BUILD_ALLOWLIST="$ROOT/build/titan2/n1d-c3-build-patch-allowlist.txt"
-RUNTIME_ALLOWLIST="$ROOT/build/titan2/n1d-c3-runtime-patch-allowlist.txt"
+BUILD_AUDIT_SET="$ROOT/build/titan2/n1d-c3a-build-make-audit-set.txt"
+C3B_RUNTIME_ALLOWLIST="$ROOT/build/titan2/n1d-c3b-runtime-patch-allowlist.txt"
 BUILD_PATCH_DIR="$ROOT/patches/android-16-n1d-trebledroid/build-make"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 SOURCE_GATE="$ROOT/build/gates/n1d-source-lock-contract.sh"
@@ -24,7 +24,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE" "$HOST_PROFILE" "$SOURCE_LOCK" "$FRESH_PROFILE"     "$TD_PROFILE" "$PHASE_PROFILE" "$MANIFEST_SRC" "$ROM_SRC" "$TIER_FILE"     "$BUILD_ALLOWLIST" "$RUNTIME_ALLOWLIST" "$STORAGE_VERIFY" "$SOURCE_GATE"
+for f in     "$STORAGE_PROFILE" "$HOST_PROFILE" "$SOURCE_LOCK" "$FRESH_PROFILE"     "$TD_PROFILE" "$PHASE_PROFILE" "$MANIFEST_SRC" "$ROM_SRC" "$TIER_FILE"     "$BUILD_AUDIT_SET" "$C3B_RUNTIME_ALLOWLIST" "$STORAGE_VERIFY" "$SOURCE_GATE"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -141,8 +141,8 @@ capture_dirty_projects() {
 
 verify_contract_inputs() {
     local build_count runtime_count tier_count tier_total
-    build_count="$(count_allowlist "$BUILD_ALLOWLIST")"
-    runtime_count="$(count_allowlist "$RUNTIME_ALLOWLIST")"
+    build_count="$(count_allowlist "$BUILD_AUDIT_SET")"
+    runtime_count="$(count_allowlist "$C3B_RUNTIME_ALLOWLIST")"
     tier_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$TIER_FILE")"
     tier_total="$(awk 'NF && $1 !~ /^#/ {s+=$2} END {print s+0}' "$TIER_FILE")"
 
@@ -154,11 +154,11 @@ verify_contract_inputs() {
     while IFS= read -r patch; do
         [[ -z "$patch" || "$patch" == #* ]] && continue
         [[ -f "$BUILD_PATCH_DIR/$patch" ]] || fail "build_patch_missing=$patch"
-    done < "$BUILD_ALLOWLIST"
+    done < "$BUILD_AUDIT_SET"
 
-    echo "N1D_C3_BUILD_PATCH_ALLOWLIST=PASS count=$build_count"
+    echo "N1D_C3A_BUILD_MAKE_AUDIT_SET=PASS count=$build_count"
     echo "N1D_C3_CONTROL_PATCH_TIERS=PASS count=$tier_count patches=$tier_total"
-    echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
 }
 
 verify_graphene_base_pre_stage() {
@@ -408,8 +408,8 @@ stage() {
     cp -a "$MANIFEST_SRC" "$evidence/n1d-c3-trebledroid-manifest.xml"
     cp -a "$ROM_SRC" "$evidence/rom.mk"
     cp -a "$TIER_FILE" "$evidence/control-patch-tiers.tsv"
-    cp -a "$BUILD_ALLOWLIST" "$evidence/build-make-patch-allowlist.txt"
-    cp -a "$RUNTIME_ALLOWLIST" "$evidence/release-runtime-patch-allowlist.txt"
+    cp -a "$BUILD_AUDIT_SET" "$evidence/build-make-patch-allowlist.txt"
+    cp -a "$C3B_RUNTIME_ALLOWLIST" "$evidence/release-runtime-patch-allowlist.txt"
     git -C "$TD_ROOT" status --porcelain --untracked-files=all         > "$evidence/device-phh-generated-status.txt"
 
     {
@@ -420,7 +420,7 @@ stage() {
         echo "N1D_C3_GENERATED_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
         echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
         echo "N1D_C3_FIRST_VARIANT=$N1D_C3_FIRST_VARIANT"
-        echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3_RUNTIME_PATCH_ALLOWLIST_COUNT"
+        echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3_RUNTIME_PATCH_ALLOWLIST_COUNT"
         echo "N1D_C3_RELEASE_ELIGIBLE=NO"
     } > "$evidence/stage-state.env"
 
@@ -474,7 +474,7 @@ verify() {
     verify_td_generated_dirty_scope
 
     echo "N1D_C3_POSTPATCH_HEADS=PASS_EXACT value=1045"
-    echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
     echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
 }
 
@@ -667,8 +667,8 @@ stage() {
     cp -a "$MANIFEST_SRC" "$evidence/n1d-c3-trebledroid-manifest.xml"
     cp -a "$ROM_SRC" "$evidence/rom.mk"
     cp -a "$TIER_FILE" "$evidence/control-patch-tiers.tsv"
-    cp -a "$BUILD_ALLOWLIST" "$evidence/build-make-patch-allowlist.txt"
-    cp -a "$RUNTIME_ALLOWLIST" "$evidence/release-runtime-patch-allowlist.txt"
+    cp -a "$BUILD_AUDIT_SET" "$evidence/build-make-patch-allowlist.txt"
+    cp -a "$C3B_RUNTIME_ALLOWLIST" "$evidence/release-runtime-patch-allowlist.txt"
     git -C "$TD_ROOT" status --porcelain --untracked-files=all         > "$evidence/device-phh-generated-status.txt"
 
     {
@@ -679,7 +679,7 @@ stage() {
         echo "N1D_C3_GENERATED_PRODUCT=$N1D_C3_GENERATED_PRODUCT"
         echo "N1D_C3_RELEASE_CONFIG=$N1D_C3_RELEASE_CONFIG"
         echo "N1D_C3_FIRST_VARIANT=$N1D_C3_FIRST_VARIANT"
-        echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3_RUNTIME_PATCH_ALLOWLIST_COUNT"
+        echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3_RUNTIME_PATCH_ALLOWLIST_COUNT"
         echo "N1D_C3_RELEASE_ELIGIBLE=NO"
     } > "$evidence/stage-state.env"
 
@@ -733,7 +733,7 @@ verify() {
     verify_td_generated_dirty_scope
 
     echo "N1D_C3_POSTPATCH_HEADS=PASS_EXACT value=1045"
-    echo "N1D_C3_RELEASE_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
     echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
 }
 
