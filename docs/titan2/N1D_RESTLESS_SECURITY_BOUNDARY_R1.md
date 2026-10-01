@@ -1,12 +1,12 @@
 # Titan 2 N1D Restless/Treble security boundary
 
-Status: **TrebleDroid build scaffold admitted for control builds; release runtime remains deny-by-default**
+Status: **C3A Restless control admitted; C3B Sable runtime remains deny-by-default**
 
 Date: 2026-10-01
 
 ## Decision
 
-N1D C3 is rebaselined on the exact successful public RestlessOS/TrebleDroid
+N1D C3A is rebaselined on the exact successful public RestlessOS/TrebleDroid
 build topology. This corrects the earlier rule which prohibited using
 `device/phh/treble` as build scaffolding and led to a handcrafted GSI product
 that repeatedly entered the wrong Soong `aosp_system_image` dependency graph.
@@ -19,7 +19,7 @@ C2 diagnostic control
   security claim: NO
   Sable release artifact: NO
 
-C3 build/compatibility control
+C3A build/compatibility control
   pinned GrapheneOS 2026061600 base
   + 12 pinned public TrebleDroid/PHH companion projects
   + exact RestlessOS 16.0.0-202606230923 patch tiers
@@ -27,7 +27,7 @@ C3 build/compatibility control
   + generated treble_arm64_bvN-bp4a-user
   release eligible: NO
 
-Sable release runtime
+C3B Sable baseline/runtime
   no automatic admission from the C3 control patch stack
   release runtime allowlist starts at 0
   requires separate security/runtime closure
@@ -88,7 +88,7 @@ unauthenticated/default ADB behavior, PHH root/securize/OTA/remote-debug tools,
 legacy VNDK support, broad OEM compatibility payloads, and unrelated device
 workarounds.
 
-For the first control build:
+For the C3A control build:
 
 ```text
 N1D_C3_PHH_BASE_RUNTIME_SECURITY_TRUST=NO
@@ -126,3 +126,24 @@ to `systemimage`.
 
 The resulting control image must not be flashed or released as SableOS merely
 because it compiles.
+
+
+## C3B radio and runtime inheritance boundary
+
+C3B does not inherit the complete C3A Restless patch stack. The earlier Titan 2
+radio evidence remains the policy source:
+
+```text
+AOSP phone stack = source-built
+stock telephony APK import = NO
+stock MTK JAR/SO import = NO
+full vendor copy into system = NO
+stock vendor/kernel/firmware compatibility strategy = PRESERVE
+MTK indication handling = INVESTIGATE
+IMS/QNS/IWLAN = INVESTIGATE
+persist.sys.phh.ims.mtk default = false
+APN-only fix = NO
+LTE-only fix = NO
+```
+
+A control patch enters C3B only after a reproduced failure and explicit review.
