@@ -146,6 +146,36 @@ committed baseline blob remains the pinned upstream blob
 directly under `sdk/licenses/`. Any other tracked modification, nested license
 path, symlink, or other untracked path fails verification.
 
+## Host-layout compatibility boundary
+
+The canonical C3A output directory is intentionally outside the Android source
+tree. The Android 16 Soong `ci_tests/test_package` implementation in the pinned
+GrapheneOS source assumes host install paths can be represented relative to the
+product output. With an absolute out-of-tree `OUT_DIR`, host test outputs can
+remain absolute and fail Soong path validation before the system image graph is
+generated.
+
+C3A carries exactly one Sable-owned build-environment compatibility patch:
+
+```text
+patches/android-16-n1d-trebledroid/host-layout/
+  0001-soong-ci-tests-skip-out-of-tree-host-paths.patch
+```
+
+This patch is not part of the 369 Restless control patches and does not change
+runtime Android behavior. It adds the out-of-tree `OUT_DIR` guard used by the
+known Soong fix for this failure class. Application requires the explicit
+`--authorize-host-layout-source-mutation` build-driver authorization. The
+driver requires the exact pinned patch blob and exact pinned base blob before
+mutation. Verification then requires `build/soong` to have exactly one dirty
+file, `ci_tests/ci_test_package_zip.go`, with exactly the four expected added
+lines and a successful reverse-apply check.
+
+A build that reached `make systemimage` but failed before producing
+`system.img` is classified as `FAILED_SYSTEMIMAGE_PRE_ARTIFACT`. It may be
+resumed only when no system image, target-files package, or OTA artifact exists.
+
+
 
 ## Exit criterion
 
