@@ -1,0 +1,6 @@
+# N1D C3 runtime patch allowlist.
+#
+# Intentionally empty at rebaseline. TrebleDroid, TrebleDroid-staging,
+# Restless ROM/personal, and release runtime patches are reviewed separately.
+# Presence in the successful Restless build does not grant automatic Sable
+# runtime admission.
