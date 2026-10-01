@@ -51,6 +51,9 @@ commit: 4adc5766f457849ca37e0b318bced65aef5a2233
 ```
 
 The private Restless vendor repository is not admitted. Pixel GSans is also
+omitted because its Restless manifest entry was mutable and it is optional
+font/branding content. C3A is therefore classified as
+`PUBLIC_FUNCTIONAL_REPRODUCTION`, not bit-identical Restless. Pixel GSans is also
 omitted because no immutable release-time pin was established for that
 non-functional font/branding input. C3A therefore claims public functional
 reproduction, not bit-identical Restless source provenance.
