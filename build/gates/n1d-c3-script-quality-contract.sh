@@ -44,7 +44,7 @@ systemimage_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+systemimage[[:space:
 treble_app_count="$(grep -Ec '^[[:space:]]*bash[[:space:]]+build\.sh[[:space:]]+release[[:space:]]*$' "$BUILD" || true)"
 
 [[ "$repo_sync_count" == 1 ]] || fail "prep_repo_sync_count=$repo_sync_count"
-[[ "$repo_forall_count" == 2 ]] || fail "prep_repo_forall_definition_count=$repo_forall_count"
+[[ "$repo_forall_count" == 1 ]] || fail "prep_repo_forall_definition_count=$repo_forall_count"
 [[ "$systemimage_count" == 1 ]] || fail "build_systemimage_count=$systemimage_count"
 [[ "$treble_app_count" == 1 ]] || fail "treble_app_release_count=$treble_app_count"
 
@@ -70,7 +70,7 @@ grep -Fq 'bash "$ROOT/build/gates/n1d-c3-script-quality-contract.sh"' "$PIPELINE
 
 echo "N1D_C3_SCRIPT_SYNTAX=PASS files=${#syntax_files[@]}"
 echo "N1D_C3_PREP_REPO_SYNC_COUNT=PASS value=$repo_sync_count"
-echo "N1D_C3_PREP_REPO_FORALL_HELPERS=PASS value=$repo_forall_count"
+echo "N1D_C3_PREP_REPO_FORALL_HELPERS=PASS value=$repo_forall_count optimized_combined_state_capture=YES"
 echo "N1D_C3_PREP_SYNC_PARALLELISM=PASS jobs=4"
 echo "N1D_C3_BUILD_SYSTEMIMAGE_COUNT=PASS value=$systemimage_count"
 echo "N1D_C3_BUILD_TREBLE_APP_COUNT=PASS value=$treble_app_count"
