@@ -26,7 +26,12 @@ for token in \
     'N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_COMPLETE' \
     'DEXPREOPT_OUTDIR_PATCH=' \
     'FAILED_SYSTEMIMAGE_PRE_ARTIFACT' \
-    'prior_build_resume_state_inconsistent' \
+    'prior_build_resume_state_inconsistent' \    'prior_systemimage_build_product_out_evidence_missing' \
+    'prior_product_out_outside_c3_out' \
+    'prior_final_system_img_exists_resume_not_allowed' \
+    'N1D_C3A_RESUME_FINAL_SYSTEM_IMG=PASS_ABSENT' \
+    'prior_output_contains_packaging_artifact_resume_not_allowed' \
+
     'failed_build_evidence_missing_for_resume' \
     'N1D_C3A_BUILD_RESUME=PASS' \
     'PREP_VERIFY_ARGS=(verify --allow-c3a-host-layout-fix)' \
