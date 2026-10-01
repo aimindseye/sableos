@@ -315,6 +315,27 @@ admit() {
     echo "EVIDENCE_DIR=$out"
 }
 
+resume_preflight() {
+    echo "===== TITAN 2 N1D C2 SOURCE ADMISSION RESUME PREFLIGHT ====="
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    assert_no_build_device_flash
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_base_seal
+    verify_historical_c2_seal
+    [[ -f "$LOCAL_MANIFEST" ]] || fail "resume_local_manifest_missing=$LOCAL_MANIFEST"
+    local manifest_count tmp
+    manifest_count="$(find "$LOCAL_MANIFEST_DIR" -mindepth 1 -maxdepth 1 -type f -print | wc -l | tr -d ' ')"
+    [[ "$manifest_count" == 1 ]] || fail "resume_local_manifest_count=$manifest_count"
+    verify_base_subset_exact
+    tmp="$(mktemp -d)"
+    derive_install_manifest "$tmp/$N1D_C2_LOCAL_MANIFEST_NAME" "$tmp/c2-projects.tsv"
+    verify_partial_c2_safe "$tmp/c2-projects.tsv"
+    rm -rf "$tmp"
+    echo "N1D_C2_SOURCE_ADMISSION_RESUME_PREFLIGHT=PASS"
+}
+
 resume() {
     echo "===== TITAN 2 N1D C2 SOURCE ADMISSION RESUME ====="
     require_network_authorization
@@ -374,6 +395,7 @@ resume() {
 case "$ACTION" in
     preflight) preflight ;;
     admit) admit ;;
+    resume-preflight) resume_preflight ;;
     resume) resume ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
