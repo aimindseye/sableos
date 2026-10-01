@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- Exact public source inputs corresponding to the successful
+       RestlessOS 16.0.0-202606230923 build topology. -->
+  <remote name="n1d-trebledroid" fetch="https://github.com/TrebleDroid/" />
+  <remote name="n1d-andycgyan" fetch="https://github.com/AndyCGYan/" />
+  <remote name="n1d-lineage" fetch="https://github.com/LineageOS/" />
+  <remote name="n1d-phhusson" fetch="https://github.com/phhusson/" />
+  <remote name="n1d-aosp" fetch="https://android.googlesource.com/" />
+
+  <project path="device/phh/treble"
+           name="device_phh_treble"
+           remote="n1d-trebledroid"
+           revision="39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed" />
+  <project path="packages/apps/QcRilAm"
+           name="android_packages_apps_QcRilAm"
+           remote="n1d-andycgyan"
+           revision="dc599b67cc1e7e9a62ca15eef605e3b2546d0d42" />
+  <project path="prebuilts/vndk/v28"
+           name="platform/prebuilts/vndk/v28"
+           remote="n1d-aosp"
+           revision="204f1bad00aaf480ba33233f7b8c2ddaa03155dd" />
+  <project path="prebuilts/vndk/v29"
+           name="platform/prebuilts/vndk/v29"
+           remote="n1d-aosp"
+           revision="bef5d37dda9360940964f097d612c8032e140961" />
+  <project path="prebuilts/vndk/v30"
+           name="platform/prebuilts/vndk/v30"
+           remote="n1d-aosp"
+           revision="5f9884aa352825291757dfd6694b874ad8c1805e" />
+  <project path="treble_app"
+           name="treble_app"
+           remote="n1d-trebledroid"
+           revision="96acf04e74d42a08cc841688686ad3c5d8bd5790" />
+  <project path="vendor/apn"
+           name="android_vendor_apn"
+           remote="n1d-lineage"
+           revision="8b06f423fd67e67f87a22ca520e1900335e3f790" />
+  <project path="vendor/hardware_overlay"
+           name="vendor_hardware_overlay"
+           remote="n1d-trebledroid"
+           revision="bb0bbb9e1314e5312f718ca1d3ea320137d14370" />
+  <project path="vendor/interfaces"
+           name="vendor_interfaces"
+           remote="n1d-trebledroid"
+           revision="a2271d260e226e8de5cb1e8c15a229dc90c007dd" />
+  <project path="vendor/lptools"
+           name="vendor_lptools"
+           remote="n1d-phhusson"
+           revision="c8be7de57b80eab61a6f94ec86464a01fb9056f2" />
+  <project path="vendor/magisk"
+           name="vendor_magisk"
+           remote="n1d-phhusson"
+           revision="d8056f8032a0f60f365ddfe5e9fccd7eaf3a655d" />
+  <project path="vendor/vndk-tests"
+           name="vendor_vndk-tests"
+           remote="n1d-phhusson"
+           revision="533390a1d6bc98d86de6b9aab56825c1f03fddcb" />
+</manifest>
