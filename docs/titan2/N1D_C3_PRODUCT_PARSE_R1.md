@@ -113,7 +113,7 @@ N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS
 N1D_C3_PRODUCT_PARSE=PASS
 ```
 
-Evidence is SHA-sealed under:
+Deterministic parse state (`product-vars.env` and `parse-state.env`) is SHA-sealed under the path below. The streaming `parse.log` is retained for diagnostics but intentionally excluded from `SHA256SUMS.txt` so post-write log flushing cannot invalidate the evidence seal.
 
 ```text
 /srv/sable-build/evidence/titan2/n1d-c3-product-parse/
