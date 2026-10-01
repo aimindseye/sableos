@@ -76,7 +76,7 @@ TD_ROOT="$ANDROID_ROOT/device/phh/treble"
 BUILD_MAKE="$ANDROID_ROOT/build/make"
 OLD_PRODUCT="$ANDROID_ROOT/vendor/sable/n1d"
 RECIPE_ROOT="$SABLE_BUILD_ROOT/artifacts/titan2/n1d-c3-restless-recipe/$N1D_RESTLESS_TAG"
-EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3-trebledroid-prep"
+EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3a-trebledroid-prep"
 
 scaffold_paths=(
     device/phh/treble
@@ -319,7 +319,7 @@ latest_stage_evidence() {
 }
 
 preflight() {
-    echo "===== N1D C3 TREBLEDROID REBASELINE PREFLIGHT ====="
+    echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL PREFLIGHT ====="
     echo "SOURCE_MUTATION_AUTHORIZED=NO"
     echo "NETWORK_FETCH_AUTHORIZED=NO"
     echo "BUILD_AUTHORIZED=NO"
@@ -338,7 +338,7 @@ preflight() {
 }
 
 stage() {
-    echo "===== N1D C3 TREBLEDROID REBASELINE STAGE ====="
+    echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL STAGE ====="
     [[ "$SOURCE_MUTATION_AUTHORIZED" == YES ]]         || fail stage_requires_--authorize-source-mutation
     [[ "$NETWORK_FETCH_AUTHORIZED" == YES ]]         || fail stage_requires_--authorize-network
 
@@ -426,7 +426,7 @@ stage() {
 }
 
 verify() {
-    echo "===== N1D C3 TREBLEDROID REBASELINE VERIFY ====="
+    echo "===== N1D C3A RESTLESS/TREBLEDROID CONTROL VERIFY ====="
     echo "SOURCE_MUTATION_AUTHORIZED=NO"
     echo "NETWORK_FETCH_AUTHORIZED=NO"
     echo "BUILD_AUTHORIZED=NO"
