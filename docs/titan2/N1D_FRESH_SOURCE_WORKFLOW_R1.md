@@ -1,6 +1,6 @@
 # Titan 2 N1D fresh-source workflow R1
 
-Status: **pre-sync engineering contract**
+Status: **base source workflow; Graphene/AOSP base sealed**
 
 Date: 2026-10-01
 
@@ -70,11 +70,12 @@ incompatible with the N1D source lock.
 Its local manifest also contains mutable `main` / `master` revisions and a
 private SSH vendor remote. N1D therefore never copies that manifest directly.
 
-## C2 public compatibility pins
+## Historical C2 public compatibility pins
 
-C2 remains the Restless/Treble diagnostic control. Its required public Treble
-projects are recovered from the already sealed public R6
-`repo manifest -r`, not from mutable upstream branches.
+The sealed public R6 `repo manifest -r` remains audit evidence for the
+historical Restless/Treble source graph. It is no longer the active C2 build
+input because exact reconstruction proved incomplete from current public
+remotes.
 
 The source of truth is:
 
@@ -124,16 +125,19 @@ The intended lifecycle is:
 ```text
 fresh Graphene/AOSP Android 16 base
   -> seal pinned manifest and zero-dirty state
-  -> add exact public C2 compatibility projects
-  -> build/seal C2
-  -> explicitly retire C2-only project paths
-  -> restore and verify the same checkout against the pinned base
+  -> audit bounded historical C2 source reconstruction
+  -> fail closed when two historical source objects are unavailable
+  -> use pinned published RestlessOS GSI as C2 diagnostic control
+  -> retire partial C2 source paths
+  -> restore and verify the same checkout against the pinned 1033-project base
   -> stage Sable-owned C3 product files
+  -> parse/qualify C3 product
   -> build/seal C3
 ```
 
-C2-to-C3 transition logic is a later gated deliverable. The fresh-source
-preparation driver does not delete C2 projects and does not build either image.
+The C2-to-C3 transition has now been completed: partial C2 source worktrees
+were retired and the checkout was restored to the exact sealed 1,033-project
+base. The fresh-source preparation driver itself still performs no build.
 
 ## Driver actions
 
