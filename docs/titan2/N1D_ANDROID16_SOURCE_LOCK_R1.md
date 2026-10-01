@@ -118,14 +118,17 @@ atomically. For example, v28 SELinux compatibility requires both the build-side
 policy.
 
 The upstream `rom` tier also contains a patch allowing TrebleDroid permissive
-domains (`phhsu_daemon`, `tkcore`, `ueventd`) in user builds. This is not
-implicitly acceptable to SableOS and is blocked by the N1D source policy.
+domains (`phhsu_daemon`, `tkcore`, `ueventd`) in user builds. C3A may
+reproduce that patch only inside the non-release control. It is not implicitly
+acceptable to C3B/SableOS and cannot enter C3B without separate evidence and
+review.
 
 ```text
-N1D_PATCH_APPLICATION_MODE=REPO_OWNED_REVIEWED_ALLOWLIST
-N1D_PATCH_TIER_AUTOAPPLY_ALLOWED=NO_FOR_C3B
-N1D_C3A_PINNED_CONTROL_PATCH_TIERS_ALLOWED=YES_CONTROL_ONLY
-N1D_SELINUX_PERMISSIVE_DOMAINS_ALLOWED=NO
+N1D_PATCH_APPLICATION_MODE=PHASE_SCOPED
+N1D_C3A_PATCH_APPLICATION_MODE=PINNED_RESTLESS_CONTROL_RECIPE
+N1D_C3A_PATCH_TIER_AUTOAPPLY_ALLOWED=YES_PINNED_CONTROL_ONLY
+N1D_C3B_PATCH_APPLICATION_MODE=REPO_OWNED_REVIEWED_ALLOWLIST
+N1D_C3B_PATCH_TIER_AUTOAPPLY_ALLOWED=NO
 ```
 
 ## Relationship to historical SableOS work
