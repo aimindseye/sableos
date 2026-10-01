@@ -38,6 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--remote-prefix", default="")
+    parser.add_argument("--project-tsv", type=Path)
     return parser.parse_args()
 
 
@@ -172,10 +173,26 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(xml, encoding="utf-8")
 
+    if args.project_tsv is not None:
+        args.project_tsv.parent.mkdir(parents=True, exist_ok=True)
+        rows = []
+        for project, remote_name in sorted(
+            selected,
+            key=lambda item: item[0].attrib.get("path", ""),
+        ):
+            path = project.attrib.get("path") or project.attrib["name"]
+            rows.append(
+                f"{path}\t{project.attrib['revision']}\t"
+                f"{args.remote_prefix}{remote_name}"
+            )
+        args.project_tsv.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
     digest = hashlib.sha256(args.output.read_bytes()).hexdigest()
     print(f"N1D_C2_PUBLIC_PROJECT_COUNT={len(selected)}")
     print(f"N1D_C2_PUBLIC_MANIFEST_SHA256={digest}")
     print(f"N1D_C2_PUBLIC_MANIFEST={args.output}")
+    if args.project_tsv is not None:
+        print(f"N1D_C2_PUBLIC_PROJECT_TSV={args.project_tsv}")
     print("N1D_C2_PRIVATE_VENDOR=ABSENT")
     print("N1D_C2_MUTABLE_REVISIONS=ABSENT")
     print("N1D_C2_PUBLIC_MANIFEST=PASS")
