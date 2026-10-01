@@ -7,12 +7,13 @@ STORAGE_PROFILE="$ROOT/build/config/storage.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
 PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
+PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
 fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -24,8 +25,12 @@ source "$FRESH_PROFILE"
 source "$TD_PROFILE"
 # shellcheck source=/dev/null
 source "$PHASE_PROFILE"
+# shellcheck source=/dev/null
+source "$PRODUCT_PROFILE"
 [[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] || fail c3a_role_mismatch
+[[ "$N1D_C3A_RELEASE_ELIGIBLE" == NO ]] || fail c3a_release_boundary_mismatch
 [[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
+[[ "$N1D_C3_RELEASE_ELIGIBLE" == NO ]] || fail c3_release_boundary_mismatch
 
 BUILD_AUTHORIZED=NO
 NETWORK_FETCH_AUTHORIZED=NO
@@ -63,8 +68,9 @@ echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
 echo "RELEASE_ELIGIBLE=NO"
 echo "N1D_C3_ACTIVE_PHASE=C3A_CONTROL"
-echo "C3A_RELEASE_ELIGIBLE=NO"
-echo "C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE"
+echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
+echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
+echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
@@ -155,7 +161,9 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3_SYSTEM_BYTES=$bytes"
     echo "N1D_C3_TREBLE_APP_SHA256=$(cat "$EVIDENCE_DIR/treble-app.sha256")"
     echo "N1D_C3_TREBLE_APP_BYTES=$(cat "$EVIDENCE_DIR/treble-app.bytes")"
-    echo "N1D_C3_RELEASE_ELIGIBLE=NO"
+    echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
+    echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
+    echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
 } > "$EVIDENCE_DIR/build-state.env"
@@ -170,5 +178,5 @@ echo "SYSTEM_IMG=$SYSTEM_IMG"
 echo "SYSTEM_SHA256=$sha"
 echo "SYSTEM_BYTES=$bytes"
 echo "N1D_C3A_TREBLEDROID_SYSTEMIMAGE=PASS"
-echo "N1D_C3_RELEASE_ELIGIBLE=NO"
+echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
