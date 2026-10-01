@@ -114,8 +114,11 @@ First compile:
 ```bash
 bash build/titan2/build-n1d-c3-trebledroid-systemimage.sh \
   --authorize-c3-compile \
+  --authorize-network \
   --jobs 16
 ```
+
+The network authorization is limited by contract to the pinned TrebleApp Gradle release prebuild. The driver runs `bash build.sh release` in `treble_app` before Restless's exact `make systemimage` invocation.
 
 The first compile uses a fresh output directory:
 
@@ -123,7 +126,7 @@ The first compile uses a fresh output directory:
 /srv/sable-build/workspaces/titan2-n1d/out-c3-td
 ```
 
-and authorizes only `systemimage`.
+and authorizes only the TrebleApp release prebuild plus `systemimage`. Restless's subsequent `target-files-package`, `otatools`, signing and release packaging are intentionally deferred until this control compile succeeds.
 
 ## Release status
 
