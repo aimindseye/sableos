@@ -70,6 +70,21 @@ N1D_C3B_APN_ONLY_FIX_ALLOWED=NO
 N1D_C3B_LTE_ONLY_FIX_ALLOWED=NO
 ```
 
+The detailed reference set, MediaTek/IMS prior art, healing-script constraints
+and carry-forward mapping from the earlier N1B2 PR plan are recorded in:
+
+```text
+docs/titan2/N1D_C3B_REFERENCE_AND_SCOPE_R1.md
+```
+
+C3B is explicitly prepared to add a **bounded, evidence-gated cellular/IMS
+healer** if runtime testing proves one is necessary. The healer is disabled by
+default, must be state-triggered and rate-limited, must remain slot-aware and
+call-safe, and must not use permissive SELinux, reboot loops, blind airplane
+toggles or default RIL restarts. Partial OEM/MediaTek IMS compatibility may be
+investigated when evidence points there; proprietary stock IMS payload import
+remains a separate explicit admission decision.
+
 ## Security direction
 
 C3B must not inherit PHH/Restless release-incompatible defaults such as:
