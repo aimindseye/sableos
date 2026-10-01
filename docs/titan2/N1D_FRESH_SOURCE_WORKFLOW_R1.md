@@ -131,6 +131,7 @@ fresh Graphene/AOSP Android 16 base
   -> retire partial C2 source paths
   -> restore and verify the same checkout against the pinned 1033-project base
   -> stage pinned TrebleDroid/Restless C3A control inputs
+     (54 Restless removals + 12 public additions = 991 managed C3A projects)
   -> parse/qualify C3A generated product
   -> build/seal C3A control system.img
   -> use C3A evidence to peel toward minimal C3B Sable baseline
