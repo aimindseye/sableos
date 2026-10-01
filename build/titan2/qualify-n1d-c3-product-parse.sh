@@ -24,9 +24,9 @@ source "$FRESH_PROFILE"
 # shellcheck source=/dev/null
 source "$TD_PROFILE"
 # shellcheck source=/dev/null
-source "$PHASE_PROFILE"
-# shellcheck source=/dev/null
 source "$PRODUCT_PROFILE"
+# shellcheck source=/dev/null
+source "$PHASE_PROFILE"
 [[ "$N1D_C3A_ROLE" == RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL ]] || fail c3a_role_mismatch
 [[ "$N1D_C3A_RELEASE_ELIGIBLE" == NO ]] || fail c3a_release_boundary_mismatch
 [[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
