@@ -32,6 +32,10 @@ done
 grep -Fq '/srv/data/sable-host-tools' "$PROFILE"
 grep -Fq 'source "$HOST_TOOLS_PROFILE"' "$ENTRY"
 grep -Fq 'source "$_R8_HOST_TOOLS_CONFIG_DIR/host-tools.env"' "$LEGACY_R8"
+grep -Fq 'cp -a --reflink=auto "$src/." "$stage/"' "$MIGRATE"
+! grep -Fq 'cp -aL' "$MIGRATE"
+grep -Fq '.sable-canonical-jdk.env' "$MIGRATE"
+grep -Fq 'QUARANTINED_INCOMPLETE' "$MIGRATE"
 grep -Fq 'build/config/host-tools.env' "$N1D_C0"
 grep -Fq 'HOST_TOOL_RESOLUTION_MODE CANONICAL_PROFILE_ONLY' "$N1D_C0"
 
