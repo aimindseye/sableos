@@ -18,12 +18,15 @@ done
 bash -n "$PROFILE" "$PRODUCT_CONTRACT" "$BOUNDARY" "$DRIVER"
 
 for required in \
-    'N1D_C3_COMPOSITION_VERSION=1' \
+    'N1D_C3_COMPOSITION_VERSION=2' \
     'N1D_C3_BASE_SEAL_SHA256=365780be847eba999a72603c501a0f3afcac30dc61f71ce35165d8271dfbf830' \
     'N1D_C3_BASE_PROJECT_COUNT=1033' \
     'N1D_C3_SOURCE_BUNDLE_REL=build/titan2/n1d-c3-product' \
     'N1D_C3_STAGE_TARGET_REL=vendor/sable/n1d' \
     'N1D_C3_PRODUCT_NAME=sable_titan2_n1d_arm64' \
+    'N1D_C3_PRODUCT_DEVICE=gsi_arm64' \
+    'N1D_C3_BUILDING_GSI_VALUE=false' \
+    'N1D_C3_REFRESH_FILE_COUNT=1' \
     'N1D_C3_REQUIRED_STAGE_FILE_COUNT=5' \
     'N1D_C3_INITIAL_TREBLE_COMPAT_ITEM_COUNT=0' \
     'N1D_C3_INITIAL_RESTLESS_PATCH_ALLOWLIST_COUNT=0' \
@@ -41,9 +44,13 @@ do
 done
 
 for required in \
-    'N1D_PRODUCT_CONTRACT_VERSION=3' \
+    'N1D_PRODUCT_CONTRACT_VERSION=4' \
     'N1D_RESTLESS_ROLE=REFERENCE_AND_C2_PREBUILT_DIAGNOSTIC_CONTROL' \
     'N1D_C3_PRODUCT_SOURCE_BUNDLE=build/titan2/n1d-c3-product' \
+    'N1D_C3_PRODUCT_DEVICE=gsi_arm64' \
+    'N1D_C3_GSI_BOARD=build/make/target/board/gsi_arm64/BoardConfig.mk' \
+    'N1D_C3_BUILDING_GSI_VALUE=false' \
+    'N1D_C3_SOONG_AOSP_SYSTEM_IMAGE_ENABLED=NO' \
     'N1D_C3_PRODUCT_STAGE_TARGET=vendor/sable/n1d' \
     'N1D_C3_STAGE_REQUIRES_BASE_SEAL=YES' \
     'N1D_C3_STAGE_REQUIRES_C2_CONTROL_HASH=YES' \
@@ -101,7 +108,8 @@ PY
 
 for required in \
     'PRODUCT_NAME := sable_titan2_n1d_arm64' \
-    'PRODUCT_DEVICE := mainline_arm64' \
+    'BUILDING_GSI := false' \
+    'PRODUCT_DEVICE := gsi_arm64' \
     'PRODUCT_BRAND := SableOS' \
     'PRODUCT_MODEL := SableOS Titan 2 N1D' \
     'PRODUCT_MANUFACTURER := SableOS'
