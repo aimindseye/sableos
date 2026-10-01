@@ -1,0 +1,102 @@
+# Titan 2 N1D C3A Restless/Treble reproduction control
+
+Status: **control-build phase; non-release; no device contact**
+
+Date: 2026-10-01
+
+## Purpose
+
+C3A answers one question: can Sable reproduce the exact public Android 16
+RestlessOS/TrebleDroid build topology that previously built successfully?
+
+C3A is not the SableOS product baseline.
+
+## Exact control topology
+
+```text
+sealed GrapheneOS 2026061600 base
+  + 12 pinned public TrebleDroid/PHH companion projects
+  + RestlessOS 16.0.0-202606230923 recipe
+  + exact ordered control patch tiers:
+      trebledroid          198
+      trebledroid-staging  121
+      rom                    29
+      personal               17
+      release-builds           4
+                           ----
+                            369
+  + configs/rom/rom.mk-equivalent
+  + device/phh/treble/generate.sh rom
+  + treble_app/build.sh release
+  + lunch treble_arm64_bvN-bp4a-user
+  + make systemimage
+```
+
+The private Restless vendor repository is excluded.
+
+## Why C3A exists
+
+The retired handcrafted product repeatedly reached Soong graph generation and
+failed because its AOSP `aosp_system_image` dependency set did not match the
+Graphene source graph. Restless's known-good recipe already solved that source
+composition problem.
+
+C3A therefore removes build-topology guesswork. It gives C3B a known reference
+for each subsequent compatibility decision.
+
+## Cellular expectation
+
+C3A is **not expected to prove cellular correctness**.
+
+Earlier Titan 2 Restless/Treble-derived runtime evidence showed that LTE attach
+and a WWAN data call could succeed and later drop. High-signal suspects remained
+MTK network-indication integration and IMS/QNS/IWLAN interaction.
+
+Therefore:
+
+```text
+C3A_BUILD_SUCCESS != CELLULAR_PASS
+C3A_BUILD_SUCCESS != SABLE_RELEASE_BASELINE
+```
+
+No cellular fix is inferred from reproducing Restless.
+
+## Security boundary
+
+The 369 patches are control inputs only.
+
+```text
+N1D_C3A_FULL_RESTLESS_PATCH_STACK_ALLOWED=YES_CONTROL_ONLY
+N1D_C3A_RELEASE_ELIGIBLE=NO
+N1D_C3A_DEVICE_CONTACT_AUTHORIZED=NO
+N1D_C3A_FLASH_AUTHORIZED=NO
+```
+
+The generated PHH/Treble runtime is not trusted as Sable security policy.
+
+## Outputs
+
+C3A parse output:
+
+```text
+/srv/sable-build/workspaces/titan2-n1d/out-c3a-td-parse/
+```
+
+C3A build output:
+
+```text
+/srv/sable-build/workspaces/titan2-n1d/out-c3a-td/
+```
+
+C3A evidence:
+
+```text
+/srv/sable-build/evidence/titan2/n1d-c3a-trebledroid-*/
+```
+
+## Exit criterion
+
+C3A is complete when the pinned control recipe produces and seals a
+`treble_arm64_bvN-bp4a-user` `system.img`.
+
+That result becomes comparison evidence for C3B. It does not authorize a flash.
