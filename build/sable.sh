@@ -4,6 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+STORAGE_PROFILE="$ROOT/build/config/storage.env"
+[[ -f "$STORAGE_PROFILE" ]] || {
+  echo "SABLE_ENTRYPOINT=FAIL_STORAGE_PROFILE path=$STORAGE_PROFILE" >&2
+  exit 64
+}
+# shellcheck source=/dev/null
+source "$STORAGE_PROFILE"
+
 HOST_TOOLS_PROFILE="$ROOT/build/config/host-tools.env"
 [[ -f "$HOST_TOOLS_PROFILE" ]] || {
   echo "SABLE_ENTRYPOINT=FAIL_HOST_TOOLS_PROFILE path=$HOST_TOOLS_PROFILE" >&2
@@ -78,8 +86,8 @@ echo "ENTRYPOINT=build/sable.sh"
 echo "DEVICE_SPECIFIC_ENTRYPOINT=NO"
 echo "RELEASE_SPECIFIC_ENTRYPOINT=NO"
 
-REGISTRY_ROOT="${SABLE_RELEASE_REGISTRY_ROOT:-/srv/data/sable-build/release-registry}"
-EVIDENCE_ROOT="${SABLE_DEVICE_EVIDENCE_ROOT:-/srv/data/sable-build/evidence}"
+REGISTRY_ROOT="${SABLE_RELEASE_REGISTRY_ROOT}"
+EVIDENCE_ROOT="${SABLE_DEVICE_EVIDENCE_ROOT}"
 REGISTRY="$ROOT/build/deploy/artifact_registry.py"
 PLAN="$ROOT/build/deploy/target_files_plan.py"
 
