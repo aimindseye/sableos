@@ -254,12 +254,18 @@ if [[ -e "$OUT_C3" ]]; then
         fail prior_build_resume_state_inconsistent
     fi
 
-    if find "$OUT_C3" -type f \
-        \( -name '*target_files*.zip' -o -name '*ota*.zip' \) \
-        -print -quit | grep -q .
-    then
-        fail prior_output_contains_packaging_artifact_resume_not_allowed
+    mapfile -t packaging_artifacts < <(
+        find "$OUT_C3" -type f \
+            \( -name '*target_files*.zip' -o -name '*-ota-*.zip' -o -name '*-ota.zip' \) \
+            -print 2>/dev/null | LC_ALL=C sort
+    )
+    if (("${#packaging_artifacts[@]}" > 0)); then
+        printf 'N1D_C3A_RESUME_PACKAGING_ARTIFACT=FOUND path=%s\n' "${packaging_artifacts[@]}"
+        fail "prior_output_contains_packaging_artifact_resume_not_allowed count=${#packaging_artifacts[@]}"
     fi
+
+    otacerts_count="$(find "$OUT_C3" -type f -name 'otacerts.zip' -print 2>/dev/null | wc -l | tr -d ' ')"
+    echo "N1D_C3A_RESUME_PACKAGING_ARTIFACTS=PASS_ABSENT otacerts_payload_count=$otacerts_count"
 
     echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE prior_evidence=$PRIOR_BUILD_EVIDENCE"
 elif [[ "$RESUME_FAILED_BUILD_AUTHORIZED" == YES ]]; then
