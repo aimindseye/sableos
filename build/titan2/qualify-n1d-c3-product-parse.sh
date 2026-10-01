@@ -150,7 +150,7 @@ echo "PARSE_OUT=$PARSE_OUT"
     set +e +u
     build/soong/soong_ui.bash \
         --dumpvars-mode \
-        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILDING_GSI SOONG_CONFIG_gsi_building_gsi BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
+        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILDING_GSI BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
         > "$vars_file"
     dumpvars_rc=$?
     set -euo pipefail
@@ -164,11 +164,58 @@ grep -Fxq "TARGET_BUILD_VARIANT='$N1D_C3_FIRST_BUILD_VARIANT'" "$EVIDENCE_DIR/pr
     || fail "dumpvars_target_variant"
 grep -Fxq "PRODUCT_DEVICE='$N1D_C3_PRODUCT_DEVICE'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_device"
-grep -Fxq "SOONG_CONFIG_gsi_building_gsi=''" "$EVIDENCE_DIR/product-vars.env" \
-    || fail "dumpvars_soong_gsi_building_gsi"
-if grep -Fxq "SOONG_CONFIG_gsi_building_gsi='true'" "$EVIDENCE_DIR/product-vars.env"; then
-    fail "dumpvars_soong_gsi_building_gsi_enabled"
-fi
+SOONG_VARIABLES_JSON="$PARSE_OUT/soong/soong.$N1D_C3_PRODUCT_NAME.variables"
+[[ -f "$SOONG_VARIABLES_JSON" ]] \
+    || fail "soong_variables_missing=$SOONG_VARIABLES_JSON"
+
+python3 - "$SOONG_VARIABLES_JSON" "$EVIDENCE_DIR/soong-gsi-selector.env" <<'PY'
+import json
+import pathlib
+import sys
+
+src = pathlib.Path(sys.argv[1])
+dst = pathlib.Path(sys.argv[2])
+
+with src.open("r", encoding="utf-8") as fp:
+    data = json.load(fp)
+
+product_device = data.get("ProductDevice")
+vendor_vars = data.get("VendorVars", {})
+gsi_vars = vendor_vars.get("gsi", {})
+building_gsi = gsi_vars.get("building_gsi", None)
+use_soong_system_image = data.get("UseSoongSystemImage")
+product_soong_system_image = data.get("ProductSoongDefinedSystemImage")
+
+if product_device != "gsi_arm64":
+    raise SystemExit(
+        f"soong_product_device expected=gsi_arm64 actual={product_device!r}"
+    )
+
+if building_gsi != "":
+    raise SystemExit(
+        "soong_gsi_building_gsi expected_empty "
+        f"actual={building_gsi!r}"
+    )
+
+with dst.open("w", encoding="utf-8") as fp:
+    fp.write("N1D_C3_SOONG_PRODUCT_DEVICE=gsi_arm64\n")
+    fp.write("N1D_C3_SOONG_GSI_BUILDING_GSI_RAW=EMPTY\n")
+    fp.write("N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO\n")
+    fp.write(
+        "N1D_C3_SOONG_USE_SYSTEM_IMAGE="
+        f"{str(use_soong_system_image).upper()}\n"
+    )
+    fp.write(
+        "N1D_C3_SOONG_DEFINED_SYSTEM_IMAGE="
+        f"{product_soong_system_image or 'EMPTY'}\n"
+    )
+PY
+
+cat "$EVIDENCE_DIR/soong-gsi-selector.env"
+
+grep -Fxq 'N1D_C3_SOONG_GSI_BUILDING_GSI_ENABLED=NO' \
+    "$EVIDENCE_DIR/soong-gsi-selector.env" \
+    || fail "soong_gsi_selector_not_disabled"
 grep -Fxq "PRODUCT_BRAND='SableOS'" "$EVIDENCE_DIR/product-vars.env" \
     || fail "dumpvars_product_brand"
 grep -Fxq "PRODUCT_MODEL='SableOS Titan 2 N1D'" "$EVIDENCE_DIR/product-vars.env" \
@@ -212,6 +259,7 @@ fi
 )
 
 echo "N1D_C3_PRODUCT_PARSE_IDENTITY=PASS"
+echo "N1D_C3_PRODUCT_PARSE_SOONG_VARIABLES=PASS"
 echo "N1D_C3_PRODUCT_PARSE_SOONG_GSI_SELECTOR=PASS_DISABLED"
 echo "N1D_C3_PRODUCT_PARSE_GRAPHENE_GSI_ADAPTATION=PASS"
 echo "N1D_C3_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS"
