@@ -36,6 +36,14 @@ grep -Fq 'device/phh/treble/treble_arm64_bvN.mk' "$DRIVER" || fail active_produc
 grep -Fq 'sealed known-booting N1B/Restless-derived system compared to N1C' "$DRIVER" || fail n1b_control_c0_10
 pass control_autodiscovery
 
+grep -Fq 'n1c-stock-super-restore-artifact-r1c-20260930_200124' "$DRIVER" || fail stock_super_evidence_discovery
+grep -Fq 'n1c-restore-tee14-boot-avb-direct-20260930_204335' "$DRIVER" || fail avb_evidence_discovery
+grep -Fq 'RELEASE_REGISTRY' "$DRIVER" || fail n1b_registry_discovery
+grep -Fq '*/host/linux-x86/bin/$n' "$DRIVER" || fail host_tool_out_discovery
+grep -Fq 'AOSP_GSI_CANDIDATES' "$DRIVER" || fail gsi_release_source_discovery
+grep -Fq 'TOOL_CHECKVINTF' "$DRIVER" || fail tool_resolution_evidence
+pass c0_discovery_contract
+
 # Reviewed Engineer-2 tool hashes are immutable inputs to C0_12.
 [[ "$(sha256sum "$AUDIT" | awk '{print $1}')" == "b02d0da22de0f0cecca8a0793acd216ddecebafd9a51fae9c708936832c17c28" ]] || fail audit_hash
 [[ "$(sha256sum "$CAPTURE" | awk '{print $1}')" == "50344ffe5de82986299175587e152b493add8e930a90aa9dd55aba89351b721a" ]] || fail capture_hash

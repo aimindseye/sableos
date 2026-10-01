@@ -122,6 +122,8 @@ C0 also auto-discovers the active Restless/Treble product makefile `device/phh/t
 
 The remaining required local material is therefore the already-known N1C/stock corpus plus a resolvable stock-super artifact.
 
+C0 discovery also searches the documented N1C stock-super restore evidence and TEE14 boot/AVB restore evidence, and resolves missing Android host tools from Titan 2 Android OUT trees. A gate must not be interpreted as a compatibility failure when its prerequisite artifact/tool could not be resolved; the summary records every resolved tool and critical input path for that reason.
+
 ## Run
 
 ```bash
