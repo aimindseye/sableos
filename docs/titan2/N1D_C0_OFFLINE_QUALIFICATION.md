@@ -118,11 +118,27 @@ BOOT_PROOF=docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md
 
 The ledger must also contain `BOOT_COMPLETED=PASS`, `FIRST_N1B_BOOT=PASS`, and the post-boot orange verified-boot state before C0 promotes it to `QUALIFIED_HISTORICAL`.
 
-C0 also auto-discovers the active Restless/Treble product makefile `device/phh/treble/treble_arm64_bvN.mk` from the Titan 2 workspace. Manual `RESTLESS_SYSTEM_IMG` or `N1D_PRODUCT_FILE` values are fallback overrides only when local paths differ or discovery is ambiguous.
+The N1D product contract is repository-owned at `build/titan2/n1d-product-contract.env`. It captures the actual Restless/Treble generation model rather than inventing a duplicate product makefile:
 
-The remaining required local material is therefore the already-known N1C/stock corpus plus a resolvable stock-super artifact.
+```text
+treble_arm64_bvN
+  -> device/phh/treble/generate.sh
+  -> build/make/target/product/aosp_arm64.mk
+  -> device/phh/treble/base.mk
+     -> build/make/target/product/gsi_release.mk
+  -> device/phh/treble/rom.mk
+  -> vendor/sable/n1d/sable_n1d_product_delta.mk
+```
 
-C0 discovery also searches the documented N1C stock-super restore evidence and TEE14 boot/AVB restore evidence, and resolves missing Android host tools from Titan 2 Android OUT trees. A gate must not be interpreted as a compatibility failure when its prerequisite artifact/tool could not be resolved; the summary records every resolved tool and critical input path for that reason.
+This preserves the proven TrebleDroid/Restless base while making the Sable delta explicit and keeping `product` / `system_ext` owned by the GSI runtime view. The contract is a design/build-readiness artifact; it does not itself mutate an Android workspace or authorize a build.
+
+C0 still accepts `N1D_PRODUCT_FILE` as an optional diagnostic override when an already-generated active product exists, but the absence of that generated file no longer creates an artificial architecture failure.
+
+The remaining required local material is therefore the already-known N1C/stock corpus plus recoverable host/control artifacts.
+
+C0 discovery searches the documented N1C stock-super restore evidence and TEE14 boot/AVB restore evidence. When a systemimage-only OUT omitted `checkvintf`, `lpdump`, or `lpunpack`, C0 may recover those host binaries and sibling libraries from an existing local `otatools.zip`; no build or network fetch occurs. If the historical N1B standalone `system.img` moved, C0 may also extract `IMAGES/system.img` from a retained N1B target-files archive and accepts it only when its byte size and SHA-256 exactly match the first-boot ledger.
+
+A gate must not be interpreted as a compatibility failure when its prerequisite artifact/tool could not be resolved; the summary records every resolved tool and critical input path for that reason.
 
 ## Run
 
@@ -179,6 +195,8 @@ N1D_DEVICE_CONTACT_AUTHORIZED=NO
 
 - SableOS Titan 2 N1C first-write postmortem and hybrid-super checkpoint in `aimindseye/unihertz-titan2`.
 - AOSP `build/target/product/gsi_release.mk` and `target/product/gsi/gsi_skip_mount.cfg`.
+- TrebleDroid `device_phh_treble` Android 16 product generator and `base.mk`, where generated `treble_arm64_bvN` products inherit the PHH base and the PHH base includes `gsi_release.mk`.
+- RestlessOS Android 16 build workflow, which runs `device/phh/treble/generate.sh rom` before lunching `treble_arm64_bvN`.
 - AOSP `system/core/init/selinux.cpp` split-policy compilation path.
 - AOSP `system/libvintf/check_vintf.cpp` host compatibility checker.
 - AOSP `external/avb/avbtool.py`, including `info_image` / footer resizing semantics.
