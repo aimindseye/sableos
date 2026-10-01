@@ -39,7 +39,7 @@ pass control_autodiscovery
 grep -Fq 'n1c-stock-super-restore-artifact-r1c-20260930_200124' "$DRIVER" || fail stock_super_evidence_discovery
 grep -Fq 'n1c-restore-tee14-boot-avb-direct-20260930_204335' "$DRIVER" || fail avb_evidence_discovery
 grep -Fq 'RELEASE_REGISTRY' "$DRIVER" || fail n1b_registry_discovery
-grep -Fq '*/host/linux-x86/bin/$n' "$DRIVER" || fail host_tool_out_discovery
+grep -Fq 'HOST_TOOL_RESOLUTION_MODE CANONICAL_PROFILE_ONLY' "$DRIVER" || fail canonical_host_tool_resolution
 grep -Fq 'AOSP_GSI_CANDIDATES' "$DRIVER" || fail gsi_release_source_discovery
 grep -Fq 'TOOL_CHECKVINTF' "$DRIVER" || fail tool_resolution_evidence
 pass c0_discovery_contract
@@ -57,8 +57,12 @@ for required in \
   'N1D_PRODUCT_CONTRACT=PASS'; do
   grep -Fxq "$required" "$CONTRACT" || fail "n1d_product_contract token=$required"
 done
-grep -Fq "OTATOOLS_ZIP_RESOLVED" "$DRIVER" || fail otatools_resolution_evidence
-grep -Fq "'bin/checkvintf' 'bin/lpdump' 'bin/lpunpack'" "$DRIVER" || fail otatools_required_tools
+grep -Fq 'build/config/host-tools.env' "$DRIVER" || fail canonical_host_tool_profile
+grep -Fq 'SABLE_LPDUMP' "$DRIVER" || fail canonical_lpdump
+grep -Fq 'SABLE_LPUNPACK' "$DRIVER" || fail canonical_lpunpack
+grep -Fq 'SABLE_CHECKVINTF' "$DRIVER" || fail canonical_checkvintf
+if grep -Fq 'resolve_otatools_zip' "$DRIVER"; then fail stale_otatools_discovery; fi
+if grep -Fq 'resolve_tool()' "$DRIVER"; then fail stale_tool_discovery; fi
 grep -Fq "IMAGES/system.img" "$DRIVER" || fail n1b_target_files_control_recovery
 grep -Fq "N1B_CONTROL_TARGET_FILES_SOURCE" "$DRIVER" || fail n1b_target_files_provenance
 pass c0_closure_contract

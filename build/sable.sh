@@ -4,6 +4,14 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+HOST_TOOLS_PROFILE="$ROOT/build/config/host-tools.env"
+[[ -f "$HOST_TOOLS_PROFILE" ]] || {
+  echo "SABLE_ENTRYPOINT=FAIL_HOST_TOOLS_PROFILE path=$HOST_TOOLS_PROFILE" >&2
+  exit 64
+}
+# shellcheck source=/dev/null
+source "$HOST_TOOLS_PROFILE"
+
 DEVICE="${1:-}"
 RELEASE="${2:-}"
 FUNCTION="${3:-}"

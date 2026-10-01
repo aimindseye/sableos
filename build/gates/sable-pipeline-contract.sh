@@ -98,4 +98,6 @@ SABLEOS_DEVICE=titan2 \
 SABLEOS_RELEASE_VERSION=N1B \
   bash "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
 
+bash "$ROOT/build/gates/host-tools-contract.sh"
+
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"
