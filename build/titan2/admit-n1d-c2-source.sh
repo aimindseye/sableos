@@ -262,4 +262,3 @@ case "$ACTION" in
     admit) admit ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
-
