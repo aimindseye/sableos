@@ -1,6 +1,6 @@
 # Titan 2 N1D C3 product-parse qualification R1
 
-Status: **TrebleDroid-generated control product; parse only; non-release**
+Status: **C3A TrebleDroid-generated control product; parse only; non-release**
 
 Date: 2026-10-01
 
@@ -32,16 +32,16 @@ OTA packaging is authorized by parse.
 Parse output is isolated beneath:
 
 ```text
-/srv/sable-build/workspaces/titan2-n1d/out-c3-td-parse/
+/srv/sable-build/workspaces/titan2-n1d/out-c3a-td-parse/
 ```
 
 Evidence is sealed beneath:
 
 ```text
-/srv/sable-build/evidence/titan2/n1d-c3-trebledroid-parse/
+/srv/sable-build/evidence/titan2/n1d-c3a-trebledroid-parse/
 ```
 
-A passing parse proves the pinned generated product resolves. It does not make
+A passing C3A parse proves the pinned generated control product resolves. It does not make
 the control product release-eligible.
 
 Execution:
