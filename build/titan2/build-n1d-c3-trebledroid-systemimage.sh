@@ -4,21 +4,25 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STORAGE_PROFILE="$ROOT/build/config/storage.env"
+HOST_PROFILE="$ROOT/build/config/host-tools.env"
 FRESH_PROFILE="$ROOT/build/titan2/n1d-fresh-source.env"
 TD_PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
 PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
+HOST_VERIFY="$ROOT/build/host/verify-host-tools.sh"
 
 fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY" "$HOST_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
 # shellcheck source=/dev/null
 source "$STORAGE_PROFILE"
+# shellcheck source=/dev/null
+source "$HOST_PROFILE"
 # shellcheck source=/dev/null
 source "$FRESH_PROFILE"
 # shellcheck source=/dev/null
@@ -31,14 +35,18 @@ source "$PHASE_PROFILE"
 [[ "$N1D_C3A_RELEASE_ELIGIBLE" == NO ]] || fail c3a_release_boundary_mismatch
 [[ "$N1D_C3B_BUILD_AUTHORIZED" == NO_UNTIL_C3A_CONTROL_EVIDENCE ]] || fail c3b_build_boundary_mismatch
 [[ "$N1D_C3_RELEASE_ELIGIBLE" == NO ]] || fail c3_release_boundary_mismatch
+[[ "$N1D_C3_TREBLE_APP_JDK_MAJOR" == 17 ]] || fail treble_app_jdk_major_mismatch
+[[ "$N1D_C3_TREBLE_APP_JDK_SOURCE" == SABLE_JDK17 ]] || fail treble_app_jdk_source_mismatch
 
 BUILD_AUTHORIZED=NO
 NETWORK_FETCH_AUTHORIZED=NO
+RESUME_FAILED_BUILD_AUTHORIZED=NO
 JOBS="$(nproc --all)"
 while (($#)); do
     case "$1" in
         --authorize-c3-compile) BUILD_AUTHORIZED=YES; shift ;;
         --authorize-network) NETWORK_FETCH_AUTHORIZED=YES; shift ;;
+        --resume-failed-c3-build) RESUME_FAILED_BUILD_AUTHORIZED=YES; shift ;;
         --jobs)
             [[ $# -ge 2 ]] || fail jobs_value_missing
             JOBS="$2"
@@ -63,6 +71,7 @@ echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
 echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
 echo "NETWORK_FETCH_AUTHORIZED=YES_TREBLE_APP_GRADLE_ONLY"
+echo "RESUME_FAILED_BUILD_AUTHORIZED=$RESUME_FAILED_BUILD_AUTHORIZED"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
@@ -74,9 +83,48 @@ echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
+bash "$HOST_VERIFY" core
+[[ -x "$SABLE_JDK17/bin/java" ]] || fail "canonical_jdk17_java_missing=$SABLE_JDK17/bin/java"
+[[ -x "$SABLE_JDK17/bin/jlink" ]] || fail "canonical_jdk17_jlink_missing=$SABLE_JDK17/bin/jlink"
+treble_jdk_spec="$("$SABLE_JDK17/bin/java" -XshowSettings:properties -version 2>&1 | awk -F'= ' '/^[[:space:]]*java\.specification\.version = / {print $2; exit}')"
+[[ "$treble_jdk_spec" == "$N1D_C3_TREBLE_APP_JDK_MAJOR" ]] \
+    || fail "canonical_jdk17_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${treble_jdk_spec:-unset}"
+echo "N1D_C3_TREBLE_APP_JDK=PASS source=$N1D_C3_TREBLE_APP_JDK_SOURCE major=$treble_jdk_spec home=$SABLE_JDK17"
+
 bash "$PREP" verify
 
-[[ ! -e "$OUT_C3" ]] || fail "out_already_exists=$OUT_C3"
+BUILD_RESUME_MODE=FRESH
+if [[ -e "$OUT_C3" ]]; then
+    [[ "$RESUME_FAILED_BUILD_AUTHORIZED" == YES ]] \
+        || fail "out_already_exists_requires_--resume-failed-c3-build path=$OUT_C3"
+
+    mapfile -t prior_builds < <(
+        find "$BUILD_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d \
+            -name '*-trebledroid-systemimage' -print 2>/dev/null | LC_ALL=C sort
+    )
+    (("${#prior_builds[@]}" > 0)) || fail failed_build_evidence_missing_for_resume
+    PRIOR_BUILD_EVIDENCE="${prior_builds[-1]}"
+    [[ -f "$PRIOR_BUILD_EVIDENCE/build.log" ]] || fail prior_build_log_missing
+    grep -Fq 'N1D_C3_TREBLE_APP_BUILD=START' "$PRIOR_BUILD_EVIDENCE/build.log" \
+        || fail prior_build_did_not_reach_treble_app
+    if grep -Fq 'N1D_C3_TREBLE_APP_BUILD=PASS' "$PRIOR_BUILD_EVIDENCE/build.log"; then
+        fail prior_build_passed_treble_app_resume_not_allowed
+    fi
+    [[ ! -e "$PRIOR_BUILD_EVIDENCE/systemimage-command.log" ]] \
+        || fail prior_build_reached_systemimage_resume_not_allowed
+    if find "$OUT_C3" -type f \
+        \( -name 'system.img' -o -name '*target_files*.zip' -o -name '*ota*.zip' \) \
+        -print -quit | grep -q .
+    then
+        fail prior_output_contains_target_artifact_resume_not_allowed
+    fi
+    BUILD_RESUME_MODE=FAILED_TREBLE_APP_ONLY
+    echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE prior_evidence=$PRIOR_BUILD_EVIDENCE"
+elif [[ "$RESUME_FAILED_BUILD_AUTHORIZED" == YES ]]; then
+    fail resume_requested_but_out_missing
+else
+    echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE"
+fi
 
 mapfile -t parses < <(
     find "$PARSE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d         -name '*-trebledroid-parse' -print 2>/dev/null | LC_ALL=C sort
@@ -114,6 +162,18 @@ exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
     echo "N1D_C3_TREBLE_APP_BUILD=START"
     (
         cd treble_app
+        export JAVA_HOME="$SABLE_JDK17"
+        export PATH="$SABLE_JDK17/bin:$PATH"
+        export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"
+
+        java_spec="$("$JAVA_HOME/bin/java" -XshowSettings:properties -version 2>&1 | awk -F'= ' '/^[[:space:]]*java\.specification\.version = / {print $2; exit}')"
+        [[ "$java_spec" == "$N1D_C3_TREBLE_APP_JDK_MAJOR" ]] \
+            || fail "treble_app_java_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${java_spec:-unset}"
+        [[ "$JAVA_HOME" == "$SABLE_JDK17" ]] || fail treble_app_java_home_not_canonical
+
+        printf '%s\n' "$JAVA_HOME" > "$EVIDENCE_DIR/treble-app-java-home.txt"
+        "$JAVA_HOME/bin/java" -version > "$EVIDENCE_DIR/treble-app-java-version.txt" 2>&1
+        echo "N1D_C3_TREBLE_APP_JAVA=PASS major=$java_spec home=$JAVA_HOME"
         bash build.sh release
     )
     [[ -f treble_app/TrebleApp.apk ]] || fail treble_app_apk_missing
@@ -161,6 +221,9 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3_SYSTEM_BYTES=$bytes"
     echo "N1D_C3_TREBLE_APP_SHA256=$(cat "$EVIDENCE_DIR/treble-app.sha256")"
     echo "N1D_C3_TREBLE_APP_BYTES=$(cat "$EVIDENCE_DIR/treble-app.bytes")"
+    echo "N1D_C3_TREBLE_APP_JDK_MAJOR=$N1D_C3_TREBLE_APP_JDK_MAJOR"
+    echo "N1D_C3_TREBLE_APP_JAVA_HOME=$(cat "$EVIDENCE_DIR/treble-app-java-home.txt")"
+    echo "N1D_C3A_BUILD_RESUME_MODE=$BUILD_RESUME_MODE"
     echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
     echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
     echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
