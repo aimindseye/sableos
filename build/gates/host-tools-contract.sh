@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROFILE="$ROOT/build/config/host-tools.env"
+LEGACY_R8="$ROOT/build/config/r8-host-tools.env"
+VERIFY="$ROOT/build/host/verify-host-tools.sh"
+MIGRATE="$ROOT/build/host/migrate-canonical-host-tools.sh"
+ENTRY="$ROOT/build/sable.sh"
+
+for f in "$PROFILE" "$LEGACY_R8" "$VERIFY" "$MIGRATE" "$ENTRY"; do
+    [[ -f "$f" ]] || {
+        echo "SABLE_HOST_TOOLS_CONTRACT=FAIL_MISSING path=$f"
+        exit 1
+    }
+done
+
+for f in "$PROFILE" "$LEGACY_R8" "$VERIFY" "$MIGRATE" "$ENTRY"; do
+    bash -n "$f"
+done
+
+for token in     'SABLE_HOST_TOOLS_ROOT'     'SABLE_ANDROID_SDK'     'SABLE_AOSP_HOST_TOOLS_ROOT'     'SABLE_LPDUMP'     'SABLE_LPUNPACK'     'SABLE_LPMAKE'     'SABLE_SIMG2IMG'     'SABLE_AVBTOOL'     'SABLE_CHECKVINTF'     'SABLE_SECILC'     'SABLE_UNPACK_BOOTIMG'     'SABLE_REPO_TOOL'     'SABLE_JDK17'     'SABLE_JDK21'
+do
+    grep -Fq "$token" "$PROFILE" || {
+        echo "SABLE_HOST_TOOLS_CONTRACT=FAIL_MISSING_VARIABLE token=$token"
+        exit 1
+    }
+done
+
+grep -Fq '/srv/data/sable-host-tools' "$PROFILE"
+grep -Fq 'source "$HOST_TOOLS_PROFILE"' "$ENTRY"
+grep -Fq 'source "$_R8_HOST_TOOLS_CONFIG_DIR/host-tools.env"' "$LEGACY_R8"
+
+for forbidden in     '/android/r8/'     '/android/r9/'     'titan2-n1c'     'panther-r9'     '/n1d/'
+do
+    if grep -Fq "$forbidden" "$PROFILE"; then
+        echo "SABLE_HOST_TOOLS_CONTRACT=FAIL_BUILD_SPECIFIC_PATH token=$forbidden"
+        exit 1
+    fi
+done
+
+# Migration may reference the one legacy R8 SDK source path, but canonical
+# profile/verification and operator entry points may not rediscover tools in
+# Android build outputs.
+for f in "$PROFILE" "$VERIFY" "$ENTRY"; do
+    if grep -Eq '/out[^[:space:]]*/host/linux-x86|find .*host/linux-x86' "$f"; then
+        echo "SABLE_HOST_TOOLS_CONTRACT=FAIL_OUT_DISCOVERY path=$f"
+        exit 1
+    fi
+done
+
+echo "SABLE_HOST_TOOLS_GLOBAL_LAYOUT=PASS"
+echo "SABLE_HOST_TOOLS_EXPLICIT_VARIABLES=PASS"
+echo "SABLE_HOST_TOOLS_NO_BUILD_SPECIFIC_PATHS=PASS"
+echo "SABLE_HOST_TOOLS_NO_OUT_DISCOVERY=PASS"
+echo "SABLE_HOST_TOOLS_CONTRACT=PASS"
