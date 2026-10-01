@@ -263,6 +263,27 @@ bash build/gates/n1d-source-lock-contract.sh
 Source sync, Android build and device deployment remain separate gated phases.
 These contracts authorize none of them.
 
+Fresh N1D source preparation is defined by:
+
+```text
+build/titan2/n1d-fresh-source.env
+build/titan2/prepare-n1d-fresh-source.sh
+docs/titan2/N1D_FRESH_SOURCE_WORKFLOW_R1.md
+```
+
+The workflow uses one fresh checkout at
+`/srv/sable-build/workspaces/titan2-n1d/android`. Offline preflight and C2
+public-pin derivation do not authorize network access. Graphene base
+initialization and sync require the explicit `--authorize-network` flag. The
+driver never runs an Android build, adb, fastboot, or the Restless upstream sync
+script.
+
+The fresh-source contract is enforced by:
+
+```bash
+bash build/gates/n1d-fresh-source-contract.sh
+```
+
 ## Validation discipline
 
 Before providing or accepting a build/script deliverable, validate at minimum:

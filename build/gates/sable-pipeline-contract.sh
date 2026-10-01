@@ -102,5 +102,6 @@ bash "$ROOT/build/gates/storage-root-contract.sh"
 bash "$ROOT/build/gates/host-tools-contract.sh"
 bash "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
 bash "$ROOT/build/gates/n1d-source-lock-contract.sh"
+bash "$ROOT/build/gates/n1d-fresh-source-contract.sh"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"
