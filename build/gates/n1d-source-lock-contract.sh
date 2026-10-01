@@ -61,6 +61,9 @@ fi
 # N1D stays on the Treble product graph, but source provenance and patch
 # application are independently locked and reviewed.
 for required in \
+    'N1D_SOURCE_LOCK_FILE=build/titan2/n1d-source-lock.env' \
+    'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED_PLUS_REVIEWED_RESTLESS_A16' \
+    'N1D_RESTLESS_PATCH_POLICY=REVIEWED_ALLOWLIST_ONLY' \
     'N1D_BASE_PRODUCT=treble_arm64_bvN' \
     'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
     'N1D_TREBLE_BASE=device/phh/treble/base.mk' \
