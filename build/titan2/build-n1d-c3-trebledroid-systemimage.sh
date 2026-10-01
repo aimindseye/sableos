@@ -90,8 +90,6 @@ treble_jdk_spec="$("$SABLE_JDK17/bin/java" -XshowSettings:properties -version 2>
     || fail "canonical_jdk17_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${treble_jdk_spec:-unset}"
 echo "N1D_C3_TREBLE_APP_JDK=PASS source=$N1D_C3_TREBLE_APP_JDK_SOURCE major=$treble_jdk_spec home=$SABLE_JDK17"
 
-bash "$PREP" verify
-
 BUILD_RESUME_MODE=FRESH
 if [[ -e "$OUT_C3" ]]; then
     [[ "$RESUME_FAILED_BUILD_AUTHORIZED" == YES ]] \
@@ -125,6 +123,12 @@ else
     echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE"
 fi
 
+if [[ "$BUILD_RESUME_MODE" == FAILED_TREBLE_APP_ONLY ]]; then
+    bash "$PREP" verify --allow-treble-app-build-residue
+else
+    bash "$PREP" verify
+fi
+
 mapfile -t parses < <(
     find "$PARSE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d         -name '*-trebledroid-parse' -print 2>/dev/null | LC_ALL=C sort
 )
@@ -139,6 +143,10 @@ grep -Fxq 'N1D_C3A_TREBLEDROID_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env"    
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$BUILD_EVIDENCE_ROOT/$stamp-trebledroid-systemimage"
 mkdir -p "$EVIDENCE_DIR"
+if [[ "$BUILD_RESUME_MODE" == FAILED_TREBLE_APP_ONLY ]]; then
+    git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all \
+        > "$EVIDENCE_DIR/treble-app-resume-status.txt"
+fi
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
 (
