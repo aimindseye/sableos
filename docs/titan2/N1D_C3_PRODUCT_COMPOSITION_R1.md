@@ -87,8 +87,7 @@ several AOSP application modules referenced by build/make's Soong-defined GSI
 image. C3 therefore sets `BUILDING_GSI := false` after inheriting
 `gsi_release.mk`. The value remains non-empty for
 `BoardConfigGsiCommon.mk`'s Make-side `ifdef BUILDING_GSI` handling, while
-the Soong config conversion tests specifically for literal `true` and
-therefore does not enable the incompatible `aosp_system_image` module.
+the Soong config conversion uses `filter true`; therefore `false` becomes an empty `SOONG_CONFIG_gsi_building_gsi` value and does not enable the incompatible `aosp_system_image` module.
 
 Titan 2 vendor/VNDK API is 34, so C3 does not restore legacy VNDK 28/29 as a
 baseline compatibility mechanism.
