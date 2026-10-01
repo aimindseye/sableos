@@ -20,6 +20,7 @@ BUILD_AUDIT_SET="$ROOT/build/titan2/n1d-c3a-build-make-audit-set.txt"
 C3B_RUNTIME_ALLOWLIST="$ROOT/build/titan2/n1d-c3b-runtime-patch-allowlist.txt"
 BUILD_PATCH_DIR="$ROOT/patches/android-16-n1d-trebledroid/build-make"
 HOST_LAYOUT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci-tests-skip-out-of-tree-host-paths.patch"
+DEXPREOPT_OUTDIR_PATCH="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 SOURCE_GATE="$ROOT/build/gates/n1d-source-lock-contract.sh"
 
@@ -44,6 +45,7 @@ for f in \
     "$BUILD_AUDIT_SET" \
     "$C3B_RUNTIME_ALLOWLIST" \
     "$HOST_LAYOUT_PATCH" \
+    "$DEXPREOPT_OUTDIR_PATCH" \
     "$STORAGE_VERIFY" \
     "$SOURCE_GATE"
 do
@@ -675,63 +677,85 @@ verify_treble_app_build_residue() {
     echo "N1D_C3A_TREBLE_APP_BUILD_RESIDUE=PASS_SDK_METADATA_AND_LICENSES_ONLY count=$count metadata=$metadata_count licenses=$license_count"
 }
 
-verify_host_layout_fix() {
-    local target="$N1D_C3A_HOST_LAYOUT_TARGET_FILE"
-    local status_file
+verify_host_layout_file_exact() {
+    local target="$1"
+    local patch="$2"
+    local expected_base_blob="$3"
+    local expected_post_blob="$4"
+    local expected_patch_blob="$5"
+    local label="$6"
     local base_blob
+    local post_blob
     local patch_blob
-    local numstat
-    local expected_numstat
+
+    base_blob="$(git -C "$BUILD_SOONG_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$expected_base_blob" ]] || {
+        fail "${label}_base_blob expected=$expected_base_blob actual=$base_blob"
+    }
+
+    patch_blob="$(git hash-object "$patch")"
+    [[ "$patch_blob" == "$expected_patch_blob" ]] || {
+        fail "${label}_patch_blob expected=$expected_patch_blob actual=$patch_blob"
+    }
+
+    post_blob="$(git hash-object "$BUILD_SOONG_ROOT/$target")"
+    [[ "$post_blob" == "$expected_post_blob" ]] || {
+        fail "${label}_post_blob expected=$expected_post_blob actual=$post_blob"
+    }
+
+    git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$patch" || {
+        fail "${label}_reverse_check"
+    }
+    git -C "$BUILD_SOONG_ROOT" diff --check -- "$target" || {
+        fail "${label}_diff_check"
+    }
+
+    echo "N1D_C3A_HOST_LAYOUT_FILE=PASS_EXACT label=$label file=$target base_blob=$base_blob post_blob=$post_blob"
+}
+
+verify_host_layout_fix() {
+    local status_file
+    local status_count
 
     status_file="$(mktemp)"
     git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all > "$status_file"
+    status_count="$(grep -cve '^$' "$status_file" || true)"
 
-    [[ "$(wc -l < "$status_file" | tr -d ' ')" == 1 ]] || {
+    [[ "$status_count" == "$N1D_C3A_HOST_LAYOUT_PATCH_COUNT" ]] || {
         cat "$status_file"
         rm -f "$status_file"
-        fail host_layout_fix_dirty_entry_count
+        fail "host_layout_fix_dirty_entry_count expected=$N1D_C3A_HOST_LAYOUT_PATCH_COUNT actual=$status_count"
     }
-    grep -Fxq " M $target" "$status_file" || {
+
+    grep -Fxq " M $N1D_C3A_HOST_LAYOUT_TARGET_FILE" "$status_file" || {
         cat "$status_file"
         rm -f "$status_file"
-        fail host_layout_fix_unexpected_dirty_entry
+        fail host_layout_fix_primary_dirty_entry_missing
+    }
+    grep -Fxq " M $N1D_C3A_DEXPREOPT_OUTDIR_TARGET_FILE" "$status_file" || {
+        cat "$status_file"
+        rm -f "$status_file"
+        fail host_layout_fix_dexpreopt_dirty_entry_missing
     }
 
-    base_blob="$(git -C "$BUILD_SOONG_ROOT" rev-parse "HEAD:$target")"
-    [[ "$base_blob" == "$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB" ]] || {
-        rm -f "$status_file"
-        fail "host_layout_fix_base_blob expected=$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB actual=$base_blob"
-    }
+    verify_host_layout_file_exact \
+        "$N1D_C3A_HOST_LAYOUT_TARGET_FILE" \
+        "$HOST_LAYOUT_PATCH" \
+        "$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB" \
+        "$N1D_C3A_HOST_LAYOUT_TARGET_POST_BLOB" \
+        "$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA" \
+        ci_tests_outdir
 
-    patch_blob="$(git hash-object "$HOST_LAYOUT_PATCH")"
-    [[ "$patch_blob" == "$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA" ]] || {
-        rm -f "$status_file"
-        fail "host_layout_patch_blob expected=$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA actual=$patch_blob"
-    }
-
-    git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$HOST_LAYOUT_PATCH" || {
-        rm -f "$status_file"
-        fail host_layout_fix_reverse_check
-    }
-    git -C "$BUILD_SOONG_ROOT" diff --check -- "$target" || {
-        rm -f "$status_file"
-        fail host_layout_fix_diff_check
-    }
-
-    numstat="$(git -C "$BUILD_SOONG_ROOT" diff --numstat -- "$target")"
-    expected_numstat="$(printf '4\t0\t%s' "$target")"
-    [[ "$numstat" == "$expected_numstat" ]] || {
-        rm -f "$status_file"
-        fail "host_layout_fix_numstat=$numstat"
-    }
-
-    grep -Fq 'strings.HasPrefix(f, ctx.Config().OutDir())' "$BUILD_SOONG_ROOT/$target" || {
-        rm -f "$status_file"
-        fail host_layout_fix_guard_missing
-    }
+    verify_host_layout_file_exact \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_FILE" \
+        "$DEXPREOPT_OUTDIR_PATCH" \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_BASE_BLOB" \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_POST_BLOB" \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_PATCH_BLOB_SHA" \
+        dexpreopt_product_packages_outdir
 
     rm -f "$status_file"
-    echo "N1D_C3A_HOST_LAYOUT_FIX=PASS_EXACT project=$N1D_C3A_HOST_LAYOUT_TARGET_PROJECT file=$target"
+    echo "N1D_C3A_HOST_LAYOUT_FIX=PASS_EXACT project=$N1D_C3A_HOST_LAYOUT_TARGET_PROJECT patches=$N1D_C3A_HOST_LAYOUT_PATCH_COUNT"
 }
 
 latest_stage_evidence() {
