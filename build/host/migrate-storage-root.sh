@@ -81,7 +81,7 @@ preflight() {
         echo "CANONICAL_ROOT_ALREADY_BOUND=NO"
     fi
 
-    uuid="$(blkid -s UUID -o value "$source" 2>/dev/null || true)"
+    uuid="$(lsblk -n -o UUID "$source" 2>/dev/null | head -1 | tr -d '[:space:]')"
     [[ -n "$uuid" ]] || fail "uuid_unresolved source=$source"
 
     echo "SABLE_BUILD_FS_SOURCE=$source"
@@ -123,7 +123,7 @@ fstab_plan() {
 
     local source uuid fstype
     source="$(resolve_underlying_source "$SABLE_BUILD_LEGACY_ROOT")"
-    uuid="$(blkid -s UUID -o value "$source" 2>/dev/null || true)"
+    uuid="$(lsblk -n -o UUID "$source" 2>/dev/null | head -1 | tr -d '[:space:]')"
     fstype="$(findmnt -n -o FSTYPE -M "$SABLE_BUILD_LEGACY_ROOT")"
 
     echo
