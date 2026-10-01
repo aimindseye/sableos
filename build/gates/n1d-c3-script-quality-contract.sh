@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
+PARSE="$ROOT/build/titan2/qualify-n1d-c3-product-parse.sh"
+BUILD="$ROOT/build/titan2/build-n1d-c3-trebledroid-systemimage.sh"
+PIPELINE="$ROOT/build/gates/sable-pipeline-contract.sh"
+
+fail() {
+    echo "N1D_C3_SCRIPT_QUALITY_CONTRACT=FAIL $*" >&2
+    exit 1
+}
+
+syntax_files=(
+    "$ROOT/build/titan2/n1d-source-lock.env"
+    "$ROOT/build/titan2/n1d-product-contract.env"
+    "$ROOT/build/titan2/n1d-restless-security-boundary.env"
+    "$ROOT/build/titan2/n1d-c3-composition.env"
+    "$ROOT/build/titan2/n1d-c3-phase-split.env"
+    "$ROOT/build/titan2/n1d-c3-trebledroid.env"
+    "$PREP"
+    "$PARSE"
+    "$BUILD"
+    "$ROOT/build/titan2/stage-n1d-c3-product.sh"
+    "$ROOT/build/titan2/tests/test-n1d-c0-offline.sh"
+    "$ROOT/build/gates/n1d-c3-phase-split-contract.sh"
+    "$ROOT/build/gates/n1d-c3-trebledroid-contract.sh"
+    "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
+    "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
+    "$ROOT/build/gates/n1d-c3-trebledroid-build-contract.sh"
+    "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
+    "$ROOT/build/gates/n1d-source-lock-contract.sh"
+)
+
+for file in "${syntax_files[@]}"; do
+    [[ -f "$file" ]] || fail "missing_file=$file"
+    bash -n "$file" || fail "bash_n=$file"
+done
+
+repo_sync_count="$(grep -Ec '^[[:space:]]*"?\$SABLE_REPO_TOOL"?[[:space:]]+sync|^[[:space:]]*repo[[:space:]]+sync' "$PREP" || true)"
+repo_forall_count="$(grep -c 'forall -c' "$PREP" || true)"
+systemimage_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+systemimage[[:space:]]' "$BUILD" || true)"
+treble_app_count="$(grep -Ec '^[[:space:]]*bash[[:space:]]+build\.sh[[:space:]]+release[[:space:]]*$' "$BUILD" || true)"
+
+[[ "$repo_sync_count" == 1 ]] || fail "prep_repo_sync_count=$repo_sync_count"
+[[ "$repo_forall_count" == 2 ]] || fail "prep_repo_forall_definition_count=$repo_forall_count"
+[[ "$systemimage_count" == 1 ]] || fail "build_systemimage_count=$systemimage_count"
+[[ "$treble_app_count" == 1 ]] || fail "treble_app_release_count=$treble_app_count"
+
+grep -Fq -- '--jobs=4' "$PREP" || fail prep_sync_parallelism_missing
+
+if grep -Eq '^[[:space:]]*sleep([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+    fail avoidable_sleep_present
+fi
+
+if grep -Eq '(^|[[:space:]])(clean|clobber)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+    fail clean_or_clobber_present
+fi
+
+if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+    fail device_command_present
+fi
+
+if grep -Eq '^[[:space:]]*(m|make|ninja)([[:space:]]|$)' "$PREP" "$PARSE"; then
+    fail target_compile_outside_build_driver
+fi
+
+grep -Fq 'bash "$ROOT/build/gates/n1d-c3-script-quality-contract.sh"' "$PIPELINE"     || fail standard_pipeline_binding_missing
+
+echo "N1D_C3_SCRIPT_SYNTAX=PASS files=${#syntax_files[@]}"
+echo "N1D_C3_PREP_REPO_SYNC_COUNT=PASS value=$repo_sync_count"
+echo "N1D_C3_PREP_REPO_FORALL_HELPERS=PASS value=$repo_forall_count"
+echo "N1D_C3_PREP_SYNC_PARALLELISM=PASS jobs=4"
+echo "N1D_C3_BUILD_SYSTEMIMAGE_COUNT=PASS value=$systemimage_count"
+echo "N1D_C3_BUILD_TREBLE_APP_COUNT=PASS value=$treble_app_count"
+echo "N1D_C3_NO_AVOIDABLE_SLEEP=PASS"
+echo "N1D_C3_NO_CLEAN_CLOBBER=PASS"
+echo "N1D_C3_NO_DEVICE_COMMANDS=PASS"
+echo "N1D_C3_COMPILE_SCOPE=PASS_BUILD_DRIVER_ONLY"
+echo "N1D_C3_SCRIPT_QUALITY_CONTRACT=PASS"
