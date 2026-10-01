@@ -12,10 +12,11 @@ product must not be inherited wholesale by the actual N1D SableOS image.
 N1D now has two deliberately separate roles:
 
 ```text
-C2 fresh diagnostic control
-  pinned RestlessOS Android 16 / TrebleDroid
-  product: treble_arm64_bvN
-  purpose: reproduce a known Titan-capable Treble control
+C2 diagnostic control
+  pinned published RestlessOS Android 16 GSI
+  tag: 16.0.0-202606230923
+  SHA-256: 52ea47d794faf6eafbb49a5f0d2301508757be0e30d1b73e033e1d5185bb492c
+  exact historical source reconstruction: blocked by unavailable public objects
   Sable security claim: NO
   Sable release artifact: NO
 
@@ -61,17 +62,19 @@ C3 merely because upstream Restless uses them.
 
 ## C2 role
 
-The historical N1B result proved that the Treble/Restless hierarchy is useful as
-a device compatibility control. Exact historical N1B image bytes are no longer
-available, so C2 will be a fresh, sealed control rather than a claim that the old
-image was reconstructed byte-for-byte.
+The Treble/Restless hierarchy remains useful as a device compatibility control.
+The active C2 control is the original published RestlessOS
+`16.0.0-202606230923` ARM64 A/B GSI, pinned by tag, commit, byte size and
+SHA-256.
 
-C2 may reproduce the pinned Android-16 Restless/Treble composition for
-diagnostic comparison. Any weaker compatibility/security posture it contains is
-part of the control definition only.
+A bounded attempt to reconstruct the historical public source graph found two
+locked source objects that can no longer be materialized from current public
+remotes. Exact C2 source reconstruction is therefore fail-closed rather than
+silently substituting newer branch tips.
 
-C2 cannot become a Sable release artifact and cannot transfer security
-acceptance to C3.
+Any weaker compatibility/security posture in the published Restless image is
+part of the control definition only. C2 cannot become a Sable release artifact
+and cannot transfer security acceptance to C3.
 
 ## C3 N1D product basis
 
