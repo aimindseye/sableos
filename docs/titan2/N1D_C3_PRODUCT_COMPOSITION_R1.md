@@ -60,7 +60,7 @@ correction that are directly relevant to product composition.
 ## Generator config
 
 The repository-owned
-`build/titan2/n1d-c3-sable-rom.mk` mirrors the successful Restless
+`build/titan2/n1d-c3a-control-rom.mk` mirrors the successful Restless
 `configs/rom/rom.mk` control configuration and is copied to
 `device/phh/treble/rom.mk` before generation.
 
