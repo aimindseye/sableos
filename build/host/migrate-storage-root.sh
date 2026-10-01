@@ -121,15 +121,42 @@ live_bind() {
 fstab_plan() {
     preflight
 
-    local source uuid fstype
+    local source uuid fstype active_options fstab_options
     source="$(resolve_underlying_source "$SABLE_BUILD_LEGACY_ROOT")"
     uuid="$(lsblk -n -o UUID "$source" 2>/dev/null | head -1 | tr -d '[:space:]')"
     fstype="$(findmnt -n -o FSTYPE -M "$SABLE_BUILD_LEGACY_ROOT")"
+    active_options="$(findmnt -n -o OPTIONS -M "$SABLE_BUILD_LEGACY_ROOT")"
+
+    [[ -n "$active_options" ]] || fail "active_mount_options_unresolved"
+
+    # rw/ro reflects runtime state, not the persistent fstab option set. Preserve
+    # the remaining active options (for example noatime) instead of replacing
+    # them with a generic 'defaults' line.
+    fstab_options="$(
+        tr ',' '\n' <<<"$active_options" |
+        grep -Ev '^(rw|ro)    echo
+    echo "FSTAB_MUTATION_PERFORMED=NO"
+    echo "SABLE_STORAGE_FSTAB_PLAN=PASS"
+}
+
+case "$ACTION" in
+    preflight) preflight ;;
+    live-bind) live_bind ;;
+    fstab-plan) fstab_plan ;;
+    *) fail "unknown_action=$ACTION" ;;
+esac
+ |
+        paste -sd, -
+    )"
+    [[ -n "$fstab_options" ]] || fstab_options=defaults
 
     echo
     echo "===== PROPOSED /etc/fstab TARGET STATE ====="
-    echo "# Review existing mount options before applying."
-    printf 'UUID=%s %s %s defaults 0 2\n' "$uuid" "$SABLE_BUILD_ROOT" "$fstype"
+    echo "# Review the existing /etc/fstab entry before applying."
+    echo "ACTIVE_MOUNT_OPTIONS=$active_options"
+    echo "PROPOSED_FS_OPTIONS=$fstab_options"
+    printf 'UUID=%s %s %s %s 0 2\n' \
+        "$uuid" "$SABLE_BUILD_ROOT" "$fstype" "$fstab_options"
     printf '%s %s none bind,x-systemd.requires-mounts-for=%s 0 0\n' \
         "$SABLE_BUILD_ROOT" \
         "$SABLE_BUILD_LEGACY_ROOT" \
