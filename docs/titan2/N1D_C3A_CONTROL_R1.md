@@ -6,7 +6,7 @@ Date: 2026-10-01
 
 ## Purpose
 
-C3A answers one question: can Sable reproduce the exact public Android 16
+C3A answers one question: can Sable reproduce the public functional Android 16
 RestlessOS/TrebleDroid build topology that previously built successfully?
 
 C3A is not the SableOS product baseline.
@@ -36,6 +36,12 @@ sealed GrapheneOS 2026061600 base (1,033 projects)
 ```
 
 The private Restless vendor repository is excluded. Pixel GSans is also
+excluded because the release manifest used a mutable source revision and the
+content is optional font/branding data.
+
+C3A is therefore a **public functional reproduction**, not a bit-identical
+Restless source tree. The 54 removed Graphene working trees are archived
+reversibly under `/srv/sable-build/artifacts/titan2/n1d-c3a-retired-graphene/`. Pixel GSans is also
 excluded because the release did not provide an immutable source pin for that
 non-functional branding/font input. C3A is therefore classified as:
 
@@ -118,7 +124,7 @@ C3A evidence:
 
 ## Exit criterion
 
-C3A is complete when the pinned control recipe produces and seals a
-`treble_arm64_bvN-bp4a-user` `system.img`.
+C3A is complete when the pinned 991-project public functional graph and control
+recipe produce and seal a `treble_arm64_bvN-bp4a-user` `system.img`.
 
 That result becomes comparison evidence for C3B. It does not authorize a flash.
