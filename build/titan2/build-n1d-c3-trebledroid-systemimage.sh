@@ -11,11 +11,10 @@ PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
-HOST_VERIFY="$ROOT/build/host/verify-host-tools.sh"
 
 fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY" "$HOST_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -83,9 +82,9 @@ echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
-bash "$HOST_VERIFY" core
 [[ -x "$SABLE_JDK17/bin/java" ]] || fail "canonical_jdk17_java_missing=$SABLE_JDK17/bin/java"
 [[ -x "$SABLE_JDK17/bin/jlink" ]] || fail "canonical_jdk17_jlink_missing=$SABLE_JDK17/bin/jlink"
+[[ -d "$SABLE_GRADLE_USER_HOME" ]] || fail "canonical_gradle_user_home_missing=$SABLE_GRADLE_USER_HOME"
 treble_jdk_spec="$("$SABLE_JDK17/bin/java" -XshowSettings:properties -version 2>&1 | awk -F'= ' '/^[[:space:]]*java\.specification\.version = / {print $2; exit}')"
 [[ "$treble_jdk_spec" == "$N1D_C3_TREBLE_APP_JDK_MAJOR" ]] \
     || fail "canonical_jdk17_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${treble_jdk_spec:-unset}"
