@@ -1,0 +1,22 @@
+diff --git a/dexpreopt/dexpreopt_gen/dexpreopt_gen.go b/dexpreopt/dexpreopt_gen/dexpreopt_gen.go
+--- a/dexpreopt/dexpreopt_gen/dexpreopt_gen.go
++++ b/dexpreopt/dexpreopt_gen/dexpreopt_gen.go
+@@ -187,8 +187,18 @@ func writeScripts(ctx android.BuilderContext, globalSoong *dexpreopt.GlobalSoong
+ 		}
+ 	}
++
++	productPackagesRel, err := filepath.Rel(ctx.Config().OutDir(), productPackagesPath)
++	if err != nil {
++		panic(fmt.Errorf("failed to make product_packages path relative to out_dir: %w", err))
++	}
++	if productPackagesRel == ".." || strings.HasPrefix(productPackagesRel, ".."+string(filepath.Separator)) {
++		panic(fmt.Errorf("product_packages path %q is outside out_dir %q",
++			productPackagesPath, ctx.Config().OutDir()))
++	}
++	productPackages := android.PathForOutput(ctx, productPackagesRel)
+ 	dexpreoptRule, err := dexpreopt.GenerateDexpreoptRule(
+-		ctx, globalSoong, global, module, android.PathForTesting(productPackagesPath))
++		ctx, globalSoong, global, module, productPackages)
+ 	if err != nil {
+ 		panic(err)
+ 	}
