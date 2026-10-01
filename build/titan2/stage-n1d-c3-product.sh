@@ -90,6 +90,7 @@ capture_dirty() {
 }
 
 verify_base_exact() {
+    local out_policy="${1:-require-no-c3-out}"
     [[ -d "$ANDROID_ROOT/.repo/manifests/.git" ]] || fail manifest_checkout_missing
     local manifest_head tmp count dirty
     manifest_head="$(git -C "$ANDROID_ROOT/.repo/manifests" rev-parse HEAD)"
@@ -101,9 +102,19 @@ verify_base_exact() {
     for path in device/phh/treble packages/apps/QcRilAm prebuilts/vndk/v28 prebuilts/vndk/v29 prebuilts/vndk/v30 treble_app vendor/apn vendor/hardware_overlay vendor/interfaces vendor/lptools vendor/magisk vendor/pixel/gsans vendor/vndk-tests; do
         [[ ! -e "$ANDROID_ROOT/$path" ]] || fail "retired_c2_path_present=$path"
     done
-    for path in "$OUT_C2" "$OUT_C3" "$ANDROID_ROOT/out"; do
+    for path in "$OUT_C2" "$ANDROID_ROOT/out"; do
         [[ ! -e "$path" ]] || fail "preexisting_out=$path"
     done
+    case "$out_policy" in
+        require-no-c3-out)
+            [[ ! -e "$OUT_C3" ]] || fail "preexisting_out=$OUT_C3"
+            ;;
+        allow-c3-out)
+            ;;
+        *)
+            fail "unknown_out_policy=$out_policy"
+            ;;
+    esac
     tmp="$(mktemp -d)"
     capture_heads "$tmp/current.tsv"
     capture_dirty "$tmp/dirty.tsv"
@@ -146,6 +157,23 @@ verify_staged_bundle() {
         cmp -s "$SOURCE_BUNDLE/$name" "$STAGE_TARGET/$name" || fail "staged_file_mismatch=$name"
     done
     echo "N1D_C3_STAGED_BUNDLE=PASS"
+}
+
+verify_refresh_prestate() {
+    [[ -d "$STAGE_TARGET" ]] || fail "refresh_stage_target_missing=$STAGE_TARGET"
+    local count name current_sha
+    count="$(find "$STAGE_TARGET" -maxdepth 1 -type f | wc -l | tr -d " ")"
+    [[ "$count" == "$N1D_C3_REQUIRED_STAGE_FILE_COUNT" ]]         || fail "refresh_staged_file_count expected=$N1D_C3_REQUIRED_STAGE_FILE_COUNT actual=$count"
+
+    for name in AndroidProducts.mk treble_compat.mk sable_n1d_product_delta.mk restless-patch-allowlist.txt; do
+        cmp -s "$SOURCE_BUNDLE/$name" "$STAGE_TARGET/$name"             || fail "refresh_unexpected_existing_file_drift=$name"
+    done
+
+    current_sha="$(sha256sum "$STAGE_TARGET/sable_titan2_n1d_arm64.mk" | awk '{print $1}')"
+    [[ "$current_sha" == "$N1D_C3_PREVIOUS_PRODUCT_MK_SHA256" ]]         || fail "refresh_product_prestate expected=$N1D_C3_PREVIOUS_PRODUCT_MK_SHA256 actual=$current_sha"
+
+    echo "N1D_C3_PRODUCT_REFRESH_PRESTATE=PASS"
+    echo "N1D_C3_PRODUCT_REFRESH_FILE_COUNT=PASS value=$N1D_C3_REFRESH_FILE_COUNT"
 }
 
 preflight() {
@@ -201,6 +229,60 @@ stage() {
     echo "EVIDENCE_DIR=$out"
 }
 
+refresh() {
+    echo "===== TITAN 2 N1D C3 PRODUCT COMPOSITION REFRESH ====="
+    [[ "$SOURCE_MUTATION_AUTHORIZED" == YES ]] || fail refresh_requires_--authorize-source-mutation
+    echo "SOURCE_MUTATION_AUTHORIZED=YES_EXACT_C3_PRODUCT_REFRESH_ONLY"
+    assert_no_build_device_flash
+    bash "$STORAGE_VERIFY" runtime
+    bash "$SOURCE_GATE"
+    verify_base_seal
+    verify_control_artifact
+    verify_base_exact allow-c3-out
+    verify_source_bundle
+    verify_refresh_prestate
+
+    local stamp out previous_sha
+    stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+    out="$EVIDENCE_ROOT/$stamp-c3-product-stage"
+    mkdir -p "$out"
+
+    cp -a "$STAGE_TARGET/sable_titan2_n1d_arm64.mk"         "$out/previous-sable_titan2_n1d_arm64.mk"
+    previous_sha="$(sha256sum "$out/previous-sable_titan2_n1d_arm64.mk" | awk '{print $1}')"
+    [[ "$previous_sha" == "$N1D_C3_PREVIOUS_PRODUCT_MK_SHA256" ]]         || fail "refresh_evidence_prestate_hash=$previous_sha"
+
+    cp -a "$SOURCE_BUNDLE/sable_titan2_n1d_arm64.mk"         "$STAGE_TARGET/sable_titan2_n1d_arm64.mk"
+
+    verify_staged_bundle
+    verify_base_exact allow-c3-out
+
+    cp -a "$SOURCE_BUNDLE/." "$out/"
+    {
+        echo "N1D_C3_PRODUCT_STAGE_MODE=REFRESH"
+        echo "N1D_C3_PRODUCT_NAME=$N1D_C3_PRODUCT_NAME"
+        echo "N1D_C3_PRODUCT_DEVICE=$N1D_C3_PRODUCT_DEVICE"
+        echo "N1D_C3_BUILDING_GSI_VALUE=$N1D_C3_BUILDING_GSI_VALUE"
+        echo "N1D_C3_REFRESH_FILE_COUNT=$N1D_C3_REFRESH_FILE_COUNT"
+        echo "N1D_C3_PREVIOUS_PRODUCT_MK_SHA256=$N1D_C3_PREVIOUS_PRODUCT_MK_SHA256"
+        echo "N1D_C3_STAGE_TARGET=$STAGE_TARGET"
+        echo "N1D_C3_BASE_SEAL_SHA256=$N1D_C3_BASE_SEAL_SHA256"
+        echo "N1D_C2_CONTROL_ASSET_SHA256=$N1D_C2_CONTROL_ASSET_SHA256"
+        echo "BUILD_AUTHORIZED=NO"
+        echo "DEVICE_CONTACT_AUTHORIZED=NO"
+        echo "FLASH_AUTHORIZED=NO"
+        echo "SIGNING_AUTHORIZED=NO"
+    } > "$out/stage-state.env"
+    (
+        cd "$out"
+        find . -type f ! -name SHA256SUMS.txt -print0             | LC_ALL=C sort -z             | xargs -0 sha256sum > SHA256SUMS.txt
+        sha256sum -c SHA256SUMS.txt >/dev/null
+    )
+
+    echo "N1D_C3_PRODUCT_REFRESH=PASS"
+    echo "N1D_C3_PRODUCT_STAGE=PASS"
+    echo "EVIDENCE_DIR=$out"
+}
+
 verify() {
     echo "===== TITAN 2 N1D C3 PRODUCT COMPOSITION VERIFY ====="
     echo "SOURCE_MUTATION_AUTHORIZED=NO"
@@ -209,7 +291,7 @@ verify() {
     bash "$SOURCE_GATE"
     verify_base_seal
     verify_control_artifact
-    verify_base_exact
+    verify_base_exact allow-c3-out
     verify_source_bundle
     verify_staged_bundle
     echo "N1D_C3_PRODUCT_COMPOSITION_VERIFY=PASS"
@@ -218,6 +300,7 @@ verify() {
 case "$ACTION" in
     preflight) preflight ;;
     stage) stage ;;
+    refresh) refresh ;;
     verify) verify ;;
     *) fail "unknown_action=$ACTION" ;;
 esac
