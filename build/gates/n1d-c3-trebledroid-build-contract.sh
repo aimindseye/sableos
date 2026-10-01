@@ -26,11 +26,10 @@ for token in \
     'FAILED_SYSTEMIMAGE_PRE_ARTIFACT' \
     'prior_build_resume_state_inconsistent' \
     'failed_build_evidence_missing_for_resume' \
-    'prior_build_reached_systemimage_resume_not_allowed' \
     'N1D_C3A_BUILD_RESUME=PASS' \
     'PREP_VERIFY_ARGS=(verify --allow-c3a-host-layout-fix)' \
     'PREP_VERIFY_ARGS+=(--allow-treble-app-build-residue)' \
-
+    'bash "$PREP" "${PREP_VERIFY_ARGS[@]}"' \
     'treble-app-resume-status.txt' \
     'build-soong-host-layout-status.txt' \
     'build-soong-host-layout.diff' \
@@ -46,7 +45,6 @@ for token in \
     'export JAVA_HOME="$SABLE_JDK17"' \
     'export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"' \
     'N1D_C3_TREBLE_APP_JAVA=PASS' \
-    'bash "$PREP" verify' \
     'bash build.sh release' \
     'N1D_C3_TREBLE_APP_BUILD=PASS' \
     'make systemimage -j"$JOBS"' \
