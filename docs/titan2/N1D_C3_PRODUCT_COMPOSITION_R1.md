@@ -1,6 +1,6 @@
 # Titan 2 N1D C3 product composition R1
 
-Status: **rebaselined on pinned TrebleDroid-generated control product**
+Status: **C3A active control; C3B Sable baseline held**
 
 Date: 2026-10-01
 
@@ -13,7 +13,7 @@ Live compilation proved that the handcrafted
 `aosp_system_image` dependency graph incompatible with the pinned GrapheneOS
 source set.
 
-C3 now follows the known-successful Restless/TrebleDroid topology:
+C3A follows the known-successful Restless/TrebleDroid topology:
 
 ```text
 GrapheneOS 2026061600
@@ -45,11 +45,11 @@ The private Restless vendor repository is not admitted.
 
 Two patch concepts are deliberately separate.
 
-The **control patch stack** reproduces the successful Restless release build:
+The **C3A control patch stack** reproduces the successful Restless release build:
 five ordered tiers and 369 patches. It is allowed only for the non-release
 compatibility control.
 
-The **Sable release runtime patch allowlist** starts empty. Nothing in the
+The **C3B Sable runtime patch allowlist** starts empty. Nothing in the
 control stack becomes accepted Sable runtime policy simply because the control
 image builds.
 
@@ -123,14 +123,14 @@ The network authorization is limited by contract to the pinned TrebleApp Gradle 
 The first compile uses a fresh output directory:
 
 ```text
-/srv/sable-build/workspaces/titan2-n1d/out-c3-td
+/srv/sable-build/workspaces/titan2-n1d/out-c3a-td
 ```
 
 and authorizes only the TrebleApp release prebuild plus `systemimage`. Restless's subsequent `target-files-package`, `otatools`, signing and release packaging are intentionally deferred until this control compile succeeds.
 
 ## Release status
 
-This phase proves reproducible build topology and compatibility, not release
+C3A proves reproducible build topology and compatibility, not release
 security.
 
 ```text
@@ -139,3 +139,17 @@ N1D_C3_RUNTIME_SECURITY_AUDIT_REQUIRED=YES
 ```
 
 No device contact or flash is authorized.
+
+
+## C3B peeling boundary
+
+C3B does not inherit the C3A 369-patch stack. It starts from the pinned
+Graphene/Treble scaffold with an empty runtime allowlist. A C3A patch or patch
+pair may enter C3B only after a reproduced C3B failure identifies the need and
+the security/runtime impact is reviewed.
+
+```text
+N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO
+N1D_C3B_RUNTIME_PATCH_ALLOWLIST_INITIAL_COUNT=0
+N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE
+```
