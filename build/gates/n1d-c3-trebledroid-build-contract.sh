@@ -21,11 +21,19 @@ for token in \
     'compile_requires_--authorize-c3-compile' \
     'build_requires_--authorize-network_for_treble_app' \
     'out_already_exists_requires_--resume-failed-c3-build' \
+    'host_layout_fix_requires_--authorize-host-layout-source-mutation' \
+    'N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT' \
+    'FAILED_SYSTEMIMAGE_PRE_ARTIFACT' \
+    'prior_build_resume_state_inconsistent' \
     'failed_build_evidence_missing_for_resume' \
     'prior_build_reached_systemimage_resume_not_allowed' \
     'N1D_C3A_BUILD_RESUME=PASS' \
-    'bash "$PREP" verify --allow-treble-app-build-residue' \
+    'PREP_VERIFY_ARGS=(verify --allow-c3a-host-layout-fix)' \
+    'PREP_VERIFY_ARGS+=(--allow-treble-app-build-residue)' \
+
     'treble-app-resume-status.txt' \
+    'build-soong-host-layout-status.txt' \
+    'build-soong-host-layout.diff' \
     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY' \
     'NETWORK_FETCH_AUTHORIZED=YES_TREBLE_APP_GRADLE_ONLY' \
     'TARGET_FILES_BUILD_AUTHORIZED=NO' \
@@ -60,7 +68,10 @@ for token in \
     'N1D_C3_TREBLE_APP_JDK_MAJOR=17' \
     'N1D_C3_TREBLE_APP_JDK_SOURCE=SABLE_JDK17' \
     'N1D_C3_TREBLE_APP_BUILD_RESIDUE_POLICY=SDK_METADATA_AND_LICENSES_ONLY' \
-    'N1D_C3_TREBLE_APP_KNOWN_PACKAGES_BASE_BLOB=7b27183be84845e00318dbbd3aeb60b5d291216b'
+    'N1D_C3_TREBLE_APP_KNOWN_PACKAGES_BASE_BLOB=7b27183be84845e00318dbbd3aeb60b5d291216b' \
+    'N1D_C3A_HOST_LAYOUT_PATCH_COUNT=1' \
+    'N1D_C3A_HOST_LAYOUT_PATCH_ROLE=BUILD_ENVIRONMENT_COMPATIBILITY_ONLY' \
+    'N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA=ce55b543e3e5ff49a9a6921ba752f6aa39d53997'
 do
     grep -Fxq "$token" "$PROFILE" || fail "profile_missing=$token"
 done
