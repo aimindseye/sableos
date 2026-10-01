@@ -111,10 +111,11 @@ PHH OTA release allowed: NO
 
 ## Public-source boundary
 
-The C3A control is a public functional reproduction, not a bit-identical Restless release. The rebaseline uses only public source. The Restless private vendor repository
-is deliberately omitted. The optional Pixel GSans include remains unresolved
-because the source is absent and is not required to generate the control
-product.
+The C3A control is a public functional reproduction, not a bit-identical Restless release. C3A uses only pinned public functional source. The Restless private vendor
+repository is deliberately omitted. Pixel GSans is also omitted because the
+release manifest used a mutable revision and the content is optional
+font/branding data. These omissions are why C3A is labeled
+`PUBLIC_FUNCTIONAL_REPRODUCTION` rather than bit-identical Restless.
 
 All Treble companion projects are pinned by exact commit rather than mutable
 branch names.
