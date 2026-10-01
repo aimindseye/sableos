@@ -1,8 +1,12 @@
-# SableOS N1D configuration inherited by the pinned TrebleDroid generator.
-#
-# Keep this file intentionally minimal. device/phh/treble/base.mk is treated as
-# a compatibility substrate for compile/boot discovery, not as Sable runtime
-# policy. Runtime patch admission remains separate and deny-by-default.
+# ROM configuration for RestlessOS builds
+# this file is copied to device/phh/treble/rom.mk during the build process
 
-# Matches the known-good Restless build's image-size optimization.
+# ensure product fonts directory exists for third-party font modules
+$(shell mkdir -p $(PRODUCT_OUT)/system/product/fonts)
+
+# google pixel gsans fonts (issue #63)
+$(call inherit-product-if-exists, vendor/pixel/gsans/common/common-vendor.mk)
+
+# restrict dexpreopt to boot classpath + system server only
+# saves ~150-200MB from system image (issue #76)
 WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY := true
