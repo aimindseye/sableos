@@ -1,5 +1,7 @@
 # R9 SableStart launcher design expansion
 
+> **Historical HOME-ownership note (2026-10-01):** this record predates the final R9L8 cutover. Current HOME runtime is Launcher3/Launcher3QuickStep hosting Sable Start presentation/state source. Do not use standalone-SableLauncher statements here as current Titan 2/C3B architecture. See `CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md` and `../src/android/packages/apps/SableStart/PORTABILITY_STATUS.md`.
+
 Status: **approved design scope / Mac gate waived for R9 / physical Panther is final visual authority**
 
 Date: 2026-09-20
