@@ -47,9 +47,9 @@ pass c0_discovery_contract
 CONTRACT="$ROOT/build/titan2/n1d-product-contract.env"
 [[ -f "$CONTRACT" ]] || fail n1d_product_contract_missing
 for required in \
-  'N1D_PRODUCT_CONTRACT_VERSION=4' \
+  'N1D_PRODUCT_CONTRACT_VERSION=5' \
   'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED' \
-  'N1D_RESTLESS_ROLE=C2_CONTROL_AND_PINNED_C3_BUILD_RECIPE_REFERENCE' \
+  'N1D_RESTLESS_ROLE=C2_CONTROL_C3A_REPRODUCTION_REFERENCE_C3B_PATCH_SOURCE_ONLY' \
   'N1D_C3_PRODUCT_GENERATION_MODE=PINNED_TREBLEDROID_GENERATOR' \
   'N1D_PRODUCT_NAME=treble_arm64_bvN' \
   'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
@@ -65,6 +65,13 @@ for required in \
   'N1D_C3_FIRST_BUILD_GOAL=systemimage' \
   'N1D_C3_RELEASE_ELIGIBLE=NO' \
   'N1D_C3_RUNTIME_SECURITY_AUDIT_REQUIRED=YES' \
+  'N1D_C3A_ROLE=RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL' \
+  'N1D_C3A_RELEASE_ELIGIBLE=NO' \
+  'N1D_C3B_ROLE=SABLE_MINIMAL_BASELINE' \
+  'N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO' \
+  'N1D_C3B_AOSP_PHONE_STACK=SOURCE_BUILT' \
+  'N1D_C3B_STOCK_TELEPHONY_APK_IMPORT_ALLOWED=NO' \
+  'N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE' \
   'N1D_PRODUCT_CONTRACT=PASS'; do
   grep -Fxq "$required" "$CONTRACT" || fail "n1d_product_contract token=$required"
 done
@@ -77,7 +84,7 @@ for forbidden in \
     fail "n1d_product_contract stale_token=$forbidden"
   fi
 done
-pass n1d_product_contract_v4_trebledroid
+pass n1d_product_contract_v5_c3a_c3b
 
 grep -Fq 'build/config/host-tools.env' "$DRIVER" || fail canonical_host_tool_profile
 grep -Fq 'SABLE_LPDUMP' "$DRIVER" || fail canonical_lpdump
