@@ -39,6 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--remote-prefix", default="")
     parser.add_argument("--project-tsv", type=Path)
+    parser.add_argument("--preserve-upstream", action="store_true")
     return parser.parse_args()
 
 
@@ -148,9 +149,10 @@ def main() -> int:
                 "revision",
                 "groups",
                 "clone-depth",
-                "upstream",
             }
         }
+        if args.preserve_upstream and project.attrib.get("upstream", ""):
+            attrs["upstream"] = project.attrib["upstream"]
         attrs["revision"] = project.attrib["revision"]
         attrs["remote"] = f"{args.remote_prefix}{remote_name}"
         ET.SubElement(out_root, "project", attrs)
@@ -181,7 +183,11 @@ def main() -> int:
             key=lambda item: item[0].attrib.get("path", ""),
         ):
             path = project.attrib.get("path") or project.attrib["name"]
-            upstream = project.attrib.get("upstream", "")
+            upstream = (
+                project.attrib.get("upstream", "")
+                if args.preserve_upstream
+                else ""
+            )
             rows.append(
                 f"{path}\t{project.attrib['revision']}\t"
                 f"{args.remote_prefix}{remote_name}\t{upstream}"
@@ -198,7 +204,7 @@ def main() -> int:
     upstream_count = sum(
         1
         for project, _remote_name in selected
-        if project.attrib.get("upstream", "")
+        if args.preserve_upstream and project.attrib.get("upstream", "")
     )
     print("N1D_C2_MUTABLE_REVISIONS=ABSENT")
     print(f"N1D_C2_UPSTREAM_LOCATOR_COUNT={upstream_count}")
