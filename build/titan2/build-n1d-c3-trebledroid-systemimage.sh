@@ -12,10 +12,11 @@ PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 HOST_LAYOUT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci-tests-skip-out-of-tree-host-paths.patch"
+DEXPREOPT_OUTDIR_PATCH="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch"
 
 fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY" "$HOST_LAYOUT_PATCH"; do
+for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY" "$HOST_LAYOUT_PATCH" "$DEXPREOPT_OUTDIR_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -95,41 +96,117 @@ treble_jdk_spec="$("$SABLE_JDK17/bin/java" -XshowSettings:properties -version 2>
     || fail "canonical_jdk17_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${treble_jdk_spec:-unset}"
 echo "N1D_C3_TREBLE_APP_JDK=PASS source=$N1D_C3_TREBLE_APP_JDK_SOURCE major=$treble_jdk_spec home=$SABLE_JDK17"
 
-apply_host_layout_fix() {
-    local target="$N1D_C3A_HOST_LAYOUT_TARGET_FILE"
+check_host_layout_patch_state() {
+    local target="$1"
+    local patch="$2"
+    local expected_base_blob="$3"
+    local expected_post_blob="$4"
+    local expected_patch_blob="$5"
+    local label="$6"
     local base_blob
+    local current_blob
     local patch_blob
 
-    patch_blob="$(git hash-object "$HOST_LAYOUT_PATCH")"
-    [[ "$patch_blob" == "$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA" ]] \
-        || fail "host_layout_patch_blob expected=$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA actual=$patch_blob"
+    base_blob="$(git -C "$BUILD_SOONG_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$expected_base_blob" ]] \
+        || fail "${label}_base_blob expected=$expected_base_blob actual=$base_blob"
 
-    if git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$HOST_LAYOUT_PATCH" >/dev/null 2>&1; then
-        echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_ALREADY_PRESENT"
+    patch_blob="$(git hash-object "$patch")"
+    [[ "$patch_blob" == "$expected_patch_blob" ]] \
+        || fail "${label}_patch_blob expected=$expected_patch_blob actual=$patch_blob"
+
+    current_blob="$(git hash-object "$BUILD_SOONG_ROOT/$target")"
+    if [[ "$current_blob" == "$expected_post_blob" ]]; then
+        git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$patch" \
+            || fail "${label}_post_blob_reverse_check"
+        echo "N1D_C3A_HOST_LAYOUT_PATCH_STATE=PASS_PRESENT label=$label file=$target"
         return 0
     fi
+    if [[ "$current_blob" == "$expected_base_blob" ]]; then
+        return 1
+    fi
 
-    [[ "$HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED" == YES ]] \
-        || fail host_layout_fix_requires_--authorize-host-layout-source-mutation
+    fail "${label}_unexpected_blob expected_base=$expected_base_blob expected_post=$expected_post_blob actual=$current_blob"
+}
 
-    [[ -z "$(git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all)" ]] \
-        || {
-            git -C "$BUILD_SOONG_ROOT" status --short
-            fail build_soong_dirty_before_host_layout_fix
+apply_host_layout_fixes() {
+    local status_file
+    local status_count
+
+    if ! check_host_layout_patch_state \
+        "$N1D_C3A_HOST_LAYOUT_TARGET_FILE" \
+        "$HOST_LAYOUT_PATCH" \
+        "$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB" \
+        "$N1D_C3A_HOST_LAYOUT_TARGET_POST_BLOB" \
+        "$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA" \
+        ci_tests_outdir
+    then
+        [[ "$HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED" == YES ]] \
+            || fail host_layout_fix_requires_--authorize-host-layout-source-mutation
+        [[ -z "$(git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all)" ]] \
+            || {
+                git -C "$BUILD_SOONG_ROOT" status --short
+                fail build_soong_dirty_before_primary_host_layout_fix
+            }
+        git -C "$BUILD_SOONG_ROOT" apply --check "$HOST_LAYOUT_PATCH" \
+            || fail primary_host_layout_fix_apply_check
+        git -C "$BUILD_SOONG_ROOT" apply "$HOST_LAYOUT_PATCH" \
+            || fail primary_host_layout_fix_apply
+        check_host_layout_patch_state \
+            "$N1D_C3A_HOST_LAYOUT_TARGET_FILE" \
+            "$HOST_LAYOUT_PATCH" \
+            "$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB" \
+            "$N1D_C3A_HOST_LAYOUT_TARGET_POST_BLOB" \
+            "$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA" \
+            ci_tests_outdir
+        echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT patch=1"
+    else
+        echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_ALREADY_PRESENT patch=1"
+    fi
+
+    if ! check_host_layout_patch_state \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_FILE" \
+        "$DEXPREOPT_OUTDIR_PATCH" \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_BASE_BLOB" \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_POST_BLOB" \
+        "$N1D_C3A_DEXPREOPT_OUTDIR_PATCH_BLOB_SHA" \
+        dexpreopt_product_packages_outdir
+    then
+        [[ "$HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED" == YES ]] \
+            || fail host_layout_fix_requires_--authorize-host-layout-source-mutation
+
+        status_file="$(mktemp)"
+        git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all > "$status_file"
+        status_count="$(grep -cve '^$' "$status_file" || true)"
+        [[ "$status_count" == 1 ]] || {
+            cat "$status_file"
+            rm -f "$status_file"
+            fail "build_soong_dirty_before_dexpreopt_fix expected=1 actual=$status_count"
         }
+        grep -Fxq " M $N1D_C3A_HOST_LAYOUT_TARGET_FILE" "$status_file" || {
+            cat "$status_file"
+            rm -f "$status_file"
+            fail build_soong_primary_fix_missing_before_dexpreopt_fix
+        }
+        rm -f "$status_file"
 
-    base_blob="$(git -C "$BUILD_SOONG_ROOT" rev-parse "HEAD:$target")"
-    [[ "$base_blob" == "$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB" ]] \
-        || fail "host_layout_fix_base_blob expected=$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB actual=$base_blob"
+        git -C "$BUILD_SOONG_ROOT" apply --check "$DEXPREOPT_OUTDIR_PATCH" \
+            || fail dexpreopt_outdir_fix_apply_check
+        git -C "$BUILD_SOONG_ROOT" apply "$DEXPREOPT_OUTDIR_PATCH" \
+            || fail dexpreopt_outdir_fix_apply
+        check_host_layout_patch_state \
+            "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_FILE" \
+            "$DEXPREOPT_OUTDIR_PATCH" \
+            "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_BASE_BLOB" \
+            "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_POST_BLOB" \
+            "$N1D_C3A_DEXPREOPT_OUTDIR_PATCH_BLOB_SHA" \
+            dexpreopt_product_packages_outdir
+        echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT patch=2"
+    else
+        echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_ALREADY_PRESENT patch=2"
+    fi
 
-    git -C "$BUILD_SOONG_ROOT" apply --check "$HOST_LAYOUT_PATCH" \
-        || fail host_layout_fix_apply_check
-    git -C "$BUILD_SOONG_ROOT" apply "$HOST_LAYOUT_PATCH" \
-        || fail host_layout_fix_apply
-    git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$HOST_LAYOUT_PATCH" \
-        || fail host_layout_fix_post_apply_reverse_check
-
-    echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT"
+    echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_COMPLETE patches=$N1D_C3A_HOST_LAYOUT_PATCH_COUNT"
 }
 
 BUILD_RESUME_MODE=FRESH
@@ -173,7 +250,7 @@ else
     echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE"
 fi
 
-apply_host_layout_fix
+apply_host_layout_fixes
 
 PREP_VERIFY_ARGS=(verify --allow-c3a-host-layout-fix)
 if [[ -n "$(git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all)" ]]; then
@@ -197,7 +274,9 @@ EVIDENCE_DIR="$BUILD_EVIDENCE_ROOT/$stamp-trebledroid-systemimage"
 mkdir -p "$EVIDENCE_DIR"
 git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all \
     > "$EVIDENCE_DIR/build-soong-host-layout-status.txt"
-git -C "$BUILD_SOONG_ROOT" diff -- "$N1D_C3A_HOST_LAYOUT_TARGET_FILE" \
+git -C "$BUILD_SOONG_ROOT" diff -- \
+    "$N1D_C3A_HOST_LAYOUT_TARGET_FILE" \
+    "$N1D_C3A_DEXPREOPT_OUTDIR_TARGET_FILE" \
     > "$EVIDENCE_DIR/build-soong-host-layout.diff"
 if [[ -n "$(git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all)" ]]; then
     git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all \
@@ -288,6 +367,7 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3_TREBLE_APP_JAVA_HOME=$(cat "$EVIDENCE_DIR/treble-app-java-home.txt")"
     echo "N1D_C3A_BUILD_RESUME_MODE=$BUILD_RESUME_MODE"
     echo "N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA=$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA"
+    echo "N1D_C3A_DEXPREOPT_OUTDIR_PATCH_BLOB_SHA=$N1D_C3A_DEXPREOPT_OUTDIR_PATCH_BLOB_SHA"
     echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
     echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
     echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
