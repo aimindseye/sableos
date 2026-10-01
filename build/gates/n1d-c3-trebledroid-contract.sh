@@ -121,10 +121,11 @@ map_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$REMOVE_MAP")"
 
 add_blob="$(git hash-object "$ADD_MANIFEST")"
 remove_blob="$(git hash-object "$REMOVE_MANIFEST")"
-[[ "$add_blob" == "654f0dcc8f7a46a1cc7aaa49efafdc2dc5402a1b" ]] \
-    || fail "add_manifest_blob=$add_blob"
-[[ "$remove_blob" == "0bbfce1b7693e755629504fbea876ee073f2c544" ]] \
-    || fail "remove_manifest_blob=$remove_blob"
+rom_blob="$(git hash-object "$ROM")"
+
+require_line "$PROFILE" "N1D_C3A_ADD_MANIFEST_BLOB_SHA=$add_blob"
+require_line "$PROFILE" "N1D_C3A_RESTLESS_REMOVE_MANIFEST_BLOB_SHA=$remove_blob"
+require_line "$PROFILE" "N1D_C3A_CONTROL_ROM_BLOB_SHA=$rom_blob"
 
 tmp="$(mktemp -d)"
 trap 'rm -f "$tmp/remove-manifest-names.txt" "$tmp/remove-map-names.txt"; rmdir "$tmp" 2>/dev/null || true' EXIT
@@ -202,7 +203,7 @@ if grep -Fq 'sable_titan2_n1d_arm64' "$PROFILE" "$PRODUCT" "$DRIVER"; then
     fail retired_handcrafted_product_reintroduced
 fi
 
-echo "N1D_C3A_MANIFEST_BLOBS=PASS_EXACT"
+echo "N1D_C3A_INPUT_BLOBS=PASS_EXACT add=$add_blob remove=$remove_blob rom=$rom_blob"
 echo "N1D_C3A_REMOVE_MANIFEST_MAP=PASS_EXACT_NAMES count=54"
 echo "N1D_C3A_SOURCE_GRAPH=PASS add=12 remove=54 managed=991"
 echo "N1D_C3A_CONTROL_FIDELITY=PASS_PUBLIC_FUNCTIONAL_REPRODUCTION"
