@@ -5,14 +5,16 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 LOCK="$ROOT/build/titan2/n1d-source-lock.env"
 PRODUCT="$ROOT/build/titan2/n1d-product-contract.env"
 PROFILE="$ROOT/build/titan2/n1d-c3-trebledroid.env"
-MANIFEST="$ROOT/build/titan2/n1d-c3-trebledroid-manifest.xml"
+ADD_MANIFEST="$ROOT/build/titan2/n1d-c3a-trebledroid-add.xml"
+REMOVE_MANIFEST="$ROOT/build/titan2/n1d-c3a-trebledroid-remove.xml"
+REMOVE_MAP="$ROOT/build/titan2/n1d-c3a-remove-projects.tsv"
 
 fail() {
     echo "N1D_SOURCE_LOCK_CONTRACT=FAIL $*" >&2
     exit 1
 }
 
-for f in "$LOCK" "$PRODUCT" "$PROFILE" "$MANIFEST"; do
+for f in "$LOCK" "$PRODUCT" "$PROFILE" "$ADD_MANIFEST" "$REMOVE_MANIFEST" "$REMOVE_MAP"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 bash -n "$LOCK" "$PRODUCT" "$PROFILE"
@@ -34,19 +36,26 @@ if grep -Eq 'android-17|2026061800|202609[0-9]{4}' "$LOCK"; then
     fail android17_source_reference_present
 fi
 
-for required in     'N1D_PRODUCT_CONTRACT_VERSION=5'     'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED'     'N1D_RESTLESS_ROLE=C2_CONTROL_C3A_REPRODUCTION_REFERENCE_C3B_PATCH_SOURCE_ONLY'     'N1D_C3_PRODUCT_GENERATION_MODE=PINNED_TREBLEDROID_GENERATOR'     'N1D_PRODUCT_NAME=treble_arm64_bvN'     'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh'     'N1D_C3_SCAFFOLD_MANIFEST=build/titan2/n1d-c3-trebledroid-manifest.xml'     'N1D_CONTROL_PATCH_COUNT=369'     'N1D_RUNTIME_PATCH_ALLOWLIST_COUNT=0'     'N1D_C3_RELEASE_ELIGIBLE=NO'     'N1D_C3_ACTIVE_PHASE=C3A_CONTROL'     'N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO'     'N1D_PRODUCT_CONTRACT=PASS'
+for required in     'N1D_PRODUCT_CONTRACT_VERSION=5'     'N1D_SOURCE_SUBSTRATE=GRAPHENEOS_A16_PINNED'     'N1D_RESTLESS_ROLE=C2_CONTROL_C3A_REPRODUCTION_REFERENCE_C3B_PATCH_SOURCE_ONLY'     'N1D_C3_PRODUCT_GENERATION_MODE=PINNED_TREBLEDROID_GENERATOR'     'N1D_PRODUCT_NAME=treble_arm64_bvN'     'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh'     'N1D_C3A_ADD_MANIFEST=build/titan2/n1d-c3a-trebledroid-add.xml'     'N1D_C3A_REMOVE_MANIFEST=build/titan2/n1d-c3a-trebledroid-remove.xml'     'N1D_C3A_REMOVE_PROJECT_MAP=build/titan2/n1d-c3a-remove-projects.tsv'     'N1D_CONTROL_PATCH_COUNT=369'     'N1D_RUNTIME_PATCH_ALLOWLIST_COUNT=0'     'N1D_C3_RELEASE_ELIGIBLE=NO'     'N1D_C3_ACTIVE_PHASE=C3A_CONTROL'     'N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO'     'N1D_PRODUCT_CONTRACT=PASS'
 do
     require_line "$PRODUCT" "$required"
 done
 
-for required in     'N1D_C3_GRAPHENEOS_TAG=2026061600'     'N1D_C3_GRAPHENEOS_BUILD_COMMIT=e1c27e0172987898adfcf8416186baf28c693842'     'N1D_C3_RESTLESS_TAG=16.0.0-202606230923'     'N1D_C3_RESTLESS_COMMIT=4adc5766f457849ca37e0b318bced65aef5a2233'     'N1D_C3_SCAFFOLD_PROJECT_COUNT=12'     'N1D_C3_CONTROL_PATCH_COUNT=369'     'N1D_C3_PRIVATE_VENDOR_ALLOWED=NO'
+for required in     'N1D_C3_GRAPHENEOS_TAG=2026061600'     'N1D_C3_GRAPHENEOS_BUILD_COMMIT=e1c27e0172987898adfcf8416186baf28c693842'     'N1D_C3_RESTLESS_TAG=16.0.0-202606230923'     'N1D_C3_RESTLESS_COMMIT=4adc5766f457849ca37e0b318bced65aef5a2233'     'N1D_C3_SCAFFOLD_PROJECT_COUNT=12'     'N1D_C3A_ADD_PROJECT_COUNT=12'     'N1D_C3A_REMOVE_PROJECT_COUNT=54'     'N1D_C3A_RETAINED_GRAPHENE_PROJECT_COUNT=979'     'N1D_C3A_MANAGED_PROJECT_COUNT=991'     'N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION'     'N1D_C3_CONTROL_PATCH_COUNT=369'     'N1D_C3_PRIVATE_VENDOR_ALLOWED=NO'
 do
     require_line "$PROFILE" "$required"
 done
 
-if grep -Fq 'vendor/cawilliamson-priv' "$MANIFEST"; then
+if grep -Fq 'vendor/cawilliamson-priv' "$ADD_MANIFEST"; then
     fail private_restless_vendor_present
 fi
+
+add_count="$(grep -c '<project ' "$ADD_MANIFEST")"
+remove_count="$(grep -c '<remove-project ' "$REMOVE_MANIFEST")"
+map_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$REMOVE_MAP")"
+[[ "$add_count" == 12 ]] || fail "c3a_add_manifest_count=$add_count"
+[[ "$remove_count" == 54 ]] || fail "c3a_remove_manifest_count=$remove_count"
+[[ "$map_count" == 54 ]] || fail "c3a_remove_map_count=$map_count"
 
 bash "$ROOT/build/gates/n1d-c3-phase-split-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-trebledroid-contract.sh"
@@ -56,6 +65,7 @@ echo "N1D_SOURCE_LOCK_ANDROID16=PASS"
 echo "N1D_SOURCE_LOCK_GRAPHENE_PIN=PASS"
 echo "N1D_SOURCE_LOCK_RESTLESS_PIN=PASS"
 echo "N1D_SOURCE_LOCK_TREBLEDROID_PINS=PASS"
+echo "N1D_SOURCE_LOCK_C3A_ADD_REMOVE_GRAPH=PASS add=12 remove=54 managed=991"
 echo "N1D_SOURCE_LOCK_NO_FLOATING_TAG=PASS"
 echo "N1D_SOURCE_LOCK_PUBLIC_ONLY=PASS"
 echo "N1D_SOURCE_LOCK_C3A_PATCH_POLICY=PASS_PINNED_CONTROL_ONLY"
