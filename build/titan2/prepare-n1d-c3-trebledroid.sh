@@ -157,22 +157,21 @@ map_patch_project() {
     printf '%s\n' "$path"
 }
 
-capture_heads() {
-    local out="$1"
-    (
-        cd "$ANDROID_ROOT"
-        "$SABLE_REPO_TOOL" forall -c \
-            'printf "%s\t%s\n" "$REPO_PATH" "$(git rev-parse HEAD)"'
-    ) > "$out"
-}
+capture_project_state() {
+    local heads="$1"
+    local dirty="$2"
+    local raw
 
-capture_dirty_projects() {
-    local out="$1"
+    raw="$(mktemp)"
     (
         cd "$ANDROID_ROOT"
         "$SABLE_REPO_TOOL" forall -c \
-            's="$(git status --porcelain --untracked-files=all)"; if [ -n "$s" ]; then printf "%s\n" "$REPO_PATH"; fi'
-    ) > "$out"
+            'head="$(git rev-parse HEAD)"; printf "H\t%s\t%s\n" "$REPO_PATH" "$head"; s="$(git status --porcelain --untracked-files=all)"; if [ -n "$s" ]; then printf "D\t%s\n" "$REPO_PATH"; fi'
+    ) > "$raw"
+
+    awk -F '\t' '$1=="H" {print $2 "\t" $3}' "$raw" > "$heads"
+    awk -F '\t' '$1=="D" {print $2}' "$raw" > "$dirty"
+    rm -f "$raw"
 }
 
 verify_contract_inputs() {
@@ -260,8 +259,7 @@ verify_graphene_base_pre_stage() {
     done < "$REMOVE_PROJECT_MAP"
 
     tmp="$(mktemp -d)"
-    capture_heads "$tmp/current.tsv"
-    capture_dirty_projects "$tmp/dirty.tsv"
+    capture_project_state "$tmp/current.tsv" "$tmp/dirty.tsv"
 
     count="$(grep -cve '^$' "$tmp/current.tsv" || true)"
     dirty="$(grep -cve '^$' "$tmp/dirty.tsv" || true)"
@@ -416,8 +414,7 @@ verify_managed_graph_count() {
     local count
     local dirty_count
 
-    capture_heads "$heads"
-    capture_dirty_projects "$dirty"
+    capture_project_state "$heads" "$dirty"
 
     count="$(grep -cve '^$' "$heads" || true)"
     dirty_count="$(grep -cve '^$' "$dirty" || true)"
@@ -735,6 +732,8 @@ verify() {
     local evidence
     local count
     local current_heads
+    local current_dirty
+    local dirty_count
     local retired_graphene_root
     local ledger_count
 
@@ -789,12 +788,72 @@ verify() {
     verify_removed_paths_absent
 
     current_heads="$(mktemp)"
-    capture_heads "$current_heads"
-    count="$(grep -cve '^$' "$current_heads" || true)"
+    current_dirty="$(mktemp)"
+    capture_project_state "$current_heads" "$current_dirty"
+
+    count="$(grep -cve '^
+
+    verify_generated_product
+    verify_td_generated_dirty_scope
+
+    echo "N1D_C3A_POSTPATCH_HEADS=PASS_EXACT value=$N1D_C3A_MANAGED_PROJECT_COUNT"
+    echo "N1D_C3A_RETIRED_GRAPHENE_PROJECTS=PASS_ARCHIVED count=$N1D_C3A_REMOVE_PROJECT_COUNT"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
+}
+
+case "$ACTION" in
+    preflight)
+        preflight
+        ;;
+    stage)
+        stage
+        ;;
+    verify)
+        verify
+        ;;
+    *)
+        fail "unknown_action=$ACTION"
+        ;;
+esac
+ "$current_heads" || true)"
+    dirty_count="$(grep -cve '^
+
+    verify_generated_product
+    verify_td_generated_dirty_scope
+
+    echo "N1D_C3A_POSTPATCH_HEADS=PASS_EXACT value=$N1D_C3A_MANAGED_PROJECT_COUNT"
+    echo "N1D_C3A_RETIRED_GRAPHENE_PROJECTS=PASS_ARCHIVED count=$N1D_C3A_REMOVE_PROJECT_COUNT"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3A_TREBLEDROID_REBASELINE_VERIFY=PASS"
+}
+
+case "$ACTION" in
+    preflight)
+        preflight
+        ;;
+    stage)
+        stage
+        ;;
+    verify)
+        verify
+        ;;
+    *)
+        fail "unknown_action=$ACTION"
+        ;;
+esac
+ "$current_dirty" || true)"
+
     [[ "$count" == "$N1D_C3A_MANAGED_PROJECT_COUNT" ]] \
         || {
-            rm -f "$current_heads"
+            rm -f "$current_heads" "$current_dirty"
             fail "current_project_count expected=$N1D_C3A_MANAGED_PROJECT_COUNT actual=$count"
+        }
+    [[ "$dirty_count" == 0 ]] \
+        || {
+            cat "$current_dirty"
+            rm -f "$current_heads" "$current_dirty"
+            fail "current_dirty_project_count=$dirty_count"
         }
 
     LC_ALL=C sort "$current_heads" > "$current_heads.sorted"
@@ -802,11 +861,11 @@ verify() {
     cmp -s "$current_heads.sorted" "$current_heads.expected" \
         || {
             diff -u "$current_heads.expected" "$current_heads.sorted" || true
-            rm -f "$current_heads" "$current_heads.sorted" "$current_heads.expected"
+            rm -f "$current_heads" "$current_dirty" "$current_heads.sorted" "$current_heads.expected"
             fail postpatch_heads_mismatch
         }
 
-    rm -f "$current_heads" "$current_heads.sorted" "$current_heads.expected"
+    rm -f "$current_heads" "$current_dirty" "$current_heads.sorted" "$current_heads.expected"
 
     verify_generated_product
     verify_td_generated_dirty_scope
