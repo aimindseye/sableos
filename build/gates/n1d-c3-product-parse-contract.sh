@@ -30,6 +30,8 @@ for token in \
     'bash "$STAGE_DRIVER" verify' \
     'lunch "$LUNCH_TARGET"' \
     '--dumpvars-mode' \
+    'build/make/core/config.mk' \
+    'soong_config_set_bool_filter_true_missing' \
     'android_soong_config_vars.mk' \
     'target/product/gsi/Android.bp' \
     'BUILDING_GSI := false' \
