@@ -28,7 +28,7 @@ do
     grep -Fxq "$required" "$C3_PROFILE" || fail "c3_profile_missing=$required"
 done
 
-for required in     'N1D_PRODUCT_CONTRACT_VERSION=3'     'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64'     'N1D_C3_FIRST_BUILD_RELEASE_CONFIG=bp4a'     'N1D_C3_FIRST_BUILD_VARIANT=userdebug'     'N1D_C3_BUILD_AUTHORIZED_BY_COMPOSITION_STAGE=NO'
+for required in     'N1D_PRODUCT_CONTRACT_VERSION=4'     'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64'     'N1D_C3_FIRST_BUILD_RELEASE_CONFIG=bp4a'     'N1D_C3_FIRST_BUILD_VARIANT=userdebug'     'N1D_C3_BUILD_AUTHORIZED_BY_COMPOSITION_STAGE=NO'
 do
     grep -Fxq "$required" "$PRODUCT" || fail "product_contract_missing=$required"
 done
