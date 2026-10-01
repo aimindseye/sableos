@@ -46,7 +46,7 @@ do
 done
 
 for token in \
-    'N1D_PRODUCT_CONTRACT_VERSION=3' \
+    'N1D_PRODUCT_CONTRACT_VERSION=4' \
     'N1D_PRODUCT_NAME=sable_titan2_n1d_arm64' \
     'N1D_C3_FIRST_BUILD_RELEASE_CONFIG=bp4a' \
     'N1D_C3_FIRST_BUILD_VARIANT=userdebug' \
