@@ -215,7 +215,13 @@ preflight() {
     [[ -x "$SABLE_REPO_TOOL" ]] ||
         fail "canonical_repo_tool_missing=$SABLE_REPO_TOOL"
 
+    command -v git >/dev/null 2>&1 ||
+        fail "git_missing"
+    git lfs version >/dev/null 2>&1 ||
+        fail "git_lfs_missing"
+
     "$SABLE_REPO_TOOL" version | head -20
+    git lfs version
 
     local tmp
     tmp="$(mktemp -d)"
@@ -361,7 +367,7 @@ seal_base() {
 
         "$SABLE_REPO_TOOL" forall -c '
             status="$(git status --porcelain --untracked-files=all)"
-            if [[ -n "$status" ]]; then
+            if [ -n "$status" ]; then
                 printf "%s\n" "$REPO_PATH"
             fi
         ' > "$out/dirty-projects.tsv"
