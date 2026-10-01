@@ -284,36 +284,39 @@ The fresh-source contract is enforced by:
 bash build/gates/n1d-fresh-source-contract.sh
 ```
 
-After the Graphene/AOSP base is sealed, C2 source admission is a separate
-bounded phase. It re-derives the 13 exact public Restless/Treble projects from
-the sealed historical manifest, namespaces their remote names, verifies the
-current 1,033-project base against its seal, and syncs only those 13 paths.
+After the Graphene/AOSP base is sealed, the historical exact-source C2
+admission path remains preserved for audit evidence but is now fail-closed.
+Two locked source objects could not be reconstructed from current public
+remotes, so source-admission retries are prohibited.
 
-```bash
-bash build/titan2/admit-n1d-c2-source.sh preflight
+The active C2 diagnostic control is the original published RestlessOS
+`16.0.0-202606230923` ARM64 A/B GSI, pinned by release tag, commit, size and
+SHA-256. See:
 
-bash build/titan2/admit-n1d-c2-source.sh \
-  admit \
-  --authorize-network
-
-# Only after a failed bounded admission has already installed the C2 manifest:
-bash build/titan2/admit-n1d-c2-source.sh resume-preflight
-
-bash build/titan2/admit-n1d-c2-source.sh \
-  resume \
-  --authorize-network
+```text
+build/titan2/n1d-c2-prebuilt-control.env
+docs/titan2/N1D_C2_PREBUILT_CONTROL_R1.md
 ```
 
-The immutable 40-hex revision remains C2 source identity. Install/resume
-manifests preserve the `upstream` locator from the sealed
-`repo manifest -r` only as transport metadata for locating locked commits in
-the shallow checkout. Audit-only derivations continue to omit it. Resume
-revalidates all 1,033 sealed base HEADs and any existing partial C2 worktrees
-before retrying the same 13 bounded paths.
+```bash
+bash build/titan2/fetch-n1d-c2-control.sh preflight
 
-C2 remains diagnostic/control-only. This source-admission phase authorizes no
-Android build, device contact, flash, or C3 inheritance of PHH/Restless product
-policy.
+bash build/titan2/fetch-n1d-c2-control.sh \
+  download \
+  --authorize-network
+
+bash build/titan2/retire-n1d-c2-source.sh preflight
+bash build/titan2/retire-n1d-c2-source.sh retire
+```
+
+The historical locked revisions remain evidence and are not replaced with
+current branch tips. The published release asset is now the C2 control
+identity. Before C3, the partial 11-project C2 source state is retired offline
+and the checkout must return exactly to the sealed 1,033-project base.
+
+C2 remains diagnostic/control-only. The control download and source retirement
+authorize no Android build, device contact, flash, or C3 inheritance of
+PHH/Restless product policy.
 
 The admission contract is enforced by:
 
