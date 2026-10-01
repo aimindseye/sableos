@@ -31,7 +31,7 @@ for token in \
     'DEVICE_CONTACT_AUTHORIZED=NO' \
     'FLASH_AUTHORIZED=NO' \
     'PRODUCTION_SIGNING_AUTHORIZED=NO' \
-    'bash "$HOST_VERIFY" core' \
+    'canonical_gradle_user_home_missing=$SABLE_GRADLE_USER_HOME' \
     'N1D_C3_TREBLE_APP_JDK=PASS' \
     'export JAVA_HOME="$SABLE_JDK17"' \
     'export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"' \
