@@ -11,10 +11,11 @@ PHASE_PROFILE="$ROOT/build/titan2/n1d-c3-phase-split.env"
 PRODUCT_PROFILE="$ROOT/build/titan2/n1d-product-contract.env"
 PREP="$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
+HOST_LAYOUT_PATCH="$ROOT/$N1D_C3A_HOST_LAYOUT_PATCH_PATH"
 
 fail() { echo "N1D_C3A_TREBLEDROID_BUILD=FAIL $*" >&2; exit 1; }
 
-for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY"; do
+for f in "$STORAGE_PROFILE" "$HOST_PROFILE" "$FRESH_PROFILE" "$TD_PROFILE" "$PHASE_PROFILE" "$PRODUCT_PROFILE" "$PREP" "$STORAGE_VERIFY" "$HOST_LAYOUT_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -40,12 +41,14 @@ source "$PHASE_PROFILE"
 BUILD_AUTHORIZED=NO
 NETWORK_FETCH_AUTHORIZED=NO
 RESUME_FAILED_BUILD_AUTHORIZED=NO
+HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=NO
 JOBS="$(nproc --all)"
 while (($#)); do
     case "$1" in
         --authorize-c3-compile) BUILD_AUTHORIZED=YES; shift ;;
         --authorize-network) NETWORK_FETCH_AUTHORIZED=YES; shift ;;
         --resume-failed-c3-build) RESUME_FAILED_BUILD_AUTHORIZED=YES; shift ;;
+        --authorize-host-layout-source-mutation) HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=YES; shift ;;
         --jobs)
             [[ $# -ge 2 ]] || fail jobs_value_missing
             JOBS="$2"
@@ -61,6 +64,7 @@ done
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 OUT_C3="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-c3a-td"
+BUILD_SOONG_ROOT="$ANDROID_ROOT/$N1D_C3A_HOST_LAYOUT_TARGET_PROJECT"
 PARSE_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3a-trebledroid-parse"
 BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3a-trebledroid-build"
 LUNCH_TARGET="${N1D_C3_GENERATED_PRODUCT}-${N1D_C3_RELEASE_CONFIG}-${N1D_C3_FIRST_VARIANT}"
@@ -71,6 +75,7 @@ echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
 echo "NETWORK_FETCH_AUTHORIZED=YES_TREBLE_APP_GRADLE_ONLY"
 echo "RESUME_FAILED_BUILD_AUTHORIZED=$RESUME_FAILED_BUILD_AUTHORIZED"
+echo "HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=$HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
@@ -90,6 +95,43 @@ treble_jdk_spec="$("$SABLE_JDK17/bin/java" -XshowSettings:properties -version 2>
     || fail "canonical_jdk17_spec expected=$N1D_C3_TREBLE_APP_JDK_MAJOR actual=${treble_jdk_spec:-unset}"
 echo "N1D_C3_TREBLE_APP_JDK=PASS source=$N1D_C3_TREBLE_APP_JDK_SOURCE major=$treble_jdk_spec home=$SABLE_JDK17"
 
+apply_host_layout_fix() {
+    local target="$N1D_C3A_HOST_LAYOUT_TARGET_FILE"
+    local base_blob
+    local patch_blob
+
+    patch_blob="$(git hash-object "$HOST_LAYOUT_PATCH")"
+    [[ "$patch_blob" == "$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA" ]] \
+        || fail "host_layout_patch_blob expected=$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA actual=$patch_blob"
+
+    if git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$HOST_LAYOUT_PATCH" >/dev/null 2>&1; then
+        echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_ALREADY_PRESENT"
+        return 0
+    fi
+
+    [[ "$HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED" == YES ]] \
+        || fail host_layout_fix_requires_--authorize-host-layout-source-mutation
+
+    [[ -z "$(git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all)" ]] \
+        || {
+            git -C "$BUILD_SOONG_ROOT" status --short
+            fail build_soong_dirty_before_host_layout_fix
+        }
+
+    base_blob="$(git -C "$BUILD_SOONG_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB" ]] \
+        || fail "host_layout_fix_base_blob expected=$N1D_C3A_HOST_LAYOUT_TARGET_BASE_BLOB actual=$base_blob"
+
+    git -C "$BUILD_SOONG_ROOT" apply --check "$HOST_LAYOUT_PATCH" \
+        || fail host_layout_fix_apply_check
+    git -C "$BUILD_SOONG_ROOT" apply "$HOST_LAYOUT_PATCH" \
+        || fail host_layout_fix_apply
+    git -C "$BUILD_SOONG_ROOT" apply --reverse --check "$HOST_LAYOUT_PATCH" \
+        || fail host_layout_fix_post_apply_reverse_check
+
+    echo "N1D_C3A_HOST_LAYOUT_FIX_APPLY=PASS_APPLIED_EXACT"
+}
+
 BUILD_RESUME_MODE=FRESH
 if [[ -e "$OUT_C3" ]]; then
     [[ "$RESUME_FAILED_BUILD_AUTHORIZED" == YES ]] \
@@ -104,18 +146,26 @@ if [[ -e "$OUT_C3" ]]; then
     [[ -f "$PRIOR_BUILD_EVIDENCE/build.log" ]] || fail prior_build_log_missing
     grep -Fq 'N1D_C3_TREBLE_APP_BUILD=START' "$PRIOR_BUILD_EVIDENCE/build.log" \
         || fail prior_build_did_not_reach_treble_app
-    if grep -Fq 'N1D_C3_TREBLE_APP_BUILD=PASS' "$PRIOR_BUILD_EVIDENCE/build.log"; then
-        fail prior_build_passed_treble_app_resume_not_allowed
-    fi
-    [[ ! -e "$PRIOR_BUILD_EVIDENCE/systemimage-command.log" ]] \
-        || fail prior_build_reached_systemimage_resume_not_allowed
+
     if find "$OUT_C3" -type f \
         \( -name 'system.img' -o -name '*target_files*.zip' -o -name '*ota*.zip' \) \
         -print -quit | grep -q .
     then
         fail prior_output_contains_target_artifact_resume_not_allowed
     fi
-    BUILD_RESUME_MODE=FAILED_TREBLE_APP_ONLY
+
+    treble_app_passed=NO
+    [[ ! -f "$PRIOR_BUILD_EVIDENCE/treble-app.sha256" ]] \
+        || treble_app_passed=YES
+
+    if [[ "$treble_app_passed" == NO && ! -e "$PRIOR_BUILD_EVIDENCE/systemimage-command.log" ]]; then
+        BUILD_RESUME_MODE=FAILED_TREBLE_APP_ONLY
+    elif [[ "$treble_app_passed" == YES && -e "$PRIOR_BUILD_EVIDENCE/systemimage-command.log" ]]; then
+        BUILD_RESUME_MODE=FAILED_SYSTEMIMAGE_PRE_ARTIFACT
+    else
+        fail prior_build_resume_state_inconsistent
+    fi
+
     echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE prior_evidence=$PRIOR_BUILD_EVIDENCE"
 elif [[ "$RESUME_FAILED_BUILD_AUTHORIZED" == YES ]]; then
     fail resume_requested_but_out_missing
@@ -123,11 +173,13 @@ else
     echo "N1D_C3A_BUILD_RESUME=PASS mode=$BUILD_RESUME_MODE"
 fi
 
-if [[ "$BUILD_RESUME_MODE" == FAILED_TREBLE_APP_ONLY ]]; then
-    bash "$PREP" verify --allow-treble-app-build-residue
-else
-    bash "$PREP" verify
+apply_host_layout_fix
+
+PREP_VERIFY_ARGS=(verify --allow-c3a-host-layout-fix)
+if [[ -n "$(git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all)" ]]; then
+    PREP_VERIFY_ARGS+=(--allow-treble-app-build-residue)
 fi
+bash "$PREP" "${PREP_VERIFY_ARGS[@]}"
 
 mapfile -t parses < <(
     find "$PARSE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d         -name '*-trebledroid-parse' -print 2>/dev/null | LC_ALL=C sort
@@ -143,7 +195,11 @@ grep -Fxq 'N1D_C3A_TREBLEDROID_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env"    
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$BUILD_EVIDENCE_ROOT/$stamp-trebledroid-systemimage"
 mkdir -p "$EVIDENCE_DIR"
-if [[ "$BUILD_RESUME_MODE" == FAILED_TREBLE_APP_ONLY ]]; then
+git -C "$BUILD_SOONG_ROOT" status --porcelain --untracked-files=all \
+    > "$EVIDENCE_DIR/build-soong-host-layout-status.txt"
+git -C "$BUILD_SOONG_ROOT" diff -- "$N1D_C3A_HOST_LAYOUT_TARGET_FILE" \
+    > "$EVIDENCE_DIR/build-soong-host-layout.diff"
+if [[ -n "$(git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all)" ]]; then
     git -C "$ANDROID_ROOT/treble_app" status --porcelain --untracked-files=all \
         > "$EVIDENCE_DIR/treble-app-resume-status.txt"
 fi
@@ -231,6 +287,7 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3_TREBLE_APP_JDK_MAJOR=$N1D_C3_TREBLE_APP_JDK_MAJOR"
     echo "N1D_C3_TREBLE_APP_JAVA_HOME=$(cat "$EVIDENCE_DIR/treble-app-java-home.txt")"
     echo "N1D_C3A_BUILD_RESUME_MODE=$BUILD_RESUME_MODE"
+    echo "N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA=$N1D_C3A_HOST_LAYOUT_PATCH_BLOB_SHA"
     echo "N1D_C3A_RELEASE_ELIGIBLE=$N1D_C3A_RELEASE_ELIGIBLE"
     echo "N1D_C3B_BUILD_AUTHORIZED=$N1D_C3B_BUILD_AUTHORIZED"
     echo "N1D_C3_RELEASE_ELIGIBLE=$N1D_C3_RELEASE_ELIGIBLE"
