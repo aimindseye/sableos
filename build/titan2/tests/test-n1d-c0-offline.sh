@@ -54,6 +54,9 @@ for required in \
   'N1D_PRODUCT_NAME=treble_arm64_bvN' \
   'N1D_PRODUCT_GENERATOR=device/phh/treble/generate.sh' \
   'N1D_TREBLE_COMPAT_SUBSTRATE=device/phh/treble/base.mk' \
+  'N1D_C3A_ADD_MANIFEST=build/titan2/n1d-c3a-trebledroid-add.xml' \
+  'N1D_C3A_REMOVE_MANIFEST=build/titan2/n1d-c3a-trebledroid-remove.xml' \
+  'N1D_C3A_REMOVE_PROJECT_MAP=build/titan2/n1d-c3a-remove-projects.tsv' \
   'N1D_DEVICE_PHH_TREBLE_GENERATOR_USED=YES_PINNED' \
   'N1D_DEVICE_PHH_TREBLE_BASE_PRESENT=YES_COMPATIBILITY_SUBSTRATE' \
   'N1D_CONTROL_FULL_RESTLESS_PATCH_TIERS=YES_PINNED_CONTROL_ONLY' \
@@ -66,6 +69,12 @@ for required in \
   'N1D_C3_RELEASE_ELIGIBLE=NO' \
   'N1D_C3_RUNTIME_SECURITY_AUDIT_REQUIRED=YES' \
   'N1D_C3A_ROLE=RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL' \
+  'N1D_C3A_ADD_PROJECT_COUNT=12' \
+  'N1D_C3A_REMOVE_PROJECT_COUNT=54' \
+  'N1D_C3A_MANAGED_PROJECT_COUNT=991' \
+  'N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION' \
+  'N1D_C3A_PRIVATE_RESTLESS_VENDOR=OMITTED' \
+  'N1D_C3A_PIXEL_GSANS=OMITTED_UNPINNED_NONFUNCTIONAL' \
   'N1D_C3A_RELEASE_ELIGIBLE=NO' \
   'N1D_C3B_ROLE=SABLE_MINIMAL_BASELINE' \
   'N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO' \
@@ -84,7 +93,7 @@ for forbidden in \
     fail "n1d_product_contract stale_token=$forbidden"
   fi
 done
-pass n1d_product_contract_v5_c3a_c3b
+pass n1d_product_contract_v5_c3a_991_c3b
 
 grep -Fq 'build/config/host-tools.env' "$DRIVER" || fail canonical_host_tool_profile
 grep -Fq 'SABLE_LPDUMP' "$DRIVER" || fail canonical_lpdump
