@@ -3,7 +3,7 @@
 # Host-only. No adb, no fastboot, no build, no flash, no network fetch.
 set -euo pipefail
 
-SCRIPT_VERSION="1.1.0"
+SCRIPT_VERSION="1.2.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HELPER="$SCRIPT_DIR/n1d-c0-inspect.py"
 CONFIG=""
@@ -268,79 +268,34 @@ STOCK_VBMETA_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_IMG" "$TEE14_BOOT_AVB_
 STOCK_VBMETA_SYSTEM_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_SYSTEM_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta_system.img || printf '%s' "$STOCK_VBMETA_SYSTEM_IMG")"
 STOCK_VBMETA_VENDOR_IMG="$(resolve_evidence_exact "$STOCK_VBMETA_VENDOR_IMG" "$TEE14_BOOT_AVB_EVID" vbmeta_vendor.img || printf '%s' "$STOCK_VBMETA_VENDOR_IMG")"
 
-# Resolve Android host tools, preferring direct OUT binaries. If a partial
-# systemimage OUT omitted otatools, recover the host binaries from an existing
-# local otatools.zip without building or fetching anything.
-resolve_otatools_zip() {
-  command -v unzip >/dev/null || return 1
-  local z
-  while IFS= read -r z; do
-    [[ -f "$z" ]] || continue
-    if unzip -Z1 "$z" 2>/dev/null | grep -Fxq 'bin/checkvintf' \
-      && unzip -Z1 "$z" 2>/dev/null | grep -Fxq 'bin/lpdump' \
-      && unzip -Z1 "$z" 2>/dev/null | grep -Fxq 'bin/lpunpack'; then
-      printf '%s\n' "$z"
-      return 0
-    fi
-  done < <(
-    {
-      find "$N1B_OUT_DIR" -type f -iname 'otatools*.zip' -print 2>/dev/null || true
-      find /srv/data/sable-build/evidence/titan2 -type f -iname 'otatools*.zip' -path '*n1b*' -print 2>/dev/null || true
-      find "$N1C_OUT_DIR" -type f -iname 'otatools*.zip' -print 2>/dev/null || true
-      find /srv/data/sable-build/workspaces -maxdepth 10 -type f -iname 'otatools*.zip' -print 2>/dev/null || true
-    } | sort -u
-  )
-  return 1
+# Resolve Android host tools only from the canonical SableOS host-tool
+# profile. N1D qualification must never search historical OUT directories,
+# archived otatools, PATH fallbacks, or build-specific host-tool roots.
+HOST_TOOLS_PROFILE="$SABLE_REPO/build/config/host-tools.env"
+[[ -f "$HOST_TOOLS_PROFILE" ]] || {
+  echo "ERROR: canonical host-tool profile missing: $HOST_TOOLS_PROFILE" >&2
+  exit 3
 }
+# shellcheck source=/dev/null
+source "$HOST_TOOLS_PROFILE"
 
-OTATOOLS_ZIP="$(resolve_otatools_zip || true)"
-OTATOOLS_ROOT=""
-if [[ -n "$OTATOOLS_ZIP" ]]; then
-  OTATOOLS_ROOT="$WORK/otatools"
-  mkdir -p "$OTATOOLS_ROOT"
-  unzip -q "$OTATOOLS_ZIP" \
-    'bin/checkvintf' 'bin/lpdump' 'bin/lpunpack' \
-    'lib64/*' 'lib/*' -d "$OTATOOLS_ROOT" 2>"$OUT/logs/otatools-extract.log" || true
-  chmod +x "$OTATOOLS_ROOT"/bin/checkvintf "$OTATOOLS_ROOT"/bin/lpdump "$OTATOOLS_ROOT"/bin/lpunpack 2>/dev/null || true
-fi
-record OTATOOLS_ZIP_RESOLVED "${OTATOOLS_ZIP:--}"
+SIMG2IMG="$SABLE_SIMG2IMG"
+LPUNPACK="$SABLE_LPUNPACK"
+LPDUMP="$SABLE_LPDUMP"
+AVBTOOL="$SABLE_AVBTOOL"
+CHECKVINTF="$SABLE_CHECKVINTF"
+SECILC="$SABLE_SECILC"
+UNPACK_BOOTIMG="$SABLE_UNPACK_BOOTIMG"
 
-HOST_BIN="$N1C_OUT_DIR/host/linux-x86/bin"
-resolve_tool() {
-  local n override p root
-  n="$1"
-  override="${2:-}"
-  if [[ -n "$override" && -x "$override" ]]; then printf '%s\n' "$override"; return 0; fi
-  if [[ -x "$HOST_BIN/$n" ]]; then printf '%s\n' "$HOST_BIN/$n"; return 0; fi
-  if [[ -x "$N1B_OUT_DIR/host/linux-x86/bin/$n" ]]; then printf '%s\n' "$N1B_OUT_DIR/host/linux-x86/bin/$n"; return 0; fi
-  if [[ -n "$OTATOOLS_ROOT" && -x "$OTATOOLS_ROOT/bin/$n" ]]; then printf '%s\n' "$OTATOOLS_ROOT/bin/$n"; return 0; fi
-  while IFS= read -r root; do
-    [[ -x "$root" ]] || continue
-    printf '%s\n' "$root"
-    return 0
-  done < <(
-    find /srv/data/sable-build/workspaces \
-      -maxdepth 8 -type f -path "*/host/linux-x86/bin/$n" -print 2>/dev/null | sort -u
-  )
-  p="$(command -v "$n" 2>/dev/null || true)"
-  if [[ -n "$p" ]]; then printf '%s\n' "$p"; return 0; fi
-  return 1
-}
-SIMG2IMG="$(resolve_tool simg2img "${SIMG2IMG_TOOL:-}" || true)"
-LPUNPACK="$(resolve_tool lpunpack "${LPUNPACK_TOOL:-}" || true)"
-LPDUMP="$(resolve_tool lpdump "${LPDUMP_TOOL:-}" || true)"
-AVBTOOL="$(resolve_tool avbtool "${AVBTOOL_TOOL:-}" || true)"
-CHECKVINTF="$(resolve_tool checkvintf "${CHECKVINTF_TOOL:-}" || true)"
-SECILC="$(resolve_tool secilc "${SECILC_TOOL:-}" || true)"
-UNPACK_BOOTIMG="$(resolve_tool unpack_bootimg "${UNPACK_BOOTIMG_TOOL:-}" || true)"
-
-record TOOL_SIMG2IMG "${SIMG2IMG:--}"
-record TOOL_LPUNPACK "${LPUNPACK:--}"
-record TOOL_LPDUMP "${LPDUMP:--}"
-record TOOL_AVBTOOL "${AVBTOOL:--}"
-record TOOL_CHECKVINTF "${CHECKVINTF:--}"
-record TOOL_SECILC "${SECILC:--}"
-record TOOL_UNPACK_BOOTIMG "${UNPACK_BOOTIMG:--}"
+record HOST_TOOLS_PROFILE_RESOLVED "$HOST_TOOLS_PROFILE"
+record HOST_TOOL_RESOLUTION_MODE CANONICAL_PROFILE_ONLY
+record TOOL_SIMG2IMG "$SIMG2IMG"
+record TOOL_LPUNPACK "$LPUNPACK"
+record TOOL_LPDUMP "$LPDUMP"
+record TOOL_AVBTOOL "$AVBTOOL"
+record TOOL_CHECKVINTF "$CHECKVINTF"
+record TOOL_SECILC "$SECILC"
+record TOOL_UNPACK_BOOTIMG "$UNPACK_BOOTIMG"
 record N1B_CONTROL_SYSTEM_IMG_RESOLVED "${N1B_CONTROL_SYSTEM_IMG:--}"
 record STOCK_VBMETA_IMG_RESOLVED "${STOCK_VBMETA_IMG:--}"
 record STOCK_VBMETA_SYSTEM_IMG_RESOLVED "${STOCK_VBMETA_SYSTEM_IMG:--}"
