@@ -54,6 +54,7 @@ for required in \
     'N1D_C3_TREBLE_APP_NETWORK_REQUIRES_EXPLICIT_AUTH=YES' \
     'N1D_C3_SCAFFOLD_PROJECT_COUNT=12' \
     'N1D_C3A_ADD_PROJECT_COUNT=12' \
+    'N1D_C3A_ADD_MANIFEST_BLOB_SHA=654f0dcc8f7a46a1cc7aaa49efafdc2dc5402a1b' \
     'N1D_C3A_REMOVE_PROJECT_COUNT=54' \
     'N1D_C3A_RESTLESS_REMOVE_MANIFEST_BLOB_SHA=0bbfce1b7693e755629504fbea876ee073f2c544' \
     'N1D_C3A_RETAINED_GRAPHENE_PROJECT_COUNT=979' \
@@ -116,6 +117,13 @@ map_count="$(awk 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$REMOVE_MAP")"
 [[ "$add_count" == 12 ]] || fail "add_manifest_count=$add_count"
 [[ "$remove_count" == 54 ]] || fail "remove_manifest_count=$remove_count"
 [[ "$map_count" == 54 ]] || fail "remove_map_count=$map_count"
+
+add_blob="$(git hash-object "$ADD_MANIFEST")"
+remove_blob="$(git hash-object "$REMOVE_MANIFEST")"
+[[ "$add_blob" == "654f0dcc8f7a46a1cc7aaa49efafdc2dc5402a1b" ]] \
+    || fail "add_manifest_blob=$add_blob"
+[[ "$remove_blob" == "0bbfce1b7693e755629504fbea876ee073f2c544" ]] \
+    || fail "remove_manifest_blob=$remove_blob"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
@@ -190,6 +198,7 @@ if grep -Fq 'sable_titan2_n1d_arm64' "$PROFILE" "$PRODUCT" "$DRIVER"; then
     fail retired_handcrafted_product_reintroduced
 fi
 
+echo "N1D_C3A_MANIFEST_BLOBS=PASS_EXACT"
 echo "N1D_C3A_REMOVE_MANIFEST_MAP=PASS_EXACT_NAMES count=54"
 echo "N1D_C3A_SOURCE_GRAPH=PASS add=12 remove=54 managed=991"
 echo "N1D_C3A_CONTROL_FIDELITY=PASS_PUBLIC_FUNCTIONAL_REPRODUCTION"
