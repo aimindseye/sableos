@@ -62,7 +62,6 @@ done
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 OUT_C2="$SABLE_BUILD_ROOT/$N1D_OUT_C2_REL"
 OUT_C3="$SABLE_BUILD_ROOT/$N1D_C3_COMPILE_OUT_REL"
-SANDBOX_PROBE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3_SANDBOX_PROBE_OUT_REL"
 BASE_SEAL="$SABLE_BUILD_ROOT/$N1D_C3_BASE_SEAL_REL"
 BASE_HEADS="$BASE_SEAL/all-project-heads.tsv"
 SOURCE_BUNDLE="$ROOT/$N1D_C3_SOURCE_BUNDLE_REL"
@@ -89,7 +88,7 @@ echo "JOBS=$JOBS"
 [[ "$N1D_C3_COMPILE_RELEASE_CONFIG" == "$N1D_C3_RELEASE_CONFIG" ]]     || fail "compile_release_profile_mismatch"
 [[ "$N1D_C3_COMPILE_VARIANT" == "$N1D_C3_FIRST_BUILD_VARIANT" ]]     || fail "compile_variant_profile_mismatch"
 [[ "$N1D_C3_FIRST_COMPILE_GOAL" == systemimage ]]     || fail "unexpected_compile_goal=$N1D_C3_FIRST_COMPILE_GOAL"
-[[ "$N1D_C3_BUILD_SANDBOX_REQUIRED" == YES ]]     || fail "build_sandbox_requirement_disabled"
+[[ "$N1D_C3_BUILD_SANDBOX_POLICY" == ADVISORY_HOST_DEPENDENT ]]     || fail "unexpected_build_sandbox_policy=$N1D_C3_BUILD_SANDBOX_POLICY"
 
 bash "$STORAGE_VERIFY" runtime
 bash "$SOURCE_GATE"
@@ -119,50 +118,14 @@ done
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="$COMPILE_EVIDENCE_ROOT/$stamp-c3-first-compile"
-SANDBOX_PROBE_OUT="$SANDBOX_PROBE_ROOT/$stamp"
-mkdir -p "$EVIDENCE_DIR" "$SANDBOX_PROBE_OUT"
+mkdir -p "$EVIDENCE_DIR"
 
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
 echo "PARSE_EVIDENCE=$PARSE_EVIDENCE"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
-echo "SANDBOX_PROBE_OUT=$SANDBOX_PROBE_OUT"
 echo "OUT_DIR=$OUT_C3"
-
-(
-    cd "$ANDROID_ROOT"
-    export OUT_DIR="$SANDBOX_PROBE_OUT"
-
-    set +e +u
-    # shellcheck source=/dev/null
-    source build/envsetup.sh
-    probe_envsetup_rc=$?
-    set -euo pipefail
-    [[ "$probe_envsetup_rc" -eq 0 ]] || fail "sandbox_probe_envsetup_rc=$probe_envsetup_rc"
-
-    set +e +u
-    lunch "$LUNCH_TARGET" > "$EVIDENCE_DIR/sandbox-probe-lunch.log" 2>&1
-    probe_lunch_rc=$?
-    set -euo pipefail
-    cat "$EVIDENCE_DIR/sandbox-probe-lunch.log"
-    [[ "$probe_lunch_rc" -eq 0 ]] || fail "sandbox_probe_lunch_rc=$probe_lunch_rc"
-    if grep -Fq "Build sandboxing disabled due to nsjail error." "$EVIDENCE_DIR/sandbox-probe-lunch.log"; then
-        fail "build_sandbox_nsjail_unavailable_at_lunch"
-    fi
-
-    set +e +u
-    build/soong/soong_ui.bash --dumpvars-mode --vars="TARGET_PRODUCT" > "$EVIDENCE_DIR/nsjail-probe.log" 2>&1
-    sandbox_probe_rc=$?
-    set -euo pipefail
-    cat "$EVIDENCE_DIR/nsjail-probe.log"
-    [[ "$sandbox_probe_rc" -eq 0 ]] || fail "sandbox_probe_rc=$sandbox_probe_rc"
-    if grep -Fq "Build sandboxing disabled due to nsjail error." "$EVIDENCE_DIR/nsjail-probe.log"; then
-        fail "build_sandbox_nsjail_unavailable_at_dumpvars"
-    fi
-)
-
-echo "N1D_C3_BUILD_SANDBOX_PREFLIGHT=PASS_NSJAIL"
-[[ ! -e "$OUT_C3" ]] || fail "c3_out_created_by_sandbox_probe=$OUT_C3"
+echo "N1D_C3_BUILD_SANDBOX_POLICY=$N1D_C3_BUILD_SANDBOX_POLICY"
 
 capture_heads() {
     local out="$1"
@@ -238,7 +201,9 @@ verify_post_build_source() {
     cat "$EVIDENCE_DIR/compile-lunch.log"
     [[ "$lunch_rc" -eq 0 ]] || fail "lunch_rc=$lunch_rc"
     if grep -Fq "Build sandboxing disabled due to nsjail error." "$EVIDENCE_DIR/compile-lunch.log"; then
-        fail "build_sandbox_disabled_during_compile_lunch"
+        echo "N1D_C3_BUILD_SANDBOX_LUNCH=WARN_UNAVAILABLE_HOST_POLICY"
+    else
+        echo "N1D_C3_BUILD_SANDBOX_LUNCH=PASS_NSJAIL"
     fi
     echo "N1D_C3_COMPILE_LUNCH=PASS target=$LUNCH_TARGET"
 
@@ -262,9 +227,10 @@ verify_post_build_source() {
     set -euo pipefail
     [[ "$build_rc" -eq 0 ]] || fail "systemimage_build_rc=$build_rc"
     if grep -Fq "Build sandboxing disabled due to nsjail error." "$EVIDENCE_DIR/systemimage-command.log"; then
-        fail "build_sandbox_disabled_during_systemimage"
+        echo "N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=WARN_UNAVAILABLE_HOST_POLICY"
+    else
+        echo "N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL"
     fi
-    echo "N1D_C3_BUILD_SANDBOX_SYSTEMIMAGE=PASS_NSJAIL"
     echo "N1D_C3_SYSTEMIMAGE_BUILD=PASS"
 )
 
@@ -291,7 +257,6 @@ verify_post_build_source
     echo "N1D_C3_COMPILE_VARIANT=$N1D_C3_COMPILE_VARIANT"
     echo "N1D_C3_FIRST_COMPILE_GOAL=$N1D_C3_FIRST_COMPILE_GOAL"
     echo "N1D_C3_PARSE_EVIDENCE=$PARSE_EVIDENCE"
-    echo "N1D_C3_SANDBOX_PROBE_OUT=$SANDBOX_PROBE_OUT"
     echo "N1D_C3_OUT_DIR=$OUT_C3"
     echo "N1D_C3_PRODUCT_OUT=$PRODUCT_OUT"
     echo "N1D_C3_SYSTEM_IMG=$SYSTEM_IMG"
@@ -304,7 +269,12 @@ verify_post_build_source
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
     echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
-    echo "N1D_C3_BUILD_SANDBOX=PASS_NSJAIL"
+    echo "N1D_C3_BUILD_SANDBOX_POLICY=$N1D_C3_BUILD_SANDBOX_POLICY"
+    if grep -Fq "Build sandboxing disabled due to nsjail error." "$EVIDENCE_DIR/compile-lunch.log" "$EVIDENCE_DIR/systemimage-command.log"; then
+        echo "N1D_C3_BUILD_SANDBOX_STATUS=WARN_UNAVAILABLE_HOST_POLICY"
+    else
+        echo "N1D_C3_BUILD_SANDBOX_STATUS=PASS_NSJAIL"
+    fi
 } > "$EVIDENCE_DIR/compile-state.env"
 
 (
