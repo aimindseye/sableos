@@ -7,6 +7,7 @@ HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
 PREP="$ROOT/build/titan2/prepare-n1d-c3b-engineering.sh"
 PARSE="$ROOT/build/titan2/qualify-n1d-c3b-product-parse.sh"
 BUILD="$ROOT/build/titan2/build-n1d-c3b-systemimage.sh"
+SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
 
 fail() {
@@ -14,7 +15,7 @@ fail() {
     exit 1
 }
 
-for f in "$TRANSITION" "$HARDENER" "$PREP" "$PARSE" "$BUILD" "$TRANSITION_GATE"; do
+for f in "$TRANSITION" "$HARDENER" "$PREP" "$PARSE" "$BUILD" "$SCAFFOLD_COMPAT_PATCH" "$TRANSITION_GATE"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -61,7 +62,7 @@ if grep -Eq 'repo[[:space:]]+sync|curl[[:space:]]|wget[[:space:]]|git[[:space:]]
     fail network_command_in_parse
 fi
 
-for token in     'compile_requires_--authorize-c3b-compile'     'host_layout_patch_requires_--authorize-host-layout-source-mutation'     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY'     'NETWORK_FETCH_AUTHORIZED=NO'     'TARGET_FILES_BUILD_AUTHORIZED=NO'     'OTA_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'     'SIGNING_AUTHORIZED=NO'     'PHYSICAL_RUNTIME_AUTHORIZED=NO'     'make systemimage -j"$JOBS"'     'N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT'     'N1D_C3B_SYSTEMIMAGE=PASS'
+for token in     'compile_requires_--authorize-c3b-compile'     'host_layout_patch_requires_--authorize-host-layout-source-mutation'     'scaffold_compat_patch_requires_--authorize-scaffold-compat-source-mutation'     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY'     'NETWORK_FETCH_AUTHORIZED=NO'     'TARGET_FILES_BUILD_AUTHORIZED=NO'     'OTA_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'     'SIGNING_AUTHORIZED=NO'     'PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_APPLIED'     'make systemimage -j"$JOBS"'     'N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT'     'N1D_C3B_SYSTEMIMAGE=PASS'
 do
     grep -Fq -- "$token" "$BUILD" || fail "build_missing=$token"
 done
@@ -79,7 +80,7 @@ if grep -Eq 'target-files-package|otatools|(^|[[:space:]])dist([[:space:]]|$)' "
     fail packaging_goal_present
 fi
 
-for required in     'N1D_C3_CURRENT_ACTIVE_PHASE=C3B_ENGINEERING'     'N1D_C3B_SCAFFOLD_PROJECT_COUNT=5'     'N1D_C3B_MANAGED_PROJECT_COUNT=1038'     'N1D_C3B_RESTLESS_PATCH_COUNT=0'     'N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0'     'N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT=14'     'N1D_C3B_ENGINEERING_VARIANT=userdebug'     'N1D_C3B_GENERATED_PRODUCT=treble_arm64_bvN'     'N1D_C3B_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2'     'N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO'     'N1D_C3B_FLASH_AUTHORIZED=NO'     'N1D_C3B_SIGNING_AUTHORIZED=NO'     'N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_RELEASE_ELIGIBLE=NO'
+for required in     'N1D_C3_CURRENT_ACTIVE_PHASE=C3B_ENGINEERING'     'N1D_C3B_SCAFFOLD_PROJECT_COUNT=5'     'N1D_C3B_MANAGED_PROJECT_COUNT=1038'     'N1D_C3B_RESTLESS_PATCH_COUNT=0'     'N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0'     'N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT=14'     'N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT=1'     'N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE=NON_TITAN_VENDOR_BUILD_GRAPH_QUARANTINE'     'N1D_C3B_ENGINEERING_VARIANT=userdebug'     'N1D_C3B_GENERATED_PRODUCT=treble_arm64_bvN'     'N1D_C3B_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2'     'N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO'     'N1D_C3B_FLASH_AUTHORIZED=NO'     'N1D_C3B_SIGNING_AUTHORIZED=NO'     'N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_RELEASE_ELIGIBLE=NO'
 do
     grep -Fxq "$required" "$TRANSITION" || fail "transition_missing=$required"
 done
@@ -94,8 +95,21 @@ hardener_blob="$(git hash-object "$HARDENER")"
 grep -Fq 'N1D_C3B_PHH_BASE_SECURITY_REDUCTIONS=PASS' "$HARDENER" ||
     fail hardener_pass_marker_missing
 
+scaffold_compat_patch_blob="$(git hash-object "$SCAFFOLD_COMPAT_PATCH")"
+[[ "$scaffold_compat_patch_blob" == 21e88ec26ef0b0d5b80abd77ce2d3381c47a1976 ]] ||
+    fail "scaffold_compat_patch_blob=$scaffold_compat_patch_blob"
+grep -Fq 'deleted file mode 100644' "$SCAFFOLD_COMPAT_PATCH" ||
+    fail scaffold_compat_delete_mode_missing
+grep -Fq 'vendor/lge/hardware/vibrator/1.0/Android.bp' "$SCAFFOLD_COMPAT_PATCH" ||
+    fail scaffold_compat_target_missing
+if grep -Eq '^diff --git ' "$SCAFFOLD_COMPAT_PATCH" &&
+   [[ "$(grep -Ec '^diff --git ' "$SCAFFOLD_COMPAT_PATCH")" != 1 ]]; then
+    fail scaffold_compat_patch_not_single_file
+fi
+
 echo "N1D_C3B_ENGINEERING_SCRIPT_SYNTAX=PASS"
 echo "N1D_C3B_ENGINEERING_PHH_BASE_HARDENING=PASS_STATIC_BOUND"
+echo "N1D_C3B_ENGINEERING_SCAFFOLD_COMPAT=PASS_EXACT_LGE_VIBRATOR_QUARANTINE"
 echo "N1D_C3B_ENGINEERING_PREP_SCOPE=PASS"
 echo "N1D_C3B_ENGINEERING_PARSE_SCOPE=PASS_NO_COMPILE"
 echo "N1D_C3B_ENGINEERING_BUILD_SCOPE=PASS_SYSTEMIMAGE_ONLY"
