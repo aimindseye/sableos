@@ -11,6 +11,7 @@ import sys
 
 EXPECTED_HEAD = "39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed"
 EXPECTED_BASE_BLOB = "a29e402009d449150f1216e5d517ec0c9b36bfbd"
+EXPECTED_POST_BLOB = "58edfb8713e9a1392daaf5bbf0d07778efd6d669"
 TARGET = pathlib.PurePosixPath("base.mk")
 
 TRANSFORMS: tuple[tuple[str, str, str], ...] = (
@@ -202,6 +203,10 @@ def main() -> int:
     hardened_text = transform(base_text)
     hardened_bytes = hardened_text.encode("utf-8")
     hardened_blob = git_blob(hardened_bytes)
+    if hardened_blob != EXPECTED_POST_BLOB:
+        raise RuntimeError(
+            f"transform_post_blob expected={EXPECTED_POST_BLOB} actual={hardened_blob}"
+        )
 
     current_bytes = target.read_bytes()
     current_blob = git_blob(current_bytes)
