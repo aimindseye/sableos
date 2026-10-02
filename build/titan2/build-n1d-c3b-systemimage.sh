@@ -102,8 +102,6 @@ bash "$STORAGE_VERIFY" runtime
 
 # Require a fully staged C3B source graph before any build/Soong source mutation.
 bash "$PREP" verify
-apply_vendor_interfaces_quarantine
-bash "$PREP" verify
 
 mapfile -t parses < <(
     find "$PARSE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d         -name '*-c3b-parse' -print 2>/dev/null | LC_ALL=C sort
@@ -263,6 +261,9 @@ apply_one_patch() {
 
     echo "N1D_C3B_HOST_LAYOUT_PATCH=PASS_APPLIED label=$label"
 }
+
+apply_vendor_interfaces_quarantine
+bash "$PREP" verify
 
 validate_soong_dirty_subset
 
