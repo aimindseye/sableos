@@ -2,50 +2,20 @@ diff --git a/target/product/generic/Android.bp b/target/product/generic/Android.
 index 1d7dcbf..5f0e346 100644
 --- a/target/product/generic/Android.bp
 +++ b/target/product/generic/Android.bp
-@@ -419,7 +419,7 @@ android_filesystem_defaults {
-         ///////////////////////////////////////////
-         // media_product
-         ///////////////////////////////////////////
+@@ -422 +422 @@
 -        "webview",
 +        "TrichromeWebView",
- 
-         ///////////////////////////////////////////
-         // base_product
-@@ -1092,6 +1092,7 @@ android_system_image {
- android_system_image {
-     name: "aosp_shared_system_image",
-     defaults: ["system_image_defaults"],
+@@ -1094,0 +1095 @@ android_system_image {
 +    enabled: false,
-     dirs: android_rootdirs,
-     symlinks: android_symlinks,
-     type: "erofs",
 diff --git a/target/product/gsi/Android.bp b/target/product/gsi/Android.bp
 index 3fa6e76..013c2ac 100644
 --- a/target/product/gsi/Android.bp
 +++ b/target/product/gsi/Android.bp
-@@ -129,11 +129,9 @@ android_filesystem_defaults {
-         ///////////////////////////////////////////
-         // gsi_product
-         ///////////////////////////////////////////
+@@ -132,2 +132 @@
 -        "Browser2",
 -        "Camera2",
 +        "TrichromeChrome",
-         "Dialer",
-         "LatinIME",
+@@ -136 +134,0 @@
 -        "messaging",
-         "apns-full-conf.xml",
-         "frameworks-base-overlays",
-     ],
-@@ -188,11 +186,10 @@ android_system_image {
-         // handheld_product
-         "AvatarPicker",
-         "Calendar",
-         "Contacts",
-         "DeskClock",
-         "Gallery2",
-         "Music",
-         "preinstalled-packages-platform-handheld-product.xml",
+@@ -196 +194,0 @@
 -        "QuickSearchBox",
-         "SettingsIntelligence",
-         "frameworks-base-overlays",
- 
