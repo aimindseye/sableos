@@ -231,7 +231,7 @@ part 2:
   target: cmds/Android.bp
   target base blob: df2625f98a3df2472a3750e1345cd652902a15f3
   action: delete exactly the vibrator-lge cc_binary block
-  patch blob: 727ad9fa18aba9aaa43879c50eeae0ae405e2879
+  patch blob: ddeec00be9e6da4f88093603eedcbe95a96122c5
 
 role: NON_TITAN_VENDOR_BUILD_GRAPH_QUARANTINE
 runtime patch allowlist delta: 0
