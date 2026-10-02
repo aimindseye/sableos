@@ -48,7 +48,8 @@ for file in "${syntax_files[@]}"; do
     bash -n "$file" || fail "bash_n=$file"
 done
 
-python3 -m py_compile "$HARDENER" || fail "python_syntax=$HARDENER"
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache" \
+    python3 -m py_compile "$HARDENER" || fail "python_syntax=$HARDENER"
 
 for file in "${syntax_files[@]}"; do
     if grep -Eq 'bash[[:space:]]+-n[[:space:]]+"[^"]+"[[:space:]]+"[^"]+"' "$file"; then
