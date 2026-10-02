@@ -21,7 +21,7 @@ C3A control
 
 C3B E1 engineering baseline
     pinned GrapheneOS Android 16 base
-    minimal pinned Treble build scaffold
+    minimal pinned Treble build/parse scaffold
     zero Restless runtime patches
     broad PHH runtime/control behavior reduced
     generated Treble engineering product
@@ -75,21 +75,18 @@ base project count:         1033
 Graphene project removals:  0
 ```
 
-It then adds six pinned build-scaffold projects:
+It then adds three pinned build/parse-scaffold projects:
 
 ```text
 device/phh/treble
-prebuilts/vndk/v28
-prebuilts/vndk/v29
 vendor/hardware_overlay
 vendor/interfaces
-vendor/lptools
 ```
 
 Expected managed project count:
 
 ```text
-1033 + 6 = 1039
+1033 + 3 = 1036
 ```
 
 C3B does not inherit the C3A 54-project Restless removal set.
@@ -100,9 +97,12 @@ The following C3A projects are intentionally absent from the E1 scaffold:
 
 ```text
 packages/apps/QcRilAm
+prebuilts/vndk/v28
+prebuilts/vndk/v29
 prebuilts/vndk/v30
 treble_app
 vendor/apn
+vendor/lptools
 vendor/magisk
 vendor/vndk-tests
 ```
@@ -168,14 +168,19 @@ features from the first engineering product, including:
 - PHH TWRP/busybox payloads;
 - TrebleApp privileged permission/sysconfig payloads.
 
-It also restores:
+It also removes the broad PHH private sepolicy directory and generic PHH
+product overlay, clears the inherited legacy VNDK 28/29 list, drops the PHH
+VNDK init/detect path, and restores:
 
 ```text
 SELINUX_IGNORE_NEVERALLOWS=false
 ro.adb.secure=1
 ```
 
-and removes the PHH adb-by-default USB property.
+The PHH adb-by-default USB property is removed as well. This deliberately makes
+the first E1 image narrower than a universal PHH GSI. If Titan 2 build/runtime
+evidence proves that a specific compatibility element is required, it is
+re-admitted explicitly rather than inherited as a bundle.
 
 If this reduction makes the image fail to parse or compile, that failure is
 useful C3B evidence. E1 does not pre-emptively restore the removed behavior.
@@ -296,7 +301,7 @@ bash build/titan2/prepare-n1d-c3b-engineering.sh \
   --authorize-source-mutation
 ```
 
-Stage the six-project C3B scaffold and generate the engineering product:
+Stage the three-project C3B scaffold and generate the engineering product:
 
 ```bash
 bash build/titan2/prepare-n1d-c3b-engineering.sh \
