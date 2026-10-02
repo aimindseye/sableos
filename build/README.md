@@ -416,8 +416,8 @@ E1 uses a separate workspace at
 `/srv/sable-build/workspaces/titan2-n1d-c3b` and does not roll back or reuse
 the sealed C3A Android tree.
 
-The E1 graph is the pinned GrapheneOS 1,033-project base plus six pinned Treble
-build-scaffold projects. It inherits zero C3A Graphene removals and zero
+The E1 graph is the pinned GrapheneOS 1,033-project base plus three pinned Treble
+build/parse-scaffold projects. It inherits zero C3A Graphene removals and zero
 Restless runtime patches.
 
 Entry points:
