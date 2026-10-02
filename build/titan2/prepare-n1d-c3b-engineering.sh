@@ -18,6 +18,7 @@ SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
 BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
 BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
+LPTOOLS_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0003-vendor-lptools-android16-fs-mgr-api.patch"
 TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
@@ -26,7 +27,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
+for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$LPTOOLS_COMPAT_PATCH"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -70,6 +71,7 @@ EVIDENCE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_BASE_EVIDENCE_REL"
 LOCAL_MANIFEST="$ANDROID_ROOT/.repo/local_manifests/n1d-c3b-scaffold.xml"
 PHH_ROOT="$ANDROID_ROOT/device/phh/treble"
 BUILD_MAKE_ROOT="$ANDROID_ROOT/build/make"
+LPTOOLS_ROOT="$ANDROID_ROOT/vendor/lptools"
 STAGED_DELTA="$PHH_ROOT/sable-c3b-engineering.mk"
 
 assert_global_boundaries() {
@@ -494,6 +496,47 @@ verify_optional_vendor_interfaces_quarantine_state() {
     echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_EXACT_QUARANTINE"
 }
 
+
+verify_optional_lptools_api_compat_state() {
+    local target="$N1D_C3B_LPTOOLS_API_COMPAT_TARGET"
+    local head_blob current_blob patch_blob status
+
+    head_blob="$(git -C "$LPTOOLS_ROOT" rev-parse "HEAD:$target")"
+    [[ "$head_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB" ]] ||
+        fail "lptools_base_blob expected=$N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB actual=$head_blob"
+
+    patch_blob="$(git hash-object "$LPTOOLS_COMPAT_PATCH")"
+    [[ "$patch_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_PATCH_BLOB_SHA" ]] ||
+        fail "lptools_patch_blob expected=$N1D_C3B_LPTOOLS_API_COMPAT_PATCH_BLOB_SHA actual=$patch_blob"
+
+    current_blob="$(git hash-object "$LPTOOLS_ROOT/$target")"
+    if [[ "$current_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB" ]]; then
+        status="$(git -C "$LPTOOLS_ROOT" status --porcelain --untracked-files=all)"
+        [[ -z "$status" ]] || {
+            printf '%s\n' "$status"
+            fail lptools_dirty_at_base
+        }
+        echo "N1D_C3B_LPTOOLS_API_COMPAT_STATE=PASS_CLEAN"
+        return
+    fi
+
+    [[ "$current_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_POST_BLOB" ]] ||
+        fail "lptools_unexpected_blob=$current_blob"
+
+    status="$(git -C "$LPTOOLS_ROOT" status --porcelain --untracked-files=all)"
+    [[ "$status" == " M $target" ]] || {
+        printf '%s\n' "$status"
+        fail lptools_unexpected_dirty_state
+    }
+    git -C "$LPTOOLS_ROOT" apply --reverse --check "$LPTOOLS_COMPAT_PATCH" ||
+        fail lptools_reverse_check
+    if grep -Eq 'fs_mgr_get_super_partition_name\([^)]+' "$LPTOOLS_ROOT/$target"; then
+        fail lptools_legacy_slot_argument_still_present
+    fi
+
+    echo "N1D_C3B_LPTOOLS_API_COMPAT_STATE=PASS_EXACT_PATCHED"
+}
+
 verify() {
     echo "===== TITAN 2 N1D C3B ENGINEERING VERIFY ====="
     assert_global_boundaries
@@ -525,14 +568,15 @@ verify() {
     verify_optional_phh_lge_vibrator_quarantine_state
     verify_optional_host_layout_state
     verify_optional_build_make_compat_state
+    verify_optional_lptools_api_compat_state
     verify_optional_vendor_interfaces_quarantine_state
 
     dirty_count="$(grep -cve '^$' "$dirty_file" || true)"
 
-    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 4 ]] || {
+    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 5 ]] || {
         cat "$dirty_file"
         rm -f "$heads_file" "$dirty_file"
-        fail "dirty_project_count expected=1_to_4 actual=$dirty_count"
+        fail "dirty_project_count expected=1_to_5 actual=$dirty_count"
     }
 
     grep -Fxq 'device/phh/treble' "$dirty_file" || {
@@ -544,7 +588,7 @@ verify() {
     while IFS= read -r dirty_project; do
         [[ -n "$dirty_project" ]] || continue
         case "$dirty_project" in
-            device/phh/treble|build/soong|build/make|vendor/interfaces) ;;
+            device/phh/treble|build/soong|build/make|vendor/interfaces|vendor/lptools) ;;
             *)
                 cat "$dirty_file"
                 rm -f "$heads_file" "$dirty_file"
