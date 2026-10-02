@@ -271,7 +271,7 @@ check_build_make_compat_state() {
     if [[ "$generic_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_POST_BLOB" &&
           "$gsi_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_POST_BLOB" &&
           "$adb_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_POST_BLOB" ]]; then
-        git -C "$BUILD_MAKE_ROOT" apply --reverse --check             "$BUILD_MAKE_COMPAT_PATCH_2" "$BUILD_MAKE_COMPAT_PATCH_1" ||
+        git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero --reverse --check             "$BUILD_MAKE_COMPAT_PATCH_2" "$BUILD_MAKE_COMPAT_PATCH_1" ||
             fail build_make_compat_reverse_check
         return 0
     fi
@@ -294,9 +294,9 @@ apply_build_make_compat() {
     [[ "$BUILD_COMPAT_MUTATION_AUTHORIZED" == YES ]] ||
         fail build_compat_patch_requires_--authorize-build-compat-source-mutation
 
-    git -C "$BUILD_MAKE_ROOT" apply --check         "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" ||
+    git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero --check         "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" ||
         fail build_make_compat_apply_check
-    git -C "$BUILD_MAKE_ROOT" apply         "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" ||
+    git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero         "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" ||
         fail build_make_compat_apply
 
     check_build_make_compat_state ||
