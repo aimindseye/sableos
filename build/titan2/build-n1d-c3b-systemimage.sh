@@ -239,6 +239,72 @@ apply_device_phh_lge_quarantine() {
     echo "N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_APPLIED"
 }
 
+check_build_make_compat_state() {
+    local generic_target="$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_TARGET"
+    local gsi_target="$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_TARGET"
+    local adb_target="$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_TARGET"
+    local generic_head gsi_head adb_head generic_blob gsi_blob adb_blob
+    local patch1_blob patch2_blob
+
+    generic_head="$(git -C "$BUILD_MAKE_ROOT" rev-parse "HEAD:$generic_target")"
+    gsi_head="$(git -C "$BUILD_MAKE_ROOT" rev-parse "HEAD:$gsi_target")"
+    adb_head="$(git -C "$BUILD_MAKE_ROOT" rev-parse "HEAD:$adb_target")"
+
+    [[ "$generic_head" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_BASE_BLOB" ]] ||
+        fail "build_make_generic_head_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_BASE_BLOB actual=$generic_head"
+    [[ "$gsi_head" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_BASE_BLOB" ]] ||
+        fail "build_make_gsi_head_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_BASE_BLOB actual=$gsi_head"
+    [[ "$adb_head" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BASE_BLOB" ]] ||
+        fail "build_make_adb_head_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BASE_BLOB actual=$adb_head"
+
+    patch1_blob="$(git hash-object "$BUILD_MAKE_COMPAT_PATCH_1")"
+    patch2_blob="$(git hash-object "$BUILD_MAKE_COMPAT_PATCH_2")"
+    [[ "$patch1_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_BLOB_SHA" ]] ||
+        fail "build_make_compat_patch_1_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_BLOB_SHA actual=$patch1_blob"
+    [[ "$patch2_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BLOB_SHA" ]] ||
+        fail "build_make_compat_patch_2_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BLOB_SHA actual=$patch2_blob"
+
+    generic_blob="$(git hash-object "$BUILD_MAKE_ROOT/$generic_target")"
+    gsi_blob="$(git hash-object "$BUILD_MAKE_ROOT/$gsi_target")"
+    adb_blob="$(git hash-object "$BUILD_MAKE_ROOT/$adb_target")"
+
+    if [[ "$generic_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_POST_BLOB" &&
+          "$gsi_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_POST_BLOB" &&
+          "$adb_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_POST_BLOB" ]]; then
+        git -C "$BUILD_MAKE_ROOT" apply --reverse --check             "$BUILD_MAKE_COMPAT_PATCH_2" "$BUILD_MAKE_COMPAT_PATCH_1" ||
+            fail build_make_compat_reverse_check
+        return 0
+    fi
+
+    if [[ "$generic_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_BASE_BLOB" &&
+          "$gsi_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_BASE_BLOB" &&
+          "$adb_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BASE_BLOB" ]]; then
+        return 1
+    fi
+
+    fail "build_make_compat_partial_state generic=$generic_blob gsi=$gsi_blob adb=$adb_blob"
+}
+
+apply_build_make_compat() {
+    if check_build_make_compat_state; then
+        echo "N1D_C3B_BUILD_MAKE_COMPAT=PASS_ALREADY_PRESENT count=2"
+        return
+    fi
+
+    [[ "$BUILD_COMPAT_MUTATION_AUTHORIZED" == YES ]] ||
+        fail build_compat_patch_requires_--authorize-build-compat-source-mutation
+
+    git -C "$BUILD_MAKE_ROOT" apply --check         "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" ||
+        fail build_make_compat_apply_check
+    git -C "$BUILD_MAKE_ROOT" apply         "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" ||
+        fail build_make_compat_apply
+
+    check_build_make_compat_state ||
+        fail build_make_compat_post_apply_state
+
+    echo "N1D_C3B_BUILD_MAKE_COMPAT=PASS_APPLIED count=2"
+}
+
 check_patch_state() {
     local target="$1"
     local patch="$2"
