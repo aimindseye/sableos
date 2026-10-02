@@ -16,7 +16,7 @@ TARGET = pathlib.PurePosixPath("base.mk")
 TRANSFORMS: tuple[tuple[str, str, str], ...] = (
     (
         "drop_phh_sepolicy_and_external_overlay",
-        """SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/phh/treble/sepolicy
+        r"""SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/phh/treble/sepolicy
 PRODUCT_PACKAGE_OVERLAYS += device/phh/treble/overlay
 
 $(call inherit-product, vendor/hardware_overlay/overlay.mk)
@@ -35,20 +35,20 @@ $(call inherit-product, vendor/hardware_overlay/overlay.mk)
     ),
     (
         "drop_phh_mutation_boot_hooks",
-        """PRODUCT_COPY_FILES += \
+        r"""PRODUCT_COPY_FILES += \
     device/phh/treble/rw-system.sh:system/bin/rw-system.sh \
     device/phh/treble/phh-on-boot.sh:system/bin/phh-on-boot.sh \
     device/phh/treble/phh-on-data.sh:system/bin/phh-on-data.sh \
     device/phh/treble/phh-prop-handler.sh:system/bin/phh-prop-handler.sh \
     device/phh/treble/fixSPL/getSPL.arm:system/bin/getSPL
 """,
-        """PRODUCT_COPY_FILES += \
+        r"""PRODUCT_COPY_FILES += \
     device/phh/treble/fixSPL/getSPL.arm:system/bin/getSPL
 """,
     ),
     (
         "drop_twrp_busybox",
-        """PRODUCT_COPY_FILES += \
+        r"""PRODUCT_COPY_FILES += \
     device/phh/treble/twrp/twrp.rc:system/etc/init/twrp.rc \
     device/phh/treble/twrp/twrp.sh:system/bin/twrp.sh \
     device/phh/treble/twrp/busybox-armv7l:system/bin/busybox_phh
@@ -63,7 +63,7 @@ $(call inherit-product, vendor/hardware_overlay/overlay.mk)
     ),
     (
         "drop_mtk_sms_helper",
-        """# MTK incoming SMS fix
+        r"""# MTK incoming SMS fix
 PRODUCT_PACKAGES += \
     mtk-sms-fwk-ready
 
@@ -72,7 +72,7 @@ PRODUCT_PACKAGES += \
     ),
     (
         "drop_phh_root_ota_mutation",
-        """PRODUCT_PACKAGES += \
+        r"""PRODUCT_PACKAGES += \
     resetprop_phh
 
 PRODUCT_COPY_FILES += \
@@ -87,7 +87,7 @@ PRODUCT_COPY_FILES += \
     ),
     (
         "drop_phh_adbd_override",
-        """PRODUCT_COPY_FILES += \
+        r"""PRODUCT_COPY_FILES += \
     device/phh/treble/files/adbd.rc:system/etc/init/adbd.rc
 
 """,
@@ -95,7 +95,7 @@ PRODUCT_COPY_FILES += \
     ),
     (
         "drop_trebleapp_privilege_files",
-        """# Privapp-permissions whitelist for PhhTrebleApp
+        r"""# Privapp-permissions whitelist for PhhTrebleApp
 PRODUCT_COPY_FILES += \
     device/phh/treble/privapp-permissions-me.phh.treble.app.xml:system/etc/permissions/privapp-permissions-me.phh.treble.app.xml \
     device/phh/treble/sysconfig-me.phh.treble.app.xml:system/etc/sysconfig/sysconfig-me.phh.treble.app.xml
@@ -105,7 +105,7 @@ PRODUCT_COPY_FILES += \
     ),
     (
         "drop_phh_remote_debug",
-        """# Remote debugging
+        r"""# Remote debugging
 PRODUCT_COPY_FILES += \
     device/phh/treble/remote/dbclient:system/bin/dbclient \
     device/phh/treble/remote/phh-remotectl.rc:system/etc/init/phh-remotectl.rc \
@@ -121,7 +121,7 @@ PRODUCT_COPY_FILES += \
     ),
     (
         "drop_qcom_incall_helper",
-        """# QCOM in-call audio fix as a standalone app
+        r"""# QCOM in-call audio fix as a standalone app
 PRODUCT_PACKAGES += \
     QcRilAm
 
@@ -130,14 +130,14 @@ PRODUCT_PACKAGES += \
     ),
     (
         "drop_vendor_specific_boot_and_mtk_incall_helpers",
-        """PRODUCT_PACKAGES += \
+        r"""PRODUCT_PACKAGES += \
     slsi-booted \
     Iwlan \
     QualifiedNetworksService \
     MtkInCallService \
 
 """,
-        """PRODUCT_PACKAGES += \
+        r"""PRODUCT_PACKAGES += \
     Iwlan \
     QualifiedNetworksService \
 
