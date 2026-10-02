@@ -14,6 +14,7 @@ TRANSITION="$ROOT/build/titan2/n1d-c3b-transition.env"
 SCAFFOLD_MANIFEST="$ROOT/build/titan2/n1d-c3b-scaffold-add.xml"
 ENGINEERING_DELTA="$ROOT/build/titan2/n1d-c3b-engineering.mk"
 HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
+SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
@@ -22,7 +23,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
+for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -321,6 +322,38 @@ verify_optional_host_layout_state() {
     echo "N1D_C3B_HOST_LAYOUT_STATE=PASS_EXACT_PATCHED"
 }
 
+verify_optional_vendor_interfaces_quarantine_state() {
+    local repo="$ANDROID_ROOT/vendor/interfaces"
+    local target="$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"
+    local patch="$SCAFFOLD_COMPAT_PATCH"
+    local base_blob patch_blob status
+
+    base_blob="$(git -C "$repo" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB" ]] ||
+        fail "vendor_interfaces_lge_vibrator_base_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$patch")"
+    [[ "$patch_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA" ]] ||
+        fail "vendor_interfaces_lge_vibrator_patch_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA actual=$patch_blob"
+
+    status="$(git -C "$repo" status --porcelain --untracked-files=all)"
+    if [[ -z "$status" ]]; then
+        [[ -f "$repo/$target" ]] || fail vendor_interfaces_lge_vibrator_target_missing_clean
+        echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_CLEAN_NOT_QUARANTINED"
+        return
+    fi
+
+    [[ "$status" == " D $target" ]] || {
+        printf '%s\n' "$status"
+        fail vendor_interfaces_unexpected_dirty_state
+    }
+    [[ ! -e "$repo/$target" ]] || fail vendor_interfaces_lge_vibrator_target_still_present
+    git -C "$repo" apply --reverse --check "$patch" ||
+        fail vendor_interfaces_lge_vibrator_reverse_check
+
+    echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_EXACT_QUARANTINE"
+}
+
 verify() {
     echo "===== TITAN 2 N1D C3B ENGINEERING VERIFY ====="
     assert_global_boundaries
@@ -345,15 +378,16 @@ verify() {
     verify_dropped_paths_absent
     verify_device_phh_generated_state
     verify_optional_host_layout_state
+    verify_optional_vendor_interfaces_quarantine_state
 
     dirty_file="$(mktemp)"
     repo_dirty_projects > "$dirty_file"
     dirty_count="$(grep -cve '^$' "$dirty_file" || true)"
 
-    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 2 ]] || {
+    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 3 ]] || {
         cat "$dirty_file"
         rm -f "$dirty_file"
-        fail "dirty_project_count expected=1_or_2 actual=$dirty_count"
+        fail "dirty_project_count expected=1_to_3 actual=$dirty_count"
     }
 
     grep -Fxq 'device/phh/treble' "$dirty_file" || {
@@ -362,13 +396,17 @@ verify() {
         fail device_phh_not_dirty_as_expected
     }
 
-    if [[ "$dirty_count" == 2 ]]; then
-        grep -Fxq 'build/soong' "$dirty_file" || {
-            cat "$dirty_file"
-            rm -f "$dirty_file"
-            fail unexpected_second_dirty_project
-        }
-    fi
+    while IFS= read -r dirty_project; do
+        [[ -n "$dirty_project" ]] || continue
+        case "$dirty_project" in
+            device/phh/treble|build/soong|vendor/interfaces) ;;
+            *)
+                cat "$dirty_file"
+                rm -f "$dirty_file"
+                fail "unexpected_dirty_project=$dirty_project"
+                ;;
+        esac
+    done < "$dirty_file"
     rm -f "$dirty_file"
 
     echo "N1D_C3B_MANAGED_PROJECT_COUNT=PASS value=$count"
