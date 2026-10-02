@@ -1,8 +1,13 @@
 # Titan 2 N1D C3 product composition R1
 
-Status: **C3A active control; C3B Sable baseline held**
+Status: **historical C3A composition record; superseded for active C3B engineering**
 
-Date: 2026-10-01
+Date: 2026-10-02
+
+> Current C3B authority is `docs/titan2/N1D_C3B_TRANSITION_R1.md` together
+> with `build/titan2/n1d-c3b-transition.env`. The C3A topology below is
+> preserved as historical control evidence and must not be reused as the active
+> C3B source graph.
 
 ## Architecture correction
 
