@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Build the first Titan 2 N1D C3B engineering system image.
+#
+# Scope: pinned Graphene base + minimal Treble scaffold + exact C3B PHH base
+# hardening + two proven out-of-tree Soong host-layout fixes.
+#
+# No Restless runtime patches, network fetch, target-files, OTA, signing,
+# device contact, physical runtime, or flash are authorized here.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -14,17 +21,19 @@ fail() {
     exit 1
 }
 
-for f in "$STORAGE_PROFILE" "$TRANSITION" "$PREP" "$STORAGE_VERIFY" "$HOST_PATCH_1" "$HOST_PATCH_2"; do
+for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"
+do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
+# shellcheck source=/dev/null
 source "$STORAGE_PROFILE"
+# shellcheck source=/dev/null
 source "$TRANSITION"
 
 BUILD_AUTHORIZED=NO
 HOST_LAYOUT_MUTATION_AUTHORIZED=NO
 JOBS="$(nproc --all)"
-
 while (($#)); do
     case "$1" in
         --authorize-c3b-compile)
@@ -46,12 +55,17 @@ while (($#)); do
     esac
 done
 
-[[ "$BUILD_AUTHORIZED" == YES ]] || fail compile_requires_--authorize-c3b-compile
+[[ "$BUILD_AUTHORIZED" == YES ]] ||
+    fail compile_requires_--authorize-c3b-compile
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || fail "invalid_jobs=$JOBS"
-[[ "$N1D_C3_CURRENT_ACTIVE_PHASE" == C3B_ENGINEERING ]] || fail active_phase_mismatch
-[[ "$N1D_C3B_ENGINEERING_BUILD_AUTHORIZED" == YES_SYSTEMIMAGE_ONLY_AFTER_STAGE_AND_PARSE ]] || fail engineering_build_boundary_mismatch
-[[ "$N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT" == 0 ]] || fail runtime_allowlist_not_zero
-[[ "$N1D_C3B_RESTLESS_PATCH_COUNT" == 0 ]] || fail restless_patch_count_not_zero
+[[ "$N1D_C3_CURRENT_ACTIVE_PHASE" == C3B_ENGINEERING ]] ||
+    fail active_phase_mismatch
+[[ "$N1D_C3B_ENGINEERING_BUILD_AUTHORIZED" == YES_SYSTEMIMAGE_ONLY_AFTER_STAGE_AND_PARSE ]] ||
+    fail engineering_build_boundary_mismatch
+[[ "$N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT" == 0 ]] ||
+    fail runtime_allowlist_not_zero
+[[ "$N1D_C3B_RESTLESS_PATCH_COUNT" == 0 ]] ||
+    fail restless_patch_count_not_zero
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_ANDROID_ROOT_REL"
 OUT_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_OUT_ROOT_REL"
@@ -63,17 +77,40 @@ LUNCH_TARGET="$N1D_C3B_GENERATED_PRODUCT-$N1D_C3B_RELEASE_CONFIG-$N1D_C3B_ENGINE
 echo "===== N1D C3B ENGINEERING SYSTEMIMAGE BUILD ====="
 echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
+echo "HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=$HOST_LAYOUT_MUTATION_AUTHORIZED"
 echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "SIGNING_AUTHORIZED=NO"
+echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
 echo "PHYSICAL_RUNTIME_AUTHORIZED=NO"
 echo "RELEASE_ELIGIBLE=NO"
 echo "N1D_C3_ACTIVE_PHASE=$N1D_C3_CURRENT_ACTIVE_PHASE"
+echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT"
 echo "LUNCH_TARGET=$LUNCH_TARGET"
 
 bash "$STORAGE_VERIFY" runtime
+
+# Require a fully staged C3B source graph before any build/Soong source mutation.
+bash "$PREP" verify
+
+mapfile -t parses < <(
+    find "$PARSE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d         -name '*-c3b-parse' -print 2>/dev/null | LC_ALL=C sort
+)
+(("${#parses[@]}" > 0)) || fail c3b_parse_evidence_missing
+PARSE_EVIDENCE="${parses[-1]}"
+
+(
+    cd "$PARSE_EVIDENCE"
+    sha256sum -c SHA256SUMS.txt >/dev/null
+) || fail c3b_parse_evidence_invalid
+grep -Fxq 'N1D_C3B_PRODUCT_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env" ||
+    fail c3b_parse_not_passed
+grep -Fxq "N1D_C3B_VARIANT=$N1D_C3B_ENGINEERING_VARIANT" "$PARSE_EVIDENCE/parse-state.env" ||
+    fail c3b_parse_variant_mismatch
+grep -Fxq 'N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0' "$PARSE_EVIDENCE/parse-state.env" ||
+    fail c3b_parse_runtime_allowlist_not_zero
 
 check_patch_state() {
     local target="$1"
@@ -85,20 +122,59 @@ check_patch_state() {
     local base_blob current_blob patch_blob
 
     base_blob="$(git -C "$SOONG_ROOT" rev-parse "HEAD:$target")"
-    [[ "$base_blob" == "$expected_base" ]] || fail "${label}_base_blob expected=$expected_base actual=$base_blob"
+    [[ "$base_blob" == "$expected_base" ]] ||
+        fail "${label}_base_blob expected=$expected_base actual=$base_blob"
 
     patch_blob="$(git hash-object "$patch")"
-    [[ "$patch_blob" == "$expected_patch" ]] || fail "${label}_patch_blob expected=$expected_patch actual=$patch_blob"
+    [[ "$patch_blob" == "$expected_patch" ]] ||
+        fail "${label}_patch_blob expected=$expected_patch actual=$patch_blob"
 
     current_blob="$(git hash-object "$SOONG_ROOT/$target")"
     if [[ "$current_blob" == "$expected_post" ]]; then
-        git -C "$SOONG_ROOT" apply --reverse --check "$patch" || fail "${label}_reverse_check"
+        git -C "$SOONG_ROOT" apply --reverse --check "$patch" ||
+            fail "${label}_reverse_check"
         return 0
     fi
     if [[ "$current_blob" == "$expected_base" ]]; then
         return 1
     fi
-    fail "${label}_unexpected_blob actual=$current_blob"
+
+    fail "${label}_unexpected_blob expected_base=$expected_base expected_post=$expected_post actual=$current_blob"
+}
+
+validate_soong_dirty_subset() {
+    local status_file line count
+    local file1="ci_tests/ci_test_package_zip.go"
+    local file2="dexpreopt/dexpreopt_gen/dexpreopt_gen.go"
+
+    status_file="$(mktemp)"
+    git -C "$SOONG_ROOT" status --porcelain --untracked-files=all > "$status_file"
+    count="$(grep -cve '^$' "$status_file" || true)"
+    [[ "$count" -le 2 ]] || {
+        cat "$status_file"
+        rm -f "$status_file"
+        fail "build_soong_dirty_count=$count"
+    }
+
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        case "$line" in
+            " M $file1"|" M $file2") ;;
+            *)
+                cat "$status_file"
+                rm -f "$status_file"
+                fail "unexpected_build_soong_dirty_entry=$line"
+                ;;
+        esac
+    done < "$status_file"
+
+    rm -f "$status_file"
+
+    # Each target must be either its exact pinned base or exact approved post blob.
+    check_patch_state         "$file1"         "$HOST_PATCH_1"         "$N1D_C3B_HOST_LAYOUT_PATCH_1_BASE_BLOB"         "$N1D_C3B_HOST_LAYOUT_PATCH_1_POST_BLOB"         "$N1D_C3B_HOST_LAYOUT_PATCH_1_BLOB_SHA"         host_layout_1 || true
+    check_patch_state         "$file2"         "$HOST_PATCH_2"         "$N1D_C3B_HOST_LAYOUT_PATCH_2_BASE_BLOB"         "$N1D_C3B_HOST_LAYOUT_PATCH_2_POST_BLOB"         "$N1D_C3B_HOST_LAYOUT_PATCH_2_BLOB_SHA"         host_layout_2 || true
+
+    echo "N1D_C3B_HOST_LAYOUT_DIRTY_SUBSET=PASS count=$count"
 }
 
 apply_one_patch() {
@@ -109,47 +185,33 @@ apply_one_patch() {
     local expected_patch="$5"
     local label="$6"
 
-    if check_patch_state "$target" "$patch" "$expected_base" "$expected_post" "$expected_patch" "$label"; then
+    if check_patch_state         "$target" "$patch" "$expected_base" "$expected_post" "$expected_patch" "$label"
+    then
         echo "N1D_C3B_HOST_LAYOUT_PATCH=PASS_ALREADY_PRESENT label=$label"
         return
     fi
 
-    [[ "$HOST_LAYOUT_MUTATION_AUTHORIZED" == YES ]] || fail host_layout_patch_requires_--authorize-host-layout-source-mutation
-    git -C "$SOONG_ROOT" apply --check "$patch" || fail "${label}_apply_check"
-    git -C "$SOONG_ROOT" apply "$patch" || fail "${label}_apply"
-    check_patch_state "$target" "$patch" "$expected_base" "$expected_post" "$expected_patch" "$label"
+    [[ "$HOST_LAYOUT_MUTATION_AUTHORIZED" == YES ]] ||
+        fail host_layout_patch_requires_--authorize-host-layout-source-mutation
+
+    git -C "$SOONG_ROOT" apply --check "$patch" ||
+        fail "${label}_apply_check"
+    git -C "$SOONG_ROOT" apply "$patch" ||
+        fail "${label}_apply"
+
+    check_patch_state         "$target" "$patch" "$expected_base" "$expected_post" "$expected_patch" "$label"
+
     echo "N1D_C3B_HOST_LAYOUT_PATCH=PASS_APPLIED label=$label"
 }
 
-status_before="$(git -C "$SOONG_ROOT" status --porcelain --untracked-files=all)"
-if [[ -n "$status_before" ]]; then
-    count_before="$(printf '%s\n' "$status_before" | grep -cve '^$' || true)"
-    if [[ "$count_before" != 2 ]]; then
-        printf '%s\n' "$status_before"
-        fail "unexpected_build_soong_dirty_state count=$count_before"
-    fi
-fi
+validate_soong_dirty_subset
 
 apply_one_patch     ci_tests/ci_test_package_zip.go     "$HOST_PATCH_1"     "$N1D_C3B_HOST_LAYOUT_PATCH_1_BASE_BLOB"     "$N1D_C3B_HOST_LAYOUT_PATCH_1_POST_BLOB"     "$N1D_C3B_HOST_LAYOUT_PATCH_1_BLOB_SHA"     host_layout_1
 
 apply_one_patch     dexpreopt/dexpreopt_gen/dexpreopt_gen.go     "$HOST_PATCH_2"     "$N1D_C3B_HOST_LAYOUT_PATCH_2_BASE_BLOB"     "$N1D_C3B_HOST_LAYOUT_PATCH_2_POST_BLOB"     "$N1D_C3B_HOST_LAYOUT_PATCH_2_BLOB_SHA"     host_layout_2
 
-echo "N1D_C3B_HOST_LAYOUT_PATCHES=PASS_EXACT count=2"
-
+validate_soong_dirty_subset
 bash "$PREP" verify
-
-mapfile -t parses < <(
-    find "$PARSE_EVIDENCE_ROOT" -mindepth 1 -maxdepth 1 -type d -name '*-c3b-parse' -print 2>/dev/null | LC_ALL=C sort
-)
-(("${#parses[@]}" > 0)) || fail c3b_parse_evidence_missing
-PARSE_EVIDENCE="${parses[-1]}"
-
-(
-    cd "$PARSE_EVIDENCE"
-    sha256sum -c SHA256SUMS.txt >/dev/null
-) || fail c3b_parse_evidence_invalid
-
-grep -Fxq 'N1D_C3B_PRODUCT_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env" || fail c3b_parse_not_passed
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR_C3B="$OUT_ROOT/build-$stamp"
@@ -158,8 +220,8 @@ EVIDENCE_DIR="$BUILD_EVIDENCE_ROOT/$stamp-c3b-systemimage"
 [[ ! -e "$OUT_DIR_C3B" ]] || fail "fresh_out_required=$OUT_DIR_C3B"
 mkdir -p "$OUT_DIR_C3B" "$EVIDENCE_DIR"
 
-git -C "$SOONG_ROOT" status --porcelain --untracked-files=all > "$EVIDENCE_DIR/build-soong-host-layout-status.txt"
-git -C "$SOONG_ROOT" diff -- ci_tests/ci_test_package_zip.go dexpreopt/dexpreopt_gen/dexpreopt_gen.go > "$EVIDENCE_DIR/build-soong-host-layout.diff"
+git -C "$SOONG_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/build-soong-host-layout-status.txt"
+git -C "$SOONG_ROOT" diff --     ci_tests/ci_test_package_zip.go     dexpreopt/dexpreopt_gen/dexpreopt_gen.go     > "$EVIDENCE_DIR/build-soong-host-layout.diff"
 
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
@@ -168,6 +230,7 @@ exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
     export OUT_DIR="$OUT_DIR_C3B"
 
     set +e +u
+    # shellcheck source=/dev/null
     source build/envsetup.sh
     envsetup_rc=$?
     set -euo pipefail
@@ -222,6 +285,7 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3B_SYSTEM_BYTES=$bytes"
     echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=$N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT"
     echo "N1D_C3B_RESTLESS_PATCH_COUNT=$N1D_C3B_RESTLESS_PATCH_COUNT"
+    echo "N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT=$N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT"
     echo "N1D_C3B_HOST_LAYOUT_PATCH_COUNT=$N1D_C3B_HOST_LAYOUT_PATCH_COUNT"
     echo "N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO"
     echo "N1D_C3B_FLASH_AUTHORIZED=NO"
@@ -232,7 +296,7 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 
 (
     cd "$EVIDENCE_DIR"
-    find . -type f ! -name SHA256SUMS.txt ! -name build.log ! -name systemimage-command.log -print0 |
+    find . -type f         ! -name SHA256SUMS.txt         ! -name build.log         ! -name systemimage-command.log         -print0 |
         LC_ALL=C sort -z |
         xargs -0 sha256sum > SHA256SUMS.txt
     sha256sum -c SHA256SUMS.txt >/dev/null
