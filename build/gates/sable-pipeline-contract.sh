@@ -100,12 +100,17 @@ SABLEOS_RELEASE_VERSION=N1B \
 
 bash "$ROOT/build/gates/storage-root-contract.sh"
 bash "$ROOT/build/gates/host-tools-contract.sh"
+bash "$ROOT/build/gates/n1d-c3-script-quality-contract.sh"
 bash "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
 bash "$ROOT/build/gates/n1d-source-lock-contract.sh"
 bash "$ROOT/build/gates/n1d-fresh-source-contract.sh"
 bash "$ROOT/build/gates/n1d-c2-source-admission-contract.sh"
 bash "$ROOT/build/gates/n1d-c2-prebuilt-control-contract.sh"
+bash "$ROOT/build/gates/n1d-c3-phase-split-contract.sh"
+bash "$ROOT/build/gates/n1d-c3a-control-evidence-contract.sh"
+bash "$ROOT/build/gates/n1d-c3-trebledroid-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
+bash "$ROOT/build/gates/n1d-c3-trebledroid-build-contract.sh"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"

@@ -1,0 +1,7 @@
+# Exact RestlessOS 16.0.0-202606230923 release patch order.
+# Applied only to the non-release C3 compatibility control build.
+trebledroid	198
+trebledroid-staging	121
+rom	29
+personal	17
+release-builds	4

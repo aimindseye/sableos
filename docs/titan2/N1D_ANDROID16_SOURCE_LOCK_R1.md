@@ -81,8 +81,10 @@ patch tiers.
 
 ## Public-only source requirement
 
-The Restless Android-16 local manifest contains a private
+The Restless Android-16 `default.xml` add manifest contains a private
 `vendor/cawilliamson-priv` project used by upstream signing/release tooling.
+N1D does not copy that add manifest directly. C3A separately pins the exact
+Restless `remove.xml`, which contains 54 deterministic project removals.
 SableOS N1D must not depend on that project.
 
 The future N1D source-sync driver must generate/use a reviewed public-only local
@@ -105,22 +107,30 @@ personal
 release-builds
 ```
 
-N1D must not automatically reproduce that loop.
+N1D must not automatically reproduce that loop for the Sable baseline.
 
-Compatibility changes are imported only through a Sable-owned reviewed
-allowlist. Patch pairs which form one compatibility contract must be applied
+C3A is the explicit exception: it reproduces the exact pinned Restless patch
+loop as a non-release control so C3B can stop guessing about compatibility.
+C3B continues to prohibit wholesale tier inheritance.
+
+For C3B, compatibility changes are imported only through a Sable-owned reviewed
+allowlist. C3A control patches do not become C3B policy automatically. Patch pairs which form one compatibility contract must be applied
 atomically. For example, v28 SELinux compatibility requires both the build-side
 `PLATFORM_SEPOLICY_COMPAT_VERSIONS` change and the matching restored 28.0 CIL
 policy.
 
 The upstream `rom` tier also contains a patch allowing TrebleDroid permissive
-domains (`phhsu_daemon`, `tkcore`, `ueventd`) in user builds. This is not
-implicitly acceptable to SableOS and is blocked by the N1D source policy.
+domains (`phhsu_daemon`, `tkcore`, `ueventd`) in user builds. C3A may
+reproduce that patch only inside the non-release control. It is not implicitly
+acceptable to C3B/SableOS and cannot enter C3B without separate evidence and
+review.
 
 ```text
-N1D_PATCH_APPLICATION_MODE=REPO_OWNED_REVIEWED_ALLOWLIST
-N1D_PATCH_TIER_AUTOAPPLY_ALLOWED=NO
-N1D_SELINUX_PERMISSIVE_DOMAINS_ALLOWED=NO
+N1D_PATCH_APPLICATION_MODE=PHASE_SCOPED
+N1D_C3A_PATCH_APPLICATION_MODE=PINNED_RESTLESS_CONTROL_RECIPE
+N1D_C3A_PATCH_TIER_AUTOAPPLY_ALLOWED=YES_PINNED_CONTROL_ONLY
+N1D_C3B_PATCH_APPLICATION_MODE=REPO_OWNED_REVIEWED_ALLOWLIST
+N1D_C3B_PATCH_TIER_AUTOAPPLY_ALLOWED=NO
 ```
 
 ## Relationship to historical SableOS work

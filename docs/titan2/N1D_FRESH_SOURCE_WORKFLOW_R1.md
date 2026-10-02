@@ -17,7 +17,7 @@ Canonical layout:
 /srv/sable-build/workspaces/titan2-n1d/
   android/   # one fresh pinned Android 16 checkout
   out-c2/    # C2 output only
-  out-c3/    # C3 output only
+  out-c3a-td/ # C3A control output only
 ```
 
 The SableOS repository remains separate:
@@ -67,8 +67,10 @@ The pinned Restless Android-16 repository contains a convenience sync script
 which resolves the newest GrapheneOS stable release at runtime. That is
 incompatible with the N1D source lock.
 
-Its local manifest also contains mutable `main` / `master` revisions and a
-private SSH vendor remote. N1D therefore never copies that manifest directly.
+Restless `configs/manifests/default.xml` contains mutable `main` / `master`
+revisions and a private SSH vendor remote, so N1D never copies that add manifest
+directly. C3A separately pins the exact Restless `remove.xml`, which contains
+only deterministic project removals.
 
 ## Historical C2 public compatibility pins
 
@@ -130,14 +132,19 @@ fresh Graphene/AOSP Android 16 base
   -> use pinned published RestlessOS GSI as C2 diagnostic control
   -> retire partial C2 source paths
   -> restore and verify the same checkout against the pinned 1033-project base
-  -> stage Sable-owned C3 product files
-  -> parse/qualify C3 product
-  -> build/seal C3
+  -> stage pinned TrebleDroid/Restless C3A control inputs
+     (54 Restless removals + 12 public additions = 991 managed C3A projects)
+  -> parse/qualify C3A generated product
+  -> build/seal C3A control system.img
+  -> use C3A evidence to peel toward minimal C3B Sable baseline
 ```
 
-The C2-to-C3 transition has now been completed: partial C2 source worktrees
-were retired and the checkout was restored to the exact sealed 1,033-project
-base. The fresh-source preparation driver itself still performs no build.
+The C2-to-C3 transition begins from the exact sealed 1,033-project base.
+C3A then applies the pinned Restless remove manifest and public add manifest.
+Because the base is already synchronized, the 54 removed working trees are
+moved to a reversible artifact archive rather than deleted. The resulting C3A
+managed graph contains 991 projects. The fresh-source preparation driver itself
+still performs no build.
 
 ## Driver actions
 

@@ -1,0 +1,12 @@
+# N1D C3B Sable runtime patch allowlist.
+#
+# Intentionally empty at C3A/C3B split creation.
+# C3A may apply the full pinned Restless patch stack only as a reproduction
+# control. No C3A patch is admitted to C3B merely because the control builds.
+#
+# C3B admission requires:
+#   reproduced C3B failure
+#   -> identify smallest relevant C3A/Treble change
+#   -> security/runtime review
+#   -> explicit entry here
+#   -> rebuild and evidence

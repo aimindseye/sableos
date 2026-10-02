@@ -1,0 +1,11 @@
+# C3A focused build/make audit artifact provenance.
+# local_filename<TAB>restless_path<TAB>git_blob_sha
+0001-Remove-init.vndk-nodef.rc.patch	patches/trebledroid/platform_build/0001-Remove-init.vndk-nodef.rc.patch	29bc98c8a69291e198fdcf169473e7506256b5d4
+0002-build-Remove-llkd.patch	patches/trebledroid/platform_build/0002-build-Remove-llkd.patch	59292118c375f499f9927b9ce4bd7dddcc5e4b4d
+0003-Include-vndk-v28-sepolicy-support.patch	patches/trebledroid/platform_build/0003-Include-vndk-v28-sepolicy-support.patch	d067be346af72a6497eb522835e4b8967a01642c
+0004-Skip-mounting-my_manifest-on-GSIs.patch	patches/trebledroid-staging/platform_build/0001-Skip-mounting-my_manifest-on-GSIs.patch	6eca8a605a0085f8628e61d91dbe21e33a59fc2e
+0005-Disable-Cuttlefish-only-aosp_shared_system_image-mod.patch	patches/trebledroid-staging/platform_build/0002-Disable-Cuttlefish-only-aosp_shared_system_image-mod.patch	b656a08b479b9a0772a9d2f376e11422304e7bee
+0006-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch	patches/rom/platform_build/0001-Configure-build-for-GrapheneOS-GSI-apps-and-packages.patch	79f4d6aa0c9caeca771536c250a31c4acfff4535
+0007-Remove-LogViewer-from-GSI-system-image.patch	patches/rom/platform_build/0002-Remove-LogViewer-from-GSI-system-image.patch	d089829e84c81a2865f73a1ee0b19627b488cdd1
+0008-Exclude-AOSP-sample-APN-list-from-GSI-build.patch	patches/rom/platform_build/0003-Exclude-AOSP-sample-APN-list-from-GSI-build.patch	039148b96e3e7ba25df8b73e2299ee03430804eb
+0009-Do-not-disable-adb-authentication-in-GSI-system_ext-.patch	patches/release-builds/platform_build/0001-Do-not-disable-adb-authentication-in-GSI-system_ext-.patch	3f90db57d1be690e3f05a535e4c729f6175ae2fc
