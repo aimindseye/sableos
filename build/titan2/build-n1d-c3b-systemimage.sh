@@ -17,6 +17,7 @@ HOST_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci
 HOST_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch"
 SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
+PHH_ROOT_FOLDER_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0003-device-phh-drop-unlabeled-root-extra-folders.patch"
 BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
 BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
 LPTOOLS_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0003-vendor-lptools-android16-fs-mgr-api.patch"
@@ -26,7 +27,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$LPTOOLS_COMPAT_PATCH"
+for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$PHH_ROOT_FOLDER_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$LPTOOLS_COMPAT_PATCH"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -239,6 +240,57 @@ apply_device_phh_lge_quarantine() {
         fail device_phh_lge_vibrator_post_apply_state
 
     echo "N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_APPLIED"
+}
+
+check_device_phh_root_folder_compat_state() {
+    local target="$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_TARGET"
+    local base_blob patch_blob current_blob
+
+    base_blob="$(git -C "$PHH_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_BASE_BLOB" ]] ||
+        fail "device_phh_root_folder_base_blob expected=$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$PHH_ROOT_FOLDER_COMPAT_PATCH")"
+    [[ "$patch_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_COMPAT_PATCH_BLOB_SHA" ]] ||
+        fail "device_phh_root_folder_patch_blob expected=$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_COMPAT_PATCH_BLOB_SHA actual=$patch_blob"
+
+    current_blob="$(git hash-object "$PHH_ROOT/$target")"
+    if [[ "$current_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_BASE_BLOB" ]]; then
+        grep -Fq 'BOARD_ROOT_EXTRA_FOLDERS += bt_firmware sec_storage efs persist' "$PHH_ROOT/$target" ||
+            fail device_phh_root_folder_clean_contract_missing
+        return 1
+    fi
+
+    [[ "$current_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_POST_BLOB" ]] ||
+        fail "device_phh_root_folder_unexpected_blob=$current_blob"
+    git -C "$PHH_ROOT" apply --reverse --check "$PHH_ROOT_FOLDER_COMPAT_PATCH" ||
+        fail device_phh_root_folder_reverse_check
+    grep -Fq 'BOARD_ROOT_EXTRA_FOLDERS += efs persist' "$PHH_ROOT/$target" ||
+        fail device_phh_root_folder_retained_set_mismatch
+    if grep -Eq '^BOARD_ROOT_EXTRA_FOLDERS.*(bt_firmware|sec_storage)' "$PHH_ROOT/$target"; then
+        fail device_phh_unlabeled_root_folder_still_present
+    fi
+    return 0
+}
+
+apply_device_phh_root_folder_compat() {
+    if check_device_phh_root_folder_compat_state; then
+        echo "N1D_C3B_DEVICE_PHH_ROOT_FOLDERS=PASS_ALREADY_APPLIED"
+        return
+    fi
+
+    [[ "$SCAFFOLD_COMPAT_MUTATION_AUTHORIZED" == YES ]] ||
+        fail scaffold_compat_patch_requires_--authorize-scaffold-compat-source-mutation
+
+    git -C "$PHH_ROOT" apply --check "$PHH_ROOT_FOLDER_COMPAT_PATCH" ||
+        fail device_phh_root_folder_apply_check
+    git -C "$PHH_ROOT" apply "$PHH_ROOT_FOLDER_COMPAT_PATCH" ||
+        fail device_phh_root_folder_apply
+
+    check_device_phh_root_folder_compat_state ||
+        fail device_phh_root_folder_post_apply_state
+
+    echo "N1D_C3B_DEVICE_PHH_ROOT_FOLDERS=PASS_APPLIED"
 }
 
 check_build_make_compat_state() {
@@ -456,6 +508,7 @@ apply_one_patch() {
 
 apply_vendor_interfaces_quarantine
 apply_device_phh_lge_quarantine
+apply_device_phh_root_folder_compat
 apply_build_make_compat
 apply_lptools_compat
 
@@ -481,6 +534,8 @@ git -C "$VENDOR_INTERFACES_ROOT" status --porcelain --untracked-files=all     > 
 git -C "$VENDOR_INTERFACES_ROOT" diff --     "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/vendor-interfaces-lge-vibrator.diff"
 git -C "$PHH_ROOT" status --porcelain --untracked-files=all --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator-status.txt"
 git -C "$PHH_ROOT" diff --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator.diff"
+git -C "$PHH_ROOT" status --porcelain --untracked-files=all --     "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_TARGET"     > "$EVIDENCE_DIR/device-phh-root-folders-status.txt"
+git -C "$PHH_ROOT" diff --     "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_TARGET"     > "$EVIDENCE_DIR/device-phh-root-folders.diff"
 git -C "$BUILD_MAKE_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/build-make-r2-status.txt"
 git -C "$BUILD_MAKE_ROOT" diff --     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_TARGET"     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_TARGET"     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_TARGET"     > "$EVIDENCE_DIR/build-make-r2.diff"
 git -C "$LPTOOLS_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/vendor-lptools-api-compat-status.txt"
@@ -550,6 +605,8 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3B_HOST_LAYOUT_PATCH_COUNT=$N1D_C3B_HOST_LAYOUT_PATCH_COUNT"
     echo "N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT=$N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT"
     echo "N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE=$N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE"
+    echo "N1D_C3B_DEVICE_PHH_ROOT_FOLDER_POST_BLOB=$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_POST_BLOB"
+    echo "N1D_C3B_DEVICE_PHH_ROOT_FOLDER_RUNTIME_VALIDATED=$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_RUNTIME_VALIDATED"
     echo "N1D_C3B_COMPATIBILITY_PEEL_VERSION=$N1D_C3B_COMPATIBILITY_PEEL_VERSION"
     echo "N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT"
     echo "N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE"
