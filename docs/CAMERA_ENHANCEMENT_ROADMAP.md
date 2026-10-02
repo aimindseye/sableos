@@ -18,25 +18,28 @@ measured device-specific capability/tuning.
 
 ## Product decision
 
-Use **GrapheneOS Camera** as the preferred application/source baseline.
+For keyboard-first devices, use the **Sable-owned Camera2 application** as the
+product/source direction.
 
-Reasons:
+The application is capability-driven and continues to use the stock vendor
+camera HAL/ISP. It does not require a proprietary GCam dependency.
 
-- already aligned with the GrapheneOS-derived SableOS substrate;
-- modern CameraX architecture;
-- privacy/security-oriented product model;
-- MIT-licensed standalone source;
-- QR/barcode support already exists;
-- materially lower legal/supply-chain risk than redistributing proprietary GCam
-  ports.
+GrapheneOS Camera remains an important privacy/security and camera-product
+reference, especially for Panther/upstream behavior. Open Camera remains a
+secondary open-source reference for Camera2 manual controls, bracketing, RAW,
+slow motion, focus bracketing and capability probing.
 
 Community GCam/LMC/SGCam ports are **reference behavior only**. Do not import,
 redistribute or depend on opaque Google Camera-derived APKs as Sable product
 source.
 
-Open Camera may be used as a secondary open-source reference for Camera2 manual
-controls, HDR/exposure bracketing, RAW, slow motion, focus bracketing and
-device-capability probing.
+Keyboard-device UX follows ADR-0012 and the **Camera Control Deck** direction:
+
+> The screen is the viewfinder. The physical keyboard is the camera control
+> surface.
+
+This supersedes the earlier assumption that the keyboard-device product should
+simply be GrapheneOS Camera with device-specific adjustments.
 
 ## Device matrix
 
@@ -107,11 +110,11 @@ privileged-camera behavior.
 ## Architecture
 
 ```text
-Sable Camera UI
-    -> GrapheneOS Camera / CameraX baseline
-    -> Sable camera capability adapter
-    -> CameraX extensions where exposed
-    -> Camera2 for exact capability/system-camera/manual paths
+Sable Camera UI / Camera Control Deck
+    -> Sable semantic camera-action layer
+    -> Camera2 capability adapter
+    -> public Camera2 capture/manual/video paths
+    -> optional narrowly reviewed system-camera path only if later proven
     -> stock vendor camera HAL
     -> stock ISP / sensor drivers
 ```
@@ -163,6 +166,56 @@ Required on Titan 2 / Elite / Q27:
 - touch remains fully supported;
 - no forced soft keyboard;
 - orientation and inset handling validated at actual density.
+
+## C1A — keyboard-first Camera Control Deck
+
+The camera interaction model is now explicitly keyboard-device-native rather
+than touch-first with shortcut keys added later.
+
+Required source/UX behavior:
+
+- portrait remains supported;
+- default orientation policy is Auto;
+- no global landscape lock;
+- landscape uses a viewfinder-first Control Deck layout;
+- physical keys map to semantic camera actions;
+- touch remains a complete fallback;
+- manual parameter UI is transient;
+- a control legend is available for discoverability;
+- arbitrary full key remapping is not required for the first release.
+
+Initial semantic actions:
+
+~~~text
+shutter
+autofocus
+autofocus lock
+auto-exposure lock
+focus-point movement
+ISO
+white balance
+shutter speed
+exposure compensation
+zoom
+camera switch
+RAW / RAW+JPEG candidate
+same-scene compare bracket
+mode navigation
+last capture
+return parameter to Auto
+~~~
+
+The exact key chords for AF/AE lock and focus-point movement require physical
+Titan evidence before release acceptance.
+
+The Control Deck does not add new capture modes. Photo / Video / Pro and
+capability-derived JPEG/RAW behavior remain the capture model.
+
+See:
+
+~~~text
+docs/adr/0012-keyboard-device-user-choice-camera-control-deck.md
+~~~
 
 ## C2 — image-quality baseline
 
@@ -232,6 +285,11 @@ Before granting:
 SABLE_CAMERA_OPEN_SOURCE_BASELINE=PASS
 CAMERA_CAPABILITY_PROBE_<DEVICE>=PASS
 CAMERA_SQUARE_LAYOUT_<DEVICE>=PASS
+CAMERA_CONTROL_DECK_<DEVICE>=PASS
+CAMERA_TOUCH_FALLBACK_<DEVICE>=PASS
+CAMERA_ORIENTATION_<DEVICE>=PASS
+CAMERA_KEYBOARD_FOCUS_POINT_<DEVICE>=PASS
+CAMERA_AF_AE_LOCK_<DEVICE>=PASS
 CAMERA_TAP_TO_FOCUS_<DEVICE>=PASS
 CAMERA_PREVIEW_FIDELITY_<DEVICE>=PASS
 CAMERA_COLOR_BASELINE_<DEVICE>=PASS
