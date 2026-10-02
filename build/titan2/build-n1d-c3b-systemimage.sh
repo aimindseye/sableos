@@ -399,6 +399,7 @@ apply_one_patch() {
 
 apply_vendor_interfaces_quarantine
 apply_device_phh_lge_quarantine
+apply_build_make_compat
 
 validate_soong_dirty_subset
 
@@ -422,6 +423,8 @@ git -C "$VENDOR_INTERFACES_ROOT" status --porcelain --untracked-files=all     > 
 git -C "$VENDOR_INTERFACES_ROOT" diff --     "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/vendor-interfaces-lge-vibrator.diff"
 git -C "$PHH_ROOT" status --porcelain --untracked-files=all --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator-status.txt"
 git -C "$PHH_ROOT" diff --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator.diff"
+git -C "$BUILD_MAKE_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/build-make-r2-status.txt"
+git -C "$BUILD_MAKE_ROOT" diff --     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_TARGET"     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_TARGET"     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_TARGET"     > "$EVIDENCE_DIR/build-make-r2.diff"
 
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
@@ -487,6 +490,9 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3B_HOST_LAYOUT_PATCH_COUNT=$N1D_C3B_HOST_LAYOUT_PATCH_COUNT"
     echo "N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT=$N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT"
     echo "N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE=$N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE"
+    echo "N1D_C3B_COMPATIBILITY_PEEL_VERSION=$N1D_C3B_COMPATIBILITY_PEEL_VERSION"
+    echo "N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT"
+    echo "N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE"
     echo "N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO"
     echo "N1D_C3B_FLASH_AUTHORIZED=NO"
     echo "N1D_C3B_SIGNING_AUTHORIZED=NO"
@@ -503,6 +509,8 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 )
 
 echo "N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT"
+echo "N1D_C3B_COMPATIBILITY_PEEL_R2=PASS_APPLIED"
+echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
 echo "SYSTEM_IMG=$SYSTEM_IMG"
 echo "SYSTEM_SHA256=$sha"
 echo "SYSTEM_BYTES=$bytes"
