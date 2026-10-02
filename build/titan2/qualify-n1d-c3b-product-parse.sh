@@ -108,9 +108,17 @@ grep -Fxq "PRODUCT_BRAND='google'" "$EVIDENCE_DIR/product-vars.env" ||
 grep -Fxq "PRODUCT_MODEL='TrebleDroid vanilla'" "$EVIDENCE_DIR/product-vars.env" ||
     fail dumpvars_product_model
 
-if find "$PARSE_OUT" -type f     ( -name '*.img' -o -name '*target_files*.zip' -o -name '*-ota-*.zip' -o -name '*-ota.zip' )     -print -quit | grep -q .
-then
-    fail "unexpected_target_artifact=$PARSE_OUT"
+if find "$PARSE_OUT" -type f -name '*.img' -print -quit | grep -q .; then
+    fail "unexpected_image_artifact=$PARSE_OUT"
+fi
+if find "$PARSE_OUT" -type f -name '*target_files*.zip' -print -quit | grep -q .; then
+    fail "unexpected_target_files_artifact=$PARSE_OUT"
+fi
+if find "$PARSE_OUT" -type f -name '*-ota-*.zip' -print -quit | grep -q .; then
+    fail "unexpected_ota_artifact=$PARSE_OUT"
+fi
+if find "$PARSE_OUT" -type f -name '*-ota.zip' -print -quit | grep -q .; then
+    fail "unexpected_ota_artifact=$PARSE_OUT"
 fi
 
 {
