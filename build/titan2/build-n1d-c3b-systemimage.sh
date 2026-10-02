@@ -16,13 +16,14 @@ STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 HOST_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci-tests-skip-out-of-tree-host-paths.patch"
 HOST_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch"
 SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
+PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
 
 fail() {
     echo "N1D_C3B_SYSTEMIMAGE_BUILD=FAIL $*" >&2
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"
+for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -78,6 +79,7 @@ OUT_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_OUT_ROOT_REL"
 PARSE_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3b-product-parse"
 BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3b-systemimage"
 SOONG_ROOT="$ANDROID_ROOT/build/soong"
+PHH_ROOT="$ANDROID_ROOT/device/phh/treble"
 VENDOR_INTERFACES_ROOT="$ANDROID_ROOT/vendor/interfaces"
 LUNCH_TARGET="$N1D_C3B_GENERATED_PRODUCT-$N1D_C3B_RELEASE_CONFIG-$N1D_C3B_ENGINEERING_VARIANT"
 
@@ -168,6 +170,64 @@ apply_vendor_interfaces_quarantine() {
         fail vendor_interfaces_lge_vibrator_post_apply_state
 
     echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_APPLIED"
+}
+
+check_device_phh_lge_quarantine_state() {
+    local target="$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"
+    local base_blob patch_blob status numstat expected_numstat
+
+    base_blob="$(git -C "$PHH_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_BASE_BLOB" ]] ||
+        fail "device_phh_lge_vibrator_base_blob expected=$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$PHH_LGE_COMPAT_PATCH")"
+    [[ "$patch_blob" == "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA" ]] ||
+        fail "device_phh_lge_vibrator_patch_blob expected=$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA actual=$patch_blob"
+
+    status="$(git -C "$PHH_ROOT" status --porcelain --untracked-files=all -- "$target")"
+    if [[ -z "$status" ]]; then
+        grep -Fq 'name: "vibrator-lge"' "$PHH_ROOT/$target" ||
+            fail device_phh_lge_vibrator_clean_module_missing
+        return 1
+    fi
+
+    [[ "$status" == " M $target" ]] || {
+        printf '%s\n' "$status"
+        fail device_phh_lge_vibrator_unexpected_dirty_state
+    }
+    git -C "$PHH_ROOT" apply --reverse --check "$PHH_LGE_COMPAT_PATCH" ||
+        fail device_phh_lge_vibrator_reverse_check
+    numstat="$(git -C "$PHH_ROOT" diff --numstat -- "$target")"
+    printf -v expected_numstat '0\t12\t%s' "$target"
+    [[ "$numstat" == "$expected_numstat" ]] ||
+        fail "device_phh_lge_vibrator_numstat=$numstat"
+    if grep -Fq 'name: "vibrator-lge"' "$PHH_ROOT/$target"; then
+        fail device_phh_lge_vibrator_module_still_present
+    fi
+    if grep -Fq 'vendor.lge.hardware.vibrator@1.0' "$PHH_ROOT/$target"; then
+        fail device_phh_lge_vibrator_dependency_still_present
+    fi
+    return 0
+}
+
+apply_device_phh_lge_quarantine() {
+    if check_device_phh_lge_quarantine_state; then
+        echo "N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_ALREADY_QUARANTINED"
+        return
+    fi
+
+    [[ "$SCAFFOLD_COMPAT_MUTATION_AUTHORIZED" == YES ]] ||
+        fail scaffold_compat_patch_requires_--authorize-scaffold-compat-source-mutation
+
+    git -C "$PHH_ROOT" apply --check "$PHH_LGE_COMPAT_PATCH" ||
+        fail device_phh_lge_vibrator_apply_check
+    git -C "$PHH_ROOT" apply "$PHH_LGE_COMPAT_PATCH" ||
+        fail device_phh_lge_vibrator_apply
+
+    check_device_phh_lge_quarantine_state ||
+        fail device_phh_lge_vibrator_post_apply_state
+
+    echo "N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_APPLIED"
 }
 
 check_patch_state() {
@@ -263,6 +323,7 @@ apply_one_patch() {
 }
 
 apply_vendor_interfaces_quarantine
+apply_device_phh_lge_quarantine
 bash "$PREP" verify
 
 validate_soong_dirty_subset
@@ -285,6 +346,8 @@ git -C "$SOONG_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_D
 git -C "$SOONG_ROOT" diff --     ci_tests/ci_test_package_zip.go     dexpreopt/dexpreopt_gen/dexpreopt_gen.go     > "$EVIDENCE_DIR/build-soong-host-layout.diff"
 git -C "$VENDOR_INTERFACES_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/vendor-interfaces-lge-vibrator-status.txt"
 git -C "$VENDOR_INTERFACES_ROOT" diff --     "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/vendor-interfaces-lge-vibrator.diff"
+git -C "$PHH_ROOT" status --porcelain --untracked-files=all --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator-status.txt"
+git -C "$PHH_ROOT" diff --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator.diff"
 
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
