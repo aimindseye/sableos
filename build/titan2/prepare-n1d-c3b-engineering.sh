@@ -16,6 +16,8 @@ ENGINEERING_DELTA="$ROOT/build/titan2/n1d-c3b-engineering.mk"
 HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
 SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
+BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
+BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
 TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
@@ -24,7 +26,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
+for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -67,6 +69,7 @@ OUT_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_OUT_ROOT_REL"
 EVIDENCE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_BASE_EVIDENCE_REL"
 LOCAL_MANIFEST="$ANDROID_ROOT/.repo/local_manifests/n1d-c3b-scaffold.xml"
 PHH_ROOT="$ANDROID_ROOT/device/phh/treble"
+BUILD_MAKE_ROOT="$ANDROID_ROOT/build/make"
 STAGED_DELTA="$PHH_ROOT/sable-c3b-engineering.mk"
 
 assert_global_boundaries() {
