@@ -293,7 +293,7 @@ verify_device_phh_generated_state() {
 verify_optional_phh_lge_vibrator_quarantine_state() {
     local target="$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"
     local patch="$PHH_LGE_COMPAT_PATCH"
-    local base_blob patch_blob status numstat
+    local base_blob patch_blob status numstat expected_numstat
 
     base_blob="$(git -C "$PHH_ROOT" rev-parse "HEAD:$target")"
     [[ "$base_blob" == "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_BASE_BLOB" ]] ||
@@ -318,7 +318,20 @@ verify_optional_phh_lge_vibrator_quarantine_state() {
     git -C "$PHH_ROOT" apply --reverse --check "$patch" ||
         fail device_phh_lge_vibrator_reverse_check
     numstat="$(git -C "$PHH_ROOT" diff --numstat -- "$target")"
-    [[ "$numstat" == 
+    printf -v expected_numstat '0\t12\t%s' "$target"
+    [[ "$numstat" == "$expected_numstat" ]] ||
+        fail "device_phh_lge_vibrator_numstat=$numstat"
+    if grep -Fq 'name: "vibrator-lge"' "$PHH_ROOT/$target"; then
+        fail device_phh_lge_vibrator_module_still_present
+    fi
+    if grep -Fq 'vendor.lge.hardware.vibrator@1.0' "$PHH_ROOT/$target"; then
+        fail device_phh_lge_vibrator_dependency_still_present
+    fi
+
+    echo "N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_EXACT_QUARANTINE"
+}
+
+verify_optional_host_layout_state() {
     local soong="$ANDROID_ROOT/build/soong"
     local status
     status="$(git -C "$soong" status --porcelain --untracked-files=all)"
