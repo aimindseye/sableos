@@ -49,6 +49,12 @@ do
     require_line "$TRANSITION" "$required"
 done
 
+# The exact lines above establish the transition profile as validated input.
+# Import it only after that validation so the blob-bound checks below can use
+# the authoritative N1D_C3B_* values without hard-coding them a second time.
+# shellcheck source=/dev/null
+source "$TRANSITION"
+
 require_line "$C3A_EVIDENCE" 'N1D_C3A_CONTROL_EVIDENCE_STATUS=PASS_SYSTEMIMAGE'
 require_line "$C3A_EVIDENCE" 'N1D_C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16'
 require_line "$C3A_EVIDENCE" 'N1D_C3B_TRANSITION_PREREQUISITE=SATISFIED_BY_C3A_CONTROL_EVIDENCE'
@@ -151,10 +157,6 @@ compat_count="$(awk -F '\t' 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$COMPAT_PE
 
 inventory_count="$(awk -F '\t' 'NF && $1 !~ /^#/ {c++} END {print c+0}' "$CONTROL_PATCH_INVENTORY")"
 [[ "$inventory_count" == 369 ]] || fail "control_patch_inventory_count=$inventory_count"
-
-inventory_blob="$(git hash-object "$CONTROL_PATCH_INVENTORY")"
-[[ "$inventory_blob" == c842e97bea45a2c67f665de703414075882a40ea ]] ||
-    fail "control_patch_inventory_blob=$inventory_blob"
 
 for tier_count in \
     "trebledroid 198" \
