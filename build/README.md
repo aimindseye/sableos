@@ -408,3 +408,29 @@ The boundary is guarded by:
 ```text
 build/gates/n1d-local-ci-scope-contract.sh
 ```
+
+
+## Titan 2 N1D C3B E1 engineering transition
+
+E1 uses a separate workspace at
+`/srv/sable-build/workspaces/titan2-n1d-c3b` and does not roll back or reuse
+the sealed C3A Android tree.
+
+The E1 graph is the pinned GrapheneOS 1,033-project base plus six pinned Treble
+build-scaffold projects. It inherits zero C3A Graphene removals and zero
+Restless runtime patches.
+
+Entry points:
+
+```text
+build/gates/n1d-c3b-transition-contract.sh
+build/gates/n1d-c3b-engineering-contract.sh
+build/titan2/prepare-n1d-c3b-engineering.sh
+build/titan2/qualify-n1d-c3b-product-parse.sh
+build/titan2/build-n1d-c3b-systemimage.sh
+```
+
+The first target is the generated
+`treble_arm64_bvN-bp4a-userdebug` engineering `systemimage`.
+Final Sable product admission is E2. Device contact, flash, signing and release
+remain blocked.
