@@ -1,30 +1,9 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: SableOS Engineering <engineering@sableos.org>
-Date: Fri, 2 Oct 2026 08:07:00 -0400
-Subject: [PATCH] build: preserve GSI ADB authentication policy
-
-C3B must not inherit the generic GSI ro.adb.secure=0 override. Leave ADB
-authentication under the device/platform policy instead.
-
-This is a security-positive C3B admission derived from the C3A control and
-does not authorize device contact, flashing or release.
----
- target/board/gsi_system_ext.prop | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
 diff --git a/target/board/gsi_system_ext.prop b/target/board/gsi_system_ext.prop
+index 780aadc..223ef97 100644
 --- a/target/board/gsi_system_ext.prop
 +++ b/target/board/gsi_system_ext.prop
-@@ -1,8 +1,8 @@
- # GSI always generate dex pre-opt in system image
- ro.cp_system_other_odex=0
- 
+@@ -4,2 +4,2 @@
 -# GSI always disables adb authentication
 -ro.adb.secure=0
 +# GSI: do not override adb authentication -- let the device tree control it.
 +# ro.adb.secure=0
- 
- # GSI disables non-AOSP nnapi extensions on product partition
- ro.nnapi.extensions.deny_on_product=true
--- 
-2.54.0
