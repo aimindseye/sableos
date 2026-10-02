@@ -119,12 +119,20 @@ runtime patches and zero inherited Graphene project removals. The pinned PHH
 `base.mk` receives 14 exact fail-closed security/control reductions before
 generation.
 
+Compatibility Peel R2 inventories all 369 patches from the five pinned C3A
+Restless control tiers and admits none verbatim. The focused build-compatibility
+review covers the nine `platform_build` fixes plus the two C3A-proven Soong
+host-layout fixes. R2 reimplements only the narrow Graphene/Treble build graph
+corrections and the security-positive ADB-authentication correction; Restless
+APN removal, llkd removal, OPlus runtime handling and the legacy LGE HIDL
+restoration are not admitted. The C3B runtime patch allowlist remains zero.
+
 The first E1 build identity is
 `treble_arm64_bvN-bp4a-userdebug systemimage`. It is build/parse-only:
 device contact, flash, signing, physical runtime and release remain blocked.
 Final Sable product identity and application/source-module admission are E2.
 
-See `docs/titan2/N1D_C3B_TRANSITION_R1.md`.
+See `docs/titan2/N1D_C3B_TRANSITION_R1.md` and `docs/titan2/N1D_C3B_COMPATIBILITY_PEEL_R2.md`.
 
 ## Active development
 
