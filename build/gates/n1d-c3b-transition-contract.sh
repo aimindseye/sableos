@@ -174,6 +174,22 @@ verbatim_admitted="$(awk -F '\t' 'NF && $1 !~ /^#/ && $5 ~ /^ADMIT_VERBATIM/ {c+
 [[ "$verbatim_admitted" == 0 ]] ||
     fail "control_patch_inventory_verbatim_admitted=$verbatim_admitted"
 
+for decision_count in \
+    "CONTROL_ONLY_NOT_ADMITTED_R2 359" \
+    "ADMIT_E1_NARROW_REIMPLEMENTED 3" \
+    "DEFER_E2 1" \
+    "REJECT_R2 2" \
+    "REJECT_NON_TITAN 2" \
+    "DEFER_RUNTIME_EVIDENCE 1" \
+    "DEFER_ATOMIC_PAIR 1"
+do
+    decision="${decision_count%% *}"
+    expected="${decision_count##* }"
+    actual="$(awk -F '\t' -v decision="$decision" 'NF && $1 !~ /^#/ && $5 == decision {c++} END {print c+0}' "$CONTROL_PATCH_INVENTORY")"
+    [[ "$actual" == "$expected" ]] ||
+        fail "control_patch_inventory_decision=$decision expected=$expected actual=$actual"
+done
+
 grep -Fq $'trebledroid-staging\tplatform_hardware_interfaces\t0001-Add-HIDL-vibrator-1.0-interface-for-legacy-vendor-HA.patch' "$CONTROL_PATCH_INVENTORY" ||
     fail control_patch_inventory_lge_hidl_missing
 grep -Fq $'REJECT_NON_TITAN\tKnown C3A fix for LG/legacy path; C3B quarantines the non-Titan LGE consumer instead.' "$CONTROL_PATCH_INVENTORY" ||
