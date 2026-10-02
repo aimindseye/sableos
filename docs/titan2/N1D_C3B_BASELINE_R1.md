@@ -1,6 +1,6 @@
 # Titan 2 N1D C3B minimal Sable baseline
 
-Status: **C3A evidence consumed by E1; C3B engineering transition active on review branch**
+Status: **C3A evidence consumed; C3B Compatibility Peel R2 active on review branch**
 
 Date: 2026-10-02
 
@@ -19,31 +19,42 @@ reductions bound to the pinned PHH commit and `base.mk` blob.
 
 ## Admission rule
 
-C3B uses a peeling model:
+C3B uses a peeling model, refined by Compatibility Peel R2.
+
+Runtime/device compatibility remains evidence-driven, but already-proven C3A
+**build compatibility** is classified up front so C3B does not rediscover known
+Graphene/Treble build failures one compile at a time.
 
 ```text
 C3A known control
       |
+audit repository-owned C3A compatibility fixes
+      |
+admit safe build-only/security-positive subset
+      |
 C3B minimal Graphene + pinned Treble scaffold
       |
-build/runtime failure
+new runtime/device failure only
       |
-identify the C3A change that explains the failure
-      |
-review security/runtime impact
-      |
-admit the smallest required change or atomic patch pair
-      |
-rebuild and record evidence
+review -> bounded admission or rejection
 ```
 
-No patch enters C3B merely because it existed in Restless.
+No patch enters C3B merely because it existed in Restless. The full 369-patch
+control stack remains excluded. The R2 decision ledger is
+`build/titan2/n1d-c3b-compatibility-peel-r2.tsv`.
 
 ```text
-N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO
-N1D_C3B_RUNTIME_PATCH_ALLOWLIST_INITIAL_COUNT=0
-N1D_C3B_PATCH_ADMISSION_MODE=FAILURE_EVIDENCE_THEN_REVIEW_THEN_ADMIT
+N1D_C3B_RESTLESS_WHOLESALE_ADMISSION_ALLOWED=NO
+N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
+N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT=2
 ```
+
+The two R2 build/make patches are Sable-owned narrow deltas: one fixes the
+Graphene/Treble GSI module graph and disables the irrelevant Cuttlefish-only
+shared-system-image module; the other prevents the generic GSI
+`ro.adb.secure=0` override. Restless APN removal, llkd removal, OPlus
+`my_manifest` handling, and non-atomic VNDK-28 SELinux changes are not
+admitted.
 
 ## Cellular/radio direction
 
@@ -133,7 +144,8 @@ build/titan2/n1d-c3b-transition.env
 ```
 
 E1 authorizes only a separate C3B engineering workspace, five-project scaffold
-sync, exact PHH-base hardening, product parse, and `systemimage` compilation.
+sync, exact PHH-base hardening, the reviewed R2 build-compatibility peel,
+product parse, and `systemimage` compilation.
 The first engineering target remains the generated Treble product
 `treble_arm64_bvN-bp4a-userdebug`; final Sable product identity and
 source-module admission are E2 work.
