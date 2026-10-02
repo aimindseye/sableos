@@ -32,9 +32,12 @@ The following exact source revisions were reviewed on 2026-09-19.
 
 ```text
 repository: palsoftware/pastiera
-revision: 474fa104ab54da6f246b462d774af7507c6885fd
+release: v0.86
+revision: e7d8f27ecc7253e61690b5d34f110b25dc68bb16
+release date: 2026-09-26
 license: GPL-3.0
-role: physical-keyboard IME / input-routing reference
+successor: pkb-rocks/plektra
+role: physical-keyboard IME / input-routing / compact-input product reference
 ```
 
 Observed useful concepts:
@@ -49,7 +52,12 @@ Observed useful concepts:
 - JSON keyboard layouts and device-specific mapping data;
 - compact status/variation UI which minimizes screen use;
 - device-near modifier/input regression tests;
-- launcher shortcut handling separated from ordinary text-entry behavior.
+- launcher shortcut handling separated from ordinary text-entry behavior;
+- compact candidate/modifier/language status surfaces;
+- configurable SYM/emoji surfaces and snippets/shortcodes;
+- multiple dictionaries and local learned next-word sequences;
+- searchable settings with stable direct links;
+- improved Titan 2 Elite rounded-display fitting.
 
 Sable lessons:
 
@@ -58,9 +66,13 @@ Sable lessons:
 - key mappings should be data-driven and capability/device-profile bound;
 - shortcut handling must not accidentally steal text from an editable field;
 - held modifier behavior and latched navigation behavior are separate states and should stay separate;
-- input behavior requires automated regression tests, especially for modifier/key-up/key-repeat sequences.
+- input behavior requires automated regression tests, especially for modifier/key-up/key-repeat sequences;
+- compact input surfaces are useful, but app launching/global shortcuts remain Sable Start/platform responsibilities rather than IME ownership;
+- persistent keyboard clipboard history should not be enabled by default;
+- Shizuku must not become a Sable input dependency;
+- remote layout/dictionary catalogs require provenance, signing/hash validation and explicit user action if ever introduced.
 
-Pastiera is GPL-3.0. Treat implementation as a behavioral/architectural reference unless a separate licensing review authorizes reuse.
+Pastiera is GPL-3.0. Treat implementation as a behavioral/architectural reference unless a separate licensing review authorizes reuse. No Pastiera/Plektra source import is authorized by this review.
 
 ### MinkLauncher / OpenMiniLaunch
 
@@ -334,7 +346,18 @@ Requirements:
 - application opt-out/raw-key path for apps such as games when required;
 - no ambient AccessibilityService interception as the normal Sable input architecture.
 
-Pastiera is the primary behavior/reference model for this work.
+Pastiera 0.86 is a primary behavior/reference model for this work, alongside Sable's independently owned implementation.
+
+Sable first-party/default-IME ownership must not remove Android user choice:
+
+~~~text
+SABLE_FIRST_PARTY_IME=SableKeyboard
+THIRD_PARTY_IME_SELECTION_ALLOWED=YES
+FORCE_SABLE_IME_AFTER_USER_SELECTION=NO
+~~~
+
+Third-party IMEs are not automatically covered by Sable's direct-boot, lockscreen
+or physical-keyboard acceptance evidence.
 
 ### App display compatibility
 
