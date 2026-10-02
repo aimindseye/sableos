@@ -17,13 +17,15 @@ HOST_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci
 HOST_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch"
 SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
+BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
+BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
 
 fail() {
     echo "N1D_C3B_SYSTEMIMAGE_BUILD=FAIL $*" >&2
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"
+for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -36,6 +38,7 @@ source "$TRANSITION"
 BUILD_AUTHORIZED=NO
 HOST_LAYOUT_MUTATION_AUTHORIZED=NO
 SCAFFOLD_COMPAT_MUTATION_AUTHORIZED=NO
+BUILD_COMPAT_MUTATION_AUTHORIZED=NO
 JOBS="$(nproc --all)"
 while (($#)); do
     case "$1" in
@@ -49,6 +52,10 @@ while (($#)); do
             ;;
         --authorize-scaffold-compat-source-mutation)
             SCAFFOLD_COMPAT_MUTATION_AUTHORIZED=YES
+            shift
+            ;;
+        --authorize-build-compat-source-mutation)
+            BUILD_COMPAT_MUTATION_AUTHORIZED=YES
             shift
             ;;
         --jobs)
@@ -81,6 +88,7 @@ BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3b-systemimage"
 SOONG_ROOT="$ANDROID_ROOT/build/soong"
 PHH_ROOT="$ANDROID_ROOT/device/phh/treble"
 VENDOR_INTERFACES_ROOT="$ANDROID_ROOT/vendor/interfaces"
+BUILD_MAKE_ROOT="$ANDROID_ROOT/build/make"
 LUNCH_TARGET="$N1D_C3B_GENERATED_PRODUCT-$N1D_C3B_RELEASE_CONFIG-$N1D_C3B_ENGINEERING_VARIANT"
 
 echo "===== N1D C3B ENGINEERING SYSTEMIMAGE BUILD ====="
@@ -88,6 +96,7 @@ echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=$HOST_LAYOUT_MUTATION_AUTHORIZED"
 echo "SCAFFOLD_COMPAT_SOURCE_MUTATION_AUTHORIZED=$SCAFFOLD_COMPAT_MUTATION_AUTHORIZED"
+echo "BUILD_COMPAT_SOURCE_MUTATION_AUTHORIZED=$BUILD_COMPAT_MUTATION_AUTHORIZED"
 echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
