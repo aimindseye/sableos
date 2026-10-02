@@ -207,11 +207,8 @@ verify_scaffold_heads() {
     local actual
     local entries=(
         "device/phh/treble:$N1D_C3B_DEVICE_PHH_TREBLE_COMMIT"
-        "prebuilts/vndk/v28:$N1D_C3B_VNDK28_COMMIT"
-        "prebuilts/vndk/v29:$N1D_C3B_VNDK29_COMMIT"
         "vendor/hardware_overlay:$N1D_C3B_HARDWARE_OVERLAY_COMMIT"
         "vendor/interfaces:$N1D_C3B_VENDOR_INTERFACES_COMMIT"
-        "vendor/lptools:$N1D_C3B_LPTOOLS_COMMIT"
     )
 
     local entry path expected
@@ -224,12 +221,12 @@ verify_scaffold_heads() {
             fail "scaffold_head path=$path expected=$expected actual=$actual"
     done
 
-    echo "N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=6"
+    echo "N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=3"
 }
 
 verify_dropped_paths_absent() {
     local path
-    for path in         packages/apps/QcRilAm         prebuilts/vndk/v30         treble_app         vendor/apn         vendor/magisk         vendor/vndk-tests         vendor/cawilliamson-priv
+    for path in         packages/apps/QcRilAm         prebuilts/vndk/v28         prebuilts/vndk/v29         prebuilts/vndk/v30         treble_app         vendor/apn         vendor/lptools         vendor/magisk         vendor/vndk-tests         vendor/cawilliamson-priv
     do
         [[ ! -e "$ANDROID_ROOT/$path" ]] ||
             fail "dropped_scaffold_path_present=$path"
@@ -467,7 +464,7 @@ stage() {
 
     (
         cd "$ANDROID_ROOT"
-        "$SABLE_REPO_TOOL" sync             --jobs=4             --no-clone-bundle             --no-tags             device/phh/treble             prebuilts/vndk/v28             prebuilts/vndk/v29             vendor/hardware_overlay             vendor/interfaces             vendor/lptools
+        "$SABLE_REPO_TOOL" sync             --jobs=4             --no-clone-bundle             --no-tags             device/phh/treble             vendor/hardware_overlay             vendor/interfaces
     )
 
     verify_scaffold_heads
