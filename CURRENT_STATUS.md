@@ -1,6 +1,6 @@
 # SableOS current status
 
-Last updated: 2026-10-01
+Last updated: 2026-10-02
 
 This file is the private integration repository's current execution authority.
 Historical R5-R10 status files, issue bodies and PR descriptions remain evidence
@@ -106,6 +106,20 @@ The canonical current integration boundary is documented in
 Parallel product development in `aimindseye/titan2-temp` is source input only;
 canonical product identity remains `sable_titan2_n1d_arm64` staged under
 `vendor/sable/n1d`. Canonical CI remains operator-owned.
+
+## Titan 2 C3B E1 transition
+
+C3A is sealed and merged. E1 activates a separate C3B engineering workspace
+using the pinned 1,033-project GrapheneOS base plus six pinned Treble
+build-scaffold projects, with zero Restless runtime patches and zero inherited
+Graphene project removals.
+
+The first E1 build identity is
+`treble_arm64_bvN-bp4a-userdebug systemimage`. It is build/parse-only:
+device contact, flash, signing, physical runtime and release remain blocked.
+Final Sable product identity and application/source-module admission are E2.
+
+See `docs/titan2/N1D_C3B_TRANSITION_R1.md`.
 
 ## Active development
 
