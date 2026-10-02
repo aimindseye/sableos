@@ -251,6 +251,12 @@ applicator `build/titan2/apply-n1d-c3b-phh-base-hardening.py` before product
 generation. The applicator removes the highest-risk PHH security/control
 defaults instead of treating the PHH base as Sable runtime policy.
 
+Compatibility Peel R2 pre-audits the pinned C3A compatibility corpus before the
+next E1 compile. The complete 369-patch Restless control inventory is
+deny-by-default and has zero verbatim C3B admissions. The focused R2 ledger
+admits only Sable-owned narrow build-graph/security reimplementations while the
+runtime patch allowlist remains empty.
+
 C3B E1 keeps the generated `treble_arm64_bvN` identity only as an engineering
 build identity. Final Sable product identity, source-module admission and
 partition/product inheritance are E2 responsibilities.
@@ -334,6 +340,8 @@ Current C3B composition authority is:
 
 ```text
 build/titan2/n1d-c3b-transition.env
+build/titan2/n1d-c3a-control-patch-inventory-r2.tsv
+build/titan2/n1d-c3b-compatibility-peel-r2.tsv
 build/titan2/n1d-c3b-scaffold-add.xml
 build/titan2/n1d-c3b-scaffold-decisions.tsv
 build/titan2/apply-n1d-c3b-phh-base-hardening.py
@@ -414,6 +422,11 @@ build/parse-scaffold projects, for 1,038 managed projects. It inherits zero C3A
 Graphene removals and zero Restless runtime patches. The exact pinned PHH
 `base.mk` is hardened before generation with 14 fail-closed security/control
 transformations.
+
+R2 also binds a complete 369-patch C3A control-corpus inventory and an 11-row
+focused semantic compatibility ledger. The next build applies the complete
+admitted E1 set before Soong: two non-Titan LGE graph quarantines, two Soong
+host-layout fixes, and two Sable-owned build/make compatibility patches.
 
 Entry points:
 
