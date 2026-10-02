@@ -492,14 +492,15 @@ verify() {
     verify_device_phh_generated_state
     verify_optional_phh_lge_vibrator_quarantine_state
     verify_optional_host_layout_state
+    verify_optional_build_make_compat_state
     verify_optional_vendor_interfaces_quarantine_state
 
     dirty_count="$(grep -cve '^$' "$dirty_file" || true)"
 
-    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 3 ]] || {
+    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 4 ]] || {
         cat "$dirty_file"
         rm -f "$heads_file" "$dirty_file"
-        fail "dirty_project_count expected=1_to_3 actual=$dirty_count"
+        fail "dirty_project_count expected=1_to_4 actual=$dirty_count"
     }
 
     grep -Fxq 'device/phh/treble' "$dirty_file" || {
@@ -511,7 +512,7 @@ verify() {
     while IFS= read -r dirty_project; do
         [[ -n "$dirty_project" ]] || continue
         case "$dirty_project" in
-            device/phh/treble|build/soong|vendor/interfaces) ;;
+            device/phh/treble|build/soong|build/make|vendor/interfaces) ;;
             *)
                 cat "$dirty_file"
                 rm -f "$heads_file" "$dirty_file"
@@ -524,6 +525,7 @@ verify() {
     echo "N1D_C3B_MANAGED_PROJECT_COUNT=PASS value=$count"
     echo "N1D_C3B_GRAPHENE_REMOVALS=PASS_ZERO"
     echo "N1D_C3B_RESTLESS_PATCHES=PASS_ZERO"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
     echo "N1D_C3B_PREP_VERIFY=PASS"
 }
 
