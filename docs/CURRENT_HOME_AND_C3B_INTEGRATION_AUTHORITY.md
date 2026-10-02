@@ -2,7 +2,7 @@
 
 Status: **current architecture authority**
 
-Date: 2026-10-01
+Date: 2026-10-02
 
 This document resolves conflicting historical SableOS launcher/product notes and
 defines the source-of-truth boundary for Titan 2 N1D/C3B product integration.
@@ -54,7 +54,9 @@ after live compilation proved that its direct
 `generic_system_arm64 + gsi_release` graph was incompatible with the pinned
 GrapheneOS source set.
 
-C3B E1 therefore keeps a generated engineering identity:
+C3B E1 uses a separate clean Graphene workspace, adds five pinned Treble
+build-scaffold projects, applies 14 exact security/control reductions to the
+pinned PHH `base.mk`, and keeps a generated engineering identity:
 
 ```text
 RELEASE_TRACK=N1D
@@ -74,6 +76,9 @@ Canonical source:
 
 ```text
 build/titan2/n1d-c3b-transition.env
+build/titan2/n1d-c3b-scaffold-add.xml
+build/titan2/n1d-c3b-scaffold-decisions.tsv
+build/titan2/apply-n1d-c3b-phh-base-hardening.py
 build/titan2/n1d-c3b-engineering.mk
 build/titan2/n1d-product-contract.env
 docs/titan2/N1D_C3_PRODUCT_COMPOSITION_R1.md
