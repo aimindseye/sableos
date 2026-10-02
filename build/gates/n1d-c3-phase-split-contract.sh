@@ -27,7 +27,7 @@ require_line() {
 }
 
 for required in \
-    'N1D_C3_PHASE_SPLIT_VERSION=2' \
+    'N1D_C3_PHASE_SPLIT_VERSION=3' \
     'N1D_C3A_ROLE=RESTLESS_TREBLEDROID_REPRODUCTION_CONTROL' \
     'N1D_C3A_PRODUCT=treble_arm64_bvN' \
     'N1D_C3A_ADD_PROJECT_COUNT=12' \
@@ -58,6 +58,9 @@ for required in \
     'N1D_C3B_LTE_ONLY_FIX_ALLOWED=NO' \
     'N1D_C3B_RELEASE_ELIGIBLE=NO' \
     'N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE' \
+    'N1D_C3A_CONTROL_PHASE_STATUS=CLOSED_SEALED' \
+    'N1D_C3_CURRENT_PHASE_AUTHORITY=build/titan2/n1d-c3b-transition.env' \
+    'N1D_C3B_TRANSITION_PROFILE=build/titan2/n1d-c3b-transition.env' \
     'N1D_C3_PHASE_SPLIT=PASS'
 do
     require_line "$SPLIT" "$required"
