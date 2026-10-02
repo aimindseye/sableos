@@ -132,10 +132,11 @@ but E1 moves current phase authority to:
 build/titan2/n1d-c3b-transition.env
 ```
 
-E1 authorizes only a separate C3B engineering workspace, product parse, and
-`systemimage` compilation. The first engineering target remains the generated
-Treble product `treble_arm64_bvN-bp4a-userdebug`; final Sable product identity
-and source-module admission are E2 work.
+E1 authorizes only a separate C3B engineering workspace, five-project scaffold
+sync, exact PHH-base hardening, product parse, and `systemimage` compilation.
+The first engineering target remains the generated Treble product
+`treble_arm64_bvN-bp4a-userdebug`; final Sable product identity and
+source-module admission are E2 work.
 
 ```text
 N1D_C3_CURRENT_ACTIVE_PHASE=C3B_ENGINEERING
