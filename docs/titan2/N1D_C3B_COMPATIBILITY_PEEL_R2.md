@@ -46,11 +46,21 @@ classify before the next build
 one C3B systemimage attempt
 ```
 
-The authoritative decision ledger is:
+The complete pinned 369-patch control corpus inventory is:
+
+```text
+build/titan2/n1d-c3a-control-patch-inventory-r2.tsv
+```
+
+Every Restless control patch is deny-by-default in that inventory and the count is bound to the five C3A tiers (198 + 121 + 29 + 17 + 4 = 369). No Restless patch is admitted verbatim by R2.
+
+The focused semantic decision ledger for the 9 platform/build fixes plus the 2 previously proven Soong host-layout fixes is:
 
 ```text
 build/titan2/n1d-c3b-compatibility-peel-r2.tsv
 ```
+
+The legacy HIDL vibrator restoration is also explicitly rejected in the full inventory because C3B quarantines the non-Titan LGE consumer instead.
 
 ## Newly admitted E1 compatibility
 
