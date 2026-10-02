@@ -69,7 +69,7 @@ prep_last_nonempty="$(awk 'NF {line=$0} END {print line}' "$PREP")"
 hardening_transform_count="$(grep -c '^        "drop_' "$HARDENER" || true)"
 
 [[ "$repo_sync_count" == 2 ]] || fail "prep_repo_sync_count=$repo_sync_count"
-[[ "$repo_forall_count" == 2 ]] || fail "prep_repo_forall_definition_count=$repo_forall_count"
+[[ "$repo_forall_count" == 3 ]] || fail "prep_repo_forall_definition_count=$repo_forall_count"
 [[ "$systemimage_count" == 1 ]] || fail "build_systemimage_count=$systemimage_count"
 [[ "$prep_action_dispatch_count" == 1 ]] || fail "prep_action_dispatch_count=$prep_action_dispatch_count"
 [[ "$prep_preflight_count" == 1 ]] || fail "prep_preflight_count=$prep_preflight_count"
