@@ -27,7 +27,8 @@ done
 for f in "$TRANSITION" "$C3A_EVIDENCE" "$SOURCE_LOCK"; do
     bash -n "$f" || fail "syntax=$f"
 done
-python3 -m py_compile "$HARDENER" || fail "python_syntax=$HARDENER"
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache" \
+    python3 -m py_compile "$HARDENER" || fail "python_syntax=$HARDENER"
 
 bash "$C3A_EVIDENCE_GATE"
 
