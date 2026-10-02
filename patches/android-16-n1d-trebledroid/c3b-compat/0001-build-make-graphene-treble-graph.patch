@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SableOS Engineering <engineering@sableos.org>
+Date: Fri, 2 Oct 2026 08:07:00 -0400
+Subject: [PATCH] build: admit minimal Graphene Treble GSI graph compatibility
+
+C3B does not inherit the RestlessOS build/make patch wholesale. Admit only
+the build-graph changes already proven by C3A and reproduced by C3B:
+
+- use GrapheneOS TrichromeWebView instead of the absent generic webview;
+- use TrichromeChrome instead of the absent Browser2;
+- remove absent Camera2, messaging and QuickSearchBox from the GSI graph;
+- disable the Cuttlefish-only aosp_shared_system_image module whose global
+  verification is irrelevant to the active Treble system image.
+
+No APN, llkd, OEM mount, application-removal or runtime policy is changed.
+---
+ target/product/generic/Android.bp | 3 ++-
+ target/product/gsi/Android.bp     | 5 +----
+ 2 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/target/product/generic/Android.bp b/target/product/generic/Android.bp
+--- a/target/product/generic/Android.bp
++++ b/target/product/generic/Android.bp
+@@ -419,7 +419,7 @@ android_filesystem_defaults {
+         ///////////////////////////////////////////
+         // media_product
+         ///////////////////////////////////////////
+-        "webview",
++        "TrichromeWebView",
+ 
+         ///////////////////////////////////////////
+         // base_product
+@@ -1092,6 +1092,7 @@ android_system_image {
+ android_system_image {
+     name: "aosp_shared_system_image",
+     defaults: ["system_image_defaults"],
++    enabled: false,
+     dirs: android_rootdirs,
+     symlinks: android_symlinks,
+     type: "erofs",
+diff --git a/target/product/gsi/Android.bp b/target/product/gsi/Android.bp
+--- a/target/product/gsi/Android.bp
++++ b/target/product/gsi/Android.bp
+@@ -129,11 +129,9 @@ android_filesystem_defaults {
+         ///////////////////////////////////////////
+         // gsi_product
+         ///////////////////////////////////////////
+-        "Browser2",
+-        "Camera2",
++        "TrichromeChrome",
+         "Dialer",
+         "LatinIME",
+-        "messaging",
+         "apns-full-conf.xml",
+         "frameworks-base-overlays",
+     ],
+@@ -187,7 +185,6 @@ android_system_image {
+         "Gallery2",
+         "Music",
+         "preinstalled-packages-platform-handheld-product.xml",
+-        "QuickSearchBox",
+         "SettingsIntelligence",
+         "frameworks-base-overlays",
+ 
+-- 
+2.54.0
