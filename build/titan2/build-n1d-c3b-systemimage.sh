@@ -19,13 +19,14 @@ SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
 BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
 BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
+LPTOOLS_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0003-vendor-lptools-android16-fs-mgr-api.patch"
 
 fail() {
     echo "N1D_C3B_SYSTEMIMAGE_BUILD=FAIL $*" >&2
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"
+for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$LPTOOLS_COMPAT_PATCH"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -89,6 +90,7 @@ SOONG_ROOT="$ANDROID_ROOT/build/soong"
 PHH_ROOT="$ANDROID_ROOT/device/phh/treble"
 VENDOR_INTERFACES_ROOT="$ANDROID_ROOT/vendor/interfaces"
 BUILD_MAKE_ROOT="$ANDROID_ROOT/build/make"
+LPTOOLS_ROOT="$ANDROID_ROOT/vendor/lptools"
 LUNCH_TARGET="$N1D_C3B_GENERATED_PRODUCT-$N1D_C3B_RELEASE_CONFIG-$N1D_C3B_ENGINEERING_VARIANT"
 
 echo "===== N1D C3B ENGINEERING SYSTEMIMAGE BUILD ====="
@@ -305,6 +307,61 @@ apply_build_make_compat() {
     echo "N1D_C3B_BUILD_MAKE_COMPAT=PASS_APPLIED count=2"
 }
 
+
+check_lptools_compat_state() {
+    local target="$N1D_C3B_LPTOOLS_API_COMPAT_TARGET"
+    local head_blob current_blob patch_blob status
+
+    head_blob="$(git -C "$LPTOOLS_ROOT" rev-parse "HEAD:$target")"
+    [[ "$head_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB" ]] ||
+        fail "lptools_base_blob expected=$N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB actual=$head_blob"
+
+    patch_blob="$(git hash-object "$LPTOOLS_COMPAT_PATCH")"
+    [[ "$patch_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_PATCH_BLOB_SHA" ]] ||
+        fail "lptools_patch_blob expected=$N1D_C3B_LPTOOLS_API_COMPAT_PATCH_BLOB_SHA actual=$patch_blob"
+
+    current_blob="$(git hash-object "$LPTOOLS_ROOT/$target")"
+    if [[ "$current_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_POST_BLOB" ]]; then
+        status="$(git -C "$LPTOOLS_ROOT" status --porcelain --untracked-files=all)"
+        [[ "$status" == " M $target" ]] || {
+            printf '%s\n' "$status"
+            fail lptools_unexpected_dirty_state
+        }
+        git -C "$LPTOOLS_ROOT" apply --reverse --check "$LPTOOLS_COMPAT_PATCH" ||
+            fail lptools_reverse_check
+        if grep -Eq 'fs_mgr_get_super_partition_name\([^)]+' "$LPTOOLS_ROOT/$target"; then
+            fail lptools_legacy_slot_argument_still_present
+        fi
+        return 0
+    fi
+
+    if [[ "$current_blob" == "$N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB" ]]; then
+        [[ -z "$(git -C "$LPTOOLS_ROOT" status --porcelain --untracked-files=all)" ]] ||
+            fail lptools_dirty_at_base
+        return 1
+    fi
+
+    fail "lptools_unexpected_blob=$current_blob"
+}
+
+apply_lptools_compat() {
+    if check_lptools_compat_state; then
+        echo "N1D_C3B_LPTOOLS_COMPAT=PASS_ALREADY_PRESENT"
+        return
+    fi
+
+    [[ "$BUILD_COMPAT_MUTATION_AUTHORIZED" == YES ]] ||
+        fail build_compat_patch_requires_--authorize-build-compat-source-mutation
+
+    git -C "$LPTOOLS_ROOT" apply --check "$LPTOOLS_COMPAT_PATCH" ||
+        fail lptools_apply_check
+    git -C "$LPTOOLS_ROOT" apply "$LPTOOLS_COMPAT_PATCH" ||
+        fail lptools_apply
+
+    check_lptools_compat_state || fail lptools_post_apply_state
+    echo "N1D_C3B_LPTOOLS_COMPAT=PASS_APPLIED"
+}
+
 check_patch_state() {
     local target="$1"
     local patch="$2"
@@ -400,6 +457,7 @@ apply_one_patch() {
 apply_vendor_interfaces_quarantine
 apply_device_phh_lge_quarantine
 apply_build_make_compat
+apply_lptools_compat
 
 validate_soong_dirty_subset
 
@@ -425,6 +483,8 @@ git -C "$PHH_ROOT" status --porcelain --untracked-files=all --     "$N1D_C3B_DEV
 git -C "$PHH_ROOT" diff --     "$N1D_C3B_DEVICE_PHH_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/device-phh-lge-vibrator.diff"
 git -C "$BUILD_MAKE_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/build-make-r2-status.txt"
 git -C "$BUILD_MAKE_ROOT" diff --     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_TARGET"     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_TARGET"     "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_TARGET"     > "$EVIDENCE_DIR/build-make-r2.diff"
+git -C "$LPTOOLS_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/vendor-lptools-api-compat-status.txt"
+git -C "$LPTOOLS_ROOT" diff -- "$N1D_C3B_LPTOOLS_API_COMPAT_TARGET"     > "$EVIDENCE_DIR/vendor-lptools-api-compat.diff"
 
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
@@ -493,6 +553,9 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3B_COMPATIBILITY_PEEL_VERSION=$N1D_C3B_COMPATIBILITY_PEEL_VERSION"
     echo "N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT"
     echo "N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE"
+    echo "N1D_C3B_LPTOOLS_API_COMPAT_PATCH_COUNT=$N1D_C3B_LPTOOLS_API_COMPAT_PATCH_COUNT"
+    echo "N1D_C3B_LPTOOLS_API_COMPAT_PATCH_ROLE=$N1D_C3B_LPTOOLS_API_COMPAT_PATCH_ROLE"
+    echo "N1D_C3B_LPTOOLS_API_COMPAT_POST_BLOB=$N1D_C3B_LPTOOLS_API_COMPAT_POST_BLOB"
     echo "N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO"
     echo "N1D_C3B_FLASH_AUTHORIZED=NO"
     echo "N1D_C3B_SIGNING_AUTHORIZED=NO"
@@ -510,6 +573,7 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 
 echo "N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT"
 echo "N1D_C3B_COMPATIBILITY_PEEL_R2=PASS_APPLIED"
+echo "N1D_C3B_LPTOOLS_API_COMPAT=PASS"
 echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
 echo "SYSTEM_IMG=$SYSTEM_IMG"
 echo "SYSTEM_SHA256=$sha"
