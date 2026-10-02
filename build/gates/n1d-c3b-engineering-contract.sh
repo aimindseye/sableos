@@ -109,7 +109,7 @@ if grep -Eq '^diff --git ' "$SCAFFOLD_COMPAT_PATCH" &&
 fi
 
 phh_lge_patch_blob="$(git hash-object "$PHH_LGE_COMPAT_PATCH")"
-[[ "$phh_lge_patch_blob" == 727ad9fa18aba9aaa43879c50eeae0ae405e2879 ]] ||
+[[ "$phh_lge_patch_blob" == ddeec00be9e6da4f88093603eedcbe95a96122c5 ]] ||
     fail "phh_lge_patch_blob=$phh_lge_patch_blob"
 [[ "$(grep -Ec '^diff --git ' "$PHH_LGE_COMPAT_PATCH")" == 1 ]] ||
     fail phh_lge_patch_not_single_file
