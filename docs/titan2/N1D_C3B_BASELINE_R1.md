@@ -2,15 +2,20 @@
 
 Status: **C3A evidence consumed by E1; C3B engineering transition active on review branch**
 
-Date: 2026-10-01
+Date: 2026-10-02
 
 ## Purpose
 
 C3B is the actual SableOS N1D baseline.
 
-It starts from the sealed GrapheneOS Android 16 source and may use the pinned
-TrebleDroid scaffold as build/compatibility infrastructure, but it does not
-inherit the complete C3A Restless patch stack.
+It starts from a separate clean checkout of the same pinned GrapheneOS Android
+16 source used to establish the sealed base. E1 adds five pinned Treble
+build-scaffold projects, for 1,038 managed projects, and inherits none of the
+C3A 54-project removal set or 369-patch Restless control stack.
+
+The pinned PHH `base.mk` is not accepted wholesale as Sable runtime policy.
+Before product generation, E1 applies 14 exact fail-closed security/control
+reductions bound to the pinned PHH commit and `base.mk` blob.
 
 ## Admission rule
 
@@ -96,8 +101,20 @@ C3B must not inherit PHH/Restless release-incompatible defaults such as:
 - vendor Magisk runtime inclusion;
 - PHH OTA behavior.
 
-These must be absent, replaced, or individually justified before release
-qualification.
+E1 removes these highest-risk defaults before the first C3B engineering parse
+or compile. Other PHH compatibility behavior remains provisional and can be
+removed, retained or replaced only through evidence-driven C3B work.
+
+The active E1 source graph is:
+
+```text
+GrapheneOS pinned base       1033
+C3B Treble scaffold             5
+Graphene removals               0
+Restless patches                0
+-------------------------------
+managed projects             1038
+```
 
 ## Current authorization state
 
