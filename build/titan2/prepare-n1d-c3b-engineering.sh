@@ -376,6 +376,612 @@ verify_optional_host_layout_state() {
     echo "N1D_C3B_HOST_LAYOUT_STATE=PASS_EXACT_PATCHED"
 }
 
+verify_optional_build_make_compat_state() {
+    local generic_target="$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_TARGET"
+    local gsi_target="$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_TARGET"
+    local adb_target="$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_TARGET"
+    local generic_head gsi_head adb_head generic_blob gsi_blob adb_blob
+    local patch1_blob patch2_blob status count
+
+    generic_head="$(git -C "$BUILD_MAKE_ROOT" rev-parse "HEAD:$generic_target")"
+    gsi_head="$(git -C "$BUILD_MAKE_ROOT" rev-parse "HEAD:$gsi_target")"
+    adb_head="$(git -C "$BUILD_MAKE_ROOT" rev-parse "HEAD:$adb_target")"
+
+    [[ "$generic_head" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_BASE_BLOB" ]] ||
+        fail "build_make_generic_head_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_BASE_BLOB actual=$generic_head"
+    [[ "$gsi_head" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_BASE_BLOB" ]] ||
+        fail "build_make_gsi_head_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_BASE_BLOB actual=$gsi_head"
+    [[ "$adb_head" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BASE_BLOB" ]] ||
+        fail "build_make_adb_head_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BASE_BLOB actual=$adb_head"
+
+    patch1_blob="$(git hash-object "$BUILD_MAKE_COMPAT_PATCH_1")"
+    patch2_blob="$(git hash-object "$BUILD_MAKE_COMPAT_PATCH_2")"
+    [[ "$patch1_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_BLOB_SHA" ]] ||
+        fail "build_make_compat_patch_1_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_BLOB_SHA actual=$patch1_blob"
+    [[ "$patch2_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BLOB_SHA" ]] ||
+        fail "build_make_compat_patch_2_blob expected=$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BLOB_SHA actual=$patch2_blob"
+
+    generic_blob="$(git hash-object "$BUILD_MAKE_ROOT/$generic_target")"
+    gsi_blob="$(git hash-object "$BUILD_MAKE_ROOT/$gsi_target")"
+    adb_blob="$(git hash-object "$BUILD_MAKE_ROOT/$adb_target")"
+
+    if [[ "$generic_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_BASE_BLOB" &&
+          "$gsi_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_BASE_BLOB" &&
+          "$adb_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_BASE_BLOB" ]]; then
+        status="$(git -C "$BUILD_MAKE_ROOT" status --porcelain --untracked-files=all)"
+        [[ -z "$status" ]] || {
+            printf '%s\n' "$status"
+            fail build_make_dirty_while_targets_at_base
+        }
+        echo "N1D_C3B_BUILD_MAKE_COMPAT_STATE=PASS_CLEAN"
+        return
+    fi
+
+    [[ "$generic_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GENERIC_POST_BLOB" ]] ||
+        fail "build_make_generic_partial_or_unexpected_blob=$generic_blob"
+    [[ "$gsi_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_1_GSI_POST_BLOB" ]] ||
+        fail "build_make_gsi_partial_or_unexpected_blob=$gsi_blob"
+    [[ "$adb_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_POST_BLOB" ]] ||
+        fail "build_make_adb_partial_or_unexpected_blob=$adb_blob"
+
+    git -C "$BUILD_MAKE_ROOT" apply --reverse --check "$BUILD_MAKE_COMPAT_PATCH_2" ||
+        fail build_make_adb_reverse_check
+    git -C "$BUILD_MAKE_ROOT" apply --reverse --check "$BUILD_MAKE_COMPAT_PATCH_1" ||
+        fail build_make_graph_reverse_check
+
+    status="$(git -C "$BUILD_MAKE_ROOT" status --porcelain --untracked-files=all)"
+    count="$(printf '%s\n' "$status" | grep -cve '^
+    local repo="$ANDROID_ROOT/vendor/interfaces"
+    local target="$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"
+    local patch="$SCAFFOLD_COMPAT_PATCH"
+    local base_blob patch_blob status
+
+    base_blob="$(git -C "$repo" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB" ]] ||
+        fail "vendor_interfaces_lge_vibrator_base_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$patch")"
+    [[ "$patch_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA" ]] ||
+        fail "vendor_interfaces_lge_vibrator_patch_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA actual=$patch_blob"
+
+    status="$(git -C "$repo" status --porcelain --untracked-files=all)"
+    if [[ -z "$status" ]]; then
+        [[ -f "$repo/$target" ]] || fail vendor_interfaces_lge_vibrator_target_missing_clean
+        echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_CLEAN_NOT_QUARANTINED"
+        return
+    fi
+
+    [[ "$status" == " D $target" ]] || {
+        printf '%s\n' "$status"
+        fail vendor_interfaces_unexpected_dirty_state
+    }
+    [[ ! -e "$repo/$target" ]] || fail vendor_interfaces_lge_vibrator_target_still_present
+    git -C "$repo" apply --reverse --check "$patch" ||
+        fail vendor_interfaces_lge_vibrator_reverse_check
+
+    echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_EXACT_QUARANTINE"
+}
+
+verify() {
+    echo "===== TITAN 2 N1D C3B ENGINEERING VERIFY ====="
+    assert_global_boundaries
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+    verify_manifest_checkout
+
+    [[ -f "$LOCAL_MANIFEST" ]] || fail scaffold_local_manifest_missing
+    cmp -s "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST" ||
+        fail scaffold_local_manifest_mismatch
+
+    local count heads_file dirty_file dirty_count
+    heads_file="$(mktemp)"
+    dirty_file="$(mktemp)"
+    capture_project_state "$heads_file" "$dirty_file"
+    count="$(grep -cve '^$' "$heads_file" || true)"
+    [[ "$count" == "$N1D_C3B_MANAGED_PROJECT_COUNT" ]] || {
+        rm -f "$heads_file" "$dirty_file"
+        fail "managed_project_count expected=$N1D_C3B_MANAGED_PROJECT_COUNT actual=$count"
+    }
+
+    verify_scaffold_heads
+    verify_dropped_paths_absent
+    verify_device_phh_generated_state
+    verify_optional_phh_lge_vibrator_quarantine_state
+    verify_optional_host_layout_state
+    verify_optional_vendor_interfaces_quarantine_state
+
+    dirty_count="$(grep -cve '^$' "$dirty_file" || true)"
+
+    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 3 ]] || {
+        cat "$dirty_file"
+        rm -f "$heads_file" "$dirty_file"
+        fail "dirty_project_count expected=1_to_3 actual=$dirty_count"
+    }
+
+    grep -Fxq 'device/phh/treble' "$dirty_file" || {
+        cat "$dirty_file"
+        rm -f "$heads_file" "$dirty_file"
+        fail device_phh_not_dirty_as_expected
+    }
+
+    while IFS= read -r dirty_project; do
+        [[ -n "$dirty_project" ]] || continue
+        case "$dirty_project" in
+            device/phh/treble|build/soong|vendor/interfaces) ;;
+            *)
+                cat "$dirty_file"
+                rm -f "$heads_file" "$dirty_file"
+                fail "unexpected_dirty_project=$dirty_project"
+                ;;
+        esac
+    done < "$dirty_file"
+    rm -f "$heads_file" "$dirty_file"
+
+    echo "N1D_C3B_MANAGED_PROJECT_COUNT=PASS value=$count"
+    echo "N1D_C3B_GRAPHENE_REMOVALS=PASS_ZERO"
+    echo "N1D_C3B_RESTLESS_PATCHES=PASS_ZERO"
+    echo "N1D_C3B_PREP_VERIFY=PASS"
+}
+
+preflight() {
+    echo "===== TITAN 2 N1D C3B ENGINEERING PREFLIGHT ====="
+    assert_global_boundaries
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+
+    [[ -x "$SABLE_REPO_TOOL" ]] ||
+        fail "repo_tool_missing=$SABLE_REPO_TOOL"
+    [[ -x "$SABLE_PYTHON" ]] ||
+        fail "python_missing=$SABLE_PYTHON"
+    command -v git >/dev/null 2>&1 || fail git_missing
+
+    if [[ -e "$ANDROID_ROOT" ]]; then
+        if [[ -d "$ANDROID_ROOT/.repo" ]]; then
+            echo "N1D_C3B_ANDROID_ROOT_STATE=INITIALIZED"
+        elif [[ -d "$ANDROID_ROOT" ]] &&
+             [[ -z "$(find "$ANDROID_ROOT" -mindepth 1 -maxdepth 1 -print -quit)" ]]
+        then
+            echo "N1D_C3B_ANDROID_ROOT_STATE=EMPTY_DIRECTORY"
+        else
+            fail "android_root_preexists_nonworkspace=$ANDROID_ROOT"
+        fi
+    else
+        echo "N1D_C3B_ANDROID_ROOT_STATE=ABSENT"
+    fi
+
+    echo "N1D_C3B_ENGINEERING_PREFLIGHT=PASS"
+}
+
+init_base() {
+    echo "===== TITAN 2 N1D C3B GRAPHENE INIT ====="
+    assert_global_boundaries
+    require_network_and_mutation
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+
+    if [[ -d "$ANDROID_ROOT/.repo" ]]; then
+        verify_manifest_checkout
+        echo "N1D_C3B_GRAPHENE_INIT=PASS_ALREADY_INITIALIZED"
+        return
+    fi
+
+    [[ ! -e "$ANDROID_ROOT" ||
+       ( -d "$ANDROID_ROOT" &&
+         -z "$(find "$ANDROID_ROOT" -mindepth 1 -maxdepth 1 -print -quit)" ) ]] ||
+        fail "android_root_not_fresh=$ANDROID_ROOT"
+
+    mkdir -p "$ANDROID_ROOT"
+    (
+        cd "$ANDROID_ROOT"
+        printf 'y\n' |
+            "$SABLE_REPO_TOOL" init                 --depth=1                 --manifest-url "$N1D_GRAPHENEOS_MANIFEST_REPO"                 --manifest-branch "refs/tags/$N1D_C3B_GRAPHENE_TAG"
+    )
+
+    verify_manifest_checkout
+    echo "N1D_C3B_GRAPHENE_INIT=PASS"
+}
+
+sync_base() {
+    echo "===== TITAN 2 N1D C3B GRAPHENE SYNC ====="
+    assert_global_boundaries
+    require_network_and_mutation
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+    verify_manifest_checkout
+
+    if [[ -d "$ANDROID_ROOT/.repo/local_manifests" ]] &&
+       [[ -n "$(find "$ANDROID_ROOT/.repo/local_manifests" -mindepth 1 -maxdepth 1 -type f -print -quit)" ]]
+    then
+        fail base_sync_local_manifest_present
+    fi
+
+    (
+        cd "$ANDROID_ROOT"
+        "$SABLE_REPO_TOOL" sync             --jobs=8             --no-clone-bundle             --no-tags
+    )
+
+    verify_base_clean
+    seal_base
+    echo "N1D_C3B_GRAPHENE_SYNC=PASS"
+}
+
+stage() {
+    echo "===== TITAN 2 N1D C3B MINIMAL SCAFFOLD STAGE ====="
+    assert_global_boundaries
+    require_network_and_mutation
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+    verify_manifest_checkout
+
+    if [[ -e "$LOCAL_MANIFEST" ]]; then
+        cmp -s "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST" ||
+            fail existing_scaffold_local_manifest_mismatch
+        verify
+        echo "N1D_C3B_SCAFFOLD_STAGE=PASS_ALREADY_STAGED"
+        return
+    fi
+
+    verify_base_clean
+
+    mkdir -p "$(dirname "$LOCAL_MANIFEST")"
+    install -m 0644 "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST"
+
+    (
+        cd "$ANDROID_ROOT"
+        "$SABLE_REPO_TOOL" sync             --jobs=4             --no-clone-bundle             --no-tags             device/phh/treble             prebuilts/vndk/v28             prebuilts/vndk/v29             vendor/interfaces             vendor/lptools
+    )
+
+    verify_scaffold_heads
+    verify_dropped_paths_absent
+
+    "$SABLE_PYTHON" "$HARDENER" apply --repo "$PHH_ROOT"
+
+    install -m 0644 "$ENGINEERING_DELTA" "$STAGED_DELTA"
+
+    (
+        cd "$PHH_ROOT"
+        bash generate.sh "$N1D_C3B_GENERATOR_CONFIG"
+    )
+
+    verify
+    echo "N1D_C3B_SCAFFOLD_STAGE=PASS"
+}
+
+case "$ACTION" in
+    preflight)
+        preflight
+        ;;
+    init-base)
+        init_base
+        ;;
+    sync-base)
+        sync_base
+        ;;
+    seal-base)
+        echo "===== TITAN 2 N1D C3B GRAPHENE BASE SEAL ====="
+        assert_global_boundaries
+        echo "NETWORK_FETCH_AUTHORIZED=NO"
+        echo "SOURCE_MUTATION_AUTHORIZED=NO"
+        bash "$STORAGE_VERIFY" runtime
+        bash "$TRANSITION_GATE"
+        verify_workspace_scope
+        seal_base
+        ;;
+    stage)
+        stage
+        ;;
+    verify)
+        verify
+        ;;
+    *)
+        fail "unknown_action=$ACTION"
+        ;;
+esac
+ || true)"
+    [[ "$count" == 3 ]] || {
+        printf '%s\n' "$status"
+        fail "build_make_dirty_count=$count"
+    }
+    printf '%s\n' "$status" | grep -Fxq " M $generic_target" ||
+        fail build_make_generic_dirty_entry_missing
+    printf '%s\n' "$status" | grep -Fxq " M $gsi_target" ||
+        fail build_make_gsi_dirty_entry_missing
+    printf '%s\n' "$status" | grep -Fxq " M $adb_target" ||
+        fail build_make_adb_dirty_entry_missing
+
+    grep -Fq '"TrichromeWebView"' "$BUILD_MAKE_ROOT/$generic_target" ||
+        fail build_make_trichrome_webview_missing
+    grep -Fq '"TrichromeChrome"' "$BUILD_MAKE_ROOT/$gsi_target" ||
+        fail build_make_trichrome_chrome_missing
+    grep -Fq '"apns-full-conf.xml"' "$BUILD_MAKE_ROOT/$gsi_target" ||
+        fail build_make_apn_owner_removed
+    for forbidden in '"Browser2"' '"Camera2"' '"messaging"' '"QuickSearchBox"'; do
+        if grep -Fq "$forbidden" "$BUILD_MAKE_ROOT/$gsi_target"; then
+            fail "build_make_forbidden_gsi_dep_present=$forbidden"
+        fi
+    done
+    if grep -Eq '^ro\.adb\.secure=0
+    local repo="$ANDROID_ROOT/vendor/interfaces"
+    local target="$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"
+    local patch="$SCAFFOLD_COMPAT_PATCH"
+    local base_blob patch_blob status
+
+    base_blob="$(git -C "$repo" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB" ]] ||
+        fail "vendor_interfaces_lge_vibrator_base_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$patch")"
+    [[ "$patch_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA" ]] ||
+        fail "vendor_interfaces_lge_vibrator_patch_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA actual=$patch_blob"
+
+    status="$(git -C "$repo" status --porcelain --untracked-files=all)"
+    if [[ -z "$status" ]]; then
+        [[ -f "$repo/$target" ]] || fail vendor_interfaces_lge_vibrator_target_missing_clean
+        echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_CLEAN_NOT_QUARANTINED"
+        return
+    fi
+
+    [[ "$status" == " D $target" ]] || {
+        printf '%s\n' "$status"
+        fail vendor_interfaces_unexpected_dirty_state
+    }
+    [[ ! -e "$repo/$target" ]] || fail vendor_interfaces_lge_vibrator_target_still_present
+    git -C "$repo" apply --reverse --check "$patch" ||
+        fail vendor_interfaces_lge_vibrator_reverse_check
+
+    echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_EXACT_QUARANTINE"
+}
+
+verify() {
+    echo "===== TITAN 2 N1D C3B ENGINEERING VERIFY ====="
+    assert_global_boundaries
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+    verify_manifest_checkout
+
+    [[ -f "$LOCAL_MANIFEST" ]] || fail scaffold_local_manifest_missing
+    cmp -s "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST" ||
+        fail scaffold_local_manifest_mismatch
+
+    local count heads_file dirty_file dirty_count
+    heads_file="$(mktemp)"
+    dirty_file="$(mktemp)"
+    capture_project_state "$heads_file" "$dirty_file"
+    count="$(grep -cve '^$' "$heads_file" || true)"
+    [[ "$count" == "$N1D_C3B_MANAGED_PROJECT_COUNT" ]] || {
+        rm -f "$heads_file" "$dirty_file"
+        fail "managed_project_count expected=$N1D_C3B_MANAGED_PROJECT_COUNT actual=$count"
+    }
+
+    verify_scaffold_heads
+    verify_dropped_paths_absent
+    verify_device_phh_generated_state
+    verify_optional_phh_lge_vibrator_quarantine_state
+    verify_optional_host_layout_state
+    verify_optional_vendor_interfaces_quarantine_state
+
+    dirty_count="$(grep -cve '^$' "$dirty_file" || true)"
+
+    [[ "$dirty_count" -ge 1 && "$dirty_count" -le 3 ]] || {
+        cat "$dirty_file"
+        rm -f "$heads_file" "$dirty_file"
+        fail "dirty_project_count expected=1_to_3 actual=$dirty_count"
+    }
+
+    grep -Fxq 'device/phh/treble' "$dirty_file" || {
+        cat "$dirty_file"
+        rm -f "$heads_file" "$dirty_file"
+        fail device_phh_not_dirty_as_expected
+    }
+
+    while IFS= read -r dirty_project; do
+        [[ -n "$dirty_project" ]] || continue
+        case "$dirty_project" in
+            device/phh/treble|build/soong|vendor/interfaces) ;;
+            *)
+                cat "$dirty_file"
+                rm -f "$heads_file" "$dirty_file"
+                fail "unexpected_dirty_project=$dirty_project"
+                ;;
+        esac
+    done < "$dirty_file"
+    rm -f "$heads_file" "$dirty_file"
+
+    echo "N1D_C3B_MANAGED_PROJECT_COUNT=PASS value=$count"
+    echo "N1D_C3B_GRAPHENE_REMOVALS=PASS_ZERO"
+    echo "N1D_C3B_RESTLESS_PATCHES=PASS_ZERO"
+    echo "N1D_C3B_PREP_VERIFY=PASS"
+}
+
+preflight() {
+    echo "===== TITAN 2 N1D C3B ENGINEERING PREFLIGHT ====="
+    assert_global_boundaries
+    echo "NETWORK_FETCH_AUTHORIZED=NO"
+    echo "SOURCE_MUTATION_AUTHORIZED=NO"
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+
+    [[ -x "$SABLE_REPO_TOOL" ]] ||
+        fail "repo_tool_missing=$SABLE_REPO_TOOL"
+    [[ -x "$SABLE_PYTHON" ]] ||
+        fail "python_missing=$SABLE_PYTHON"
+    command -v git >/dev/null 2>&1 || fail git_missing
+
+    if [[ -e "$ANDROID_ROOT" ]]; then
+        if [[ -d "$ANDROID_ROOT/.repo" ]]; then
+            echo "N1D_C3B_ANDROID_ROOT_STATE=INITIALIZED"
+        elif [[ -d "$ANDROID_ROOT" ]] &&
+             [[ -z "$(find "$ANDROID_ROOT" -mindepth 1 -maxdepth 1 -print -quit)" ]]
+        then
+            echo "N1D_C3B_ANDROID_ROOT_STATE=EMPTY_DIRECTORY"
+        else
+            fail "android_root_preexists_nonworkspace=$ANDROID_ROOT"
+        fi
+    else
+        echo "N1D_C3B_ANDROID_ROOT_STATE=ABSENT"
+    fi
+
+    echo "N1D_C3B_ENGINEERING_PREFLIGHT=PASS"
+}
+
+init_base() {
+    echo "===== TITAN 2 N1D C3B GRAPHENE INIT ====="
+    assert_global_boundaries
+    require_network_and_mutation
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+
+    if [[ -d "$ANDROID_ROOT/.repo" ]]; then
+        verify_manifest_checkout
+        echo "N1D_C3B_GRAPHENE_INIT=PASS_ALREADY_INITIALIZED"
+        return
+    fi
+
+    [[ ! -e "$ANDROID_ROOT" ||
+       ( -d "$ANDROID_ROOT" &&
+         -z "$(find "$ANDROID_ROOT" -mindepth 1 -maxdepth 1 -print -quit)" ) ]] ||
+        fail "android_root_not_fresh=$ANDROID_ROOT"
+
+    mkdir -p "$ANDROID_ROOT"
+    (
+        cd "$ANDROID_ROOT"
+        printf 'y\n' |
+            "$SABLE_REPO_TOOL" init                 --depth=1                 --manifest-url "$N1D_GRAPHENEOS_MANIFEST_REPO"                 --manifest-branch "refs/tags/$N1D_C3B_GRAPHENE_TAG"
+    )
+
+    verify_manifest_checkout
+    echo "N1D_C3B_GRAPHENE_INIT=PASS"
+}
+
+sync_base() {
+    echo "===== TITAN 2 N1D C3B GRAPHENE SYNC ====="
+    assert_global_boundaries
+    require_network_and_mutation
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+    verify_manifest_checkout
+
+    if [[ -d "$ANDROID_ROOT/.repo/local_manifests" ]] &&
+       [[ -n "$(find "$ANDROID_ROOT/.repo/local_manifests" -mindepth 1 -maxdepth 1 -type f -print -quit)" ]]
+    then
+        fail base_sync_local_manifest_present
+    fi
+
+    (
+        cd "$ANDROID_ROOT"
+        "$SABLE_REPO_TOOL" sync             --jobs=8             --no-clone-bundle             --no-tags
+    )
+
+    verify_base_clean
+    seal_base
+    echo "N1D_C3B_GRAPHENE_SYNC=PASS"
+}
+
+stage() {
+    echo "===== TITAN 2 N1D C3B MINIMAL SCAFFOLD STAGE ====="
+    assert_global_boundaries
+    require_network_and_mutation
+
+    bash "$STORAGE_VERIFY" runtime
+    bash "$TRANSITION_GATE"
+    verify_workspace_scope
+    verify_manifest_checkout
+
+    if [[ -e "$LOCAL_MANIFEST" ]]; then
+        cmp -s "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST" ||
+            fail existing_scaffold_local_manifest_mismatch
+        verify
+        echo "N1D_C3B_SCAFFOLD_STAGE=PASS_ALREADY_STAGED"
+        return
+    fi
+
+    verify_base_clean
+
+    mkdir -p "$(dirname "$LOCAL_MANIFEST")"
+    install -m 0644 "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST"
+
+    (
+        cd "$ANDROID_ROOT"
+        "$SABLE_REPO_TOOL" sync             --jobs=4             --no-clone-bundle             --no-tags             device/phh/treble             prebuilts/vndk/v28             prebuilts/vndk/v29             vendor/interfaces             vendor/lptools
+    )
+
+    verify_scaffold_heads
+    verify_dropped_paths_absent
+
+    "$SABLE_PYTHON" "$HARDENER" apply --repo "$PHH_ROOT"
+
+    install -m 0644 "$ENGINEERING_DELTA" "$STAGED_DELTA"
+
+    (
+        cd "$PHH_ROOT"
+        bash generate.sh "$N1D_C3B_GENERATOR_CONFIG"
+    )
+
+    verify
+    echo "N1D_C3B_SCAFFOLD_STAGE=PASS"
+}
+
+case "$ACTION" in
+    preflight)
+        preflight
+        ;;
+    init-base)
+        init_base
+        ;;
+    sync-base)
+        sync_base
+        ;;
+    seal-base)
+        echo "===== TITAN 2 N1D C3B GRAPHENE BASE SEAL ====="
+        assert_global_boundaries
+        echo "NETWORK_FETCH_AUTHORIZED=NO"
+        echo "SOURCE_MUTATION_AUTHORIZED=NO"
+        bash "$STORAGE_VERIFY" runtime
+        bash "$TRANSITION_GATE"
+        verify_workspace_scope
+        seal_base
+        ;;
+    stage)
+        stage
+        ;;
+    verify)
+        verify
+        ;;
+    *)
+        fail "unknown_action=$ACTION"
+        ;;
+esac
+ "$BUILD_MAKE_ROOT/$adb_target"; then
+        fail build_make_insecure_adb_override_active
+    fi
+
+    echo "N1D_C3B_BUILD_MAKE_COMPAT_STATE=PASS_EXACT_R2"
+}
+
 verify_optional_vendor_interfaces_quarantine_state() {
     local repo="$ANDROID_ROOT/vendor/interfaces"
     local target="$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"
