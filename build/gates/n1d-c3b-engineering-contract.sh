@@ -21,7 +21,8 @@ done
 for f in "$TRANSITION" "$PREP" "$PARSE" "$BUILD" "$TRANSITION_GATE"; do
     bash -n "$f" || fail "syntax=$f"
 done
-python3 -m py_compile "$HARDENER" || fail "python_syntax=$HARDENER"
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache" \
+    python3 -m py_compile "$HARDENER" || fail "python_syntax=$HARDENER"
 
 bash "$TRANSITION_GATE"
 
@@ -85,6 +86,11 @@ done
 
 grep -Fq 'EXPECTED_BASE_BLOB = "a29e402009d449150f1216e5d517ec0c9b36bfbd"' "$HARDENER" ||
     fail hardener_base_binding_missing
+grep -Fq 'EXPECTED_POST_BLOB = "58edfb8713e9a1392daaf5bbf0d07778efd6d669"' "$HARDENER" ||
+    fail hardener_post_binding_missing
+hardener_blob="$(git hash-object "$HARDENER")"
+[[ "$hardener_blob" == 9fdfeb59ab7826615e8c0a44ea105dfc4b7e0679 ]] ||
+    fail "hardener_blob=$hardener_blob"
 grep -Fq 'N1D_C3B_PHH_BASE_SECURITY_REDUCTIONS=PASS' "$HARDENER" ||
     fail hardener_pass_marker_missing
 
