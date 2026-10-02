@@ -19,6 +19,9 @@ The R9L8 cutover is authoritative:
 HOME_RUNTIME=packages/apps/Launcher3/Launcher3QuickStep
 SABLESTART_ROLE=PRESENTATION_AND_STATE_SOURCE_HOSTED_IN_LAUNCHER3
 STANDALONE_SABLELAUNCHER_RUNTIME=RETIRED
+HOME_AUTHORITY_SCOPE=SABLE_FIRST_PARTY_CANONICAL
+THIRD_PARTY_HOME_SELECTION_ALLOWED=YES
+FORCE_SABLE_HOME_AFTER_USER_SELECTION=NO
 ```
 
 Canonical source evidence:
@@ -32,6 +35,12 @@ docs/BUILD_LAYOUT.md
 
 The SableStart source directory no longer defines a standalone HOME application.
 Reusable Sable presentation/state source is compiled into Launcher3/Quickstep.
+
+This authority defines Sable's first-party HOME ownership, not a prohibition on
+Android user choice. A user-installed launcher may be selected as the default
+HOME through the normal Android role/default-app model. SableOS does not force
+Sable Start back after an explicit user selection. Third-party launchers do not
+automatically receive privileged Quickstep/SystemUI or Private Space integration.
 
 Historical files that describe `org.sableos.launcher` / `SableLauncher` as
 the current HOME architecture document an earlier R9 phase and must not be used
@@ -180,6 +189,8 @@ Current priority for new Titan 2 work:
 
 ```text
 CURRENT_HOME_AUTHORITY=LAUNCHER3_HOSTED_SABLE_START
+CURRENT_HOME_AUTHORITY_SCOPE=SABLE_FIRST_PARTY_CANONICAL
+THIRD_PARTY_HOME_SELECTION_ALLOWED=YES
 CURRENT_TITAN2_PRODUCT_AUTHORITY=N1D_C3B
 PARALLEL_PRODUCT_REPO=aimindseye/titan2-temp
 PUBLIC_DESIGN_REPO=sableos-project/platform_sable
