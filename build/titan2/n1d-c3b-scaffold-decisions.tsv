@@ -1,0 +1,13 @@
+# path	c3a_commit	c3b_decision	reason
+device/phh/treble	39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed	KEEP_BUILD_SCAFFOLD	Pinned generator and generic Treble compatibility substrate.
+packages/apps/QcRilAm	dc599b67cc1e7e9a62ca15eef605e3b2546d0d42	DROP_DEFAULT	Qualcomm-specific runtime app; Titan 2 is MediaTek and C3B admits runtime compatibility only from failure evidence.
+prebuilts/vndk/v28	204f1bad00aaf480ba33233f7b8c2ddaa03155dd	KEEP_BUILD_SCAFFOLD	Pinned PHH base requests extra VNDK 28 support.
+prebuilts/vndk/v29	bef5d37dda9360940964f097d612c8032e140961	KEEP_BUILD_SCAFFOLD	Pinned PHH base requests extra VNDK 29 support.
+prebuilts/vndk/v30	5f9884aa352825291757dfd6694b874ad8c1805e	DROP_DEFAULT	Not requested by the pinned vanilla base; re-admit only if parse/build evidence proves need.
+treble_app	96acf04e74d42a08cc841688686ad3c5d8bd5790	DROP_DEFAULT	Privileged PHH runtime control app; not build-scaffold authority for C3B.
+vendor/apn	8b06f423fd67e67f87a22ca520e1900335e3f790	DROP_DEFAULT	Carrier/APN policy is not build scaffold; C3B starts with source-built AOSP/Graphene telephony policy.
+vendor/hardware_overlay	bb0bbb9e1314e5312f718ca1d3ea320137d14370	KEEP_PARSE_SCAFFOLD	Pinned PHH base inherits overlay.mk; runtime overlay packages are filtered by the C3B engineering delta.
+vendor/interfaces	a2271d260e226e8de5cb1e8c15a229dc90c007dd	KEEP_BUILD_SCAFFOLD	Provides pinned vendor interface declarations referenced by generic compatibility modules.
+vendor/lptools	c8be7de57b80eab61a6f94ec86464a01fb9056f2	KEEP_BUILD_SCAFFOLD	Provides lptools module referenced by the pinned PHH base.
+vendor/magisk	d8056f8032a0f60f365ddfe5e9fccd7eaf3a655d	DROP_FORBIDDEN	Magisk/root runtime is outside the C3B security boundary.
+vendor/vndk-tests	533390a1d6bc98d86de6b9aab56825c1f03fddcb	DROP_DEFAULT	Test-only scaffold; not required by the first engineering product.
