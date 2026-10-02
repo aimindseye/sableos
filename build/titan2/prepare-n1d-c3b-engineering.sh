@@ -424,9 +424,9 @@ verify_optional_build_make_compat_state() {
     [[ "$adb_blob" == "$N1D_C3B_BUILD_MAKE_COMPAT_PATCH_2_POST_BLOB" ]] ||
         fail "build_make_adb_partial_or_unexpected_blob=$adb_blob"
 
-    git -C "$BUILD_MAKE_ROOT" apply --reverse --check "$BUILD_MAKE_COMPAT_PATCH_2" ||
+    git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero --reverse --check "$BUILD_MAKE_COMPAT_PATCH_2" ||
         fail build_make_adb_reverse_check
-    git -C "$BUILD_MAKE_ROOT" apply --reverse --check "$BUILD_MAKE_COMPAT_PATCH_1" ||
+    git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero --reverse --check "$BUILD_MAKE_COMPAT_PATCH_1" ||
         fail build_make_graph_reverse_check
 
     status="$(git -C "$BUILD_MAKE_ROOT" status --porcelain --untracked-files=all)"
