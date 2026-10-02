@@ -448,11 +448,13 @@ verify_optional_build_make_compat_state() {
         fail build_make_trichrome_chrome_missing
     grep -Fq '"apns-full-conf.xml"' "$BUILD_MAKE_ROOT/$gsi_target" ||
         fail build_make_apn_owner_removed
+
     for forbidden in '"Browser2"' '"Camera2"' '"messaging"' '"QuickSearchBox"'; do
         if grep -Fq "$forbidden" "$BUILD_MAKE_ROOT/$gsi_target"; then
             fail "build_make_forbidden_gsi_dep_present=$forbidden"
         fi
     done
+
     if grep -Eq '^ro\.adb\.secure=0$' "$BUILD_MAKE_ROOT/$adb_target"; then
         fail build_make_insecure_adb_override_active
     fi
