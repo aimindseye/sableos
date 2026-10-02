@@ -110,6 +110,7 @@ bash "$ROOT/build/gates/n1d-c3-phase-split-contract.sh"
 bash "$ROOT/build/gates/n1d-c3a-control-evidence-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-trebledroid-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
+python3 "$ROOT/build/gates/n1d-c3b-hub-parity-contract.py"
 bash "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-trebledroid-build-contract.sh"
 
