@@ -214,24 +214,38 @@ The later SableOS Titan 2 bring-up learning classifies
 `vendor.lge.hardware.vibrator@1.0` / `vibrator-lge` as LG/PHH compatibility
 material rather than a Titan 2 requirement.
 
-E1 therefore admits one narrower build-graph quarantine:
+E1 therefore admits one two-sided, narrowly bounded build-graph quarantine:
 
 ~~~text
-project: vendor/interfaces
-pinned project commit: a2271d260e226e8de5cb1e8c15a229dc90c007dd
-target: vendor/lge/hardware/vibrator/1.0/Android.bp
-target base blob: fa69894ac6b59ddb623f6f8f4426a15cef0e5df9
-action: delete exactly this Android.bp build definition
-patch blob: 21e88ec26ef0b0d5b80abd77ce2d3381c47a1976
+part 1:
+  project: vendor/interfaces
+  pinned project commit: a2271d260e226e8de5cb1e8c15a229dc90c007dd
+  target: vendor/lge/hardware/vibrator/1.0/Android.bp
+  target base blob: fa69894ac6b59ddb623f6f8f4426a15cef0e5df9
+  action: delete exactly this LGE interface build definition
+  patch blob: 21e88ec26ef0b0d5b80abd77ce2d3381c47a1976
+
+part 2:
+  project: device/phh/treble
+  pinned project commit: 39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
+  target: cmds/Android.bp
+  target base blob: df2625f98a3df2472a3750e1345cd652902a15f3
+  action: delete exactly the vibrator-lge cc_binary block
+  patch blob: 727ad9fa18aba9aaa43879c50eeae0ae405e2879
+
 role: NON_TITAN_VENDOR_BUILD_GRAPH_QUARANTINE
+runtime patch allowlist delta: 0
+Restless patch count delta: 0
 ~~~
 
 The patch is source/build-graph compatibility only. It does not re-add a legacy
 platform HIDL API, does not alter Titan 2 runtime behavior, and does not
 increment either the Restless patch count or the C3B runtime patch allowlist.
 
-The driver accepts only a clean pinned `vendor/interfaces` tree or the exact
-single-file deletion above and fails closed on any other dirty state.
+The driver accepts only the exact pinned inputs or the two exact quarantine
+states above and fails closed on any other `vendor/interfaces` or PHH
+`cmds/Android.bp` mutation. The `vibrator-lge.cpp` source file is left untouched;
+only its non-Titan build module is removed.
 
 ## Authorization
 
