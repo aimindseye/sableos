@@ -103,16 +103,21 @@ sealed public-functional build control; C3B is the Sable-owned minimal baseline.
 The canonical current integration boundary is documented in
 `docs/CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md`.
 
-Parallel product development in `aimindseye/titan2-temp` is source input only;
-canonical product identity remains `sable_titan2_n1d_arm64` staged under
-`vendor/sable/n1d`. Canonical CI remains operator-owned.
+Parallel product development in `aimindseye/titan2-temp` is source input only.
+The retired handcrafted `sable_titan2_n1d_arm64` / `vendor/sable/n1d`
+implementation is not current authority. E1 uses
+`treble_arm64_bvN-bp4a-userdebug` only as an engineering identity; E2 owns
+final Sable product identity and source-module admission. Canonical CI remains
+operator-owned.
 
 ## Titan 2 C3B E1 transition
 
 C3A is sealed and merged. E1 activates a separate C3B engineering workspace
-using the pinned 1,033-project GrapheneOS base plus three pinned Treble
-build/parse-scaffold projects, with zero Restless runtime patches and zero inherited
-Graphene project removals.
+using the pinned 1,033-project GrapheneOS base plus five pinned Treble
+build/parse-scaffold projects (1,038 managed projects), with zero Restless
+runtime patches and zero inherited Graphene project removals. The pinned PHH
+`base.mk` receives 14 exact fail-closed security/control reductions before
+generation.
 
 The first E1 build identity is
 `treble_arm64_bvN-bp4a-userdebug systemimage`. It is build/parse-only:
