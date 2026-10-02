@@ -2,7 +2,8 @@
 # Prepare the Titan 2 N1D C3B engineering source graph.
 #
 # C3B uses a separate Android workspace so the sealed C3A control tree and its
-# evidence remain immutable. This driver never contacts a device or flashes.
+# evidence remain immutable. This driver never builds Android, contacts a
+# device, signs an image, or flashes.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -12,6 +13,7 @@ SOURCE_LOCK="$ROOT/build/titan2/n1d-source-lock.env"
 TRANSITION="$ROOT/build/titan2/n1d-c3b-transition.env"
 SCAFFOLD_MANIFEST="$ROOT/build/titan2/n1d-c3b-scaffold-add.xml"
 ENGINEERING_DELTA="$ROOT/build/titan2/n1d-c3b-engineering.mk"
+HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
 TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
@@ -20,7 +22,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
+for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -35,7 +37,9 @@ source "$SOURCE_LOCK"
 source "$TRANSITION"
 
 ACTION="${1:-preflight}"
-if (($#)); then shift; fi
+if (($#)); then
+    shift
+fi
 
 NETWORK_AUTHORIZED=NO
 SOURCE_MUTATION_AUTHORIZED=NO
@@ -60,9 +64,11 @@ ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_ANDROID_ROOT_REL"
 OUT_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_OUT_ROOT_REL"
 EVIDENCE_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_BASE_EVIDENCE_REL"
 LOCAL_MANIFEST="$ANDROID_ROOT/.repo/local_manifests/n1d-c3b-scaffold.xml"
-STAGED_DELTA="$ANDROID_ROOT/device/phh/treble/sable-c3b-engineering.mk"
+PHH_ROOT="$ANDROID_ROOT/device/phh/treble"
+STAGED_DELTA="$PHH_ROOT/sable-c3b-engineering.mk"
 
 assert_global_boundaries() {
+    echo "BUILD_AUTHORIZED=NO"
     echo "DEVICE_CONTACT_AUTHORIZED=NO"
     echo "FLASH_AUTHORIZED=NO"
     echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
@@ -100,10 +106,12 @@ verify_workspace_scope() {
 verify_manifest_checkout() {
     [[ -d "$ANDROID_ROOT/.repo/manifests/.git" ]] ||
         fail manifest_checkout_missing
+
     local head
     head="$(git -C "$ANDROID_ROOT/.repo/manifests" rev-parse HEAD)"
     [[ "$head" == "$N1D_C3B_GRAPHENE_MANIFEST_COMMIT" ]] ||
         fail "manifest_head expected=$N1D_C3B_GRAPHENE_MANIFEST_COMMIT actual=$head"
+
     echo "N1D_C3B_GRAPHENE_MANIFEST_HEAD=PASS value=$head"
 }
 
@@ -138,8 +146,7 @@ verify_base_clean() {
         fail base_dirty_projects_present
     }
 
-    [[ ! -e "$ANDROID_ROOT/device/phh/treble" ]] ||
-        fail scaffold_present_before_stage
+    [[ ! -e "$PHH_ROOT" ]] || fail scaffold_present_before_stage
     [[ ! -e "$ANDROID_ROOT/vendor/cawilliamson-priv" ]] ||
         fail private_restless_vendor_present
 
@@ -149,9 +156,12 @@ verify_base_clean() {
 
 seal_base() {
     verify_manifest_checkout
-    [[ ! -d "$ANDROID_ROOT/.repo/local_manifests" ]] ||
-        [[ -z "$(find "$ANDROID_ROOT/.repo/local_manifests" -mindepth 1 -maxdepth 1 -type f -print -quit)" ]] ||
+
+    if [[ -d "$ANDROID_ROOT/.repo/local_manifests" ]] &&
+       [[ -n "$(find "$ANDROID_ROOT/.repo/local_manifests" -mindepth 1 -maxdepth 1 -type f -print -quit)" ]]
+    then
         fail base_local_manifest_present
+    fi
 
     verify_base_clean
 
@@ -175,6 +185,7 @@ seal_base() {
 
     project_count="$(grep -cve '^$' "$out/all-project-heads.tsv" || true)"
     dirty_count="$(grep -cve '^$' "$out/dirty-projects.tsv" || true)"
+
     [[ "$project_count" == "$N1D_C3B_GRAPHENE_BASE_PROJECT_COUNT" ]] ||
         fail "sealed_project_count=$project_count"
     [[ "$dirty_count" == 0 ]] ||
@@ -204,14 +215,15 @@ seal_base() {
 }
 
 verify_scaffold_heads() {
-    local actual
     local entries=(
         "device/phh/treble:$N1D_C3B_DEVICE_PHH_TREBLE_COMMIT"
-        "vendor/hardware_overlay:$N1D_C3B_HARDWARE_OVERLAY_COMMIT"
+        "prebuilts/vndk/v28:$N1D_C3B_VNDK28_COMMIT"
+        "prebuilts/vndk/v29:$N1D_C3B_VNDK29_COMMIT"
         "vendor/interfaces:$N1D_C3B_VENDOR_INTERFACES_COMMIT"
+        "vendor/lptools:$N1D_C3B_LPTOOLS_COMMIT"
     )
+    local entry path expected actual
 
-    local entry path expected
     for entry in "${entries[@]}"; do
         path="${entry%%:*}"
         expected="${entry#*:}"
@@ -221,23 +233,27 @@ verify_scaffold_heads() {
             fail "scaffold_head path=$path expected=$expected actual=$actual"
     done
 
-    echo "N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=3"
+    echo "N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=5"
 }
 
 verify_dropped_paths_absent() {
     local path
-    for path in         packages/apps/QcRilAm         prebuilts/vndk/v28         prebuilts/vndk/v29         prebuilts/vndk/v30         treble_app         vendor/apn         vendor/lptools         vendor/magisk         vendor/vndk-tests         vendor/cawilliamson-priv
+    for path in         packages/apps/QcRilAm         prebuilts/vndk/v30         treble_app         vendor/apn         vendor/hardware_overlay         vendor/magisk         vendor/vndk-tests         vendor/cawilliamson-priv
     do
         [[ ! -e "$ANDROID_ROOT/$path" ]] ||
             fail "dropped_scaffold_path_present=$path"
     done
+
     echo "N1D_C3B_DROPPED_C3A_SCAFFOLD=PASS_ABSENT"
 }
 
 verify_device_phh_generated_state() {
-    local status_file line path
+    "$SABLE_PYTHON" "$HARDENER" verify --repo "$PHH_ROOT"
+
+    local status_file line
+    local base_seen=0
     status_file="$(mktemp)"
-    git -C "$ANDROID_ROOT/device/phh/treble" status --porcelain --untracked-files=all         > "$status_file"
+    git -C "$PHH_ROOT" status --porcelain --untracked-files=all > "$status_file"
 
     [[ -s "$status_file" ]] || {
         rm -f "$status_file"
@@ -246,8 +262,10 @@ verify_device_phh_generated_state() {
 
     while IFS= read -r line; do
         [[ -n "$line" ]] || continue
-        path="${line:3}"
         case "$line" in
+            " M base.mk")
+                base_seen=$((base_seen + 1))
+                ;;
             "?? AndroidProducts.mk") ;;
             "?? sable-c3b-engineering.mk") ;;
             "?? treble_"*.mk) ;;
@@ -261,8 +279,8 @@ verify_device_phh_generated_state() {
 
     rm -f "$status_file"
 
-    [[ -f "$ANDROID_ROOT/device/phh/treble/treble_arm64_bvN.mk" ]] ||
-        fail generated_product_missing
+    [[ "$base_seen" == 1 ]] || fail "device_phh_hardened_base_status_count=$base_seen"
+    [[ -f "$PHH_ROOT/treble_arm64_bvN.mk" ]] || fail generated_product_missing
     cmp -s "$ENGINEERING_DELTA" "$STAGED_DELTA" ||
         fail staged_engineering_delta_mismatch
 
@@ -331,16 +349,19 @@ verify() {
     dirty_file="$(mktemp)"
     repo_dirty_projects > "$dirty_file"
     dirty_count="$(grep -cve '^$' "$dirty_file" || true)"
+
     [[ "$dirty_count" -ge 1 && "$dirty_count" -le 2 ]] || {
         cat "$dirty_file"
         rm -f "$dirty_file"
         fail "dirty_project_count expected=1_or_2 actual=$dirty_count"
     }
+
     grep -Fxq 'device/phh/treble' "$dirty_file" || {
         cat "$dirty_file"
         rm -f "$dirty_file"
-        fail device_phh_not_dirty_as_generated
+        fail device_phh_not_dirty_as_expected
     }
+
     if [[ "$dirty_count" == 2 ]]; then
         grep -Fxq 'build/soong' "$dirty_file" || {
             cat "$dirty_file"
@@ -368,6 +389,8 @@ preflight() {
 
     [[ -x "$SABLE_REPO_TOOL" ]] ||
         fail "repo_tool_missing=$SABLE_REPO_TOOL"
+    [[ -x "$SABLE_PYTHON" ]] ||
+        fail "python_missing=$SABLE_PYTHON"
     command -v git >/dev/null 2>&1 || fail git_missing
 
     if [[ -e "$ANDROID_ROOT" ]]; then
@@ -457,33 +480,34 @@ stage() {
     if [[ -e "$LOCAL_MANIFEST" ]]; then
         cmp -s "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST" ||
             fail existing_scaffold_local_manifest_mismatch
-    else
-        mkdir -p "$(dirname "$LOCAL_MANIFEST")"
-        install -m 0644 "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST"
+        verify
+        echo "N1D_C3B_SCAFFOLD_STAGE=PASS_ALREADY_STAGED"
+        return
     fi
+
+    verify_base_clean
+
+    mkdir -p "$(dirname "$LOCAL_MANIFEST")"
+    install -m 0644 "$SCAFFOLD_MANIFEST" "$LOCAL_MANIFEST"
 
     (
         cd "$ANDROID_ROOT"
-        "$SABLE_REPO_TOOL" sync             --jobs=4             --no-clone-bundle             --no-tags             device/phh/treble             vendor/hardware_overlay             vendor/interfaces
+        "$SABLE_REPO_TOOL" sync             --jobs=4             --no-clone-bundle             --no-tags             device/phh/treble             prebuilts/vndk/v28             prebuilts/vndk/v29             vendor/interfaces             vendor/lptools
     )
 
     verify_scaffold_heads
     verify_dropped_paths_absent
 
-    if [[ -e "$STAGED_DELTA" ]]; then
-        cmp -s "$ENGINEERING_DELTA" "$STAGED_DELTA" ||
-            fail existing_engineering_delta_mismatch
-    else
-        install -m 0644 "$ENGINEERING_DELTA" "$STAGED_DELTA"
-    fi
+    "$SABLE_PYTHON" "$HARDENER" apply --repo "$PHH_ROOT"
+
+    install -m 0644 "$ENGINEERING_DELTA" "$STAGED_DELTA"
 
     (
-        cd "$ANDROID_ROOT/device/phh/treble"
+        cd "$PHH_ROOT"
         bash generate.sh "$N1D_C3B_GENERATOR_CONFIG"
     )
 
     verify
-
     echo "N1D_C3B_SCAFFOLD_STAGE=PASS"
 }
 
