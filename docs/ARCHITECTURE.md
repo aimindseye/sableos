@@ -1,6 +1,6 @@
 # SableOS architecture
 
-> **Current HOME authority:** R9L8 Launcher3-hosted Sable Start. See `CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md`. Older standalone-SableLauncher records are historical.
+> **Current first-party HOME authority:** R9L8 Launcher3-hosted Sable Start. See `CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md` and ADR-0012. Older standalone-SableLauncher records are historical. Android user selection of a third-party HOME remains allowed.
 
 SableOS is one common OS architecture with device-specific hardware adaptation and form-factor-specific interaction profiles.
 
@@ -32,7 +32,7 @@ Exact S1.7 source, AIDL, image, device-binary and runtime seals are recorded in 
 The active Android 17 / Panther product architecture is newer than the S1.7
 bramble service baseline above. Current R9 source/module closure establishes:
 
-- R9L8 Launcher3/Launcher3QuickStep as the sole HOME runtime;
+- R9L8 Launcher3/Launcher3QuickStep as the sole Sable-owned canonical first-party HOME runtime; user-selected third-party HOME remains allowed through Android's normal role/default-app model;
 - SableStart retained as reusable presentation/state source compiled into
   Launcher3 rather than a standalone `org.sableos.launcher` application;
 - host Gradle presentation qualification limited to the canonical SableStart
@@ -55,8 +55,7 @@ bramble service baseline above. Current R9 source/module closure establishes:
   camera/gallery OCR; its Sable flavor is offline-first with no INTERNET
   permission, translation dependency/UI or model-download path, bounds each
   text ingestion to 2 MiB, and permits only local TTS voices;
-- Clock/Photos using qualified Day/Night presentation while Camera remains an
-  intentionally upstream, security-sensitive dark-presentation boundary;
+- Clock/Photos using qualified Day/Night presentation; Panther Camera remains an intentionally upstream, security-sensitive boundary, while keyboard-first Titan-family work uses the separately scoped Sable-owned Camera2 / Camera Control Deck direction from ADR-0012 and `CAMERA_ENHANCEMENT_ROADMAP.md`;
 - Sable Hub (`org.sableos.hub`) as the common communications surface with
   Priority / Messages / Email / People pivots; the pinned GrapheneOS Messaging
   package remains the default SMS/MMS transport substrate;
@@ -447,6 +446,25 @@ Sable Notification Policy & Profiles
 Sable Hub
 Sable Device Adapter & Security Delta Ledger
 ```
+
+First-party input ownership does not remove Android user choice:
+
+~~~text
+SABLE_FIRST_PARTY_HOME=Launcher3QuickStep/SableStart
+THIRD_PARTY_HOME_SELECTION_ALLOWED=YES
+SABLE_FIRST_PARTY_IME=SableKeyboard
+THIRD_PARTY_IME_SELECTION_ALLOWED=YES
+FORCE_SABLE_DEFAULT_AFTER_USER_SELECTION=NO
+~~~
+
+Third-party launchers do not automatically gain Quickstep/SystemUI or Private
+Space integration, and third-party IMEs do not automatically inherit Sable's
+critical-entry/direct-boot acceptance. See ADR-0012.
+
+Keyboard-first camera interaction is also part of the common interaction
+profile rather than a device-specific UI fork. Sable Camera maps physical keys
+to semantic camera actions and uses a landscape Camera Control Deck with a
+viewfinder-first layout, while portrait and touch fallback remain supported.
 
 The primary input normalization boundary is Android userspace around
 EventHub/InputReader. Kernel changes are a last resort after device evidence
