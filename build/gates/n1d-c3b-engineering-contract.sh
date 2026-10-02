@@ -23,7 +23,7 @@ done
 
 bash "$TRANSITION_GATE"
 
-for token in     'network_action_requires_--authorize-network'     'source_action_requires_--authorize-source-mutation'     'N1D_C3B_WORKSPACE_SCOPE=PASS'     'N1D_C3B_GRAPHENE_BASE_PROJECT_COUNT=PASS'     'N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=6'     'N1D_C3B_DROPPED_C3A_SCAFFOLD=PASS_ABSENT'     'bash generate.sh "$N1D_C3B_GENERATOR_CONFIG"'     'N1D_C3B_MANAGED_PROJECT_COUNT=PASS'     'N1D_C3B_GRAPHENE_REMOVALS=PASS_ZERO'     'N1D_C3B_RESTLESS_PATCHES=PASS_ZERO'     'N1D_C3B_PREP_VERIFY=PASS'
+for token in     'network_action_requires_--authorize-network'     'source_action_requires_--authorize-source-mutation'     'N1D_C3B_WORKSPACE_SCOPE=PASS'     'N1D_C3B_GRAPHENE_BASE_PROJECT_COUNT=PASS'     'N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=3'     'N1D_C3B_DROPPED_C3A_SCAFFOLD=PASS_ABSENT'     'bash generate.sh "$N1D_C3B_GENERATOR_CONFIG"'     'N1D_C3B_MANAGED_PROJECT_COUNT=PASS'     'N1D_C3B_GRAPHENE_REMOVALS=PASS_ZERO'     'N1D_C3B_RESTLESS_PATCHES=PASS_ZERO'     'N1D_C3B_PREP_VERIFY=PASS'
 do
     grep -Fq -- "$token" "$PREP" || fail "prep_missing=$token"
 done
