@@ -16,6 +16,7 @@ ENGINEERING_DELTA="$ROOT/build/titan2/n1d-c3b-engineering.mk"
 HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
 SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
+PHH_ROOT_FOLDER_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0003-device-phh-drop-unlabeled-root-extra-folders.patch"
 BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
 BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
 LPTOOLS_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0003-vendor-lptools-android16-fs-mgr-api.patch"
@@ -27,7 +28,7 @@ fail() {
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$LPTOOLS_COMPAT_PATCH"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
+for f in     "$STORAGE_PROFILE"     "$HOST_PROFILE"     "$SOURCE_LOCK"     "$TRANSITION"     "$SCAFFOLD_MANIFEST"     "$ENGINEERING_DELTA"     "$HARDENER"     "$SCAFFOLD_COMPAT_PATCH"     "$PHH_LGE_COMPAT_PATCH"     "$PHH_ROOT_FOLDER_COMPAT_PATCH"     "$BUILD_MAKE_COMPAT_PATCH_1"     "$BUILD_MAKE_COMPAT_PATCH_2"     "$LPTOOLS_COMPAT_PATCH"     "$TRANSITION_GATE"     "$STORAGE_VERIFY"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -282,6 +283,7 @@ verify_device_phh_generated_state() {
                 base_seen=$((base_seen + 1))
                 ;;
             " M cmds/Android.bp") ;;
+            " M board-base.mk") ;;
             "?? AndroidProducts.mk") ;;
             "?? sable-c3b-engineering.mk") ;;
             "?? treble_"*.mk) ;;
@@ -342,6 +344,40 @@ verify_optional_phh_lge_vibrator_quarantine_state() {
     fi
 
     echo "N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_EXACT_QUARANTINE"
+}
+
+verify_optional_phh_root_folder_compat_state() {
+    local target="$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_TARGET"
+    local patch="$PHH_ROOT_FOLDER_COMPAT_PATCH"
+    local base_blob patch_blob current_blob
+
+    base_blob="$(git -C "$PHH_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_BASE_BLOB" ]] ||
+        fail "device_phh_root_folder_base_blob expected=$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$patch")"
+    [[ "$patch_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_COMPAT_PATCH_BLOB_SHA" ]] ||
+        fail "device_phh_root_folder_patch_blob expected=$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_COMPAT_PATCH_BLOB_SHA actual=$patch_blob"
+
+    current_blob="$(git hash-object "$PHH_ROOT/$target")"
+    if [[ "$current_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_BASE_BLOB" ]]; then
+        grep -Fq 'BOARD_ROOT_EXTRA_FOLDERS += bt_firmware sec_storage efs persist' "$PHH_ROOT/$target" ||
+            fail device_phh_root_folder_clean_contract_missing
+        echo "N1D_C3B_DEVICE_PHH_ROOT_FOLDERS=PASS_CLEAN_NOT_QUARANTINED"
+        return
+    fi
+
+    [[ "$current_blob" == "$N1D_C3B_DEVICE_PHH_ROOT_FOLDER_POST_BLOB" ]] ||
+        fail "device_phh_root_folder_unexpected_blob=$current_blob"
+    git -C "$PHH_ROOT" apply --reverse --check "$patch" ||
+        fail device_phh_root_folder_reverse_check
+    grep -Fq 'BOARD_ROOT_EXTRA_FOLDERS += efs persist' "$PHH_ROOT/$target" ||
+        fail device_phh_root_folder_retained_set_mismatch
+    if grep -Eq '^BOARD_ROOT_EXTRA_FOLDERS.*(bt_firmware|sec_storage)' "$PHH_ROOT/$target"; then
+        fail device_phh_unlabeled_root_folder_still_present
+    fi
+
+    echo "N1D_C3B_DEVICE_PHH_ROOT_FOLDERS=PASS_EXACT_LABELED_SUBSET"
 }
 
 verify_optional_host_layout_state() {
@@ -566,6 +602,7 @@ verify() {
     verify_dropped_paths_absent
     verify_device_phh_generated_state
     verify_optional_phh_lge_vibrator_quarantine_state
+    verify_optional_phh_root_folder_compat_state
     verify_optional_host_layout_state
     verify_optional_build_make_compat_state
     verify_optional_lptools_api_compat_state
