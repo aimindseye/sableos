@@ -159,6 +159,17 @@ cross-provider identity from display names.
 The semantic provider/person/action model remains stable across touch-first and
 keyboard-first presentation.
 
+For Titan 2 / Titan 2 Elite, Panther Hub V1 behavior is a portability floor, not
+optional historical behavior. The keyboard-first profile must preserve generic
+Connected Apps discovery/configuration, package+user policy, Android
+notification/conversation ingestion, source-authorized RemoteInput reply,
+Open-app fallback, bounded local derived history and truthful capability
+degradation. Provider names such as WhatsApp, Signal, Telegram and LinkedIn are
+compatibility/evidence targets, never a hard-coded allowlist. See
+`docs/titan2/N1D_C3B_HUB_PARITY.md`.
+
+Sable Messages work must not replace, subsume, disable or weaken Sable Hub.
+
 ### Sable People
 
 People is a first-class cross-surface semantic object used by Start and Hub.
