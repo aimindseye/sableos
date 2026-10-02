@@ -2,8 +2,14 @@ diff --git a/target/board/gsi_system_ext.prop b/target/board/gsi_system_ext.prop
 index 780aadc..223ef97 100644
 --- a/target/board/gsi_system_ext.prop
 +++ b/target/board/gsi_system_ext.prop
-@@ -4,2 +4,2 @@
+@@ -1,8 +1,8 @@
+ # GSI always generate dex pre-opt in system image
+ ro.cp_system_other_odex=0
+ 
 -# GSI always disables adb authentication
 -ro.adb.secure=0
 +# GSI: do not override adb authentication -- let the device tree control it.
 +# ro.adb.secure=0
+ 
+ # GSI disables non-AOSP nnapi extensions on product partition
+ ro.nnapi.extensions.deny_on_product=true
