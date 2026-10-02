@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <!-- Minimal pinned C3B build scaffold. No C3A Restless remove set is used. -->
+  <remote name="n1d-c3b-trebledroid" fetch="https://github.com/TrebleDroid/" />
+  <remote name="n1d-c3b-phhusson" fetch="https://github.com/phhusson/" />
+  <remote name="n1d-c3b-aosp" fetch="https://android.googlesource.com/" />
+
+  <project path="device/phh/treble"
+           name="device_phh_treble"
+           remote="n1d-c3b-trebledroid"
+           revision="39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed" />
+  <project path="prebuilts/vndk/v28"
+           name="platform/prebuilts/vndk/v28"
+           remote="n1d-c3b-aosp"
+           revision="204f1bad00aaf480ba33233f7b8c2ddaa03155dd" />
+  <project path="prebuilts/vndk/v29"
+           name="platform/prebuilts/vndk/v29"
+           remote="n1d-c3b-aosp"
+           revision="bef5d37dda9360940964f097d612c8032e140961" />
+  <project path="vendor/interfaces"
+           name="vendor_interfaces"
+           remote="n1d-c3b-trebledroid"
+           revision="a2271d260e226e8de5cb1e8c15a229dc90c007dd" />
+  <project path="vendor/lptools"
+           name="vendor_lptools"
+           remote="n1d-c3b-phhusson"
+           revision="c8be7de57b80eab61a6f94ec86464a01fb9056f2" />
+</manifest>

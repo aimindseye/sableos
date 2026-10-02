@@ -240,18 +240,26 @@ The source lock pins GrapheneOS `2026061600` / AOSP
 `16.0.0-202606230923`. Do not use the Restless default branch, its
 latest-Graphene resolver, or any Android 17 source for N1D.
 
-Restless source is a pinned Treble compatibility reference and C2 diagnostic
-control. The actual C3 N1D product is Sable-owned and must not directly inherit
-`device/phh/treble/base.mk` or the generated Restless product.
+Restless source is a pinned Treble compatibility reference and C2/C3A
+diagnostic control. C3A is sealed historical evidence.
 
-The Android-16 PHH/Treble base intentionally carries universal-GSI compatibility
-mechanisms which are outside the Sable C3 baseline, including disabled SELinux
-neverallow enforcement, unauthenticated/default ADB behavior, PHH OTA/securize/
-remote-debug tooling, legacy VNDK compatibility, and unrelated OEM helpers.
+C3B E1 starts from a separate clean pinned GrapheneOS Android 16 checkout and
+adds only the five pinned Treble build-scaffold projects required by the current
+generated-product path. The pinned `device/phh/treble/base.mk` is used as a
+build-compatibility substrate, but it is transformed by the exact repository
+applicator `build/titan2/apply-n1d-c3b-phh-base-hardening.py` before product
+generation. The applicator removes the highest-risk PHH security/control
+defaults instead of treating the PHH base as Sable runtime policy.
 
-C3 therefore starts from the pinned Android-16 AOSP/Graphene GSI product and
-admits Restless/Treble compatibility changes only through
-`vendor/sable/n1d/treble_compat.mk` after evidence-based review.
+Compatibility Peel R2 pre-audits the pinned C3A compatibility corpus before the
+next E1 compile. The complete 369-patch Restless control inventory is
+deny-by-default and has zero verbatim C3B admissions. The focused R2 ledger
+admits only Sable-owned narrow build-graph/security reimplementations while the
+runtime patch allowlist remains empty.
+
+C3B E1 keeps the generated `treble_arm64_bvN` identity only as an engineering
+build identity. Final Sable product identity, source-module admission and
+partition/product inheritance are E2 responsibilities.
 
 The source and security boundaries are enforced by:
 
@@ -324,37 +332,30 @@ The admission contract is enforced by:
 bash build/gates/n1d-c2-source-admission-contract.sh
 ```
 
-C3 product composition is repository-owned and starts only from the restored,
-sealed 1,033-project base. The source bundle is:
+The earlier handcrafted `build/titan2/n1d-c3-product/` /
+`vendor/sable/n1d/` product path is retired and must not be revived as the
+active C3B product implementation.
+
+Current C3B composition authority is:
 
 ```text
-build/titan2/n1d-c3-product/
+build/titan2/n1d-c3b-transition.env
+build/titan2/n1d-c3a-control-patch-inventory-r2.tsv
+build/titan2/n1d-c3b-compatibility-peel-r2.tsv
+build/titan2/n1d-c3b-scaffold-add.xml
+build/titan2/n1d-c3b-scaffold-decisions.tsv
+build/titan2/apply-n1d-c3b-phh-base-hardening.py
+build/titan2/n1d-c3b-engineering.mk
 ```
 
-and is staged to:
-
-```text
-vendor/sable/n1d/
-```
-
-with zero initial Treble compatibility items and zero Restless patch entries.
-
-```bash
-bash build/titan2/stage-n1d-c3-product.sh preflight
-
-bash build/titan2/stage-n1d-c3-product.sh \
-  stage \
-  --authorize-source-mutation
-
-bash build/titan2/stage-n1d-c3-product.sh verify
-```
-
-The staging action authorizes no build, network fetch, device contact, flash or
-signing. The composition contract is:
+The composition gate is:
 
 ```bash
 bash build/gates/n1d-c3-product-composition-contract.sh
 ```
+
+E1 authorizes only the separate C3B source graph, product parse and
+`systemimage` compilation. Sable app/source-module product admission is E2.
 
 ## Validation discipline
 
@@ -408,3 +409,36 @@ The boundary is guarded by:
 ```text
 build/gates/n1d-local-ci-scope-contract.sh
 ```
+
+
+## Titan 2 N1D C3B E1 engineering transition
+
+E1 uses a separate workspace at
+`/srv/sable-build/workspaces/titan2-n1d-c3b` and does not roll back or reuse
+the sealed C3A Android tree.
+
+The E1 graph is the pinned GrapheneOS 1,033-project base plus five pinned Treble
+build/parse-scaffold projects, for 1,038 managed projects. It inherits zero C3A
+Graphene removals and zero Restless runtime patches. The exact pinned PHH
+`base.mk` is hardened before generation with 14 fail-closed security/control
+transformations.
+
+R2 also binds a complete 369-patch C3A control-corpus inventory and an 11-row
+focused semantic compatibility ledger. The next build applies the complete
+admitted E1 set before Soong: two non-Titan LGE graph quarantines, two Soong
+host-layout fixes, and two Sable-owned build/make compatibility patches.
+
+Entry points:
+
+```text
+build/gates/n1d-c3b-transition-contract.sh
+build/gates/n1d-c3b-engineering-contract.sh
+build/titan2/prepare-n1d-c3b-engineering.sh
+build/titan2/qualify-n1d-c3b-product-parse.sh
+build/titan2/build-n1d-c3b-systemimage.sh
+```
+
+The first target is the generated
+`treble_arm64_bvN-bp4a-userdebug` engineering `systemimage`.
+Final Sable product admission is E2. Device contact, flash, signing and release
+remain blocked.

@@ -1,172 +1,284 @@
 # Titan 2 N1D C3 product composition R1
 
-Status: **C3A active control; C3B Sable baseline held**
+Status: **C3A sealed; C3B E1 active engineering composition**
 
-Date: 2026-10-01
+Date: 2026-10-02
 
-## Architecture correction
+## Current architecture
 
-The earlier handcrafted product `sable_titan2_n1d_arm64` is retired.
+C3 is split into two deliberately different roles.
 
-Live compilation proved that the handcrafted
-`generic_system_arm64 + gsi_release` path enabled an AOSP
-`aosp_system_image` dependency graph incompatible with the pinned GrapheneOS
-source set.
+~~~text
+C3A
+  historical public-functional Restless/TrebleDroid build control
+  sealed systemimage evidence
+  not the Sable baseline
 
-C3A follows the known-successful Restless/TrebleDroid topology:
+C3B E1
+  active non-release engineering baseline
+  pinned GrapheneOS Android 16
+  minimal pinned Treble build scaffold
+  exact Sable security reduction of the pinned PHH base
+  zero Restless runtime patches
+  generated Treble engineering identity
 
-```text
-GrapheneOS 2026061600
-  + pinned public TrebleDroid/PHH scaffold
-  + exact pinned Restless release patch stack
-  + device/phh/treble/rom.mk
-  + device/phh/treble/generate.sh rom
-  -> treble_arm64_bvN
-  -> lunch treble_arm64_bvN-bp4a-user
-  -> systemimage
-```
+C3B E2
+  Sable product identity and source-module admission
+  Launcher3-hosted Sable Start
+  product/partition ownership
+  parallel-product source integration
+~~~
 
-## Source pins
+The earlier handcrafted product "sable_titan2_n1d_arm64" remains retired.
+Live C3A work proved that the direct handcrafted
+"generic_system_arm64 + gsi_release" graph did not match the pinned GrapheneOS
+source graph. E1 therefore keeps the proven Treble generator topology while
+removing unwanted PHH runtime/security policy before generation.
 
-The clean Graphene base remains the previously sealed 1,033-project checkout.
+## C3A sealed control
 
-C3A then reproduces Restless's source-graph shaping:
+C3A used:
 
-```text
+~~~text
 1,033 sealed Graphene projects
 -   54 exact Restless remove.xml projects
 =  979 retained Graphene projects
 +   12 pinned public Treble/PHH additions
 =  991 managed C3A projects
-```
++   369 pinned Restless control patches
++   generate.sh rom
+->  treble_arm64_bvN-bp4a-user
+->  systemimage
+~~~
 
-The add manifest is `build/titan2/n1d-c3a-trebledroid-add.xml`; the exact
-Restless removal set is `build/titan2/n1d-c3a-trebledroid-remove.xml`.
-The 54 existing clean working trees are archived reversibly before sync.
-The Restless build recipe is pinned to:
+The successful sealed image is:
 
-```text
-tag:    16.0.0-202606230923
-commit: 4adc5766f457849ca37e0b318bced65aef5a2233
-```
+~~~text
+SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+SYSTEM_BYTES=3146977280
+N1D_C3A_CONTROL_EVIDENCE=PASS
+N1D_C3A_RELEASE_ELIGIBLE=NO
+~~~
 
-The private Restless vendor repository is not admitted. Pixel GSans is also
-omitted because its Restless manifest entry was mutable and it is optional
-font/branding content. C3A is therefore classified as
-`PUBLIC_FUNCTIONAL_REPRODUCTION`, not bit-identical Restless. Pixel GSans is also
-omitted because no immutable release-time pin was established for that
-non-functional font/branding input. C3A therefore claims public functional
-reproduction, not bit-identical Restless source provenance.
+C3A remains evidence. It is not flashed and is not the current product lane.
 
-## Patch layers
+## C3B E1 source graph
 
-Two patch concepts are deliberately separate.
+E1 creates a separate clean Android workspace from the same pinned GrapheneOS
+Android 16 manifest:
 
-The **C3A control patch stack** reproduces the successful Restless release build:
-five ordered tiers and 369 patches. It is allowed only for the non-release
-compatibility control.
+~~~text
+GrapheneOS tag:      2026061600
+manifest commit:     5d82aa9610855bc0b43b9eb7ca4470d30455cfeb
+base projects:       1033
+Graphene removals:   0
+~~~
 
-The **C3B Sable runtime patch allowlist** starts empty. Nothing in the
-control stack becomes accepted Sable runtime policy simply because the control
-image builds.
+It adds only five pinned scaffold projects:
 
-Nine build/make patches are also vendored in SableOS as a focused C3A audit set.
-They include the Graphene-GSI dependency corrections and the ADB-authentication
-correction that are directly relevant to product composition.
+~~~text
+device/phh/treble
+prebuilts/vndk/v28
+prebuilts/vndk/v29
+vendor/interfaces
+vendor/lptools
+~~~
 
-## Generator config
+Result:
 
-The repository-owned
-`build/titan2/n1d-c3a-control-rom.mk` mirrors the successful Restless
-`configs/rom/rom.mk` control configuration and is copied to
-`device/phh/treble/rom.mk` before generation.
+~~~text
+1033 + 5 = 1038 managed C3B E1 projects
+~~~
 
-The expected generated product is:
+The C3A Restless 54-project removal set is not inherited.
 
-```text
-PRODUCT_NAME   = treble_arm64_bvN
-PRODUCT_DEVICE = tdgsi_arm64_ab
-PRODUCT_BRAND  = google
-PRODUCT_MODEL  = TrebleDroid vanilla
-```
+The following C3A additions are not part of the E1 scaffold:
 
-Branding is intentionally not changed during this control phase. Sable product
-identity is a later release-runtime concern.
+~~~text
+packages/apps/QcRilAm
+prebuilts/vndk/v30
+treble_app
+vendor/apn
+vendor/hardware_overlay
+vendor/magisk
+vendor/vndk-tests
+~~~
 
-## Preparation
+The exact decision ledger is:
+
+~~~text
+build/titan2/n1d-c3b-scaffold-decisions.tsv
+~~~
+
+## PHH base hardening
+
+E1 does not rely on a later product fragment to undo PHH base content.
+Android product inheritance is resolved after inheritance tags are recorded, so
+post-inheritance filtering is not treated as an authoritative removal
+mechanism.
+
+Instead E1 modifies the exact pinned "device/phh/treble/base.mk" before product
+generation with:
+
+~~~text
+build/titan2/apply-n1d-c3b-phh-base-hardening.py
+~~~
+
+The hardening is content-addressed:
+
+~~~text
+device/phh/treble commit:
+39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
+
+base.mk input blob:
+a29e402009d449150f1216e5d517ec0c9b36bfbd
+
+base.mk hardened blob:
+58edfb8713e9a1392daaf5bbf0d07778efd6d669
+
+hardening transforms:
+14
+~~~
+
+The hardening removes broad PHH runtime/security policy that is not accepted as
+Sable policy for the first engineering image, including:
+
+- PHH private sepolicy and generic external hardware-overlay inheritance;
+- unauthenticated/default ADB settings;
+- PHH rw-system, boot/data and property-handler hooks;
+- TWRP/busybox payloads;
+- SELinux neverallow bypass;
+- PHH MTK SMS helper;
+- resetprop/securize/PHH OTA/remove-telephony payloads;
+- PHH adbd override;
+- TrebleApp privileged permission/sysconfig payloads;
+- PHH remote-debug payloads;
+- QcRilAm;
+- Samsung boot helper and PHH MTK in-call helper.
+
+E1 deliberately retains "Iwlan", "QualifiedNetworksService", and the pinned VNDK
+compatibility substrate because they are part of the first build/radio
+compatibility baseline. Runtime behavior is still unproven.
+
+This Sable-owned base hardening is baseline policy, not a Restless compatibility
+patch admission. Therefore:
+
+~~~text
+N1D_C3B_RESTLESS_PATCH_COUNT=0
+N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
+~~~
+
+## Generator and first engineering identity
+
+The E1 generator config is intentionally composition-neutral:
+
+~~~text
+build/titan2/n1d-c3b-engineering.mk
+~~~
+
+It does not add Sable applications or final product identity. It exists as the
+named Treble generator configuration after base hardening.
+
+The first E1 identity is:
+
+~~~text
+generator:       device/phh/treble/generate.sh
+config:          sable-c3b-engineering
+product:         treble_arm64_bvN
+device:          tdgsi_arm64_ab
+release config:  bp4a
+variant:         userdebug
+goal:            systemimage
+~~~
+
+Final Sable identity and source-module admission are E2 work.
+
+## Host-layout compatibility
+
+Two C3A-discovered Soong fixes are reused only as build-environment
+compatibility fixes for the canonical out-of-tree OUT_DIR:
+
+~~~text
+0001-soong-ci-tests-skip-out-of-tree-host-paths.patch
+0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch
+~~~
+
+They remain exact blob-pinned and do not count as C3B runtime patch admission.
+
+## Preparation and parse
 
 Offline preflight:
 
-```bash
-bash build/titan2/prepare-n1d-c3-trebledroid.sh preflight
-```
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh preflight
+~~~
 
-Pinned scaffold/recipe staging requires both explicit permissions:
+Initialize the separate workspace:
 
-```bash
-bash build/titan2/prepare-n1d-c3-trebledroid.sh \
-  stage \
-  --authorize-source-mutation \
-  --authorize-network
-```
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh   init-base   --authorize-network   --authorize-source-mutation
+~~~
 
-The stage archives the obsolete Android-tree `vendor/sable/n1d` product,
-installs the pinned add and remove manifests, reversibly archives the 54 removed Graphene working trees, syncs only the 12 admitted public projects, fetches
-the exact pinned Restless recipe, applies the exact 369-patch stack, and runs
-`generate.sh rom`.
+Synchronize and seal the exact 1,033-project Graphene base:
 
-No Android target build occurs during this stage.
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh   sync-base   --authorize-network   --authorize-source-mutation
+~~~
 
-## Parse and first build
+Stage the five pinned scaffold projects, harden PHH base, and generate the
+engineering product:
 
-Product parse:
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh   stage   --authorize-network   --authorize-source-mutation
+~~~
 
-```bash
-bash build/titan2/qualify-n1d-c3-product-parse.sh \
-  --authorize-product-parse
-```
+Offline verify:
 
-First compile:
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh verify
+~~~
 
-```bash
-bash build/titan2/build-n1d-c3-trebledroid-systemimage.sh \
-  --authorize-c3-compile \
-  --authorize-network \
-  --jobs 16
-```
+Parse without target compilation:
 
-The network authorization is limited by contract to the pinned TrebleApp Gradle release prebuild. The driver runs `bash build.sh release` in `treble_app` before Restless's exact `make systemimage` invocation.
+~~~bash
+bash build/titan2/qualify-n1d-c3b-product-parse.sh   --authorize-product-parse
+~~~
 
-The first compile uses a fresh output directory:
+## First compile
 
-```text
-/srv/sable-build/workspaces/titan2-n1d/out-c3a-td
-```
+After parse PASS:
 
-and authorizes only the TrebleApp release prebuild plus `systemimage`. Restless's subsequent `target-files-package`, `otatools`, signing and release packaging are intentionally deferred until this control compile succeeds.
+~~~bash
+bash build/titan2/build-n1d-c3b-systemimage.sh   --authorize-c3b-compile   --authorize-host-layout-source-mutation   --jobs 16
+~~~
 
-## Release status
+The build driver accepts no network authorization and invokes exactly one Android
+target goal:
 
-C3A proves reproducible build topology and compatibility, not release
-security.
+~~~text
+make systemimage
+~~~
 
-```text
-N1D_C3_RELEASE_ELIGIBLE=NO
-N1D_C3_RUNTIME_SECURITY_AUDIT_REQUIRED=YES
-```
+It does not authorize target-files, OTA, dist, signing, device contact, flash,
+or physical runtime.
 
-No device contact or flash is authorized.
+## Release and runtime status
 
+E1 is deliberately non-release:
 
-## C3B peeling boundary
+~~~text
+N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO
+N1D_C3B_FLASH_AUTHORIZED=NO
+N1D_C3B_SIGNING_AUTHORIZED=NO
+N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
+N1D_C3B_RELEASE_ELIGIBLE=NO
+~~~
 
-C3B does not inherit the C3A 369-patch stack. It starts from the pinned
-Graphene/Treble scaffold with an empty runtime allowlist. A C3A patch or patch
-pair may enter C3B only after a reproduced C3B failure identifies the need and
-the security/runtime impact is reviewed.
+Compatibility Peel R2 pre-audits the known C3A build-compatibility set before
+the E1 compile, while keeping all Restless patches deny-by-default and the
+runtime allowlist at zero. If parse or compile still fails outside that admitted
+R2 set, the new failure becomes C3B evidence for a separate bounded review.
+Do not restore the C3A stack wholesale.
 
-```text
-N1D_C3B_RESTLESS_FULL_PATCH_STACK_ALLOWED=NO
-N1D_C3B_RUNTIME_PATCH_ALLOWLIST_INITIAL_COUNT=0
-N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE
-```
+E2 begins after the E1 build baseline is understood and owns Sable
+product/source-module admission.

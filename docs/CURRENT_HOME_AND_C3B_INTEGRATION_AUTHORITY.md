@@ -2,7 +2,7 @@
 
 Status: **current architecture authority**
 
-Date: 2026-10-01
+Date: 2026-10-02
 
 This document resolves conflicting historical SableOS launcher/product notes and
 defines the source-of-truth boundary for Titan 2 N1D/C3B product integration.
@@ -48,26 +48,51 @@ as authority for Titan 2 C3B work.
 
 ## Titan 2 N1D/C3B product authority
 
-The canonical product identity is:
+The R9L8 HOME decision is final, but the Android product identity has two
+different phases that must not be conflated.
+
+C3A used the generated control product:
 
 ```text
-PRODUCT_NAME=sable_titan2_n1d_arm64
-PRODUCT_STAGE_TARGET=vendor/sable/n1d
-ANDROID_MAJOR=16
-RELEASE_TRACK=N1D
-FIRST_ENGINEERING_VARIANT=userdebug
+C3A_PRODUCT=treble_arm64_bvN
+C3A_VARIANT=user
 ```
+
+The earlier handcrafted `sable_titan2_n1d_arm64` implementation was retired
+after live compilation proved that its direct
+`generic_system_arm64 + gsi_release` graph was incompatible with the pinned
+GrapheneOS source set.
+
+C3B E1 uses a separate clean Graphene workspace, adds five pinned Treble
+build-scaffold projects, applies 14 exact security/control reductions to the
+pinned PHH `base.mk`, and keeps a generated engineering identity:
+
+```text
+RELEASE_TRACK=N1D
+C3B_E1_PRODUCT=treble_arm64_bvN
+C3B_E1_RELEASE_CONFIG=bp4a
+C3B_E1_VARIANT=userdebug
+C3B_E1_GOAL=systemimage
+C3B_E1_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2
+```
+
+C3B E2 owns the final Sable product identity, source-module admission and
+partition/product inheritance model. Parallel product work must not create a
+second `vendor/sable/titan2` authority or revive the retired handcrafted
+product path.
 
 Canonical source:
 
 ```text
-build/titan2/n1d-c3-product/
-build/titan2/n1d-c3-composition.env
+build/titan2/n1d-c3b-transition.env
+build/titan2/n1d-c3b-scaffold-add.xml
+build/titan2/n1d-c3b-scaffold-decisions.tsv
+build/titan2/apply-n1d-c3b-phh-base-hardening.py
+build/titan2/n1d-c3b-engineering.mk
 build/titan2/n1d-product-contract.env
 docs/titan2/N1D_C3_PRODUCT_COMPOSITION_R1.md
+docs/titan2/N1D_C3B_TRANSITION_R1.md
 ```
-
-There is no second `vendor/sable/titan2` product authority.
 
 ## Parallel product-development lane
 
