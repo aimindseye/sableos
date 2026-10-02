@@ -15,13 +15,14 @@ PREP="$ROOT/build/titan2/prepare-n1d-c3b-engineering.sh"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 HOST_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0001-soong-ci-tests-skip-out-of-tree-host-paths.patch"
 HOST_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/host-layout/0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch"
+SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 
 fail() {
     echo "N1D_C3B_SYSTEMIMAGE_BUILD=FAIL $*" >&2
     exit 1
 }
 
-for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"
+for f in     "$STORAGE_PROFILE"     "$TRANSITION"     "$PREP"     "$STORAGE_VERIFY"     "$HOST_PATCH_1"     "$HOST_PATCH_2"     "$SCAFFOLD_COMPAT_PATCH"
 do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
@@ -33,6 +34,7 @@ source "$TRANSITION"
 
 BUILD_AUTHORIZED=NO
 HOST_LAYOUT_MUTATION_AUTHORIZED=NO
+SCAFFOLD_COMPAT_MUTATION_AUTHORIZED=NO
 JOBS="$(nproc --all)"
 while (($#)); do
     case "$1" in
@@ -42,6 +44,10 @@ while (($#)); do
             ;;
         --authorize-host-layout-source-mutation)
             HOST_LAYOUT_MUTATION_AUTHORIZED=YES
+            shift
+            ;;
+        --authorize-scaffold-compat-source-mutation)
+            SCAFFOLD_COMPAT_MUTATION_AUTHORIZED=YES
             shift
             ;;
         --jobs)
@@ -72,12 +78,14 @@ OUT_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_OUT_ROOT_REL"
 PARSE_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3b-product-parse"
 BUILD_EVIDENCE_ROOT="$SABLE_EVIDENCE_ROOT/titan2/n1d-c3b-systemimage"
 SOONG_ROOT="$ANDROID_ROOT/build/soong"
+VENDOR_INTERFACES_ROOT="$ANDROID_ROOT/vendor/interfaces"
 LUNCH_TARGET="$N1D_C3B_GENERATED_PRODUCT-$N1D_C3B_RELEASE_CONFIG-$N1D_C3B_ENGINEERING_VARIANT"
 
 echo "===== N1D C3B ENGINEERING SYSTEMIMAGE BUILD ====="
 echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=$HOST_LAYOUT_MUTATION_AUTHORIZED"
+echo "SCAFFOLD_COMPAT_SOURCE_MUTATION_AUTHORIZED=$SCAFFOLD_COMPAT_MUTATION_AUTHORIZED"
 echo "TARGET_FILES_BUILD_AUTHORIZED=NO"
 echo "OTA_BUILD_AUTHORIZED=NO"
 echo "DEVICE_CONTACT_AUTHORIZED=NO"
@@ -93,6 +101,8 @@ echo "LUNCH_TARGET=$LUNCH_TARGET"
 bash "$STORAGE_VERIFY" runtime
 
 # Require a fully staged C3B source graph before any build/Soong source mutation.
+bash "$PREP" verify
+apply_vendor_interfaces_quarantine
 bash "$PREP" verify
 
 mapfile -t parses < <(
@@ -111,6 +121,56 @@ grep -Fxq "N1D_C3B_VARIANT=$N1D_C3B_ENGINEERING_VARIANT" "$PARSE_EVIDENCE/parse-
     fail c3b_parse_variant_mismatch
 grep -Fxq 'N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0' "$PARSE_EVIDENCE/parse-state.env" ||
     fail c3b_parse_runtime_allowlist_not_zero
+
+check_vendor_interfaces_quarantine_state() {
+    local target="$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"
+    local base_blob patch_blob status
+
+    base_blob="$(git -C "$VENDOR_INTERFACES_ROOT" rev-parse "HEAD:$target")"
+    [[ "$base_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB" ]] ||
+        fail "vendor_interfaces_lge_vibrator_base_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_BASE_BLOB actual=$base_blob"
+
+    patch_blob="$(git hash-object "$SCAFFOLD_COMPAT_PATCH")"
+    [[ "$patch_blob" == "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA" ]] ||
+        fail "vendor_interfaces_lge_vibrator_patch_blob expected=$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_QUARANTINE_PATCH_BLOB_SHA actual=$patch_blob"
+
+    status="$(git -C "$VENDOR_INTERFACES_ROOT" status --porcelain --untracked-files=all)"
+    if [[ -z "$status" ]]; then
+        [[ -f "$VENDOR_INTERFACES_ROOT/$target" ]] ||
+            fail vendor_interfaces_lge_vibrator_target_missing_clean
+        return 1
+    fi
+
+    [[ "$status" == " D $target" ]] || {
+        printf '%s\n' "$status"
+        fail vendor_interfaces_unexpected_dirty_state
+    }
+    [[ ! -e "$VENDOR_INTERFACES_ROOT/$target" ]] ||
+        fail vendor_interfaces_lge_vibrator_target_still_present
+    git -C "$VENDOR_INTERFACES_ROOT" apply --reverse --check "$SCAFFOLD_COMPAT_PATCH" ||
+        fail vendor_interfaces_lge_vibrator_reverse_check
+    return 0
+}
+
+apply_vendor_interfaces_quarantine() {
+    if check_vendor_interfaces_quarantine_state; then
+        echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_ALREADY_QUARANTINED"
+        return
+    fi
+
+    [[ "$SCAFFOLD_COMPAT_MUTATION_AUTHORIZED" == YES ]] ||
+        fail scaffold_compat_patch_requires_--authorize-scaffold-compat-source-mutation
+
+    git -C "$VENDOR_INTERFACES_ROOT" apply --check "$SCAFFOLD_COMPAT_PATCH" ||
+        fail vendor_interfaces_lge_vibrator_apply_check
+    git -C "$VENDOR_INTERFACES_ROOT" apply "$SCAFFOLD_COMPAT_PATCH" ||
+        fail vendor_interfaces_lge_vibrator_apply
+
+    check_vendor_interfaces_quarantine_state ||
+        fail vendor_interfaces_lge_vibrator_post_apply_state
+
+    echo "N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_APPLIED"
+}
 
 check_patch_state() {
     local target="$1"
@@ -222,6 +282,8 @@ mkdir -p "$OUT_DIR_C3B" "$EVIDENCE_DIR"
 
 git -C "$SOONG_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/build-soong-host-layout-status.txt"
 git -C "$SOONG_ROOT" diff --     ci_tests/ci_test_package_zip.go     dexpreopt/dexpreopt_gen/dexpreopt_gen.go     > "$EVIDENCE_DIR/build-soong-host-layout.diff"
+git -C "$VENDOR_INTERFACES_ROOT" status --porcelain --untracked-files=all     > "$EVIDENCE_DIR/vendor-interfaces-lge-vibrator-status.txt"
+git -C "$VENDOR_INTERFACES_ROOT" diff --     "$N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR_TARGET"     > "$EVIDENCE_DIR/vendor-interfaces-lge-vibrator.diff"
 
 exec > >(tee "$EVIDENCE_DIR/build.log") 2>&1
 
@@ -287,6 +349,8 @@ bytes="$(stat -c '%s' "$SYSTEM_IMG")"
     echo "N1D_C3B_RESTLESS_PATCH_COUNT=$N1D_C3B_RESTLESS_PATCH_COUNT"
     echo "N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT=$N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT"
     echo "N1D_C3B_HOST_LAYOUT_PATCH_COUNT=$N1D_C3B_HOST_LAYOUT_PATCH_COUNT"
+    echo "N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT=$N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT"
+    echo "N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE=$N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE"
     echo "N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO"
     echo "N1D_C3B_FLASH_AUTHORIZED=NO"
     echo "N1D_C3B_SIGNING_AUTHORIZED=NO"
