@@ -96,8 +96,11 @@ vendor/magisk
 vendor/vndk-tests
 ~~~
 
-vendor/magisk is forbidden by the C3B security boundary. Other dropped
-components can be reconsidered only from concrete C3B failure evidence.
+vendor/magisk is forbidden by the C3B security boundary. Compatibility Peel R2
+separates build compatibility from runtime/device compatibility: known C3A
+build-graph fixes are pre-audited and may enter only as Sable-owned narrow
+reimplementations; dropped runtime/device components can be reconsidered only
+from concrete C3B evidence.
 
 ## Runtime patch boundary
 
@@ -107,15 +110,25 @@ N1D_C3B_RESTLESS_PATCH_COUNT=0
 N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
 ~~~
 
-Later compatibility admission requires:
+Runtime/device compatibility admission requires:
 
 ~~~text
-reproduce failure
+reproduce runtime/device failure
 -> identify smallest relevant change
 -> review security/runtime impact
 -> explicit admission
 -> rebuild
 -> evidence
+~~~
+
+Build compatibility is handled separately by Compatibility Peel R2:
+
+~~~text
+inventory all 369 C3A control patches
+-> deny all verbatim admission
+-> semantically review the focused build-compatibility set
+-> admit only Sable-owned narrow reimplementations
+-> keep runtime allowlist at 0
 ~~~
 
 ## Exact PHH base hardening
@@ -365,6 +378,8 @@ N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
 N1D_C3B_RELEASE_ELIGIBLE=NO
 ~~~
 
-A compile failure is not a reason to import C3A wholesale. Preserve the exact
-failure and admit only the minimum reviewed compatibility change supported by
-evidence.
+A compile failure is not a reason to import C3A wholesale. Compatibility Peel
+R2 already pre-audits the known C3A build-compatibility corpus so those failures
+are not intentionally rediscovered one at a time. Any *new* compile failure
+outside the admitted R2 set becomes evidence for a separate bounded review;
+runtime/device admission remains failure-evidence gated.
