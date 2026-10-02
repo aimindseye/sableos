@@ -1,7 +1,9 @@
 diff --git a/cmds/Android.bp b/cmds/Android.bp
 --- a/cmds/Android.bp
 +++ b/cmds/Android.bp
-@@ -40,12 +40,0 @@
+@@ -38,15 +38,3 @@
+ }
+-
 -cc_binary {
 -	name: "vibrator-lge",
 -	srcs: [
@@ -14,3 +16,5 @@ diff --git a/cmds/Android.bp b/cmds/Android.bp
 -	],
 -}
 -
++
+ cc_binary {
