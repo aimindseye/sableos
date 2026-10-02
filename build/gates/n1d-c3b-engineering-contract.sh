@@ -7,11 +7,13 @@ HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
 PREP="$ROOT/build/titan2/prepare-n1d-c3b-engineering.sh"
 PARSE="$ROOT/build/titan2/qualify-n1d-c3b-product-parse.sh"
 BUILD="$ROOT/build/titan2/build-n1d-c3b-systemimage.sh"
+LPTOOLS_QUALIFIER="$ROOT/build/titan2/qualify-n1d-c3b-lptools.sh"
 SCAFFOLD_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0001-vendor-interfaces-quarantine-lge-vibrator.patch"
 PHH_LGE_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/scaffold-compat/0002-device-phh-quarantine-vibrator-lge-helper.patch"
 COMPAT_PEEL="$ROOT/build/titan2/n1d-c3b-compatibility-peel-r2.tsv"
 BUILD_MAKE_COMPAT_PATCH_1="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0001-build-make-graphene-treble-graph.patch"
 BUILD_MAKE_COMPAT_PATCH_2="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0002-build-make-preserve-adb-auth.patch"
+LPTOOLS_COMPAT_PATCH="$ROOT/patches/android-16-n1d-trebledroid/c3b-compat/0003-vendor-lptools-android16-fs-mgr-api.patch"
 TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
 
 fail() {
@@ -19,11 +21,11 @@ fail() {
     exit 1
 }
 
-for f in "$TRANSITION" "$HARDENER" "$PREP" "$PARSE" "$BUILD" "$SCAFFOLD_COMPAT_PATCH" "$PHH_LGE_COMPAT_PATCH" "$COMPAT_PEEL" "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" "$TRANSITION_GATE"; do
+for f in "$TRANSITION" "$HARDENER" "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER" "$SCAFFOLD_COMPAT_PATCH" "$PHH_LGE_COMPAT_PATCH" "$COMPAT_PEEL" "$BUILD_MAKE_COMPAT_PATCH_1" "$BUILD_MAKE_COMPAT_PATCH_2" "$LPTOOLS_COMPAT_PATCH" "$TRANSITION_GATE"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
-for f in "$TRANSITION" "$PREP" "$PARSE" "$BUILD" "$TRANSITION_GATE"; do
+for f in "$TRANSITION" "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER" "$TRANSITION_GATE"; do
     bash -n "$f" || fail "syntax=$f"
 done
 PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache" \
@@ -63,10 +65,10 @@ do
     fi
 done
 
-if grep -Eq '(^|[[:space:]])(clean|clobber)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+if grep -Eq '(^|[[:space:]])(clean|clobber)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER"; then
     fail clean_or_clobber_present
 fi
-if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER"; then
     fail device_command_present
 fi
 
@@ -82,7 +84,7 @@ if grep -Eq 'repo[[:space:]]+sync|curl[[:space:]]|wget[[:space:]]|git[[:space:]]
     fail network_command_in_parse
 fi
 
-for token in     'compile_requires_--authorize-c3b-compile'     'host_layout_patch_requires_--authorize-host-layout-source-mutation'     'scaffold_compat_patch_requires_--authorize-scaffold-compat-source-mutation'     'build_compat_patch_requires_--authorize-build-compat-source-mutation'     'git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero --check'     'git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero'     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY'     'NETWORK_FETCH_AUTHORIZED=NO'     'TARGET_FILES_BUILD_AUTHORIZED=NO'     'OTA_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'     'SIGNING_AUTHORIZED=NO'     'PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_APPLIED'     'N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_APPLIED'     'N1D_C3B_BUILD_MAKE_COMPAT=PASS_APPLIED count=2'     'N1D_C3B_COMPATIBILITY_PEEL_R2=PASS_APPLIED'     'make systemimage -j"$JOBS"'     'N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT'     'N1D_C3B_SYSTEMIMAGE=PASS'
+for token in     'compile_requires_--authorize-c3b-compile'     'host_layout_patch_requires_--authorize-host-layout-source-mutation'     'scaffold_compat_patch_requires_--authorize-scaffold-compat-source-mutation'     'build_compat_patch_requires_--authorize-build-compat-source-mutation'     'git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero --check'     'git -C "$BUILD_MAKE_ROOT" apply --unidiff-zero'     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY'     'NETWORK_FETCH_AUTHORIZED=NO'     'TARGET_FILES_BUILD_AUTHORIZED=NO'     'OTA_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'     'SIGNING_AUTHORIZED=NO'     'PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_VENDOR_INTERFACES_LGE_VIBRATOR=PASS_APPLIED'     'N1D_C3B_DEVICE_PHH_LGE_VIBRATOR=PASS_APPLIED'     'N1D_C3B_BUILD_MAKE_COMPAT=PASS_APPLIED count=2'     'N1D_C3B_LPTOOLS_COMPAT=PASS_APPLIED'     'N1D_C3B_COMPATIBILITY_PEEL_R2=PASS_APPLIED'     'make systemimage -j"$JOBS"'     'N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT'     'N1D_C3B_SYSTEMIMAGE=PASS'
 do
     grep -Fq -- "$token" "$BUILD" || fail "build_missing=$token"
 done
@@ -100,7 +102,7 @@ if grep -Eq 'target-files-package|otatools|(^|[[:space:]])dist([[:space:]]|$)' "
     fail packaging_goal_present
 fi
 
-for required in     'N1D_C3_CURRENT_ACTIVE_PHASE=C3B_ENGINEERING'     'N1D_C3B_SCAFFOLD_PROJECT_COUNT=5'     'N1D_C3B_MANAGED_PROJECT_COUNT=1038'     'N1D_C3B_RESTLESS_PATCH_COUNT=0'     'N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0'     'N1D_C3B_COMPATIBILITY_PEEL_VERSION=2'     'N1D_C3B_C3A_FOCUSED_COMPAT_FIX_COUNT=11'     'N1D_C3B_RESTLESS_CONTROL_PATCH_COUNT=369'     'N1D_C3B_RESTLESS_WHOLESALE_ADMISSION_ALLOWED=NO'     'N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT=2'     'N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE=REPO_OWNED_BUILD_GRAPH_AND_SECURITY_ONLY'     'N1D_C3B_REJECT_RESTLESS_LLKD_REMOVAL=YES'     'N1D_C3B_REJECT_RESTLESS_APN_REMOVAL=YES'     'N1D_C3B_REJECT_RESTLESS_OPLUS_MY_MANIFEST=YES'     'N1D_C3B_DEFER_VNDK28_SEPOLICY_ATOMIC_PAIR=YES'     'N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT=14'     'N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT=2'     'N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE=NON_TITAN_VENDOR_BUILD_GRAPH_QUARANTINE'     'N1D_C3B_ENGINEERING_VARIANT=userdebug'     'N1D_C3B_GENERATED_PRODUCT=treble_arm64_bvN'     'N1D_C3B_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2'     'N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO'     'N1D_C3B_FLASH_AUTHORIZED=NO'     'N1D_C3B_SIGNING_AUTHORIZED=NO'     'N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_RELEASE_ELIGIBLE=NO'
+for required in     'N1D_C3_CURRENT_ACTIVE_PHASE=C3B_ENGINEERING'     'N1D_C3B_SCAFFOLD_PROJECT_COUNT=5'     'N1D_C3B_MANAGED_PROJECT_COUNT=1038'     'N1D_C3B_RESTLESS_PATCH_COUNT=0'     'N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0'     'N1D_C3B_COMPATIBILITY_PEEL_VERSION=2'     'N1D_C3B_C3A_FOCUSED_COMPAT_FIX_COUNT=11'     'N1D_C3B_RESTLESS_CONTROL_PATCH_COUNT=369'     'N1D_C3B_RESTLESS_WHOLESALE_ADMISSION_ALLOWED=NO'     'N1D_C3B_BUILD_MAKE_COMPAT_PATCH_COUNT=2'     'N1D_C3B_BUILD_MAKE_COMPAT_PATCH_ROLE=REPO_OWNED_BUILD_GRAPH_AND_SECURITY_ONLY'     'N1D_C3B_REJECT_RESTLESS_LLKD_REMOVAL=YES'     'N1D_C3B_REJECT_RESTLESS_APN_REMOVAL=YES'     'N1D_C3B_REJECT_RESTLESS_OPLUS_MY_MANIFEST=YES'     'N1D_C3B_DEFER_VNDK28_SEPOLICY_ATOMIC_PAIR=YES'     'N1D_C3B_PHH_BASE_SECURITY_TRANSFORM_COUNT=14'     'N1D_C3B_SCAFFOLD_COMPAT_PATCH_COUNT=2'     'N1D_C3B_SCAFFOLD_COMPAT_PATCH_ROLE=NON_TITAN_VENDOR_BUILD_GRAPH_QUARANTINE'     'N1D_C3B_LPTOOLS_API_COMPAT_PATCH_COUNT=1'     'N1D_C3B_LPTOOLS_API_COMPAT_PATCH_ROLE=PINNED_SCAFFOLD_ANDROID16_PLATFORM_API_ADAPTATION'     'N1D_C3B_LPTOOLS_API_COMPAT_PATCH_BLOB_SHA=d1fca112c3df19f567f24b23c750b8bfad43c403'     'N1D_C3B_LPTOOLS_API_COMPAT_BASE_BLOB=160cd44f9515416e5358f76cb10b2ec1109c0df4'     'N1D_C3B_LPTOOLS_API_COMPAT_POST_BLOB=0b3779902387e2ccc6a86993a40c50c8b7e16852'     'N1D_C3B_ENGINEERING_VARIANT=userdebug'     'N1D_C3B_GENERATED_PRODUCT=treble_arm64_bvN'     'N1D_C3B_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2'     'N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO'     'N1D_C3B_FLASH_AUTHORIZED=NO'     'N1D_C3B_SIGNING_AUTHORIZED=NO'     'N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_RELEASE_ELIGIBLE=NO'
 do
     grep -Fxq "$required" "$TRANSITION" || fail "transition_missing=$required"
 done
@@ -139,10 +141,27 @@ grep -Fq 'name: "vibrator-lge"' "$PHH_LGE_COMPAT_PATCH" ||
 grep -Fq 'vendor.lge.hardware.vibrator@1.0' "$PHH_LGE_COMPAT_PATCH" ||
     fail phh_lge_patch_dependency_missing
 
+
+lptools_patch_blob="$(git hash-object "$LPTOOLS_COMPAT_PATCH")"
+[[ "$lptools_patch_blob" == d1fca112c3df19f567f24b23c750b8bfad43c403 ]] ||
+    fail "lptools_compat_patch_blob=$lptools_patch_blob"
+[[ "$(grep -Ec '^diff --git ' "$LPTOOLS_COMPAT_PATCH")" == 1 ]] ||
+    fail lptools_compat_patch_not_single_file
+grep -Fq 'lptools.cc' "$LPTOOLS_COMPAT_PATCH" ||
+    fail lptools_compat_target_missing
+
+for token in     'BUILD_AUTHORIZED=YES_LPTOOLS_MODULE_ONLY'     'NETWORK_FETCH_AUTHORIZED=NO'     'build_compat_patch_requires_--authorize-build-compat-source-mutation'     'git -C "$LPTOOLS_ROOT" apply --check "$LPTOOLS_COMPAT_PATCH"'     'make lptools -j"$JOBS"'     'N1D_C3B_LPTOOLS_BUILD=PASS'     'DEVICE_CONTACT_AUTHORIZED=NO'     'RELEASE_ELIGIBLE=NO'
+do
+    grep -Fq -- "$token" "$LPTOOLS_QUALIFIER" || fail "lptools_qualifier_missing=$token"
+done
+lptools_build_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+lptools[[:space:]]' "$LPTOOLS_QUALIFIER" || true)"
+[[ "$lptools_build_count" == 1 ]] || fail "lptools_build_count=$lptools_build_count"
+
 echo "N1D_C3B_ENGINEERING_SCRIPT_SYNTAX=PASS"
 echo "N1D_C3B_ENGINEERING_PHH_BASE_HARDENING=PASS_STATIC_BOUND"
 echo "N1D_C3B_ENGINEERING_SCAFFOLD_COMPAT=PASS_EXACT_LGE_VIBRATOR_QUARANTINE count=2"
 echo "N1D_C3B_ENGINEERING_COMPATIBILITY_PEEL=PASS_R2 rows=11 build_make_patches=2 runtime_allowlist=0"
+echo "N1D_C3B_ENGINEERING_LPTOOLS_API_COMPAT=PASS_EXACT patch_count=1 focused_build_count=$lptools_build_count"
 echo "N1D_C3B_ENGINEERING_PREP_SCOPE=PASS"
 echo "N1D_C3B_ENGINEERING_PREP_GRAPH_SCAN=PASS_SINGLE_FORALL_HELPER"
 echo "N1D_C3B_ENGINEERING_BUILD_PREP_VERIFY_COUNT=PASS value=2"
