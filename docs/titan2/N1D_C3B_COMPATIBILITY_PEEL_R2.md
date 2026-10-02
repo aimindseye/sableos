@@ -1,6 +1,6 @@
 # Titan 2 N1D C3B Compatibility Peel R2
 
-Status: **R2 compatibility peel active on PR #234; next action is one exact-head systemimage attempt**
+Status: **R2 compatibility peel active on PR #234; E1 systemimage reached final ext4 packaging and exposed one PHH root-label mismatch; bounded retry fix admitted**
 
 Date: 2026-10-02
 
@@ -54,7 +54,7 @@ build/titan2/n1d-c3a-control-patch-inventory-r2.tsv
 
 Every Restless control patch is deny-by-default in that inventory and the count is bound to the five C3A tiers (198 + 121 + 29 + 17 + 4 = 369). No Restless patch is admitted verbatim by R2.
 
-The focused semantic decision ledger for the 9 platform/build fixes plus the 2 previously proven Soong host-layout fixes is:
+The focused semantic decision ledger for the 9 platform/build fixes, the 2 previously proven Soong host-layout fixes and the failure-derived PHH root-folder packaging fix is:
 
 ```text
 build/titan2/n1d-c3b-compatibility-peel-r2.tsv
@@ -64,8 +64,9 @@ The legacy HIDL vibrator restoration is also explicitly rejected in the full inv
 
 ## Newly admitted E1 compatibility
 
-R2 adds two Sable-owned patches. Neither is a verbatim admission of a Restless
-patch and neither increments the runtime patch allowlist.
+R2 retains two Sable-owned build/make patches and now adds one failure-derived
+PHH scaffold packaging patch. None is a verbatim admission of a Restless patch
+and none increments the runtime patch allowlist.
 
 ### Graphene/Treble build graph
 
@@ -103,6 +104,38 @@ The generic GSI `ro.adb.secure=0` override is removed. This is a
 security-positive admission consistent with the existing C3B rule that
 unauthenticated/default ADB is not acceptable.
 
+### PHH root-folder SELinux label alignment
+
+The E1 systemimage build completed compilation and reached final ext4 image
+construction before `e2fsdroid` failed while looking up a label for
+`/bt_firmware`.
+
+The pinned PHH `board-base.mk` creates:
+
+```text
+bt_firmware sec_storage efs persist
+```
+
+but the C3B hardening deliberately removes `device/phh/treble/sepolicy`.
+The dropped PHH file-context set is the sole owner of the legacy
+`/bt_firmware` and `/sec_storage` labels. Re-enabling the broad PHH policy or
+inventing new SELinux types would widen C3B security scope.
+
+The bounded repair is:
+
+```text
+patches/android-16-n1d-trebledroid/scaffold-compat/
+  0003-device-phh-drop-unlabeled-root-extra-folders.patch
+
+before: BOARD_ROOT_EXTRA_FOLDERS += bt_firmware sec_storage efs persist
+after:  BOARD_ROOT_EXTRA_FOLDERS += efs persist
+```
+
+`/efs` is already label-owned by platform sepolicy and `/persist` by the
+generic arm64 GSI board policy, so they are retained. The two PHH-only unlabeled
+root folders are removed. This is build/image-layout compatibility evidence,
+not physical-runtime qualification; Titan runtime validation remains NO.
+
 ## Explicitly rejected or deferred
 
 R2 makes these decisions before another build:
@@ -131,7 +164,9 @@ R2 retains, without widening them:
 ```text
 PHH base security/control reductions     14
 Soong host-layout build fixes             2
-non-Titan LGE vibrator quarantines        2
+scaffold compatibility patches            3
+  non-Titan LGE vibrator quarantines      2
+  unlabeled PHH root-folder quarantine    1
 new build/make compatibility patches      2
 runtime patch allowlist                    0
 Restless patches applied verbatim          0
@@ -165,13 +200,16 @@ from Titan evidence.
 
 ## Next build rule
 
-After exact-head static qualification, perform exactly one fresh
-`systemimage` build. Do not run another patch-by-patch Restless replay.
+After exact-head static qualification, retry exactly one fresh `systemimage`
+build with the failure-derived root-folder compatibility patch. Do not run
+another patch-by-patch Restless replay.
 
 The build driver applies the complete admitted R2 set before invoking Soong:
 
 ```text
-2 scaffold/LGE quarantines
+3 scaffold compatibility patches
+  2 non-Titan LGE quarantines
+  1 PHH unlabeled-root-folder quarantine
 2 Soong host-layout fixes
 2 build/make R2 compatibility patches
 ```
