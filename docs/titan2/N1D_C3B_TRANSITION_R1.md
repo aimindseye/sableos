@@ -1,6 +1,6 @@
 # Titan 2 N1D C3B E1 engineering transition
 
-Status: **E1 source/build transition proposed; no device contact or flash**
+Status: **E1 active on review branch; source/build qualification required; no device contact**
 
 Date: 2026-10-02
 
@@ -9,101 +9,84 @@ Date: 2026-10-02
 E1 consumes the sealed C3A control evidence and activates a separate C3B
 engineering lane.
 
-C3A proved that the pinned public Restless/TrebleDroid topology can produce an
-Android 16 system image. C3B does not inherit that topology wholesale.
+C3A proved the public Restless/TrebleDroid Android 16 build topology. C3B does
+not inherit the Restless source-graph removals or patch stack.
 
-E1 deliberately separates three concerns:
-
-```text
+~~~text
 C3A control
-    sealed comparison evidence
-    no longer the active engineering lane
+    -> sealed comparison evidence
 
-C3B E1 engineering baseline
-    pinned GrapheneOS Android 16 base
-    minimal pinned Treble build/parse scaffold
-    zero Restless runtime patches
-    broad PHH runtime/control behavior reduced
-    generated Treble engineering product
-    build/parse only
+C3B E1
+    -> clean pinned GrapheneOS base
+    -> minimal pinned Treble scaffold
+    -> exact Sable hardening of pinned PHH base
+    -> zero Restless runtime patches
+    -> generated userdebug systemimage only
 
-C3B E2 product admission
-    Sable product identity
-    Sable source modules
-    Launcher3-hosted Sable Start
-    product/partition ownership
-    canonical product integration
-```
+C3B E2
+    -> Sable product identity
+    -> Sable source-module admission
+    -> Launcher3-hosted Sable Start
+    -> product/partition ownership
+~~~
 
-E1 is not a release transition and is not a flash authorization.
+E1 is not a release or flash transition.
 
 ## C3A prerequisite
 
-E1 is bound to the sealed C3A evidence:
+E1 is bound to the sealed C3A image evidence:
 
-```text
-N1D_C3A_CONTROL_EVIDENCE=PASS
+~~~text
+N1D_C3A_CONTROL_EVIDENCE_STATUS=PASS_SYSTEMIMAGE
 N1D_C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
 N1D_C3B_TRANSITION_PREREQUISITE=SATISFIED_BY_C3A_CONTROL_EVIDENCE
-```
+~~~
 
-The C3A image remains evidence only.
+## Separate workspace
 
-## Separate C3B workspace
+C3B does not attempt to roll back the C3A-mutated Android tree.
 
-C3B does not try to undo the C3A-mutated source tree.
-
-Canonical E1 workspace:
-
-```text
+~~~text
 /srv/sable-build/workspaces/titan2-n1d-c3b/
     android/
     out-c3b-engineering/
-```
+~~~
 
-This keeps the C3A 991-project control graph, its archived Graphene projects,
-369 control patches, TrebleApp residue and Soong fixes isolated from C3B.
+This keeps C3A's 991-project graph, 369 control patches and generated/build
+residue isolated as evidence.
 
-## C3B source graph
+## Source graph
 
-E1 starts from a new exact GrapheneOS Android 16 checkout:
+Exact Graphene base:
 
-```text
-GrapheneOS tag:             2026061600
-manifest commit:            5d82aa9610855bc0b43b9eb7ca4470d30455cfeb
-base project count:         1033
-Graphene project removals:  0
-```
+~~~text
+tag:              2026061600
+manifest commit:  5d82aa9610855bc0b43b9eb7ca4470d30455cfeb
+projects:         1033
+removals:         0
+~~~
 
-It then adds five pinned build/parse-scaffold projects:
+E1 adds five pinned scaffold projects:
 
-```text
+~~~text
 device/phh/treble
 prebuilts/vndk/v28
 prebuilts/vndk/v29
 vendor/interfaces
 vendor/lptools
-```
+~~~
 
-The VNDK 28/29 prebuilts and `lptools` are retained because the exact pinned
-PHH `base.mk` directly requests them. The pinned interface definitions are
-kept for the generic compatibility modules still named by that base. The
-external `vendor/hardware_overlay` inheritance is removed before product
-generation, so that repository is not part of the E1 graph.
+Expected managed graph:
 
-Expected managed project count:
-
-```text
+~~~text
 1033 + 5 = 1038
-```
+~~~
 
-C3B does not inherit the C3A 54-project Restless removal set.
+The C3A 54-project Restless removal set is not inherited.
 
-## C3A additions not inherited by default
+C3A additions dropped from E1 by default:
 
-The following C3A projects are intentionally absent from the E1 scaffold:
-
-```text
+~~~text
 packages/apps/QcRilAm
 prebuilts/vndk/v30
 treble_app
@@ -111,164 +94,129 @@ vendor/apn
 vendor/hardware_overlay
 vendor/magisk
 vendor/vndk-tests
-```
+~~~
 
-Reasons are recorded in:
+vendor/magisk is forbidden by the C3B security boundary. Other dropped
+components can be reconsidered only from concrete C3B failure evidence.
 
-```text
-build/titan2/n1d-c3b-scaffold-decisions.tsv
-```
+## Runtime patch boundary
 
-Absence at E1 is not a permanent claim that every item is unnecessary.
-A non-forbidden component may be reconsidered if product parse/build/runtime
-failure provides evidence.
-
-`vendor/magisk` is outside the C3B security boundary.
-
-## Restless patch boundary
-
-E1 applies none of the 369 C3A Restless control patches.
-
-```text
+~~~text
 N1D_C3B_C3A_CONTROL_PATCH_STACK_INHERITED=NO
 N1D_C3B_RESTLESS_PATCH_COUNT=0
 N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
-```
+~~~
 
-Any later runtime patch requires the normal C3B sequence:
+Later compatibility admission requires:
 
-```text
+~~~text
 reproduce failure
-  -> identify smallest relevant compatibility change
-  -> security/runtime review
-  -> explicit allowlist admission
-  -> rebuild
-  -> evidence
-```
+-> identify smallest relevant change
+-> review security/runtime impact
+-> explicit admission
+-> rebuild
+-> evidence
+~~~
 
-## PHH runtime reduction
+## Exact PHH base hardening
 
-The pinned `device/phh/treble/base.mk` is used as a build-compatibility
-substrate, not accepted wholesale as Sable runtime policy.
+The pinned Treble generator is retained, but its base.mk is not accepted
+unchanged as Sable runtime/security policy.
 
-Android product inheritance is resolved after `inherit-product` tagging, so a
-later product fragment is not a reliable way to subtract packages already
-introduced by the PHH base. E1 therefore applies an exact, fail-closed
-Sable-owned transformation to the pinned `base.mk` **before** generation:
+E1 applies:
 
-```text
+~~~text
 build/titan2/apply-n1d-c3b-phh-base-hardening.py
-```
+~~~
 
-The applicator is bound to:
+against exactly:
 
-```text
-device/phh/treble commit:
+~~~text
+device/phh/treble commit
 39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
 
-base.mk git blob:
+base.mk input blob
 a29e402009d449150f1216e5d517ec0c9b36bfbd
 
-security transforms:
+base.mk expected hardened blob
+58edfb8713e9a1392daaf5bbf0d07778efd6d669
+
+hardening applicator blob
+9fdfeb59ab7826615e8c0a44ea105dfc4b7e0679
+
+security transforms
 14
-```
+~~~
 
-It removes the highest-risk broad control/runtime behavior from the first C3B
-engineering product, including:
+The transform removes:
 
-- PHH private sepolicy and the external broad hardware-overlay inheritance;
-- `ro.adb.secure=0` and adb-by-default USB;
-- rw-system / boot / data / property-handler mutation hooks;
+- PHH private sepolicy and generic external hardware-overlay inheritance;
+- ro.adb.secure=0;
+- default persist.sys.usb.config=adb;
+- PHH rw-system, boot/data and property-handler hooks;
 - TWRP/busybox payloads;
-- `SELINUX_IGNORE_NEVERALLOWS := true`;
+- SELINUX_IGNORE_NEVERALLOWS := true;
 - PHH MTK SMS helper;
-- resetprop, securize, PHH OTA and remove-telephony hooks;
-- PHH custom adbd service;
+- resetprop/securize/PHH OTA/remove-telephony payloads;
+- PHH adbd override;
 - TrebleApp privileged permission/sysconfig payloads;
-- PHH remote debugging;
-- PHH OTA service;
+- PHH remote-debug payloads;
 - QcRilAm;
-- unrelated Samsung boot and PHH MTK in-call helpers.
+- Samsung boot helper and PHH MTK in-call helper.
 
-E1 deliberately retains the pinned base's VNDK 28/29 requirement, `lptools`,
-`Iwlan`, `QualifiedNetworksService` and other compatibility code not yet
-shown to violate the C3B security boundary. Their presence is not a permanent
-release admission: E1 is the first compile baseline, and later build/runtime
-evidence decides what else is removed, retained or replaced.
+E1 retains Iwlan, QualifiedNetworksService, and required VNDK compatibility
+support for the first build baseline.
 
-The generator config:
+The hardening is Sable baseline policy, not a Restless patch admission.
 
-```text
+## Generator identity
+
+The generator configuration is:
+
+~~~text
 build/titan2/n1d-c3b-engineering.mk
-```
+~~~
 
-is intentionally composition-neutral in E1. It exists to bind the generated
-configuration name; Sable application/product admission belongs to E2.
+It intentionally adds no Sable apps or branding in E1.
 
-If this hardening makes the image fail to parse or compile, that failure is
-useful C3B evidence. E1 does not pre-emptively restore the removed behavior.
+First engineering target:
 
-## Host-layout patches
+~~~text
+treble_arm64_bvN-bp4a-userdebug
+goal=systemimage
+~~~
 
-Two C3A-discovered Soong patches are admitted into E1 separately from runtime
-patch policy:
+Final Sable product identity is explicitly E2-owned.
 
-```text
+## Host-layout fixes
+
+Two exact C3A-discovered Soong patches are carried into E1 solely for
+out-of-tree host-layout compatibility:
+
+~~~text
 0001-soong-ci-tests-skip-out-of-tree-host-paths.patch
 0002-soong-dexpreopt-gen-support-out-of-tree-product-packages.patch
-```
+~~~
 
-They are allowed because they address the canonical out-of-tree `OUT_DIR`
-build environment and do not change Android runtime behavior.
+They are separately blob-pinned and do not change the runtime patch count.
 
-Their patch blobs and expected Graphene base/post blobs remain exact-pinned.
+## Authorization
 
-```text
-N1D_C3B_HOST_LAYOUT_PATCH_ROLE=BUILD_ENVIRONMENT_COMPATIBILITY_ONLY
-N1D_C3B_HOST_LAYOUT_PATCH_COUNT=2
-```
+E1 permits only:
 
-Application requires explicit build-driver authorization.
-
-## First C3B engineering identity
-
-E1 intentionally keeps the generated Treble identity while the Sable product
-admission model is defined in E2.
-
-```text
-generator:       device/phh/treble/generate.sh
-config:          sable-c3b-engineering
-product:         treble_arm64_bvN
-device:          tdgsi_arm64_ab
-release config:  bp4a
-variant:         userdebug
-goal:            systemimage
-```
-
-This is an **engineering build identity**, not final Sable product identity.
-
-The earlier handcrafted `sable_titan2_n1d_arm64` implementation remains
-retired. E2 will define how accepted Sable source modules and product identity
-enter the generated C3B product without returning to the failed handcrafted
-GSI graph.
-
-## Authorization boundary
-
-E1 authorizes only:
-
-```text
-new C3B workspace creation
-pinned Graphene repo init/sync with explicit network authorization
-five-project scaffold sync with explicit network authorization
-bounded source generation in device/phh/treble
+~~~text
+separate C3B workspace init/sync with explicit network + mutation authorization
+five-project scaffold sync with explicit network + mutation authorization
+exact PHH base hardening
+Treble product generation
 product parse with explicit authorization
 systemimage compile with explicit authorization
-two exact host-layout source mutations with explicit authorization
-```
+two exact Soong host-layout fixes with explicit mutation authorization
+~~~
 
-E1 does not authorize:
+E1 blocks:
 
-```text
+~~~text
 target-files
 OTA
 dist
@@ -277,116 +225,98 @@ device contact
 adb
 fastboot
 flash
-development/release signing
-production signing
+signing
 physical runtime qualification
 release
-```
+~~~
 
-A successful E1 system image is therefore still:
+## Operator sequence
 
-```text
-N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
-N1D_C3B_RELEASE_ELIGIBLE=NO
-```
+Repository contracts:
 
-## Driver sequence
-
-Repository/static qualification:
-
-```bash
+~~~bash
 bash build/gates/n1d-c3b-transition-contract.sh
 bash build/gates/n1d-c3b-engineering-contract.sh
 bash build/gates/sable-pipeline-contract.sh
-```
+~~~
 
-Offline preflight:
+Preflight:
 
-```bash
+~~~bash
 bash build/titan2/prepare-n1d-c3b-engineering.sh preflight
-```
+~~~
 
-Initialize the separate Graphene workspace:
+Initialize:
 
-```bash
-bash build/titan2/prepare-n1d-c3b-engineering.sh \
-  init-base \
-  --authorize-network \
-  --authorize-source-mutation
-```
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh   init-base   --authorize-network   --authorize-source-mutation
+~~~
 
-Synchronize and seal the 1033-project base:
+Sync and seal:
 
-```bash
-bash build/titan2/prepare-n1d-c3b-engineering.sh \
-  sync-base \
-  --authorize-network \
-  --authorize-source-mutation
-```
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh   sync-base   --authorize-network   --authorize-source-mutation
+~~~
 
-Stage the five-project C3B scaffold, harden the pinned PHH base, and generate the engineering product:
+Stage and generate:
 
-```bash
-bash build/titan2/prepare-n1d-c3b-engineering.sh \
-  stage \
-  --authorize-network \
-  --authorize-source-mutation
-```
+~~~bash
+bash build/titan2/prepare-n1d-c3b-engineering.sh   stage   --authorize-network   --authorize-source-mutation
+~~~
 
-Offline verification:
+Verify:
 
-```bash
+~~~bash
 bash build/titan2/prepare-n1d-c3b-engineering.sh verify
-```
+~~~
 
-Product parse:
+Parse:
 
-```bash
-bash build/titan2/qualify-n1d-c3b-product-parse.sh \
-  --authorize-product-parse
-```
+~~~bash
+bash build/titan2/qualify-n1d-c3b-product-parse.sh   --authorize-product-parse
+~~~
 
-First C3B engineering compile:
+Compile:
 
-```bash
-bash build/titan2/build-n1d-c3b-systemimage.sh \
-  --authorize-c3b-compile \
-  --authorize-host-layout-source-mutation \
-  --jobs 16
-```
+~~~bash
+bash build/titan2/build-n1d-c3b-systemimage.sh   --authorize-c3b-compile   --authorize-host-layout-source-mutation   --jobs 16
+~~~
 
-No network authorization is accepted by the build driver.
+The build phase accepts no network authorization.
 
-## E1 exit criteria
+## Exit criteria
 
-E1 source transition is complete when:
+Static/source transition:
 
-```text
+~~~text
 N1D_C3B_TRANSITION_CONTRACT=PASS
 N1D_C3B_ENGINEERING_CONTRACT=PASS
+SABLE_STANDARD_PIPELINE_CONTRACT=PASS
+~~~
+
+Workspace/staging:
+
+~~~text
+N1D_C3B_GRAPHENE_BASE_SEAL=PASS
 N1D_C3B_SCAFFOLD_STAGE=PASS
 N1D_C3B_PREP_VERIFY=PASS
+~~~
+
+Parse:
+
+~~~text
 N1D_C3B_PRODUCT_PARSE=PASS
-```
+~~~
 
-The first compile then has two valid outcomes.
+Successful compile:
 
-If it fails:
-
-```text
-preserve exact failure
-classify missing build/runtime compatibility
-do not import the C3A stack wholesale
-admit only the smallest evidence-supported change
-```
-
-If it succeeds:
-
-```text
+~~~text
 N1D_C3B_SYSTEMIMAGE=PASS
 N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT
 N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
 N1D_C3B_RELEASE_ELIGIBLE=NO
-```
+~~~
 
-E2 product admission and later runtime/security gates remain separate.
+A compile failure is not a reason to import C3A wholesale. Preserve the exact
+failure and admit only the minimum reviewed compatibility change supported by
+evidence.
