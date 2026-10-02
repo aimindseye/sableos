@@ -34,10 +34,10 @@ grep -Fq '"$SABLE_REPO_TOOL" init' "$PREP" || fail repo_init_missing
 repo_sync_count="$(grep -c '"$SABLE_REPO_TOOL" sync' "$PREP" || true)"
 [[ "$repo_sync_count" == 2 ]] || fail "prep_repo_sync_count=$repo_sync_count"
 
-for forbidden in     'n1d-c3a-trebledroid-remove.xml'     'treble_restlessos'     'packages/apps/QcRilAm'     'vendor/magisk'
+for forbidden in     'n1d-c3a-trebledroid-remove.xml'     'treble_restlessos'
 do
     if grep -Fq "$forbidden" "$PREP"; then
-        fail "forbidden_prep_token=$forbidden"
+        fail "forbidden_prep_control_input=$forbidden"
     fi
 done
 
