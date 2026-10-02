@@ -36,14 +36,14 @@ The older R8 status tables below are retained as historical closure context.
 Current R9 execution has advanced beyond that snapshot:
 
 ```text
-SABLE_START_STATUS=STANDALONE_HOME_SOURCE_MODULE_QUALIFIED_PHYSICAL_PENDING
+SABLE_START_STATUS=R9L8_LAUNCHER3_HOSTED_PRESENTATION
 SABLE_MEDIA_STATUS=LARGE_LIBRARY_HARDENED_ALPHABET_NAVIGATION_QUALIFIED
 SABLE_MESSAGES_STATUS=PROVIDER_FOUNDATION_PHYSICALLY_PROVEN
 SABLE_MESSAGES_WEB_CAPSULES=RETIRED
 SABLE_HUB_V1=PRIORITY_MESSAGES_EMAIL_PEOPLE_SOURCE_IMPLEMENTED
 SABLE_CONNECTED_APPS=ENABLED_AVAILABLE_SOURCE_IMPLEMENTED
 SABLE_HUB_REPLY_HISTORY=TRUTHFUL_HANDOFF_SOURCE_IMPLEMENTED
-QUICKSTEP_ROLE=RECENTS_ONLY
+LAUNCHER3_QUICKSTEP_ROLE=HOME_PLUS_RECENTS_SUBSTRATE
 FULL_PANTHER_PHYSICAL_ACCEPTANCE=PENDING
 ```
 
@@ -154,7 +154,7 @@ Sable Start requirements:
 - Messages tile;
 - Settings tile;
 - Social Hub placeholder tile;
-- standalone SableLauncher owns HOME; Launcher3QuickStep is retained only for Recents/Quickstep.
+- R9L8 Launcher3QuickStep owns HOME and hosts the Sable Start presentation while retaining Recents/Quickstep.
 
 M1 is intentionally a real shell/product milestone, not only a renderer demo.
 

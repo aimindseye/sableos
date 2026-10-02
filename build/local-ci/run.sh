@@ -212,16 +212,25 @@ PY
     fi
   }
 
-  run_static_contract r8-build-driver \
-    bash "$ROOT/build/gates/r8-build-driver-contract.sh"
   run_static_contract sable-pipeline \
     bash "$ROOT/build/gates/sable-pipeline-contract.sh"
-  run_static_contract r9-physical-remediation \
-    python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
-  run_static_contract r9-system-cohesion \
-    python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
-  run_static_contract r9-physical-ux-closure \
-    python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+  run_static_contract n1d-local-ci-scope \
+    bash "$ROOT/build/gates/n1d-local-ci-scope-contract.sh"
+
+  if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then
+    run_static_contract r8-build-driver \
+      bash "$ROOT/build/gates/r8-build-driver-contract.sh"
+    run_static_contract r9-physical-remediation \
+      python3 "$ROOT/build/gates/r9-physical-remediation-contract.py"
+    run_static_contract r9-system-cohesion \
+      python3 "$ROOT/build/gates/r9-system-cohesion-contract.py"
+    run_static_contract r9-physical-ux-closure \
+      python3 "$ROOT/build/gates/r9-physical-ux-closure-contract.py"
+    echo "SABLE_LOCAL_CI_PANTHER_R9_STATIC_CONTRACTS=PASS_EXECUTED"
+  else
+    echo "SABLE_LOCAL_CI_PANTHER_R9_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
+  fi
+
   run_static_contract r9-textreader-standalone \
     python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
@@ -243,10 +252,14 @@ PY
     python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
   run_static_contract r9-sablestart-design \
     python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
-  run_static_contract r9-launcher3-foundation-self-test \
-    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
-  run_static_contract r9-launcher3-foundation \
-    python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+  if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then
+    run_static_contract r9-launcher3-foundation-self-test \
+      python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
+    run_static_contract r9-launcher3-foundation \
+      python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py"
+  else
+    echo "SABLE_LOCAL_CI_R9_LAUNCHER3_FOUNDATION=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
+  fi
 
   if [[ "$static_contract_failures" -ne 0 ]]; then
     local failure_csv

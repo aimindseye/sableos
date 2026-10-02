@@ -4,6 +4,7 @@
 
 For the current project state and active product direction, start here:
 
+- `CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md` — current R9L8 HOME ownership and Titan 2 N1D/C3B product/parallel-integration authority; use this to resolve older standalone-SableLauncher notes.
 - `../CURRENT_STATUS.md` — current execution authority: Panther R9 Hub V1 closure merged, final accepted source/target-files seal, frozen touch-first reference state, Titan-family keyboard-first next work.
 - `adr/0010-keyboard-first-sableos-design-v1.md` — accepted keyboard-first platform architecture and implementation workstreams.
 - `adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 product model: Priority / Messages / Email / People, Enabled / Available Connected Apps, truthful local reply handoff bubbles, bounded Sable Mail integration and keyboard-first semantics.

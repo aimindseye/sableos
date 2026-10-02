@@ -37,7 +37,7 @@ accent          -> Sable Blue
 local overrides -> cleared
 ```
 
-`Follow system` is the normal default unless a surface has an explicit reviewed exception. R9 uses one Settings-owned global appearance authority at `content://org.sableos.appearance/appearance` for `Follow system` / `Light` / `Dark` plus the bounded Blue / Green / Purple / Orange / Slate accents. SableLauncher and Sable-owned apps consume/edit that state through the shared appearance contract; standalone app qualification falls back to Follow system + Sable Blue when the provider is unavailable. A production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
+`Follow system` is the normal default unless a surface has an explicit reviewed exception. R9 uses one Settings-owned global appearance authority at `content://org.sableos.appearance/appearance` for `Follow system` / `Light` / `Dark` plus the bounded Blue / Green / Purple / Orange / Slate accents. Launcher3-hosted Sable Start and Sable-owned apps consume/edit that state through the shared appearance contract; standalone app qualification falls back to Follow system + Sable Blue when the provider is unavailable. A production surface must not silently create an unrelated hard-coded dark/light theme. Content-specific bounded color remains allowed for information that inherently uses color, such as game values or album artwork, provided contrast and non-color state cues remain accessible.
 
 ## Core principles
 
@@ -64,7 +64,7 @@ src/android/shared/sabledesign/
 It is consumed by:
 
 - the Gradle `:design` module used by R8 first-party apps;
-- the Soong-built standalone `SableLauncher` through `:sable_design_shared_srcs`.
+- the Launcher3-hosted Sable Start presentation through `:sable_start_presentation_srcs` / `:sable_design_shared_srcs`.
 
 Shared primitives currently include:
 
@@ -125,7 +125,7 @@ Rules:
 - Persistent usage-ranked app ordering is not the default. User pinning and exact alphabetical order remain the privacy-preserving baseline; session recents may remain memory-only.
 - Search is local-first. SableStart itself must not become an ambient network search client; remote/provider results require an explicit provider and privacy boundary.
 - Sable Peek may expose Open, Pin/Unpin, published app shortcuts, App Security & Privacy and Android App info. Notification/widget content is optional and requires explicit access/redaction policy.
-- Quickstep remains available for Android Recents/Overview and gesture integration until Sable separately owns and qualifies those surfaces.
+- Launcher3QuickStep remains the R9L8 HOME host and Android Recents/Overview/gesture substrate; Sable owns the hosted presentation and product semantics.
 - Pinned/live content must use the same tile/state primitives rather than a separate visual system.
 - Before the next full Panther image build after a launcher redesign, a production-source visual review set is mandatory. Required states are defined in `R9_SABLESTART_LAUNCHER_DESIGN.md`.
 
@@ -201,4 +201,4 @@ The sequence is implementation order, not permission for later screens to invent
 - Product-image integration remains a separate gate; a successful standalone Compose build does not prove SystemUI/SetupWizard integration.
 - Visual review is required in addition to compile/static gates before a screen is called UI-complete.
 - Launcher redesigns are build-blocking until the production-source review set is accepted; prototype/demo-only launcher screenshots do not satisfy this gate.
-- SableStart launcher acceptance separately proves HOME resolution, HOME role ownership, cold-launch survival and Quickstep/Recents preservation. Package presence alone is insufficient.
+- SableStart/Launcher3 acceptance separately proves Launcher3 HOME resolution, hosted Sable presentation, cold-launch survival and Quickstep/Recents preservation. Package presence alone is insufficient.
