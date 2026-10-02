@@ -389,6 +389,22 @@ Titan 2 is intended first as a GSI/userspace/UI laboratory, not a production-sec
 - stock vendor/HAL compatibility;
 - data/5G/IMS behavior as separate observations rather than assumed support.
 
+Keyboard-device product extensions accepted on 2026-10-02:
+
+- Sable Camera Control Deck: portrait remains supported, while landscape uses a
+  viewfinder-first physical-keyboard control surface with transient parameter
+  strips, AF/AE lock, focus-point movement and complete touch fallback;
+- Sable Keyboard D6 backlog: compact input strip, configurable SYM/emoji/snippet
+  surfaces and local dictionary/prediction improvements;
+- Pastiera 0.86 is a pinned GPL-3.0 behavior/product reference only, not a Sable
+  source dependency;
+- Sable Start and Sable Keyboard remain factory/first-party defaults while
+  third-party HOME and IME selection stays allowed through Android's normal
+  user-choice model.
+
+These extensions are non-blocking and must not delay C3B image/radio/security
+qualification. See ADR-0012 and `CAMERA_ENHANCEMENT_ROADMAP.md`.
+
 A successful GSI boot remains `N0_GSI_USERSPACE_LAB`. It does not imply Sable-owned kernel security maintenance, full firmware lifecycle ownership, relocked verified boot or supported production OTA. See `TITAN2_GSI_PLAN.md`.
 
 ### Zinwa Q25
