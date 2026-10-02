@@ -37,6 +37,22 @@ grep -Fq '"$SABLE_REPO_TOOL" init' "$PREP" || fail repo_init_missing
 repo_sync_count="$(grep -c '"$SABLE_REPO_TOOL" sync' "$PREP" || true)"
 [[ "$repo_sync_count" == 2 ]] || fail "prep_repo_sync_count=$repo_sync_count"
 
+prep_action_dispatch_count="$(grep -Fc 'case "$ACTION" in' "$PREP" || true)"
+[[ "$prep_action_dispatch_count" == 1 ]] ||
+    fail "prep_action_dispatch_count=$prep_action_dispatch_count"
+prep_repo_forall_count="$(grep -Fc '"$SABLE_REPO_TOOL" forall' "$PREP" || true)"
+[[ "$prep_repo_forall_count" == 1 ]] ||
+    fail "prep_repo_forall_count=$prep_repo_forall_count"
+grep -Fq 'capture_project_state()' "$PREP" ||
+    fail prep_combined_project_state_capture_missing
+if grep -Eq '^repo_(project_count|dirty_projects)\(\)' "$PREP"; then
+    fail prep_legacy_split_project_scan_present
+fi
+
+build_prep_verify_count="$(grep -Fc 'bash "$PREP" verify' "$BUILD" || true)"
+[[ "$build_prep_verify_count" == 2 ]] ||
+    fail "build_prep_verify_count=$build_prep_verify_count"
+
 for forbidden in     'n1d-c3a-trebledroid-remove.xml'     'treble_restlessos'
 do
     if grep -Fq "$forbidden" "$PREP"; then
@@ -124,6 +140,8 @@ echo "N1D_C3B_ENGINEERING_SCRIPT_SYNTAX=PASS"
 echo "N1D_C3B_ENGINEERING_PHH_BASE_HARDENING=PASS_STATIC_BOUND"
 echo "N1D_C3B_ENGINEERING_SCAFFOLD_COMPAT=PASS_EXACT_LGE_VIBRATOR_QUARANTINE count=2"
 echo "N1D_C3B_ENGINEERING_PREP_SCOPE=PASS"
+echo "N1D_C3B_ENGINEERING_PREP_GRAPH_SCAN=PASS_SINGLE_FORALL_HELPER"
+echo "N1D_C3B_ENGINEERING_BUILD_PREP_VERIFY_COUNT=PASS value=2"
 echo "N1D_C3B_ENGINEERING_PARSE_SCOPE=PASS_NO_COMPILE"
 echo "N1D_C3B_ENGINEERING_BUILD_SCOPE=PASS_SYSTEMIMAGE_ONLY"
 echo "N1D_C3B_ENGINEERING_NETWORK_SCOPE=PASS_PREP_ONLY"
