@@ -1,6 +1,6 @@
 # Titan 2 N1D C3B minimal Sable baseline
 
-Status: **C3A evidence prerequisite satisfied; C3B transition pending separate change**
+Status: **C3A evidence consumed by E1; C3B engineering transition active on review branch**
 
 Date: 2026-10-01
 
@@ -101,22 +101,34 @@ qualification.
 
 ## Current authorization state
 
-C3A has now produced sealed control evidence:
+C3A has produced sealed control evidence:
 
 ```text
 N1D_C3A_CONTROL_EVIDENCE=PASS
 N1D_C3B_TRANSITION_PREREQUISITE=SATISFIED_BY_C3A_CONTROL_EVIDENCE
 ```
 
-PR231 intentionally leaves the existing C3B build block in place:
+The original split profile keeps the historical pre-transition block for audit,
+but E1 moves current phase authority to:
 
 ```text
-N1D_C3B_BUILD_AUTHORIZED=NO_UNTIL_C3A_CONTROL_EVIDENCE
+build/titan2/n1d-c3b-transition.env
+```
+
+E1 authorizes only a separate C3B engineering workspace, product parse, and
+`systemimage` compilation. The first engineering target remains the generated
+Treble product `treble_arm64_bvN-bp4a-userdebug`; final Sable product identity
+and source-module admission are E2 work.
+
+```text
+N1D_C3_CURRENT_ACTIVE_PHASE=C3B_ENGINEERING
+N1D_C3B_ENGINEERING_BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY_AFTER_STAGE_AND_PARSE
+N1D_C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
+N1D_C3B_DEVICE_CONTACT_AUTHORIZED=NO
+N1D_C3B_FLASH_AUTHORIZED=NO
+N1D_C3B_SIGNING_AUTHORIZED=NO
+N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
 N1D_C3B_RELEASE_ELIGIBLE=NO
 ```
 
-That preserves the exact policy state under which C3A was qualified. A separate
-C3B transition change will consume
-`build/titan2/n1d-c3a-control-evidence.env`, switch the active phase to the
-minimal Sable baseline, and authorize only the C3B engineering build scope.
-Release, signing, device contact, and flash remain separate later gates.
+See `N1D_C3B_TRANSITION_R1.md`.
