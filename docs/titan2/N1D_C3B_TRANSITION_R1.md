@@ -75,18 +75,26 @@ base project count:         1033
 Graphene project removals:  0
 ```
 
-It then adds three pinned build/parse-scaffold projects:
+It then adds five pinned build/parse-scaffold projects:
 
 ```text
 device/phh/treble
-vendor/hardware_overlay
+prebuilts/vndk/v28
+prebuilts/vndk/v29
 vendor/interfaces
+vendor/lptools
 ```
+
+The VNDK 28/29 prebuilts and `lptools` are retained because the exact pinned
+PHH `base.mk` directly requests them. The pinned interface definitions are
+kept for the generic compatibility modules still named by that base. The
+external `vendor/hardware_overlay` inheritance is removed before product
+generation, so that repository is not part of the E1 graph.
 
 Expected managed project count:
 
 ```text
-1033 + 3 = 1036
+1033 + 5 = 1038
 ```
 
 C3B does not inherit the C3A 54-project Restless removal set.
@@ -97,12 +105,10 @@ The following C3A projects are intentionally absent from the E1 scaffold:
 
 ```text
 packages/apps/QcRilAm
-prebuilts/vndk/v28
-prebuilts/vndk/v29
 prebuilts/vndk/v30
 treble_app
 vendor/apn
-vendor/lptools
+vendor/hardware_overlay
 vendor/magisk
 vendor/vndk-tests
 ```
@@ -145,44 +151,61 @@ reproduce failure
 The pinned `device/phh/treble/base.mk` is used as a build-compatibility
 substrate, not accepted wholesale as Sable runtime policy.
 
-The E1 generator delta:
+Android product inheritance is resolved after `inherit-product` tagging, so a
+later product fragment is not a reliable way to subtract packages already
+introduced by the PHH base. E1 therefore applies an exact, fail-closed
+Sable-owned transformation to the pinned `base.mk` **before** generation:
+
+```text
+build/titan2/apply-n1d-c3b-phh-base-hardening.py
+```
+
+The applicator is bound to:
+
+```text
+device/phh/treble commit:
+39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
+
+base.mk git blob:
+a29e402009d449150f1216e5d517ec0c9b36bfbd
+
+security transforms:
+14
+```
+
+It removes the highest-risk broad control/runtime behavior from the first C3B
+engineering product, including:
+
+- PHH private sepolicy and the external broad hardware-overlay inheritance;
+- `ro.adb.secure=0` and adb-by-default USB;
+- rw-system / boot / data / property-handler mutation hooks;
+- TWRP/busybox payloads;
+- `SELINUX_IGNORE_NEVERALLOWS := true`;
+- PHH MTK SMS helper;
+- resetprop, securize, PHH OTA and remove-telephony hooks;
+- PHH custom adbd service;
+- TrebleApp privileged permission/sysconfig payloads;
+- PHH remote debugging;
+- PHH OTA service;
+- QcRilAm;
+- unrelated Samsung boot and PHH MTK in-call helpers.
+
+E1 deliberately retains the pinned base's VNDK 28/29 requirement, `lptools`,
+`Iwlan`, `QualifiedNetworksService` and other compatibility code not yet
+shown to violate the C3B security boundary. Their presence is not a permanent
+release admission: E1 is the first compile baseline, and later build/runtime
+evidence decides what else is removed, retained or replaced.
+
+The generator config:
 
 ```text
 build/titan2/n1d-c3b-engineering.mk
 ```
 
-is inherited after the PHH base and removes known broad runtime/control
-features from the first engineering product, including:
+is intentionally composition-neutral in E1. It exists to bind the generated
+configuration name; Sable application/product admission belongs to E2.
 
-- TrebleApp;
-- HardwareOverlayPicker;
-- QcRilAm;
-- QtiAudio;
-- PHH MTK in-call and SMS helpers;
-- PHH OTA;
-- resetprop helper;
-- broad Treble hardware overlays;
-- PHH rw-system / property-handler / boot/data scripts;
-- PHH securize;
-- PHH remote debugging;
-- PHH TWRP/busybox payloads;
-- TrebleApp privileged permission/sysconfig payloads.
-
-It also removes the broad PHH private sepolicy directory and generic PHH
-product overlay, clears the inherited legacy VNDK 28/29 list, drops the PHH
-VNDK init/detect path, and restores:
-
-```text
-SELINUX_IGNORE_NEVERALLOWS=false
-ro.adb.secure=1
-```
-
-The PHH adb-by-default USB property is removed as well. This deliberately makes
-the first E1 image narrower than a universal PHH GSI. If Titan 2 build/runtime
-evidence proves that a specific compatibility element is required, it is
-re-admitted explicitly rather than inherited as a bundle.
-
-If this reduction makes the image fail to parse or compile, that failure is
+If this hardening makes the image fail to parse or compile, that failure is
 useful C3B evidence. E1 does not pre-emptively restore the removed behavior.
 
 ## Host-layout patches
@@ -236,7 +259,7 @@ E1 authorizes only:
 ```text
 new C3B workspace creation
 pinned Graphene repo init/sync with explicit network authorization
-six-project scaffold sync with explicit network authorization
+five-project scaffold sync with explicit network authorization
 bounded source generation in device/phh/treble
 product parse with explicit authorization
 systemimage compile with explicit authorization
@@ -301,7 +324,7 @@ bash build/titan2/prepare-n1d-c3b-engineering.sh \
   --authorize-source-mutation
 ```
 
-Stage the three-project C3B scaffold and generate the engineering product:
+Stage the five-project C3B scaffold, harden the pinned PHH base, and generate the engineering product:
 
 ```bash
 bash build/titan2/prepare-n1d-c3b-engineering.sh \
