@@ -1,9 +1,7 @@
 diff --git a/cmds/Android.bp b/cmds/Android.bp
 --- a/cmds/Android.bp
 +++ b/cmds/Android.bp
-@@ -38,16 +38,4 @@ cc_binary {
- }
- 
+@@ -40,12 +40,0 @@
 -cc_binary {
 -	name: "vibrator-lge",
 -	srcs: [
@@ -16,5 +14,3 @@ diff --git a/cmds/Android.bp b/cmds/Android.bp
 -	],
 -}
 -
- cc_binary {
- 	name: "mtk-sms-fwk-ready",
