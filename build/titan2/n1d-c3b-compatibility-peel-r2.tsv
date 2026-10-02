@@ -1,5 +1,6 @@
-# C3B Compatibility Peel R2: complete repository-owned C3A compatibility-fix audit.
-# The full 369-patch Restless control stack is not an admission list and remains excluded.
+# C3B Compatibility Peel R2 focused semantic audit.
+# Full 369-patch control-corpus inventory: build/titan2/n1d-c3a-control-patch-inventory-r2.tsv
+# The Restless control stack is not an admission list and remains excluded.
 # source_id<TAB>source_patch<TAB>class<TAB>c3b_decision<TAB>admission_artifact<TAB>runtime_allowlist_effect<TAB>reason
 BM-001	0001-Remove-init.vndk-nodef.rc.patch	GSI_RUNTIME_BOOT_COMPAT	DEFER_EVIDENCE	NONE	NONE	Boot/runtime behavior; Titan-specific VNDK evidence required before changing nodef handling.
 BM-002	0002-build-Remove-llkd.patch	PRODUCT_RUNTIME_POLICY	REJECT	NONE	NONE	Restless removed llkd for application compatibility; Sable N1C learning keeps llkd at the generic-system owner layer.
