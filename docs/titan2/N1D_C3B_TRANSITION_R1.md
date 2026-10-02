@@ -200,6 +200,39 @@ out-of-tree host-layout compatibility:
 
 They are separately blob-pinned and do not change the runtime patch count.
 
+## Scaffold compatibility quarantine
+
+The first C3B E1 systemimage attempt reproduced a compatibility failure already
+seen in the RestlessOS control path: the pinned TrebleDroid
+`vendor/interfaces` LGE vibrator extension references the legacy
+`android.hardware.vibrator@1.0` HIDL interface removed from the GrapheneOS
+Android 16 platform graph.
+
+RestlessOS solved this by restoring the legacy platform HIDL vibrator 1.0
+interface. C3B deliberately does not inherit that platform compatibility patch.
+The later SableOS Titan 2 bring-up learning classifies
+`vendor.lge.hardware.vibrator@1.0` / `vibrator-lge` as LG/PHH compatibility
+material rather than a Titan 2 requirement.
+
+E1 therefore admits one narrower build-graph quarantine:
+
+~~~text
+project: vendor/interfaces
+pinned project commit: a2271d260e226e8de5cb1e8c15a229dc90c007dd
+target: vendor/lge/hardware/vibrator/1.0/Android.bp
+target base blob: fa69894ac6b59ddb623f6f8f4426a15cef0e5df9
+action: delete exactly this Android.bp build definition
+patch blob: 21e88ec26ef0b0d5b80abd77ce2d3381c47a1976
+role: NON_TITAN_VENDOR_BUILD_GRAPH_QUARANTINE
+~~~
+
+The patch is source/build-graph compatibility only. It does not re-add a legacy
+platform HIDL API, does not alter Titan 2 runtime behavior, and does not
+increment either the Restless patch count or the C3B runtime patch allowlist.
+
+The driver accepts only a clean pinned `vendor/interfaces` tree or the exact
+single-file deletion above and fails closed on any other dirty state.
+
 ## Authorization
 
 E1 permits only:
@@ -212,6 +245,7 @@ Treble product generation
 product parse with explicit authorization
 systemimage compile with explicit authorization
 two exact Soong host-layout fixes with explicit mutation authorization
+one exact non-Titan LGE vibrator build-graph quarantine with explicit mutation authorization
 ~~~
 
 E1 blocks:
@@ -279,7 +313,7 @@ bash build/titan2/qualify-n1d-c3b-product-parse.sh   --authorize-product-parse
 Compile:
 
 ~~~bash
-bash build/titan2/build-n1d-c3b-systemimage.sh   --authorize-c3b-compile   --authorize-host-layout-source-mutation   --jobs 16
+bash build/titan2/build-n1d-c3b-systemimage.sh   --authorize-c3b-compile   --authorize-host-layout-source-mutation   --authorize-scaffold-compat-source-mutation   --jobs 16
 ~~~
 
 The build phase accepts no network authorization.
