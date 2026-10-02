@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PREP="$ROOT/build/titan2/prepare-n1d-c3b-engineering.sh"
 PARSE="$ROOT/build/titan2/qualify-n1d-c3b-product-parse.sh"
 BUILD="$ROOT/build/titan2/build-n1d-c3b-systemimage.sh"
+LPTOOLS_QUALIFIER="$ROOT/build/titan2/qualify-n1d-c3b-lptools.sh"
 HARDENER="$ROOT/build/titan2/apply-n1d-c3b-phh-base-hardening.py"
 PIPELINE="$ROOT/build/gates/sable-pipeline-contract.sh"
 
@@ -25,6 +26,7 @@ syntax_files=(
     "$PREP"
     "$PARSE"
     "$BUILD"
+    "$LPTOOLS_QUALIFIER"
     "$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh"
     "$ROOT/build/titan2/qualify-n1d-c3-product-parse.sh"
     "$ROOT/build/titan2/build-n1d-c3-trebledroid-systemimage.sh"
@@ -60,6 +62,7 @@ done
 repo_sync_count="$(grep -c '"$SABLE_REPO_TOOL" sync' "$PREP" || true)"
 repo_forall_count="$(grep -c 'forall -c' "$PREP" || true)"
 systemimage_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+systemimage[[:space:]]' "$BUILD" || true)"
+lptools_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+lptools[[:space:]]' "$LPTOOLS_QUALIFIER" || true)"
 prep_action_dispatch_count="$(grep -c '^case "$ACTION" in$' "$PREP" || true)"
 prep_preflight_count="$(grep -c '^preflight() {$' "$PREP" || true)"
 prep_init_count="$(grep -c '^init_base() {$' "$PREP" || true)"
@@ -74,6 +77,7 @@ hardening_transform_count="$(grep -c '^        "drop_' "$HARDENER" || true)"
 grep -Fq 'capture_project_state()' "$PREP" ||
     fail prep_combined_project_state_capture_missing
 [[ "$systemimage_count" == 1 ]] || fail "build_systemimage_count=$systemimage_count"
+[[ "$lptools_count" == 1 ]] || fail "lptools_module_build_count=$lptools_count"
 [[ "$prep_action_dispatch_count" == 1 ]] || fail "prep_action_dispatch_count=$prep_action_dispatch_count"
 [[ "$prep_preflight_count" == 1 ]] || fail "prep_preflight_count=$prep_preflight_count"
 [[ "$prep_init_count" == 1 ]] || fail "prep_init_count=$prep_init_count"
@@ -86,15 +90,15 @@ grep -Fq 'capture_project_state()' "$PREP" ||
 grep -Fq -- '--jobs=8' "$PREP" || fail base_sync_parallelism_missing
 grep -Fq -- '--jobs=4' "$PREP" || fail scaffold_sync_parallelism_missing
 
-if grep -Eq '^[[:space:]]*sleep([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+if grep -Eq '^[[:space:]]*sleep([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER"; then
     fail avoidable_sleep_present
 fi
 
-if grep -Eq '(^|[[:space:]])(clean|clobber)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+if grep -Eq '(^|[[:space:]])(clean|clobber)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER"; then
     fail clean_or_clobber_present
 fi
 
-if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD" "$LPTOOLS_QUALIFIER"; then
     fail device_command_present
 fi
 
@@ -120,10 +124,11 @@ echo "N1D_C3B_PREP_REPO_SYNC_COUNT=PASS value=$repo_sync_count"
 echo "N1D_C3B_PREP_REPO_FORALL_HELPERS=PASS value=$repo_forall_count optimized_combined_state_capture=YES"
 echo "N1D_C3B_PREP_SYNC_PARALLELISM=PASS base_jobs=8 scaffold_jobs=4"
 echo "N1D_C3B_BUILD_SYSTEMIMAGE_COUNT=PASS value=$systemimage_count"
+echo "N1D_C3B_LPTOOLS_MODULE_BUILD_COUNT=PASS value=$lptools_count"
 echo "N1D_C3B_PHH_HARDENING_TRANSFORM_COUNT=PASS value=$hardening_transform_count"
 echo "N1D_C3B_PREP_STRUCTURE=PASS dispatcher=1 preflight=1 init=1 sync=1 stage=1 verify=1 terminal_esac=YES"
 echo "N1D_C3_NO_AVOIDABLE_SLEEP=PASS"
 echo "N1D_C3_NO_CLEAN_CLOBBER=PASS"
 echo "N1D_C3_NO_DEVICE_COMMANDS=PASS"
-echo "N1D_C3_COMPILE_SCOPE=PASS_BUILD_DRIVER_ONLY"
+echo "N1D_C3_COMPILE_SCOPE=PASS_BUILD_DRIVERS_ONLY"
 echo "N1D_C3_SCRIPT_QUALITY_CONTRACT=PASS"
