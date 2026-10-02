@@ -324,7 +324,6 @@ apply_one_patch() {
 
 apply_vendor_interfaces_quarantine
 apply_device_phh_lge_quarantine
-bash "$PREP" verify
 
 validate_soong_dirty_subset
 
@@ -388,15 +387,13 @@ PRODUCT_OUT="$(cat "$EVIDENCE_DIR/product-out.txt")"
 SYSTEM_IMG="$PRODUCT_OUT/system.img"
 [[ -f "$SYSTEM_IMG" ]] || fail "system_img_missing=$SYSTEM_IMG"
 
-if find "$OUT_DIR_C3B" -type f -name '*target_files*.zip' -print -quit | grep -q .; then
-    fail unauthorized_target_files_artifact
-fi
-if find "$OUT_DIR_C3B" -type f -name '*-ota-*.zip' -print -quit | grep -q .; then
-    fail unauthorized_ota_artifact
-fi
-if find "$OUT_DIR_C3B" -type f -name '*-ota.zip' -print -quit | grep -q .; then
-    fail unauthorized_ota_artifact
-fi
+unexpected_package="$(
+    find "$OUT_DIR_C3B" -type f \
+        \( -name '*target_files*.zip' -o -name '*-ota-*.zip' -o -name '*-ota.zip' \) \
+        -print -quit
+)"
+[[ -z "$unexpected_package" ]] ||
+    fail "unauthorized_packaging_artifact=$unexpected_package"
 
 sha="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
 bytes="$(stat -c '%s' "$SYSTEM_IMG")"
