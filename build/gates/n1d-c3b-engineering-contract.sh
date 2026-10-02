@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TRANSITION="$ROOT/build/titan2/n1d-c3b-transition.env"
+PREP="$ROOT/build/titan2/prepare-n1d-c3b-engineering.sh"
+PARSE="$ROOT/build/titan2/qualify-n1d-c3b-product-parse.sh"
+BUILD="$ROOT/build/titan2/build-n1d-c3b-systemimage.sh"
+TRANSITION_GATE="$ROOT/build/gates/n1d-c3b-transition-contract.sh"
+
+fail() {
+    echo "N1D_C3B_ENGINEERING_CONTRACT=FAIL $*" >&2
+    exit 1
+}
+
+for f in "$TRANSITION" "$PREP" "$PARSE" "$BUILD" "$TRANSITION_GATE"; do
+    [[ -f "$f" ]] || fail "missing_file=$f"
+done
+
+for f in "$TRANSITION" "$PREP" "$PARSE" "$BUILD" "$TRANSITION_GATE"; do
+    bash -n "$f" || fail "syntax=$f"
+done
+
+bash "$TRANSITION_GATE"
+
+for token in     'network_action_requires_--authorize-network'     'source_action_requires_--authorize-source-mutation'     'N1D_C3B_WORKSPACE_SCOPE=PASS'     'N1D_C3B_GRAPHENE_BASE_PROJECT_COUNT=PASS'     'N1D_C3B_SCAFFOLD_HEADS=PASS_EXACT count=6'     'N1D_C3B_DROPPED_C3A_SCAFFOLD=PASS_ABSENT'     'bash generate.sh "$N1D_C3B_GENERATOR_CONFIG"'     'N1D_C3B_MANAGED_PROJECT_COUNT=PASS'     'N1D_C3B_GRAPHENE_REMOVALS=PASS_ZERO'     'N1D_C3B_RESTLESS_PATCHES=PASS_ZERO'     'N1D_C3B_PREP_VERIFY=PASS'
+do
+    grep -Fq -- "$token" "$PREP" || fail "prep_missing=$token"
+done
+
+grep -Fq '"$SABLE_REPO_TOOL" init' "$PREP" || fail repo_init_missing
+repo_sync_count="$(grep -c '"$SABLE_REPO_TOOL" sync' "$PREP" || true)"
+[[ "$repo_sync_count" == 2 ]] || fail "prep_repo_sync_count=$repo_sync_count"
+
+if grep -Fq 'n1d-c3a-trebledroid-remove.xml' "$PREP"; then
+    fail c3a_remove_manifest_reused
+fi
+if grep -Fq 'treble_restlessos' "$PREP"; then
+    fail restless_recipe_fetch_present
+fi
+if grep -Eq '(^|[[:space:]])(clean|clobber)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+    fail clean_or_clobber_present
+fi
+if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PREP" "$PARSE" "$BUILD"; then
+    fail device_command_present
+fi
+
+for token in     'product_parse_requires_--authorize-product-parse'     'ANDROID_TARGET_COMPILATION_AUTHORIZED=NO'     'NETWORK_FETCH_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'     'N1D_C3B_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS'     'N1D_C3B_PRODUCT_PARSE=PASS'
+do
+    grep -Fq -- "$token" "$PARSE" || fail "parse_missing=$token"
+done
+
+if grep -Eq '^[[:space:]]*(make|m|ninja)([[:space:]]|$)' "$PARSE"; then
+    fail compile_command_in_parse
+fi
+if grep -Eq 'repo[[:space:]]+sync|curl[[:space:]]|wget[[:space:]]|git[[:space:]]+fetch' "$PARSE"; then
+    fail network_command_in_parse
+fi
+
+for token in     'compile_requires_--authorize-c3b-compile'     'host_layout_patch_requires_--authorize-host-layout-source-mutation'     'BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY'     'NETWORK_FETCH_AUTHORIZED=NO'     'TARGET_FILES_BUILD_AUTHORIZED=NO'     'OTA_BUILD_AUTHORIZED=NO'     'DEVICE_CONTACT_AUTHORIZED=NO'     'FLASH_AUTHORIZED=NO'     'SIGNING_AUTHORIZED=NO'     'PHYSICAL_RUNTIME_AUTHORIZED=NO'     'make systemimage -j"$JOBS"'     'N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT'     'N1D_C3B_SYSTEMIMAGE=PASS'
+do
+    grep -Fq -- "$token" "$BUILD" || fail "build_missing=$token"
+done
+
+systemimage_count="$(grep -Ec '^[[:space:]]*make[[:space:]]+systemimage[[:space:]]' "$BUILD" || true)"
+[[ "$systemimage_count" == 1 ]] || fail "systemimage_count=$systemimage_count"
+
+if grep -Eq 'bash[[:space:]]+build.sh[[:space:]]+release|TrebleApp.apk' "$BUILD"; then
+    fail treble_app_build_reintroduced
+fi
+if grep -Eq 'repo[[:space:]]+sync|curl[[:space:]]|wget[[:space:]]|git[[:space:]]+fetch' "$BUILD"; then
+    fail network_command_in_build
+fi
+if grep -Eq 'target-files-package|otatools|(^|[[:space:]])dist([[:space:]]|$)' "$BUILD"; then
+    fail packaging_goal_present
+fi
+
+grep -Fq 'N1D_C3B_ENGINEERING_VARIANT=userdebug' "$TRANSITION" ||
+    fail engineering_variant_not_userdebug
+grep -Fq 'N1D_C3B_GENERATED_PRODUCT=treble_arm64_bvN' "$TRANSITION" ||
+    fail generated_product_mismatch
+grep -Fq 'N1D_C3B_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2' "$TRANSITION" ||
+    fail e2_product_identity_boundary_missing
+
+echo "N1D_C3B_ENGINEERING_SCRIPT_SYNTAX=PASS"
+echo "N1D_C3B_ENGINEERING_PREP_SCOPE=PASS"
+echo "N1D_C3B_ENGINEERING_PARSE_SCOPE=PASS_NO_COMPILE"
+echo "N1D_C3B_ENGINEERING_BUILD_SCOPE=PASS_SYSTEMIMAGE_ONLY"
+echo "N1D_C3B_ENGINEERING_NETWORK_SCOPE=PASS_PREP_ONLY"
+echo "N1D_C3B_ENGINEERING_NO_CLEAN_CLOBBER=PASS"
+echo "N1D_C3B_ENGINEERING_NO_DEVICE_COMMANDS=PASS"
+echo "N1D_C3B_ENGINEERING_NO_TREBLE_APP_BUILD=PASS"
+echo "N1D_C3B_ENGINEERING_NO_RELEASE_PACKAGING=PASS"
+echo "N1D_C3B_ENGINEERING_CONTRACT=PASS"
