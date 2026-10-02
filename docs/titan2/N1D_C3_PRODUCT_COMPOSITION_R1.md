@@ -274,9 +274,11 @@ N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
 N1D_C3B_RELEASE_ELIGIBLE=NO
 ~~~
 
-If parse or compile fails, the failure becomes C3B evidence. Do not restore the
-C3A stack wholesale. Admit only the smallest reviewed compatibility change
-supported by the failure.
+Compatibility Peel R2 pre-audits the known C3A build-compatibility set before
+the E1 compile, while keeping all Restless patches deny-by-default and the
+runtime allowlist at zero. If parse or compile still fails outside that admitted
+R2 set, the new failure becomes C3B evidence for a separate bounded review.
+Do not restore the C3A stack wholesale.
 
 E2 begins after the E1 build baseline is understood and owns Sable
 product/source-module admission.
