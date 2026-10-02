@@ -200,7 +200,7 @@ Important implementation consequences:
 Reference projects are tracked explicitly:
 
 ```text
-Pastiera / future Plektra  physical IME/modifier/layout behavior
+Pastiera 0.86 / Plektra    physical IME/modifier/layout/product behavior
 Commander                  command palette + notification UX
 OpenMiniLaunch / Mink      HOME type-to-command + Conversations UX
 q25toolbox                 hardware/input failure-mode evidence
@@ -212,6 +212,12 @@ TrebleDroid / RestlessOS   non-Pixel vendor compatibility evidence
 ### Sable Camera
 
 Camera should become a common Sable system application for keyboard devices.
+
+The accepted interaction direction is the Sable **Camera Control Deck** from
+ADR-0012: portrait remains supported, while landscape emphasizes a large
+viewfinder and treats the physical keyboard as the primary camera control
+surface. Touch remains a complete fallback and the app does not globally force
+landscape.
 
 Reuse the proven standard Camera2/vendor HAL path. Keep sensor capability, HAL
 capability, app-visible capability and system privilege as separate facts.
@@ -251,6 +257,12 @@ physical-keyboard platform adapter
 ```
 
 Do not put device-specific scan-code quirks into the common IME.
+
+Sable Keyboard remains the first-party/factory-default direction, but Android
+user choice is preserved: third-party IMEs may be installed, enabled and
+selected. SableOS must not force Sable Keyboard back after the user chooses
+another IME. Pastiera 0.86 is a reviewed GPL-3.0 behavior/product reference only;
+no source import is authorized.
 
 ## 8. Reuse from Panther vs change for keyboard devices
 
@@ -368,6 +380,12 @@ KF6 Sable App Display Profiles
 KF7 Sable Notification Policy + keyboard notification center
 KF8 Hub integration against notification policy
 K6  Sable Camera normal system-app baseline
+D6A compact IME input strip
+D6B configurable SYM / emoji / snippets
+D6C local dictionary/prediction improvements
+CAM-D6A Camera Control Deck semantic-action source architecture
+CAM-D6B keyboard focus-point / AF lock / AE lock
+CAM-D6C portrait/landscape/inset polish
 K7  Titan 2 N0 image/build/flash qualification
 K8  Titan 2 Elite independent evidence/adapter qualification
 K9  Q27 only after shipped-hardware acceptance

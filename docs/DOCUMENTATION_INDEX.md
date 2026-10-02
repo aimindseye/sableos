@@ -8,8 +8,10 @@ For the current project state and active product direction, start here:
 - `../CURRENT_STATUS.md` — current execution authority: Panther R9 Hub V1 closure merged, final accepted source/target-files seal, frozen touch-first reference state, Titan-family keyboard-first next work.
 - `adr/0010-keyboard-first-sableos-design-v1.md` — accepted keyboard-first platform architecture and implementation workstreams.
 - `adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 product model: Priority / Messages / Email / People, Enabled / Available Connected Apps, truthful local reply handoff bubbles, bounded Sable Mail integration and keyboard-first semantics.
+- `adr/0012-keyboard-device-user-choice-camera-control-deck.md` — accepted policy for user-selectable third-party HOME/IME, Sable first-party defaults, Camera Control Deck, and Pastiera 0.86 reference boundaries.
 - `KEYBOARD_FIRST_MULTI_DEVICE_TRANSITION.md` — active Titan-family keyboard-first execution plan bound to ADR-0010.
 - `TITAN2_KEYBOARD_FIRST_REFERENCE.md` — normative Titan 2 keyboard-first interaction contract plus pinned Pastiera, OpenMiniLaunch, TypeQ25 and Q25 Toolbox reference review and licensing boundary.
+- `CAMERA_ENHANCEMENT_ROADMAP.md` — keyboard-device Sable Camera capability roadmap and Camera Control Deck physical-control direction.
 - `KEYBOARD_FIRST_SABLE_TOOLS_REFERENCE.md` — common Titan 2/Q27 Sable Tools direction inspired by BB10 power-user/device utilities, with pinned bb10tools revision, GPL boundary, safe capabilities and explicit non-goals.
 - `build/README.md` — canonical multi-device build/deploy/acceptance entry point.
 
@@ -78,6 +80,7 @@ Accepted ADRs include:
 - `adr/0009-separate-reader-and-text-reader-products.md` — separate publication Reader and plain-text/TTS/OCR Text Reader products.
 - `adr/0010-keyboard-first-sableos-design-v1.md` — normative keyboard-first platform architecture.
 - `adr/0011-sable-hub-v1.md` — accepted Sable Hub V1 communications surface.
+- `adr/0012-keyboard-device-user-choice-camera-control-deck.md` — keyboard-device user-choice, Sable first-party defaults, Pastiera 0.86 intake, and Camera Control Deck.
 
 ## Product planning
 
@@ -96,7 +99,7 @@ frozen Panther touch-first reference
     -> first Titan 2 keyboard-first SableOS artifact + deployment path
     -> close remaining open Panther/Titan shared polish issues where proven or superseded
     -> Titan 2 Elite independent evidence and deployment sequence
-    -> common Sable Camera + Sable Keyboard/system input integration
+    -> common Sable Camera Control Deck + Sable Keyboard/system input integration
     -> Q27 full-port evaluation when shipped hardware qualifies
     -> production signing / OTA closure after repeatable multi-device development qualification
 ```
@@ -160,7 +163,7 @@ SableOS studies external systems for specific lessons rather than inheriting com
 - BlackBerry Hub / BB10 — people/communication organization and keyboard-first workflow inspiration.
 - OpenMiniLaunch / MinkLauncher — Apache-2.0 keyboard-first HOME type-to-command and active Conversations reference.
 - Commander — keyboard-first command palette, recents and notification-Hub interaction reference.
-- Pastiera / future Plektra — physical-keyboard IME, modifiers, layouts and input-surface behavior reference; Pastiera is GPL-3.0.
+- Pastiera 0.86 / Plektra — physical-keyboard IME, modifier/layout, compact-input and settings/product behavior reference; Pastiera 0.86 is pinned at `e7d8f27ecc7253e61690b5d34f110b25dc68bb16`, GPL-3.0, with no Sable source import authorized.
 - q25toolbox — rooted Q25 hardware/input forensic reference; workarounds are not Sable platform architecture.
 - TrebleDroid / RestlessOS — non-Pixel/GSI/vendor compatibility reference; not the Sable security baseline.
 - App Manager — package/application transparency reference for Secure Package Intelligence.

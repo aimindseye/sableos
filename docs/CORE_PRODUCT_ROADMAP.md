@@ -378,6 +378,39 @@ KF10 Titan 2 Elite independent evidence/adapter binding
 KF11 Q27 shipped-hardware qualification when available
 ```
 
+The 2026-10-02 keyboard-device product extension track is intentionally
+non-blocking relative to C3B bring-up:
+
+~~~text
+D2        Kotlin quality + dependency verification
+D3        critical text-entry / direct-boot / provenance hardening
+D5        first-party icon integration
+
+D6A       compact IME candidate/modifier/language strip
+D6B       configurable SYM / emoji / snippets
+D6C       local dictionary/prediction improvements
+
+CAM-D6A   Sable Camera Control Deck semantic action architecture
+CAM-D6B   keyboard focus-point / AF lock / AE lock
+CAM-D6C   portrait/landscape/inset polish
+CAM-PHY   Titan-family physical Camera Control Deck qualification
+~~~
+
+Pastiera 0.86 is behavior/product reference input for D6, not a Sable source
+dependency. Camera Control Deck is a Sable-owned keyboard-device interaction
+model, not a new capture mode.
+
+First-party defaults remain Sable Start and Sable Keyboard, but Android user
+choice is preserved:
+
+~~~text
+THIRD_PARTY_HOME_SELECTION_ALLOWED=YES
+THIRD_PARTY_IME_SELECTION_ALLOWED=YES
+FORCE_SABLE_DEFAULT_AFTER_USER_SELECTION=NO
+~~~
+
+See ADR-0012 and `CAMERA_ENHANCEMENT_ROADMAP.md`.
+
 KF6 must preserve native global display metrics and use Activity/Task size-compat
 configuration. KF7 must keep delivery policy distinct from Hub aggregation and
 show status-LED/keyboard-backlight/secondary-display controls only when the

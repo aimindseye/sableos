@@ -170,13 +170,42 @@ automatically the Sable platform architecture.
 
 ### Pastiera / Plektra
 
-Pastiera remains a strong GPL-3.0 physical-keyboard IME/modifier/layout and
-trackpad-behavior reference. Current source points to a future successor named
-Plektra. Until that successor's accessible source, license and maintenance model
-are established, Sable treats the family primarily as behavioral/test input.
+Pastiera 0.86 was reviewed as the stable feature checkpoint:
+
+~~~text
+repository=https://github.com/palsoftware/pastiera
+release=v0.86
+commit=e7d8f27ecc7253e61690b5d34f110b25dc68bb16
+release_date=2026-09-26
+license=GPL-3.0
+successor=https://github.com/pkb-rocks/plektra
+~~~
+
+Pastiera states that 0.86 is its final planned feature release; security
+maintenance continues there while active feature development moves to Plektra.
+
+Useful behavior/product lessons now include:
+
+- compact candidate/modifier/language surfaces for physical-keyboard devices;
+- configurable SYM/emoji pages and locally stored snippets/shortcodes;
+- multiple dictionaries and optional local learned next-word behavior;
+- searchable settings with stable deep links;
+- Titan 2 Elite rounded-display/inset care;
+- keyboard-driven launcher/search workflows.
+
+Sable ownership remains explicit:
+
+- Sable Keyboard is independently Sable-owned;
+- QuickLauncher/app launch belongs to Launcher3-hosted Sable Start, not the IME;
+- global/power shortcuts belong to platform/Sable Start semantics;
+- Shizuku is not introduced as an input dependency;
+- persistent keyboard clipboard history is not enabled by default;
+- unverified automatic remote dictionary/layout channels are not adopted.
 
 Direct GPL code reuse requires an explicit licensing decision. Process/IPC
-separation is not treated as an automatic legal safe harbor.
+separation is not treated as an automatic legal safe harbor. Current intake is
+behavior/product reference only; no Pastiera/Plektra source import is
+authorized.
 
 ### q25toolbox
 
