@@ -1,6 +1,6 @@
 # Titan 2 N1D C3B Compatibility Peel R2
 
-Status: **R2 compatibility peel active on PR #234; E1 systemimage reached final ext4 packaging and exposed one PHH root-label mismatch; bounded retry fix admitted**
+Status: **R2 compatibility peel qualified; E1 systemimage PASS on ai-g732; physical runtime/release remain blocked**
 
 Date: 2026-10-02
 
@@ -136,6 +136,31 @@ generic arm64 GSI board policy, so they are retained. The two PHH-only unlabeled
 root folders are removed. This is build/image-layout compatibility evidence,
 not physical-runtime qualification; Titan runtime validation remains NO.
 
+## E1 build closure
+
+After the bounded PHH root-folder repair and exact-head contract qualification,
+the next fresh-out build completed successfully:
+
+```text
+N1D_C3B_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT
+N1D_C3B_COMPATIBILITY_PEEL_R2=PASS_APPLIED
+N1D_C3B_LPTOOLS_API_COMPAT=PASS
+N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO
+SYSTEM_IMG=/srv/sable-build/workspaces/titan2-n1d-c3b/out-c3b-engineering/build-20261002T194210Z/target/product/tdgsi_arm64_ab/system.img
+SYSTEM_SHA256=9ce0144220b3a5bf531a1b0da7ec97543a89c9181ab9d69b6390ea5a86ad45dd
+SYSTEM_BYTES=2940891136
+N1D_C3B_SYSTEMIMAGE=PASS
+N1D_C3B_PHYSICAL_RUNTIME_AUTHORIZED=NO
+N1D_C3B_RELEASE_ELIGIBLE=NO
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/n1d-c3b-systemimage/20261002T194210Z-c3b-systemimage
+```
+
+This closes the E1 build-engineering objective only. It proves that the current
+GrapheneOS/Treble C3B engineering baseline can produce the intended system image
+under the bounded Compatibility Peel R2. It does not prove boot/runtime
+compatibility on Titan hardware and does not authorize flash, signing,
+target-files/OTA or release work.
+
 ## Explicitly rejected or deferred
 
 R2 makes these decisions before another build:
@@ -198,13 +223,14 @@ IMS/QNS/IWLAN                       INVESTIGATE
 A later physical-runtime phase may admit a bounded cellular/IMS correction only
 from Titan evidence.
 
-## Next build rule
+## Post-E1 rule
 
-After exact-head static qualification, retry exactly one fresh `systemimage`
-build with the failure-derived root-folder compatibility patch. Do not run
-another patch-by-patch Restless replay.
+The bounded fresh `systemimage` retry succeeded, so do not continue
+failure-driven compatibility peeling without new evidence. E1 is closed at the
+build-engineering layer.
 
-The build driver applies the complete admitted R2 set before invoking Soong:
+The qualified build driver applies the complete admitted R2 set before invoking
+Soong:
 
 ```text
 3 scaffold compatibility patches
@@ -214,7 +240,9 @@ The build driver applies the complete admitted R2 set before invoking Soong:
 2 build/make R2 compatibility patches
 ```
 
-The existing PHH base hardening is already staged by the prep driver.
+The existing PHH base hardening is staged by the prep driver. Any further source
+compatibility change now requires a new failed qualification or physical-runtime
+evidence; the Restless control stack remains deny-by-default.
 
 Still prohibited:
 

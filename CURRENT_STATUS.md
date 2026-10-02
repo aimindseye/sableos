@@ -128,9 +128,21 @@ APN removal, llkd removal, OPlus runtime handling and the legacy LGE HIDL
 restoration are not admitted. The C3B runtime patch allowlist remains zero.
 
 The first E1 build identity is
-`treble_arm64_bvN-bp4a-userdebug systemimage`. It is build/parse-only:
-device contact, flash, signing, physical runtime and release remain blocked.
-Final Sable product identity and application/source-module admission are E2.
+`treble_arm64_bvN-bp4a-userdebug systemimage`. E1 source/build qualification
+is now complete: the exact C3B engineering head produced a successful
+`system.img` with Compatibility Peel R2 applied, lptools API compatibility
+passing, no post-build packaging artifacts, and a zero runtime patch allowlist.
+
+```text
+N1D_C3B_SYSTEMIMAGE=PASS
+SYSTEM_SHA256=9ce0144220b3a5bf531a1b0da7ec97543a89c9181ab9d69b6390ea5a86ad45dd
+SYSTEM_BYTES=2940891136
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/n1d-c3b-systemimage/20261002T194210Z-c3b-systemimage
+```
+
+This closes E1 build engineering only. Device contact, flash, signing, physical
+runtime, target-files/OTA and release remain blocked. Final Sable product
+identity and application/source-module admission are E2.
 
 See `docs/titan2/N1D_C3B_TRANSITION_R1.md` and `docs/titan2/N1D_C3B_COMPATIBILITY_PEEL_R2.md`.
 
