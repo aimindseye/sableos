@@ -88,8 +88,14 @@ grep -Fq 'EXPECTED_HEAD = "39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed"' "$HARDENER
     fail hardener_head_missing
 grep -Fq 'EXPECTED_BASE_BLOB = "a29e402009d449150f1216e5d517ec0c9b36bfbd"' "$HARDENER" ||
     fail hardener_base_blob_missing
+grep -Fq 'EXPECTED_POST_BLOB = "58edfb8713e9a1392daaf5bbf0d07778efd6d669"' "$HARDENER" ||
+    fail hardener_post_blob_missing
 grep -Fq 'N1D_C3B_PHH_BASE_SECURITY_REDUCTIONS=PASS' "$HARDENER" ||
     fail hardener_pass_marker_missing
+
+hardener_blob="$(git hash-object "$HARDENER")"
+[[ "$hardener_blob" == 9fdfeb59ab7826615e8c0a44ea105dfc4b7e0679 ]] ||
+    fail "hardener_blob=$hardener_blob"
 
 transform_count="$(grep -c '^        "drop_' "$HARDENER" || true)"
 [[ "$transform_count" == 14 ]] || fail "hardener_transform_count=$transform_count"
