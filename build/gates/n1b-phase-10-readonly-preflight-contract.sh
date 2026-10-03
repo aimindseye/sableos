@@ -37,7 +37,7 @@ require_grep() {
   local pattern="$1"
   local path="$2"
   local marker="$3"
-  if grep -Fq "$pattern" "$path"; then
+  if grep -Fq -- "$pattern" "$path"; then
     echo "$marker=PASS"
   else
     echo "$marker=FAIL pattern=$pattern path=$path"
