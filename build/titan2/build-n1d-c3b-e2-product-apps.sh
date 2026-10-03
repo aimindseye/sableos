@@ -113,7 +113,7 @@ ARCHIVE_PATHS=(
     tools/indic_common.py
     tools/test_gen_pinyin_dict.py
 )
-git -C "$ROOT" archive HEAD -- "${ARCHIVE_PATHS[@]}" |
+git -C "$ROOT" archive "$N1D_C3B_E2_SOURCE_IMPORT_COMMIT" -- "${ARCHIVE_PATHS[@]}" |
     tar -x -C "$OUTPUT_DIR/source-snapshot"
 
 APP_ROOT="$OUTPUT_DIR/source-snapshot/$APP_SOURCE_REL"
