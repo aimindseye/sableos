@@ -115,7 +115,7 @@ N1D_C3B_E3_DEVICE_CONTACT_AUTHORIZED=NO
 N1D_C3B_E3_RELEASE_ELIGIBLE=NO
 ```
 
-E3 and E4 are sealed PASS. E5A fresh read-only device-state revalidation is also sealed PASS; E5B remains an offline/manual authorization boundary with all mutation unauthorized.
+E3 and E4 are sealed PASS. E5A fresh read-only device-state revalidation is also sealed PASS. The owner has approved the bounded E5B mutation concept, but standardized execution remains held until the canonical flash plan seals the exact fastboot logical-image size and the execution scope is reconfirmed.
 
 ## Titan 2 C3B E4 deployment readiness
 
@@ -138,11 +138,15 @@ E5A_FASTBOOTD_IS_USERSPACE=yes
 E5A_ALLOCATION_COMPLETE=YES
 E5A_CAPACITY_SAFE=YES
 E5A_REMAINING_HEADROOM_AFTER_PLANNED_GROWTH_BYTES=2954141696
-E5B_AUTHORIZATION_PACKAGE=OFFLINE_PREPARATION_READY
-E5B_FLASH_AUTHORIZED=NO
+E5B_AUTHORIZATION_PACKAGE=READY_FOR_MANUAL_AUTHORIZATION_ACTIVE_SYSTEM_PATH
+E5B_OWNER_AUTHORIZATION=APPROVED_BOUNDED_ACTIVE_SYSTEM_SCOPE
+E5B_STANDARD_ARTIFACT_REGISTRATION=IMPLEMENTED_PENDING_OPERATOR_RUN
+E5B_STANDARD_FLASH_PLAN=IMPLEMENTED_PENDING_OPERATOR_RUN
+E5B_STANDARD_FLASH_EXECUTION=BLOCKED_PENDING_LOGICAL_SIZE_PLAN_AND_SCOPE_RECONFIRMATION
+E5B_FLASH_AUTHORIZED=NO_STANDARD_DRIVER_REMAINS_FAIL_CLOSED
 ```
 
-E4 is sealed. E5A read-only device contact and the two required mode transitions are explicitly authorized. E5B remains unauthorized until the fresh E5A evidence is reviewed.
+E4 is sealed. E5A read-only device contact and the two required mode transitions are complete. E5B review and owner authorization are complete for the bounded active-system concept, but the standardized write path remains disabled until the canonical flash plan closes fastboot logical-size semantics.
 
 ## Titan 2 C3B E5A authorization
 
@@ -164,8 +168,8 @@ E5B_FACTORY_RESET_AUTHORIZED=NO
 E5A completed cleanly and left the phone in userspace fastbootd. The sealed
 result is `PASS_REVIEW_READY` with complete logical-partition accounting,
 idle/no snapshot update state, and 2954141696 bytes of measured total-`super`
-headroom remaining after the planned active-system growth. E5B remains a
-separate mutation authorization.
+headroom remaining after the planned active-system growth. The separate E5B
+owner authorization was subsequently approved, subject to the exact bounded scope.
 
 The first E5B offline package is superseded because it assumed a conventional inactive logical-system target. The corrected next step is offline-only active-system/COW/group analysis from the same sealed E5A evidence. No additional device contact is required.
 
@@ -187,14 +191,13 @@ N1B_PROVEN_PATH=ACTIVE_SYSTEM_COW_CLEANUP_RESIZE_WRITE_FACTORY_RESET
 N1B_FIRST_BOOT=PASS
 N1C_WHOLE_SUPER_RESULT=FLASHED_BUT_BOOT_FAILED
 C3B_WHOLE_SUPER_PRIMARY_PATH=NO
-E5B_FLASH_AUTHORIZED=NO
-E5B_LP_MUTATION_AUTHORIZED=NO
+E5B_OWNER_AUTHORIZATION=APPROVED_BOUNDED_ACTIVE_SYSTEM_SCOPE
+E5B_STANDARD_FLASH_PLAN_REQUIRED=YES
+E5B_STANDARD_FLASH_EXECUTION=BLOCKED_PENDING_PLAN_AND_SCOPE_RECONFIRMATION
 E5B_FACTORY_RESET_AUTHORIZED=NO
 ```
 
-The corrected E5B offline package uses the sealed E5A `lpdump` and Phase 11
-`getvar all` to prove active-slot COW and group capacity before a manual
-mutation authorization is considered.
+The corrected E5B package used the sealed E5A `lpdump` and Phase 11 `getvar all` to prove active-slot COW and group capacity. The owner then approved the bounded active-system mutation concept. The current next step is standardized `register-artifact` followed by standardized `flash-plan`; physical write execution remains fail-closed.
 
 ## Keyboard-first design closure
 
@@ -230,8 +233,11 @@ P2 Android glue remains specifically subject to the operator offline Android com
 E3 sealed
  -> E4 sealed PASS
  -> E5A read-only revalidation PASS / SEALED
- -> offline E5B authorization package
- -> separate E5B mutation authorization
+ -> corrected E5B authorization package PASS
+ -> bounded owner mutation authorization APPROVED
+ -> standardized N1D artifact registration
+ -> standardized N1D flash-plan / exact logical-size seal
+ -> execution-scope reconfirmation
  -> E5 physical C3B boot
  -> E6 read-only runtime baseline
  -> E7 smallest evidence-backed compatibility changes
