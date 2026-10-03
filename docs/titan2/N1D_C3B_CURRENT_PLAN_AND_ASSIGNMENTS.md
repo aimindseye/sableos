@@ -199,7 +199,7 @@ The first offline package's inactive-slot assumption is superseded. The correcte
 ## Developer deliverables at the recovery checkpoint
 
 ```text
-TITAN2_TEMP_MAIN=4089c1274a9e4a402a2c617cc00a7c166112f195
+TITAN2_TEMP_P5E_BASE=4089c1274a9e4a402a2c617cc00a7c166112f195
 PR_28=P5F_READER_RUNTIME_READINESS_DRAFT
 PR_28_HEAD=e8a5ddd374a0d78ca175b2137cf73707150ca28a
 PR_28_OPERATOR_ANDROID=REQUIRED
