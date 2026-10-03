@@ -215,12 +215,14 @@ require(len(active_cows) == 0, "ACTIVE_COW_COUNT_NOT_ZERO")
 # treating a device that omits some is-logical:* keys as if those partitions
 # consume zero bytes.
 baseline_group = str(baseline.get("active_group", ""))
+baseline_cows = baseline.get("active_cow_partitions") or {}
 baseline_group_max = parse_int(baseline.get("active_group_maximum_bytes"))
 baseline_group_current = parse_int(baseline.get("active_group_current_bytes"))
 baseline_allocated_total = parse_int(baseline.get("all_materialized_logical_bytes"))
 baseline_members_raw = baseline.get("active_group_members") or {}
 baseline_members = list(baseline_members_raw.keys()) if isinstance(baseline_members_raw, dict) else []
 
+require(isinstance(baseline_cows, dict) and len(baseline_cows) == 0, "BASELINE_ACTIVE_COW_NOT_ZERO")
 require(str(baseline.get("current_slot", "")).lstrip("_") == expected_slot, "BASELINE_GROUP_SLOT_MISMATCH")
 require(baseline.get("target_system_partition") == "system_a", "BASELINE_TARGET_NOT_SYSTEM_A")
 require(baseline_group == "main_a", "BASELINE_ACTIVE_GROUP_MISMATCH")
