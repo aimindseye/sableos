@@ -25,6 +25,11 @@ grep -Fq 'C3B_PRODUCT_SOURCE_REPO=aimindseye/titan2-temp' "$ADAPTER" || fail sou
 grep -Fq 'C3B_RELEASE_TRACK=N1D' "$ADAPTER" || fail release_track_binding_missing
 grep -Fq 'C3B_BASELINE_PHASE=C3B' "$ADAPTER" || fail baseline_phase_binding_missing
 grep -Fq 'RUNTIME_GIT_HEAD' "$ADAPTER" || fail runtime_head_binding_missing
+grep -Fq 'n1d-c3b-e2-product-admission.env' "$ADAPTER" || fail e2_profile_binding_missing
+grep -Fq 'N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD' "$ADAPTER" || fail e2_qualified_head_binding_missing
+grep -Fq 'N1D_C3B_E2_PRODUCT_QUALIFIED_TREE' "$ADAPTER" || fail e2_qualified_tree_binding_missing
+grep -Fq "rev-parse 'HEAD^{tree}'" "$ADAPTER" || fail runtime_tree_identity_missing
+grep -Fq 'C3B_PRODUCT_STAGE_TREE=PASS' "$ADAPTER" || fail tree_pass_marker_missing
 grep -Fq 'undeclared_tracked_files' "$ADAPTER" || fail undeclared_file_rejection_missing
 grep -Fq 'differing_existing_path=' "$ADAPTER" || fail collision_rejection_missing
 grep -Fq 'HANDOFF_AS_SOURCE_MODULE' "$ADAPTER" || fail stage_action_source_missing
@@ -35,7 +40,21 @@ grep -Fq 'KEEP_AS_PROTOTYPE' "$ADAPTER" || fail prototype_exclusion_missing
 grep -Fq 'KEEP_REFERENCE_ONLY' "$ADAPTER" || fail reference_exclusion_missing
 
 grep -Fq 'git", "-C", str(source), "ls-files", "-s", "-z"' "$ADAPTER" || fail tracked_file_inventory_missing
-grep -Fq 'git -C "$ROOT" diff --cached --check' "$ADAPTER" || fail diff_check_missing
+grep -Fq 'git -C "$ROOT" -c core.whitespace=cr-at-eol diff --cached --check' "$ADAPTER" || fail crlf_safe_diff_check_missing
+grep -Fq 'C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS ' "$ADAPTER" || fail line_ending_pass_marker_missing
+grep -Fq '"diff", "--cached", "--numstat", "--", path' "$ADAPTER" || fail git_binary_classification_missing
+grep -Fq 'if fields[0] == "-" and fields[1] == "-":' "$ADAPTER" || fail binary_line_ending_skip_missing
+grep -Fq 'unexpected_cr_text_path=' "$ADAPTER" || fail unexpected_cr_text_rejection_missing
+grep -Fq 'N1D_C3B_E2_CRLF_BATCH_FILE_1' "$ADAPTER" || fail crlf_batch_path_binding_missing
+grep -Fq 'N1D_C3B_E2_CRLF_BATCH_FILE_1_GIT_BLOB' "$ADAPTER" || fail crlf_batch_blob_binding_missing
+grep -Fq 'malformed_crlf_path=' "$ADAPTER" || fail malformed_crlf_rejection_missing
+grep -Fq 'xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"' "$ADAPTER" || fail approved_ignored_file_stage_missing
+grep -Fq 'if staged != copied:' "$ADAPTER" || fail staged_equals_copied_guard_missing
+grep -Fq 'git -C "$ROOT" check-ignore -z --stdin < "$COPIED_NUL"' "$ADAPTER" || fail ignored_copied_path_discovery_missing
+grep -Fq 'C3B_PRODUCT_STAGE_IGNORED_INPUTS=PASS' "$ADAPTER" || fail ignored_copied_path_pass_marker_missing
+grep -Fq 'N1D_C3B_E2_CANONICAL_IGNORE_EXCEPTION_1' "$ADAPTER" || fail ignored_exception_1_binding_missing
+grep -Fq 'N1D_C3B_E2_CANONICAL_IGNORE_EXCEPTION_2' "$ADAPTER" || fail ignored_exception_2_binding_missing
+grep -Fq 'C3B_PRODUCT_STAGE_INDEX=FAIL staged=' "$ADAPTER" || fail staged_equals_copied_failure_marker_missing
 grep -Fq 'staged-file-inventory.tsv' "$ADAPTER" || fail deterministic_inventory_missing
 grep -Fq 'C3B_PRODUCT_HEAD=$PRODUCT_HEAD' "$ADAPTER" || fail evidence_head_missing
 grep -Fq 'C3B_CANONICAL_BASE_HEAD=$BASE_HEAD' "$ADAPTER" || fail evidence_base_missing
@@ -60,8 +79,11 @@ fi
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_SYNTAX=PASS"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_AUTHORITY=PASS_EXPLICIT"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_SOURCE_BINDING=PASS_EXACT_HEAD"
+echo "N1D_C3B_PRODUCT_REVIEW_STAGING_TREE_BINDING=PASS_EXACT_QUALIFIED_TREE"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_OWNERSHIP=PASS_FAIL_CLOSED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_COLLISION_POLICY=PASS_REJECT_DIFFERING"
+echo "N1D_C3B_PRODUCT_REVIEW_STAGING_IGNORED_INPUT_POLICY=PASS_EXACT_2_QUALIFIED_PINYIN_ARCHIVES"
+echo "N1D_C3B_PRODUCT_REVIEW_STAGING_LINE_ENDING_POLICY=PASS_EXACT_1_QUALIFIED_CRLF_BATCH_WRAPPER"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_PROTOTYPE_POLICY=PASS_EXCLUDED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_NETWORK=PASS_FORBIDDEN"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_DEVICE_CONTACT=PASS_FORBIDDEN"

@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 ACTIVE_REPO="/srv/sable-build/sableos/repo"
+E2_PROFILE="$ROOT/build/titan2/n1d-c3b-e2-product-admission.env"
 PRODUCT_SOURCE=""
 PRODUCT_HEAD=""
 PRODUCT_PR=""
@@ -62,6 +63,16 @@ done
     exit 1
 }
 ROOT="$(realpath "$ROOT")"
+[[ -f "$E2_PROFILE" ]] || {
+    echo "C3B_PRODUCT_STAGE_PROFILE=FAIL missing=$E2_PROFILE"
+    exit 1
+}
+bash -n "$E2_PROFILE" || {
+    echo "C3B_PRODUCT_STAGE_PROFILE=FAIL syntax=$E2_PROFILE"
+    exit 1
+}
+# shellcheck source=/dev/null
+source "$E2_PROFILE"
 [[ "$ROOT" != "$ACTIVE_REPO" ]] || {
     echo "C3B_PRODUCT_STAGE_TARGET=FAIL active_repo_forbidden=$ROOT"
     exit 1
@@ -97,10 +108,20 @@ git -C "$PRODUCT_SOURCE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     exit 1
 }
 ACTUAL_PRODUCT_HEAD="$(git -C "$PRODUCT_SOURCE" rev-parse HEAD)"
+ACTUAL_PRODUCT_TREE="$(git -C "$PRODUCT_SOURCE" rev-parse 'HEAD^{tree}')"
+[[ "$PRODUCT_HEAD" == "$N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD" ]] || {
+    echo "C3B_PRODUCT_STAGE_HEAD=FAIL e2_expected=$N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD requested=$PRODUCT_HEAD"
+    exit 1
+}
 [[ "$ACTUAL_PRODUCT_HEAD" == "$PRODUCT_HEAD" ]] || {
     echo "C3B_PRODUCT_STAGE_HEAD=FAIL expected=$PRODUCT_HEAD actual=$ACTUAL_PRODUCT_HEAD"
     exit 1
 }
+[[ "$ACTUAL_PRODUCT_TREE" == "$N1D_C3B_E2_PRODUCT_QUALIFIED_TREE" ]] || {
+    echo "C3B_PRODUCT_STAGE_TREE=FAIL expected=$N1D_C3B_E2_PRODUCT_QUALIFIED_TREE actual=$ACTUAL_PRODUCT_TREE"
+    exit 1
+}
+echo "C3B_PRODUCT_STAGE_TREE=PASS value=$ACTUAL_PRODUCT_TREE"
 [[ -z "$(git -C "$PRODUCT_SOURCE" status --porcelain)" ]] || {
     echo "C3B_PRODUCT_STAGE_SOURCE=FAIL dirty_product_source"
     git -C "$PRODUCT_SOURCE" status --short
@@ -140,6 +161,7 @@ mkdir -p "$EVIDENCE_DIR"
 PLAN_TSV="$EVIDENCE_DIR/stage-plan.tsv"
 PLAN_NUL="$EVIDENCE_DIR/stage-paths.nul"
 COPIED_NUL="$EVIDENCE_DIR/copied-paths.nul"
+IGNORED_COPIED_NUL="$EVIDENCE_DIR/ignored-copied-paths.nul"
 INVENTORY="$EVIDENCE_DIR/staged-file-inventory.tsv"
 STATE="$EVIDENCE_DIR/staging-state.env"
 
@@ -302,11 +324,102 @@ with copied_nul.open("wb") as fh:
 print(f"C3B_PRODUCT_STAGE_COPY=PASS copied={len(copied)} identical={identical}")
 PY
 
+: > "$IGNORED_COPIED_NUL"
 if [[ -s "$COPIED_NUL" ]]; then
-    xargs -0 -r git -C "$ROOT" add -- < "$COPIED_NUL"
+    git -C "$ROOT" check-ignore -z --stdin < "$COPIED_NUL" > "$IGNORED_COPIED_NUL" || true
 fi
 
-git -C "$ROOT" diff --cached --check
+python3 - "$IGNORED_COPIED_NUL"     "$N1D_C3B_E2_CANONICAL_IGNORE_EXCEPTION_1"     "$N1D_C3B_E2_CANONICAL_IGNORE_EXCEPTION_2" <<'PY'
+from __future__ import annotations
+import pathlib
+import sys
+
+ignored = pathlib.Path(sys.argv[1])
+expected = sorted(sys.argv[2:4])
+actual = sorted(
+    p.decode("utf-8")
+    for p in ignored.read_bytes().split(b"\0")
+    if p
+)
+if actual != expected:
+    print(
+        "C3B_PRODUCT_STAGE_IGNORED_INPUTS=FAIL "
+        f"expected={expected} actual={actual}",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+print(f"C3B_PRODUCT_STAGE_IGNORED_INPUTS=PASS count={len(actual)}")
+PY
+
+if [[ -s "$COPIED_NUL" ]]; then
+    # Force-add is permitted only after the ignored copied-path set above has
+    # matched the two exact E2-qualified provenance inputs.
+    xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"
+fi
+
+python3 - "$ROOT" "$COPIED_NUL" "$N1D_C3B_E2_CRLF_BATCH_FILE_1" "$N1D_C3B_E2_CRLF_BATCH_FILE_1_GIT_BLOB" <<'PY'
+from __future__ import annotations
+import pathlib
+import subprocess
+import sys
+
+root = pathlib.Path(sys.argv[1])
+copied_nul = pathlib.Path(sys.argv[2])
+allowed_path = sys.argv[3]
+allowed_blob = sys.argv[4]
+copied = [
+    p.decode("utf-8")
+    for p in copied_nul.read_bytes().split(b"\0")
+    if p
+]
+
+binary_files = []
+crlf_batch_files = []
+for path in copied:
+    numstat = subprocess.check_output(
+        ["git", "-C", str(root), "diff", "--cached", "--numstat", "--", path],
+        text=True,
+    ).strip()
+    fields = numstat.split("\t", 2)
+    if len(fields) < 2:
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL missing_numstat_path={path}")
+    if fields[0] == "-" and fields[1] == "-":
+        binary_files.append(path)
+        continue
+
+    body = subprocess.check_output(["git", "-C", str(root), "show", f":{path}"])
+    if b"\r" not in body:
+        continue
+    if path != allowed_path or not path.endswith(".bat"):
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL unexpected_cr_text_path={path}")
+    remainder = body.replace(b"\r\n", b"")
+    if b"\r" in remainder or b"\n" in remainder:
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL malformed_crlf_path={path}")
+    blob = subprocess.check_output(
+        ["git", "-C", str(root), "hash-object", "--stdin"],
+        input=body,
+        text=False,
+    ).decode().strip()
+    if blob != allowed_blob:
+        raise SystemExit(
+            "C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL "
+            f"batch_blob expected={allowed_blob} actual={blob}"
+        )
+    crlf_batch_files.append(path)
+
+if crlf_batch_files != [allowed_path]:
+    raise SystemExit(
+        "C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL "
+        f"expected={[allowed_path]} actual={crlf_batch_files}"
+    )
+print(
+    "C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS "
+    f"crlf_batch_files={len(crlf_batch_files)} "
+    f"binary_files={len(binary_files)}"
+)
+PY
+
+git -C "$ROOT" -c core.whitespace=cr-at-eol diff --cached --check
 
 python3 - "$ROOT" "$PLAN_TSV" "$COPIED_NUL" "$INVENTORY" <<'PY'
 from __future__ import annotations
@@ -344,10 +457,13 @@ IDENTICAL_COUNT="$(( PLAN_COUNT - STAGED_COUNT ))"
     echo "C3B_PRODUCT_SOURCE_REPO=aimindseye/titan2-temp"
     echo "C3B_PRODUCT_PR=${PRODUCT_PR:-UNBOUND}"
     echo "C3B_PRODUCT_HEAD=$PRODUCT_HEAD"
+    echo "C3B_PRODUCT_TREE=$ACTUAL_PRODUCT_TREE"
     echo "C3B_CANONICAL_BASE_HEAD=$BASE_HEAD"
     echo "C3B_PRODUCT_STAGE_FILE_COUNT=$PLAN_COUNT"
     echo "C3B_PRODUCT_STAGE_STAGED_COUNT=$STAGED_COUNT"
     echo "C3B_PRODUCT_STAGE_IDENTICAL_COUNT=$IDENTICAL_COUNT"
+    echo "C3B_PRODUCT_STAGE_IGNORED_INPUT_COUNT=2"
+    echo "C3B_PRODUCT_STAGE_CRLF_BATCH_FILE_COUNT=1"
     echo "C3B_PRODUCT_STAGE_INVENTORY=$INVENTORY"
     echo "C3B_PRODUCT_STAGING=PASS"
 } > "$STATE"

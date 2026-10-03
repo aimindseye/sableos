@@ -1,0 +1,29 @@
+source_path	owner	canonical_target_or_interface	collision_status	handoff_action	notes
+apps/titan2/platform/keyboard/	PARALLEL_LANE	SableTitan2Keyboard (candidate ID); canonical admission via IR-011	NO_COLLISION	HANDOFF_AS_SOURCE_MODULE	Gradle module; no prebuilt APK.
+apps/titan2/platform/camera/	PARALLEL_LANE	SableTitan2Camera (candidate ID)	NO_COLLISION	HANDOFF_AS_SOURCE_MODULE	NONE
+apps/titan2/platform/displaycompat/	PARALLEL_LANE	SableTitan2DisplayCompat (candidate ID)	NO_COLLISION	HANDOFF_AS_SOURCE_MODULE	NONE
+apps/titan2/platform/setup/	PARALLEL_LANE	SableTitan2Setup (candidate ID)	NO_COLLISION	HANDOFF_AS_SOURCE_MODULE	Readiness helper, not the Setup Wizard.
+apps/titan2/platform/radiodiag/	PARALLEL_LANE	SableTitan2RadioDiag (candidate ID)	NO_COLLISION	HANDOFF_AS_SOURCE_MODULE	Read-only.
+apps/titan2/platform/build.gradle.kts;apps/titan2/platform/settings.gradle.kts;apps/titan2/platform/gradle/;apps/titan2/platform/gradle.properties;apps/titan2/platform/gradlew;apps/titan2/platform/gradlew.bat	PARALLEL_LANE	build metadata for the parallel Gradle workspace	NO_COLLISION	HANDOFF_AS_BUILD_METADATA	Detekt 1.23.8 and Ktlint plugin 14.2.0 are applied in D2; verification-metadata.xml is operator-generated/bootstrap-reviewed.
+reference/sable-start-type-to-find/	PARALLEL_LANE	Portable reference source for Launcher3-hosted Sable Start type-to-find (IR-002); not a Gradle module, not HOME, not runtime	NO_COLLISION	HANDOFF_AS_REFERENCE_SOURCE	Pure Kotlin AppFilter + JVM test moved from the retired home module in D1b; no manifest, no APK.
+apps/titan2/screens/	PARALLEL_LANE	none (prototype; not required in a product image)	NO_COLLISION	KEEP_AS_PROTOTYPE	PROTOTYPE_ONLY, no quality exemption. sableos main has no apps/titan2/ path at e97ea89.
+tools/	PARALLEL_LANE	generators for keyboard layout/phonetic/pinyin data	NO_COLLISION	HANDOFF_AS_TOOLING	Pinyin generator is pinned and reproducible (D3).
+docs/C3B_*;docs/TITAN2_*	PARALLEL_LANE	documentation	NO_COLLISION	HANDOFF_AS_DOCS	docs/TITAN2_SABLE_IMAGE.md and docs/TITAN2_SABLESCREENS_INTEGRATION.md are non-operational retirement records after D1b.
+build/titan2/capture-c3b-cellular-runtime-reference.sh	PARALLEL_LANE	REFERENCE_ONLY_NOT_CANONICAL_CAPTURE	RENAMED_FROM_COLLIDING_NAME	KEEP_REFERENCE_ONLY	Formerly capture-n1b2-cellular-runtime.sh, which collides with the canonical PR 207 capture. Output file names also changed so no canonical gate can read it.
+build/titan2/qualify-c3b-product-source.sh	PARALLEL_LANE	product-lane source qualification (static/full)	NO_COLLISION	HANDOFF_AS_GATE	D1b: legacy exemptions removed; retired paths and product-authority patterns fail closed (docs/C3B_PRODUCT_RETIRED_PATHS.tsv).
+build/titan2/render-c3b-deliverable-pr.sh	PARALLEL_LANE	PR body renderer	NO_COLLISION	HANDOFF_AS_TOOLING	NONE
+.gitignore	PARALLEL_LANE	repository-local	NAME_COLLISION_ELSEWHERE	DO_NOT_STAGE	Same name as a canonical file; the staging adapter must not copy it.
+README.md	PARALLEL_LANE	repository-local	NAME_COLLISION_ELSEWHERE	DO_NOT_STAGE	Same name as a canonical file; the staging adapter must not copy it.
+docs/C3B_PRODUCT_RETIRED_PATHS.tsv	PARALLEL_LANE	data for the fail-closed retirement check in the qualification gate	NO_COLLISION	HANDOFF_AS_DOCS	Paths listed there must stay absent.
+.editorconfig;config/	PARALLEL_LANE	D2 Ktlint style (android_studio) and the canonical Detekt configuration copy with provenance	NO_COLLISION	HANDOFF_AS_BUILD_METADATA	config/detekt.yml is a byte-exact copy of sableos apps/r8/android/config/detekt.yml; never edit it here (config/DETEKT_PROVENANCE.env).
+build/titan2/bootstrap-gradle-verification.sh	PARALLEL_LANE	one-time operator online generation of Gradle dependency-verification metadata	NO_COLLISION	HANDOFF_AS_TOOLING	Refuses to run without --authorized-online-bootstrap.
+third_party/pinyin_zh/	PARALLEL_LANE	pinyin dictionary inputs (vendored CC-CEDICT and Unihan archives), provenance record and the two licence texts (D3)	NO_COLLISION	HANDOFF_AS_PROVENANCE	Clean-corpus policy; see KL-027.
+docs/evidence/	PARALLEL_LANE	captured developer-side evidence (JVM only)	NO_COLLISION	HANDOFF_AS_EVIDENCE	Not on-device evidence.
+docs/PASTIERA_*;docs/SABLE_CAMERA_*	PARALLEL_LANE	documentation (accepted D6 interaction backlog references)	NO_COLLISION	HANDOFF_AS_DOCS	Added with the main sync; main merged these without a matching ownership row.
+third_party/phosphor-icons/	PARALLEL_LANE	Phosphor icon licence, provenance, manifest and pinned glyph SVGs (D5)	NO_COLLISION	HANDOFF_AS_PROVENANCE	MIT; canonical gate wiring is IR-010.
+build/titan2/verify-c3b-messages-canonical-pin.sh;build/titan2/test-c3b-messages-contract.sh;build/titan2/test-c3b-d6-contract.sh	PARALLEL_LANE	D4 canonical-pin verification (operator, network) and mutation tests for the Messages contract	NO_COLLISION	HANDOFF_AS_TOOLING	Read-only; no canonical source is imported.
+build/titan2/test-c3b-d7a-contract.sh	PARALLEL_LANE	D7A mutation tests for the Camera Control Deck source contract	NO_COLLISION	HANDOFF_AS_TOOLING	Read-only; offline; no canonical source is imported.
+docs/SABLE_KEYBOARD_COMPACT_INPUT_STRIP.md	PARALLEL_LANE	D7B compact input strip documentation	NO_COLLISION	HANDOFF_AS_DOCS	Source only; no device evidence.
+build/titan2/test-c3b-d7b-contract.sh	PARALLEL_LANE	D7B mutation tests for the compact input strip source contract	NO_COLLISION	HANDOFF_AS_TOOLING	Read-only; offline; no canonical source is imported.
+docs/C3B_D8_SETUP_HELPER_HARDENING.md	PARALLEL_LANE	D8 Setup helper readiness hardening documentation	NO_COLLISION	HANDOFF_AS_DOCS	Source only; no device evidence.
+build/titan2/test-c3b-d8-contract.sh	PARALLEL_LANE	D8 mutation tests for the Setup helper source contract	NO_COLLISION	HANDOFF_AS_TOOLING	Read-only; offline; no canonical source is imported.
