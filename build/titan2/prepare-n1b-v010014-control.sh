@@ -24,7 +24,7 @@ usage() {
   cat >&2 <<'USAGE'
 usage:
   bash build/titan2/prepare-n1b-v010014-control.sh \
-    --system-img /absolute/path/to/n1b/system.img \
+    [--system-img /absolute/path/to/n1b/system.img] \
     --e5a-json /absolute/path/e5a-readonly-device-state.json \
     --e5b-json /absolute/path/e5b-authorization-package.json \
     [--evidence-dir /absolute/path/output]
@@ -51,7 +51,6 @@ while (($#)); do
 done
 
 for pair in \
-  "system-img:$SYSTEM_IMG" \
   "e5a-json:$E5A_JSON" \
   "e5b-json:$E5B_JSON"
 do
@@ -62,6 +61,20 @@ do
 done
 [[ -f "$LEDGER" ]] || fail "historical ledger missing path=$LEDGER"
 command -v "$PYTHON" >/dev/null 2>&1 || fail "python unavailable command=$PYTHON"
+
+RESOLVER="$ROOT/build/titan2/resolve-n1b-control-artifact.sh"
+[[ -f "$RESOLVER" ]] || fail "N1B resolver missing path=$RESOLVER"
+if [[ -n "$SYSTEM_IMG" && "$SYSTEM_IMG" != /* ]]; then
+  fail "system-img must be an absolute path when supplied"
+fi
+if [[ -z "$SYSTEM_IMG" || ! -f "$SYSTEM_IMG" ]]; then
+  if [[ -n "$SYSTEM_IMG" ]]; then
+    SYSTEM_IMG="$(bash "$RESOLVER" --preferred "$SYSTEM_IMG")" || fail "exact historical N1B artifact could not be resolved"
+  else
+    SYSTEM_IMG="$(bash "$RESOLVER")" || fail "exact historical N1B artifact could not be resolved"
+  fi
+fi
+[[ -f "$SYSTEM_IMG" ]] || fail "resolved N1B system image missing path=$SYSTEM_IMG"
 
 if [[ -z "$EVIDENCE_DIR" ]]; then
   stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -110,6 +123,7 @@ echo "N1B_LEDGER_BINDING=PASS"
 
 echo
 echo "===== N1B ARTIFACT ====="
+echo "N1B_SYSTEM_IMG_RESOLVED=$SYSTEM_IMG"
 actual_sha="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
 actual_bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 [[ "$actual_sha" == "$EXPECTED_N1B_SHA256" ]] || fail "N1B sha256 expected=$EXPECTED_N1B_SHA256 actual=$actual_sha"
