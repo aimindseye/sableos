@@ -12,6 +12,7 @@ HOST_TOOLS="$ROOT/build/config/host-tools.env"
 STORAGE_VERIFY="$ROOT/build/host/verify-storage-root.sh"
 
 AUTHORIZE_MODULE_BUILD=NO
+PARSE_EVIDENCE=""
 JOBS=16
 
 fail() {
@@ -25,6 +26,11 @@ while (($#)); do
             AUTHORIZE_MODULE_BUILD=YES
             shift
             ;;
+        --parse-evidence)
+            [[ $# -ge 2 ]] || fail missing_parse_evidence
+            PARSE_EVIDENCE="$2"
+            shift 2
+            ;;
         --jobs)
             [[ $# -ge 2 && "$2" =~ ^[1-9][0-9]*$ ]] || fail invalid_jobs
             JOBS="$2"
@@ -37,6 +43,8 @@ while (($#)); do
 done
 
 [[ "$AUTHORIZE_MODULE_BUILD" == YES ]] || fail explicit_module_build_authority_required
+[[ -n "$PARSE_EVIDENCE" && "$PARSE_EVIDENCE" = /* ]] || fail parse_evidence_must_be_absolute
+[[ -f "$PARSE_EVIDENCE/parse-state.env" ]] || fail "parse_state_missing=$PARSE_EVIDENCE/parse-state.env"
 
 for f in "$STORAGE_PROFILE" "$TRANSITION" "$PROFILE" "$COMPOSITION_GATE" "$HOST_TOOLS" "$STORAGE_VERIFY"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
@@ -64,6 +72,19 @@ LUNCH_TARGET="$N1D_C3B_E2_LUNCH_TARGET"
 [[ -f "$STAGE_ROOT/source-binding.env" ]] || fail "product_stage_missing=$STAGE_ROOT"
 grep -Fxq "N1D_C3B_E2_SOURCE_IMPORT_COMMIT=$N1D_C3B_E2_SOURCE_IMPORT_COMMIT" "$STAGE_ROOT/source-binding.env" ||
     fail staged_source_binding
+
+grep -Fxq 'N1D_C3B_E2_PRODUCT_PARSE=PASS' "$PARSE_EVIDENCE/parse-state.env" ||
+    fail parse_evidence_status
+grep -Fxq "N1D_C3B_E2_LUNCH_TARGET=$LUNCH_TARGET" "$PARSE_EVIDENCE/parse-state.env" ||
+    fail parse_evidence_lunch_target
+grep -Fxq "N1D_C3B_E2_PRODUCT=$N1D_C3B_E2_PRODUCT_NAME" "$PARSE_EVIDENCE/parse-state.env" ||
+    fail parse_evidence_product
+grep -Fxq "N1D_C3B_E2_PRODUCT_DEVICE=$N1D_C3B_E2_PRODUCT_DEVICE" "$PARSE_EVIDENCE/parse-state.env" ||
+    fail parse_evidence_device
+grep -Fxq "N1D_C3B_E2_RELEASE_CONFIG=$N1D_C3B_E2_RELEASE_CONFIG" "$PARSE_EVIDENCE/parse-state.env" ||
+    fail parse_evidence_release
+grep -Fxq "N1D_C3B_E2_VARIANT=$N1D_C3B_E2_BUILD_VARIANT" "$PARSE_EVIDENCE/parse-state.env" ||
+    fail parse_evidence_variant
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR_BUILD="$OUT_ROOT/e2-modules/$stamp"
@@ -112,6 +133,22 @@ modules=(
 
     [[ "${TARGET_PRODUCT:-}" == "$N1D_C3B_E2_PRODUCT_NAME" ]] ||
         fail "target_product=${TARGET_PRODUCT:-unset}"
+    [[ "${TARGET_RELEASE:-}" == "$N1D_C3B_E2_RELEASE_CONFIG" ]] ||
+        fail "target_release=${TARGET_RELEASE:-unset}"
+    [[ "${TARGET_BUILD_VARIANT:-}" == "$N1D_C3B_E2_BUILD_VARIANT" ]] ||
+        fail "target_variant=${TARGET_BUILD_VARIANT:-unset}"
+
+    product_packages="$(get_build_var PRODUCT_PACKAGES)"
+    for module in "${modules[@]}"; do
+        grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$product_packages" ||
+            fail "module_not_in_product_packages=${module}"
+    done
+    for forbidden in SableTitan2Screens SableTitan2Home; do
+        if grep -Eq "(^|[[:space:]])${forbidden}([[:space:]]|$)" <<<"$product_packages"; then
+            fail "forbidden_module_in_product_packages=${forbidden}"
+        fi
+    done
+    echo "N1D_C3B_E2_MODULE_BUILD_PRODUCT_PACKAGES=PASS count=5"
 
     m -j"$JOBS" "${modules[@]}"
 )
@@ -158,6 +195,7 @@ fi
     sha256sum -c SHA256SUMS.txt >/dev/null
 )
 
+echo "N1D_C3B_E2_MODULE_BUILD_PARSE_PREREQUISITE=PASS"
 echo "N1D_C3B_E2_MODULE_BUILD_PRODUCT=PASS_SABLE_TITAN2"
 echo "N1D_C3B_E2_MODULE_BUILD_COUNT=PASS value=5"
 echo "N1D_C3B_E2_MODULE_BUILD_PACKAGE_IDS=PASS count=5"
