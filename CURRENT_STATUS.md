@@ -12,7 +12,7 @@ the active Titan roadmap.
 PANTHER=R9_REFERENCE_FROZEN
 TITAN2_ACTIVE_ENGINEERING_LANE=N1D_C3B
 TITAN2_E3_BUILD_SOURCE=caf98dde723d07a071d95aaa1ef27d578d3208d8
-TITAN2_E3_STATUS=BUILD_RUNNING_NOT_YET_SEALED
+TITAN2_E3_STATUS=SEALED_PASS
 TITAN2_ELITE=INDEPENDENT_PORTABILITY_TARGET_PENDING
 Q27=RESEARCH
 PRODUCTION_SIGNING=DEFERRED
@@ -66,23 +66,7 @@ MODULE_COUNT=5
 The five modules are Sable Keyboard, Camera, DisplayCompat, Setup helper and
 RadioDiag.
 
-The E3 operator driver passed compatibility preflight, exact-head E2 application
-build/stage/parse/five-module qualification and product-route/package checks,
-then entered one fresh long `make systemimage` build.
-
-```text
-E3_PREBUILD_QUALIFICATION=PASS
-E3_SYSTEMIMAGE=RUNNING_NOT_YET_SEALED
-DEVICE_CONTACT_AUTHORIZED=NO
-FLASH_AUTHORIZED=NO
-TARGET_FILES_AUTHORIZED=NO
-OTA_AUTHORIZED=NO
-PRODUCTION_SIGNING_AUTHORIZED=NO
-RELEASE_ELIGIBLE=NO
-```
-
-Do not claim E3 PASS until final system image, module membership, hash and
-evidence markers are available.
+E3 is sealed PASS. The exact image identity and evidence are recorded in the E3 evidence seal.
 
 ## Current HOME / IME policy
 
@@ -133,6 +117,24 @@ N1D_C3B_E3_RELEASE_ELIGIBLE=NO
 
 E3 is sealed. E4 artifact/deployment readiness is next; flash remains unauthorized.
 
+## Titan 2 C3B E4 deployment readiness
+
+```text
+N1D_C3B_E4_DEPLOYMENT_READINESS=PASS_REVIEW_READY
+N1D_C3B_E4_DIRECT_FIT=NO
+N1D_C3B_E4_PLANNED_SYSTEM_TARGET_BYTES=3263168512
+N1D_C3B_E4_PLANNED_SYSTEM_GROWTH_BYTES=2506727424
+N1D_C3B_E4_ESTIMATED_REMAINING_SUPER_HEADROOM_BYTES=3003637760
+N1D_C3B_E4_STOCK_SUPER_RESOLUTION=PASS
+N1D_C3B_E4_STOCK_BOOT_AVB_RESOLUTION=PASS count=6
+N1D_C3B_E4_STOCK_RESTORE_PROOF=PASS
+E5A_DEVICE_CONTACT_AUTHORIZED=NO
+E5B_FLASH_AUTHORIZED=NO
+```
+
+E4 is sealed. E5 requires explicit manual authorization; fresh read-only device
+state must be revalidated before any mutation is considered.
+
 ## Keyboard-first design closure
 
 ```text
@@ -164,9 +166,11 @@ P2 Android glue remains specifically subject to the operator offline Android com
 ## Next execution order
 
 ```text
-E3 finish + seal
- -> E4 image/deployment readiness
- -> explicit flash authorization
+E3 sealed
+ -> E4 sealed PASS
+ -> explicit E5A read-only device-contact authorization
+ -> fresh device-state revalidation
+ -> separate E5B mutation authorization
  -> E5 physical C3B boot
  -> E6 read-only runtime baseline
  -> E7 smallest evidence-backed compatibility changes
