@@ -4,9 +4,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE_DIR="${SABLE_E5A_EVIDENCE_DIR:-/srv/sable-build/evidence/titan2/n1d-c3b-e5a-readonly-device-state/$STAMP}"
-SYSTEM_IMG="/srv/sable-build/workspaces/titan2-n1d-c3b/out-c3b-engineering/e3-systemimage/20261003T014638Z/target/product/tdgsi_arm64_ab/system.img"
-EXPECTED_SYSTEM_SHA256="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"
-EXPECTED_SYSTEM_BYTES="2994405376"
+SYSTEM_IMG="${SABLE_E5A_SYSTEM_IMG:-/srv/sable-build/workspaces/titan2-n1d-c3b/out-c3b-engineering/e3-systemimage/20261003T014638Z/target/product/tdgsi_arm64_ab/system.img}"
+EXPECTED_SYSTEM_SHA256="${SABLE_E5A_EXPECTED_SYSTEM_SHA256:-998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5}"
+EXPECTED_SYSTEM_BYTES="${SABLE_E5A_EXPECTED_SYSTEM_BYTES:-2994405376}"
 E4_EVIDENCE_DIR="/srv/sable-build/evidence/titan2/n1d-c3b-e4-deployment-readiness/20261003T044503Z"
 
 AUTHORIZE_READONLY=NO
