@@ -17,7 +17,8 @@ done
 
 bash -n "$ADAPTER"
 bash -n "$PLAN"
-python3 -m py_compile "$GSI_INFO"
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache" \
+  python3 -m py_compile "$GSI_INFO"
 python3 "$GSI_INFO" --self-test | grep -Fxq 'SABLE_GSI_IMAGE_INFO_SELF_TEST=PASS'
 
 grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$ADAPTER" ||
