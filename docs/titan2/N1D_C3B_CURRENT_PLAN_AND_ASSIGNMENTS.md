@@ -73,6 +73,26 @@ RELEASE_ELIGIBLE=NO
 
 E3 is sealed. Do not reinterpret this as flash, device-contact, OTA, target-files or release authorization.
 
+## E4 operator package
+
+E4 is now defined as an offline/read-only deployment-readiness gate. It consumes
+the sealed E3 image plus historical read-only fastbootd and proven stock-restore
+evidence. It does not contact the Titan 2.
+
+Expected sizing classification:
+
+```text
+DIRECT_FIT=NO
+PLANNED_SYSTEM_TARGET_BYTES=3263168512
+ESTIMATED_REMAINING_SUPER_HEADROOM_BYTES=3003637760
+PARTITION_FIT=PASS_RESIZE_CAPACITY_APPEARS_AVAILABLE_REVIEW_REQUIRED
+```
+
+This remains plan-only; fresh device state is required before any future resize
+or flash authorization.
+
+See `docs/titan2/N1D_C3B_E4_DEPLOYMENT_READINESS.md`.
+
 ## Assignment model
 
 Two lanes proceed in parallel.
