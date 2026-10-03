@@ -28,16 +28,22 @@ C3B_E3_STATUS=SEALED_PASS
 N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP
 C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
 COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
-N1B_V010014_CONTROL=PENDING
-N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
+N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE
+N1E_STATUS=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
+C3A_V010014_CONTROL=NEXT_COMPATIBILITY_CONTROL
+N1F_STATUS=RESERVED_PENDING_C3A_BOOT
 ```
 
 The first N1D physical attempt did not establish a boot-qualified baseline.
-The next physical experiment is the exact sealed N1B system artifact on the
-current V01.00.14 device state. If N1B boots, N1E is built as the exact N1B
-product plus only the five C3B apps and must pass G0/G1/G2 before any flash.
-If N1B fails, N1E stops and the firmware/boot-chain/current-device-state delta
-is investigated. N1D/E6 remain frozen meanwhile.
+The exact N1B control is now retired as unexecutable because its image/target-
+files were not retained and both critical pinned source objects are provider-
+confirmed absent. N1E is retired rather than redefined.
+
+The next compatibility control is the sealed C3A source-built public-functional
+Restless/TrebleDroid image on current V01.00.14. If C3A boots, N1F is reserved
+for the later minimal C3A-derived five-Sable-app isolation. If C3A is unavailable
+or inconclusive/fails, the pinned published C2 RestlessOS prebuilt may be
+reviewed as an independent second diagnostic control. N1D/E6 remain frozen.
 
 See
 [`docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md`](docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md)
@@ -119,7 +125,8 @@ Start with:
 
 - `CURRENT_STATUS.md` — current private execution state.
 - `docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — active Titan 2 roadmap and assignments.
-- `docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md` — current N1B control / N1E isolation authority.
+- `docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md` — current Titan 2 compatibility-control authority.
+- `docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md` — superseded exact-N1B/N1E recovery evidence.
 - `docs/SABLE_READER_V2_ARCHITECTURE.md` — accepted P5 Reader v2 architecture, UX, formats and dependencies.
 - `docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md` — 23-screen design/reference convergence baseline.
 - `docs/DOCUMENTATION_INDEX.md` — current/historical documentation index.
