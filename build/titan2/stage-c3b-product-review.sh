@@ -357,7 +357,52 @@ if [[ -s "$COPIED_NUL" ]]; then
     xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"
 fi
 
-git -C "$ROOT" diff --cached --check
+python3 - "$ROOT" "$COPIED_NUL" "$N1D_C3B_E2_CRLF_BATCH_FILE_1" "$N1D_C3B_E2_CRLF_BATCH_FILE_1_GIT_BLOB" <<'PY'
+from __future__ import annotations
+import pathlib
+import subprocess
+import sys
+
+root = pathlib.Path(sys.argv[1])
+copied_nul = pathlib.Path(sys.argv[2])
+allowed_path = sys.argv[3]
+allowed_blob = sys.argv[4]
+copied = [
+    p.decode("utf-8")
+    for p in copied_nul.read_bytes().split(b"\0")
+    if p
+]
+crlf_batch_files = []
+for path in copied:
+    body = subprocess.check_output(["git", "-C", str(root), "show", f":{path}"])
+    if b"\r" not in body:
+        continue
+    if path != allowed_path or not path.endswith(".bat"):
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL unexpected_cr_path={path}")
+    remainder = body.replace(b"\r\n", b"")
+    if b"\r" in remainder or b"\n" in remainder:
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL malformed_crlf_path={path}")
+    blob = subprocess.check_output(
+        ["git", "-C", str(root), "hash-object", "--stdin"],
+        input=body,
+        text=False,
+    ).decode().strip()
+    if blob != allowed_blob:
+        raise SystemExit(
+            "C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL "
+            f"batch_blob expected={allowed_blob} actual={blob}"
+        )
+    crlf_batch_files.append(path)
+
+if crlf_batch_files != [allowed_path]:
+    raise SystemExit(
+        "C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL "
+        f"expected={[allowed_path]} actual={crlf_batch_files}"
+    )
+print("C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS crlf_batch_files=1")
+PY
+
+git -C "$ROOT" -c core.whitespace=cr-at-eol diff --cached --check
 
 python3 - "$ROOT" "$PLAN_TSV" "$COPIED_NUL" "$INVENTORY" <<'PY'
 from __future__ import annotations
@@ -401,6 +446,7 @@ IDENTICAL_COUNT="$(( PLAN_COUNT - STAGED_COUNT ))"
     echo "C3B_PRODUCT_STAGE_STAGED_COUNT=$STAGED_COUNT"
     echo "C3B_PRODUCT_STAGE_IDENTICAL_COUNT=$IDENTICAL_COUNT"
     echo "C3B_PRODUCT_STAGE_IGNORED_INPUT_COUNT=2"
+    echo "C3B_PRODUCT_STAGE_CRLF_BATCH_FILE_COUNT=1"
     echo "C3B_PRODUCT_STAGE_INVENTORY=$INVENTORY"
     echo "C3B_PRODUCT_STAGING=PASS"
 } > "$STATE"
