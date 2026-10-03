@@ -152,6 +152,7 @@ bash "$ROOT/build/titan2/qualify-c3a-v010014-live-preflight.sh" \
   --offline-plan "$OFFLINE_PLAN" \
   --output-json "$FINAL_JSON"
 
+cp "$E5A_JSON" "$EVIDENCE_DIR/e5a-readonly-device-state.json"
 cp "$OFFLINE_PLAN" "$EVIDENCE_DIR/offline-control-plan.env"
 printf '%s\n' "$offline_seal" > "$EVIDENCE_DIR/offline-evidence-seal-sha256.txt"
 
