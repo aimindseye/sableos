@@ -84,8 +84,6 @@ APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 AAPT2="$SABLE_ANDROID_BUILD_TOOLS/aapt2"
 [[ -x "$APKSIGNER" ]] || fail "missing_apksigner=$APKSIGNER"
 [[ -x "$AAPT2" ]] || fail "missing_aapt2=$AAPT2"
-[[ -x "$JAVA_HOME/bin/java" || -x "$SABLE_JDK17/bin/java" ]] || true
-
 export ANDROID_HOME="$SABLE_ANDROID_SDK"
 export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
 export JAVA_HOME="$SABLE_JDK17"
