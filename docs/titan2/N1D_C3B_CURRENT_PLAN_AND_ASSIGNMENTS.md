@@ -115,6 +115,31 @@ See:
 - `docs/titan2/N1D_C3B_E4_DEPLOYMENT_READINESS_EVIDENCE.md`
 - `docs/titan2/N1D_C3B_E5_MANUAL_AUTHORIZATION_CHECKPOINT.md`
 
+## E5A authorized read-only checkpoint
+
+E5A is now explicitly authorized for read-only device contact plus the two mode
+transitions needed to reach fastbootd.
+
+```text
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_ADB_READONLY_AUTHORIZED=YES
+E5A_FASTBOOT_READONLY_AUTHORIZED=YES
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+E5A_FINAL_DEVICE_MODE=FASTBOOTD
+E5A_REBOOT_BACK_TO_ANDROID=NO_NOT_AUTHORIZED
+E5B_FLASH_AUTHORIZED=NO
+E5B_LP_MUTATION_AUTHORIZED=NO
+E5B_AVB_MUTATION_AUTHORIZED=NO
+E5B_SLOT_MUTATION_AUTHORIZED=NO
+```
+
+E5A revalidates stock identity, slot, bootloader state, snapshot/update state and
+fresh dynamic-partition capacity. It requires complete slot/allocation evidence
+before it can return a capacity-ready PASS.
+
+See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
+
 ## Assignment model
 
 Two lanes proceed in parallel.
@@ -295,7 +320,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
 | E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
-| E5 | first physical C3B boot | fresh read-only revalidation, then separately authorized deployment + untouched baseline | **MANUAL AUTHORIZATION REQUIRED** |
+| E5 | first physical C3B boot | E5A fresh read-only revalidation, then separately authorized E5B deployment + untouched baseline | **E5A AUTHORIZED / E5B NOT AUTHORIZED** |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
 | E8A | core OS usability | Start, Keyboard, Setup, Settings, Hub/Messages, browser/files | PARALLEL SOURCE WORK |
