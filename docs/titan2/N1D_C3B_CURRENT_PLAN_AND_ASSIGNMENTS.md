@@ -93,6 +93,28 @@ or flash authorization.
 
 See `docs/titan2/N1D_C3B_E4_DEPLOYMENT_READINESS.md`.
 
+## E4 sealed result
+
+```text
+N1D_C3B_E4_DEPLOYMENT_READINESS=PASS_REVIEW_READY
+SYSTEM_SHA256=998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5
+DIRECT_FIT=NO
+PLANNED_SYSTEM_TARGET_BYTES=3263168512
+PLANNED_SYSTEM_GROWTH_BYTES=2506727424
+ESTIMATED_REMAINING_SUPER_HEADROOM_BYTES=3003637760
+STOCK_SUPER_RESOLUTION=PASS
+STOCK_BOOT_AVB_RESOLUTION=PASS count=6
+STOCK_RESTORE_PROOF=PASS
+```
+
+E5 is now a manual authorization boundary. E5A is fresh read-only device-state
+revalidation; E5B physical deployment is considered only after E5A review and a
+separate mutation authorization.
+
+See:
+- `docs/titan2/N1D_C3B_E4_DEPLOYMENT_READINESS_EVIDENCE.md`
+- `docs/titan2/N1D_C3B_E5_MANUAL_AUTHORIZATION_CHECKPOINT.md`
+
 ## Assignment model
 
 Two lanes proceed in parallel.
@@ -272,8 +294,8 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | Phase | Purpose | Exit condition | State |
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
-| E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **ACTIVE NEXT** |
-| E5 | first physical C3B boot | boot + untouched baseline capture | NEXT |
+| E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
+| E5 | first physical C3B boot | fresh read-only revalidation, then separately authorized deployment + untouched baseline | **MANUAL AUTHORIZATION REQUIRED** |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
 | E8A | core OS usability | Start, Keyboard, Setup, Settings, Hub/Messages, browser/files | PARALLEL SOURCE WORK |
@@ -288,8 +310,10 @@ P2 Android glue remains specifically subject to the operator offline Android com
 E3 completes
  -> seal exact artifact
  -> E4 deployment preflight
- -> explicit operator authorization
- -> E5 physical boot
+ -> explicit E5A read-only device-contact authorization
+ -> fresh device-state revalidation
+ -> separate E5B mutation authorization
+ -> first physical C3B boot
  -> E6 read-only runtime baseline
  -> E7 smallest evidence-backed fixes
 
