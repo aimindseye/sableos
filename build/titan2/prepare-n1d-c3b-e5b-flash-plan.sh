@@ -30,6 +30,7 @@ usage:
     --e5b-json <path> \
     --expected-e5b-json-sha256 <sha256> \
     --auth-freeze-env <path> \
+    --expected-auth-freeze-sha256 <sha256> \
     --build-evidence-dir <path> \
     --evidence-dir <path>
 
