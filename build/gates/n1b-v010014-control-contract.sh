@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PREP="$ROOT/build/titan2/prepare-n1b-v010014-control.sh"
+RESOLVER="$ROOT/build/titan2/resolve-n1b-control-artifact.sh"
 DOC="$ROOT/docs/titan2/N1B_V010014_CONTROL.md"
 LEDGER="$ROOT/docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md"
 
@@ -11,11 +12,12 @@ fail() {
   exit 1
 }
 
-for f in "$PREP" "$DOC" "$LEDGER"; do
+for f in "$PREP" "$RESOLVER" "$DOC" "$LEDGER"; do
   [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
 bash -n "$PREP" || fail "bash_n=$PREP"
+bash -n "$RESOLVER" || fail "bash_n=$RESOLVER"
 
 for marker in \
   'EXPECTED_N1B_SOURCE="8dd06e77410fea131e4716447f7f05067e427654"' \
@@ -69,6 +71,12 @@ grep -Fq '[[ "$e5b_sha" == "$EXPECTED_E5B_SHA256" ]]' "$PREP" || fail e5b_hash_g
 grep -Fq '[[ "$actual_sha" == "$EXPECTED_N1B_SHA256" ]]' "$PREP" || fail n1b_hash_gate_missing
 grep -Fq '[[ "$actual_bytes" == "$EXPECTED_N1B_BYTES" ]]' "$PREP" || fail n1b_size_gate_missing
 grep -Fq 'GSI_IMAGE_LOGICAL_BYTES=$EXPECTED_N1B_BYTES' "$PREP" || fail n1b_geometry_gate_missing
+grep -Fq 'resolve-n1b-control-artifact.sh' "$PREP" || fail resolver_binding_missing
+grep -Fq 'IMAGES/system.img' "$RESOLVER" || fail target_files_member_missing
+grep -Fq '/srv/data/sable-build/evidence/titan2' "$RESOLVER" || fail evidence_search_root_missing
+grep -Fq '/srv/data/sable-build/artifacts/titan2' "$RESOLVER" || fail artifact_search_root_missing
+grep -Fq 'EXPECTED_SHA256="bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e"' "$RESOLVER" || fail resolver_sha_missing
+grep -Fq 'EXPECTED_BYTES=3180666880' "$RESOLVER" || fail resolver_bytes_missing
 grep -Fq '! -name prepare.log' "$PREP" || fail live_prepare_log_must_be_excluded_from_seal
 
 if grep -Eq '^[[:space:]]*(repo[[:space:]]+sync|make[[:space:]]|m[[:space:]]|ninja[[:space:]]|fastboot[[:space:]]+(flash|erase|delete-logical-partition|resize-logical-partition)|adb[[:space:]]+reboot)' "$PREP"; then
@@ -85,6 +93,7 @@ do
 done
 
 echo "N1B_V010014_CONTROL_SCRIPT_SYNTAX=PASS"
+echo "N1B_V010014_CONTROL_ARTIFACT_RECOVERY_CONTRACT=PASS"
 echo "N1B_V010014_CONTROL_HISTORICAL_BINDING=PASS"
 echo "N1B_V010014_CONTROL_E5A_E5B_BINDING=PASS_STATIC"
 echo "N1B_V010014_CONTROL_NO_DEVICE_COMMANDS=PASS"
