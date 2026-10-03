@@ -303,8 +303,8 @@ echo "===== 3. BUILD C3A-DERIVED SYSTEMIMAGE ====="
 
   [[ "$(get_build_var TARGET_PRODUCT)" == treble_arm64_bvN ]] ||
     fail target_product
-  [[ "$(get_build_var TARGET_RELEASE)" == bp4a ]] ||
-    fail target_release
+  [[ "$(get_build_var BUILD_ID)" == BP4A.251205.006 ]] ||
+    fail build_id
   [[ "$(get_build_var TARGET_BUILD_VARIANT)" == user ]] ||
     fail target_variant
   [[ "$(get_build_var TARGET_COPY_OUT_PRODUCT)" == system/product ]] ||
