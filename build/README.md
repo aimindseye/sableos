@@ -258,8 +258,14 @@ admits only Sable-owned narrow build-graph/security reimplementations while the
 runtime patch allowlist remains empty.
 
 C3B E1 keeps the generated `treble_arm64_bvN` identity only as an engineering
-build identity. Final Sable product identity, source-module admission and
-partition/product inheritance are E2 responsibilities.
+build identity. E2 now preserves that generated product as its proven base graph
+and defines a thin Sable wrapper product, `sable_titan2-bp4a-userdebug`.
+The qualified parallel source is canonically imported at
+`aafb543565c9d59ed5e0d9cda876aabb4967f8aa`; five non-privileged product apps
+are built offline from that source into unsigned APKs and imported into Android
+with `default_dev_cert` for the userdebug engineering image. Presigned APKs,
+platform-certificate signing, target-files/OTA, device contact, flash and release
+remain unauthorized.
 
 The source and security boundaries are enforced by:
 
@@ -348,14 +354,33 @@ build/titan2/apply-n1d-c3b-phh-base-hardening.py
 build/titan2/n1d-c3b-engineering.mk
 ```
 
-The composition gate is:
+The E1 composition gate remains:
 
 ```bash
 bash build/gates/n1d-c3-product-composition-contract.sh
 ```
 
-E1 authorizes only the separate C3B source graph, product parse and
-`systemimage` compilation. Sable app/source-module product admission is E2.
+E2 source admission and product composition are enforced separately:
+
+```bash
+bash build/gates/n1d-c3b-e2-product-admission-contract.sh
+bash build/gates/n1d-c3b-e2-product-composition-contract.sh
+```
+
+The E2 product template and execution drivers are:
+
+```text
+product/titan2/c3b/
+build/titan2/build-n1d-c3b-e2-product-apps.sh
+build/titan2/stage-n1d-c3b-e2-product-composition.sh
+build/titan2/qualify-n1d-c3b-e2-product-parse.sh
+build/titan2/build-n1d-c3b-e2-modules.sh
+```
+
+E1 authorizes only the separate C3B source graph, product parse and engineering
+`systemimage` compilation. E2 is now the canonical Sable identity/module
+composition lane, but remains non-release until its parse, module build, image
+build and physical runtime evidence close.
 
 ## Validation discipline
 
