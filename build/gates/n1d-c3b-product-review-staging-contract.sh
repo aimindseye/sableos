@@ -41,10 +41,12 @@ grep -Fq 'KEEP_REFERENCE_ONLY' "$ADAPTER" || fail reference_exclusion_missing
 
 grep -Fq 'git", "-C", str(source), "ls-files", "-s", "-z"' "$ADAPTER" || fail tracked_file_inventory_missing
 grep -Fq 'git -C "$ROOT" -c core.whitespace=cr-at-eol diff --cached --check' "$ADAPTER" || fail crlf_safe_diff_check_missing
-grep -Fq 'C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS crlf_batch_files=1' "$ADAPTER" || fail line_ending_pass_marker_missing
+grep -Fq 'C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS ' "$ADAPTER" || fail line_ending_pass_marker_missing
+grep -Fq '"diff", "--cached", "--numstat", "--", path' "$ADAPTER" || fail git_binary_classification_missing
+grep -Fq 'if fields[0] == "-" and fields[1] == "-":' "$ADAPTER" || fail binary_line_ending_skip_missing
+grep -Fq 'unexpected_cr_text_path=' "$ADAPTER" || fail unexpected_cr_text_rejection_missing
 grep -Fq 'N1D_C3B_E2_CRLF_BATCH_FILE_1' "$ADAPTER" || fail crlf_batch_path_binding_missing
 grep -Fq 'N1D_C3B_E2_CRLF_BATCH_FILE_1_GIT_BLOB' "$ADAPTER" || fail crlf_batch_blob_binding_missing
-grep -Fq 'unexpected_cr_path=' "$ADAPTER" || fail non_batch_cr_rejection_missing
 grep -Fq 'malformed_crlf_path=' "$ADAPTER" || fail malformed_crlf_rejection_missing
 grep -Fq 'xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"' "$ADAPTER" || fail approved_ignored_file_stage_missing
 grep -Fq 'if staged != copied:' "$ADAPTER" || fail staged_equals_copied_guard_missing
