@@ -26,6 +26,7 @@ status document takes precedence.
 - `titan2/N1B_PROVIDER_OBJECT_EXISTENCE.md` — completed provider-specific evidence confirming both critical exact N1B source objects are not addressable.
 - `titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md` — **current Titan 2 runtime-recovery authority**: sealed C3A compatibility control on V01.00.14, C2 fallback only if needed, N1F reserved after C3A boot.
 - `titan2/N1D_C3A_V010014_FASTBOOT_ENTRY_PREFLIGHT.md` — **current operator step while N1D is bootlooping**: fastboot-only binding/snapshot/COW/group/capacity revalidation; leaves phone in fastbootd and authorizes no write/reset.
+- `titan2/N1D_C3A_V010014_STANDARD_FLASH_PLAN.md` — **current operator step**: canonical C3A registration + sealed no-write flash plan; physical execution remains closed pending exact plan-seal scope binding.
 - `titan2/N1D_C3A_V010014_LIVE_PREFLIGHT.md` — alternate Android/ADB-entry preflight retained for a future bootable state; not current during the bootloop.
 - `SABLE_READER_V2_ARCHITECTURE.md` — **accepted P5 product architecture** for EPUB/PDF, comics/manga/webtoons and audiobooks; Text Reader remains separate.
 - `titan2/SABLESCREENS_REFERENCE_BASELINE.md` — **accepted design/reference baseline** mapping the 23-screen catalog into P1-P5/E8; not a runtime product.
