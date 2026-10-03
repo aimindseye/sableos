@@ -826,12 +826,20 @@ sable_device_flash_postboot() {
   local adb_serial="" adb_state="" boot_completed="" bootmode=""
   local fingerprint="" slot_suffix="" verified_boot=""
   local candidate candidate_hash
+  local fastboot_seen_absent=NO fastboot_present=NO
   start="$(date +%s)"
 
   while :; do
+    fastboot_present=NO
     if "$FASTBOOT_BIN" devices </dev/null 2>/dev/null |
        awk 'NF>=1 {print $1}' |
        grep -Fxq -- "$SERIAL"; then
+      fastboot_present=YES
+    fi
+
+    if [[ "$fastboot_present" == NO ]]; then
+      fastboot_seen_absent=YES
+    elif [[ "$fastboot_seen_absent" == YES ]]; then
       echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=FASTBOOT_RETURNED"
       echo "TITAN2_N1D_E5B_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
       return 1
