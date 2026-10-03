@@ -100,8 +100,9 @@ fresh remaining capacity after proposed E3 system growth
 ## Privacy
 
 The device serial is needed internally to bind ADB, bootloader fastboot and
-fastbootd to the same phone. Raw serial-bearing Phase 10/11 console output is
-redirected into the private local evidence directory.
+fastbootd to the same phone. All raw serial-bearing Phase 10/11 JSON, command output and console logs are
+kept beneath the local `private/` evidence subtree. The C3B summary independently
+hash-verifies that 10A, 10B and Phase 11 refer to the same device.
 
 Normal console/final C3B evidence records only:
 
@@ -127,7 +128,8 @@ userspace fastbootd for review.
 
 E4 used historical sizing. E5A uses fresh fastbootd evidence and prefers all
 logical partitions reported by getvar-all. If the device does not expose
-logical markers, it falls back to the known dynamic-partition families.
+logical markers, it may calculate a known-family fallback estimate, but that
+fallback is explicitly marked for manual review and cannot by itself clear E5B.
 
 ```text
 PLANNED_SYSTEM_TARGET_BYTES=3263168512
