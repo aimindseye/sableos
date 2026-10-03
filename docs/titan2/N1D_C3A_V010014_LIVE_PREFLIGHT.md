@@ -42,7 +42,9 @@ current slot = a
 product = Titan_2
 userspace fastbootd = yes
 bootloader unlocked = yes
-snapshot/update state = idle/none
+fresh fastboot binding = sealed fastboot binding
+fastboot snapshot-update-status = none
+system_a = reported logical
 logical allocation = complete
 target = system_a
 planned target bytes = 3146977280
@@ -97,7 +99,7 @@ bash build/titan2/collect-c3a-v010014-live-preflight.sh \
 Expected clean result:
 
 ```text
-C3A_V010014_LIVE_PREFLIGHT=PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW
+C3A_V010014_LIVE_PREFLIGHT=PASS_READY_FOR_CONTROL_EXECUTION_REVIEW
 C3A_V010014_LIVE_TARGET_PARTITION=system_a
 C3A_V010014_LIVE_ACTIVE_COW_COUNT=0
 C3A_V010014_LIVE_ACTIVE_GROUP_CAPACITY_SAFE=YES
