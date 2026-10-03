@@ -383,6 +383,37 @@ E1 authorizes only the separate C3B source graph, product parse and engineering
 composition lane, but remains non-release until its parse, module build, image
 build and physical runtime evidence close.
 
+## Titan 2 N1D C3B standardized deployment planning
+
+N1D C3B E5B uses the canonical multi-device operator interface. Do not create
+or run standalone Titan write scripts.
+
+The current qualified stage is artifact registration plus an offline flash plan:
+
+```text
+build/sable.sh titan2 N1D register-artifact
+ -> build/sable.sh titan2 N1D show-artifact
+ -> build/sable.sh titan2 N1D flash-plan
+```
+
+The N1D artifact gate is bound to the sealed E3 build source and system SHA.
+The registration also includes the E5B decision JSON and manual-authorization
+freeze as hashed registry artifacts. The flash plan derives the exact raw/sparse
+logical image size, recomputes group/super capacity and records fastboot's
+implicit logical-partition resize semantics.
+
+Physical execution remains fail-closed:
+
+```text
+SABLE_DEVICE_FLASH_SUPPORTED=NO
+SABLE_DEVICE_PRESERVED_DATA_FLASH_SUPPORTED=NO
+TITAN2_FLASH_EXECUTION_SUPPORTED=NO
+TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO
+```
+
+See `docs/titan2/N1D_C3B_E5B_STANDARD_DEPLOYMENT.md` for the exact
+placeholder-free registration and flash-plan commands.
+
 ## Validation discipline
 
 Before providing or accepting a build/script deliverable, validate at minimum:
