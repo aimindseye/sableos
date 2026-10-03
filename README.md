@@ -16,22 +16,28 @@ R9_PANTHER_TARGET_FILES_SHA256=a0b359613c4f30e9a834fba212e0b044a97d63ed0537c5947
 R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS_WITH_PRESERVED_PLAY_STATE
 ```
 
-Active development is Titan 2 **N1D/C3B**, not the earlier N0/N1B execution
-sequence.
+Active development is Titan 2 **N1D/C3B runtime recovery**, not the earlier
+N0/N1B execution sequence.
 
 ```text
-TITAN2_ACTIVE_LANE=N1D_C3B
+TITAN2_ACTIVE_LANE=N1D_C3B_RUNTIME_RECOVERY
 C3B_E1_SYSTEMIMAGE=PASS
 C3B_E2_SOURCE_ADMISSION=PASS
 C3B_E3_BUILD_SOURCE=caf98dde723d07a071d95aaa1ef27d578d3208d8
-C3B_E3_STATUS=BUILD_RUNNING_NOT_YET_SEALED
+C3B_E3_STATUS=SEALED_PASS
+N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP
 C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
+COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
+N1B_V010014_CONTROL=PENDING
+N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
 ```
 
-E3 is the first Sable-composed Titan 2 engineering system image. Its cheap
-compatibility/product/module gates passed before the long fresh build started.
-Device contact, flash, target-files/OTA, production signing and release remain
-blocked until later explicit phases.
+The first N1D physical attempt did not establish a boot-qualified baseline.
+The next physical experiment is the exact sealed N1B system artifact on the
+current V01.00.14 device state. If N1B boots, N1E is built as the exact N1B
+product plus only the five C3B apps and must pass G0/G1/G2 before any flash.
+If N1B fails, N1E stops and the firmware/boot-chain/current-device-state delta
+is investigated. N1D/E6 remain frozen meanwhile.
 
 See
 [`docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md`](docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md)
@@ -113,6 +119,7 @@ Start with:
 
 - `CURRENT_STATUS.md` — current private execution state.
 - `docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — active Titan 2 roadmap and assignments.
+- `docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md` — current N1B control / N1E isolation authority.
 - `docs/SABLE_READER_V2_ARCHITECTURE.md` — accepted P5 Reader v2 architecture, UX, formats and dependencies.
 - `docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md` — 23-screen design/reference convergence baseline.
 - `docs/DOCUMENTATION_INDEX.md` — current/historical documentation index.
