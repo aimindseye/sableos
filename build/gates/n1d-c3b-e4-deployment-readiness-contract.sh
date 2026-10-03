@@ -8,9 +8,15 @@ fail(){ echo "N1D_C3B_E4_CONTRACT_FAIL=$1" >&2; exit 1; }
 bash -n "$DRIVER"
 
 grep -Fq 'resolve_stock_super()' "$DRIVER" || fail missing_stock_super_resolver
+grep -Fq 'resolve_evidence_exact()' "$DRIVER" || fail missing_boot_avb_resolver
+grep -Fq 'resolve_boot_avb_component()' "$DRIVER" || fail missing_boot_avb_component_resolver
 grep -Fq -- '--stock-super-image' "$DRIVER" || fail missing_stock_super_override
+grep -Fq -- '--stock-boot-image' "$DRIVER" || fail missing_stock_boot_override
+grep -Fq -- '--stock-vendor-boot-image' "$DRIVER" || fail missing_stock_vendor_boot_override
+grep -Fq -- '--stock-init-boot-image' "$DRIVER" || fail missing_stock_init_boot_override
+grep -Fq -- '--stock-vbmeta-image' "$DRIVER" || fail missing_stock_vbmeta_override
 
-for token in   'DEVICE_CONTACT_AUTHORIZED=NO'   'FLASH_AUTHORIZED=NO'   'LP_MUTATION_AUTHORIZED=NO'   'AVB_MUTATION_AUTHORIZED=NO'   'NETWORK_FETCH_AUTHORIZED=NO'   'N1D_C3B_E4_E3_IMAGE_SEAL=PASS'   'N1D_C3B_E4_SYSTEM_AVB_INFO=PASS'   'N1D_C3B_E4_STOCK_SUPER_RESOLUTION=PASS'   'N1D_C3B_E4_STOCK_RESTORE_PROOF=PASS'   'N1D_C3B_E4_PARTITION_FIT='   'N1D_C3B_E4_DEPLOYMENT_READINESS=PASS_REVIEW_READY'
+for token in   'DEVICE_CONTACT_AUTHORIZED=NO'   'FLASH_AUTHORIZED=NO'   'LP_MUTATION_AUTHORIZED=NO'   'AVB_MUTATION_AUTHORIZED=NO'   'NETWORK_FETCH_AUTHORIZED=NO'   'N1D_C3B_E4_E3_IMAGE_SEAL=PASS'   'N1D_C3B_E4_SYSTEM_AVB_INFO=PASS'   'N1D_C3B_E4_STOCK_SUPER_RESOLUTION=PASS'   'N1D_C3B_E4_STOCK_BOOT_AVB_RESOLUTION=PASS count=6'   'N1D_C3B_E4_STOCK_RESTORE_PROOF=PASS'   'N1D_C3B_E4_PARTITION_FIT='   'N1D_C3B_E4_DEPLOYMENT_READINESS=PASS_REVIEW_READY'
 do
   grep -Fq "$token" "$DRIVER" || fail "missing_token=$token"
 done

@@ -8,6 +8,12 @@ SYSTEM_IMG="/srv/sable-build/workspaces/titan2-n1d-c3b/out-c3b-engineering/e3-sy
 PHASE11_JSON="/srv/data/sable-build/evidence/titan2/n1b-phase-11-lp-super-sizing/20260928_195308/fastbootd-lp-sizing/phase11-fastbootd-lp-sizing.json"
 STOCK_REF_DIR="/srv/data/sable-build/titan2/artifacts/stock-firmware/unihertz-device-fota-20260922/inspection/bit-equivalence/TEE14-large-reference"
 STOCK_SUPER_IMG=""
+STOCK_BOOT_IMG=""
+STOCK_VENDOR_BOOT_IMG=""
+STOCK_INIT_BOOT_IMG=""
+STOCK_VBMETA_IMG=""
+STOCK_VBMETA_SYSTEM_IMG=""
+STOCK_VBMETA_VENDOR_IMG=""
 STOCK_SUPER_EVID="/srv/data/sable-build/evidence/titan2/n1c-stock-super-restore-artifact-r1c-20260930_200124"
 BOOT_AVB_EVID="/srv/data/sable-build/evidence/titan2/n1c-restore-tee14-boot-avb-direct-20260930_204335"
 EVIDENCE_DIR="/srv/sable-build/evidence/titan2/n1d-c3b-e4-deployment-readiness/$STAMP"
@@ -29,6 +35,12 @@ Options:
   --phase11-json PATH
   --stock-ref-dir DIR
   --stock-super-image PATH
+  --stock-boot-image PATH
+  --stock-vendor-boot-image PATH
+  --stock-init-boot-image PATH
+  --stock-vbmeta-image PATH
+  --stock-vbmeta-system-image PATH
+  --stock-vbmeta-vendor-image PATH
   --stock-super-evidence DIR
   --boot-avb-evidence DIR
   --avbtool PATH
@@ -46,6 +58,12 @@ while (($#)); do
     --phase11-json) PHASE11_JSON="$2"; shift 2 ;;
     --stock-ref-dir) STOCK_REF_DIR="$2"; shift 2 ;;
     --stock-super-image) STOCK_SUPER_IMG="$2"; shift 2 ;;
+    --stock-boot-image) STOCK_BOOT_IMG="$2"; shift 2 ;;
+    --stock-vendor-boot-image) STOCK_VENDOR_BOOT_IMG="$2"; shift 2 ;;
+    --stock-init-boot-image) STOCK_INIT_BOOT_IMG="$2"; shift 2 ;;
+    --stock-vbmeta-image) STOCK_VBMETA_IMG="$2"; shift 2 ;;
+    --stock-vbmeta-system-image) STOCK_VBMETA_SYSTEM_IMG="$2"; shift 2 ;;
+    --stock-vbmeta-vendor-image) STOCK_VBMETA_VENDOR_IMG="$2"; shift 2 ;;
     --stock-super-evidence) STOCK_SUPER_EVID="$2"; shift 2 ;;
     --boot-avb-evidence) BOOT_AVB_EVID="$2"; shift 2 ;;
     --avbtool) AVBTOOL="$2"; shift 2 ;;
@@ -176,9 +194,77 @@ echo "STOCK_SUPER_IMG=$STOCK_SUPER_IMG"
 echo "N1D_C3B_E4_STOCK_SUPER_RESOLUTION=PASS"
 sha256sum "$STOCK_SUPER_IMG" | tee "$EVIDENCE_DIR/stock-super.sha256"
 
-for required in vendor_boot.img init_boot.img vbmeta.img vbmeta_system.img vbmeta_vendor.img; do
-  [[ -f "$STOCK_REF_DIR/$required" ]] || fail "stock_restore_component_missing file=$required"
-done
+resolve_evidence_exact() {
+  local current="$1"
+  local evidence="$2"
+  local base="$3"
+  local -a hits=()
+
+  if [[ -n "$current" && -f "$current" ]]; then
+    realpath "$current"
+    return 0
+  fi
+
+  if [[ -f "$STOCK_REF_DIR/$base" ]]; then
+    realpath "$STOCK_REF_DIR/$base"
+    return 0
+  fi
+
+  [[ -d "$evidence" ]] || return 1
+
+  mapfile -t hits < <(
+    find "$evidence" -type f -name "$base" -print 2>/dev/null |
+      xargs -r -n1 realpath 2>/dev/null |
+      sort -u
+  )
+  if [[ "${#hits[@]}" -eq 1 ]]; then
+    printf '%s\n' "${hits[0]}"
+    return 0
+  fi
+
+  mapfile -t hits < <(
+    grep -RhoE "/[^[:space:]\"']*/$base" "$evidence" 2>/dev/null |
+      sort -u |
+      while IFS= read -r p; do
+        [[ -f "$p" ]] && realpath "$p"
+      done |
+      sort -u
+  )
+  [[ "${#hits[@]}" -eq 1 ]] || return 1
+  printf '%s\n' "${hits[0]}"
+}
+
+resolve_boot_avb_component() {
+  local var_name="$1"
+  local base="$2"
+  local current="${!var_name:-}"
+  local resolved
+
+  if ! resolved="$(resolve_evidence_exact "$current" "$BOOT_AVB_EVID" "$base")"; then
+    echo "N1D_C3B_E4_BOOT_AVB_COMPONENT_RESOLUTION=FAIL component=$base" >&2
+    return 1
+  fi
+
+  printf -v "$var_name" '%s' "$resolved"
+  echo "N1D_C3B_E4_BOOT_AVB_COMPONENT=PASS component=$base path=$resolved"
+  sha256sum "$resolved" >> "$EVIDENCE_DIR/stock-boot-avb.sha256"
+}
+
+: > "$EVIDENCE_DIR/stock-boot-avb.sha256"
+resolve_boot_avb_component STOCK_BOOT_IMG boot.img ||
+  fail "stock_boot_avb_resolution_failed component=boot.img"
+resolve_boot_avb_component STOCK_VENDOR_BOOT_IMG vendor_boot.img ||
+  fail "stock_boot_avb_resolution_failed component=vendor_boot.img"
+resolve_boot_avb_component STOCK_INIT_BOOT_IMG init_boot.img ||
+  fail "stock_boot_avb_resolution_failed component=init_boot.img"
+resolve_boot_avb_component STOCK_VBMETA_IMG vbmeta.img ||
+  fail "stock_boot_avb_resolution_failed component=vbmeta.img"
+resolve_boot_avb_component STOCK_VBMETA_SYSTEM_IMG vbmeta_system.img ||
+  fail "stock_boot_avb_resolution_failed component=vbmeta_system.img"
+resolve_boot_avb_component STOCK_VBMETA_VENDOR_IMG vbmeta_vendor.img ||
+  fail "stock_boot_avb_resolution_failed component=vbmeta_vendor.img"
+
+echo "N1D_C3B_E4_STOCK_BOOT_AVB_RESOLUTION=PASS count=6"
 echo "N1D_C3B_E4_STOCK_REFERENCE_COMPONENTS=PASS"
 
 POSTMORTEM="$ROOT/docs/titan2/N1C_FIRST_WRITE_POSTMORTEM_20260930.md"
