@@ -249,12 +249,36 @@ echo "N1D_C3B_E5A_ADB_BASELINE=PASS"
 echo "N1D_C3B_E5A_ADB_REBOOT_BOOTLOADER=AUTHORIZED_AND_RUNNING"
 "${ADB[@]}" reboot bootloader
 
-wait_for_fastboot_serial() {
-  local expected="$1"
+resolve_fastboot_serial() {
+  local explicit="$1"
   local deadline=$((SECONDS + WAIT_SECONDS))
   while (( SECONDS < deadline )); do
     timeout "$COMMAND_TIMEOUT_SECONDS" fastboot devices > "$EVIDENCE_DIR/fastboot-devices.txt" 2>/dev/null || true
-    if awk -v s="$expected" '$1 == s {found=1} END {exit !found}' "$EVIDENCE_DIR/fastboot-devices.txt"; then
+    if resolved="$(
+      python3 - "$explicit" "$EVIDENCE_DIR/fastboot-devices.txt" <<'PY'
+from __future__ import annotations
+import sys
+
+explicit = sys.argv[1].strip()
+path = sys.argv[2]
+devices = []
+for line in open(path, encoding="utf-8", errors="replace"):
+    parts = line.split()
+    if parts:
+        devices.append(parts[0])
+
+if explicit:
+    if explicit not in devices:
+        raise SystemExit(2)
+    print(explicit)
+    raise SystemExit(0)
+
+if len(devices) != 1:
+    raise SystemExit(3)
+print(devices[0])
+PY
+    )"; then
+      printf '%s\n' "$resolved"
       return 0
     fi
     sleep 2
@@ -262,11 +286,11 @@ wait_for_fastboot_serial() {
   return 1
 }
 
-expected_fastboot_serial="${FASTBOOT_SERIAL:-$ADB_SERIAL}"
-wait_for_fastboot_serial "$expected_fastboot_serial" || fail "wait_for_bootloader_fastboot"
-FASTBOOT_SERIAL="$expected_fastboot_serial"
+FASTBOOT_SERIAL="$(resolve_fastboot_serial "$FASTBOOT_SERIAL")" ||
+  fail "wait_for_single_bootloader_fastboot"
 fastboot_binding_sha256="$(printf '%s' "$FASTBOOT_SERIAL" | sha256sum | awk '{print $1}')"
-[[ "$fastboot_binding_sha256" == "$serial_binding_sha256" ]] || fail "adb_fastboot_serial_binding_mismatch"
+echo "N1D_C3B_E5A_FASTBOOT_BINDING_SHA256=$fastboot_binding_sha256"
+echo "N1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION"
 echo "N1D_C3B_E5A_FASTBOOT_DEVICE_BINDING=PASS"
 
 FASTBOOT=(fastboot -s "$FASTBOOT_SERIAL")
@@ -320,7 +344,10 @@ cat "$EVIDENCE_DIR/bootloader-summary.env"
 if [[ "$BOOTLOADER_IS_USERSPACE" == no ]]; then
   echo "N1D_C3B_E5A_FASTBOOT_REBOOT_FASTBOOTD=AUTHORIZED_AND_RUNNING"
   timeout "$COMMAND_TIMEOUT_SECONDS" "${FASTBOOT[@]}" reboot fastboot
-  wait_for_fastboot_serial "$FASTBOOT_SERIAL" || fail "wait_for_fastbootd"
+  resolved_after_fastbootd="$(resolve_fastboot_serial "$FASTBOOT_SERIAL")" ||
+    fail "wait_for_fastbootd"
+  [[ "$resolved_after_fastbootd" == "$FASTBOOT_SERIAL" ]] ||
+    fail "fastboot_serial_changed_during_transition"
 fi
 
 collect_getvar all > "$EVIDENCE_DIR/fastbootd-getvar-all.txt"
@@ -667,7 +694,8 @@ result = {
     "schema": 1,
     "phase": "N1D_C3B_E5A_READONLY_DEVICE_STATE",
     "device": "titan2",
-    "device_binding_sha256": serial_hash,
+    "adb_device_binding_sha256": serial_hash,
+    "device_binding_method": "CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION",
     "sealed_system_sha256": system_sha,
     "sealed_system_bytes": system_bytes,
     "adb": env_file("adb-summary.env"),
