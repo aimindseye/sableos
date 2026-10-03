@@ -61,7 +61,7 @@ TITAN2_N1D_E6_SCOPE_PREFIX="N1D-C3B-E6-BM001:system_a:2994388992:"
 # C3A diagnostic compatibility control.
 # Registration and no-write flash-plan generation are qualified here.
 # Physical execution remains blocked until a later plan-seal-bound scope change.
-TITAN2_N1D_C3A_BUILD_SOURCE="e6bcd76885c6048da7cbd9f200a9b1102e6d91a2"
+TITAN2_N1D_C3A_BUILD_SOURCE="23f6ce0055cdbbbed9d35705264b5e73737e6560"
 TITAN2_N1D_C3A_SYSTEM_SHA256="4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16"
 TITAN2_N1D_C3A_SYSTEM_CURRENT_BYTES=2994388992
 TITAN2_N1D_C3A_SYSTEM_LOGICAL_BYTES=3146977280
