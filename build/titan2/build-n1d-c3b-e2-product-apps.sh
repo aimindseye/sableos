@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROFILE="$ROOT/build/titan2/n1d-c3b-e2-product-composition.env"
 HOST_TOOLS="$ROOT/build/config/host-tools.env"
 COMPOSITION_GATE="$ROOT/build/gates/n1d-c3b-e2-product-composition-contract.sh"
-APP_ROOT="$ROOT/apps/titan2/platform"
+APP_SOURCE_REL="apps/titan2/platform"
 
 OUTPUT_DIR=""
 AUTHORIZE_APP_BUILD=NO
@@ -47,7 +47,7 @@ done
 [[ "$AUTHORIZE_APP_BUILD" == YES ]] || fail explicit_build_authority_required
 [[ -f "$PROFILE" ]] || fail "missing_profile=$PROFILE"
 [[ -f "$HOST_TOOLS" ]] || fail "missing_host_tools=$HOST_TOOLS"
-[[ -x "$APP_ROOT/gradlew" ]] || fail "missing_gradlew=$APP_ROOT/gradlew"
+[[ -x "$ROOT/$APP_SOURCE_REL/gradlew" ]] || fail "missing_gradlew=$ROOT/$APP_SOURCE_REL/gradlew"
 
 # shellcheck source=/dev/null
 source "$PROFILE"
@@ -95,7 +95,37 @@ if [[ -z "$OUTPUT_DIR" ]]; then
     OUTPUT_DIR="/srv/sable-build/artifacts/titan2/n1d-c3b-e2-product-apps/${N1D_C3B_E2_SOURCE_IMPORT_COMMIT}/$run_id"
 fi
 [[ "$OUTPUT_DIR" = /* ]] || fail output_dir_must_be_absolute
-mkdir -p "$OUTPUT_DIR/prebuilt"
+[[ ! -e "$OUTPUT_DIR" ]] || fail "output_dir_preexists=$OUTPUT_DIR"
+mkdir -p "$OUTPUT_DIR/prebuilt" "$OUTPUT_DIR/source-snapshot"
+
+ARCHIVE_PATHS=(
+    apps/titan2/platform
+    config/DETEKT_PROVENANCE.env
+    config/QUALITY_SUPPRESSION_BUDGET.tsv
+    config/detekt.yml
+    third_party/phosphor-icons
+    third_party/pinyin_zh
+    tools/gen_first_party_icons.py
+    tools/gen_indic_rows.py
+    tools/gen_phonetic.py
+    tools/gen_pinyin_dict.py
+    tools/gen_pinyin_license_bundle.py
+    tools/indic_common.py
+    tools/test_gen_pinyin_dict.py
+)
+git -C "$ROOT" archive HEAD -- "${ARCHIVE_PATHS[@]}" |
+    tar -x -C "$OUTPUT_DIR/source-snapshot"
+
+APP_ROOT="$OUTPUT_DIR/source-snapshot/$APP_SOURCE_REL"
+[[ -x "$APP_ROOT/gradlew" ]] || fail "snapshot_gradlew_missing=$APP_ROOT/gradlew"
+
+snapshot_tree="$OUTPUT_DIR/source-snapshot.sha256"
+(
+    cd "$OUTPUT_DIR/source-snapshot"
+    find . -type f -print0 |
+        LC_ALL=C sort -z |
+        xargs -0 sha256sum > "$snapshot_tree"
+)
 
 echo "===== TITAN 2 N1D C3B E2 SOURCE-BOUND APP BUILD ====="
 echo "SOURCE_MUTATION_AUTHORIZED=NO"
@@ -105,6 +135,7 @@ echo "FLASH_AUTHORIZED=NO"
 echo "PRODUCTION_SIGNING_AUTHORIZED=NO"
 echo "CANONICAL_SOURCE_IMPORT_COMMIT=$N1D_C3B_E2_SOURCE_IMPORT_COMMIT"
 echo "CANONICAL_BUILD_HEAD=$current_head"
+echo "BUILD_SOURCE_SNAPSHOT=$OUTPUT_DIR/source-snapshot"
 
 (
     cd "$APP_ROOT"
@@ -163,6 +194,7 @@ done
 
 printf '%s\n' "$N1D_C3B_E2_SOURCE_IMPORT_COMMIT" > "$OUTPUT_DIR/CANONICAL_SOURCE_IMPORT_COMMIT.txt"
 printf '%s\n' "$current_head" > "$OUTPUT_DIR/CANONICAL_BUILD_HEAD.txt"
+printf '%s\n' "$N1D_C3B_E2_SOURCE_IMPORT_COMMIT" > "$OUTPUT_DIR/source-snapshot/SOURCE_IMPORT_COMMIT.txt"
 
 (
     cd "$OUTPUT_DIR/prebuilt"
