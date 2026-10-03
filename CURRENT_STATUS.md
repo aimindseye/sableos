@@ -1,6 +1,6 @@
 # SableOS current status
 
-Last updated: 2026-10-02 ET / 2026-10-03 UTC
+Last updated: 2026-10-03 ET
 
 This file is the private integration repository's current execution authority.
 Historical milestone documents remain evidence but do not override this file or
@@ -28,6 +28,40 @@ R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS_WITH_PRESERVED_PLAY_STATE
 
 Later documentation or Titan work does not change the accepted Panther image
 identity.
+
+## Superseding Titan 2 runtime-recovery checkpoint
+
+The sealed N1D/C3B build evidence remains valid, but the first physical N1D
+attempt did not establish a stable boot and entered a reboot loop. Therefore
+the prior E5 -> E6 progression is suspended.
+
+```text
+N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP
+N1D_RUNTIME_PATCH_ALLOWLIST_COUNT=0
+COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
+CURRENT_STOCK_FIRMWARE=V01.00.14
+HISTORICAL_N1B_BOOT_FIRMWARE=V01.00.13
+N1D_REFLASH=HOLD
+E6_RUNTIME_BASELINE=HOLD
+N1B_V010014_CONTROL=PENDING
+N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
+N1E_FLASH_AUTHORIZED=NO
+```
+
+The next physical experiment is the exact sealed N1B system artifact on the
+current V01.00.14 state using the already proven active-`system_a` fastbootd
+path and the same first-boot data reset. A successful N1B boot isolates the
+failure to the broad N1D system-side delta; it does not by itself prove that
+`COUNT=0`, dm-verity or any one compatibility patch family is causal.
+
+If N1B boots, N1E is the exact authoritative N1B generated
+`treble_arm64_bvN` product and lunch identity plus only the five C3B apps.
+It deliberately does not use the `sable_titan2` wrapper identity. N1E must
+pass the reviewed G0 -> G1 -> G2 pre-flash qualification before device contact.
+If N1B fails on V01.00.14, N1E is stopped and the firmware/boot-chain/current-
+device-state delta becomes the active investigation.
+
+See `docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md`.
 
 ## Titan 2 C3B state
 
@@ -227,27 +261,73 @@ AI_G732_P1_P4_BATCH_QUALIFICATION=HOLD_UNTIL_RESTACK
 
 P2 Android glue remains specifically subject to the operator offline Android compile after the corrected stack is frozen. P4 canonical admission must also adopt the per-city Weather cache key before user-managed cities are runtime-safe.
 
+## Current developer deliverables
+
+The product-source repository is now based on
+`aimindseye/titan2-temp@4089c1274a9e4a402a2c617cc00a7c166112f195`
+after the accepted P5E merge.
+
+```text
+DEVELOPER_B_PR_28=P5F_READER_RUNTIME_READINESS_DRAFT
+PR_28_HEAD=e8a5ddd374a0d78ca175b2137cf73707150ca28a
+PR_28_ANDROID_COMPILE=PENDING_OPERATOR
+PR_28_LINT=PENDING_OPERATOR
+PR_28_ANDROID_UNIT_TESTS=PENDING_OPERATOR
+PR_28_MERGED_MANIFEST=PENDING_OPERATOR
+PR_28_DEVICE_RUNTIME=NOT_RUN
+
+DEVELOPER_A_PR_29=C3B_NON_READER_RUNTIME_READINESS_DRAFT
+PR_29_HEAD=5468758dc42c372854fc6936e3800afc1ee33def
+PR_29_STATIC_GATE=PASS_DEVELOPER
+PR_29_MUTATION_TESTS=PASS_DEVELOPER
+PR_29_ANDROID_OFFLINE=PENDING_OPERATOR
+PR_29_DEVICE_RUNTIME=NOT_RUN
+```
+
+PR #28 includes Reader runtime-readiness tooling and bounded Reader source fixes,
+so exact-head operator Android compile, lint, Android unit tests and merged-
+manifest verification are required before admission. Warning counts must come
+from the real lint XML rather than being invented. Device runtime remains a
+separate later qualification.
+
+PR #29 adds non-Reader runtime-readiness/evidence tooling and no feature code.
+Its static/Python/mutation evidence is useful, but the Android-offline path must
+be run by the operator with a base that precedes the Android source delta.
+Neither draft is canonical runtime admission, and neither changes the
+N1B -> N1E recovery order.
+
 ## Next execution order
 
 ```text
-E3 sealed
- -> E4 sealed PASS
- -> E5A read-only revalidation PASS / SEALED
- -> corrected E5B authorization package PASS
- -> bounded owner mutation authorization APPROVED
- -> standardized N1D artifact registration
- -> standardized N1D flash-plan / exact logical-size seal
- -> execution-scope reconfirmation
- -> E5 physical C3B boot
- -> E6 read-only runtime baseline
- -> E7 smallest evidence-backed compatibility changes
- -> E8 product closure waves
- -> N1D Beta 1 integrated daily-driver candidate
- -> production signing/OTA later
+offline:
+ -> bind the five N1E APK hashes from the sealed E2 bundle
+ -> rerun the N1E qualification selftest on the real host
+
+physical:
+ -> exact sealed N1B on current V01.00.14
+ -> same active-system_a deployment model
+ -> factory reset
+ -> boot + transient telemetry capture
+
+if N1B PASS:
+ -> capture authoritative N1B source/product state
+ -> construct minimal N1E (N1B product + five apps only)
+ -> capture N1E with the exact N1B lunch identity
+ -> G0 -> G1
+ -> build N1E systemimage
+ -> ownership-preserving N1B/N1E extraction
+ -> G2
+ -> only then authorize N1E flash
+ -> if N1E boots, resume controlled product-identity/runtime deltas
+ -> E6 runtime baseline
+
+if N1B FAIL:
+ -> stop N1E
+ -> investigate V01.00.13 -> V01.00.14 / boot-chain / current-state delta
 
 parallel:
-P1 -> P2 -> P3 -> P4 -> freeze heads -> batched ai-g732 qualification
-P5 Reader v2 -> accepted architecture -> separate P5A-P5F implementation train
+ -> operator-qualify PR #28 and PR #29 exact heads
+ -> do not claim device runtime from either developer PR
 ```
 
 ## Historical execution plans
