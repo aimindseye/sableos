@@ -119,6 +119,20 @@ P5 Sable Reader v2 architecture is accepted. It is a sibling implementation trac
 
 The 23-screen titan2-temp/apps/titan2/screens catalog is now explicitly retained as a design/reference baseline, not a runtime product. See docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md.
 
+## Keyboard-first design closure
+
+```text
+DESIGN_KF_A_NOTIFICATION_ATTENTION_HUB=ACCEPTED
+DESIGN_KF_B_SYSTEMUI_CONVERGENCE=ACCEPTED
+DESIGN_KF_C_SABLE_TOOLS_CONSOLIDATION=ACCEPTED
+DESIGN_KF_D_ALL_APPS_RESPONSIVE_POLISH=ACCEPTED
+KEYBOARD_FIRST_V1_FOUNDATIONAL_DESIGN=COMPLETE
+TITAN2_V1_PRODUCT_DESIGN=COMPLETE
+```
+
+Implementation remains queued until P1-P4 and P5 qualification completes. See
+`docs/titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md`.
+
 ## Next execution order
 
 ```text
