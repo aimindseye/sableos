@@ -29,7 +29,7 @@ status document takes precedence.
 ## Current milestone snapshot
 
 ```text
-PRIVATE_MAIN_HEAD                         2624e1af
+PRIVATE_MAIN_HEAD                         CURRENT_GIT_MAIN (exact external pin lives in sableos-project/.github)
 R10_KEYBOARD_FIRST_DESIGN_V1              MERGED / PR #108
 R9_PANTHER_HUB_V1_CLOSURE                 MERGED / PR #110
 R9_PANTHER_ACCEPTED_SOURCE                edf62e5bb08372a1395841d6cc5d78d3148a7695
