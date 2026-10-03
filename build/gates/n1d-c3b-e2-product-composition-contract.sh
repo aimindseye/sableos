@@ -67,7 +67,7 @@ required_lines=(
     'N1D_C3B_E2_BUILD_VARIANT=userdebug'
     'N1D_C3B_E2_BUILD_GOAL=systemimage'
     'N1D_C3B_E2_PRODUCT_BRAND=SableOS'
-    'N1D_C3B_E2_PRODUCT_MODEL=SableOS Titan 2'
+    'N1D_C3B_E2_PRODUCT_MODEL="SableOS Titan 2"'
     'N1D_C3B_E2_PRODUCT_MANUFACTURER=Unihertz'
     'N1D_C3B_E2_PRODUCT_WRAPPER_MODEL=INHERIT_PROVEN_E1_GENERATED_TREBLE_PRODUCT'
     'N1D_C3B_E2_RETIRED_HANDCRAFTED_PRODUCT_ALLOWED=NO'
@@ -140,7 +140,9 @@ do
     grep -Fxq "$line" "$WRAPPER" || fail "wrapper_identity_missing=$line"
 done
 
-if grep -Eq 'generic_system_arm64|gsi_release|vendor/sable/n1d|sable_titan2_n1d_arm64' "$WRAPPER"; then
+if grep -Ev '^[[:space:]]*#' "$WRAPPER" |
+    grep -Eq 'generic_system_arm64|gsi_release|vendor/sable/n1d|sable_titan2_n1d_arm64'
+then
     fail retired_or_direct_gsi_product_reintroduced
 fi
 
