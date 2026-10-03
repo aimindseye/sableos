@@ -161,10 +161,70 @@ image SHA—is the future one-use execution-scope authority.
 
 ## Operator sequence
 
-The operator should run the static contract, register the seven artifacts,
-verify the registry entry, and generate the plan.
-
 No device command is part of this stage. The phone may remain in fastbootd.
+
+Run from the canonical integration repository:
+
+```bash
+cd /srv/sable-build/sableos/repo
+
+BUILD_SOURCE=e6bcd76885c6048da7cbd9f200a9b1102e6d91a2
+SYSTEM=/srv/sable-build/workspaces/titan2-n1d/out-c3a-td/target/product/tdgsi_arm64_ab/system.img
+BUILD_EVIDENCE=/srv/sable-build/evidence/titan2/n1d-c3a-trebledroid-build/20261001T214611Z-trebledroid-systemimage
+OFFLINE=/srv/sable-build/evidence/titan2/c3a-v010014-control/20261003T192925Z_offline-plan
+PREFLIGHT=/srv/sable-build/evidence/titan2/c3a-v010014-fastboot-entry-preflight/20261003T203047Z
+BASELINE=/srv/sable-build/evidence/titan2/n1d-c3b-e5a-readonly-device-state/20261003T053441Z
+
+bash build/gates/c3a-v010014-standard-flash-plan-contract.sh
+
+test "$(sha256sum "$SYSTEM" | awk '{print $1}')" = \
+  4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+
+test "$(sha256sum "$PREFLIGHT/SHA256SUMS.txt" | awk '{print $1}')" = \
+  47f28c371f13974d3a7303dc550014502401fae55a76bb365139f29e4c2da893
+
+test "$(sha256sum "$OFFLINE/SHA256SUMS.txt" | awk '{print $1}')" = \
+  e6ad9a20192ef7c1fcb8bf0bfc1f393afd8b9cdd7239cb19b0497512f4f8fd57
+
+test "$(sha256sum "$BASELINE/e5b-authorization-package.json" | awk '{print $1}')" = \
+  74531923a9ea6c755a9f8ea52db511c4a4a19a5d9dba3cb51da342c04b768926
+
+REGISTRY=/srv/sable-build/release-registry/titan2/N1D/$BUILD_SOURCE.json
+test ! -e "$REGISTRY" || {
+  echo "C3A_STANDARD_REGISTRY=FAIL_ALREADY_EXISTS path=$REGISTRY"
+  exit 1
+}
+
+bash build/sable.sh titan2 N1D register-artifact \
+  --build-source "$BUILD_SOURCE" \
+  --artifact-kind gsi-system-image \
+  --primary-artifact system \
+  --artifact system="$SYSTEM" \
+  --expected-sha256 system="$(sha256sum "$SYSTEM" | awk '{print $1}')" \
+  --artifact c3a_preflight="$PREFLIGHT/c3a-v010014-fastboot-entry-preflight.json" \
+  --expected-sha256 c3a_preflight="$(sha256sum "$PREFLIGHT/c3a-v010014-fastboot-entry-preflight.json" | awk '{print $1}')" \
+  --artifact c3a_preflight_sums="$PREFLIGHT/SHA256SUMS.txt" \
+  --expected-sha256 c3a_preflight_sums="$(sha256sum "$PREFLIGHT/SHA256SUMS.txt" | awk '{print $1}')" \
+  --artifact c3a_offline_plan="$OFFLINE/c3a-v010014-control-plan.env" \
+  --expected-sha256 c3a_offline_plan="$(sha256sum "$OFFLINE/c3a-v010014-control-plan.env" | awk '{print $1}')" \
+  --artifact c3a_offline_sums="$OFFLINE/SHA256SUMS.txt" \
+  --expected-sha256 c3a_offline_sums="$(sha256sum "$OFFLINE/SHA256SUMS.txt" | awk '{print $1}')" \
+  --artifact c3a_baseline_e5a="$BASELINE/e5a-readonly-device-state.json" \
+  --expected-sha256 c3a_baseline_e5a="$(sha256sum "$BASELINE/e5a-readonly-device-state.json" | awk '{print $1}')" \
+  --artifact c3a_baseline_e5b="$BASELINE/e5b-authorization-package.json" \
+  --expected-sha256 c3a_baseline_e5b="$(sha256sum "$BASELINE/e5b-authorization-package.json" | awk '{print $1}')" \
+  --build-evidence-dir "$BUILD_EVIDENCE"
+
+bash build/sable.sh titan2 N1D show-artifact \
+  --build-source "$BUILD_SOURCE"
+
+bash build/sable.sh titan2 N1D flash-plan \
+  --build-source "$BUILD_SOURCE"
+```
+
+This registers seven artifacts total: the C3A system image plus six evidence
+members. The registry key is the explicitly documented post-build evidence-seal
+commit, not a claim about the unrecorded build-start HEAD.
 
 After the plan is generated, report:
 
