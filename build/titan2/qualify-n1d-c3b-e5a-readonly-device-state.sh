@@ -9,11 +9,11 @@ DEVICE_BINDING_SHA256=""
 FASTBOOT_BINDING_SHA256=""
 SYSTEM_IMAGE=""
 OUTPUT_JSON=""
-EXPECTED_SYSTEM_SHA256="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"
-EXPECTED_SYSTEM_BYTES=2994405376
+EXPECTED_SYSTEM_SHA256="${SABLE_E5A_EXPECTED_SYSTEM_SHA256:-998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5}"
+EXPECTED_SYSTEM_BYTES="${SABLE_E5A_EXPECTED_SYSTEM_BYTES:-2994405376}"
 EXPECTED_STOCK_FINGERPRINT="Unihertz/Titan_2/Titan_2:16/BP2A.250605.031.A3/V01.00.14:user/release-keys"
 EXPECTED_STOCK_INCREMENTAL="V01.00.14"
-PLANNED_SYSTEM_TARGET_BYTES=3263168512
+PLANNED_SYSTEM_TARGET_BYTES="${SABLE_E5A_PLANNED_SYSTEM_TARGET_BYTES:-3263168512}"
 MIN_REMAINING_HEADROOM_BYTES=536870912
 MIN_FUTURE_MUTATION_BATTERY_PERCENT=50
 
@@ -204,6 +204,7 @@ slot = (getvars.get("current-slot") or str(meta11.get("active_slot", ""))).lstri
 is_userspace = getvars.get("is-userspace") or str(meta11.get("is_userspace", ""))
 unlocked = getvars.get("unlocked") or str(meta11.get("unlocked", ""))
 secure = getvars.get("secure") or str(meta11.get("secure", ""))
+product = getvars.get("product") or str(meta11.get("product", ""))
 snapshot_fastboot = getvars.get("snapshot-update-status", "UNKNOWN")
 super_bytes = as_int(getvars.get("partition-size:super", "")) or int(str(meta11.get("super_bytes", "0")) or 0)
 
@@ -358,8 +359,10 @@ result = {
         "is_userspace": is_userspace,
         "unlocked": unlocked,
         "secure": secure,
+        "product": product,
         "snapshot_update_status": snapshot_fastboot,
         "super_bytes": super_bytes,
+        "logical_partition_names": sorted(logical_names),
         "partition_sizes": per_family,
         "active_selected_dynamic_total_bytes": active_total,
         "allocation_basis": allocation_basis,
@@ -405,6 +408,7 @@ print(f"N1D_C3B_E5A_BATTERY_PERCENT={battery if battery >= 0 else 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_FASTBOOTD_CURRENT_SLOT={slot or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_FASTBOOTD_IS_USERSPACE={is_userspace or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_FASTBOOTD_UNLOCKED={unlocked or 'UNKNOWN'}")
+print(f"N1D_C3B_E5A_FASTBOOTD_PRODUCT={product or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_SYSTEM_CURRENT_BYTES={system_current}")
 print(f"N1D_C3B_E5A_SUPER_BYTES={super_bytes}")
 print(f"N1D_C3B_E5A_ALLOCATION_BASIS={allocation_basis}")

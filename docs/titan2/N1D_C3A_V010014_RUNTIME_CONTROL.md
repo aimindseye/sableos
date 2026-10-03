@@ -1,6 +1,6 @@
 # Titan 2 C3A on V01.00.14 runtime control
 
-Status: **replacement compatibility control / offline preparation first / no physical authorization**
+Status: **replacement compatibility control / offline preparation PASS / fresh read-only live preflight next**
 
 Updated: **2026-10-03 ET**
 
@@ -148,6 +148,23 @@ bash build/titan2/prepare-c3a-v010014-runtime-control.sh \
   --e5a-json "$E5A/e5a-readonly-device-state.json" \
   --e5b-json "$E5A/e5b-authorization-package.json"
 ```
+
+## Offline preparation result
+
+The offline preparation completed successfully and is sealed:
+
+```text
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/c3a-v010014-control/20261003T192925Z_offline-plan
+EVIDENCE_SEAL_SHA256=e6ad9a20192ef7c1fcb8bf0bfc1f393afd8b9cdd7239cb19b0497512f4f8fd57
+C3A_V010014_CONTROL_ARTIFACT=PASS_EXACT_SEALED_C3A
+C3A_V010014_CONTROL_CURRENT_FIRMWARE_EVIDENCE=PASS_SEALED_V010014
+C3A_V010014_CONTROL_PLAN=PASS_PREPARED_NO_WRITE
+```
+
+The next authorized step is the fresh read-only live preflight documented at
+`docs/titan2/N1D_C3A_V010014_LIVE_PREFLIGHT.md`. It may contact the phone and
+perform the two required mode transitions, but it may not flash, clean COWs,
+resize logical partitions or factory-reset the device.
 
 ## Physical scope recorded but not authorized
 

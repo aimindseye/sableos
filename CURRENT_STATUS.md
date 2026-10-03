@@ -47,7 +47,9 @@ N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE_EXACT_ARTIFACT_AND_SOURCE_OBJECTS_UNAVA
 N1B_EXACT_RECONSTRUCTION=RETIRED_PROVIDER_CONFIRMED_BOTH_CRITICAL_OBJECTS_NOT_ADDRESSABLE
 N1B_PROVIDER_OBJECT_EXISTENCE=BLOCKED_BOTH_EXACT_OBJECTS_NOT_ADDRESSABLE
 N1E_STATUS=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
-C3A_V010014_CONTROL=NEXT_COMPATIBILITY_CONTROL_OFFLINE_PREP
+C3A_V010014_CONTROL=OFFLINE_PREP_PASS_LIVE_PREFLIGHT_NEXT
+C3A_V010014_OFFLINE_EVIDENCE_SEAL=e6ad9a20192ef7c1fcb8bf0bfc1f393afd8b9cdd7239cb19b0497512f4f8fd57
+C3A_V010014_LIVE_PREFLIGHT=AUTHORIZED_READ_ONLY_NO_WRITE
 C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
 C3A_CONTROL_PATCH_COUNT=369
 N1F_STATUS=RESERVED_PENDING_C3A_V010014_BOOT
@@ -320,19 +322,21 @@ PR #29 adds non-Reader runtime-readiness/evidence tooling and no feature code.
 Its static/Python/mutation evidence is useful, but the Android-offline path must
 be run by the operator with a base that precedes the Android source delta.
 Neither draft is canonical runtime admission, and neither changes the
-N1B -> N1E recovery order.
+C3A-first runtime-recovery control order.
 
 ## Next execution order
 
 ```text
 offline:
- -> verify sealed provider evidence retiring exact N1B reconstruction
- -> verify exact retained C3A system.img identity
- -> bind sealed C3A evidence + V01.00.14 E5A/E5B evidence
- -> emit C3A-on-V01.00.14 no-write control plan
+ -> exact C3A artifact + V01.00.14 control plan = PASS / SEALED
 
-physical (still separately gated):
- -> fresh C3A live fastbootd/device/capacity preflight
+physical read-only (next):
+ -> run fresh C3A live device-binding / fastbootd / snapshot / COW / capacity preflight
+ -> require target system_a, active COW count 0, active-group and super capacity safe
+ -> leave phone in userspace fastbootd
+ -> no write and no reset
+
+physical mutation (still separately gated):
  -> exact sealed C3A system_a write only
  -> separate explicitly authorized factory reset if required
  -> boot + transient telemetry capture

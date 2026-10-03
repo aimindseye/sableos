@@ -33,7 +33,7 @@ CONTROL_1=C3A_SOURCE_BUILT_PUBLIC_FUNCTIONAL_REPRODUCTION
 C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
 C3A_SYSTEM_BYTES=3146977280
 C3A_CONTROL_PATCH_COUNT=369
-C3A_V010014_CONTROL=OFFLINE_PREPARATION_NEXT
+C3A_V010014_CONTROL=OFFLINE_PREPARATION_PASS_LIVE_PREFLIGHT_NEXT
 N1F=RESERVED_PENDING_C3A_BOOT
 CONTROL_2=C2_PINNED_PUBLISHED_RESTLESSOS_PREBUILT_REVIEW_ONLY_IF_NEEDED
 E6_RUNTIME_BASELINE=HOLD
@@ -413,7 +413,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
 | E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
-| Recovery-C3A | current-firmware compatibility control | exact sealed C3A + fresh physical boot evidence | **OFFLINE PREP NEXT** |
+| Recovery-C3A | current-firmware compatibility control | exact sealed C3A + fresh physical boot evidence | **LIVE READ-ONLY PREFLIGHT NEXT** |
 | N1F | C3A-derived minimal five-app isolation | defined only after C3A boot + provenance capture | **RESERVED / NOT AUTHORIZED** |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | **HOLD UNTIL BOOT-QUALIFIED BASELINE** |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
@@ -426,18 +426,17 @@ P2 Android glue remains specifically subject to the operator offline Android com
 ## Immediate sequence
 
 ```text
-E3 completes
- -> seal exact artifact
- -> E4 deployment preflight
- -> E5A read-only revalidation PASS / SEALED
- -> corrected E5B authorization package PASS
- -> bounded owner mutation authorization APPROVED
- -> canonical register-artifact
- -> canonical flash-plan / exact logical-size seal
- -> execution-scope reconfirmation
- -> first physical C3B boot
- -> E6 read-only runtime baseline
- -> E7 smallest evidence-backed fixes
+N1D physical reboot loop recorded
+ -> exact N1B/N1E path retired
+ -> C3A offline compatibility-control preparation PASS / SEALED
+ -> fresh C3A live read-only preflight
+ -> require same Titan 2 binding, slot a, fastbootd, no snapshot, zero active COWs
+ -> require active-group + total-super capacity PASS
+ -> separately review/authorize exact C3A system_a write
+ -> separately authorize factory reset if required
+ -> capture C3A boot outcome + transient telemetry
+ -> if C3A boots: define N1F minimal five-app isolation
+ -> if C3A fails/inconclusive: review pinned C2 as second control
 
 in parallel:
 

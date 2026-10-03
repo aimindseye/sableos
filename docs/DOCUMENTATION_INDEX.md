@@ -21,10 +21,11 @@ status document takes precedence.
 
 - `titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — **current Titan 2 execution roadmap and P1-P5 assignment authority**. N0/N1B/N1B2/N1B3/N1C execution documents are historical evidence.
 - `titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md` — superseded exact-N1B/N1E recovery evidence; N1E is retired because exact N1B cannot be reconstructed.
-- `titan2/N1B_V010014_CONTROL.md` — **next operator deliverable**: offline exact-N1B/current-V01.00.14 control qualification and sealed no-write scope; physical mutation remains separately gated.
-- `titan2/N1B_PINNED_REMOTE_AVAILABILITY.md` — **current N1B reconstruction prerequisite**: explicit two-object network availability probe only; no repo sync, build or device action.
-- `titan2/N1B_PROVIDER_OBJECT_EXISTENCE.md` — **provider-specific follow-up** for review-required direct SHA fetches; GitHub/Gitiles existence checks only, with exact reconstruction still closed.
+- `titan2/N1B_V010014_CONTROL.md` — retired unexecutable exact-N1B control plan; historical evidence only.
+- `titan2/N1B_PINNED_REMOTE_AVAILABILITY.md` — completed bounded N1B source-availability evidence; historical reconstruction evidence.
+- `titan2/N1B_PROVIDER_OBJECT_EXISTENCE.md` — completed provider-specific evidence confirming both critical exact N1B source objects are not addressable.
 - `titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md` — **current Titan 2 runtime-recovery authority**: sealed C3A compatibility control on V01.00.14, C2 fallback only if needed, N1F reserved after C3A boot.
+- `titan2/N1D_C3A_V010014_LIVE_PREFLIGHT.md` — **next operator step**: fresh read-only C3A device/fastbootd/COW/capacity revalidation; leaves phone in fastbootd and authorizes no write/reset.
 - `SABLE_READER_V2_ARCHITECTURE.md` — **accepted P5 product architecture** for EPUB/PDF, comics/manga/webtoons and audiobooks; Text Reader remains separate.
 - `titan2/SABLESCREENS_REFERENCE_BASELINE.md` — **accepted design/reference baseline** mapping the 23-screen catalog into P1-P5/E8; not a runtime product.
 - `titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md` — **implementation-ready queue** for accepted DESIGN-KF-A through DESIGN-KF-D after P1-P5 qualification.
@@ -47,7 +48,7 @@ THEME_PROPAGATION                         DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_
 CLEAN_BASELINE_APPSTORE                   NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
 
 NON_PIXEL_ASSURANCE_MODEL                 N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                               ACTIVE_N1D_C3B_RUNTIME_RECOVERY_N1B_CONTROL
+TITAN2_ROLE                               ACTIVE_N1D_C3B_RUNTIME_RECOVERY_C3A_CONTROL
 TITAN2_ELITE_ROLE                         NEXT_INDEPENDENT_KEYBOARD_FIRST_TARGET
 Q27_ROLE                                  RESEARCH / FUTURE CANDIDATE
 
@@ -110,7 +111,7 @@ Current product progression:
 frozen Panther touch-first reference
     -> keyboard-first SableOS design V1 merged
     -> Titan 2 N1D/C3B sealed build evidence + runtime-recovery control
-    -> sealed N1B on current firmware -> minimal N1E isolation if N1B boots
+    -> sealed C3A on current V01.00.14 -> N1F isolation only if C3A boots
     -> first boot-qualified Titan 2 keyboard-first SableOS baseline + deployment path
     -> close remaining open Panther/Titan shared polish issues where proven or superseded
     -> Titan 2 Elite independent evidence and deployment sequence
