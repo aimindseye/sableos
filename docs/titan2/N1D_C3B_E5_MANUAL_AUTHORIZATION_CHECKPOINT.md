@@ -1,8 +1,8 @@
 # N1D C3B E5 manual authorization checkpoint
 
-Status: **E5A AUTHORIZED / E5B NOT AUTHORIZED**
+Status: **E5A PASS / SEALED — E5B NOT AUTHORIZED**
 
-E4 is sealed PASS. The operator/user explicitly authorized E5A read-only device-state revalidation, including the reboots required to reach userspace fastbootd. E5B remains separately unauthorized.
+E4 is sealed PASS. E5A read-only device-state revalidation completed with `PASS_REVIEW_READY` and is sealed. The device remains in userspace fastbootd. E5B remains separately unauthorized.
 
 ## E5A — fresh read-only device-state revalidation
 
@@ -74,6 +74,27 @@ post-write first-boot acceptance sequence
 No executable write-capable deployment script should be produced before that
 separate authorization.
 
+## Offline E5B decision package
+
+The sealed E5A JSON may now be consumed offline to produce a sanitized E5B
+decision package. This step performs no device contact and emits no write-capable
+commands.
+
+The package must expose both the active and inactive `system_*` candidates.
+Current engineering preference is to preserve the proven stock active slot and
+use the inactive slot only if all of the following are established:
+
+```text
+inactive system partition exists with a valid current allocation
+total-super growth remains above the safety floor
+fresh logical-partition group capacity supports the proposed target
+inactive stock boot/vendor_boot/init_boot + AVB chain is coherent
+slot switch/rollback policy is explicitly authorized
+userdata remains preserved
+```
+
+Until those checks are reviewed, no E5B mutation authorization exists.
+
 ## Current state
 
 ```text
@@ -81,7 +102,12 @@ E4_DEPLOYMENT_READINESS=PASS_REVIEW_READY
 E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
 E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
 E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
-E5A_STATUS=AUTHORIZED_READY_TO_RUN
+E5A_STATUS=PASS_REVIEW_READY_SEALED
+E5A_CURRENT_SLOT=a
+E5A_ALLOCATION_COMPLETE=YES
+E5A_CAPACITY_SAFE=YES
+E5A_REMAINING_HEADROOM_AFTER_PLANNED_GROWTH_BYTES=2954141696
+E5B_AUTHORIZATION_PACKAGE=OFFLINE_PREPARATION_READY
 E5B_FLASH_AUTHORIZED=NO
 E5B_LP_MUTATION_AUTHORIZED=NO
 E5B_AVB_MUTATION_AUTHORIZED=NO
