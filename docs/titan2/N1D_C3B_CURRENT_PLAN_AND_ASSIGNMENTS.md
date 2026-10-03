@@ -212,6 +212,27 @@ chapters, resume position, speed, skip controls, sleep timer and bookmarks.
 Keyboard-only operation is a first-class acceptance requirement across books,
 comics and audiobooks.
 
+## Keyboard-first design implementation queue
+
+DESIGN-KF-A through DESIGN-KF-D are now accepted and implementation-ready, but
+remain intentionally unassigned until the current P1-P4 and P5 trains finish.
+
+```text
+DESIGN-KF-A  Notification Policy + Attention + Hub ownership        ACCEPTED
+DESIGN-KF-B  SystemUI visual/convergence                            ACCEPTED
+DESIGN-KF-C  Sable Tools / Toolbox consolidation                    ACCEPTED
+DESIGN-KF-D  All Apps privacy row + responsive app polish           ACCEPTED
+```
+
+Public authority:
+`sableos-project/platform_sable@126d91bfaedc98edc83fd38bb9c6eee8e5c1a008`.
+
+Private assignment/sequence authority:
+`docs/titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md`.
+
+Recommended future assignment after qualification:
+Developer A -> KF-D-I -> KF-A-I -> KF-B-I; Developer B -> KF-C-I1..I5.
+
 ## Execution roadmap
 
 | Phase | Purpose | Exit condition | State |

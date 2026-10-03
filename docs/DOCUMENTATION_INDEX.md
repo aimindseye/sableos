@@ -22,6 +22,7 @@ status document takes precedence.
 - `titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — **current Titan 2 execution roadmap and P1-P5 assignment authority**. N0/N1B/N1B2/N1B3/N1C execution documents are historical evidence.
 - `SABLE_READER_V2_ARCHITECTURE.md` — **accepted P5 product architecture** for EPUB/PDF, comics/manga/webtoons and audiobooks; Text Reader remains separate.
 - `titan2/SABLESCREENS_REFERENCE_BASELINE.md` — **accepted design/reference baseline** mapping the 23-screen catalog into P1-P5/E8; not a runtime product.
+- `titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md` — **implementation-ready queue** for accepted DESIGN-KF-A through DESIGN-KF-D after P1-P5 qualification.
 
 ## Current milestone snapshot
 
