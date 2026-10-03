@@ -1,11 +1,41 @@
 # Titan 2 N1D/C3B current plan and assignments
 
 Status: **current execution roadmap**
-Updated: **2026-10-02 ET / 2026-10-03 UTC**
+Updated: **2026-10-03 ET**
 
 This document supersedes the N0/N1B/N1B2/N1C execution plans as the current
 Titan 2 roadmap. Those older documents remain historical evidence and may still
 be used for requirements, deployment lessons and acceptance criteria.
+
+## Runtime-recovery override
+
+The previous E5-first-boot -> E6 sequence is suspended after the N1D physical
+attempt entered a reboot loop. Build qualification is preserved as evidence,
+but N1D is not a boot-qualified baseline.
+
+Current control sequence:
+
+```text
+N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP
+COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
+N1B_V010014_CONTROL=PENDING
+N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
+N1E_FLASH_AUTHORIZED=NO
+E6_RUNTIME_BASELINE=HOLD
+```
+
+The immediate physical control is the exact sealed N1B artifact on current
+V01.00.14. If it boots, N1E uses the exact N1B generated product/lunch identity
+and adds only the five C3B apps. If it fails, N1E stops and the firmware,
+boot-chain and current-device-state delta is investigated.
+
+N1E deliberately does not use the `sable_titan2` wrapper product. Its
+qualification is G0 -> G1 -> G2 with exact source/product/staged-payload and
+artifact parity. The reviewed synthetic self-test currently passes 47 cases;
+the real host self-test and first successful real capture remain operator work.
+
+Authority:
+`docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md`.
 
 ## Current state
 
@@ -165,6 +195,29 @@ N1D_C3B_E5A_FINAL_DEVICE_MODE=FASTBOOTD
 See `docs/titan2/N1D_C3B_E5A_EVIDENCE.md`.
 
 The first offline package's inactive-slot assumption is superseded. The corrected package passed and the owner approved the bounded active-system mutation concept. Standardized execution remains held until canonical artifact registration and flash-plan seal the exact fastboot logical-image size. Titan 2 Virtual A/B does not guarantee a materialized inactive `system_b`. The corrected package binds to the proven N1B active-system path and evaluates current-slot COW cleanup plus active-group/total-super capacity from sealed E5A evidence.
+
+## Developer deliverables at the recovery checkpoint
+
+```text
+TITAN2_TEMP_MAIN=4089c1274a9e4a402a2c617cc00a7c166112f195
+PR_28=P5F_READER_RUNTIME_READINESS_DRAFT
+PR_28_HEAD=e8a5ddd374a0d78ca175b2137cf73707150ca28a
+PR_28_OPERATOR_ANDROID=REQUIRED
+PR_28_DEVICE_RUNTIME=NOT_RUN
+
+PR_29=C3B_NON_READER_RUNTIME_READINESS_DRAFT
+PR_29_HEAD=5468758dc42c372854fc6936e3800afc1ee33def
+PR_29_STATIC_MUTATION=PASS_DEVELOPER
+PR_29_OPERATOR_ANDROID_OFFLINE=REQUIRED
+PR_29_DEVICE_RUNTIME=NOT_RUN
+```
+
+Keep both PRs draft until their operator-side qualifications are attached.
+PR #28 changed Reader Kotlin/test sources and therefore needs exact-head Android
+compile/lint/unit/merged-manifest verification. PR #29 adds readiness tooling,
+matrices and docs only; its delegated Android-offline path still needs an
+operator run with the correct pre-Android-source base. Neither PR authorizes
+device contact or changes the canonical boot-recovery sequence.
 
 ## Assignment model
 
