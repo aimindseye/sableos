@@ -1,0 +1,64 @@
+// Canonical Titan 2 C3B E2 application imports.
+//
+// APKs are generated from the admitted SableOS source by
+// build/titan2/build-n1d-c3b-e2-product-apps.sh, then staged into the Android
+// workspace by build/titan2/stage-n1d-c3b-e2-product-composition.sh.
+//
+// They are intentionally unsigned before Android admission. Soong signs them
+// with the default development certificate for the userdebug engineering image.
+// No module is privileged and no module uses the platform certificate.
+
+android_app_import {
+    name: "SableTitan2Keyboard",
+    apk: "prebuilt/SableTitan2Keyboard.apk",
+    default_dev_cert: true,
+    product_specific: true,
+    privileged: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableTitan2Camera",
+    apk: "prebuilt/SableTitan2Camera.apk",
+    default_dev_cert: true,
+    product_specific: true,
+    privileged: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableTitan2DisplayCompat",
+    apk: "prebuilt/SableTitan2DisplayCompat.apk",
+    default_dev_cert: true,
+    product_specific: true,
+    privileged: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableTitan2Setup",
+    apk: "prebuilt/SableTitan2Setup.apk",
+    default_dev_cert: true,
+    product_specific: true,
+    privileged: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+android_app_import {
+    name: "SableTitan2RadioDiag",
+    apk: "prebuilt/SableTitan2RadioDiag.apk",
+    default_dev_cert: true,
+    product_specific: true,
+    privileged: false,
+    dex_preopt: {
+        enabled: false,
+    },
+}
