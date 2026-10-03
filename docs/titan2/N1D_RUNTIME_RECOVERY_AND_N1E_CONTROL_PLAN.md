@@ -31,6 +31,33 @@ Do not describe `COUNT=0` as proven causal. A successful N1B control isolates
 the failure to the broad N1D system-side delta; N1E performs the next controlled
 isolation.
 
+## Exact N1B artifact availability
+
+The retained-storage forensic audit completed after the original N1B workspace
+was retired.
+
+```text
+N1B_SYSTEM_SHA256=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e
+N1B_TARGET_FILES_SHA256=29d21d08ceb9c286e85ec52996dcc53a17fd0290cc979b5853709ef7357f2481
+N1B_EXACT_SYSTEM_PRESENT=NO
+N1B_EXACT_TARGET_FILES_PRESENT=NO
+N1B_EXACT_SYSTEM_RECOVERABLE_FROM_TARGET_FILES=NO
+N1B_CONTROL_ARTIFACT_STATUS=NOT_FOUND_IN_RETAINED_STORAGE
+N1B_V010014_PHYSICAL_CONTROL_AUTHORIZED=NO
+```
+
+Two Phase-08 build records survive and independently bind the same exact system
+and target-files hashes. Their SableOS source commits are
+`851b4ba50c1d9141d26afaa1432cbe7a416073a6` and
+`462839cfcc362e4f4ed93d8a8dabf059885452b1`; the later registered artifact
+manifest is bound to `462839cf...`. The first-boot ledger's
+`SOURCE_COMMIT=8dd06e...` is a post-boot ledger source commit and must not be
+used as the image-build provenance.
+
+The next canonical step is a read-only exact-reconstruction feasibility audit.
+No reconstructed image is acceptable as the N1B control unless both historical
+hashes are reproduced exactly.
+
 ## Physical control: N1B on current firmware
 
 The next physical experiment is the exact sealed N1B system artifact on the
@@ -154,9 +181,10 @@ Neither PR is a reason to change the N1B -> N1E physical-control sequence.
 ## Execution order
 
 ```text
-1. finish N1E delta hash binding from the sealed E2 APK bundle (offline)
-2. run qualification-host selftest
-3. flash exact sealed N1B to current V01.00.14 using the proven system_a path
+1. run exact N1B reconstruction-feasibility audit
+2. if feasible, re-materialize the pinned N1B source/product state
+3. rebuild and require exact historical system + target-files hashes
+4. only then resume the sealed N1B-on-V01.00.14 physical control
 4. factory reset and capture boot telemetry
 
 if N1B PASS:
