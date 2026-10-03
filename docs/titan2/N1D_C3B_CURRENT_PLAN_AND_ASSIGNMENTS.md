@@ -64,7 +64,9 @@ C3B_E3_PREBUILD_QUALIFICATION=PASS
 C3B_E3_SYSTEM_SHA256=998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5
 C3B_E3_SYSTEM_BYTES=2994405376
 DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY_E5A
-FLASH_AUTHORIZED=NO
+E5B_OWNER_AUTHORIZATION=APPROVED_BOUNDED_ACTIVE_SYSTEM_SCOPE
+E5B_STANDARD_FLASH_EXECUTION=BLOCKED_PENDING_PLAN_AND_SCOPE_RECONFIRMATION
+FLASH_AUTHORIZED=NO_STANDARD_DRIVER_REMAINS_FAIL_CLOSED
 TARGET_FILES_AUTHORIZED=NO
 OTA_AUTHORIZED=NO
 PRODUCTION_SIGNING_AUTHORIZED=NO
@@ -162,7 +164,7 @@ N1D_C3B_E5A_FINAL_DEVICE_MODE=FASTBOOTD
 
 See `docs/titan2/N1D_C3B_E5A_EVIDENCE.md`.
 
-E5B remains unauthorized. The first offline package's inactive-slot assumption is superseded. Titan 2 Virtual A/B does not guarantee a materialized inactive `system_b`. The corrected package binds to the proven N1B active-system path and evaluates current-slot COW cleanup plus active-group/total-super capacity from sealed E5A evidence.
+The first offline package's inactive-slot assumption is superseded. The corrected package passed and the owner approved the bounded active-system mutation concept. Standardized execution remains held until canonical artifact registration and flash-plan seal the exact fastboot logical-image size. Titan 2 Virtual A/B does not guarantee a materialized inactive `system_b`. The corrected package binds to the proven N1B active-system path and evaluates current-slot COW cleanup plus active-group/total-super capacity from sealed E5A evidence.
 
 ## Assignment model
 
@@ -344,7 +346,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
 | E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
-| E5 | first physical C3B boot | E5A sealed read-only evidence, offline E5B decision package, then separately authorized deployment + untouched baseline | **E5A PASS / SEALED; E5B NOT AUTHORIZED** |
+| E5 | first physical C3B boot | E5A sealed evidence, corrected E5B package, owner authorization, standardized flash plan, then separately qualified execution | **E5A PASS; E5B OWNER AUTH APPROVED; STANDARD FLASH PLAN PENDING** |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
 | E8A | core OS usability | Start, Keyboard, Setup, Settings, Hub/Messages, browser/files | PARALLEL SOURCE WORK |
@@ -360,8 +362,11 @@ E3 completes
  -> seal exact artifact
  -> E4 deployment preflight
  -> E5A read-only revalidation PASS / SEALED
- -> offline E5B authorization package
- -> separate E5B mutation authorization
+ -> corrected E5B authorization package PASS
+ -> bounded owner mutation authorization APPROVED
+ -> canonical register-artifact
+ -> canonical flash-plan / exact logical-size seal
+ -> execution-scope reconfirmation
  -> first physical C3B boot
  -> E6 read-only runtime baseline
  -> E7 smallest evidence-backed fixes

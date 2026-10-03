@@ -68,7 +68,7 @@ sable_device_artifact_gate() {
   local evidence_dir="$5"
 
   case "$release" in
-    N0|N0_A16|N1|N1B|N1B2|n0|n0_a16|n1|n1b|n1b2) ;;
+    N0|N0_A16|N1|N1B|N1B2|N1D|n0|n0_a16|n1|n1b|n1b2|n1d) ;;
     *)
       echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_UNQUALIFIED_TITAN_RELEASE release=$release"
       return 1
@@ -89,6 +89,41 @@ sable_device_artifact_gate() {
     echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_BUILD_EVIDENCE_DIR"
     return 1
   }
+
+  if [[ "${release^^}" == N1D ]]; then
+    local expected_build_source expected_primary_sha build_state
+    expected_build_source="caf98dde723d07a071d95aaa1ef27d578d3208d8"
+    expected_primary_sha="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"
+    build_state="$evidence_dir/build-state.env"
+
+    [[ "$build_source" == "$expected_build_source" ]] || {
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_BUILD_SOURCE expected=$expected_build_source actual=$build_source"
+      return 1
+    }
+    [[ "$primary_sha" == "$expected_primary_sha" ]] || {
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_PRIMARY_SHA256 expected=$expected_primary_sha actual=$primary_sha"
+      return 1
+    }
+    [[ -f "$build_state" ]] || {
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_BUILD_STATE path=$build_state"
+      return 1
+    }
+    grep -Fxq 'N1D_C3B_E3_SYSTEMIMAGE=PASS' "$build_state" || {
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E3_PASS_MARKER"
+      return 1
+    }
+    grep -Fxq "N1D_C3B_E3_CANONICAL_HEAD=$expected_build_source" "$build_state" || {
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E3_BUILD_SOURCE_MARKER"
+      return 1
+    }
+    grep -Fxq "N1D_C3B_E3_SYSTEM_SHA256=$expected_primary_sha" "$build_state" || {
+      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E3_SHA_MARKER"
+      return 1
+    }
+    echo "TITAN2_N1D_C3B_E3_ARTIFACT_GATE=PASS"
+    echo "TITAN2_N1D_C3B_E5B_STANDARD_FLASH_PLAN_SUPPORTED=YES"
+    echo "TITAN2_N1D_C3B_E5B_FLASH_EXECUTION_SUPPORTED=NO"
+  fi
 
   echo "SABLE_DEVICE_ARTIFACT_GATE=PASS_TITAN2_GSI"
   echo "TITAN2_FLASH_EXECUTION_SUPPORTED=NO"
@@ -308,11 +343,34 @@ sable_device_flash_plan() {
   local bootloader_preflight fastbootd_preflight snapshot_status
   local system_current_bytes lp_action avb_action userdata_policy
   local titan_serial_required active_slot stock_baseline restore_verified
+  local e5b_json e5b_json_sha auth_freeze_env auth_freeze_sha build_evidence_dir
 
   artifact_kind="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifact_kind)" || return 1
   primary="$(sable_device_registry_field "$registry_root" "$release" "$build_source" primary_artifact)" || return 1
   path="$(sable_device_registry_field "$registry_root" "$release" "$build_source" "artifacts.$primary.path")" || return 1
   sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" "artifacts.$primary.sha256")" || return 1
+
+  if [[ "${release^^}" == N1D ]]; then
+    e5b_json="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_decision.path 2>/dev/null || true)"
+    e5b_json_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_decision.sha256 2>/dev/null || true)"
+    auth_freeze_env="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.path 2>/dev/null || true)"
+    auth_freeze_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.sha256 2>/dev/null || true)"
+    build_evidence_dir="$(sable_device_registry_field "$registry_root" "$release" "$build_source" build_evidence_dir 2>/dev/null || true)"
+
+    bash "$ROOT/build/titan2/prepare-n1d-c3b-e5b-flash-plan.sh" \
+      --release "$release" \
+      --build-source "$build_source" \
+      --system-img "$path" \
+      --expected-sha256 "$sha" \
+      --e5b-json "$e5b_json" \
+      --expected-e5b-json-sha256 "$e5b_json_sha" \
+      --auth-freeze-env "$auth_freeze_env" \
+      --expected-auth-freeze-sha256 "$auth_freeze_sha" \
+      --registry-verified PASS \
+      --build-evidence-dir "$build_evidence_dir" \
+      --evidence-dir "$evidence_dir"
+    return
+  fi
 
   logical_bytes="$(sable_device_registry_field "$registry_root" "$release" "$build_source" metadata.artifact_logical_bytes 2>/dev/null || true)"
   restore_report="$(sable_device_registry_field "$registry_root" "$release" "$build_source" metadata.restore_report 2>/dev/null || true)"
