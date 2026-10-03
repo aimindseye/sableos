@@ -1,6 +1,6 @@
 # Keyboard-first multi-device transition
 
-Status: **active architecture / execution plan**
+Status: **active architecture; execution details are owned by `docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md`**
 
 Date: 2026-09-24
 
@@ -22,7 +22,7 @@ longer the default target that drives product design.
 ## 2. Active device order
 
 ```text
-Titan 2        PORTABILITY / N0 keyboard-first active target
+Titan 2        ACTIVE N1D/C3B keyboard-first engineering target
 Titan 2 Elite  PORTABILITY candidate; independent physical proof required
 Q27            RESEARCH / future product candidate
 Panther        frozen reference
