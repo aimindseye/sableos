@@ -219,7 +219,7 @@ find_revision() {
   while IFS= read -r d; do
     [[ -d "$d" ]] || continue
     if git -C "$d" cat-file -e "$rev^{commit}" 2>/dev/null; then
-      echo "N1B_CRITICAL_REVISION_LOCAL_OBJECT=YES project=$rel revision=$rev path=$d"
+      echo "N1B_CRITICAL_REVISION_LOCAL_OBJECT=YES project=$rel revision=$rev path=$d" >&2
       found=YES
       break
     fi
@@ -228,7 +228,7 @@ find_revision() {
       LC_ALL=C sort -u
   )
   if [[ "$found" == NO ]]; then
-    echo "N1B_CRITICAL_REVISION_LOCAL_OBJECT=NO project=$rel revision=$rev"
+    echo "N1B_CRITICAL_REVISION_LOCAL_OBJECT=NO project=$rel revision=$rev" >&2
   fi
   printf '%s' "$found"
 }
