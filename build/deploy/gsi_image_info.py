@@ -56,7 +56,6 @@ def inspect_image(path: pathlib.Path) -> dict[str, object]:
         "format": image_format,
         "file_bytes": file_bytes,
         "logical_bytes": logical_bytes,
-        "sha256": sha256_file(path),
     }
 
 
@@ -116,15 +115,18 @@ def main() -> int:
         print(f"SABLE_GSI_IMAGE_INFO=FAIL reason={exc}")
         return 3
 
-    actual_sha = str(info["sha256"])
-    if args.expected_sha256 and actual_sha != args.expected_sha256:
-        print(f"GSI_IMAGE_SHA256_EXPECTED={args.expected_sha256}")
-        print(f"GSI_IMAGE_SHA256_ACTUAL={actual_sha}")
-        print("SABLE_GSI_IMAGE_INFO=FAIL_SHA256")
-        return 4
+    actual_sha = None
+    if args.expected_sha256:
+        actual_sha = sha256_file(args.image)
+        if actual_sha != args.expected_sha256:
+            print(f"GSI_IMAGE_SHA256_EXPECTED={args.expected_sha256}")
+            print(f"GSI_IMAGE_SHA256_ACTUAL={actual_sha}")
+            print("SABLE_GSI_IMAGE_INFO=FAIL_SHA256")
+            return 4
 
     print(f"GSI_IMAGE_PATH={args.image.resolve()}")
-    print(f"GSI_IMAGE_SHA256={actual_sha}")
+    if actual_sha is not None:
+        print(f"GSI_IMAGE_SHA256={actual_sha}")
     print(f"GSI_IMAGE_FILE_BYTES={info['file_bytes']}")
     print(f"GSI_IMAGE_FORMAT={info['format']}")
     print(f"GSI_IMAGE_LOGICAL_BYTES={info['logical_bytes']}")
