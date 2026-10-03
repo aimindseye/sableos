@@ -43,38 +43,51 @@ CURRENT_STOCK_FIRMWARE=V01.00.14
 HISTORICAL_N1B_BOOT_FIRMWARE=V01.00.13
 N1D_REFLASH=HOLD
 E6_RUNTIME_BASELINE=HOLD
-N1B_V010014_CONTROL=BLOCKED_EXACT_ARTIFACT_NOT_RETAINED
-N1B_EXACT_RECONSTRUCTION_FEASIBILITY=PINNED_MANIFEST_CONFIRMED_LOCAL_OBJECTS_MISSING
-N1B_PINNED_REMOTE_AVAILABILITY=REVIEW_REQUIRED_DIRECT_SHA_FETCH_FAILED
-N1B_PROVIDER_OBJECT_EXISTENCE=PENDING_GITHUB_GITILES_CHECK
-N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
-N1E_FLASH_AUTHORIZED=NO
+N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE_EXACT_ARTIFACT_AND_SOURCE_OBJECTS_UNAVAILABLE
+N1B_EXACT_RECONSTRUCTION=RETIRED_PROVIDER_CONFIRMED_BOTH_CRITICAL_OBJECTS_NOT_ADDRESSABLE
+N1B_PROVIDER_OBJECT_EXISTENCE=BLOCKED_BOTH_EXACT_OBJECTS_NOT_ADDRESSABLE
+N1E_STATUS=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
+C3A_V010014_CONTROL=NEXT_COMPATIBILITY_CONTROL_OFFLINE_PREP
+C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+C3A_CONTROL_PATCH_COUNT=369
+N1F_STATUS=RESERVED_PENDING_C3A_V010014_BOOT
+N1F_BUILD_AUTHORIZED=NO
+N1F_FLASH_AUTHORIZED=NO
 ```
 
-The intended next physical experiment remains the exact sealed N1B system
-artifact on the current V01.00.14 state. Historical housekeeping deliberately
-retired the original N1B/N0B Android workspaces and standardized build storage,
-source checkouts and host tooling. Therefore absence of the old recorded
-ANDROID_SRC path is expected and is not evidence that the pinned Git objects
-are unavailable. The relocation-aware audit searched surviving Repo `.repo/project-objects` /
-`.repo/projects` stores and standardized checkouts and did not find the two
-critical Phase-08 revisions. The bounded two-object fetch probe completed with both exact SHA fetches rejected while both upstream locators remained live. The result is review-required rather than absence. The next step is provider-specific object verification: GitHub commit API for the recorded TrebleDroid repository plus PHH upstream lineage, and Gitiles exact-commit lookup for AOSP VNDK v29. No `repo sync` or rebuild is authorized. However, the original N1B workspace,
-the exact `system.img`, and the exact target-files archive are no longer
-present in retained storage. Physical execution is therefore blocked while an
-exact-reconstruction feasibility audit determines whether the historical
-Android source/product state can be re-materialized and reproduce the exact
-`bc550b...` system hash and `29d21d...` target-files hash. A successful N1B boot isolates the
-failure to the broad N1D system-side delta; it does not by itself prove that
-`COUNT=0`, dm-verity or any one compatibility patch family is causal.
+The exact N1B physical-control path is retired as unexecutable. The exact image
+and target-files archive are absent from retained storage, the two critical
+pinned source revisions are absent from surviving Repo object stores, and the
+provider-specific probe confirms that neither exact source object is currently
+addressable from its authentic recorded provider lineage.
 
-If N1B boots, N1E is the exact authoritative N1B generated
-`treble_arm64_bvN` product and lunch identity plus only the five C3B apps.
-It deliberately does not use the `sable_titan2` wrapper identity. N1E must
-pass the reviewed G0 -> G1 -> G2 pre-flash qualification before device contact.
-If N1B fails on V01.00.14, N1E is stopped and the firmware/boot-chain/current-
-device-state delta becomes the active investigation.
+No available image is relabeled as N1B, and N1E is retired rather than
+redefined.
 
-See `docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md`.
+The next compatibility control is the already sealed C3A public-functional
+Restless/TrebleDroid reproduction:
+
+```text
+C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+C3A_SYSTEM_BYTES=3146977280
+C3A_MANAGED_PROJECT_COUNT=991
+C3A_CONTROL_PATCH_COUNT=369
+C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION
+```
+
+C3A is not a Sable release baseline and is not claimed to be bit-identical to
+N1B. It is the strongest retained source-built control for testing whether the
+current V01.00.14 device/vendor state still boots the broad public
+Restless/TrebleDroid compatibility substrate.
+
+If C3A boots, N1F is reserved as the later C3A-derived minimal five-Sable-app
+isolation. If C3A is unavailable or its physical result is inconclusive/fails,
+the pinned published C2 RestlessOS prebuilt may be reviewed as an independent
+second diagnostic control. C2 is not pre-authorized.
+
+See `docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md`.
+
+
 
 ## Titan 2 C3B state
 
@@ -313,38 +326,30 @@ N1B -> N1E recovery order.
 
 ```text
 offline:
- -> run provider-specific GitHub/Gitiles existence checks for the two exact Phase-08 revisions
- -> if both exact objects are provider-verified, design isolated 992-project source re-materialization
- -> recover/re-materialize the pinned N1B build inputs only after that design is qualified
- -> require rebuilt system.img SHA256=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e
- -> require rebuilt target-files SHA256=29d21d08ceb9c286e85ec52996dcc53a17fd0290cc979b5853709ef7357f2481
- -> keep N1E hash binding/selftest offline work non-authorizing
+ -> verify sealed provider evidence retiring exact N1B reconstruction
+ -> verify exact retained C3A system.img identity
+ -> bind sealed C3A evidence + V01.00.14 E5A/E5B evidence
+ -> emit C3A-on-V01.00.14 no-write control plan
 
-physical (blocked until exact N1B bytes exist):
- -> exact sealed/reproduced N1B on current V01.00.14
- -> same active-system_a deployment model
- -> factory reset
+physical (still separately gated):
+ -> fresh C3A live fastbootd/device/capacity preflight
+ -> exact sealed C3A system_a write only
+ -> separate explicitly authorized factory reset if required
  -> boot + transient telemetry capture
 
-if N1B PASS:
- -> capture authoritative N1B source/product state
- -> construct minimal N1E (N1B product + five apps only)
- -> capture N1E with the exact N1B lunch identity
- -> G0 -> G1
- -> build N1E systemimage
- -> ownership-preserving N1B/N1E extraction
- -> G2
- -> only then authorize N1E flash
- -> if N1E boots, resume controlled product-identity/runtime deltas
- -> E6 runtime baseline
+if C3A PASS:
+ -> record current vendor/device compatibility with broad C3A substrate
+ -> capture exact derivative authority needed for N1F
+ -> define N1F = C3A compatibility baseline + five C3B apps only
+ -> qualify N1F before any flash
 
-if N1B FAIL:
- -> stop N1E
- -> investigate V01.00.13 -> V01.00.14 / boot-chain / current-state delta
+if C3A FAIL_OR_INCONCLUSIVE:
+ -> review pinned published C2 RestlessOS prebuilt as independent second control
+ -> do not relabel C2 as N1B or as a Sable baseline
 
 parallel:
- -> operator-qualify PR #28 and PR #29 exact heads
- -> do not claim device runtime from either developer PR
+ -> operator-qualify developer PR #28 and #29 exact heads
+ -> no developer PR may claim Titan device runtime yet
 ```
 
 ## Historical execution plans
