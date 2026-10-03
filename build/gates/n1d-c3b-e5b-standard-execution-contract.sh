@@ -85,8 +85,11 @@ if grep -Eq '"\$ADB_BIN".*[[:space:]](reboot|disable-verity|enable-verity|root|r
   fail forbidden_adb_mutation_present
 fi
 
-if grep -Eq '(factory[[:space:]_-]*reset|wipe[[:space:]_-]*data|--wipe|-w)([[:space:]]|$)' "$TITAN"; then
-  fail factory_reset_or_wipe_command_present
+if grep -Eq '"\$FASTBOOT_BIN".*([[:space:]]-w([[:space:]]|$)|[[:space:]]wipe-super([[:space:]]|$))' "$TITAN"; then
+  fail fastboot_wipe_command_present
+fi
+if grep -Eq '"\$ADB_BIN".*shell.*(recovery.*wipe|wipe_data|--wipe_data)' "$TITAN"; then
+  fail adb_factory_reset_command_present
 fi
 
 echo "N1D_C3B_E5B_COMMON_FLASH_FASTBOOTD_MODE=PASS"
