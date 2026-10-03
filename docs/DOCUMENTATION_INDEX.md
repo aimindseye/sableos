@@ -26,6 +26,7 @@ status document takes precedence.
 - `titan2/N1D_C3B_E5A_EVIDENCE.md` — **sealed Titan 2 E5A physical read-only evidence**; clean PASS in userspace fastbootd, with E5B mutation still closed.
 - `titan2/N1D_C3B_E5B_AUTHORIZATION_PACKAGE.md` — **offline-only E5B decision package**; current-slot/COW/group analysis without device contact or write-capable commands.
 - `titan2/N1D_C3B_E5B_TITAN_DEPLOYMENT_MODEL.md` — **current Titan 2 deployment authority** correcting generic inactive-slot assumptions and binding E5B to the proven N1B active-system path.
+- `titan2/N1D_C3B_E5B_STANDARD_DEPLOYMENT_INTEGRATION.md` — **canonical `build/sable.sh` registration + offline flash-plan integration for N1D C3B E5B**; execution remains fail-closed until the exact fastboot implicit-resize scope is qualified.
 
 ## Current milestone snapshot
 
