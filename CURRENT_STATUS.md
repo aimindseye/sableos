@@ -135,6 +135,26 @@ E5B_FLASH_AUTHORIZED=NO
 E4 is sealed. E5 requires explicit manual authorization; fresh read-only device
 state must be revalidated before any mutation is considered.
 
+## Titan 2 C3B E5A authorization
+
+```text
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_ADB_READONLY_AUTHORIZED=YES
+E5A_FASTBOOT_READONLY_AUTHORIZED=YES
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+E5B_FLASH_AUTHORIZED=NO
+E5B_ERASE_AUTHORIZED=NO
+E5B_LP_MUTATION_AUTHORIZED=NO
+E5B_AVB_MUTATION_AUTHORIZED=NO
+E5B_SLOT_MUTATION_AUTHORIZED=NO
+E5B_UNLOCK_LOCK_AUTHORIZED=NO
+E5B_FACTORY_RESET_AUTHORIZED=NO
+```
+
+E5A may collect fresh state and leave the phone in fastbootd. E5B remains a
+separate mutation authorization after fresh evidence review.
+
 ## Keyboard-first design closure
 
 ```text
