@@ -37,7 +37,11 @@ for marker in \
   'TITAN2_N1D_C3B_E3_ARTIFACT_GATE=PASS' \
   'TITAN2_N1D_C3B_E5B_STANDARD_FLASH_PLAN_SUPPORTED=YES' \
   'TITAN2_N1D_C3B_E5B_FLASH_EXECUTION_SUPPORTED=NO' \
-  'prepare-n1d-c3b-e5b-flash-plan.sh'
+  'prepare-n1d-c3b-e5b-flash-plan.sh' \
+  'artifacts.e5b_decision.path' \
+  'artifacts.e5b_decision.sha256' \
+  'artifacts.e5b_freeze.path' \
+  'artifacts.e5b_freeze.sha256'
 do
   grep -Fq "$marker" "$ADAPTER" || fail "adapter_marker=$marker"
 done
@@ -46,6 +50,8 @@ for marker in \
   'EXPECTED_BUILD_SOURCE="caf98dde723d07a071d95aaa1ef27d578d3208d8"' \
   'EXPECTED_SYSTEM_SHA256="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"' \
   'EXPECTED_DECISION_SHA256="74531923a9ea6c755a9f8ea52db511c4a4a19a5d9dba3cb51da342c04b768926"' \
+  '--expected-auth-freeze-sha256' \
+  'auth_freeze_sha256_mismatch' \
   'TARGET_PARTITION=system_a' \
   'EXPECTED_ACTIVE_SLOT=a' \
   'FASTBOOT_IMPLICIT_RESIZE=YES' \
