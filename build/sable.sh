@@ -40,7 +40,7 @@ functions:
   show-artifact --build-source SHA
   flash-plan --build-source SHA
   product-composition --android-root PATH [--active-product-mk RELPATH]
-  flash --build-source SHA --serial SERIAL --preserve-data --authorize
+  flash --build-source SHA --serial SERIAL [--scope-token TOKEN] --preserve-data --authorize
   accept --serial SERIAL [--suite NAME]
 
 examples:
