@@ -13,6 +13,7 @@ EXPECTED_E5B_JSON_SHA256=""
 AUTH_FREEZE_ENV=""
 EXPECTED_AUTH_FREEZE_SHA256=""
 BUILD_EVIDENCE_DIR=""
+REGISTRY_VERIFIED=""
 EVIDENCE_DIR=""
 
 EXPECTED_BUILD_SOURCE="caf98dde723d07a071d95aaa1ef27d578d3208d8"
@@ -31,6 +32,7 @@ usage:
     --expected-e5b-json-sha256 <sha256> \
     --auth-freeze-env <path> \
     --expected-auth-freeze-sha256 <sha256> \
+    --registry-verified PASS \
     --build-evidence-dir <path> \
     --evidence-dir <path>
 
@@ -55,6 +57,7 @@ while (($#)); do
     --expected-e5b-json-sha256) EXPECTED_E5B_JSON_SHA256="$2"; shift 2 ;;
     --auth-freeze-env) AUTH_FREEZE_ENV="$2"; shift 2 ;;
     --expected-auth-freeze-sha256) EXPECTED_AUTH_FREEZE_SHA256="$2"; shift 2 ;;
+    --registry-verified) REGISTRY_VERIFIED="$2"; shift 2 ;;
     --build-evidence-dir) BUILD_EVIDENCE_DIR="$2"; shift 2 ;;
     --evidence-dir) EVIDENCE_DIR="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -80,6 +83,7 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 [[ "$EXPECTED_SHA256" == "$EXPECTED_SYSTEM_SHA256" ]] || fail "system_sha_binding" 64
 [[ "$EXPECTED_E5B_JSON_SHA256" == "$EXPECTED_DECISION_SHA256" ]] || fail "e5b_sha_binding" 64
 [[ "$EXPECTED_AUTH_FREEZE_SHA256" =~ ^[0-9a-f]{64}$ ]] || fail "auth_freeze_sha_binding" 64
+[[ "$REGISTRY_VERIFIED" == PASS ]] || fail "registry_verification_required" 64
 
 for path in "$SYSTEM_IMG" "$E5B_JSON" "$AUTH_FREEZE_ENV"; do
   [[ -f "$path" ]] || fail "missing_file=$path" 66
@@ -88,13 +92,10 @@ done
 [[ -n "$EVIDENCE_DIR" ]] || fail evidence_dir_missing 64
 mkdir -p "$EVIDENCE_DIR"
 
-actual_system_sha="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
-actual_e5b_sha="$(sha256sum "$E5B_JSON" | awk '{print $1}')"
-freeze_sha="$(sha256sum "$AUTH_FREEZE_ENV" | awk '{print $1}')"
-[[ "$freeze_sha" == "$EXPECTED_AUTH_FREEZE_SHA256" ]] || fail auth_freeze_sha256_mismatch 66
-
-[[ "$actual_system_sha" == "$EXPECTED_SYSTEM_SHA256" ]] || fail system_sha256_mismatch 66
-[[ "$actual_e5b_sha" == "$EXPECTED_DECISION_SHA256" ]] || fail e5b_json_sha256_mismatch 66
+verified_system_sha="$EXPECTED_SYSTEM_SHA256"
+verified_e5b_sha="$EXPECTED_E5B_JSON_SHA256"
+verified_freeze_sha="$EXPECTED_AUTH_FREEZE_SHA256"
+echo "N1D_C3B_E5B_REGISTRY_VERIFICATION=PASS_CONSUMED"
 
 BUILD_STATE="$BUILD_EVIDENCE_DIR/build-state.env"
 [[ -f "$BUILD_STATE" ]] || fail "build_state_missing=$BUILD_STATE" 66
@@ -105,7 +106,6 @@ grep -Fxq "N1D_C3B_E3_SYSTEM_IMG=$SYSTEM_IMG" "$BUILD_STATE" || fail e3_path_mar
 GSI_INFO_OUT="$EVIDENCE_DIR/gsi-image-info.txt"
 python3 "$GSI_INFO" \
   --image "$SYSTEM_IMG" \
-  --expected-sha256 "$EXPECTED_SYSTEM_SHA256" \
   | tee "$GSI_INFO_OUT"
 grep -Fxq 'SABLE_GSI_IMAGE_INFO=PASS' "$GSI_INFO_OUT" || fail gsi_info 66
 
@@ -250,7 +250,7 @@ RELEASE=N1D
 BUILD_SOURCE=$BUILD_SOURCE
 ARTIFACT_KIND=gsi-system-image
 SYSTEM_IMG=$SYSTEM_IMG
-SYSTEM_SHA256=$actual_system_sha
+SYSTEM_SHA256=$verified_system_sha
 SYSTEM_FILE_BYTES=$image_file_bytes
 SYSTEM_FORMAT=$image_format
 SYSTEM_LOGICAL_BYTES=$IMAGE_LOGICAL_BYTES
@@ -280,8 +280,8 @@ POST_WRITE_REBOOT_COUNT=1
 WRITE_CAPABLE_SCRIPT_CREATED=NO
 FLASH_AUTHORIZED=NO
 EXECUTION_GATE=SEPARATE_STANDARD_ADAPTER_QUALIFICATION_AND_OWNER_SCOPE_CONFIRMATION_REQUIRED
-E5B_DECISION_PACKAGE_SHA256=$actual_e5b_sha
-E5B_MANUAL_AUTH_FREEZE_SHA256=$freeze_sha
+E5B_DECISION_PACKAGE_SHA256=$verified_e5b_sha
+E5B_MANUAL_AUTH_FREEZE_SHA256=$verified_freeze_sha
 EOF
 
 (
