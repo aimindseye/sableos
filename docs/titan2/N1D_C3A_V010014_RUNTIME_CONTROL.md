@@ -1,6 +1,6 @@
 # Titan 2 C3A on V01.00.14 runtime control
 
-Status: **replacement compatibility control / offline preparation PASS / fastboot-entry recovery preflight next**
+Status: **replacement compatibility control / offline preparation PASS / fastboot-entry preflight PASS / canonical no-write plan next**
 
 Updated: **2026-10-03 ET**
 
@@ -161,13 +161,23 @@ C3A_V010014_CONTROL_CURRENT_FIRMWARE_EVIDENCE=PASS_SEALED_V010014
 C3A_V010014_CONTROL_PLAN=PASS_PREPARED_NO_WRITE
 ```
 
-The phone is currently bootlooping and already in fastboot, so the Android/ADB
-entry path is not the current operator path. The next authorized step is the
-fastboot-entry recovery preflight documented at
-`docs/titan2/N1D_C3A_V010014_FASTBOOT_ENTRY_PREFLIGHT.md`. It may collect
-read-only fastboot evidence and transition bootloader fastboot to userspace
-fastbootd if required, but it may not flash, clean COWs,
-resize logical partitions or factory-reset the device.
+The Android/ADB entry path was superseded because the N1D system is bootlooping.
+The fastboot-entry recovery preflight completed successfully and is sealed:
+
+```text
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/c3a-v010014-fastboot-entry-preflight/20261003T203047Z
+EVIDENCE_SEAL_SHA256=47f28c371f13974d3a7303dc550014502401fae55a76bb365139f29e4c2da893
+C3A_FASTBOOT_ENTRY_PREFLIGHT=PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW
+ACTIVE_COW_COUNT=0
+REMAINING_HEADROOM_BYTES=3070332928
+ACTIVE_GROUP_CAPACITY_SAFE=YES
+SUPER_CAPACITY_SAFE=YES
+```
+
+The current operator step is canonical C3A artifact registration plus a sealed
+no-write standard flash plan. See
+`docs/titan2/N1D_C3A_V010014_STANDARD_FLASH_PLAN.md`. Physical write execution
+is still closed.
 
 ## Physical scope recorded but not authorized
 

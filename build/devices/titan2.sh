@@ -58,6 +58,22 @@ TITAN2_N1D_E6_EXPECTED_SLOT=a
 TITAN2_N1D_E6_EXPECTED_FASTBOOT_PRODUCT=Titan_2
 TITAN2_N1D_E6_SCOPE_PREFIX="N1D-C3B-E6-BM001:system_a:2994388992:"
 
+# C3A diagnostic compatibility control.
+# Registration and no-write flash-plan generation are qualified here.
+# Physical execution remains blocked until a later plan-seal-bound scope change.
+TITAN2_N1D_C3A_BUILD_SOURCE="e6bcd76885c6048da7cbd9f200a9b1102e6d91a2"
+TITAN2_N1D_C3A_SYSTEM_SHA256="4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16"
+TITAN2_N1D_C3A_SYSTEM_CURRENT_BYTES=2994388992
+TITAN2_N1D_C3A_SYSTEM_LOGICAL_BYTES=3146977280
+TITAN2_N1D_C3A_SUPER_BYTES=9663676416
+TITAN2_N1D_C3A_TARGET_PARTITION=system_a
+TITAN2_N1D_C3A_EXPECTED_SLOT=a
+TITAN2_N1D_C3A_EXPECTED_FASTBOOT_PRODUCT=Titan_2
+TITAN2_N1D_C3A_PREFLIGHT_SEAL_SHA256="47f28c371f13974d3a7303dc550014502401fae55a76bb365139f29e4c2da893"
+TITAN2_N1D_C3A_OFFLINE_SEAL_SHA256="e6ad9a20192ef7c1fcb8bf0bfc1f393afd8b9cdd7239cb19b0497512f4f8fd57"
+TITAN2_N1D_C3A_BASELINE_E5B_SHA256="74531923a9ea6c755a9f8ea52db511c4a4a19a5d9dba3cb51da342c04b768926"
+TITAN2_N1D_C3A_EXECUTION_SUPPORTED=NO_PENDING_PLAN_SCOPE
+
 sable_device_flash_policy() {
   local release="$1"
   local build_source="$2"
@@ -241,6 +257,38 @@ sable_device_artifact_gate() {
           }
         done
         echo "TITAN2_N1D_C3B_E6_ARTIFACT_GATE=PASS"
+        ;;
+      "$TITAN2_N1D_C3A_BUILD_SOURCE")
+        [[ "$primary_sha" == "$TITAN2_N1D_C3A_SYSTEM_SHA256" ]] || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_C3A_PRIMARY_SHA256"
+          return 1
+        }
+        local c3a_env="$ROOT/build/titan2/n1d-c3a-control-evidence.env"
+        [[ -f "$c3a_env" ]] || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_C3A_EVIDENCE_ENV path=$c3a_env"
+          return 1
+        }
+        for marker in \
+          'N1D_C3A_CONTROL_EVIDENCE_STATUS=PASS_SYSTEMIMAGE' \
+          "N1D_C3A_REGISTRY_BUILD_SOURCE=$TITAN2_N1D_C3A_BUILD_SOURCE" \
+          'N1D_C3A_REGISTRY_BUILD_SOURCE_ROLE=POSTBUILD_EVIDENCE_SEAL_COMMIT_NOT_RECORDED_BUILD_START_HEAD' \
+          "N1D_C3A_SYSTEM_SHA256=$TITAN2_N1D_C3A_SYSTEM_SHA256" \
+          "N1D_C3A_SYSTEM_BYTES=$TITAN2_N1D_C3A_SYSTEM_LOGICAL_BYTES" \
+          'N1D_C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION' \
+          'N1D_C3A_MANAGED_PROJECT_COUNT=991' \
+          'N1D_C3A_CONTROL_PATCH_COUNT=369'
+        do
+          grep -Fxq -- "$marker" "$c3a_env" || {
+            echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_C3A_MARKER marker=$marker"
+            return 1
+          }
+        done
+        grep -Fxq "N1D_C3A_EVIDENCE_DIR=$evidence_dir" "$c3a_env" || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_C3A_BUILD_EVIDENCE_DIR actual=$evidence_dir"
+          return 1
+        }
+        echo "TITAN2_N1D_C3A_ARTIFACT_GATE=PASS_CONTROL_ONLY"
+        echo "TITAN2_N1D_C3A_FLASH_EXECUTION_SUPPORTED=NO_PENDING_PLAN_SCOPE"
         ;;
       *)
         echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_BUILD_SOURCE actual=$build_source"
@@ -470,6 +518,9 @@ sable_device_flash_plan() {
   local system_current_bytes lp_action avb_action userdata_policy
   local titan_serial_required active_slot stock_baseline restore_verified
   local e5b_json e5b_json_sha auth_freeze_env auth_freeze_sha build_evidence_dir
+  local c3a_preflight c3a_preflight_sha c3a_preflight_sums c3a_preflight_sums_sha
+  local c3a_offline_plan c3a_offline_plan_sha c3a_offline_sums c3a_offline_sums_sha
+  local c3a_baseline_e5a c3a_baseline_e5a_sha c3a_baseline_e5b c3a_baseline_e5b_sha
 
   artifact_kind="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifact_kind)" || return 1
   primary="$(sable_device_registry_field "$registry_root" "$release" "$build_source" primary_artifact)" || return 1
@@ -477,12 +528,49 @@ sable_device_flash_plan() {
   sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" "artifacts.$primary.sha256")" || return 1
 
   if [[ "${release^^}" == N1D ]]; then
+    build_evidence_dir="$(sable_device_registry_field "$registry_root" "$release" "$build_source" build_evidence_dir 2>/dev/null || true)"
+
+    if [[ "$build_source" == "$TITAN2_N1D_C3A_BUILD_SOURCE" ]]; then
+      c3a_preflight="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_preflight.path)" || return 1
+      c3a_preflight_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_preflight.sha256)" || return 1
+      c3a_preflight_sums="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_preflight_sums.path)" || return 1
+      c3a_preflight_sums_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_preflight_sums.sha256)" || return 1
+      c3a_offline_plan="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_offline_plan.path)" || return 1
+      c3a_offline_plan_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_offline_plan.sha256)" || return 1
+      c3a_offline_sums="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_offline_sums.path)" || return 1
+      c3a_offline_sums_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_offline_sums.sha256)" || return 1
+      c3a_baseline_e5a="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_baseline_e5a.path)" || return 1
+      c3a_baseline_e5a_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_baseline_e5a.sha256)" || return 1
+      c3a_baseline_e5b="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_baseline_e5b.path)" || return 1
+      c3a_baseline_e5b_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.c3a_baseline_e5b.sha256)" || return 1
+
+      bash "$ROOT/build/titan2/prepare-c3a-v010014-standard-flash-plan.sh" \
+        --release "$release" \
+        --build-source "$build_source" \
+        --system-img "$path" \
+        --expected-system-sha256 "$sha" \
+        --preflight-json "$c3a_preflight" \
+        --preflight-json-sha256 "$c3a_preflight_sha" \
+        --preflight-sums "$c3a_preflight_sums" \
+        --preflight-sums-sha256 "$c3a_preflight_sums_sha" \
+        --offline-plan "$c3a_offline_plan" \
+        --offline-plan-sha256 "$c3a_offline_plan_sha" \
+        --offline-sums "$c3a_offline_sums" \
+        --offline-sums-sha256 "$c3a_offline_sums_sha" \
+        --baseline-e5a "$c3a_baseline_e5a" \
+        --baseline-e5a-sha256 "$c3a_baseline_e5a_sha" \
+        --baseline-e5b "$c3a_baseline_e5b" \
+        --baseline-e5b-sha256 "$c3a_baseline_e5b_sha" \
+        --registry-verified PASS \
+        --build-evidence-dir "$build_evidence_dir" \
+        --evidence-dir "$evidence_dir"
+      return
+    fi
+
     e5b_json="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_decision.path 2>/dev/null || true)"
     e5b_json_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_decision.sha256 2>/dev/null || true)"
     auth_freeze_env="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.path 2>/dev/null || true)"
     auth_freeze_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.sha256 2>/dev/null || true)"
-    build_evidence_dir="$(sable_device_registry_field "$registry_root" "$release" "$build_source" build_evidence_dir 2>/dev/null || true)"
-
     if [[ "$build_source" == "$TITAN2_N1D_E6_BUILD_SOURCE" ]]; then
       bash "$ROOT/build/titan2/prepare-n1d-c3b-e6-bm001-flash-plan.sh" \
         --release "$release" \

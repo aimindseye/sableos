@@ -1,6 +1,6 @@
 # Titan 2 C3A V01.00.14 fastboot-entry recovery preflight
 
-Status: **current operator step for N1D bootloop / read-only fastboot evidence / no write / no reset**
+Status: **completed PASS / sealed read-only fastboot evidence / retained prerequisite**
 
 Updated: **2026-10-03 ET**
 
@@ -178,7 +178,18 @@ C3A_FASTBOOT_ENTRY_WRITE_CAPABLE_SCRIPT_CREATED=NO
 C3A_FASTBOOT_ENTRY_FINAL_DEVICE_MODE=FASTBOOTD
 ```
 
-Any BLOCKED result stops the C3A control.
+Execution completed successfully:
 
-A PASS still does not authorize a write. The next deliverable is the separately
-gated C3A `system_a` physical-control execution package.
+```text
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/c3a-v010014-fastboot-entry-preflight/20261003T203047Z
+EVIDENCE_SEAL_SHA256=47f28c371f13974d3a7303dc550014502401fae55a76bb365139f29e4c2da893
+C3A_FASTBOOT_ENTRY_PREFLIGHT=PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW
+C3A_FASTBOOT_ENTRY_ACTIVE_COW_COUNT=0
+C3A_FASTBOOT_ENTRY_REMAINING_HEADROOM_BYTES=3070332928
+C3A_FASTBOOT_ENTRY_SUPER_CAPACITY_SAFE=YES
+C3A_FASTBOOT_ENTRY_ACTIVE_GROUP_CAPACITY_SAFE=YES
+```
+
+A PASS did not authorize a write. The current operator step is canonical
+registration plus no-write plan generation in
+`docs/titan2/N1D_C3A_V010014_STANDARD_FLASH_PLAN.md`.
