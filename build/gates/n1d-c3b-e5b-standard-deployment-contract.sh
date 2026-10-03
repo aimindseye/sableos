@@ -52,6 +52,7 @@ for marker in \
   '--registry-verified' \
   'registry_verification_required' \
   'N1D_C3B_E5B_REGISTRY_VERIFICATION=PASS_CONSUMED' \
+  'N1D_C3B_E5B_FREEZE_EVIDENCE=PASS_HASH_BOUND' \
   'TARGET_PARTITION=system_a' \
   'EXPECTED_ACTIVE_SLOT=a' \
   'FASTBOOT_IMPLICIT_RESIZE=YES' \
@@ -69,6 +70,13 @@ for marker in \
 do
   [[ "$PLAN_TEXT" == *"$marker"* ]] || fail "plan_marker=$marker"
 done
+
+if grep -Fq 'freeze_path.read_text' "$PLAN"; then
+  fail freeze_env_schema_parsing_present
+fi
+if grep -Fq 'freeze_required = {' "$PLAN"; then
+  fail freeze_env_semantic_schema_present
+fi
 
 if grep -Fq 'sha256sum "$SYSTEM_IMG"' "$PLAN"; then
   fail duplicate_system_hash_present
