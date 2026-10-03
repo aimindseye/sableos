@@ -31,27 +31,23 @@ identity.
 
 ## Superseding Titan 2 runtime-recovery checkpoint
 
-The sealed N1D/C3B build evidence remains valid, but the first physical N1D
-attempt did not establish a stable boot and entered a reboot loop. Therefore
-the prior E5 -> E6 progression is suspended.
+C3A has now answered the compatibility question physically on current stock
+firmware V01.00.14. The exact public-functional Restless/TrebleDroid control
+image was flashed to active `system_a`, resized successfully from 2994388992
+to 3146977280 bytes, rebooted into Android, attached to LTE/NR NSA, and restored
+5G after a single airplane-mode radio cycle.
 
 ```text
-N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP
-N1D_RUNTIME_PATCH_ALLOWLIST_COUNT=0
-COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
-CURRENT_STOCK_FIRMWARE=V01.00.14
-HISTORICAL_N1B_BOOT_FIRMWARE=V01.00.13
-N1D_REFLASH=HOLD
-E6_RUNTIME_BASELINE=HOLD
-N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE_EXACT_ARTIFACT_AND_SOURCE_OBJECTS_UNAVAILABLE
+N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP_RETIRED_BASELINE
 N1B_EXACT_RECONSTRUCTION=RETIRED_PROVIDER_CONFIRMED_BOTH_CRITICAL_OBJECTS_NOT_ADDRESSABLE
-N1B_PROVIDER_OBJECT_EXISTENCE=BLOCKED_BOTH_EXACT_OBJECTS_NOT_ADDRESSABLE
 N1E_STATUS=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
-C3A_V010014_CONTROL=PASS_BOOT_QUALIFIED
-C3A_V010014_OFFLINE_EVIDENCE_SEAL=e6ad9a20192ef7c1fcb8bf0bfc1f393afd8b9cdd7239cb19b0497512f4f8fd57
-C3A_V010014_FASTBOOT_ENTRY_PREFLIGHT=PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW
-C3A_V010014_FASTBOOT_ENTRY_EVIDENCE_SEAL=47f28c371f13974d3a7303dc550014502401fae55a76bb365139f29e4c2da893
-C3A_V010014_FASTBOOT_ENTRY_ACTIVE_COW_COUNT=0
+
+CURRENT_STOCK_FIRMWARE=V01.00.14
+
+C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+C3A_SYSTEM_BYTES=3146977280
+C3A_CONTROL_PATCH_COUNT=369
+C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION
 C3A_V010014_SYSTEM_FLASH=PASS
 C3A_V010014_ANDROID_BOOT=PASS
 C3A_V010014_VOICE_REGISTRATION=PASS
@@ -59,52 +55,47 @@ C3A_V010014_DATA_REGISTRATION=PASS
 C3A_V010014_NR_NSA_CAPABILITY=PASS
 C3A_V010014_RADIO_POSTBOOT_STABILITY=ISSUE_RECOVERABLE_BY_RADIO_CYCLE
 C3A_V010014_COMPATIBILITY_BASELINE=PASS
-C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
-C3A_CONTROL_PATCH_COUNT=369
-N1F_STATUS=NEXT_COMBINED_C3A_DERIVED_C3B5_BUILD_FLASH
-N1F_BUILD_AUTHORIZED=YES_EXACT_C3A_PLUS_5_APPS
-N1F_FLASH_AUTHORIZED=YES_EXACT_SYSTEM_A_ONCE
-N1F_FACTORY_RESET_AUTHORIZED=NO
+
+N1F_ROLE=C3A_DERIVED_C3B5_BOOT_ISOLATION
+N1F_BASELINE=EXACT_BOOT_QUALIFIED_C3A_RUNTIME_COMPATIBILITY_SUBSTRATE
+N1F_FUNCTIONAL_DELTA=EXACTLY_FIVE_SABLE_PRODUCT_APPS
+N1F_COMPATIBILITY_PATCH_DELTA=ZERO
+N1F_BUILD_FLASH_DRIVER=build/titan2/run-n1f-c3a-derived-c3b5.sh
+N1F_FACTORY_RESET_FIRST_ATTEMPT=NO
+N1F_NEXT=ARCHIVE_C3A_THEN_BUILD_QUALIFY_FLASH_IN_ONE_OPERATOR_RUN
 ```
 
-The exact N1B physical-control path is retired as unexecutable. The exact image
-and target-files archive are absent from retained storage, the two critical
-pinned source revisions are absent from surviving Repo object stores, and the
-provider-specific probe confirms that neither exact source object is currently
-addressable from its authentic recorded provider lineage.
-
-No available image is relabeled as N1B, and N1E is retired rather than
-redefined.
-
-The next compatibility control is the already sealed C3A public-functional
-Restless/TrebleDroid reproduction:
+The five N1F modules are:
 
 ```text
-C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
-C3A_SYSTEM_BYTES=3146977280
-C3A_MANAGED_PROJECT_COUNT=991
-C3A_CONTROL_PATCH_COUNT=369
-C3A_CONTROL_FIDELITY=PUBLIC_FUNCTIONAL_REPRODUCTION
+SableTitan2Keyboard
+SableTitan2Camera
+SableTitan2DisplayCompat
+SableTitan2Setup
+SableTitan2RadioDiag
 ```
 
-C3A is not a Sable release baseline and is not claimed to be bit-identical to
-N1B. It is the strongest retained source-built control for testing whether the
-current V01.00.14 device/vendor state still boots the broad public
-Restless/TrebleDroid compatibility substrate.
+This supersedes further N1B reconstruction and the earlier plain-C3B runtime
+path as the immediate physical experiment. N1F intentionally keeps all 369 C3A
+compatibility patches unchanged and adds only the five already-admitted Sable
+apps. No telephony fix is bundled into this isolation build.
 
-C3A physically boots on current V01.00.14 and establishes the broad
-Restless/TrebleDroid compatibility substrate as the working Titan 2 baseline.
-Voice, data and NR_NSA capability were observed. A transient post-boot radio
-state issue is recoverable by one airplane-mode cycle and is tracked in
-parallel rather than blocking the boot-isolation path.
+Before N1F mutates source or contacts the phone, its combined driver preserves
+the exact boot-qualified C3A `system.img`, pinned repo manifest, build evidence,
+runtime result and prior C3A control/preflight evidence under
+`/srv/sable-build/artifacts/titan2/c3a-boot-qualified/<timestamp>/` with a
+SHA-256 manifest. A reflink/sparse image copy is used instead of creating a
+second compressed multi-gigabyte archive solely for packaging.
 
-The single next execution is N1F: archive the exact boot-qualified C3A image and
-evidence, incrementally build C3A plus exactly five admitted Sable product apps,
-preserve that derived image, restore source state, then flash `system_a`
-exactly once and observe boot. Factory reset remains outside the experiment.
+The same driver then builds the five source-bound APKs offline, stages exactly
+`Android.bp`, `sable-titan2-apps.mk`, five APKs and one `rom.mk` inherit,
+incrementally rebuilds the proven C3A `systemimage`, verifies the five signed
+packages under `system/product`, archives the derived image, restores the C3A
+source delta, and performs one direct `system_a` flash followed by one reboot.
 
-See `docs/titan2/N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md`.
-
+The first N1F attempt does not mutate vbmeta, boot, vendor_boot, super, slot,
+userdata, metadata or COW partitions, performs no automatic flash retry, and
+does not factory-reset the phone.
 
 
 ## Titan 2 C3B state
