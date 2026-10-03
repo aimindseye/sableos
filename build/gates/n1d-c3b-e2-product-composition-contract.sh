@@ -135,7 +135,7 @@ for line in \
     'PRODUCT_DEVICE := tdgsi_arm64_ab' \
     'PRODUCT_BRAND := SableOS' \
     'PRODUCT_MODEL := SableOS Titan 2' \
-    'PRODUCT_MANUFACTURER := SableOS'
+    'PRODUCT_MANUFACTURER := Unihertz'
 do
     grep -Fxq "$line" "$WRAPPER" || fail "wrapper_identity_missing=$line"
 done
