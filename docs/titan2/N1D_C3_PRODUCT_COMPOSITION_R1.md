@@ -1,6 +1,6 @@
 # Titan 2 N1D C3 product composition R1
 
-Status: **C3A sealed; C3B E1 active engineering composition**
+Status: **C3A sealed; C3B E1 build-qualified; C3B E2 source staged and composition defined pending parse/build**
 
 Date: 2026-10-02
 
@@ -192,6 +192,76 @@ goal:            systemimage
 ~~~
 
 Final Sable identity and source-module admission are E2 work.
+
+## E2 canonical Sable product composition
+
+E2 preserves the generated E1 product as the base graph and adds a thin
+canonical wrapper:
+
+~~~text
+device/phh/treble/treble_arm64_bvN.mk
+    -> inherit into vendor/sable/titan2/sable_titan2.mk
+    -> inherit vendor/sable/titan2/sable-titan2-apps.mk
+    -> sable_titan2-bp4a-userdebug
+~~~
+
+This is not the retired `sable_titan2_n1d_arm64` direct
+`generic_system_arm64 + gsi_release` graph.
+
+The qualified product source was imported into canonical SableOS as:
+
+~~~text
+qualified product head:
+769feb9b9f662deda2a9110e85d95bb6114ceace
+
+qualified product tree:
+cf5c232be3bc79eec4bd30ee0a90ab9247852053
+
+canonical source import commit:
+aafb543565c9d59ed5e0d9cda876aabb4967f8aa
+
+imported files:
+178
+~~~
+
+The first E2 product module set is exactly:
+
+~~~text
+SableTitan2Keyboard
+SableTitan2Camera
+SableTitan2DisplayCompat
+SableTitan2Setup
+SableTitan2RadioDiag
+~~~
+
+All five are non-privileged `product` apps. The accepted Gradle source is
+built offline into unsigned release APKs; the canonical Android build imports
+those generated artifacts and applies `default_dev_cert` for the userdebug
+engineering image. Repository-stored presigned APKs and platform-certificate
+signing are forbidden.
+
+No stock app is overridden at this stage. Sable Keyboard is not yet provisioned
+as the default IME, Sable Setup remains a post-provisioning helper rather than
+Setup Wizard, and Camera does not replace the stock camera until runtime
+evidence justifies that change.
+
+The canonical E2 definitions and execution drivers are:
+
+~~~text
+build/titan2/n1d-c3b-e2-product-admission.env
+build/titan2/n1d-c3b-e2-product-composition.env
+build/titan2/build-n1d-c3b-e2-product-apps.sh
+build/titan2/stage-n1d-c3b-e2-product-composition.sh
+build/titan2/qualify-n1d-c3b-e2-product-parse.sh
+build/titan2/build-n1d-c3b-e2-modules.sh
+build/gates/n1d-c3b-e2-product-admission-contract.sh
+build/gates/n1d-c3b-e2-product-composition-contract.sh
+product/titan2/c3b/
+~~~
+
+E2 composition is currently defined but not yet parse- or compile-qualified.
+It authorizes no target-files/OTA, device contact, flash, production signing,
+physical runtime or release.
 
 ## Host-layout compatibility
 
