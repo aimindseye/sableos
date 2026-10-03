@@ -123,4 +123,121 @@ actual_system_bytes="$(stat -c '%s' "$SYSTEM_IMG")"
 echo "N1D_C3B_E5A_E4_SEAL=PASS"
 
 command -v adb >/dev/null 2>&1 || fail "adb_not_found"
-command -v fastboot >/dev/null 2>&1 || fail "fastboot_not_
+command -v fastboot >/dev/null 2>&1 || fail "fastboot_not_found"
+command -v timeout >/dev/null 2>&1 || fail "timeout_not_found"
+
+adb start-server >/dev/null 2>&1 || fail "adb_start_server"
+adb devices -l > "$EVIDENCE_DIR/adb-devices-l.txt"
+
+resolve_adb_serial() {
+  python3 - "$ADB_SERIAL" "$EVIDENCE_DIR/adb-devices-l.txt" <<'PY'
+from __future__ import annotations
+import sys
+explicit = sys.argv[1].strip()
+path = sys.argv[2]
+devices = []
+for line in open(path, encoding="utf-8", errors="replace"):
+    parts = line.split()
+    if len(parts) >= 2 and parts[1] == "device":
+        devices.append(parts[0])
+if explicit:
+    if explicit not in devices:
+        raise SystemExit("explicit adb serial is not an authorized connected device")
+    print(explicit)
+    raise SystemExit(0)
+if len(devices) != 1:
+    raise SystemExit(f"expected exactly one authorized adb device, got {len(devices)}")
+print(devices[0])
+PY
+}
+
+ADB_SERIAL="$(resolve_adb_serial)" || fail "adb_device_resolution"
+serial_binding_sha256="$(printf '%s' "$ADB_SERIAL" | sha256sum | awk '{print $1}')"
+echo "N1D_C3B_E5A_DEVICE_BINDING_SHA256=$serial_binding_sha256"
+echo "N1D_C3B_E5A_ADB_DEVICE=PASS_ONE_AUTHORIZED"
+
+ADB=(adb -s "$ADB_SERIAL")
+
+"${ADB[@]}" shell getprop > "$EVIDENCE_DIR/getprop.txt"
+"${ADB[@]}" shell dumpsys battery > "$EVIDENCE_DIR/battery.txt"
+"${ADB[@]}" shell 'snapshotctl status 2>/dev/null || true' > "$EVIDENCE_DIR/snapshotctl-status.txt"
+"${ADB[@]}" shell 'dumpsys update_engine 2>/dev/null || true' > "$EVIDENCE_DIR/update-engine.txt"
+"${ADB[@]}" shell 'lpdump 2>/dev/null || true' > "$EVIDENCE_DIR/lpdump.txt"
+"${ADB[@]}" shell 'ls -l /dev/block/by-name 2>/dev/null || true' > "$EVIDENCE_DIR/by-name.txt"
+"${ADB[@]}" shell '
+  for p in \
+    /dev/block/by-name/system \
+    /dev/block/by-name/system_a \
+    /dev/block/by-name/system_b \
+    /dev/block/mapper/system \
+    /dev/block/mapper/system_a \
+    /dev/block/mapper/system_b \
+    /dev/block/by-name/super
+  do
+    if [ -e "$p" ]; then
+      echo "CANDIDATE=$p"
+      blockdev --getsize64 "$p" 2>/dev/null || true
+    fi
+  done
+' > "$EVIDENCE_DIR/adb-block-sizes.txt"
+
+python3 - "$EVIDENCE_DIR" "$EXPECTED_STOCK_FINGERPRINT" "$EXPECTED_STOCK_INCREMENTAL" "$MIN_FUTURE_MUTATION_BATTERY_PERCENT" <<'PY' > "$EVIDENCE_DIR/adb-summary.env"
+from __future__ import annotations
+import pathlib
+import re
+import sys
+
+root = pathlib.Path(sys.argv[1])
+expected_fp = sys.argv[2]
+expected_inc = sys.argv[3]
+min_battery = int(sys.argv[4])
+
+getprop = (root / "getprop.txt").read_text(errors="replace")
+battery = (root / "battery.txt").read_text(errors="replace")
+
+def prop(name: str) -> str:
+    m = re.search(rf"^\[{re.escape(name)}\]: \[(.*)\]$", getprop, re.M)
+    return m.group(1).strip() if m else ""
+
+def battery_int(label: str) -> int:
+    m = re.search(rf"^\s*{re.escape(label)}:\s*([0-9]+)\s*$", battery, re.M | re.I)
+    return int(m.group(1)) if m else -1
+
+fingerprint = prop("ro.build.fingerprint")
+incremental = prop("ro.build.version.incremental")
+vendor_fp = prop("ro.vendor.build.fingerprint")
+slot = prop("ro.boot.slot_suffix").lstrip("_")
+verified = prop("ro.boot.verifiedbootstate")
+vbmeta_state = prop("ro.boot.vbmeta.device_state")
+flash_locked = prop("ro.boot.flash.locked")
+dynamic = prop("ro.boot.dynamic_partitions")
+virtual_ab = prop("ro.virtual_ab.enabled")
+virual_ab_compression = prop("ro.virtual_ab.compression.enabled")
+level = battery_int("level")
+
+print(f"ADB_STOCK_FINGERPRINT={fingerprint}")
+print(f"ADB_STOCK_INCREMENTAL={incremental}")
+print(f"ADB_VENDOR_FINGERPRINT={vendor_fp}")
+print(f"ADB_CURRENT_SLOT={slot or 'UNKNOWN'}")
+print(f"ADB_VERIFIED_BOOT_STATE={verified or 'UNKNOWN'}")
+print(f"ADB_VBMETA_DEVICE_STATE={vbmeta_state or 'UNKNOWN'}")
+print(f"ADB_FLASH_LOCKED={flash_locked or 'UNKNOWN'}")
+print(f"ADB_DYNAMIC_PARTITIONS={dynamic or 'UNKNOWN'}")
+print(f"ADB_VIRTUAL_AB={virtual_ab or 'UNKNOWN'}")
+print(f"ADB_VIRTUAL_AB_COMPRESSION={virtual_ab_compression or 'UNKNOWN'}")
+print(f"ADB_BATTERY_LEVEL={level if level >= 0 else 'UNKNOWN'}")
+print(f"ADB_STOCK_FINGERPRINT_MATCH={'PASS' if fingerprint == expected_fp else 'FAIL'}")
+print(f"ADB_STOCK_INCREMENTAL_MATCH={'PASS' if incremental == expected_inc else 'FAIL'}")
+if level < 0:
+    print("ADB_BATTERY_SANITY=REVIEW_UNKNOWN")
+elif level >= min_battery:
+    print("ADB_BATTERY_SANITY=PASS")
+else:
+    print("ADB_BATTERY_SANITY=BLOCK_BELOW_FUTURE_MUTATION_THRESHOLD")
+PY
+
+# shellcheck disable=SC1090
+source "$EVIDENCE_DIR/adb-summary.env"
+cat "$EVIDENCE_DIR/adb-summary.env"
+
+[[ "$ADB_STOCK_FINGERPRINT_MATCH" == PASS ]] 
