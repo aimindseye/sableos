@@ -161,6 +161,7 @@ mkdir -p "$EVIDENCE_DIR"
 PLAN_TSV="$EVIDENCE_DIR/stage-plan.tsv"
 PLAN_NUL="$EVIDENCE_DIR/stage-paths.nul"
 COPIED_NUL="$EVIDENCE_DIR/copied-paths.nul"
+IGNORED_COPIED_NUL="$EVIDENCE_DIR/ignored-copied-paths.nul"
 INVENTORY="$EVIDENCE_DIR/staged-file-inventory.tsv"
 STATE="$EVIDENCE_DIR/staging-state.env"
 
@@ -323,12 +324,36 @@ with copied_nul.open("wb") as fh:
 print(f"C3B_PRODUCT_STAGE_COPY=PASS copied={len(copied)} identical={identical}")
 PY
 
+: > "$IGNORED_COPIED_NUL"
 if [[ -s "$COPIED_NUL" ]]; then
-    # The product source may intentionally track provenance inputs whose suffixes
-    # are ignored by the canonical repository (for example pinned corpus ZIPs).
-    # Force-add only the exact NUL-delimited paths already approved by the
-    # ownership plan and copied by this adapter. The index equality check below
-    # still rejects any staged path outside this approved copied set.
+    git -C "$ROOT" check-ignore -z --stdin < "$COPIED_NUL" > "$IGNORED_COPIED_NUL" || true
+fi
+
+python3 - "$IGNORED_COPIED_NUL"     "$N1D_C3B_E2_CANONICAL_IGNORE_EXCEPTION_1"     "$N1D_C3B_E2_CANONICAL_IGNORE_EXCEPTION_2" <<'PY'
+from __future__ import annotations
+import pathlib
+import sys
+
+ignored = pathlib.Path(sys.argv[1])
+expected = sorted(sys.argv[2:4])
+actual = sorted(
+    p.decode("utf-8")
+    for p in ignored.read_bytes().split(b"\0")
+    if p
+)
+if actual != expected:
+    print(
+        "C3B_PRODUCT_STAGE_IGNORED_INPUTS=FAIL "
+        f"expected={expected} actual={actual}",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+print(f"C3B_PRODUCT_STAGE_IGNORED_INPUTS=PASS count={len(actual)}")
+PY
+
+if [[ -s "$COPIED_NUL" ]]; then
+    # Force-add is permitted only after the ignored copied-path set above has
+    # matched the two exact E2-qualified provenance inputs.
     xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"
 fi
 
@@ -375,6 +400,7 @@ IDENTICAL_COUNT="$(( PLAN_COUNT - STAGED_COUNT ))"
     echo "C3B_PRODUCT_STAGE_FILE_COUNT=$PLAN_COUNT"
     echo "C3B_PRODUCT_STAGE_STAGED_COUNT=$STAGED_COUNT"
     echo "C3B_PRODUCT_STAGE_IDENTICAL_COUNT=$IDENTICAL_COUNT"
+    echo "C3B_PRODUCT_STAGE_IGNORED_INPUT_COUNT=2"
     echo "C3B_PRODUCT_STAGE_INVENTORY=$INVENTORY"
     echo "C3B_PRODUCT_STAGING=PASS"
 } > "$STATE"
