@@ -1,6 +1,6 @@
 # Titan 2 C3A on V01.00.14 runtime control
 
-Status: **replacement compatibility control / offline preparation PASS / fresh read-only live preflight next**
+Status: **replacement compatibility control / offline preparation PASS / fastboot-entry recovery preflight next**
 
 Updated: **2026-10-03 ET**
 
@@ -161,9 +161,12 @@ C3A_V010014_CONTROL_CURRENT_FIRMWARE_EVIDENCE=PASS_SEALED_V010014
 C3A_V010014_CONTROL_PLAN=PASS_PREPARED_NO_WRITE
 ```
 
-The next authorized step is the fresh read-only live preflight documented at
-`docs/titan2/N1D_C3A_V010014_LIVE_PREFLIGHT.md`. It may contact the phone and
-perform the two required mode transitions, but it may not flash, clean COWs,
+The phone is currently bootlooping and already in fastboot, so the Android/ADB
+entry path is not the current operator path. The next authorized step is the
+fastboot-entry recovery preflight documented at
+`docs/titan2/N1D_C3A_V010014_FASTBOOT_ENTRY_PREFLIGHT.md`. It may collect
+read-only fastboot evidence and transition bootloader fastboot to userspace
+fastbootd if required, but it may not flash, clean COWs,
 resize logical partitions or factory-reset the device.
 
 ## Physical scope recorded but not authorized
