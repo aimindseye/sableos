@@ -54,9 +54,7 @@ P1-P4 do not wait for ai-g732 between stages. Each stage is frozen separately;
 after P4 the operator performs a batched exact-head ai-g732 qualification before
 the train is merged/admitted.
 
-P5 is a separate design track for **Sable Reader v2**: keyboard-first ebooks,
-comics/manga/webtoons and audiobooks while Sable Text Reader remains a separate
-lightweight product. P5 implementation is not yet assigned.
+P5 **Sable Reader v2** architecture is accepted as a separate sibling P5A-P5F implementation train: keyboard-first EPUB/PDF, local-first CBZ comics/manga/webtoons and audiobooks while Sable Text Reader remains separate. The 23-screen SableScreens catalog is an explicit design/reference baseline, not a shipping runtime.
 
 ## Product architecture
 
@@ -115,6 +113,8 @@ Start with:
 
 - `CURRENT_STATUS.md` — current private execution state.
 - `docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — active Titan 2 roadmap and assignments.
+- `docs/SABLE_READER_V2_ARCHITECTURE.md` — accepted P5 Reader v2 architecture, UX, formats and dependencies.
+- `docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md` — 23-screen design/reference convergence baseline.
 - `docs/DOCUMENTATION_INDEX.md` — current/historical documentation index.
 - `docs/CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md` — HOME/product authority.
 - `docs/adr/0010-keyboard-first-sableos-design-v1.md` — keyboard-first architecture.
