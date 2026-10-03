@@ -483,18 +483,33 @@ sable_device_flash_plan() {
     auth_freeze_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.sha256 2>/dev/null || true)"
     build_evidence_dir="$(sable_device_registry_field "$registry_root" "$release" "$build_source" build_evidence_dir 2>/dev/null || true)"
 
-    bash "$ROOT/build/titan2/prepare-n1d-c3b-e5b-flash-plan.sh" \
-      --release "$release" \
-      --build-source "$build_source" \
-      --system-img "$path" \
-      --expected-sha256 "$sha" \
-      --e5b-json "$e5b_json" \
-      --expected-e5b-json-sha256 "$e5b_json_sha" \
-      --auth-freeze-env "$auth_freeze_env" \
-      --expected-auth-freeze-sha256 "$auth_freeze_sha" \
-      --registry-verified PASS \
-      --build-evidence-dir "$build_evidence_dir" \
-      --evidence-dir "$evidence_dir"
+    if [[ "$build_source" == "$TITAN2_N1D_E6_BUILD_SOURCE" ]]; then
+      bash "$ROOT/build/titan2/prepare-n1d-c3b-e6-bm001-flash-plan.sh" \
+        --release "$release" \
+        --build-source "$build_source" \
+        --system-img "$path" \
+        --expected-sha256 "$sha" \
+        --e5b-json "$e5b_json" \
+        --expected-e5b-json-sha256 "$e5b_json_sha" \
+        --auth-freeze-env "$auth_freeze_env" \
+        --expected-auth-freeze-sha256 "$auth_freeze_sha" \
+        --registry-verified PASS \
+        --build-evidence-dir "$build_evidence_dir" \
+        --evidence-dir "$evidence_dir"
+    else
+      bash "$ROOT/build/titan2/prepare-n1d-c3b-e5b-flash-plan.sh" \
+        --release "$release" \
+        --build-source "$build_source" \
+        --system-img "$path" \
+        --expected-sha256 "$sha" \
+        --e5b-json "$e5b_json" \
+        --expected-e5b-json-sha256 "$e5b_json_sha" \
+        --auth-freeze-env "$auth_freeze_env" \
+        --expected-auth-freeze-sha256 "$auth_freeze_sha" \
+        --registry-verified PASS \
+        --build-evidence-dir "$build_evidence_dir" \
+        --evidence-dir "$evidence_dir"
+    fi
     return
   fi
 
