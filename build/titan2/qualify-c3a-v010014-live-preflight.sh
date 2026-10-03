@@ -6,6 +6,7 @@ EXPECTED_C3A_BYTES=3146977280
 EXPECTED_STOCK_FINGERPRINT="Unihertz/Titan_2/Titan_2:16/BP2A.250605.031.A3/V01.00.14:user/release-keys"
 EXPECTED_STOCK_INCREMENTAL="V01.00.14"
 EXPECTED_SLOT="a"
+EXPECTED_PRODUCT="Titan_2"
 EXPECTED_SUPER_BYTES=9663676416
 while (($#)); do
   case "$1" in
@@ -18,11 +19,11 @@ while (($#)); do
 done
 for f in "$E5A" "$CAP" "$PLAN"; do [[ -f "$f" ]] || exit 64; done
 [[ -n "$OUT" ]] || exit 64
-python3 - "$E5A" "$CAP" "$PLAN" "$OUT" "$EXPECTED_C3A_SHA256" "$EXPECTED_C3A_BYTES" "$EXPECTED_STOCK_FINGERPRINT" "$EXPECTED_STOCK_INCREMENTAL" "$EXPECTED_SLOT" "$EXPECTED_SUPER_BYTES" <<'PY'
+python3 - "$E5A" "$CAP" "$PLAN" "$OUT" "$EXPECTED_C3A_SHA256" "$EXPECTED_C3A_BYTES" "$EXPECTED_STOCK_FINGERPRINT" "$EXPECTED_STOCK_INCREMENTAL" "$EXPECTED_SLOT" "$EXPECTED_PRODUCT" "$EXPECTED_SUPER_BYTES" <<'PY'
 import json,pathlib,sys
 e=json.loads(pathlib.Path(sys.argv[1]).read_text())
 c=json.loads(pathlib.Path(sys.argv[2]).read_text())
-expected_sha=sys.argv[5]; expected_bytes=int(sys.argv[6]); expected_fp=sys.argv[7]; expected_inc=sys.argv[8]; expected_slot=sys.argv[9]; expected_super=int(sys.argv[10])
+expected_sha=sys.argv[5]; expected_bytes=int(sys.argv[6]); expected_fp=sys.argv[7]; expected_inc=sys.argv[8]; expected_slot=sys.argv[9]; expected_product=sys.argv[10]; expected_super=int(sys.argv[11])
 p={}
 for x in pathlib.Path(sys.argv[3]).read_text().splitlines():
     if x and not x.startswith("#") and "=" in x:
@@ -39,6 +40,8 @@ checks={
 "SLOT_A":f.get("current_slot")==expected_slot,
 "FASTBOOTD":f.get("is_userspace")=="yes",
 "UNLOCKED":f.get("unlocked")=="yes",
+"PRODUCT":f.get("product")==expected_product,
+"FASTBOOT_BINDING_MATCH":e.get("fastboot_device_binding_sha256")==p.get("EXPECTED_FASTBOOT_BINDING_SHA256"),
 "SNAPSHOT_NONE":e.get("snapshot_update_review")=="PASS_IDLE_OR_NONE",
 "SUPER_BYTES":int(f.get("super_bytes",0) or 0)==expected_super,
 "ALLOCATION_COMPLETE":f.get("allocation_complete") is True,
