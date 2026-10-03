@@ -178,10 +178,13 @@ reset-to-defaults, manual city management without precise-location permission
 and complete physical-keyboard operation. Common Weather must not become a
 Titan-only fork.
 
-## P5 — Sable Reader v2 design track
+## SableScreens design baseline
 
-P5 implementation is **not yet assigned**. Scope/design is being finalized
-while P1-P4 proceed.
+The early aimindseye/titan2-temp/apps/titan2/screens 23-screen Compose catalog is now an explicit design/reference baseline. It is not a shipping app and must not be counted as runtime completion. See docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md for the 23-screen convergence map. P1 and P3 consume it directly; P2 consumes its shared input/focus semantics; P4 Weather is additive because Weather was not one of the 23 surfaces.
+
+## P5 — Sable Reader v2 implementation track
+
+P5 architecture/UX/format/dependency choices are now **accepted**. P5 is a separate sibling implementation track and must not be stacked into the P1-P4 train. See docs/SABLE_READER_V2_ARCHITECTURE.md.
 
 Current accepted direction:
 
@@ -246,8 +249,12 @@ titan2-temp P1
  -> canonical source admission
 
 P5 Reader v2
- -> finalize scope/design
- -> separate implementation work package
+ -> P5A baseline/privacy/library model
+ -> P5B EPUB/PDF keyboard UX
+ -> P5C comics/manga/webtoon
+ -> P5D audiobooks
+ -> P5E unified backup/quality
+ -> P5F exact-head ai-g732 qualification
 ```
 
 ## Historical-plan rule
