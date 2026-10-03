@@ -197,38 +197,58 @@ sable_device_artifact_gate() {
   }
 
   if [[ "${release^^}" == N1D ]]; then
-    local expected_build_source expected_primary_sha build_state
-    expected_build_source="caf98dde723d07a071d95aaa1ef27d578d3208d8"
-    expected_primary_sha="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"
-    build_state="$evidence_dir/build-state.env"
+    local build_state
 
-    [[ "$build_source" == "$expected_build_source" ]] || {
-      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_BUILD_SOURCE expected=$expected_build_source actual=$build_source"
-      return 1
-    }
-    [[ "$primary_sha" == "$expected_primary_sha" ]] || {
-      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_PRIMARY_SHA256 expected=$expected_primary_sha actual=$primary_sha"
-      return 1
-    }
-    [[ -f "$build_state" ]] || {
-      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_BUILD_STATE path=$build_state"
-      return 1
-    }
-    grep -Fxq 'N1D_C3B_E3_SYSTEMIMAGE=PASS' "$build_state" || {
-      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E3_PASS_MARKER"
-      return 1
-    }
-    grep -Fxq "N1D_C3B_E3_CANONICAL_HEAD=$expected_build_source" "$build_state" || {
-      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E3_BUILD_SOURCE_MARKER"
-      return 1
-    }
-    grep -Fxq "N1D_C3B_E3_SYSTEM_SHA256=$expected_primary_sha" "$build_state" || {
-      echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E3_SHA_MARKER"
-      return 1
-    }
-    echo "TITAN2_N1D_C3B_E3_ARTIFACT_GATE=PASS"
-    echo "TITAN2_N1D_C3B_E5B_STANDARD_FLASH_PLAN_SUPPORTED=YES"
-    echo "TITAN2_N1D_C3B_E5B_FLASH_EXECUTION_SUPPORTED=NO"
+    case "$build_source" in
+      "$TITAN2_N1D_E5B_BUILD_SOURCE")
+        [[ "$primary_sha" == "$TITAN2_N1D_E5B_SYSTEM_SHA256" ]] || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E5B_PRIMARY_SHA256"
+          return 1
+        }
+        build_state="$evidence_dir/build-state.env"
+        [[ -f "$build_state" ]] || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E5B_BUILD_STATE path=$build_state"
+          return 1
+        }
+        grep -Fxq 'N1D_C3B_E3_SYSTEMIMAGE=PASS' "$build_state" || return 1
+        grep -Fxq "N1D_C3B_E3_CANONICAL_HEAD=$TITAN2_N1D_E5B_BUILD_SOURCE" "$build_state" || return 1
+        grep -Fxq "N1D_C3B_E3_SYSTEM_SHA256=$TITAN2_N1D_E5B_SYSTEM_SHA256" "$build_state" || return 1
+        echo "TITAN2_N1D_C3B_E3_ARTIFACT_GATE=PASS"
+        ;;
+      "$TITAN2_N1D_E6_BUILD_SOURCE")
+        [[ "$primary_sha" == "$TITAN2_N1D_E6_SYSTEM_SHA256" ]] || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E6_PRIMARY_SHA256"
+          return 1
+        }
+        build_state="$evidence_dir/e6-state.env"
+        [[ -f "$build_state" ]] || {
+          echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E6_BUILD_STATE path=$build_state"
+          return 1
+        }
+        for marker in \
+          'N1D_C3B_E6_SYSTEMIMAGE=PASS' \
+          "N1D_C3B_E6_CANONICAL_HEAD=$TITAN2_N1D_E6_BUILD_SOURCE" \
+          'N1D_C3B_E6_RUNTIME_PATCH_COUNT=1' \
+          'N1D_C3B_E6_RUNTIME_PATCH=BM-001_REMOVE_INIT_VNDK_NODEF' \
+          'N1D_C3B_E6_VNDK28_SEPOLICY_ADMISSION=NO' \
+          "N1D_C3B_E6_SYSTEM_SHA256=$TITAN2_N1D_E6_SYSTEM_SHA256" \
+          "N1D_C3B_E6_SYSTEM_BYTES=$TITAN2_N1D_E6_SYSTEM_LOGICAL_BYTES" \
+          'N1D_C3B_E6_SABLE_MODULE_COUNT=5'
+        do
+          grep -Fxq -- "$marker" "$build_state" || {
+            echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_E6_MARKER marker=$marker"
+            return 1
+          }
+        done
+        echo "TITAN2_N1D_C3B_E6_ARTIFACT_GATE=PASS"
+        ;;
+      *)
+        echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_N1D_BUILD_SOURCE actual=$build_source"
+        return 1
+        ;;
+    esac
+
+    echo "TITAN2_N1D_STANDARD_FLASH_PLAN_SUPPORTED=YES"
   fi
 
   echo "SABLE_DEVICE_ARTIFACT_GATE=PASS_TITAN2_GSI"
