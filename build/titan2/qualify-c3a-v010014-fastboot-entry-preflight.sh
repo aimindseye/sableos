@@ -210,18 +210,14 @@ active_cows = {
 require(all(size > 0 for size in active_cows.values()), "ACTIVE_COW_SIZE_INCOMPLETE")
 require(len(active_cows) == 0, "ACTIVE_COW_COUNT_NOT_ZERO")
 
-# Total-super proof from fresh materialized logical partitions.
-allocated_total = sum(logical_sizes.values()) if logical_sizes else 0
-growth = max(0, expected_c3a_bytes - system_current)
-fresh_headroom = expected_super - allocated_total
-remaining = fresh_headroom - growth
-super_capacity_safe = remaining >= minimum_remaining
-require(super_capacity_safe, "TOTAL_SUPER_CAPACITY_NOT_SAFE")
-
-# Group topology/max comes from the sealed pre-N1D V01.00.14 E5B package.
-# The current member sizes are always taken from fresh fastbootd evidence.
+# Group topology/max and whole-super baseline come from the sealed pre-N1D
+# V01.00.14 E5B package. Fresh sizes are read from fastbootd. This avoids
+# treating a device that omits some is-logical:* keys as if those partitions
+# consume zero bytes.
 baseline_group = str(baseline.get("active_group", ""))
 baseline_group_max = parse_int(baseline.get("active_group_maximum_bytes"))
+baseline_group_current = parse_int(baseline.get("active_group_current_bytes"))
+baseline_allocated_total = parse_int(baseline.get("all_materialized_logical_bytes"))
 baseline_members_raw = baseline.get("active_group_members") or {}
 baseline_members = list(baseline_members_raw.keys()) if isinstance(baseline_members_raw, dict) else []
 
@@ -229,11 +225,13 @@ require(str(baseline.get("current_slot", "")).lstrip("_") == expected_slot, "BAS
 require(baseline.get("target_system_partition") == "system_a", "BASELINE_TARGET_NOT_SYSTEM_A")
 require(baseline_group == "main_a", "BASELINE_ACTIVE_GROUP_MISMATCH")
 require(baseline_group_max > 0, "BASELINE_ACTIVE_GROUP_MAXIMUM_MISSING")
+require(baseline_group_current > 0, "BASELINE_ACTIVE_GROUP_CURRENT_MISSING")
+require(baseline_allocated_total > 0, "BASELINE_ALLOCATED_TOTAL_MISSING")
 require("system_a" in baseline_members, "BASELINE_SYSTEM_A_NOT_IN_ACTIVE_GROUP")
 require(bool(baseline_members), "BASELINE_ACTIVE_GROUP_MEMBERS_EMPTY")
 
 fresh_group_sizes = {
-    name: logical_sizes.get(name, 0)
+    name: parse_int(values.get(f"partition-size:{name}", ""))
     for name in baseline_members
 }
 require(all(size > 0 for size in fresh_group_sizes.values()), "FRESH_ACTIVE_GROUP_MEMBER_SIZE_INCOMPLETE")
@@ -241,6 +239,16 @@ fresh_group_current = sum(fresh_group_sizes.values()) if fresh_group_sizes else 
 fresh_group_prospective = fresh_group_current - system_current + expected_c3a_bytes
 group_capacity_safe = baseline_group_max > 0 and fresh_group_prospective <= baseline_group_max
 require(group_capacity_safe, "ACTIVE_GROUP_CAPACITY_NOT_SAFE")
+
+# Only system_a was written in the failed N1D experiment. Rebase the sealed
+# whole-super allocation by the fresh active-group delta, then calculate the
+# C3A target. Any active COW is already a hard failure above.
+allocated_total = baseline_allocated_total + (fresh_group_current - baseline_group_current)
+growth = max(0, expected_c3a_bytes - system_current)
+fresh_headroom = expected_super - allocated_total
+remaining = fresh_headroom - growth
+super_capacity_safe = remaining >= minimum_remaining
+require(super_capacity_safe, "TOTAL_SUPER_CAPACITY_NOT_SAFE")
 
 state = "PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW" if not failures else "BLOCKED_" + failures[0]
 result = {
@@ -258,7 +266,8 @@ result = {
     "snapshot_update_status": snapshot_status,
     "super_bytes": super_bytes,
     "logical_partition_names": sorted(logical_names),
-    "materialized_logical_bytes": allocated_total,
+    "baseline_materialized_logical_bytes": baseline_allocated_total,
+    "materialized_logical_bytes_estimate_from_sealed_baseline_plus_fresh_group_delta": allocated_total,
     "system_a_current_bytes": system_current,
     "c3a_target_bytes": expected_c3a_bytes,
     "system_growth_bytes": growth,
