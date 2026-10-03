@@ -7,6 +7,8 @@ ADMISSION_GATE="$ROOT/build/gates/n1d-c3b-e2-product-admission-contract.sh"
 E1_COMPOSITION_GATE="$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
 APP_BUILD="$ROOT/build/titan2/build-n1d-c3b-e2-product-apps.sh"
 STAGER="$ROOT/build/titan2/stage-n1d-c3b-e2-product-composition.sh"
+PARSE_DRIVER="$ROOT/build/titan2/qualify-n1d-c3b-e2-product-parse.sh"
+MODULE_BUILD="$ROOT/build/titan2/build-n1d-c3b-e2-modules.sh"
 TEMPLATE="$ROOT/product/titan2/c3b"
 MODULE_LEDGER="$ROOT/docs/C3B_PRODUCT_SOURCE_MODULES.tsv"
 
@@ -21,6 +23,8 @@ for f in \
     "$E1_COMPOSITION_GATE" \
     "$APP_BUILD" \
     "$STAGER" \
+    "$PARSE_DRIVER" \
+    "$MODULE_BUILD" \
     "$TEMPLATE/Android.bp" \
     "$TEMPLATE/AndroidProducts.mk" \
     "$TEMPLATE/sable-titan2-apps.mk" \
@@ -33,6 +37,8 @@ done
 bash -n "$PROFILE" || fail "syntax=$PROFILE"
 bash -n "$APP_BUILD" || fail "syntax=$APP_BUILD"
 bash -n "$STAGER" || fail "syntax=$STAGER"
+bash -n "$PARSE_DRIVER" || fail "syntax=$PARSE_DRIVER"
+bash -n "$MODULE_BUILD" || fail "syntax=$MODULE_BUILD"
 
 bash "$ADMISSION_GATE"
 bash "$E1_COMPOSITION_GATE"
@@ -244,13 +250,37 @@ do
     grep -Fq -- "$token" "$STAGER" || fail "stager_token_missing=$token"
 done
 
-if grep -Eq '(^|[[:space:]])(curl|wget)([[:space:]]|$)|git[[:space:]]+(clone|fetch|pull)([[:space:]]|$)' "$APP_BUILD" "$STAGER"; then
+for token in \
+    'N1D_C3B_E2_PRODUCT_PARSE_IDENTITY=PASS_SABLE_TITAN2' \
+    'N1D_C3B_E2_PRODUCT_PARSE_BASE_INHERIT=PASS_GENERATED_E1_TREBLE' \
+    'ANDROID_TARGET_COMPILATION_AUTHORIZED=NO' \
+    'DEVICE_CONTACT_AUTHORIZED=NO' \
+    'PRODUCTION_SIGNING_AUTHORIZED=NO'
+do
+    grep -Fq -- "$token" "$PARSE_DRIVER" || fail "parse_driver_token_missing=$token"
+done
+
+for token in \
+    'BUILD_AUTHORIZED=YES_EXACT_5_MODULES' \
+    'FULL_IMAGE_BUILD_AUTHORIZED=NO' \
+    'SableTitan2Keyboard' \
+    'SableTitan2Camera' \
+    'SableTitan2DisplayCompat' \
+    'SableTitan2Setup' \
+    'SableTitan2RadioDiag' \
+    'N1D_C3B_E2_MODULE_BUILD_FULL_IMAGE=PASS_ABSENT' \
+    'PRODUCTION_SIGNING_AUTHORIZED=NO'
+do
+    grep -Fq -- "$token" "$MODULE_BUILD" || fail "module_build_token_missing=$token"
+done
+
+if grep -Eq '(^|[[:space:]])(curl|wget)([[:space:]]|$)|git[[:space:]]+(clone|fetch|pull)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
     fail network_command_present
 fi
-if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$APP_BUILD" "$STAGER"; then
+if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
     fail device_command_present
 fi
-if grep -Eq 'rm[[:space:]]+-rf|repo[[:space:]]+sync' "$APP_BUILD" "$STAGER"; then
+if grep -Eq 'rm[[:space:]]+-rf|repo[[:space:]]+sync' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
     fail destructive_or_sync_command_present
 fi
 
