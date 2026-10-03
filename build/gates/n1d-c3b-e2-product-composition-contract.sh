@@ -298,10 +298,10 @@ done
 if grep -Eq '(^|[[:space:]])(curl|wget)([[:space:]]|$)|git[[:space:]]+(clone|fetch|pull)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD" "$ORCHESTRATOR"; then
     fail network_command_present
 fi
-if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
+if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD" "$ORCHESTRATOR"; then
     fail device_command_present
 fi
-if grep -Eq 'rm[[:space:]]+-rf|repo[[:space:]]+sync' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
+if grep -Eq 'rm[[:space:]]+-rf|repo[[:space:]]+sync' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD" "$ORCHESTRATOR"; then
     fail destructive_or_sync_command_present
 fi
 
