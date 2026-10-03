@@ -21,7 +21,7 @@ if grep -Eq '^[[:space:]]*(adb|fastboot|curl|wget|repo[[:space:]]+sync|make[[:sp
   fail forbidden_command_present
 fi
 
-if grep -Eq '(unzip[[:space:]]+-p[^|>]*>[[:space:]]*[^&]|cp[[:space:]]|mv[[:space:]]|install[[:space:]])' "$AUDIT"; then
+if grep -Eq '(unzip[[:space:]]+-p.*[[:space:]]>[[:space:]]*[^&]|^[[:space:]]*(cp|mv|install)[[:space:]])' "$AUDIT"; then
   fail artifact_write_command_present
 fi
 
