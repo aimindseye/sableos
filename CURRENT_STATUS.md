@@ -345,14 +345,19 @@ C3A-first runtime-recovery control order.
 offline:
  -> exact C3A artifact + V01.00.14 control plan = PASS / SEALED
 
-physical read-only (next):
+physical read-only (completed PASS / sealed):
  -> phone is already in fastboot because N1D is bootlooping; do not require Android/ADB entry
  -> run C3A fastboot-entry device-binding / fastbootd / snapshot / COW / capacity preflight
  -> require target system_a, active COW count 0, active-group and super capacity safe
  -> leave phone in userspace fastbootd
  -> no write and no reset
 
-physical mutation (still separately gated):
+offline (next):
+ -> register exact C3A artifact and sealed prerequisites through the canonical registry
+ -> generate and seal the standard C3A no-write plan
+ -> stop after reporting the exact plan seal
+
+later execution remains separately gated:
  -> exact sealed C3A system_a write only
  -> separate explicitly authorized factory reset if required
  -> boot + transient telemetry capture
