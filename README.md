@@ -30,7 +30,7 @@ C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
 COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
 N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE
 N1E_STATUS=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
-C3A_V010014_CONTROL=NEXT_COMPATIBILITY_CONTROL
+C3A_V010014_CONTROL=OFFLINE_PREP_PASS_LIVE_PREFLIGHT_NEXT
 N1F_STATUS=RESERVED_PENDING_C3A_BOOT
 ```
 
@@ -40,7 +40,8 @@ files were not retained and both critical pinned source objects are provider-
 confirmed absent. N1E is retired rather than redefined.
 
 The next compatibility control is the sealed C3A source-built public-functional
-Restless/TrebleDroid image on current V01.00.14. If C3A boots, N1F is reserved
+Restless/TrebleDroid image on current V01.00.14. Offline preparation has passed;
+the next step is a fresh read-only live preflight before any write is considered. If C3A boots, N1F is reserved
 for the later minimal C3A-derived five-Sable-app isolation. If C3A is unavailable
 or inconclusive/fails, the pinned published C2 RestlessOS prebuilt may be
 reviewed as an independent second diagnostic control. N1D/E6 remain frozen.
