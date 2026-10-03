@@ -115,6 +115,33 @@ See:
 - `docs/titan2/N1D_C3B_E4_DEPLOYMENT_READINESS_EVIDENCE.md`
 - `docs/titan2/N1D_C3B_E5_MANUAL_AUTHORIZATION_CHECKPOINT.md`
 
+## E5A authorization
+
+The operator/user explicitly authorized fresh read-only Titan 2 device-state
+revalidation, including the reboots required to reach userspace fastbootd.
+
+```text
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_ADB_READONLY_AUTHORIZED=YES
+E5A_FASTBOOT_READONLY_AUTHORIZED=YES
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+
+E5B_FLASH_AUTHORIZED=NO
+E5B_ERASE_AUTHORIZED=NO
+E5B_LP_MUTATION_AUTHORIZED=NO
+E5B_AVB_MUTATION_AUTHORIZED=NO
+E5B_SLOT_MUTATION_AUTHORIZED=NO
+E5B_UNLOCK_LOCK_AUTHORIZED=NO
+E5B_FACTORY_RESET_AUTHORIZED=NO
+```
+
+E5A reuses the audited N1B Phase 10A/10B and Phase 11 read-only collectors,
+then applies a C3B-specific offline qualifier. It intentionally leaves the
+device in fastbootd after evidence capture.
+
+See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
+
 ## Assignment model
 
 Two lanes proceed in parallel.
@@ -295,7 +322,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
 | E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
-| E5 | first physical C3B boot | fresh read-only revalidation, then separately authorized deployment + untouched baseline | **MANUAL AUTHORIZATION REQUIRED** |
+| E5 | first physical C3B boot | E5A fresh read-only revalidation, then separately authorized E5B deployment + untouched baseline | **E5A AUTHORIZED / E5B NOT AUTHORIZED** |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
 | E8A | core OS usability | Start, Keyboard, Setup, Settings, Hub/Messages, browser/files | PARALLEL SOURCE WORK |
