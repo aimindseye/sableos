@@ -61,7 +61,7 @@ checks={
 "NO_LP_MUTATION_BOUNDARY_VIOLATED":e.get("lp_mutation_authorized")=="NO" and c.get("lp_mutation_authorized") is False,
 }
 bad=[k for k,v in checks.items() if not v]
-state="PASS_READY_FOR_CONTROL_EXECUTION_REVIEW" if not bad else "BLOCKED_"+bad[0]
+state="PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW" if not bad else "BLOCKED_"+bad[0]
 r={"schema":1,"phase":"C3A_V010014_LIVE_PREFLIGHT","final_state":state,
    "checks":checks,"failures":bad,"system_current_bytes":f.get("system_current_bytes",0),
    "planned_system_target_bytes":f.get("planned_system_target_bytes",0),
