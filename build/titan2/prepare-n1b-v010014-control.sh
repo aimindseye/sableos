@@ -267,7 +267,7 @@ EOF_PLAN
 
 (
   cd "$EVIDENCE_DIR"
-  find . -type f ! -name SHA256SUMS.txt -print0 |
+  find . -type f ! -name SHA256SUMS.txt ! -name prepare.log -print0 |
     LC_ALL=C sort -z |
     xargs -0 sha256sum > SHA256SUMS.txt
   sha256sum -c SHA256SUMS.txt >/dev/null

@@ -69,6 +69,7 @@ grep -Fq '[[ "$e5b_sha" == "$EXPECTED_E5B_SHA256" ]]' "$PREP" || fail e5b_hash_g
 grep -Fq '[[ "$actual_sha" == "$EXPECTED_N1B_SHA256" ]]' "$PREP" || fail n1b_hash_gate_missing
 grep -Fq '[[ "$actual_bytes" == "$EXPECTED_N1B_BYTES" ]]' "$PREP" || fail n1b_size_gate_missing
 grep -Fq 'GSI_IMAGE_LOGICAL_BYTES=$EXPECTED_N1B_BYTES' "$PREP" || fail n1b_geometry_gate_missing
+grep -Fq '! -name prepare.log' "$PREP" || fail live_prepare_log_must_be_excluded_from_seal
 
 if grep -Eq '^[[:space:]]*(repo[[:space:]]+sync|make[[:space:]]|m[[:space:]]|ninja[[:space:]]|fastboot[[:space:]]+(flash|erase|delete-logical-partition|resize-logical-partition)|adb[[:space:]]+reboot)' "$PREP"; then
   fail mutation_command_present
