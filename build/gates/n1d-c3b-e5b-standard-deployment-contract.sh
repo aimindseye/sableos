@@ -43,7 +43,7 @@ for marker in \
   'artifacts.e5b_freeze.path' \
   'artifacts.e5b_freeze.sha256'
 do
-  grep -Fq "$marker" "$ADAPTER" || fail "adapter_marker=$marker"
+  grep -Fq -- "$marker" "$ADAPTER" || fail "adapter_marker=$marker"
 done
 
 for marker in \
@@ -67,7 +67,7 @@ for marker in \
   'FLASH_AUTHORIZED=NO' \
   'N1D_C3B_E5B_STANDARD_FLASH_PLAN=PASS_PREPARED_NO_WRITE'
 do
-  grep -Fq "$marker" "$PLAN" || fail "plan_marker=$marker"
+  grep -Fq -- "$marker" "$PLAN" || fail "plan_marker=$marker"
 done
 
 if grep -Eq '^[[:space:]]*(sudo[[:space:]]+)?(adb|fastboot)([[:space:]]|$)' "$PLAN"; then
