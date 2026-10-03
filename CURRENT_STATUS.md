@@ -43,14 +43,19 @@ CURRENT_STOCK_FIRMWARE=V01.00.14
 HISTORICAL_N1B_BOOT_FIRMWARE=V01.00.13
 N1D_REFLASH=HOLD
 E6_RUNTIME_BASELINE=HOLD
-N1B_V010014_CONTROL=PENDING
+N1B_V010014_CONTROL=BLOCKED_EXACT_ARTIFACT_NOT_RETAINED
+N1B_EXACT_RECONSTRUCTION_FEASIBILITY=PENDING_AUDIT
 N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
 N1E_FLASH_AUTHORIZED=NO
 ```
 
-The next physical experiment is the exact sealed N1B system artifact on the
-current V01.00.14 state using the already proven active-`system_a` fastbootd
-path and the same first-boot data reset. A successful N1B boot isolates the
+The intended next physical experiment remains the exact sealed N1B system
+artifact on the current V01.00.14 state. However, the original N1B workspace,
+the exact `system.img`, and the exact target-files archive are no longer
+present in retained storage. Physical execution is therefore blocked while an
+exact-reconstruction feasibility audit determines whether the historical
+Android source/product state can be re-materialized and reproduce the exact
+`bc550b...` system hash and `29d21d...` target-files hash. A successful N1B boot isolates the
 failure to the broad N1D system-side delta; it does not by itself prove that
 `COUNT=0`, dm-verity or any one compatibility patch family is causal.
 
@@ -300,11 +305,14 @@ N1B -> N1E recovery order.
 
 ```text
 offline:
- -> bind the five N1E APK hashes from the sealed E2 bundle
- -> rerun the N1E qualification selftest on the real host
+ -> run exact N1B reconstruction-feasibility audit
+ -> recover/re-materialize the pinned N1B build inputs only if the audit supports it
+ -> require rebuilt system.img SHA256=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e
+ -> require rebuilt target-files SHA256=29d21d08ceb9c286e85ec52996dcc53a17fd0290cc979b5853709ef7357f2481
+ -> keep N1E hash binding/selftest offline work non-authorizing
 
-physical:
- -> exact sealed N1B on current V01.00.14
+physical (blocked until exact N1B bytes exist):
+ -> exact sealed/reproduced N1B on current V01.00.14
  -> same active-system_a deployment model
  -> factory reset
  -> boot + transient telemetry capture
