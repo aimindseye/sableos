@@ -9,48 +9,43 @@ be used for requirements, deployment lessons and acceptance criteria.
 
 ## Runtime-recovery override
 
-The previous E5-first-boot -> E6 sequence remains suspended after the N1D
-physical attempt entered a reboot loop. Build qualification is preserved as
-evidence, but N1D is not a boot-qualified baseline.
-
-The exact-N1B path has now been exhausted:
-
-```text
-N1B_EXACT_IMAGE=NOT_RETAINED
-N1B_EXACT_TARGET_FILES=NOT_RETAINED
-N1B_CRITICAL_SOURCE_OBJECTS_LOCAL=NOT_FOUND
-N1B_CRITICAL_SOURCE_OBJECTS_PROVIDER=ABSENT_CONFIRMED_BOTH
-N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE
-N1E=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
-```
-
-No available artifact is relabeled as N1B.
-
-The current control sequence is:
+C3A is physically boot-qualified on current Titan 2 firmware V01.00.14.
+Restless/TrebleDroid compatibility is therefore the immediate runtime
+foundation for the next isolation experiment rather than the earlier plain
+C3B image.
 
 ```text
-CONTROL_1=C3A_SOURCE_BUILT_PUBLIC_FUNCTIONAL_REPRODUCTION
 C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
 C3A_SYSTEM_BYTES=3146977280
 C3A_CONTROL_PATCH_COUNT=369
-C3A_V010014_CONTROL=FASTBOOT_ENTRY_PREFLIGHT_PASS_STANDARD_PLAN_NEXT
-N1F=RESERVED_PENDING_C3A_BOOT
-CONTROL_2=C2_PINNED_PUBLISHED_RESTLESSOS_PREBUILT_REVIEW_ONLY_IF_NEEDED
-E6_RUNTIME_BASELINE=HOLD
+C3A_V010014_COMPATIBILITY_BASELINE=PASS
+
+N1F_ROLE=C3A_DERIVED_C3B5_BOOT_ISOLATION
+N1F_COMPATIBILITY_PATCH_DELTA=0
+N1F_SABLE_MODULE_COUNT=5
+N1F_DRIVER=build/titan2/run-n1f-c3a-derived-c3b5.sh
 ```
 
-If C3A boots on current V01.00.14, it establishes that the current device/vendor
-state can boot the broad public Restless/TrebleDroid compatibility substrate.
-It does not prove any one patch or `COUNT=0` alone is causal. N1F is then the
-reserved later minimal five-Sable-app isolation derived from the exact qualified
-C3A baseline.
+The single current operator sequence is:
 
-If C3A is unavailable or its physical result is inconclusive/fails, C2 may be
-reviewed as an independent second diagnostic control. C2 is not N1B and is not
-a Sable release baseline.
+```text
+archive boot-qualified C3A history
+ -> build five admitted Sable APKs offline
+ -> stage seven files + one C3A rom.mk inherit
+ -> incremental C3A systemimage
+ -> verify exact five system/product packages
+ -> preserve derived system.img + hashes
+ -> restore C3A source delta
+ -> enter/verify fastbootd, slot a, snapshot none, zero active COWs
+ -> flash system_a once
+ -> reboot once
+ -> observe boot
+```
 
-Authority:
-`docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md`.
+Factory reset is not part of the first N1F attempt. No telephony remediation is
+included in this image; the observed radio-state issue remains a separate
+runtime investigation.
+
 
 ## Current state
 
