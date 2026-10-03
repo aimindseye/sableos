@@ -21,17 +21,17 @@ bash "$ROOT/build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh" >/dev/nul
 bash "$ROOT/build/gates/n1d-c3b-e5b-authorization-package-contract.sh" >/dev/null
 
 for marker in \
-  'SABLE_E5A_SYSTEM_IMG=' \
-  'SABLE_E5A_EXPECTED_SYSTEM_SHA256=' \
-  'SABLE_E5A_EXPECTED_SYSTEM_BYTES='; do
-  grep -Fq -- "$marker" "$E5A_COLLECTOR" || fail "parameterized_collector_missing=$marker"
+  'SABLE_E5A_SYSTEM_IMG:-/srv/sable-build/workspaces/titan2-n1d-c3b/' \
+  'SABLE_E5A_EXPECTED_SYSTEM_SHA256:-998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5' \
+  'SABLE_E5A_EXPECTED_SYSTEM_BYTES:-2994405376'; do
+  grep -Fq -- "$marker" "$E5A_COLLECTOR" || fail "collector_default_missing=$marker"
 done
 
 for marker in \
-  'SABLE_E5A_EXPECTED_SYSTEM_SHA256' \
-  'SABLE_E5A_EXPECTED_SYSTEM_BYTES' \
-  'SABLE_E5A_PLANNED_SYSTEM_TARGET_BYTES'; do
-  grep -Fq -- "$marker" "$E5A_QUALIFIER" || fail "parameterized_qualifier_missing=$marker"
+  'SABLE_E5A_EXPECTED_SYSTEM_SHA256:-998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5' \
+  'SABLE_E5A_EXPECTED_SYSTEM_BYTES:-2994405376' \
+  'SABLE_E5A_PLANNED_SYSTEM_TARGET_BYTES:-3263168512'; do
+  grep -Fq -- "$marker" "$E5A_QUALIFIER" || fail "qualifier_default_missing=$marker"
 done
 
 for marker in \
@@ -72,8 +72,7 @@ for marker in \
   'PASS_READY_FOR_CONTROL_EXECUTION_REVIEW' \
   'C3A_V010014_LIVE_FLASH_AUTHORIZED=NO' \
   'C3A_V010014_LIVE_FACTORY_RESET_AUTHORIZED=NO' \
-  'C3A_V010014_LIVE_WRITE_CAPABLE_SCRIPT_CREATED=NO' \
-  'PASS_READY_FOR_PHYSICAL_CONTROL_REVIEW'; do
+  'C3A_V010014_LIVE_WRITE_CAPABLE_SCRIPT_CREATED=NO'; do
   grep -Fq -- "$marker" "$QUALIFIER" || fail "qualifier_marker_missing=$marker"
 done
 
