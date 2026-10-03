@@ -254,12 +254,18 @@ build/titan2/build-n1d-c3b-e2-product-apps.sh
 build/titan2/stage-n1d-c3b-e2-product-composition.sh
 build/titan2/qualify-n1d-c3b-e2-product-parse.sh
 build/titan2/build-n1d-c3b-e2-modules.sh
+build/titan2/qualify-n1d-c3b-e2-product-composition.sh
 build/gates/n1d-c3b-e2-product-admission-contract.sh
 build/gates/n1d-c3b-e2-product-composition-contract.sh
 product/titan2/c3b/
 ~~~
 
 E2 composition is currently defined but not yet parse- or compile-qualified.
+The one-shot qualifier runs the required sequence in order: offline source-bound
+APK build, bounded Android-workspace staging, product parse, then an exact
+five-module Android build. The module build requires the parse evidence produced
+by that same qualification run.
+
 It authorizes no target-files/OTA, device contact, flash, production signing,
 physical runtime or release.
 
