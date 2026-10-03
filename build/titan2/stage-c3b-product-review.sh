@@ -372,13 +372,26 @@ copied = [
     for p in copied_nul.read_bytes().split(b"\0")
     if p
 ]
+
+binary_files = []
 crlf_batch_files = []
 for path in copied:
+    numstat = subprocess.check_output(
+        ["git", "-C", str(root), "diff", "--cached", "--numstat", "--", path],
+        text=True,
+    ).strip()
+    fields = numstat.split("\t", 2)
+    if len(fields) < 2:
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL missing_numstat_path={path}")
+    if fields[0] == "-" and fields[1] == "-":
+        binary_files.append(path)
+        continue
+
     body = subprocess.check_output(["git", "-C", str(root), "show", f":{path}"])
     if b"\r" not in body:
         continue
     if path != allowed_path or not path.endswith(".bat"):
-        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL unexpected_cr_path={path}")
+        raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL unexpected_cr_text_path={path}")
     remainder = body.replace(b"\r\n", b"")
     if b"\r" in remainder or b"\n" in remainder:
         raise SystemExit(f"C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL malformed_crlf_path={path}")
@@ -399,7 +412,11 @@ if crlf_batch_files != [allowed_path]:
         "C3B_PRODUCT_STAGE_LINE_ENDINGS=FAIL "
         f"expected={[allowed_path]} actual={crlf_batch_files}"
     )
-print("C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS crlf_batch_files=1")
+print(
+    "C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS "
+    f"crlf_batch_files={len(crlf_batch_files)} "
+    f"binary_files={len(binary_files)}"
+)
 PY
 
 git -C "$ROOT" -c core.whitespace=cr-at-eol diff --cached --check
