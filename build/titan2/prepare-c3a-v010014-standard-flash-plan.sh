@@ -111,6 +111,20 @@ done
 [[ -n "$EVIDENCE_DIR" ]] || fail evidence_dir_missing 64
 mkdir -p "$EVIDENCE_DIR"
 
+[[ "$(dirname "$PREFLIGHT_JSON")" == "$(dirname "$PREFLIGHT_SUMS")" ]] ||
+  fail preflight_json_not_in_sealed_dir
+[[ "$(basename "$PREFLIGHT_JSON")" == "c3a-v010014-fastboot-entry-preflight.json" ]] ||
+  fail preflight_json_basename
+[[ "$(basename "$PREFLIGHT_SUMS")" == "SHA256SUMS.txt" ]] ||
+  fail preflight_sums_basename
+
+[[ "$(dirname "$OFFLINE_PLAN")" == "$(dirname "$OFFLINE_SUMS")" ]] ||
+  fail offline_plan_not_in_sealed_dir
+[[ "$(basename "$OFFLINE_PLAN")" == "c3a-v010014-control-plan.env" ]] ||
+  fail offline_plan_basename
+[[ "$(basename "$OFFLINE_SUMS")" == "SHA256SUMS.txt" ]] ||
+  fail offline_sums_basename
+
 # shellcheck source=/dev/null
 source "$C3A_ENV"
 [[ "${N1D_C3A_CONTROL_EVIDENCE_STATUS:-}" == PASS_SYSTEMIMAGE ]] || fail c3a_evidence_status
@@ -136,6 +150,11 @@ source "$C3A_ENV"
   cd "$(dirname "$OFFLINE_SUMS")"
   sha256sum -c "$(basename "$OFFLINE_SUMS")" >/dev/null
 ) || fail offline_evidence_seal_invalid
+
+grep -Eq "^[0-9a-f]{64}[[:space:]]+\*?\./c3a-v010014-fastboot-entry-preflight\.json$" "$PREFLIGHT_SUMS" ||
+  fail preflight_json_not_listed_in_seal
+grep -Eq "^[0-9a-f]{64}[[:space:]]+\*?\./c3a-v010014-control-plan\.env$" "$OFFLINE_SUMS" ||
+  fail offline_plan_not_listed_in_seal
 
 GSI_INFO_OUT="$EVIDENCE_DIR/gsi-image-info.txt"
 python3 "$GSI_INFO" --image "$SYSTEM_IMG" | tee "$GSI_INFO_OUT"
@@ -316,8 +335,11 @@ FACTORY_RESET_ALLOWED=NO
 POST_WRITE_REBOOT_COUNT=1
 POSTBOOT_OBSERVATION_ONLY=YES
 AUTOMATIC_FLASH_RETRY_ALLOWED=NO
+PREFLIGHT_JSON_SHA256=$PREFLIGHT_JSON_SHA256
 PREFLIGHT_EVIDENCE_SEAL_SHA256=$EXPECTED_PREFLIGHT_SEAL_SHA256
+OFFLINE_CONTROL_PLAN_SHA256=$OFFLINE_PLAN_SHA256
 OFFLINE_CONTROL_EVIDENCE_SEAL_SHA256=$EXPECTED_OFFLINE_SEAL_SHA256
+BASELINE_E5A_SHA256=$BASELINE_E5A_SHA256
 BASELINE_E5B_SHA256=$EXPECTED_BASELINE_E5B_SHA256
 WRITE_CAPABLE_SCRIPT_CREATED=NO
 FLASH_AUTHORIZED=NO
