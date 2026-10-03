@@ -540,3 +540,166 @@ case "$final_state" in
     exit 4
     ;;
 esac
+uped_logical_names),
+    "all_slots_reported_dynamic_total_bytes": all_slots_total,
+    "allocation_basis": allocation_basis,
+    "fresh_super_headroom_all_slots_estimate_bytes": headroom_all_slots,
+    "system_current_bytes": system_current,
+    "planned_system_target_bytes": target,
+    "planned_system_growth_bytes": growth,
+    "remaining_headroom_after_planned_growth_bytes": remaining_after_growth,
+    "minimum_remaining_headroom_bytes": minimum_remaining,
+    "capacity_safe": capacity_safe,
+    "classification": classification,
+    "flash_authorized": False,
+    "lp_mutation_authorized": False,
+    "avb_mutation_authorized": False,
+    "slot_mutation_authorized": False,
+}
+json_out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+print(f"FASTBOOTD_CURRENT_SLOT={slot or 'UNKNOWN'}")
+print(f"FASTBOOTD_IS_USERSPACE={is_userspace or 'UNKNOWN'}")
+print(f"FASTBOOTD_UNLOCKED={unlocked or 'UNKNOWN'}")
+print(f"FASTBOOTD_SECURE={secure or 'UNKNOWN'}")
+print(f"FASTBOOTD_SNAPSHOT_UPDATE_STATUS={snapshot}")
+print(f"FASTBOOTD_SYSTEM_CURRENT_BYTES={system_current}")
+print(f"FASTBOOTD_SUPER_BYTES={super_bytes}")
+print(f"FASTBOOTD_ACTIVE_SELECTED_DYNAMIC_TOTAL_BYTES={active_total}")
+print(f"FASTBOOTD_LOGICAL_NAME_COUNT={len(deduped_logical_names)}")
+print(f"FASTBOOTD_ALLOCATION_BASIS={allocation_basis}")
+print(f"FASTBOOTD_ALL_SLOTS_REPORTED_DYNAMIC_TOTAL_BYTES={all_slots_total}")
+print(f"FASTBOOTD_FRESH_SUPER_HEADROOM_ALL_SLOTS_ESTIMATE_BYTES={headroom_all_slots}")
+print(f"FASTBOOTD_PLANNED_SYSTEM_TARGET_BYTES={target}")
+print(f"FASTBOOTD_PLANNED_SYSTEM_GROWTH_BYTES={growth}")
+print(f"FASTBOOTD_REMAINING_HEADROOM_AFTER_PLANNED_GROWTH_BYTES={remaining_after_growth}")
+print(f"FASTBOOTD_CAPACITY_SAFE={'YES' if capacity_safe else 'NO'}")
+print(f"E5A_FASTBOOTD_CLASSIFICATION={classification}")
+PY
+
+# shellcheck disable=SC1090
+source "$EVIDENCE_DIR/fastbootd-summary.env"
+cat "$EVIDENCE_DIR/fastbootd-summary.env"
+
+[[ "$FASTBOOTD_CURRENT_SLOT" == "$ADB_CURRENT_SLOT" ]] || fail "slot_changed_between_adb_and_fastbootd"
+[[ "$FASTBOOTD_IS_USERSPACE" == yes ]] || fail "final_mode_not_fastbootd"
+[[ "$FASTBOOTD_UNLOCKED" == yes ]] || fail "fastbootd_not_unlocked"
+[[ "$FASTBOOTD_SYSTEM_CURRENT_BYTES" =~ ^[1-9][0-9]*$ ]] || fail "fresh_system_size_missing"
+[[ "$FASTBOOTD_SUPER_BYTES" =~ ^[1-9][0-9]*$ ]] || fail "fresh_super_size_missing"
+
+lpdump_status=REVIEW_NOT_AVAILABLE
+if [[ -s "$EVIDENCE_DIR/lpdump.txt" ]]; then
+  lpdump_status=PASS_CAPTURED
+fi
+echo "N1D_C3B_E5A_LPDUMP=$lpdump_status"
+
+snapshot_adb_status=REVIEW
+if grep -Eqi 'no snapshots|none|idle|state[^[:alnum:]]*(none|idle)|snapshots[^[:alnum:]]*0' "$EVIDENCE_DIR/snapshotctl-status.txt"; then
+  snapshot_adb_status=PASS_IDLE_OR_NONE
+elif grep -Eqi 'merge|merging|snapshotted|initiated|ready' "$EVIDENCE_DIR/snapshotctl-status.txt"; then
+  snapshot_adb_status=BLOCK_ACTIVE
+fi
+echo "N1D_C3B_E5A_ADB_SNAPSHOT_STATE=$snapshot_adb_status"
+
+update_engine_status=REVIEW
+if grep -Eqi 'IDLE|UPDATED_NEED_REBOOT|CURRENT_OP[^[:alnum:]]*0' "$EVIDENCE_DIR/update-engine.txt"; then
+  update_engine_status=PASS_IDLE_OR_COMPLETE
+elif grep -Eqi 'DOWNLOADING|VERIFYING|FINALIZING|MERGING|UPDATED_BUT_NOT_ACTIVE' "$EVIDENCE_DIR/update-engine.txt"; then
+  update_engine_status=BLOCK_ACTIVE
+fi
+echo "N1D_C3B_E5A_UPDATE_ENGINE_STATE=$update_engine_status"
+
+final_state="$E5A_FASTBOOTD_CLASSIFICATION"
+if [[ "$final_state" == PASS_REVIEW_READY_SNAPSHOT_STATUS_REQUIRES_ADB_EVIDENCE_REVIEW &&
+      "$snapshot_adb_status" == PASS_IDLE_OR_NONE &&
+      "$update_engine_status" == PASS_IDLE_OR_COMPLETE ]]; then
+  final_state=PASS_REVIEW_READY
+fi
+if [[ "$ADB_BATTERY_SANITY" != PASS ]]; then
+  final_state="BLOCKED_BATTERY_NOT_READY_FOR_FUTURE_MUTATION"
+fi
+if [[ "$snapshot_adb_status" == BLOCK_ACTIVE || "$update_engine_status" == BLOCK_ACTIVE ]]; then
+  final_state="BLOCKED_ACTIVE_SNAPSHOT_OR_UPDATE"
+fi
+
+python3 - \
+  "$EVIDENCE_DIR" \
+  "$serial_binding_sha256" \
+  "$final_state" \
+  "$actual_system_sha" \
+  "$actual_system_bytes" \
+  "$JSON_OUT" <<'PY'
+from __future__ import annotations
+import json
+import pathlib
+import sys
+
+root = pathlib.Path(sys.argv[1])
+serial_hash = sys.argv[2]
+final_state = sys.argv[3]
+system_sha = sys.argv[4]
+system_bytes = int(sys.argv[5])
+out = pathlib.Path(sys.argv[6])
+
+def env_file(name: str) -> dict[str, str]:
+    result = {}
+    path = root / name
+    if not path.exists():
+        return result
+    for line in path.read_text(errors="replace").splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            result[k] = v
+    return result
+
+result = {
+    "schema": 1,
+    "phase": "N1D_C3B_E5A_READONLY_DEVICE_STATE",
+    "device": "titan2",
+    "device_binding_sha256": serial_hash,
+    "sealed_system_sha256": system_sha,
+    "sealed_system_bytes": system_bytes,
+    "adb": env_file("adb-summary.env"),
+    "bootloader": env_file("bootloader-summary.env"),
+    "fastbootd": env_file("fastbootd-summary.env"),
+    "lpdump_captured": (root / "lpdump.txt").exists() and (root / "lpdump.txt").stat().st_size > 0,
+    "device_contact_authorized": "YES_READ_ONLY_E5A",
+    "reboot_bootloader_authorized": "YES",
+    "reboot_fastbootd_authorized": "YES",
+    "flash_authorized": "NO",
+    "erase_authorized": "NO",
+    "lp_mutation_authorized": "NO",
+    "avb_mutation_authorized": "NO",
+    "slot_mutation_authorized": "NO",
+    "unlock_lock_authorized": "NO",
+    "factory_reset_authorized": "NO",
+    "custom_boot_authorized": "NO",
+    "final_device_mode": "FASTBOOTD",
+    "reboot_back_to_android": "NO_NOT_AUTHORIZED",
+    "final_state": final_state,
+}
+out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+
+echo "N1D_C3B_E5A_FLASH_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_ERASE_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_LP_MUTATION_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_AVB_MUTATION_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_SLOT_MUTATION_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_UNLOCK_LOCK_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_FACTORY_RESET_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_CUSTOM_BOOT_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_FINAL_DEVICE_MODE=FASTBOOTD"
+echo "N1D_C3B_E5A_REBOOT_BACK_TO_ANDROID=NO_NOT_AUTHORIZED"
+echo "N1D_C3B_E5A_EVIDENCE_JSON=$JSON_OUT"
+echo "N1D_C3B_E5A_EVIDENCE_DIR=$EVIDENCE_DIR"
+echo "N1D_C3B_E5A_READONLY_DEVICE_STATE=$final_state"
+
+case "$final_state" in
+  PASS_REVIEW_READY|PASS_REVIEW_READY_SNAPSHOT_STATUS_REQUIRES_ADB_EVIDENCE_REVIEW)
+    exit 0
+    ;;
+  *)
+    exit 4
+    ;;
+esac
