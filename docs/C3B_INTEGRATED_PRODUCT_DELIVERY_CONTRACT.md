@@ -1216,9 +1216,15 @@ decides where they are inherited.
 
 Requirements:
 
-- fragments target the canonical `sable_titan2_n1d_arm64` composition;
-- canonical staging authority is `vendor/sable/n1d`;
-- no `vendor/sable/titan2` product authority;
+- Titan 2 fragments integrate through the canonical E2 thin-wrapper product
+  `sable_titan2`, which inherits the proven generated E1
+  `device/phh/treble/treble_arm64_bvN.mk` graph;
+- canonical Android-workspace staging authority is `vendor/sable/titan2`,
+  populated only by the canonical E2 staging driver;
+- the retired `sable_titan2_n1d_arm64` / `vendor/sable/n1d` direct
+  handcrafted product must not be revived;
+- the parallel product lane must not create a second `vendor/sable/titan2`
+  authority;
 - no repository-stored presigned APKs;
 - no product assurance properties owned by the parallel lane;
 - one Titan 2 fragment;
