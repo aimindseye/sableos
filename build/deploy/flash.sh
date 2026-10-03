@@ -22,6 +22,7 @@ DEVICE=""
 RELEASE=""
 BUILD_SOURCE=""
 SERIAL=""
+SCOPE_TOKEN=""
 AUTHORIZED=NO
 PRESERVE_DATA=NO
 REGISTRY_ROOT="${SABLE_RELEASE_REGISTRY_ROOT:-/srv/data/sable-build/release-registry}"
@@ -35,6 +36,7 @@ usage:
     --release <release> \
     --build-source <40-hex-sha> \
     --serial <adb/transport-serial> \
+    [--scope-token <adapter-specific-scope-token>] \
     --preserve-data \
     --authorize
 EOF
@@ -46,6 +48,7 @@ while (($#)); do
     --release) RELEASE="$2"; shift 2 ;;
     --build-source) BUILD_SOURCE="$2"; shift 2 ;;
     --serial) SERIAL="$2"; shift 2 ;;
+    --scope-token) SCOPE_TOKEN="$2"; shift 2 ;;
     --registry-root) REGISTRY_ROOT="$2"; shift 2 ;;
     --evidence-root) EVIDENCE_ROOT="$2"; shift 2 ;;
     --preserve-data) PRESERVE_DATA=YES; shift ;;
@@ -67,6 +70,28 @@ ADAPTER="$ROOT/build/devices/$DEVICE.sh"
 [[ -f "$ADAPTER" ]] || sable_die "SABLE_DEVICE_ADAPTER" "missing adapter for $DEVICE" 64
 # shellcheck source=/dev/null
 source "$ADAPTER"
+
+if declare -F sable_device_flash_policy >/dev/null 2>&1; then
+  sable_device_flash_policy "$RELEASE" "$BUILD_SOURCE" "$SCOPE_TOKEN" ||
+    sable_die "SABLE_DEVICE_FLASH_POLICY" "adapter release/build/scope policy blocked flashing" 78
+fi
+
+SABLE_DEVICE_FLASH_ENTRY_MODE="${SABLE_DEVICE_FLASH_ENTRY_MODE:-adb}"
+SABLE_DEVICE_PRESERVED_DATA_BASELINE_REQUIRED="${SABLE_DEVICE_PRESERVED_DATA_BASELINE_REQUIRED:-YES}"
+SABLE_DEVICE_POSTBOOT_POLICY="${SABLE_DEVICE_POSTBOOT_POLICY:-android-preserved-data}"
+
+case "$SABLE_DEVICE_FLASH_ENTRY_MODE" in
+  adb|fastbootd) ;;
+  *) sable_die "SABLE_DEVICE_FLASH_ENTRY_MODE" "unsupported entry mode=$SABLE_DEVICE_FLASH_ENTRY_MODE" 78 ;;
+esac
+case "$SABLE_DEVICE_PRESERVED_DATA_BASELINE_REQUIRED" in
+  YES|NO) ;;
+  *) sable_die "SABLE_PRESERVED_DATA_BASELINE_POLICY" "invalid baseline policy" 78 ;;
+esac
+case "$SABLE_DEVICE_POSTBOOT_POLICY" in
+  android-preserved-data|adapter-observe) ;;
+  *) sable_die "SABLE_DEVICE_POSTBOOT_POLICY" "unsupported postboot policy=$SABLE_DEVICE_POSTBOOT_POLICY" 78 ;;
+esac
 
 [[ "${SABLE_DEVICE_FLASH_SUPPORTED:-NO}" == YES ]] ||
   sable_die "SABLE_DEVICE_FLASH_SUPPORTED" "device adapter blocks flashing" 78
@@ -115,7 +140,9 @@ fi
 ADB_BIN=""
 FASTBOOT_BIN=""
 
-if [[ -n "${SABLE_ANDROID_SDK:-}" && -x "$SABLE_ANDROID_SDK/platform-tools/adb" ]]; then
+if [[ -n "${SABLE_ADB:-}" && -x "$SABLE_ADB" ]]; then
+  ADB_BIN="$SABLE_ADB"
+elif [[ -n "${SABLE_ANDROID_SDK:-}" && -x "$SABLE_ANDROID_SDK/platform-tools/adb" ]]; then
   ADB_BIN="$SABLE_ANDROID_SDK/platform-tools/adb"
 elif [[ -n "$OUT_DIR" && -x "$OUT_DIR/host/linux-x86/bin/adb" ]]; then
   ADB_BIN="$OUT_DIR/host/linux-x86/bin/adb"
@@ -126,7 +153,9 @@ fi
 echo "SABLE_ADB_BIN=$ADB_BIN"
 
 if [[ "${SABLE_DEVICE_REQUIRES_FASTBOOT:-NO}" == YES ]]; then
-  if [[ -n "${SABLE_ANDROID_SDK:-}" && -x "$SABLE_ANDROID_SDK/platform-tools/fastboot" ]]; then
+  if [[ -n "${SABLE_FASTBOOT:-}" && -x "$SABLE_FASTBOOT" ]]; then
+    FASTBOOT_BIN="$SABLE_FASTBOOT"
+  elif [[ -n "${SABLE_ANDROID_SDK:-}" && -x "$SABLE_ANDROID_SDK/platform-tools/fastboot" ]]; then
     FASTBOOT_BIN="$SABLE_ANDROID_SDK/platform-tools/fastboot"
   elif [[ -n "$OUT_DIR" && -x "$OUT_DIR/host/linux-x86/bin/fastboot" ]]; then
     FASTBOOT_BIN="$OUT_DIR/host/linux-x86/bin/fastboot"
@@ -217,6 +246,9 @@ echo "BUILD_EVIDENCE_DIR=${BUILD_EVIDENCE_DIR:-NOT_RECORDED}"
 echo "SERIAL=$(sable_mask_serial "$SERIAL")"
 echo "PRESERVE_DATA=$PRESERVE_DATA"
 echo "FLASH_TRANSPORT=${SABLE_DEVICE_FLASH_TRANSPORT:-adapter-defined}"
+echo "FLASH_ENTRY_MODE=$SABLE_DEVICE_FLASH_ENTRY_MODE"
+echo "PRESERVED_DATA_BASELINE_REQUIRED=$SABLE_DEVICE_PRESERVED_DATA_BASELINE_REQUIRED"
+echo "POSTBOOT_POLICY=$SABLE_DEVICE_POSTBOOT_POLICY"
 echo "DEVICE_CONTACT_AUTHORIZED=YES"
 echo "DEVICE_REBOOT_AUTHORIZED=YES"
 echo "FLASH_AUTHORIZED=YES"
@@ -235,37 +267,57 @@ sable_device_flash_prepare_artifact ||
 
 echo
 echo "===== PRE-MUTATION DEVICE BINDING ====="
-sable_require_adb_serial_exact_once "$ADB_BIN" "$SERIAL" ||
-  sable_die "SABLE_ADB_TARGET_SERIAL" "requested serial is not exactly once among ready adb devices" 40
+case "$SABLE_DEVICE_FLASH_ENTRY_MODE" in
+  adb)
+    sable_require_adb_serial_exact_once "$ADB_BIN" "$SERIAL" ||
+      sable_die "SABLE_ADB_TARGET_SERIAL" "requested serial is not exactly once among ready adb devices" 40
 
-PRE_DEVICE_PRODUCT="$("$ADB_BIN" -s "$SERIAL" shell getprop ro.product.device </dev/null | tr -d '\r')"
-PRE_CE_AVAILABLE="$("$ADB_BIN" -s "$SERIAL" shell getprop sys.user.0.ce_available </dev/null | tr -d '\r')"
-echo "PRE_DEVICE_PRODUCT=$PRE_DEVICE_PRODUCT"
-echo "PRE_CE_AVAILABLE=$PRE_CE_AVAILABLE"
+    PRE_DEVICE_PRODUCT="$("$ADB_BIN" -s "$SERIAL" shell getprop ro.product.device </dev/null | tr -d '\r')"
+    PRE_CE_AVAILABLE="$("$ADB_BIN" -s "$SERIAL" shell getprop sys.user.0.ce_available </dev/null | tr -d '\r')"
+    echo "PRE_DEVICE_PRODUCT=$PRE_DEVICE_PRODUCT"
+    echo "PRE_CE_AVAILABLE=$PRE_CE_AVAILABLE"
 
-[[ "$PRE_DEVICE_PRODUCT" == "$SABLE_DEVICE_EXPECTED_PRODUCT" ]] ||
-  sable_die "SABLE_DEVICE_PRODUCT"     "expected $SABLE_DEVICE_EXPECTED_PRODUCT actual $PRE_DEVICE_PRODUCT" 40
-[[ "$PRE_CE_AVAILABLE" == 1 || "$PRE_CE_AVAILABLE" == true ]] ||
-  sable_die "SABLE_PRE_CE_AVAILABLE" "unlock device before preserved-data baseline" 40
-echo "SABLE_PRE_DEVICE_BINDING=PASS"
+    [[ "$PRE_DEVICE_PRODUCT" == "$SABLE_DEVICE_EXPECTED_PRODUCT" ]] ||
+      sable_die "SABLE_DEVICE_PRODUCT" "expected $SABLE_DEVICE_EXPECTED_PRODUCT actual $PRE_DEVICE_PRODUCT" 40
+    [[ "$PRE_CE_AVAILABLE" == 1 || "$PRE_CE_AVAILABLE" == true ]] ||
+      sable_die "SABLE_PRE_CE_AVAILABLE" "unlock device before preserved-data baseline" 40
+    echo "SABLE_PRE_DEVICE_BINDING=PASS_ADB"
+    ;;
+  fastbootd)
+    [[ -x "$FASTBOOT_BIN" ]] ||
+      sable_die "SABLE_FASTBOOT" "fastboot executable unavailable for fastbootd entry" 40
+    echo "SABLE_PRE_DEVICE_BINDING=DELEGATED_FASTBOOTD_ADAPTER"
+    ;;
+esac
 
 sable_device_flash_preflight ||
   sable_die "SABLE_DEVICE_FLASH_PREFLIGHT" "adapter preflight failed" 42
 
-echo
-echo "===== PRESERVED-DATA BASELINE ====="
-BASELINE_LOG="$EVIDENCE_DIR/baseline-capture.log"
-set +e
-sable_run_sablectl "$ROOT"   --adb "$ADB_BIN"   --serial "$SERIAL"   --output-root "$EVIDENCE_DIR/sablectl"   baseline capture   --out-root "$EVIDENCE_DIR/baselines"   2>&1 | tee "$BASELINE_LOG"
-BASELINE_RC=${PIPESTATUS[0]}
-set -e
-[[ "$BASELINE_RC" -eq 0 ]] ||
-  sable_die "SABLE_PRESERVED_DATA_BASELINE" "sablectl baseline capture failed rc=$BASELINE_RC" 41
-BASELINE="$(sed -n 's/^BASELINE=//p' "$BASELINE_LOG" | tail -n1)"
-[[ -f "$BASELINE" ]] ||
-  sable_die "SABLE_PRESERVED_DATA_BASELINE" "baseline path not produced" 41
-echo "PRESERVED_DATA_BASELINE=$BASELINE"
-echo "SABLE_PRESERVED_DATA_BASELINE=PASS"
+BASELINE=""
+if [[ "$SABLE_DEVICE_PRESERVED_DATA_BASELINE_REQUIRED" == YES ]]; then
+  echo
+  echo "===== PRESERVED-DATA BASELINE ====="
+  BASELINE_LOG="$EVIDENCE_DIR/baseline-capture.log"
+  set +e
+  sable_run_sablectl "$ROOT" \
+    --adb "$ADB_BIN" \
+    --serial "$SERIAL" \
+    --output-root "$EVIDENCE_DIR/sablectl" \
+    baseline capture \
+    --out-root "$EVIDENCE_DIR/baselines" \
+    2>&1 | tee "$BASELINE_LOG"
+  BASELINE_RC=${PIPESTATUS[0]}
+  set -e
+  [[ "$BASELINE_RC" -eq 0 ]] ||
+    sable_die "SABLE_PRESERVED_DATA_BASELINE" "sablectl baseline capture failed rc=$BASELINE_RC" 41
+  BASELINE="$(sed -n 's/^BASELINE=//p' "$BASELINE_LOG" | tail -n1)"
+  [[ -f "$BASELINE" ]] ||
+    sable_die "SABLE_PRESERVED_DATA_BASELINE" "baseline path not produced" 41
+  echo "PRESERVED_DATA_BASELINE=$BASELINE"
+  echo "SABLE_PRESERVED_DATA_BASELINE=PASS"
+else
+  echo "SABLE_PRESERVED_DATA_BASELINE=SKIPPED_ADAPTER_POLICY"
+fi
 
 echo
 echo "===== ADAPTER DEPLOYMENT ====="
@@ -274,31 +326,39 @@ sable_device_flash_execute ||
 
 echo
 echo "===== POST-BOOT ====="
-sable_wait_adb_boot_completed "$ADB_BIN" "$SERIAL" "${SABLE_DEVICE_POSTBOOT_TIMEOUT:-420}" ||
-  sable_die "SABLE_POSTBOOT" "Android did not return completed within timeout" 52
+case "$SABLE_DEVICE_POSTBOOT_POLICY" in
+  android-preserved-data)
+    sable_wait_adb_boot_completed "$ADB_BIN" "$SERIAL" "${SABLE_DEVICE_POSTBOOT_TIMEOUT:-420}" ||
+      sable_die "SABLE_POSTBOOT" "Android did not return completed within timeout" 52
 
-echo "USER_ACTION=UNLOCK_DEVICE_IF_REQUIRED_FOR_CREDENTIAL_ENCRYPTED_DATA"
-CE_START="$(date +%s)"
-while :; do
-  CE="$("$ADB_BIN" -s "$SERIAL" shell getprop sys.user.0.ce_available </dev/null 2>/dev/null | tr -d '\r')"
-  if [[ "$CE" == 1 || "$CE" == true ]]; then
-    break
-  fi
-  if (( $(date +%s) - CE_START >= 300 )); then
-    sable_die "SABLE_POST_CE_AVAILABLE" "credential-encrypted user data not available" 53
-  fi
-  sleep 2
-done
-echo "SABLE_POST_CE_AVAILABLE=PASS"
+    echo "USER_ACTION=UNLOCK_DEVICE_IF_REQUIRED_FOR_CREDENTIAL_ENCRYPTED_DATA"
+    CE_START="$(date +%s)"
+    while :; do
+      CE="$("$ADB_BIN" -s "$SERIAL" shell getprop sys.user.0.ce_available </dev/null 2>/dev/null | tr -d '\r')"
+      if [[ "$CE" == 1 || "$CE" == true ]]; then
+        break
+      fi
+      if (( $(date +%s) - CE_START >= 300 )); then
+        sable_die "SABLE_POST_CE_AVAILABLE" "credential-encrypted user data not available" 53
+      fi
+      sleep 2
+    done
+    echo "SABLE_POST_CE_AVAILABLE=PASS"
 
-sable_device_flash_postboot ||
-  sable_die "SABLE_POSTFLASH_SMOKE" "adapter post-boot acceptance failed" 54
+    sable_device_flash_postboot ||
+      sable_die "SABLE_POSTFLASH_SMOKE" "adapter post-boot acceptance failed" 54
 
-echo
-echo "===== FINAL DEVICE IDENTITY ====="
-echo "POST_DEVICE_PRODUCT=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.product.device </dev/null | tr -d '\r')"
-echo "POST_SLOT_SUFFIX=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.slot_suffix </dev/null | tr -d '\r')"
-echo "POST_BUILD_FINGERPRINT=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.build.fingerprint </dev/null | tr -d '\r')"
-echo "POST_VERIFIED_BOOT_STATE=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.verifiedbootstate </dev/null | tr -d '\r')"
+    echo
+    echo "===== FINAL DEVICE IDENTITY ====="
+    echo "POST_DEVICE_PRODUCT=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.product.device </dev/null | tr -d '\r')"
+    echo "POST_SLOT_SUFFIX=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.slot_suffix </dev/null | tr -d '\r')"
+    echo "POST_BUILD_FINGERPRINT=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.build.fingerprint </dev/null | tr -d '\r')"
+    echo "POST_VERIFIED_BOOT_STATE=$("$ADB_BIN" -s "$SERIAL" shell getprop ro.boot.verifiedbootstate </dev/null | tr -d '\r')"
+    ;;
+  adapter-observe)
+    sable_device_flash_postboot ||
+      sable_die "SABLE_POSTBOOT_OBSERVATION" "adapter post-boot observation failed" 54
+    ;;
+esac
 
 FINAL_RESULT=PASS

@@ -1,6 +1,6 @@
 # N1D C3B E5B standardized deployment
 
-Status: **STANDARD ARTIFACT REGISTRATION + FLASH PLAN IMPLEMENTED / PHYSICAL FLASH STILL FAIL-CLOSED**
+Status: **STANDARD FLASH PLAN SEALED PASS / N1D EXECUTION QUALIFICATION IN PROGRESS / PHYSICAL FLASH NOT YET OWNER-REAFFIRMED**
 
 This stage moves E5B into the canonical SableOS deployment architecture:
 
@@ -99,11 +99,23 @@ adapter then consumes that verified state and:
 7. records the fastboot implicit logical-partition resize semantics;
 8. emits and seals a no-write plan.
 
-Expected end marker:
+Sealed result:
 
 ```text
 N1D_C3B_E5B_STANDARD_FLASH_PLAN=PASS_PREPARED_NO_WRITE
+SYSTEM_FORMAT=raw
+SYSTEM_LOGICAL_BYTES=2994405376
+FASTBOOT_IMPLICIT_RESIZE_TARGET_BYTES=2994405376
+ACTIVE_GROUP_PROSPECTIVE_BYTES=6440771584
+REMAINING_SUPER_HEADROOM_BYTES=3222904832
+MINIMUM_REMAINING_HEADROOM_BYTES=536870912
+EVIDENCE_SEAL_SHA256=62f92bff11821979b070b5568038dbae132e6714c87b9b43016be9c5ae503d69
 ```
+
+The plan therefore removes the earlier manual resize assumption. Standard
+Android fastboot will perform the logical-partition resize implicitly as part of
+the single `flash system_a` operation. No separate
+`resize-logical-partition` command is required or permitted.
 
 ## Execution boundary
 
@@ -121,6 +133,24 @@ execution remains held because standard Android fastboot performs an implicit
 logical-partition resize as part of flashing a logical partition. The exact
 logical size must first be sealed by the standardized flash plan.
 
-After that result is reviewed, the next change is a separate execution-
-qualification change to the common deployment/adapter path. It must not introduce
-a standalone Titan write script.
+The execution-qualification change remains inside the canonical
+`build/sable.sh -> build/deploy/flash.sh -> build/devices/titan2.sh` path. It
+does not introduce a standalone Titan write script.
+
+The qualified mutation surface is intentionally limited to:
+
+```text
+fastboot flash system_a <sealed E3 system.img>
+fastboot reboot
+```
+
+The first command includes fastboot's implicit resize of `system_a` to exactly
+`2994405376` bytes. Before it may execute, the driver must revalidate the
+E5A-bound fastboot serial, userspace-fastbootd state, slot `a`, unlocked state,
+snapshot status `none`, current `system_a` size `757059584`, super size,
+materialized logical allocation and zero active-slot COWs.
+
+Physical execution still requires a fresh owner scope reaffirmation covering
+the exact implicit resize to `2994405376` bytes. The scope token is an
+execution interlock, not a substitute for that owner authorization. Factory
+reset remains separately unauthorized.
