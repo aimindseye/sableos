@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import pathlib
-import shutil
 import tempfile
 
 ANDROID_BP = pathlib.Path("target/product/gsi/Android.bp")
