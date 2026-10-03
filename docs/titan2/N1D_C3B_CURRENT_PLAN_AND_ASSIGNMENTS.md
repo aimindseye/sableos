@@ -140,29 +140,6 @@ device in fastbootd after evidence capture.
 
 See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
 
-## E5A authorized execution
-
-```text
-E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
-E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
-E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
-E5A_FLASH_AUTHORIZED=NO
-E5A_ERASE_AUTHORIZED=NO
-E5A_LP_MUTATION_AUTHORIZED=NO
-E5A_AVB_MUTATION_AUTHORIZED=NO
-E5A_SLOT_MUTATION_AUTHORIZED=NO
-E5A_UNLOCK_LOCK_AUTHORIZED=NO
-E5A_FACTORY_RESET_AUTHORIZED=NO
-E5B_FLASH_AUTHORIZED=NO
-```
-
-E5A reuses the audited N1B Phase 10/11 read-only collectors and a C3B offline
-qualifier. The device is left in userspace fastbootd. Raw serial-bearing
-evidence stays in the local private evidence subtree; console/final evidence
-uses only a SHA-256 device binding.
-
-See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
-
 ## Assignment model
 
 Two lanes proceed in parallel.
@@ -315,7 +292,7 @@ DESIGN-KF-D  All Apps privacy row + responsive app polish           ACCEPTED
 ```
 
 Public authority:
-`sableos-project/platform_sable@126d91bfaedc98edc83fd38bb9c6eee8e5c1a008`.
+`sableos-project/platform_sable@80e3097bdef4cd2d5cbfd8ebde16390c29767918`.
 
 Private assignment/sequence authority:
 `docs/titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md`.
@@ -405,10 +382,12 @@ execution authority.
 
 ## Safety boundaries
 
-Until explicitly advanced:
+Current authorization boundary:
 
 ```text
-DEVICE_CONTACT_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY_E5A
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
 FLASH_AUTHORIZED=NO
 TARGET_FILES_AUTHORIZED=NO
 OTA_AUTHORIZED=NO

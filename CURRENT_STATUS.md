@@ -115,7 +115,7 @@ N1D_C3B_E3_DEVICE_CONTACT_AUTHORIZED=NO
 N1D_C3B_E3_RELEASE_ELIGIBLE=NO
 ```
 
-E3 is sealed. E4 artifact/deployment readiness is next; flash remains unauthorized.
+E3 is sealed. E4 is also sealed PASS; E5A read-only revalidation is the active authorized checkpoint. Flash remains unauthorized.
 
 ## Titan 2 C3B E4 deployment readiness
 
