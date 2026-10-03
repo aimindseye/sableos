@@ -87,12 +87,11 @@ the historical product/lunch/build identity.
 If either object is not fetchable:
 
 ```text
-N1B_PINNED_REMOTE_AVAILABILITY=FAIL_ONE_OR_MORE_EXACT_OBJECTS_UNAVAILABLE
-N1B_NEXT_STEP=RETIRE_EXACT_N1B_RECONSTRUCTION_OR_LOCATE_ALTERNATE_AUTHENTIC_SOURCE
+N1B_PINNED_REMOTE_AVAILABILITY=REVIEW_REQUIRED_ONE_OR_MORE_EXACT_FETCHES_FAILED
+N1B_NEXT_STEP=PROVIDER_SPECIFIC_OBJECT_EXISTENCE_CHECK
 ```
 
-Do not substitute a branch tip or nearby compatibility control for a missing
-pinned revision.
+A failed direct SHA fetch is not, by itself, proof that the object is absent; some servers restrict SHA-in-want. Review the sealed fetch log and perform a provider-specific existence check before retiring exact reconstruction. Do not substitute a branch tip or nearby compatibility control.
 
 Even after source re-materialization, the only acceptable exact reconstruction
 is one that reproduces both historical artifact identities:
