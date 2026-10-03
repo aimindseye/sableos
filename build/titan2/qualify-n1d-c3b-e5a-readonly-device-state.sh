@@ -206,6 +206,7 @@ unlocked = getvars.get("unlocked") or str(meta11.get("unlocked", ""))
 secure = getvars.get("secure") or str(meta11.get("secure", ""))
 product = getvars.get("product") or str(meta11.get("product", ""))
 snapshot_fastboot = getvars.get("snapshot-update-status", "UNKNOWN")
+product = getvars.get("product") or str(meta11.get("product", ""))
 super_bytes = as_int(getvars.get("partition-size:super", "")) or int(str(meta11.get("super_bytes", "0")) or 0)
 
 families = ["system", "system_ext", "product", "vendor", "odm", "system_dlkm", "vendor_dlkm", "odm_dlkm"]
@@ -361,7 +362,9 @@ result = {
         "secure": secure,
         "product": product,
         "snapshot_update_status": snapshot_fastboot,
+        "product": product,
         "super_bytes": super_bytes,
+        "logical_partition_names": sorted(logical_names),
         "partition_sizes": per_family,
         "active_selected_dynamic_total_bytes": active_total,
         "allocation_basis": allocation_basis,
