@@ -38,6 +38,7 @@ source "$STORAGE_PROFILE"
 source "$TRANSITION"
 
 BUILD_AUTHORIZED=NO
+PREFLIGHT_ONLY=NO
 HOST_LAYOUT_MUTATION_AUTHORIZED=NO
 SCAFFOLD_COMPAT_MUTATION_AUTHORIZED=NO
 BUILD_COMPAT_MUTATION_AUTHORIZED=NO
@@ -46,6 +47,10 @@ while (($#)); do
     case "$1" in
         --authorize-c3b-compile)
             BUILD_AUTHORIZED=YES
+            shift
+            ;;
+        --preflight-only)
+            PREFLIGHT_ONLY=YES
             shift
             ;;
         --authorize-host-layout-source-mutation)
@@ -71,8 +76,10 @@ while (($#)); do
     esac
 done
 
-[[ "$BUILD_AUTHORIZED" == YES ]] ||
-    fail compile_requires_--authorize-c3b-compile
+if [[ "$PREFLIGHT_ONLY" != YES ]]; then
+    [[ "$BUILD_AUTHORIZED" == YES ]] ||
+        fail compile_requires_--authorize-c3b-compile
+fi
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || fail "invalid_jobs=$JOBS"
 [[ "$N1D_C3_CURRENT_ACTIVE_PHASE" == C3B_ENGINEERING ]] ||
     fail active_phase_mismatch
@@ -95,7 +102,11 @@ LPTOOLS_ROOT="$ANDROID_ROOT/vendor/lptools"
 LUNCH_TARGET="$N1D_C3B_GENERATED_PRODUCT-$N1D_C3B_RELEASE_CONFIG-$N1D_C3B_ENGINEERING_VARIANT"
 
 echo "===== N1D C3B ENGINEERING SYSTEMIMAGE BUILD ====="
-echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
+if [[ "$PREFLIGHT_ONLY" == YES ]]; then
+    echo "BUILD_AUTHORIZED=NO_PREFLIGHT_ONLY"
+else
+    echo "BUILD_AUTHORIZED=YES_SYSTEMIMAGE_ONLY"
+fi
 echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "HOST_LAYOUT_SOURCE_MUTATION_AUTHORIZED=$HOST_LAYOUT_MUTATION_AUTHORIZED"
 echo "SCAFFOLD_COMPAT_SOURCE_MUTATION_AUTHORIZED=$SCAFFOLD_COMPAT_MUTATION_AUTHORIZED"
@@ -520,6 +531,14 @@ apply_one_patch     dexpreopt/dexpreopt_gen/dexpreopt_gen.go     "$HOST_PATCH_2"
 
 validate_soong_dirty_subset
 bash "$PREP" verify
+
+if [[ "$PREFLIGHT_ONLY" == YES ]]; then
+    echo "N1D_C3B_COMPATIBILITY_PEEL_R2=PASS_APPLIED"
+    echo "N1D_C3B_LPTOOLS_API_COMPAT=PASS"
+    echo "N1D_C3B_RUNTIME_PATCH_ALLOWLIST=PASS_ZERO"
+    echo "N1D_C3B_SYSTEMIMAGE_PREFLIGHT=PASS"
+    exit 0
+fi
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 OUT_DIR_C3B="$OUT_ROOT/build-$stamp"
