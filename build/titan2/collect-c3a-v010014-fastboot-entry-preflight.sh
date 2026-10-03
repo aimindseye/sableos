@@ -223,16 +223,23 @@ mapfile -t p11_getvars < <(
   find "$PHASE11_ROOT" -type f -path '*/fastbootd-lp-sizing/getvar-all.txt' -print |
     LC_ALL=C sort
 )
+mapfile -t p11_selected < <(
+  find "$PHASE11_ROOT" -type f -path '*/fastbootd-lp-sizing/getvar-selected.txt' -print |
+    LC_ALL=C sort
+)
 [[ "${#p11_jsons[@]}" -eq 1 ]] || fail "phase11_json_count=${#p11_jsons[@]}"
 [[ "${#p11_getvars[@]}" -eq 1 ]] || fail "phase11_getvar_count=${#p11_getvars[@]}"
+[[ "${#p11_selected[@]}" -eq 1 ]] || fail "phase11_selected_count=${#p11_selected[@]}"
 PHASE11_JSON="${p11_jsons[0]}"
 PHASE11_GETVAR_ALL="${p11_getvars[0]}"
+PHASE11_GETVAR_SELECTED="${p11_selected[0]}"
 
 FINAL_JSON="$EVIDENCE_DIR/c3a-v010014-fastboot-entry-preflight.json"
 bash "$ROOT/build/titan2/qualify-c3a-v010014-fastboot-entry-preflight.sh" \
   --phase10b-json "$PHASE10B_JSON" \
   --phase11-json "$PHASE11_JSON" \
   --phase11-getvar-all "$PHASE11_GETVAR_ALL" \
+  --phase11-getvar-selected "$PHASE11_GETVAR_SELECTED" \
   --offline-plan "$OFFLINE_PLAN" \
   --baseline-e5b-json "$BASELINE_E5B_JSON" \
   --fastboot-binding-sha256 "$FASTBOOT_BINDING_SHA256" \
