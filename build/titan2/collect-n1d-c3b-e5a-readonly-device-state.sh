@@ -114,8 +114,8 @@ echo "N1D_C3B_E5A_OFFLINE_RESTORE_ARTIFACTS=PASS"
 command -v adb >/dev/null 2>&1 || fail adb_not_found
 command -v fastboot >/dev/null 2>&1 || fail fastboot_not_found
 
-PHASE10_ROOT="$EVIDENCE_DIR/phase10"
-PHASE11_ROOT="$EVIDENCE_DIR/phase11"
+PHASE10_ROOT="$EVIDENCE_DIR/private/phase10"
+PHASE11_ROOT="$EVIDENCE_DIR/private/phase11"
 mkdir -p "$PHASE10_ROOT" "$PHASE11_ROOT"
 
 if ! SABLE_N1B_PHASE_10_EVIDENCE_ROOT="$PHASE10_ROOT" \
