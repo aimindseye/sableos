@@ -375,6 +375,7 @@ build/titan2/build-n1d-c3b-e2-product-apps.sh
 build/titan2/stage-n1d-c3b-e2-product-composition.sh
 build/titan2/qualify-n1d-c3b-e2-product-parse.sh
 build/titan2/build-n1d-c3b-e2-modules.sh
+build/titan2/qualify-n1d-c3b-e2-product-composition.sh
 ```
 
 E1 authorizes only the separate C3B source graph, product parse and engineering
