@@ -754,10 +754,10 @@ sable_device_flash_preflight() {
   LIVE_STATE_ENV="$EVIDENCE_DIR/fastboot-live-state.env"
   python3 - \
     "$LIVE_GETVAR_ALL" \
-    "$TITAN2_N1D_E5B_EXPECTED_FASTBOOT_PRODUCT" \
-    "$TITAN2_N1D_E5B_EXPECTED_SLOT" \
-    "$TITAN2_N1D_E5B_SYSTEM_CURRENT_BYTES" \
-    "$TITAN2_N1D_E5B_SUPER_BYTES" \
+    "$TITAN2_N1D_ACTIVE_EXPECTED_FASTBOOT_PRODUCT" \
+    "$TITAN2_N1D_ACTIVE_EXPECTED_SLOT" \
+    "$TITAN2_N1D_ACTIVE_SYSTEM_CURRENT_BYTES" \
+    "$TITAN2_N1D_ACTIVE_SUPER_BYTES" \
     "$EXPECTED_MATERIALIZED_LOGICAL_BYTES" \
     "$LIVE_STATE_ENV" <<'PY'
 from __future__ import annotations
@@ -881,9 +881,9 @@ PY
 }
 
 sable_device_flash_execute() {
-  echo "===== TITAN 2 N1D C3B E5B CONTROLLED ACTIVE-SYSTEM FLASH ====="
-  echo "FLASH_TARGET_PARTITION=$TITAN2_N1D_E5B_TARGET_PARTITION"
-  echo "FLASH_IMAGE_LOGICAL_BYTES=$TITAN2_N1D_E5B_SYSTEM_LOGICAL_BYTES"
+  echo "===== TITAN 2 N1D CONTROLLED ACTIVE-SYSTEM FLASH profile=$TITAN2_N1D_ACTIVE_PROFILE ====="
+  echo "FLASH_TARGET_PARTITION=$TITAN2_N1D_ACTIVE_TARGET_PARTITION"
+  echo "FLASH_IMAGE_LOGICAL_BYTES=$TITAN2_N1D_ACTIVE_SYSTEM_LOGICAL_BYTES"
   echo "FLASH_IMPLICIT_LOGICAL_RESIZE=YES"
   echo "FLASH_MANUAL_PRE_RESIZE=NO"
   echo "FLASH_COW_DELETION=NO"
@@ -911,7 +911,7 @@ sable_device_flash_execute() {
   post_userspace="$(sable_fastboot_getvar "$FASTBOOT_BIN" "$SERIAL" is-userspace)"
   post_snapshot="$(sable_fastboot_getvar "$FASTBOOT_BIN" "$SERIAL" snapshot-update-status)"
 
-  python3 - "$post_size" "$TITAN2_N1D_E5B_SYSTEM_LOGICAL_BYTES" <<'PY'
+  python3 - "$post_size" "$TITAN2_N1D_ACTIVE_SYSTEM_LOGICAL_BYTES" <<'PY'
 import sys
 try:
     actual = int(sys.argv[1].strip().split()[0], 0)
@@ -920,11 +920,11 @@ except (ValueError, IndexError):
 expected = int(sys.argv[2])
 raise SystemExit(0 if actual == expected else 1)
 PY
-  [[ "$post_slot" == "$TITAN2_N1D_E5B_EXPECTED_SLOT" ]] || return 1
+  [[ "$post_slot" == "$TITAN2_N1D_ACTIVE_EXPECTED_SLOT" ]] || return 1
   [[ "${post_userspace,,}" == yes ]] || return 1
   [[ "${post_snapshot,,}" == none ]] || return 1
 
-  echo "TITAN2_N1D_E5B_POSTFLASH_SYSTEM_A_BYTES=PASS value=$TITAN2_N1D_E5B_SYSTEM_LOGICAL_BYTES"
+  echo "TITAN2_N1D_E5B_POSTFLASH_SYSTEM_A_BYTES=PASS value=$TITAN2_N1D_ACTIVE_SYSTEM_LOGICAL_BYTES"
   echo "TITAN2_N1D_E5B_POSTFLASH_SLOT=PASS value=$post_slot"
   echo "TITAN2_N1D_E5B_POSTFLASH_FASTBOOTD=PASS"
   echo "TITAN2_N1D_E5B_POSTFLASH_SNAPSHOT=PASS_NONE"
