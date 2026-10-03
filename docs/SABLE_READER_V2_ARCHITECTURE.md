@@ -42,6 +42,7 @@ ACCOUNT_REQUIRED=NO
 TELEMETRY=NO
 REMOTE_AI_DEFAULT=NO
 BACKGROUND_NETWORK_DEFAULT=NO
+INTERNET_PERMISSION=ABSENT_IN_P5_V2
 KEYBOARD_ONLY_OPERATION=REQUIRED
 TOUCH_FALLBACK=REQUIRED
 DEVICE_MODEL_BRANCHING=NO
@@ -50,9 +51,7 @@ DEVICE_MODEL_BRANCHING=NO
 Remote Gemini/Cloudflare-AI features are not part of Sable Reader v2. Account
 login/cloud sync is not part of P5. Local backup/restore is required.
 
-User-configured OPDS remains allowed as an optional network capability. It must
-not create an always-on background fetch path, hidden analytics or bundled
-provider-account dependency.
+P5 v2.0 remains fully local/offline and the Sable product manifest must contain no INTERNET permission. OPDS is deferred to P5.1 so any future network/catalog capability receives a separate privacy, permission and dependency review.
 
 ## Architecture
 
@@ -376,9 +375,14 @@ Keep:
 ~~~
 local dictionary
 local publication TTS
-OPDS as user-directed optional catalog capability
 local highlights/bookmarks
 local backup/export
+~~~
+
+Defer:
+
+~~~
+OPDS / remote catalogs -> P5.1
 ~~~
 
 A future Sable local-AI feature requires its own model/provenance/privacy
@@ -436,7 +440,8 @@ new cloud sync SDK
 google-generativeai
 remote AI repositories/APIs
 readium-lcp from the Sable baseline
-duplicate Retrofit/Ktor stacks after OPDS/network consolidation
+readium-opds from the P5 v2 baseline
+Retrofit/OkHttp/Ktor app-owned network stacks when no remaining local feature requires them
 commons-compress if no remaining Reader feature uses it
 ~~~
 
@@ -494,6 +499,8 @@ P5 source qualification requires:
 READER_TEXTREADER_BOUNDARY=PASS_SEPARATE
 READER_REMOTE_AI=PASS_ABSENT
 READER_ACCOUNT_REQUIRED=NO
+READER_INTERNET_PERMISSION=PASS_ABSENT
+READER_OPDS=P5_1_DEFERRED
 READER_TELEMETRY=PASS_ABSENT
 READER_KEYBOARD_FIRST=PASS
 READER_EPUB=PASS
