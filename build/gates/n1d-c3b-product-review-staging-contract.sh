@@ -25,6 +25,11 @@ grep -Fq 'C3B_PRODUCT_SOURCE_REPO=aimindseye/titan2-temp' "$ADAPTER" || fail sou
 grep -Fq 'C3B_RELEASE_TRACK=N1D' "$ADAPTER" || fail release_track_binding_missing
 grep -Fq 'C3B_BASELINE_PHASE=C3B' "$ADAPTER" || fail baseline_phase_binding_missing
 grep -Fq 'RUNTIME_GIT_HEAD' "$ADAPTER" || fail runtime_head_binding_missing
+grep -Fq 'n1d-c3b-e2-product-admission.env' "$ADAPTER" || fail e2_profile_binding_missing
+grep -Fq 'N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD' "$ADAPTER" || fail e2_qualified_head_binding_missing
+grep -Fq 'N1D_C3B_E2_PRODUCT_QUALIFIED_TREE' "$ADAPTER" || fail e2_qualified_tree_binding_missing
+grep -Fq "rev-parse 'HEAD^{tree}'" "$ADAPTER" || fail runtime_tree_identity_missing
+grep -Fq 'C3B_PRODUCT_STAGE_TREE=PASS' "$ADAPTER" || fail tree_pass_marker_missing
 grep -Fq 'undeclared_tracked_files' "$ADAPTER" || fail undeclared_file_rejection_missing
 grep -Fq 'differing_existing_path=' "$ADAPTER" || fail collision_rejection_missing
 grep -Fq 'HANDOFF_AS_SOURCE_MODULE' "$ADAPTER" || fail stage_action_source_missing
@@ -60,6 +65,7 @@ fi
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_SYNTAX=PASS"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_AUTHORITY=PASS_EXPLICIT"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_SOURCE_BINDING=PASS_EXACT_HEAD"
+echo "N1D_C3B_PRODUCT_REVIEW_STAGING_TREE_BINDING=PASS_EXACT_QUALIFIED_TREE"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_OWNERSHIP=PASS_FAIL_CLOSED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_COLLISION_POLICY=PASS_REJECT_DIFFERING"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_PROTOTYPE_POLICY=PASS_EXCLUDED"
