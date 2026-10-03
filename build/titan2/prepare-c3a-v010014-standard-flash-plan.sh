@@ -128,6 +128,8 @@ mkdir -p "$EVIDENCE_DIR"
 # shellcheck source=/dev/null
 source "$C3A_ENV"
 [[ "${N1D_C3A_CONTROL_EVIDENCE_STATUS:-}" == PASS_SYSTEMIMAGE ]] || fail c3a_evidence_status
+[[ "${N1D_C3A_REGISTRY_BUILD_SOURCE:-}" == "$EXPECTED_BUILD_SOURCE" ]] || fail c3a_registry_build_source
+[[ "${N1D_C3A_REGISTRY_BUILD_SOURCE_ROLE:-}" == POSTBUILD_EVIDENCE_SEAL_COMMIT_NOT_RECORDED_BUILD_START_HEAD ]] || fail c3a_registry_build_source_role
 [[ "${N1D_C3A_SYSTEM_SHA256:-}" == "$CANONICAL_SYSTEM_SHA256" ]] || fail c3a_evidence_system_sha
 [[ "${N1D_C3A_SYSTEM_BYTES:-}" == "$CANONICAL_SYSTEM_BYTES" ]] || fail c3a_evidence_system_bytes
 [[ "${N1D_C3A_CONTROL_FIDELITY:-}" == PUBLIC_FUNCTIONAL_REPRODUCTION ]] || fail c3a_evidence_fidelity
