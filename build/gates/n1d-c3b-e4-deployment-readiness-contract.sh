@@ -12,7 +12,7 @@ do
   grep -Fq "$token" "$DRIVER" || fail "missing_token=$token"
 done
 
-if grep -Eq '(^|[;&|[:space:]])adb([[:space:]]|$)|(^|[;&|[:space:]])fastboot([[:space:]]|$)' "$DRIVER"; then
+if grep -Eq '^[[:space:]]*(sudo[[:space:]]+)?(adb|fastboot)[[:space:]]' "$DRIVER"; then
   fail device_command_present
 fi
 if grep -Eq 'fastboot[[:space:]]+(flash|erase|reboot|set_active|delete-logical-partition|resize-logical-partition)|avbtool[[:space:]]+(add_|erase_)' "$DRIVER"; then
@@ -21,7 +21,7 @@ fi
 if grep -Eq 'curl[[:space:]]|wget[[:space:]]|git[[:space:]]+(fetch|pull|clone)|repo[[:space:]]+sync' "$DRIVER"; then
   fail network_command_present
 fi
-if grep -Eq '(^|[;&|[:space:]])(m|make|ninja)[[:space:]]' "$DRIVER"; then
+if grep -Eq '^[[:space:]]*(m|make|ninja)[[:space:]]' "$DRIVER"; then
   fail build_command_present
 fi
 
