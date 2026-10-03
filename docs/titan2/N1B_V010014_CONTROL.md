@@ -77,18 +77,14 @@ git pull --ff-only origin main
 
 bash build/gates/n1b-v010014-control-contract.sh
 
-N1B_SYSTEM=/srv/data/sable-build/workspaces/titan2-n1b/out_sable_t2_n1_sable_gsi/target/product/tdgsi_arm64_ab/system.img
 E5A_DIR=/srv/sable-build/evidence/titan2/n1d-c3b-e5a-readonly-device-state/20261003T053441Z
 
 bash build/titan2/prepare-n1b-v010014-control.sh \
-  --system-img "$N1B_SYSTEM" \
   --e5a-json "$E5A_DIR/e5a-readonly-device-state.json" \
   --e5b-json "$E5A_DIR/e5b-authorization-package.json"
 ```
 
-If the historical N1B image has moved, supply its actual absolute path. The
-script accepts it only when its SHA-256, file size and logical image geometry
-match the historical boot ledger exactly.
+The original N1B workspace was retired during later N1D cleanup. `--system-img` is therefore optional. If the supplied path is absent, the preparation script reuses the C0 recovery model: release registry -> surviving exact-size local images -> retained N1B target-files archives. Target-files recovery accepts only `IMAGES/system.img` with the historical byte size and SHA-256, then stores a read-only recovered copy under `/srv/data/sable-build/artifacts/titan2/n1b-control-recovered/`. No network access or rebuild is used.
 
 ## Expected result
 
