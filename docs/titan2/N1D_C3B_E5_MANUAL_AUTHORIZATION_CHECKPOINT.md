@@ -1,15 +1,15 @@
 # N1D C3B E5 manual authorization checkpoint
 
-Status: **READY FOR MANUAL AUTHORIZATION DISCUSSION / NO DEVICE CONTACT YET**
+Status: **E5A AUTHORIZED / E5B NOT AUTHORIZED**
 
-E4 is sealed PASS. E5 begins only after an explicit operator/user authorization.
+E4 is sealed PASS. E5A read-only device-state revalidation is explicitly authorized. E5B deployment remains separately unauthorized.
 
 ## E5A — fresh read-only device-state revalidation
 
 Purpose: determine whether the current Titan 2 still matches the historical
 deployment assumptions before any mutation is considered.
 
-E5A may be authorized separately as **device contact, read-only only**.
+E5A is authorized as **device contact, read-only only**, including reboot to bootloader and userspace fastbootd.
 
 Required fresh observations:
 
@@ -47,8 +47,7 @@ booting or flashing a custom image
 
 If reaching fastbootd requires rebooting the device, that reboot is considered a
 device-state transition and must be explicitly included in the E5A authorization.
-The E5A runner must return the phone to the agreed non-mutating state and must
-not emit or execute deployment commands.
+The authorized E5A runner leaves the phone in userspace fastbootd for evidence review and must not emit or execute deployment commands. Reboot back to Android is outside the current authorization.
 
 ## E5B — first physical C3B deployment
 
@@ -79,8 +78,10 @@ separate authorization.
 
 ```text
 E4_DEPLOYMENT_READINESS=PASS_REVIEW_READY
-E5A_DEVICE_CONTACT_AUTHORIZED=NO
-E5A_REBOOT_AUTHORIZED=NO
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+E5A_REBOOT_BACK_TO_ANDROID=NO_NOT_AUTHORIZED
 E5B_FLASH_AUTHORIZED=NO
 E5B_LP_MUTATION_AUTHORIZED=NO
 E5B_AVB_MUTATION_AUTHORIZED=NO
