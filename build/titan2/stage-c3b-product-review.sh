@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 ACTIVE_REPO="/srv/sable-build/sableos/repo"
+E2_PROFILE="$ROOT/build/titan2/n1d-c3b-e2-product-admission.env"
 PRODUCT_SOURCE=""
 PRODUCT_HEAD=""
 PRODUCT_PR=""
@@ -62,6 +63,16 @@ done
     exit 1
 }
 ROOT="$(realpath "$ROOT")"
+[[ -f "$E2_PROFILE" ]] || {
+    echo "C3B_PRODUCT_STAGE_PROFILE=FAIL missing=$E2_PROFILE"
+    exit 1
+}
+bash -n "$E2_PROFILE" || {
+    echo "C3B_PRODUCT_STAGE_PROFILE=FAIL syntax=$E2_PROFILE"
+    exit 1
+}
+# shellcheck source=/dev/null
+source "$E2_PROFILE"
 [[ "$ROOT" != "$ACTIVE_REPO" ]] || {
     echo "C3B_PRODUCT_STAGE_TARGET=FAIL active_repo_forbidden=$ROOT"
     exit 1
@@ -97,10 +108,20 @@ git -C "$PRODUCT_SOURCE" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     exit 1
 }
 ACTUAL_PRODUCT_HEAD="$(git -C "$PRODUCT_SOURCE" rev-parse HEAD)"
+ACTUAL_PRODUCT_TREE="$(git -C "$PRODUCT_SOURCE" rev-parse 'HEAD^{tree}')"
+[[ "$PRODUCT_HEAD" == "$N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD" ]] || {
+    echo "C3B_PRODUCT_STAGE_HEAD=FAIL e2_expected=$N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD requested=$PRODUCT_HEAD"
+    exit 1
+}
 [[ "$ACTUAL_PRODUCT_HEAD" == "$PRODUCT_HEAD" ]] || {
     echo "C3B_PRODUCT_STAGE_HEAD=FAIL expected=$PRODUCT_HEAD actual=$ACTUAL_PRODUCT_HEAD"
     exit 1
 }
+[[ "$ACTUAL_PRODUCT_TREE" == "$N1D_C3B_E2_PRODUCT_QUALIFIED_TREE" ]] || {
+    echo "C3B_PRODUCT_STAGE_TREE=FAIL expected=$N1D_C3B_E2_PRODUCT_QUALIFIED_TREE actual=$ACTUAL_PRODUCT_TREE"
+    exit 1
+}
+echo "C3B_PRODUCT_STAGE_TREE=PASS value=$ACTUAL_PRODUCT_TREE"
 [[ -z "$(git -C "$PRODUCT_SOURCE" status --porcelain)" ]] || {
     echo "C3B_PRODUCT_STAGE_SOURCE=FAIL dirty_product_source"
     git -C "$PRODUCT_SOURCE" status --short
@@ -344,6 +365,7 @@ IDENTICAL_COUNT="$(( PLAN_COUNT - STAGED_COUNT ))"
     echo "C3B_PRODUCT_SOURCE_REPO=aimindseye/titan2-temp"
     echo "C3B_PRODUCT_PR=${PRODUCT_PR:-UNBOUND}"
     echo "C3B_PRODUCT_HEAD=$PRODUCT_HEAD"
+    echo "C3B_PRODUCT_TREE=$ACTUAL_PRODUCT_TREE"
     echo "C3B_CANONICAL_BASE_HEAD=$BASE_HEAD"
     echo "C3B_PRODUCT_STAGE_FILE_COUNT=$PLAN_COUNT"
     echo "C3B_PRODUCT_STAGE_STAGED_COUNT=$STAGED_COUNT"
