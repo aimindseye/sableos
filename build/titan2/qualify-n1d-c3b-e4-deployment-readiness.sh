@@ -126,6 +126,7 @@ resolve_stock_super() {
   local evidence_dir="$3"
   local -a raw=()
   local -a unique=()
+  local -A seen=()
   local item resolved
 
   if [[ -n "$explicit" ]]; then
@@ -151,8 +152,9 @@ resolve_stock_super() {
   for item in "${raw[@]:-}"; do
     [[ -f "$item" ]] || continue
     resolved="$(realpath "$item")"
-    if [[ ! " ${unique[*]:-} " =~ " $resolved " ]]; then
+    if [[ -z "${seen[$resolved]+x}" ]]; then
       unique+=("$resolved")
+      seen["$resolved"]=1
     fi
   done
 
