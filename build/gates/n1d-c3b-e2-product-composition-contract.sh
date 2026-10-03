@@ -261,6 +261,10 @@ do
 done
 
 for token in \
+    '--parse-evidence' \
+    'N1D_C3B_E2_MODULE_BUILD_PARSE_PREREQUISITE=PASS' \
+    'N1D_C3B_E2_MODULE_BUILD_PRODUCT_PACKAGES=PASS count=5' \
+    'get_build_var PRODUCT_PACKAGES' \
     'BUILD_AUTHORIZED=YES_EXACT_5_MODULES' \
     'FULL_IMAGE_BUILD_AUTHORIZED=NO' \
     'SableTitan2Keyboard' \
