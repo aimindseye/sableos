@@ -52,7 +52,7 @@ while (($#)); do
   esac
 done
 
-for pair in   "phase10b:$PHASE10B_JSON"   "phase11:$PHASE11_JSON"   "phase11_getvar_all:$PHASE11_GETVAR_ALL"   "offline_plan:$OFFLINE_PLAN"   "baseline_e5b:$BASELINE_E5B_JSON"
+for pair in   "phase10b:$PHASE10B_JSON"   "phase11:$PHASE11_JSON"   "phase11_getvar_all:$PHASE11_GETVAR_ALL"   "phase11_getvar_selected:$PHASE11_GETVAR_SELECTED"   "offline_plan:$OFFLINE_PLAN"   "baseline_e5b:$BASELINE_E5B_JSON"
 do
   name="${pair%%:*}"
   path="${pair#*:}"
@@ -78,7 +78,7 @@ baseline_e5b_sha="$(sha256sum "$BASELINE_E5B_JSON" | awk '{print $1}')"
   exit 64
 }
 
-python3 -   "$PHASE10B_JSON"   "$PHASE11_JSON"   "$PHASE11_GETVAR_ALL"   "$OFFLINE_PLAN"   "$BASELINE_E5B_JSON"   "$FASTBOOT_BINDING_SHA256"   "$OUTPUT_JSON"   "$EXPECTED_C3A_SHA256"   "$EXPECTED_C3A_BYTES"   "$EXPECTED_SLOT"   "$EXPECTED_PRODUCT"   "$EXPECTED_SUPER_BYTES"   "$MINIMUM_REMAINING_HEADROOM_BYTES" <<'PY'
+python3 -   "$PHASE10B_JSON"   "$PHASE11_JSON"   "$PHASE11_GETVAR_ALL"   "$PHASE11_GETVAR_SELECTED"   "$OFFLINE_PLAN"   "$BASELINE_E5B_JSON"   "$FASTBOOT_BINDING_SHA256"   "$OUTPUT_JSON"   "$EXPECTED_C3A_SHA256"   "$EXPECTED_C3A_BYTES"   "$EXPECTED_SLOT"   "$EXPECTED_PRODUCT"   "$EXPECTED_SUPER_BYTES"   "$MINIMUM_REMAINING_HEADROOM_BYTES" <<'PY'
 from __future__ import annotations
 
 import json
