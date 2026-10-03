@@ -205,8 +205,21 @@ if not logical_names or any(size <= 0 for size in logical_sizes.values()):
     fail("LOGICAL_PARTITION_INVENTORY_INCOMPLETE")
 
 active_cow_suffix = f"_{current}-cow"
-active_cows = sorted(name for name in logical_names if name.endswith(active_cow_suffix))
-active_cow_sizes = {name: logical_sizes[name] for name in active_cows}
+lpdump_partition_names = set(parse_lpdump_groups(lpdump)[0])
+active_cows = sorted(
+    {
+        name for name in logical_names if name.endswith(active_cow_suffix)
+    }
+    | {
+        name for name in lpdump_partition_names if name.endswith(active_cow_suffix)
+    }
+)
+active_cow_sizes = {
+    name: logical_sizes.get(name, parse_int_token(values.get(f"partition-size:{name}", "")))
+    for name in active_cows
+}
+if any(size <= 0 for size in active_cow_sizes.values()):
+    fail("ACTIVE_COW_SIZE_INCOMPLETE")
 active_cow_total = sum(active_cow_sizes.values())
 
 partition_groups, group_max = parse_lpdump_groups(lpdump)
