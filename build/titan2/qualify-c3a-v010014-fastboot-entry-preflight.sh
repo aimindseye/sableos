@@ -4,6 +4,7 @@ set -euo pipefail
 PHASE10B_JSON=""
 PHASE11_JSON=""
 PHASE11_GETVAR_ALL=""
+PHASE11_GETVAR_SELECTED=""
 OFFLINE_PLAN=""
 BASELINE_E5B_JSON=""
 FASTBOOT_BINDING_SHA256=""
@@ -24,6 +25,7 @@ usage:
     --phase10b-json PATH \
     --phase11-json PATH \
     --phase11-getvar-all PATH \
+    --phase11-getvar-selected PATH \
     --offline-plan PATH \
     --baseline-e5b-json PATH \
     --fastboot-binding-sha256 SHA256 \
@@ -40,6 +42,7 @@ while (($#)); do
     --phase10b-json) PHASE10B_JSON="$2"; shift 2 ;;
     --phase11-json) PHASE11_JSON="$2"; shift 2 ;;
     --phase11-getvar-all) PHASE11_GETVAR_ALL="$2"; shift 2 ;;
+    --phase11-getvar-selected) PHASE11_GETVAR_SELECTED="$2"; shift 2 ;;
     --offline-plan) OFFLINE_PLAN="$2"; shift 2 ;;
     --baseline-e5b-json) BASELINE_E5B_JSON="$2"; shift 2 ;;
     --fastboot-binding-sha256) FASTBOOT_BINDING_SHA256="$2"; shift 2 ;;
@@ -49,7 +52,7 @@ while (($#)); do
   esac
 done
 
-for pair in   "phase10b:$PHASE10B_JSON"   "phase11:$PHASE11_JSON"   "phase11_getvar_all:$PHASE11_GETVAR_ALL"   "offline_plan:$OFFLINE_PLAN"   "baseline_e5b:$BASELINE_E5B_JSON"
+for pair in   "phase10b:$PHASE10B_JSON"   "phase11:$PHASE11_JSON"   "phase11_getvar_all:$PHASE11_GETVAR_ALL"   "phase11_getvar_selected:$PHASE11_GETVAR_SELECTED"   "offline_plan:$OFFLINE_PLAN"   "baseline_e5b:$BASELINE_E5B_JSON"
 do
   name="${pair%%:*}"
   path="${pair#*:}"
@@ -75,7 +78,7 @@ baseline_e5b_sha="$(sha256sum "$BASELINE_E5B_JSON" | awk '{print $1}')"
   exit 64
 }
 
-python3 -   "$PHASE10B_JSON"   "$PHASE11_JSON"   "$PHASE11_GETVAR_ALL"   "$OFFLINE_PLAN"   "$BASELINE_E5B_JSON"   "$FASTBOOT_BINDING_SHA256"   "$OUTPUT_JSON"   "$EXPECTED_C3A_SHA256"   "$EXPECTED_C3A_BYTES"   "$EXPECTED_SLOT"   "$EXPECTED_PRODUCT"   "$EXPECTED_SUPER_BYTES"   "$MINIMUM_REMAINING_HEADROOM_BYTES" <<'PY'
+python3 -   "$PHASE10B_JSON"   "$PHASE11_JSON"   "$PHASE11_GETVAR_ALL"   "$PHASE11_GETVAR_SELECTED"   "$OFFLINE_PLAN"   "$BASELINE_E5B_JSON"   "$FASTBOOT_BINDING_SHA256"   "$OUTPUT_JSON"   "$EXPECTED_C3A_SHA256"   "$EXPECTED_C3A_BYTES"   "$EXPECTED_SLOT"   "$EXPECTED_PRODUCT"   "$EXPECTED_SUPER_BYTES"   "$MINIMUM_REMAINING_HEADROOM_BYTES" <<'PY'
 from __future__ import annotations
 
 import json
@@ -86,17 +89,18 @@ from typing import Any
 
 p10b = pathlib.Path(sys.argv[1])
 p11 = pathlib.Path(sys.argv[2])
-getvar_path = pathlib.Path(sys.argv[3])
-plan_path = pathlib.Path(sys.argv[4])
-baseline_path = pathlib.Path(sys.argv[5])
-fastboot_binding_sha = sys.argv[6]
-out = pathlib.Path(sys.argv[7])
-expected_c3a_sha = sys.argv[8]
-expected_c3a_bytes = int(sys.argv[9])
-expected_slot = sys.argv[10]
-expected_product = sys.argv[11]
-expected_super = int(sys.argv[12])
-minimum_remaining = int(sys.argv[13])
+getvar_all_path = pathlib.Path(sys.argv[3])
+getvar_selected_path = pathlib.Path(sys.argv[4])
+plan_path = pathlib.Path(sys.argv[5])
+baseline_path = pathlib.Path(sys.argv[6])
+fastboot_binding_sha = sys.argv[7]
+out = pathlib.Path(sys.argv[8])
+expected_c3a_sha = sys.argv[9]
+expected_c3a_bytes = int(sys.argv[10])
+expected_slot = sys.argv[11]
+expected_product = sys.argv[12]
+expected_super = int(sys.argv[13])
+minimum_remaining = int(sys.argv[14])
 
 phase10b: dict[str, Any] = json.loads(p10b.read_text(encoding="utf-8"))
 phase11: dict[str, Any] = json.loads(p11.read_text(encoding="utf-8"))
@@ -133,7 +137,12 @@ def parse_int(value: Any) -> int:
         return 0
 
 plan = parse_env(plan_path)
-values = normalize_getvar(getvar_path.read_text(encoding="utf-8", errors="replace"))
+getvar_text = (
+    getvar_all_path.read_text(encoding="utf-8", errors="replace")
+    + "\n"
+    + getvar_selected_path.read_text(encoding="utf-8", errors="replace")
+)
+values = normalize_getvar(getvar_text)
 
 failures: list[str] = []
 
