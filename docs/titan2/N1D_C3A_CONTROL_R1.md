@@ -1,6 +1,6 @@
 # Titan 2 N1D C3A Restless/Treble reproduction control
 
-Status: **control build complete; non-release; no device contact**
+Status: **control build + V01.00.14 physical boot complete; non-release**
 
 Date: 2026-10-01
 
@@ -227,6 +227,29 @@ for audit visibility and prints the exact path of any packaging candidate before
 failing.
 
 
+
+## Physical V01.00.14 result
+
+The exact C3A system image was flashed to `system_a` on V01.00.14. Fastboot
+completed the implicit logical resize and all sparse writes; slot A and
+snapshot-none state were retained. Android then booted successfully.
+
+Runtime evidence showed home LTE registration on 310260, working voice/data,
+NR availability and EN-DC availability with NR_NSA display state. A transient
+radio state loss was recoverable by one airplane-mode cycle and is tracked
+separately from the boot baseline.
+
+```text
+C3A_V010014_SYSTEM_FLASH=PASS
+C3A_V010014_ANDROID_BOOT=PASS
+C3A_V010014_VOICE_REGISTRATION=PASS
+C3A_V010014_DATA_REGISTRATION=PASS
+C3A_V010014_NR_NSA_CAPABILITY=PASS
+C3A_V010014_RADIO_POSTBOOT_STABILITY=ISSUE_RECOVERABLE_BY_RADIO_CYCLE
+C3A_V010014_COMPATIBILITY_BASELINE=PASS
+```
+
+C3A remains non-release but is now the compatibility baseline for N1F.
 
 ## Exit criterion
 
