@@ -11,6 +11,7 @@ EXPECTED_SHA256=""
 E5B_JSON=""
 EXPECTED_E5B_JSON_SHA256=""
 AUTH_FREEZE_ENV=""
+EXPECTED_AUTH_FREEZE_SHA256=""
 BUILD_EVIDENCE_DIR=""
 EVIDENCE_DIR=""
 
@@ -52,6 +53,7 @@ while (($#)); do
     --e5b-json) E5B_JSON="$2"; shift 2 ;;
     --expected-e5b-json-sha256) EXPECTED_E5B_JSON_SHA256="$2"; shift 2 ;;
     --auth-freeze-env) AUTH_FREEZE_ENV="$2"; shift 2 ;;
+    --expected-auth-freeze-sha256) EXPECTED_AUTH_FREEZE_SHA256="$2"; shift 2 ;;
     --build-evidence-dir) BUILD_EVIDENCE_DIR="$2"; shift 2 ;;
     --evidence-dir) EVIDENCE_DIR="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -76,6 +78,7 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 [[ "$BUILD_SOURCE" == "$EXPECTED_BUILD_SOURCE" ]] || fail "build_source=$BUILD_SOURCE" 64
 [[ "$EXPECTED_SHA256" == "$EXPECTED_SYSTEM_SHA256" ]] || fail "system_sha_binding" 64
 [[ "$EXPECTED_E5B_JSON_SHA256" == "$EXPECTED_DECISION_SHA256" ]] || fail "e5b_sha_binding" 64
+[[ "$EXPECTED_AUTH_FREEZE_SHA256" =~ ^[0-9a-f]{64}$ ]] || fail "auth_freeze_sha_binding" 64
 
 for path in "$SYSTEM_IMG" "$E5B_JSON" "$AUTH_FREEZE_ENV"; do
   [[ -f "$path" ]] || fail "missing_file=$path" 66
@@ -87,6 +90,7 @@ mkdir -p "$EVIDENCE_DIR"
 actual_system_sha="$(sha256sum "$SYSTEM_IMG" | awk '{print $1}')"
 actual_e5b_sha="$(sha256sum "$E5B_JSON" | awk '{print $1}')"
 freeze_sha="$(sha256sum "$AUTH_FREEZE_ENV" | awk '{print $1}')"
+[[ "$freeze_sha" == "$EXPECTED_AUTH_FREEZE_SHA256" ]] || fail auth_freeze_sha256_mismatch 66
 
 [[ "$actual_system_sha" == "$EXPECTED_SYSTEM_SHA256" ]] || fail system_sha256_mismatch 66
 [[ "$actual_e5b_sha" == "$EXPECTED_DECISION_SHA256" ]] || fail e5b_json_sha256_mismatch 66
