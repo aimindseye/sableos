@@ -138,6 +138,11 @@ modules=(
     [[ "${TARGET_BUILD_VARIANT:-}" == "$N1D_C3B_E2_BUILD_VARIANT" ]] ||
         fail "target_variant=${TARGET_BUILD_VARIANT:-unset}"
 
+    product_copy_out="$(get_build_var TARGET_COPY_OUT_PRODUCT)"
+    [[ "$product_copy_out" == "system/product" ]] ||
+        fail "target_copy_out_product=$product_copy_out"
+    printf '%s\n' "$product_copy_out" > "$EVIDENCE_DIR/product-copy-out.txt"
+
     product_packages="$(get_build_var PRODUCT_PACKAGES)"
     for module in "${modules[@]}"; do
         grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$product_packages" ||
@@ -154,6 +159,9 @@ modules=(
 )
 
 PRODUCT_OUT="$OUT_DIR_BUILD/target/product/$N1D_C3B_E2_PRODUCT_DEVICE"
+PRODUCT_COPY_OUT="$(cat "$EVIDENCE_DIR/product-copy-out.txt")"
+[[ "$PRODUCT_COPY_OUT" == "system/product" ]] ||
+    fail "recorded_target_copy_out_product=$PRODUCT_COPY_OUT"
 AAPT2="$SABLE_ANDROID_BUILD_TOOLS/aapt2"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 [[ -x "$AAPT2" ]] || fail "missing_aapt2=$AAPT2"
@@ -171,7 +179,7 @@ MANIFEST="$EVIDENCE_DIR/module-artifacts.tsv"
 printf 'module\tpackage\tapk\tsha256\tbytes\tsigned\n' > "$MANIFEST"
 
 for module in "${modules[@]}"; do
-    apk="$PRODUCT_OUT/product/app/$module/$module.apk"
+    apk="$PRODUCT_OUT/$PRODUCT_COPY_OUT/app/$module/$module.apk"
     [[ -f "$apk" ]] || fail "installed_module_apk_missing module=$module path=$apk"
     actual_package="$("$AAPT2" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)"
     [[ "$actual_package" == "${packages[$module]}" ]] ||
@@ -197,6 +205,7 @@ fi
 
 echo "N1D_C3B_E2_MODULE_BUILD_PARSE_PREREQUISITE=PASS"
 echo "N1D_C3B_E2_MODULE_BUILD_PRODUCT=PASS_SABLE_TITAN2"
+echo "N1D_C3B_E2_MODULE_BUILD_PRODUCT_COPY_OUT=PASS_SYSTEM_PRODUCT"
 echo "N1D_C3B_E2_MODULE_BUILD_COUNT=PASS value=5"
 echo "N1D_C3B_E2_MODULE_BUILD_PACKAGE_IDS=PASS count=5"
 echo "N1D_C3B_E2_MODULE_BUILD_DEV_SIGNING=PASS count=5"
