@@ -237,7 +237,10 @@ for token in \
     ':setup:assembleRelease' \
     ':radiodiag:assembleRelease' \
     'release_apk_unexpectedly_signed' \
-    'signature_state'
+    'signature_state' \
+    'git -C "$ROOT" archive "$N1D_C3B_E2_SOURCE_IMPORT_COMMIT"' \
+    'source-snapshot.sha256' \
+    'output_dir_preexists='
 do
     grep -Fq -- "$token" "$APP_BUILD" || fail "app_build_token_missing=$token"
 done
