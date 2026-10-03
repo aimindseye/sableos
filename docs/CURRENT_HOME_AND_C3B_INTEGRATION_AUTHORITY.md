@@ -116,6 +116,19 @@ docs/titan2/N1D_C3_PRODUCT_COMPOSITION_R1.md
 docs/titan2/N1D_C3B_TRANSITION_R1.md
 ```
 
+## C3B E3 current execution
+
+E2 source admission is complete. The current first Sable-composed image source
+is `caf98dde723d07a071d95aaa1ef27d578d3208d8`. The E3 driver has passed
+compatibility preflight and exact-head E2 composition qualification and has
+entered the long fresh `sable_titan2-bp4a-userdebug` systemimage build.
+
+E3 remains **running, not sealed**. Device contact, flash, target-files/OTA,
+production signing and release remain unauthorized.
+
+The current execution/assignment roadmap is
+`docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md`.
+
 ## Parallel product-development lane
 
 `aimindseye/titan2-temp` is a parallel product-source lane, not a second

@@ -1,281 +1,147 @@
 # SableOS current status
 
-Last updated: 2026-10-02
+Last updated: 2026-10-02 ET / 2026-10-03 UTC
 
 This file is the private integration repository's current execution authority.
-Historical R5-R10 status files, issue bodies and PR descriptions remain evidence
-for the milestone they described, but they do not override this file when they
-conflict with the current merged state.
+Historical milestone documents remain evidence but do not override this file or
+the active Titan roadmap.
 
 ## Executive state
 
-Pixel 7 / Panther R9 is closed again as the frozen touch-first reference after
-the final Sable Hub V1 compatibility/remediation closure.
-
 ```text
-PRIVATE_MAIN_HEAD=2624e1af
-R10_KEYBOARD_FIRST_DESIGN_V1=MERGED
-R10_KEYBOARD_FIRST_DESIGN_PR=108
-R10_KEYBOARD_FIRST_DESIGN_MERGE_COMMIT=2624e1af
-R10_KEYBOARD_FIRST_DESIGN_SOURCE=20da2daa
-
-R9_PANTHER_HUB_V1_CLOSURE=MERGED
-R9_PANTHER_HUB_V1_PR=110
-R9_PANTHER_HUB_V1_MERGE_COMMIT=f175b00f
-R9_PANTHER_ACCEPTED_SOURCE=edf62e5bb08372a1395841d6cc5d78d3148a7695
-R9_PANTHER_TARGET_FILES_SHA256=a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285
-R9_PANTHER_STANDARD_PRESERVED_DATA_FLASH=PASS
-R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS_WITH_PRESERVED_PLAY_STATE
-R9_PANTHER_REFERENCE_STATE=FROZEN_TOUCH_FIRST_REFERENCE
-
-THEME_PROPAGATION=DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_GATE
-CLEAN_BASELINE_APPSTORE=NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
+PANTHER=R9_REFERENCE_FROZEN
+TITAN2_ACTIVE_ENGINEERING_LANE=N1D_C3B
+TITAN2_E3_BUILD_SOURCE=caf98dde723d07a071d95aaa1ef27d578d3208d8
+TITAN2_E3_STATUS=BUILD_RUNNING_NOT_YET_SEALED
+TITAN2_ELITE=INDEPENDENT_PORTABILITY_TARGET_PENDING
+Q27=RESEARCH
 PRODUCTION_SIGNING=DEFERRED
 ```
 
-The final Panther image is source-bound to `edf62e5b` and target-files-bound to
-`a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285`. Later
-merged documentation, keyboard-first planning and repository-cleanup commits do
-not become new Panther image qualification sources.
-
-## Final R9 closure evidence
+## Panther reference
 
 ```text
-R9_MESSAGES_FOCUSED_QUALIFICATION=PASS
-R9_PHYSICAL_UX_MODULE_QUALIFICATION=PASS
-R9_FRESH_FULL_BUILD=PASS
-R9_FULL_BUILD_CAUSALITY=PASS_ABSENT_OUT_TO_FRESH_TARGET_FILES
-SABLE_DEVICE_ARTIFACT_GATE=PASS
-SABLE_ARTIFACT_REGISTER=PASS
-SABLE_RELEASE_ARTIFACT_REGISTER=PASS
-SABLE_STANDARD_FLASH=PASS
-R9_SABLE_HOME_DEVICE_ACCEPTANCE=PASS
-R9_SYSTEM_IDENTITY_AUDIT=PASS_READ_ONLY
-R9_PERMISSION_ALLOWLIST_RUNTIME=PASS_NO_NOTIFICATION
-R9_APPSTORE_AUDIT=PASS_READ_ONLY_RUNTIME_STATE
-MAIN_CONTAINS_SOURCE=PASS
+R9_PANTHER_ACCEPTED_SOURCE=edf62e5bb08372a1395841d6cc5d78d3148a7695
+R9_PANTHER_TARGET_FILES_SHA256=a0b359613c4f30e9a834fba212e0b044a97d63ed0537c59471c31b99b627d285
+R9_PANTHER_PHYSICAL_ACCEPTANCE=PASS_WITH_PRESERVED_PLAY_STATE
 ```
 
-The preserved-data physical device intentionally kept user-installed state. The
-AppStore/Play read-only audit therefore proves the observed preserved runtime
-state and sandboxed Play behavior, not a clean baseline factory image without
-user-installed packages.
+Later documentation or Titan work does not change the accepted Panther image
+identity.
 
-## Current product status
+## Titan 2 C3B state
 
-Sable Hub V1 is the accepted common communications surface:
+C3A sealed the Restless/Treble public-functional control. C3B is the actual
+SableOS baseline and does not inherit the Restless runtime patch stack.
 
-```text
-Priority | Messages | Email | People
-```
-
-Hub remains an aggregator/interaction surface. Sable Mail owns mail accounts,
-protocols, MIME/storage/security behavior and credentials. Hub consumes bounded
-local summaries and/or notification-derived state; it must not scrape private
-mail/provider databases or manufacture delivery/read semantics.
-
-Panther now serves as:
-
-- frozen touch-first reference;
-- regression/security/product-comparison baseline;
-- known-good build/flash/evidence pattern;
-- reference for common app semantics before Titan-family promotion.
-
-Open polish/physical issues intentionally remain open until the Titan 2 SableOS
-install path gives the next useful closure point. In particular, appearance,
-Reader propagation, large-media-library performance, duplicate visible Messages,
-production icons/launch timing, first-run crash evidence and All Apps permission
-summaries are tracked as open follow-ups rather than blockers to the current
-Panther freeze.
-
-## Current HOME / Titan 2 C3B authority
-
-Current HOME architecture after the R9L8 cutover:
-
-```text
-HOME_RUNTIME=Launcher3QuickStep
-SABLESTART_ROLE=Launcher3-hosted presentation/state source
-STANDALONE_SABLELAUNCHER_RUNTIME=RETIRED
-```
-
-Titan 2 active engineering has moved to the N1D C3A/C3B strategy. C3A is the
-sealed public-functional build control; C3B is the Sable-owned minimal baseline.
-The canonical current integration boundary is documented in
-`docs/CURRENT_HOME_AND_C3B_INTEGRATION_AUTHORITY.md`.
-
-Parallel product development in `aimindseye/titan2-temp` is source input only.
-The retired handcrafted `sable_titan2_n1d_arm64` / `vendor/sable/n1d`
-implementation is not current authority. E1 uses
-`treble_arm64_bvN-bp4a-userdebug` only as an engineering identity; E2 owns
-final Sable product identity and source-module admission. Canonical CI remains
-operator-owned.
-
-## Titan 2 C3B E1 transition
-
-C3A is sealed and merged. E1 activates a separate C3B engineering workspace
-using the pinned 1,033-project GrapheneOS base plus five pinned Treble
-build/parse-scaffold projects (1,038 managed projects), with zero Restless
-runtime patches and zero inherited Graphene project removals. The pinned PHH
-`base.mk` receives 14 exact fail-closed security/control reductions before
-generation.
-
-Compatibility Peel R2 inventories all 369 patches from the five pinned C3A
-Restless control tiers and admits none verbatim. The focused build-compatibility
-review covers the nine `platform_build` fixes plus the two C3A-proven Soong
-host-layout fixes. R2 reimplements only the narrow Graphene/Treble build graph
-corrections and the security-positive ADB-authentication correction; Restless
-APN removal, llkd removal, OPlus runtime handling and the legacy LGE HIDL
-restoration are not admitted. The C3B runtime patch allowlist remains zero.
-
-The first E1 build identity is
-`treble_arm64_bvN-bp4a-userdebug systemimage`. E1 source/build qualification
-is now complete: the exact C3B engineering head produced a successful
-`system.img` with Compatibility Peel R2 applied, lptools API compatibility
-passing, no post-build packaging artifacts, and a zero runtime patch allowlist.
+C3B E1 is build-qualified:
 
 ```text
 N1D_C3B_SYSTEMIMAGE=PASS
 SYSTEM_SHA256=9ce0144220b3a5bf531a1b0da7ec97543a89c9181ab9d69b6390ea5a86ad45dd
 SYSTEM_BYTES=2940891136
-EVIDENCE_DIR=/srv/sable-build/evidence/titan2/n1d-c3b-systemimage/20261002T194210Z-c3b-systemimage
+C3B_RUNTIME_PATCH_ALLOWLIST_COUNT=0
 ```
 
-This closes E1 build engineering only. Device contact, flash, signing, physical
-runtime, target-files/OTA and release remain blocked. Final Sable product
-identity and application/source-module admission are E2.
-
-## Titan 2 C3B E2 source admission and product composition
-
-The qualified parallel-product tree has now been staged and committed into the
-canonical SableOS review branch. The operator-qualified D8 head and merged
-product `main` are tree-identical, and the canonical import commit records the
-exact 178-file staged delta.
+C3B E2 source admission is complete:
 
 ```text
-N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD=769feb9b9f662deda2a9110e85d95bb6114ceace
-N1D_C3B_E2_PRODUCT_QUALIFIED_TREE=cf5c232be3bc79eec4bd30ee0a90ab9247852053
-N1D_C3B_E2_PRODUCT_MERGED_MAIN=dbbb96cc01a0e366ea56817b54028b5686cb4035
-N1D_C3B_E2_SOURCE_IMPORT_COMMIT=aafb543565c9d59ed5e0d9cda876aabb4967f8aa
-N1D_C3B_E2_SOURCE_IMPORT_FILE_COUNT=178
-N1D_C3B_E2_SOURCE_ADMISSION_STATUS=PASS_CANONICAL_SOURCE_STAGED
+PRODUCT_QUALIFIED_HEAD=769feb9b9f662deda2a9110e85d95bb6114ceace
+PRODUCT_QUALIFIED_TREE=cf5c232be3bc79eec4bd30ee0a90ab9247852053
+PRODUCT_MERGED_MAIN=dbbb96cc01a0e366ea56817b54028b5686cb4035
+SOURCE_IMPORT_COMMIT=aafb543565c9d59ed5e0d9cda876aabb4967f8aa
+SOURCE_IMPORT_FILE_COUNT=178
 ```
 
-E2 product composition is now defined as a thin wrapper around the proven E1
-generated Treble product, not a revival of the retired direct handcrafted GSI:
+Canonical product identity:
 
 ```text
-base product:     device/phh/treble/treble_arm64_bvN.mk
-Sable product:    sable_titan2
-lunch target:     sable_titan2-bp4a-userdebug
-device:           tdgsi_arm64_ab
-brand/model:      SableOS / SableOS Titan 2
-app partition:    product
-module count:     5
-packaging:        source-built unsigned APK -> android_app_import
-Android signing:  default_dev_cert (userdebug engineering only)
+PRODUCT_NAME=sable_titan2
+LUNCH_TARGET=sable_titan2-bp4a-userdebug
+PRODUCT_DEVICE=tdgsi_arm64_ab
+TARGET_COPY_OUT_PRODUCT=system/product
+MODULE_COUNT=5
 ```
 
-The five source-admitted modules are Sable Keyboard, Camera, DisplayCompat,
-Setup helper and RadioDiag. They remain non-privileged; no stock app is
-overridden yet, default-IME provisioning remains deferred to IR-005, and the
-Setup helper does not become Setup Wizard. Prototype screens, standalone HOME,
-reference-only source, presigned APKs and platform-certificate signing remain
-excluded.
+The five modules are Sable Keyboard, Camera, DisplayCompat, Setup helper and
+RadioDiag.
 
-Composition is **defined but not yet parsed or compiled**. The canonical
-operator entry point for this stage is
-`build/titan2/qualify-n1d-c3b-e2-product-composition.sh`, which runs the
-offline source-bound app build, bounded Android staging, parse and exact
-five-module build in that order. Target-files, OTA, device contact, flash,
-production signing, physical runtime and release remain blocked.
-
-See `build/titan2/n1d-c3b-e2-product-admission.env`,
-`build/titan2/n1d-c3b-e2-product-composition.env`,
-`build/gates/n1d-c3b-e2-product-admission-contract.sh`,
-`build/gates/n1d-c3b-e2-product-composition-contract.sh` and
-`product/titan2/c3b/`.
-
-## Active development
+The E3 operator driver passed compatibility preflight, exact-head E2 application
+build/stage/parse/five-module qualification and product-route/package checks,
+then entered one fresh long `make systemimage` build.
 
 ```text
-PRIMARY_ACTIVE_WORK=KEYBOARD_FIRST_TITAN_N0_SEQUENCE
-PANTHER=FROZEN_TOUCH_FIRST_REFERENCE
-DEVICE_1=TITAN2
-DEVICE_2=TITAN2_ELITE
-FUTURE_DEVICE=Q27
-BRAMBLE=HISTORICAL_REFERENCE
+E3_PREBUILD_QUALIFICATION=PASS
+E3_SYSTEMIMAGE=RUNNING_NOT_YET_SEALED
+DEVICE_CONTACT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+TARGET_FILES_AUTHORIZED=NO
+OTA_AUTHORIZED=NO
+PRODUCTION_SIGNING_AUTHORIZED=NO
+RELEASE_ELIGIBLE=NO
 ```
 
-Titan 2 and Titan 2 Elite are independent physical qualification targets even
-when they consume the same common Sable applications and interaction semantics.
-Titan 2 already has active sealed stock-firmware, camera and keyboard research.
-Titan 2 Elite must receive its own read-only inventory and bootloader/recovery/
-Treble/camera/telephony evidence when the device arrives.
+Do not claim E3 PASS until final system image, module membership, hash and
+evidence markers are available.
 
-## Canonical engineering interface
-
-The operator contract is device/release neutral:
+## Current HOME / IME policy
 
 ```text
-bash build/sable.sh <device> <release> <function> [options]
+SABLE_FIRST_PARTY_HOME_OWNER=Launcher3QuickStep
+SABLESTART_ROLE=PRESENTATION_AND_STATE_SOURCE_HOSTED_IN_LAUNCHER3
+STANDALONE_SABLELAUNCHER_RUNTIME=RETIRED
+THIRD_PARTY_HOME_SELECTION_ALLOWED=YES
+FORCE_SABLE_HOME_AFTER_USER_SELECTION=NO
+
+SABLE_FIRST_PARTY_IME=SableKeyboard
+SABLE_FACTORY_DEFAULT_IME=PENDING_CANONICAL_IR005
+THIRD_PARTY_IME_SELECTION_ALLOWED=YES
+FORCE_SABLE_IME_AFTER_USER_SELECTION=NO
 ```
 
-Canonical device IDs:
+## Parallel P1-P4 product train
+
+Developer work stays in `aimindseye/titan2-temp`.
 
 ```text
-panther
-titan2
-titan2-elite
-q27
+BASE_MAIN=dbbb96cc01a0e366ea56817b54028b5686cb4035
+P1=Sable Start keyboard-first source/handoff
+P2=Sable Keyboard provisioning readiness
+P3=SetupWizard2 keyboard/square-display integration preparation
+P4=Weather city-management + keyboard-first closure
 ```
 
-The hardware serial is intentionally **not** part of build/image identity. It is
-required only for device-contact operations such as flash and acceptance:
+The developer proceeds P1 -> P4 without waiting for ai-g732. Each stage is
+frozen separately and not merged. After P4, the operator runs one batched
+exact-head ai-g732 qualification session across all four stages before admission.
 
-```bash
-bash build/sable.sh titan2 R10 flash \
-  --build-source <sha> \
-  --serial <serial> \
-  --preserve-data \
-  --authorize
-```
-
-Titan 2, Titan 2 Elite and Q27 adapters remain fail-closed for build,
-qualification and flash until each platform contract is proven.
-
-## Repository direction
-
-During the keyboard-first transition:
-
-- `aimindseye/sableos` remains the private integration/release authority;
-- `sableos-project` is the target canonical public home for reusable Sable
-  product code, architecture and build contracts;
-- do not publish the private monorepo wholesale;
-- migrate reusable components one at a time after provenance, licensing,
-  secret/private-path review and independent build/test closure;
-- private host evidence, raw firmware, serials and unreviewed vendor diagnostics
-  remain outside public Git.
-
-Public documentation must now reflect that PR #110 and PR #108 are merged and
-that Panther's current image authority is the `edf62e5b` / `a0b359...` R9 Hub
-V1 closure, not the earlier `6f1d6d2f` / `08ef...` acceptance image.
+P5 Sable Reader v2 is currently design/scope work only. Direction: common
+keyboard-first books/PDF-style reading, local-first comics/manga/webtoons and
+audiobooks; Text Reader remains a separate lightweight product.
 
 ## Next execution order
 
 ```text
-1. Keep remaining open issues open until Titan 2 SableOS install closure.
-2. Synchronize sableos-project public documentation with this current state.
-3. Titan 2: finish T0/T1 read-only platform, keyboard, display, camera, radio
-   and restore evidence.
-4. Titan 2: qualify first keyboard-first N0 SableOS artifact/deployment path.
-5. Close Panther/Titan-shared open polish issues only when the Titan 2 install
-   proves or supersedes them.
-6. Titan 2 Elite: run the same independent evidence sequence.
-7. Implement common Sable Camera and Sable Keyboard/system-input integration.
-8. Q27 remains research until shipped hardware qualifies.
-9. Return to production signing/OTA after repeatable multi-device development
-   qualification.
+E3 finish + seal
+ -> E4 image/deployment readiness
+ -> explicit flash authorization
+ -> E5 physical C3B boot
+ -> E6 read-only runtime baseline
+ -> E7 smallest evidence-backed compatibility changes
+ -> E8 product closure waves
+ -> N1D Beta 1 integrated daily-driver candidate
+ -> production signing/OTA later
+
+parallel:
+P1 -> P2 -> P3 -> P4 -> freeze heads -> batched ai-g732 qualification
+P5 Reader v2 -> finalize design -> separate implementation package
 ```
 
-Historical R5-R10 details remain available in Git history, issues, PRs and
-milestone documents; this file is the current execution authority.
+## Historical execution plans
+
+N0, N1A, N1B, N1B2, N1B3 and N1C documents/scripts are retained for historical
+evidence and useful acceptance/deployment lessons. They are not the current
+Titan 2 execution roadmap.
+
+The current roadmap is
+`docs/titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md`.

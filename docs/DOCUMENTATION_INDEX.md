@@ -19,6 +19,8 @@ When an older concept note or historical validation record conflicts with an
 accepted ADR, `CURRENT_STATUS.md` or this index, the newer normative/current
 status document takes precedence.
 
+- `titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — **current Titan 2 execution roadmap and P1-P5 assignment authority**. N0/N1B/N1B2/N1B3/N1C execution documents are historical evidence.
+
 ## Current milestone snapshot
 
 ```text
@@ -33,7 +35,7 @@ THEME_PROPAGATION                         DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_
 CLEAN_BASELINE_APPSTORE                   NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
 
 NON_PIXEL_ASSURANCE_MODEL                 N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                               ACTIVE_KEYBOARD_FIRST_N0_TARGET
+TITAN2_ROLE                               ACTIVE_N1D_C3B_E3_ENGINEERING
 TITAN2_ELITE_ROLE                         NEXT_INDEPENDENT_KEYBOARD_FIRST_TARGET
 Q27_ROLE                                  RESEARCH / FUTURE CANDIDATE
 
@@ -95,7 +97,7 @@ Current product progression:
 ```text
 frozen Panther touch-first reference
     -> keyboard-first SableOS design V1 merged
-    -> Titan 2 N0 read-only evidence / restore / keyboard / display / camera / radio qualification
+    -> Titan 2 N1D/C3B E3 systemimage engineering and runtime bring-up
     -> first Titan 2 keyboard-first SableOS artifact + deployment path
     -> close remaining open Panther/Titan shared polish issues where proven or superseded
     -> Titan 2 Elite independent evidence and deployment sequence
