@@ -49,7 +49,9 @@ for marker in \
   'EXPECTED_SYSTEM_SHA256="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"' \
   'EXPECTED_DECISION_SHA256="74531923a9ea6c755a9f8ea52db511c4a4a19a5d9dba3cb51da342c04b768926"' \
   '--expected-auth-freeze-sha256' \
-  'auth_freeze_sha256_mismatch' \
+  '--registry-verified' \
+  'registry_verification_required' \
+  'N1D_C3B_E5B_REGISTRY_VERIFICATION=PASS_CONSUMED' \
   'TARGET_PARTITION=system_a' \
   'EXPECTED_ACTIVE_SLOT=a' \
   'FASTBOOT_IMPLICIT_RESIZE=YES' \
@@ -67,6 +69,13 @@ for marker in \
 do
   [[ "$PLAN_TEXT" == *"$marker"* ]] || fail "plan_marker=$marker"
 done
+
+if grep -Fq 'sha256sum "$SYSTEM_IMG"' "$PLAN"; then
+  fail duplicate_system_hash_present
+fi
+if grep -Fq -- '--expected-sha256 "$EXPECTED_SYSTEM_SHA256"' "$PLAN"; then
+  fail duplicate_gsi_hash_present
+fi
 
 if grep -Eq '^[[:space:]]*(sudo[[:space:]]+)?(adb|fastboot)([[:space:]]|$)' "$PLAN"; then
   fail plan_device_command_present
