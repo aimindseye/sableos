@@ -56,13 +56,13 @@ SableTitan2Setup
 SableTitan2RadioDiag
 ```
 
-The current E3 run passed the cheap compatibility/product/module prerequisites
-and entered the long fresh `systemimage` build. E3 is **running, not yet
-sealed**.
+E3 completed successfully and is **sealed PASS**. The exact system image, five-module membership, hash, size and evidence path are recorded in `docs/titan2/N1D_C3B_E3_SYSTEMIMAGE_EVIDENCE.md` and `build/titan2/n1d-c3b-e3-systemimage-evidence.env`.
 
 ```text
-C3B_E3_STATUS=BUILD_RUNNING_NOT_YET_SEALED
+C3B_E3_STATUS=SEALED_PASS
 C3B_E3_PREBUILD_QUALIFICATION=PASS
+C3B_E3_SYSTEM_SHA256=998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5
+C3B_E3_SYSTEM_BYTES=2994405376
 DEVICE_CONTACT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 TARGET_FILES_AUTHORIZED=NO
@@ -71,7 +71,7 @@ PRODUCTION_SIGNING_AUTHORIZED=NO
 RELEASE_ELIGIBLE=NO
 ```
 
-Do not promote E3 to PASS until the final image/module/hash evidence is captured.
+E3 is sealed. Do not reinterpret this as flash, device-contact, OTA, target-files or release authorization.
 
 ## Assignment model
 
@@ -251,8 +251,8 @@ P2 Android glue remains specifically subject to the operator offline Android com
 
 | Phase | Purpose | Exit condition | State |
 | --- | --- | --- | --- |
-| E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | RUNNING |
-| E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | NEXT |
+| E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
+| E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **ACTIVE NEXT** |
 | E5 | first physical C3B boot | boot + untouched baseline capture | NEXT |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |

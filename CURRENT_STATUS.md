@@ -119,6 +119,20 @@ P5 Sable Reader v2 architecture is accepted. It is a sibling implementation trac
 
 The 23-screen titan2-temp/apps/titan2/screens catalog is now explicitly retained as a design/reference baseline, not a runtime product. See docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md.
 
+## Titan 2 C3B E3 image
+
+```text
+N1D_C3B_E3_SYSTEMIMAGE=PASS
+N1D_C3B_E3_SYSTEM_SHA256=998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5
+N1D_C3B_E3_SYSTEM_BYTES=2994405376
+N1D_C3B_E3_MODULES_IN_SYSTEM_TREE=PASS count=5
+N1D_C3B_E3_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT
+N1D_C3B_E3_DEVICE_CONTACT_AUTHORIZED=NO
+N1D_C3B_E3_RELEASE_ELIGIBLE=NO
+```
+
+E3 is sealed. E4 artifact/deployment readiness is next; flash remains unauthorized.
+
 ## Keyboard-first design closure
 
 ```text

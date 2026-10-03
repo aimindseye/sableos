@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+EVIDENCE="$ROOT/build/titan2/n1d-c3b-e3-systemimage-evidence.env"
+fail(){ echo "N1D_C3B_E3_EVIDENCE_CONTRACT_FAIL=$1" >&2; exit 1; }
+
+[[ -f "$EVIDENCE" ]] || fail missing_evidence_env
+
+required=(
+'N1D_C3B_E3_EVIDENCE_VERSION=1'
+'N1D_C3B_E3_BUILD_SOURCE_HEAD=caf98dde723d07a071d95aaa1ef27d578d3208d8'
+'N1D_C3B_E3_BUILD_TIMESTAMP_UTC=20261003T014638Z'
+'N1D_C3B_E3_BUILD_DURATION_HMS=02:21:23'
+'N1D_C3B_E3_COMPATIBILITY_PREFLIGHT=PASS'
+'N1D_C3B_E3_E2_COMPOSITION_QUALIFICATION=PASS'
+'N1D_C3B_E3_PRODUCT_ROUTE=PASS_SYSTEM_PRODUCT'
+'N1D_C3B_E3_MODULES_IN_SYSTEM_TREE=PASS_COUNT_5'
+'N1D_C3B_E3_POSTBUILD_PACKAGING_ARTIFACTS=PASS_ABSENT'
+'N1D_C3B_E3_SYSTEM_SHA256=998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5'
+'N1D_C3B_E3_SYSTEM_BYTES=2994405376'
+'N1D_C3B_E3_SYSTEMIMAGE=PASS'
+'N1D_C3B_E3_DEVICE_CONTACT_AUTHORIZED=NO'
+'N1D_C3B_E3_TARGET_FILES_AUTHORIZED=NO'
+'N1D_C3B_E3_OTA_AUTHORIZED=NO'
+'N1D_C3B_E3_PRODUCTION_SIGNING_AUTHORIZED=NO'
+'N1D_C3B_E3_RELEASE_ELIGIBLE=NO'
+)
+for line in "${required[@]}"; do
+  grep -Fxq "$line" "$EVIDENCE" || fail "missing_line=$line"
+done
+
+grep -Eq '^N1D_C3B_E3_SYSTEM_IMG=/srv/sable-build/workspaces/titan2-n1d-c3b/out-c3b-engineering/e3-systemimage/20261003T014638Z/target/product/tdgsi_arm64_ab/system.img$' "$EVIDENCE" ||
+  fail bad_system_image_path
+grep -Eq '^N1D_C3B_E3_EVIDENCE_DIR=/srv/sable-build/evidence/titan2/n1d-c3b-e3-systemimage/20261003T014638Z$' "$EVIDENCE" ||
+  fail bad_evidence_dir
+
+echo "N1D_C3B_E3_EVIDENCE_CONTRACT=PASS"
