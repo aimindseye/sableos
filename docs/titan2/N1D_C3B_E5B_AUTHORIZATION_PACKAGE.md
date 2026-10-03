@@ -4,8 +4,32 @@ Status: **OFFLINE PREPARATION AUTHORIZED / E5B MUTATION NOT AUTHORIZED**
 
 E5A is sealed `PASS_REVIEW_READY`. The Titan 2 remains in userspace fastbootd.
 
-This package is the next non-mutating engineering step. It consumes the already
-captured E5A JSON and does not contact the device.
+This package consumes the already captured E5A evidence only. It performs no
+device contact and emits no write-capable commands.
+
+## Corrected Titan 2 model
+
+The first E5B package incorrectly treated `system_b` as a conventional inactive
+deployment target. That assumption is superseded.
+
+Titan 2 uses Virtual A/B dynamic partitions. While slot A is active, the B
+logical system may not be materialized/openable even though metadata describes
+the alternate layout.
+
+The durable deployment precedent is N1B:
+
+```text
+current slot a
+ -> active-slot COW review/cleanup
+ -> resize system_a
+ -> write system_a
+ -> keep slot a
+ -> preserve boot/vendor/vbmeta chain
+ -> explicit factory reset
+ -> boot success
+```
+
+See `N1D_C3B_E5B_TITAN_DEPLOYMENT_MODEL.md`.
 
 ## Safety boundary
 
@@ -26,28 +50,25 @@ CUSTOM_BOOT_AUTHORIZED=NO
 WRITE_CAPABLE_COMMANDS_EMITTED=NO
 ```
 
-## Purpose
+## What the corrected package proves
 
-The package converts the sealed E5A evidence into a sanitized E5B decision
-record containing:
+The offline package reads:
 
-- current and inactive slot;
-- exact `system_a` / `system_b` sizes from E5A evidence;
-- planned target size;
-- per-candidate growth requirement;
-- remaining total-`super` headroom for each candidate;
-- lpdump capture hash/presence;
-- explicit unresolved group-capacity proof;
-- the recommended rollback-oriented slot policy.
+- sealed E5A summary JSON;
+- fresh E5A `lpdump`;
+- fresh Phase 11 `getvar all`.
 
-The current engineering preference is:
+It reports:
 
-```text
-PREFER_INACTIVE_SLOT_TO_PRESERVE_PROVEN_STOCK_ACTIVE_SLOT
-```
-
-but only if the inactive slot's stock boot chain and logical-partition group
-capacity are both confirmed. The package does not authorize that policy.
+- current slot and active `system_<slot>` target;
+- whether the opposite logical system is materialized;
+- current active-system size and target growth;
+- active-slot COW partition inventory and sizes;
+- active-group membership and maximum size;
+- projected active-group use after the system target;
+- projected total-`super` headroom after reviewed COW cleanup and growth;
+- preservation policies for boot/AVB and stock dynamic partitions;
+- explicit first-boot userdata policy.
 
 ## Run
 
@@ -59,7 +80,7 @@ bash build/gates/n1d-c3b-e5b-authorization-package-contract.sh
 bash build/titan2/prepare-n1d-c3b-e5b-authorization-package.sh
 ```
 
-This uses the sealed E5A evidence directory by default:
+The default evidence root is:
 
 ```text
 /srv/sable-build/evidence/titan2/n1d-c3b-e5a-readonly-device-state/20261003T053441Z
@@ -67,23 +88,24 @@ This uses the sealed E5A evidence directory by default:
 
 Do not reboot or otherwise contact the phone for this step.
 
-## Required outcome
+## Review-ready outcome
 
-The package is reviewable only when it ends with:
+The desired corrected state is:
 
 ```text
 N1D_C3B_E5B_AUTHORIZATION_PACKAGE=
-READY_FOR_MANUAL_DECISION_AFTER_GROUP_AND_INACTIVE_BOOT_CHAIN_REVIEW
+READY_FOR_MANUAL_AUTHORIZATION_ACTIVE_SYSTEM_PATH
 ```
 
-This still means:
+Even then:
 
 ```text
 E5B_FLASH_AUTHORIZED=NO
 E5B_LP_MUTATION_AUTHORIZED=NO
 E5B_AVB_MUTATION_AUTHORIZED=NO
 E5B_SLOT_MUTATION_AUTHORIZED=NO
+E5B_FACTORY_RESET_AUTHORIZED=NO
 ```
 
-The next authorization decision must be based on the generated candidate sizes,
-fresh group-capacity evidence, and inactive-slot boot/AVB coherence.
+A later explicit authorization must name the exact COW cleanup, active-system
+resize/write, userdata reset policy and rollback stop conditions.
