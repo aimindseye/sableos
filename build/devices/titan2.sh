@@ -664,7 +664,7 @@ for raw in src.read_text(encoding="utf-8", errors="replace").splitlines():
     line = re.sub(r"^\s*\([^)]*\)\s*", "", raw.strip())
     if not line:
         continue
-    match = re.match(r"^(.+?):\s*(.*?)\s*$", line)
+    match = re.match(r"^(.+):\s*([^:]+)$", line)
     if match:
         values.setdefault(match.group(1).strip(), match.group(2).strip())
 
