@@ -23,6 +23,7 @@ status document takes precedence.
 - `SABLE_READER_V2_ARCHITECTURE.md` — **accepted P5 product architecture** for EPUB/PDF, comics/manga/webtoons and audiobooks; Text Reader remains separate.
 - `titan2/SABLESCREENS_REFERENCE_BASELINE.md` — **accepted design/reference baseline** mapping the 23-screen catalog into P1-P5/E8; not a runtime product.
 - `titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md` — **implementation-ready queue** for accepted DESIGN-KF-A through DESIGN-KF-D after P1-P5 qualification.
+- `titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md` — **authorized E5A operator contract** for fresh read-only Titan 2 state/capacity revalidation; E5B remains separately unauthorized.
 
 ## Current milestone snapshot
 
@@ -38,7 +39,7 @@ THEME_PROPAGATION                         DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_
 CLEAN_BASELINE_APPSTORE                   NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
 
 NON_PIXEL_ASSURANCE_MODEL                 N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                               ACTIVE_N1D_C3B_E3_ENGINEERING
+TITAN2_ROLE                               ACTIVE_N1D_C3B_E5A_READONLY_REVALIDATION
 TITAN2_ELITE_ROLE                         NEXT_INDEPENDENT_KEYBOARD_FIRST_TARGET
 Q27_ROLE                                  RESEARCH / FUTURE CANDIDATE
 
