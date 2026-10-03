@@ -35,6 +35,10 @@ FACTORY_RESET_ALLOWED=NO
 
 The manual authorization freeze remains an evidence input. Its SHA-256 is
 computed and stored by the standard artifact registry at registration time.
+The freeze file is intentionally treated as an opaque, hash-bound historical
+evidence artifact; flash planning does not depend on internal freeze-env key
+names. Deployment semantics come from the separately hash-verified E5B decision
+JSON.
 
 ## Canonical registration
 
@@ -81,11 +85,12 @@ bash build/sable.sh titan2 N1D flash-plan \
 
 The standard registry is verified before the Titan adapter is called.
 
-The N1D C3B plan then:
+The canonical flash-plan path first verifies the registered artifact set,
+including the E3 image, E5B decision JSON and authorization freeze. The N1D C3B
+adapter then consumes that verified state and:
 
-1. re-verifies the E3 image SHA;
-2. verifies the E5B decision and authorization-freeze artifacts through the
-   registry;
+1. treats the authorization freeze as opaque hash-bound evidence;
+2. validates deployment semantics from the E5B decision JSON;
 3. verifies the E3 build-state evidence;
 4. determines raw versus Android sparse image format;
 5. derives the logical image size used by fastboot;
