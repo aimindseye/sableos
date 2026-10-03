@@ -41,6 +41,9 @@ grep -Fq 'KEEP_REFERENCE_ONLY' "$ADAPTER" || fail reference_exclusion_missing
 
 grep -Fq 'git", "-C", str(source), "ls-files", "-s", "-z"' "$ADAPTER" || fail tracked_file_inventory_missing
 grep -Fq 'git -C "$ROOT" diff --cached --check' "$ADAPTER" || fail diff_check_missing
+grep -Fq 'xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"' "$ADAPTER" || fail approved_ignored_file_stage_missing
+grep -Fq 'if staged != copied:' "$ADAPTER" || fail staged_equals_copied_guard_missing
+grep -Fq 'C3B_PRODUCT_STAGE_INDEX=FAIL staged=' "$ADAPTER" || fail staged_equals_copied_failure_marker_missing
 grep -Fq 'staged-file-inventory.tsv' "$ADAPTER" || fail deterministic_inventory_missing
 grep -Fq 'C3B_PRODUCT_HEAD=$PRODUCT_HEAD' "$ADAPTER" || fail evidence_head_missing
 grep -Fq 'C3B_CANONICAL_BASE_HEAD=$BASE_HEAD' "$ADAPTER" || fail evidence_base_missing
@@ -68,6 +71,7 @@ echo "N1D_C3B_PRODUCT_REVIEW_STAGING_SOURCE_BINDING=PASS_EXACT_HEAD"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_TREE_BINDING=PASS_EXACT_QUALIFIED_TREE"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_OWNERSHIP=PASS_FAIL_CLOSED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_COLLISION_POLICY=PASS_REJECT_DIFFERING"
+echo "N1D_C3B_PRODUCT_REVIEW_STAGING_IGNORED_INPUT_POLICY=PASS_FORCE_ADD_APPROVED_COPIED_PATHS_ONLY"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_PROTOTYPE_POLICY=PASS_EXCLUDED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_NETWORK=PASS_FORBIDDEN"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_DEVICE_CONTACT=PASS_FORBIDDEN"
