@@ -140,6 +140,33 @@ device in fastbootd after evidence capture.
 
 See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
 
+## E5A sealed result
+
+Fresh E5A device-state revalidation completed cleanly from canonical operator
+head `602fca81ffc43e8731342b96b6945ab9ef9642b6`.
+
+```text
+N1D_C3B_E5A_READONLY_DEVICE_STATE=PASS_REVIEW_READY
+N1D_C3B_E5A_CURRENT_SLOT=a
+N1D_C3B_E5A_FASTBOOTD_IS_USERSPACE=yes
+N1D_C3B_E5A_FASTBOOTD_UNLOCKED=yes
+N1D_C3B_E5A_ALLOCATION_BASIS=GETVAR_ALL_LOGICAL_PARTITIONS_COMPLETE
+N1D_C3B_E5A_ALLOCATION_COMPLETE=YES
+N1D_C3B_E5A_FRESH_SUPER_HEADROOM_BYTES=5460250624
+N1D_C3B_E5A_PLANNED_SYSTEM_TARGET_BYTES=3263168512
+N1D_C3B_E5A_REMAINING_HEADROOM_AFTER_PLANNED_GROWTH_BYTES=2954141696
+N1D_C3B_E5A_CAPACITY_SAFE=YES
+N1D_C3B_E5A_SNAPSHOT_UPDATE_REVIEW=PASS_IDLE_OR_NONE
+N1D_C3B_E5A_FINAL_DEVICE_MODE=FASTBOOTD
+```
+
+See `docs/titan2/N1D_C3B_E5A_EVIDENCE.md`.
+
+E5B remains unauthorized. The next engineering action is offline-only generation
+of an E5B authorization package from the sealed E5A JSON. That package compares
+active/inactive `system_*` candidates and requires fresh logical-partition group
+capacity plus inactive-slot boot-chain review before recommending mutation.
+
 ## Assignment model
 
 Two lanes proceed in parallel.
@@ -320,7 +347,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
 | E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
-| E5 | first physical C3B boot | E5A fresh read-only revalidation, then separately authorized E5B deployment + untouched baseline | **E5A AUTHORIZED / E5B NOT AUTHORIZED** |
+| E5 | first physical C3B boot | E5A sealed read-only evidence, offline E5B decision package, then separately authorized deployment + untouched baseline | **E5A PASS / SEALED; E5B NOT AUTHORIZED** |
 | E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
 | E8A | core OS usability | Start, Keyboard, Setup, Settings, Hub/Messages, browser/files | PARALLEL SOURCE WORK |
@@ -335,8 +362,8 @@ P2 Android glue remains specifically subject to the operator offline Android com
 E3 completes
  -> seal exact artifact
  -> E4 deployment preflight
- -> E5A read-only authorization GRANTED
- -> fresh device-state revalidation
+ -> E5A read-only revalidation PASS / SEALED
+ -> offline E5B authorization package
  -> separate E5B mutation authorization
  -> first physical C3B boot
  -> E6 read-only runtime baseline
