@@ -144,34 +144,53 @@ This closes E1 build engineering only. Device contact, flash, signing, physical
 runtime, target-files/OTA and release remain blocked. Final Sable product
 identity and application/source-module admission are E2.
 
-## Titan 2 C3B E2 product-source admission
+## Titan 2 C3B E2 source admission and product composition
 
-E2 now has an exact source-admission candidate from the qualified
-`aimindseye/titan2-temp` product lane. The operator-qualified D8 head and the
-merged product `main` are tree-identical, so canonical staging is bound to the
-qualified head rather than silently upgrading evidence to the merge commit.
+The qualified parallel-product tree has now been staged and committed into the
+canonical SableOS review branch. The operator-qualified D8 head and merged
+product `main` are tree-identical, and the canonical import commit records the
+exact 178-file staged delta.
 
 ```text
 N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD=769feb9b9f662deda2a9110e85d95bb6114ceace
 N1D_C3B_E2_PRODUCT_QUALIFIED_TREE=cf5c232be3bc79eec4bd30ee0a90ab9247852053
 N1D_C3B_E2_PRODUCT_MERGED_MAIN=dbbb96cc01a0e366ea56817b54028b5686cb4035
-N1D_C3B_E2_PRODUCT_MERGED_MAIN_TREE=cf5c232be3bc79eec4bd30ee0a90ab9247852053
-N1D_C3B_E2_PRODUCT_TREE_EQUIVALENCE=PASS
-N1D_C3B_E2_PRODUCT_MODULE_COUNT=5
-N1D_C3B_E2_SOURCE_ADMISSION_STATUS=PENDING_CANONICAL_STAGING_REVIEW
+N1D_C3B_E2_SOURCE_IMPORT_COMMIT=aafb543565c9d59ed5e0d9cda876aabb4967f8aa
+N1D_C3B_E2_SOURCE_IMPORT_FILE_COUNT=178
+N1D_C3B_E2_SOURCE_ADMISSION_STATUS=PASS_CANONICAL_SOURCE_STAGED
 ```
 
-The five staged source candidates are Sable Keyboard, Camera, DisplayCompat,
-Setup helper and RadioDiag. Prototype screens, the retired standalone HOME,
-reference-only source and presigned-product-APK models remain excluded.
-Staging does not itself admit modules into the product image and does not
-authorize target-files, OTA, device contact, flash, signing, physical runtime or
-release.
+E2 product composition is now defined as a thin wrapper around the proven E1
+generated Treble product, not a revival of the retired direct handcrafted GSI:
+
+```text
+base product:     device/phh/treble/treble_arm64_bvN.mk
+Sable product:    sable_titan2
+lunch target:     sable_titan2-bp4a-userdebug
+device:           tdgsi_arm64_ab
+brand/model:      SableOS / SableOS Titan 2
+app partition:    product
+module count:     5
+packaging:        source-built unsigned APK -> android_app_import
+Android signing:  default_dev_cert (userdebug engineering only)
+```
+
+The five source-admitted modules are Sable Keyboard, Camera, DisplayCompat,
+Setup helper and RadioDiag. They remain non-privileged; no stock app is
+overridden yet, default-IME provisioning remains deferred to IR-005, and the
+Setup helper does not become Setup Wizard. Prototype screens, standalone HOME,
+reference-only source, presigned APKs and platform-certificate signing remain
+excluded.
+
+Composition is **defined but not yet parsed or compiled**. Target-files, OTA,
+device contact, flash, production signing, physical runtime and release remain
+blocked.
 
 See `build/titan2/n1d-c3b-e2-product-admission.env`,
+`build/titan2/n1d-c3b-e2-product-composition.env`,
 `build/gates/n1d-c3b-e2-product-admission-contract.sh`,
-`docs/titan2/N1D_C3B_TRANSITION_R1.md` and
-`docs/titan2/N1D_C3B_COMPATIBILITY_PEEL_R2.md`.
+`build/gates/n1d-c3b-e2-product-composition-contract.sh` and
+`product/titan2/c3b/`.
 
 ## Active development
 
