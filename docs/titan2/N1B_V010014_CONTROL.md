@@ -6,7 +6,7 @@ This is the next canonical Titan 2 engineering control after the N1D physical
 reboot-loop result.
 
 ```text
-N1B_V010014_CONTROL=NEXT_PHYSICAL_CONTROL_AFTER_REVIEW
+N1B_V010014_CONTROL=BLOCKED_PENDING_EXACT_ARTIFACT_OR_EXACT_RECONSTRUCTION
 COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
 N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
 N1E_FLASH_AUTHORIZED=NO
@@ -29,7 +29,10 @@ current device state. It does **not** prove V01.00.14 alone caused the failure.
 ## Exact N1B authority
 
 ```text
-N1B_SOURCE_COMMIT=8dd06e77410fea131e4716447f7f05067e427654
+N1B_LEDGER_SOURCE_COMMIT=8dd06e77410fea131e4716447f7f05067e427654
+N1B_LEDGER_SOURCE_ROLE=POST_BOOT_LEDGER_SOURCE_NOT_IMAGE_BUILD_PROVENANCE
+N1B_REGISTERED_ARTIFACT_BUILD_SOURCE=462839cfcc362e4f4ed93d8a8dabf059885452b1
+N1B_PRIOR_IDENTICAL_ARTIFACT_BUILD_SOURCE=851b4ba50c1d9141d26afaa1432cbe7a416073a6
 N1B_SYSTEM_SHA256=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e
 N1B_SYSTEM_BYTES=3180666880
 N1B_HISTORICAL_TARGET=system_a
@@ -39,6 +42,19 @@ N1B_HISTORICAL_FACTORY_RESET_REQUIRED=YES_CONFIRMED
 
 The first-boot ledger remains the authority for those values:
 `docs/titan2/N1B_FIRST_BOOT_LEDGER_AND_N1B2_HANDOFF.md`.
+
+The retained Phase-08 evidence records two image builds at different SableOS
+source commits, `851b4ba50c1d9141d26afaa1432cbe7a416073a6` and
+`462839cfcc362e4f4ed93d8a8dabf059885452b1`, that produced the same
+`system.img` SHA-256 and the same target-files SHA-256. Later flash-plan
+evidence binds the registered artifact manifest to `462839cf...`. Therefore
+the first-boot ledger's `SOURCE_COMMIT=8dd06e...` is retained as the
+post-boot ledger source, not treated as the image-producing build source.
+
+The exact historical image and its exact target-files archive are no longer
+present in retained storage. Physical N1B-on-V01.00.14 execution is therefore
+blocked until either the exact bytes are recovered or an exact pinned
+reconstruction reproduces both historical artifact hashes.
 
 ## Current-firmware evidence
 
