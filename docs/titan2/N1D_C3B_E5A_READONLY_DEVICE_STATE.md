@@ -167,12 +167,10 @@ N1D_C3B_E5A_READONLY_DEVICE_STATE=PASS_REVIEW_READY
 
 or
 
-N1D_C3B_E5A_READONLY_DEVICE_STATE=
-PASS_REVIEW_READY_SNAPSHOT_STATUS_REQUIRES_MANUAL_REVIEW
+N1D_C3B_E5A_READONLY_DEVICE_STATE=PASS_REVIEW_READY_MANUAL_REVIEW_REQUIRED
 ```
 
-The second result still blocks E5B until the captured snapshot/update evidence
-is reviewed.
+The second result still blocks E5B until every emitted `N1D_C3B_E5A_REVIEW=...` condition is reviewed. This may be snapshot/update ambiguity, fallback allocation evidence, or another explicitly recorded review condition.
 
 Any BLOCKED_* result blocks E5B.
 
