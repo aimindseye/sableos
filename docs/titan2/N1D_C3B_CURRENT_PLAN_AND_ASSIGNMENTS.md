@@ -162,10 +162,7 @@ N1D_C3B_E5A_FINAL_DEVICE_MODE=FASTBOOTD
 
 See `docs/titan2/N1D_C3B_E5A_EVIDENCE.md`.
 
-E5B remains unauthorized. The next engineering action is offline-only generation
-of an E5B authorization package from the sealed E5A JSON. That package compares
-active/inactive `system_*` candidates and requires fresh logical-partition group
-capacity plus inactive-slot boot-chain review before recommending mutation.
+E5B remains unauthorized. The first offline package's inactive-slot assumption is superseded. Titan 2 Virtual A/B does not guarantee a materialized inactive `system_b`. The corrected package binds to the proven N1B active-system path and evaluates current-slot COW cleanup plus active-group/total-super capacity from sealed E5A evidence.
 
 ## Assignment model
 
