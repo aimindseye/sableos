@@ -63,10 +63,17 @@ C3A_V010014_RADIO_POSTBOOT_STABILITY=ISSUE_RECOVERABLE_BY_RADIO_CYCLE
 C3A_V010014_COMPATIBILITY_BASELINE=PASS
 C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
 C3A_CONTROL_PATCH_COUNT=369
-N1F_STATUS=NEXT_COMBINED_C3A_DERIVED_C3B5_BUILD_FLASH
-N1F_BUILD_AUTHORIZED=YES_EXACT_C3A_PLUS_5_APPS
-N1F_FLASH_AUTHORIZED=YES_EXACT_SYSTEM_A_ONCE
-N1F_FACTORY_RESET_AUTHORIZED=NO
+N1F_STATUS=PASS_C3A_DERIVED_C3B5_BOOT_AND_RUNTIME_PACKAGES
+N1F_SYSTEM_SHA256=dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a
+N1F_SYSTEM_BYTES=3200540672
+N1F_SYSTEM_GROWTH_BYTES=53563392
+N1F_RUNTIME_PACKAGES=PASS_COUNT_5
+N1F_ANDROID_BOOT=PASS
+N1F_FLASH_TARGET=system_a
+N1F_FACTORY_RESET_PERFORMED=NO
+N1F_ARTIFACT_DIR=/srv/sable-build/artifacts/titan2/n1f-c3a-derived-c3b5/20261003T221350Z
+N1F_C3A_HISTORY_DIR=/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z
+N1F_RUN_EVIDENCE=/srv/sable-build/evidence/titan2/n1f-c3a-derived-c3b5-r2/20261003T221350Z
 ```
 
 The exact N1B physical-control path is retired as unexecutable. The exact image
@@ -99,11 +106,15 @@ baseline for Titan 2. Voice, data and NR_NSA capability were observed; the
 transient post-boot radio state loss is recoverable by one airplane-mode cycle
 and is tracked separately.
 
-The sole next physical experiment is N1F: preserve the exact C3A image/evidence,
-add exactly the five admitted Sable product apps with no compatibility-patch
-delta, rebuild, preserve the derived image, restore source state, then flash
-system_a exactly once and observe boot. Factory reset remains outside this
-experiment.
+N1F is complete and PASS. The exact C3A compatibility substrate plus exactly
+the five admitted Sable product apps rebuilt successfully, produced a
+3200540672-byte raw system image, flashed to system_a once, rebooted once,
+completed Android boot, and exposed all five Sable packages at runtime.
+No compatibility patch was added or removed and no factory reset was used.
+
+The next Titan 2 engineering phase must therefore preserve this exact
+C3A-derived compatibility substrate and advance only one additional Sable
+integration layer at a time.
 
 See `docs/titan2/N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md`.
 

@@ -1,6 +1,6 @@
 # Titan 2 N1F — C3A-derived C3B5 combined build and flash
 
-Status: **next operator execution**
+Status: **PASS — physical build/flash/runtime qualification complete**
 
 Date: **2026-10-03**
 
@@ -35,6 +35,42 @@ SableTitan2RadioDiag
 ```
 
 There is no compatibility-patch delta.
+
+
+## Physical result
+
+```text
+N1F_R2_BUILD=PASS
+SYSTEM_SHA256=dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a
+SYSTEM_BYTES=3200540672
+SYSTEM_GROWTH_BYTES=53563392
+MODULE_COUNT=5
+
+N1F_R2_ARTIFACT=PASS
+N1F_R2_SOURCE_RESTORE=PASS
+N1F_R2_PREFLASH=PASS
+N1F_R2_SYSTEM_A_FLASH=PASS
+N1F_R2_REBOOT=PASS_ONCE
+N1F_R2_RUNTIME_PACKAGES=PASS count=5
+N1F_R2_BOOT_RESULT=PASS_ANDROID_BOOT_COMPLETED
+N1F_R2=PASS
+
+FACTORY_RESET=NOT_PERFORMED
+```
+
+Artifact history:
+
+```text
+C3A_HISTORY_DIR=/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z
+N1F_ARTIFACT_DIR=/srv/sable-build/artifacts/titan2/n1f-c3a-derived-c3b5/20261003T221350Z
+RUN_EVIDENCE=/srv/sable-build/evidence/titan2/n1f-c3a-derived-c3b5-r2/20261003T221350Z
+```
+
+This result proves that the boot-qualified C3A Restless/TrebleDroid compatibility
+substrate remains stable after adding exactly the five Sable product apps.
+The earlier plain-C3B boot failure must not be used as evidence against these
+five apps; the compatibility-substrate difference is now the controlling
+variable.
 
 ## Single operator runner
 
