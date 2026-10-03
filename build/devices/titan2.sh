@@ -65,6 +65,14 @@ sable_device_flash_policy() {
     echo "TITAN2_STANDARD_FLASH_POLICY=BLOCKED_SCOPE_TOKEN"
     return 78
   }
+  [[ -n "${SABLE_ADB:-}" && -x "$SABLE_ADB" ]] || {
+    echo "TITAN2_STANDARD_FLASH_POLICY=BLOCKED_CANONICAL_ADB"
+    return 78
+  }
+  [[ -n "${SABLE_FASTBOOT:-}" && -x "$SABLE_FASTBOOT" ]] || {
+    echo "TITAN2_STANDARD_FLASH_POLICY=BLOCKED_CANONICAL_FASTBOOT"
+    return 78
+  }
 
   SABLE_DEVICE_EXPECTED_PRODUCT="$TITAN2_N1D_E5B_EXPECTED_FASTBOOT_PRODUCT"
   SABLE_DEVICE_FLASH_SUPPORTED=YES
@@ -638,122 +646,15 @@ sable_device_flash_preflight() {
   }
 
   LIVE_STATE_ENV="$EVIDENCE_DIR/fastboot-live-state.env"
-  python3 - \
-    "$LIVE_GETVAR_ALL" \
-    "$TITAN2_N1D_E5B_EXPECTED_FASTBOOT_PRODUCT" \
-    "$TITAN2_N1D_E5B_EXPECTED_SLOT" \
-    "$TITAN2_N1D_E5B_SYSTEM_CURRENT_BYTES" \
-    "$TITAN2_N1D_E5B_SUPER_BYTES" \
-    "$EXPECTED_MATERIALIZED_LOGICAL_BYTES" \
-    "$LIVE_STATE_ENV" <<'PY'
-from __future__ import annotations
-import pathlib
-import re
-import sys
-
-src = pathlib.Path(sys.argv[1])
-expected_product = sys.argv[2]
-expected_slot = sys.argv[3]
-expected_system = int(sys.argv[4])
-expected_super = int(sys.argv[5])
-expected_allocated = int(sys.argv[6])
-out = pathlib.Path(sys.argv[7])
-
-values: dict[str, str] = {}
-for raw in src.read_text(encoding="utf-8", errors="replace").splitlines():
-    line = re.sub(r"^\s*\([^)]*\)\s*", "", raw.strip())
-    if not line:
-        continue
-    match = re.match(r"^(.+):\s*([^:]+)$", line)
-    if match:
-        values.setdefault(match.group(1).strip(), match.group(2).strip())
-
-def parse_int(value: str) -> int:
-    token = value.strip().split()[0] if value.strip() else ""
-    try:
-        return int(token, 0)
-    except ValueError:
-        return 0
-
-required = {
-    "product": expected_product,
-    "current-slot": expected_slot,
-    "is-userspace": "yes",
-    "unlocked": "yes",
-    "snapshot-update-status": "none",
-    "is-logical:system_a": "yes",
-}
-for key, expected in required.items():
-    actual = values.get(key, "")
-    if actual.lower() != expected.lower():
-        raise SystemExit(
-            f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL key={key} expected={expected} actual={actual or 'MISSING'}"
-        )
-
-system_bytes = parse_int(values.get("partition-size:system_a", ""))
-super_bytes = parse_int(values.get("partition-size:super", ""))
-system_b_bytes = parse_int(values.get("partition-size:system_b", ""))
-
-if system_bytes != expected_system:
-    raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL system_a_bytes={system_bytes} expected={expected_system}"
-    )
-if super_bytes != expected_super:
-    raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL super_bytes={super_bytes} expected={expected_super}"
-    )
-if system_b_bytes != 0:
-    raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL system_b_bytes={system_b_bytes} expected=0"
-    )
-
-logical_names = sorted(
-    key.split(":", 1)[1]
-    for key, value in values.items()
-    if key.startswith("is-logical:") and value.lower() == "yes"
-)
-logical_sizes = {
-    name: parse_int(values.get(f"partition-size:{name}", ""))
-    for name in logical_names
-}
-if any(size <= 0 for size in logical_sizes.values()):
-    bad = sorted(name for name, size in logical_sizes.items() if size <= 0)
-    raise SystemExit(
-        "TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL logical_size_missing="
-        + ",".join(bad)
-    )
-
-active_cows = sorted(name for name in logical_names if name.endswith("_a-cow"))
-if active_cows:
-    raise SystemExit(
-        "TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL active_cows="
-        + ",".join(active_cows)
-    )
-
-allocated = sum(logical_sizes.values())
-if allocated != expected_allocated:
-    raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL allocated={allocated} expected={expected_allocated}"
-    )
-
-out.write_text(
-    "\n".join([
-        f"LIVE_PRODUCT={values['product']}",
-        f"LIVE_CURRENT_SLOT={values['current-slot']}",
-        f"LIVE_IS_USERSPACE={values['is-userspace']}",
-        f"LIVE_UNLOCKED={values['unlocked']}",
-        f"LIVE_SNAPSHOT_UPDATE_STATUS={values['snapshot-update-status']}",
-        f"LIVE_SYSTEM_A_BYTES={system_bytes}",
-        f"LIVE_SYSTEM_B_BYTES={system_b_bytes}",
-        f"LIVE_SUPER_BYTES={super_bytes}",
-        f"LIVE_MATERIALIZED_LOGICAL_BYTES={allocated}",
-        "LIVE_ACTIVE_COW_COUNT=0",
-        "",
-    ]),
-    encoding="utf-8",
-)
-print("TITAN2_N1D_E5B_LIVE_PREFLIGHT=PASS")
-PY
+  python3 "$ROOT/build/titan2/n1d_c3b_e5b_live_state.py" \
+    --getvar-all "$LIVE_GETVAR_ALL" \
+    --expected-product "$TITAN2_N1D_E5B_EXPECTED_FASTBOOT_PRODUCT" \
+    --expected-slot "$TITAN2_N1D_E5B_EXPECTED_SLOT" \
+    --expected-system-bytes "$TITAN2_N1D_E5B_SYSTEM_CURRENT_BYTES" \
+    --expected-super-bytes "$TITAN2_N1D_E5B_SUPER_BYTES" \
+    --expected-allocated-bytes "$EXPECTED_MATERIALIZED_LOGICAL_BYTES" \
+    --output-env "$LIVE_STATE_ENV" ||
+    return 1
   [[ -f "$LIVE_STATE_ENV" ]] || return 1
   # shellcheck source=/dev/null
   source "$LIVE_STATE_ENV"
@@ -762,6 +663,7 @@ PY
   echo "TITAN2_N1D_E5B_LIVE_CURRENT_SLOT=$LIVE_CURRENT_SLOT"
   echo "TITAN2_N1D_E5B_LIVE_SYSTEM_A_BYTES=$LIVE_SYSTEM_A_BYTES"
   echo "TITAN2_N1D_E5B_LIVE_SUPER_BYTES=$LIVE_SUPER_BYTES"
+  echo "TITAN2_N1D_E5B_LIVE_ALLOCATION_BASIS=$LIVE_ALLOCATION_BASIS"
   echo "TITAN2_N1D_E5B_LIVE_ACTIVE_COW_COUNT=$LIVE_ACTIVE_COW_COUNT"
   echo "TITAN2_N1D_E5B_DEVICE_FLASH_PREFLIGHT=PASS"
 }
