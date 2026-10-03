@@ -9,6 +9,7 @@ APP_BUILD="$ROOT/build/titan2/build-n1d-c3b-e2-product-apps.sh"
 STAGER="$ROOT/build/titan2/stage-n1d-c3b-e2-product-composition.sh"
 PARSE_DRIVER="$ROOT/build/titan2/qualify-n1d-c3b-e2-product-parse.sh"
 MODULE_BUILD="$ROOT/build/titan2/build-n1d-c3b-e2-modules.sh"
+ORCHESTRATOR="$ROOT/build/titan2/qualify-n1d-c3b-e2-product-composition.sh"
 TEMPLATE="$ROOT/product/titan2/c3b"
 MODULE_LEDGER="$ROOT/docs/C3B_PRODUCT_SOURCE_MODULES.tsv"
 
@@ -25,6 +26,7 @@ for f in \
     "$STAGER" \
     "$PARSE_DRIVER" \
     "$MODULE_BUILD" \
+    "$ORCHESTRATOR" \
     "$TEMPLATE/Android.bp" \
     "$TEMPLATE/AndroidProducts.mk" \
     "$TEMPLATE/sable-titan2-apps.mk" \
@@ -39,6 +41,7 @@ bash -n "$APP_BUILD" || fail "syntax=$APP_BUILD"
 bash -n "$STAGER" || fail "syntax=$STAGER"
 bash -n "$PARSE_DRIVER" || fail "syntax=$PARSE_DRIVER"
 bash -n "$MODULE_BUILD" || fail "syntax=$MODULE_BUILD"
+bash -n "$ORCHESTRATOR" || fail "syntax=$ORCHESTRATOR"
 
 bash "$ADMISSION_GATE"
 bash "$E1_COMPOSITION_GATE"
@@ -261,6 +264,20 @@ do
 done
 
 for token in \
+    '--authorize-composition-qualification' \
+    'N1D_C3B_E2_COMPOSITION_APP_BUILD=PASS' \
+    'N1D_C3B_E2_COMPOSITION_ANDROID_STAGE=PASS' \
+    'N1D_C3B_E2_COMPOSITION_PARSE=PASS' \
+    'N1D_C3B_E2_COMPOSITION_MODULE_BUILD=PASS count=5' \
+    'N1D_C3B_E2_PRODUCT_COMPOSITION_QUALIFICATION=PASS' \
+    'FULL_IMAGE_BUILD_AUTHORIZED=NO' \
+    'DEVICE_CONTACT_AUTHORIZED=NO' \
+    'PRODUCTION_SIGNING_AUTHORIZED=NO'
+do
+    grep -Fq -- "$token" "$ORCHESTRATOR" || fail "orchestrator_token_missing=$token"
+done
+
+for token in \
     '--parse-evidence' \
     'N1D_C3B_E2_MODULE_BUILD_PARSE_PREREQUISITE=PASS' \
     'N1D_C3B_E2_MODULE_BUILD_PRODUCT_PACKAGES=PASS count=5' \
@@ -278,7 +295,7 @@ do
     grep -Fq -- "$token" "$MODULE_BUILD" || fail "module_build_token_missing=$token"
 done
 
-if grep -Eq '(^|[[:space:]])(curl|wget)([[:space:]]|$)|git[[:space:]]+(clone|fetch|pull)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
+if grep -Eq '(^|[[:space:]])(curl|wget)([[:space:]]|$)|git[[:space:]]+(clone|fetch|pull)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD" "$ORCHESTRATOR"; then
     fail network_command_present
 fi
 if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$APP_BUILD" "$STAGER" "$PARSE_DRIVER" "$MODULE_BUILD"; then
