@@ -178,7 +178,7 @@ while IFS=$'\t' read -r path name revision remote fetch upstream; do
   fetch_rc=$?
   set -e
 
-  status=UNAVAILABLE
+  status=EXACT_FETCH_FAILED_REVIEW_REQUIRED
   fetched_commit=""
   if [[ "$fetch_rc" -eq 0 ]] &&
      git --git-dir="$bare" cat-file -e "$revision^{commit}" 2>/dev/null; then
