@@ -45,7 +45,8 @@ N1D_REFLASH=HOLD
 E6_RUNTIME_BASELINE=HOLD
 N1B_V010014_CONTROL=BLOCKED_EXACT_ARTIFACT_NOT_RETAINED
 N1B_EXACT_RECONSTRUCTION_FEASIBILITY=PINNED_MANIFEST_CONFIRMED_LOCAL_OBJECTS_MISSING
-N1B_PINNED_REMOTE_AVAILABILITY=PENDING_BOUNDED_TWO_OBJECT_PROBE
+N1B_PINNED_REMOTE_AVAILABILITY=REVIEW_REQUIRED_DIRECT_SHA_FETCH_FAILED
+N1B_PROVIDER_OBJECT_EXISTENCE=PENDING_GITHUB_GITILES_CHECK
 N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
 N1E_FLASH_AUTHORIZED=NO
 ```
@@ -57,8 +58,7 @@ source checkouts and host tooling. Therefore absence of the old recorded
 ANDROID_SRC path is expected and is not evidence that the pinned Git objects
 are unavailable. The relocation-aware audit searched surviving Repo `.repo/project-objects` /
 `.repo/projects` stores and standardized checkouts and did not find the two
-critical Phase-08 revisions. The next step is a bounded network probe for only
-those two exact objects; no `repo sync` or rebuild is authorized. However, the original N1B workspace,
+critical Phase-08 revisions. The bounded two-object fetch probe completed with both exact SHA fetches rejected while both upstream locators remained live. The result is review-required rather than absence. The next step is provider-specific object verification: GitHub commit API for the recorded TrebleDroid repository plus PHH upstream lineage, and Gitiles exact-commit lookup for AOSP VNDK v29. No `repo sync` or rebuild is authorized. However, the original N1B workspace,
 the exact `system.img`, and the exact target-files archive are no longer
 present in retained storage. Physical execution is therefore blocked while an
 exact-reconstruction feasibility audit determines whether the historical
@@ -313,8 +313,8 @@ N1B -> N1E recovery order.
 
 ```text
 offline:
- -> run bounded remote availability probe for the two missing exact Phase-08 revisions
- -> if both exact objects are fetchable, design isolated 992-project source re-materialization
+ -> run provider-specific GitHub/Gitiles existence checks for the two exact Phase-08 revisions
+ -> if both exact objects are provider-verified, design isolated 992-project source re-materialization
  -> recover/re-materialize the pinned N1B build inputs only after that design is qualified
  -> require rebuilt system.img SHA256=bc550bfaf8463324c122abb490cf4aba956b89e7e4d42168a55f0f0f0f5b638e
  -> require rebuilt target-files SHA256=29d21d08ceb9c286e85ec52996dcc53a17fd0290cc979b5853709ef7357f2481
