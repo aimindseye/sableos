@@ -343,7 +343,7 @@ sable_device_flash_plan() {
   local bootloader_preflight fastbootd_preflight snapshot_status
   local system_current_bytes lp_action avb_action userdata_policy
   local titan_serial_required active_slot stock_baseline restore_verified
-  local e5b_json e5b_json_sha auth_freeze_env build_evidence_dir
+  local e5b_json e5b_json_sha auth_freeze_env auth_freeze_sha build_evidence_dir
 
   artifact_kind="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifact_kind)" || return 1
   primary="$(sable_device_registry_field "$registry_root" "$release" "$build_source" primary_artifact)" || return 1
@@ -351,9 +351,10 @@ sable_device_flash_plan() {
   sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" "artifacts.$primary.sha256")" || return 1
 
   if [[ "${release^^}" == N1D ]]; then
-    e5b_json="$(sable_device_registry_field "$registry_root" "$release" "$build_source" metadata.e5b_authorization_json 2>/dev/null || true)"
-    e5b_json_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" metadata.e5b_authorization_sha256 2>/dev/null || true)"
-    auth_freeze_env="$(sable_device_registry_field "$registry_root" "$release" "$build_source" metadata.e5b_manual_authorization_freeze_env 2>/dev/null || true)"
+    e5b_json="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_decision.path 2>/dev/null || true)"
+    e5b_json_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_decision.sha256 2>/dev/null || true)"
+    auth_freeze_env="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.path 2>/dev/null || true)"
+    auth_freeze_sha="$(sable_device_registry_field "$registry_root" "$release" "$build_source" artifacts.e5b_freeze.sha256 2>/dev/null || true)"
     build_evidence_dir="$(sable_device_registry_field "$registry_root" "$release" "$build_source" build_evidence_dir 2>/dev/null || true)"
 
     bash "$ROOT/build/titan2/prepare-n1d-c3b-e5b-flash-plan.sh" \
@@ -364,6 +365,7 @@ sable_device_flash_plan() {
       --e5b-json "$e5b_json" \
       --expected-e5b-json-sha256 "$e5b_json_sha" \
       --auth-freeze-env "$auth_freeze_env" \
+      --expected-auth-freeze-sha256 "$auth_freeze_sha" \
       --build-evidence-dir "$build_evidence_dir" \
       --evidence-dir "$evidence_dir"
     return
