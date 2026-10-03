@@ -65,6 +65,9 @@ selfcheck() {
   project_count="$(grep -cve '^
   [[ "$(sha256sum "$C3A_SYSTEM" | awk '{print $1}')" == "$C3A_SHA" ]] || fail c3a_sha
   [[ "$(stat -c '%s' "$C3A_SYSTEM")" == "$C3A_BYTES" ]] || fail c3a_bytes
+  bash "$ROOT/build/titan2/prepare-n1d-c3-trebledroid.sh" verify \
+    --allow-c3a-host-layout-fix \
+    --allow-treble-app-build-residue >/dev/null
   [[ "$N1D_C3A_CONTROL_PATCH_COUNT" == 369 ]] || fail c3a_patch_count
   [[ "$N1D_C3B_E2_MODULE_COUNT" == 5 ]] || fail c3b5_count
   git -C "$ROOT" merge-base --is-ancestor "$N1D_C3B_E2_SOURCE_IMPORT_COMMIT" HEAD || fail e2_source_not_ancestor
@@ -101,6 +104,7 @@ echo "===== 0. ARCHIVE BOOT-QUALIFIED C3A ====="
 mkdir -p "$C3A_HISTORY"
 cp --reflink=auto --sparse=always "$C3A_SYSTEM" "$C3A_HISTORY/system.img"
 cp "$ROOT/build/titan2/n1d-c3a-control-evidence.env" "$C3A_HISTORY/"
+cp "$ROM_MK" "$C3A_HISTORY/device-phh-treble-rom.mk"
 cp -a --reflink=auto "$N1D_C3A_EVIDENCE_DIR" "$C3A_HISTORY/build-evidence"
 for d in \
   /srv/sable-build/evidence/titan2/c3a-v010014-control/20261003T192925Z_offline-plan \
@@ -404,6 +408,9 @@ done
 (
   cd "$ANDROID_ROOT"
   "$SABLE_REPO_TOOL" manifest -r -o "$C3A_HISTORY/repo-manifest-r.xml"
+  "$SABLE_REPO_TOOL" forall -c \
+    's="$(git status --porcelain --untracked-files=all)"; if [ -n "$s" ]; then printf "### %s\\n%s\\n" "$REPO_PATH" "$s"; fi' \
+    > "$C3A_HISTORY/dirty-project-state.txt"
 )
 cat > "$C3A_HISTORY/runtime-result.env" <<EOF
 C3A_V010014_SYSTEM_FLASH=PASS
