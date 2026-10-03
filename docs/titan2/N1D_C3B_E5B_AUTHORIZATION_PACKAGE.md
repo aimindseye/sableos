@@ -1,6 +1,6 @@
 # N1D C3B E5B offline authorization package
 
-Status: **OFFLINE PREPARATION AUTHORIZED / E5B MUTATION NOT AUTHORIZED**
+Status: **CORRECTED PACKAGE PASS / OWNER BOUNDED MUTATION AUTHORIZATION RECEIVED / STANDARD EXECUTION HELD**
 
 E5A is sealed `PASS_REVIEW_READY`. The Titan 2 remains in userspace fastbootd.
 
@@ -109,3 +109,29 @@ E5B_FACTORY_RESET_AUTHORIZED=NO
 
 A later explicit authorization must name the exact COW cleanup, active-system
 resize/write, userdata reset policy and rollback stop conditions.
+
+
+## Subsequent owner authorization and standardization
+
+After this corrected package passed, the owner explicitly authorized the bounded
+active-`system_a` E5B mutation concept while preserving the no-COW-delete,
+no-slot-change, no-AVB/boot-chain-write and no-factory-reset boundaries.
+
+During execution review, the standard Android fastboot logical-partition behavior
+introduced an additional scope detail: `fastboot flash` may resize a logical
+partition to the image logical size as part of the flash operation. Because that
+exact logical size was not yet sealed in the authorization package, physical
+execution remains held.
+
+The next authoritative workflow is now:
+
+```text
+build/sable.sh titan2 N1D register-artifact
+ -> build/sable.sh titan2 N1D show-artifact
+ -> build/sable.sh titan2 N1D flash-plan
+ -> review exact SYSTEM_LOGICAL_BYTES and capacity
+ -> reconfirm execution scope
+ -> only then qualify standard flash execution
+```
+
+See `N1D_C3B_E5B_STANDARD_DEPLOYMENT.md`.
