@@ -366,6 +366,7 @@ sable_device_flash_plan() {
       --expected-e5b-json-sha256 "$e5b_json_sha" \
       --auth-freeze-env "$auth_freeze_env" \
       --expected-auth-freeze-sha256 "$auth_freeze_sha" \
+      --registry-verified PASS \
       --build-evidence-dir "$build_evidence_dir" \
       --evidence-dir "$evidence_dir"
     return
