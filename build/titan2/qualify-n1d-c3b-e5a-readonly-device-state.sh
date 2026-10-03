@@ -81,6 +81,7 @@ python3 - \
   "$OUTPUT_JSON" <<'PY'
 from __future__ import annotations
 
+import hashlib
 import json
 import pathlib
 import re
@@ -149,6 +150,21 @@ j11 = load(p11)
 meta10a = j10a.get("metadata", {})
 meta10b = j10b.get("metadata", {})
 meta11 = j11.get("metadata", {})
+
+serial10a = str(meta10a.get("explicit_titan_serial", "")).strip()
+serial10b = str(meta10b.get("explicit_titan_serial", "")).strip()
+serial11 = str(meta11.get("explicit_titan_serial", "")).strip()
+binding10a = hashlib.sha256(serial10a.encode()).hexdigest() if serial10a else ""
+binding10b = hashlib.sha256(serial10b.encode()).hexdigest() if serial10b else ""
+binding11 = hashlib.sha256(serial11.encode()).hexdigest() if serial11 else ""
+device_binding_ok = (
+    bool(serial10a)
+    and bool(serial10b)
+    and bool(serial11)
+    and binding10a == device_hash
+    and binding10b == device_hash
+    and binding11 == device_hash
+)
 
 p10a_dir = p10a.parent
 p10b_dir = p10b.parent
@@ -226,6 +242,8 @@ snapshot_status, snapshot_class = classify_snapshot(snapshot_text, update_text, 
 
 failures: list[str] = []
 reviews: list[str] = []
+if not device_binding_ok:
+    failures.append("DEVICE_BINDING_MISMATCH")
 if fingerprint != expected_fp:
     failures.append("STOCK_FINGERPRINT_MISMATCH")
 if incremental != expected_inc:
@@ -248,6 +266,8 @@ if battery < 0:
     failures.append("BATTERY_LEVEL_UNKNOWN")
 elif battery < minimum_battery:
     failures.append("BATTERY_BELOW_FUTURE_MUTATION_THRESHOLD")
+if allocation_basis != "GETVAR_ALL_LOGICAL_PARTITIONS":
+    reviews.append("ALLOCATION_BASIS_FALLBACK_REQUIRES_MANUAL_REVIEW")
 
 if failures:
     final_state = "BLOCKED_" + failures[0]
@@ -261,6 +281,7 @@ result = {
     "phase": "N1D_C3B_E5A_READONLY_DEVICE_STATE",
     "device": "titan2",
     "device_binding_sha256": device_hash,
+    "device_binding_verified": device_binding_ok,
     "sealed_system_sha256": system_sha,
     "sealed_system_bytes": system_bytes,
     "stock": {
@@ -318,6 +339,7 @@ result = {
 out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 print(f"N1D_C3B_E5A_DEVICE_BINDING_SHA256={device_hash}")
+print(f"N1D_C3B_E5A_DEVICE_BINDING_VERIFIED={'PASS' if device_binding_ok else 'FAIL'}")
 print(f"N1D_C3B_E5A_STOCK_FINGERPRINT_MATCH={'PASS' if fingerprint == expected_fp else 'FAIL'}")
 print(f"N1D_C3B_E5A_STOCK_INCREMENTAL_MATCH={'PASS' if incremental == expected_inc else 'FAIL'}")
 print(f"N1D_C3B_E5A_ADB_CURRENT_SLOT={adb_slot or 'UNKNOWN'}")
