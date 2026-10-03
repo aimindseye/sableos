@@ -24,7 +24,8 @@ status document takes precedence.
 - `titan2/SABLESCREENS_REFERENCE_BASELINE.md` — **accepted design/reference baseline** mapping the 23-screen catalog into P1-P5/E8; not a runtime product.
 - `titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md` — **implementation-ready queue** for accepted DESIGN-KF-A through DESIGN-KF-D after P1-P5 qualification.
 - `titan2/N1D_C3B_E5A_EVIDENCE.md` — **sealed Titan 2 E5A physical read-only evidence**; clean PASS in userspace fastbootd, with E5B mutation still closed.
-- `titan2/N1D_C3B_E5B_AUTHORIZATION_PACKAGE.md` — **offline-only E5B decision package**; compares slot candidates without device contact or write-capable commands.
+- `titan2/N1D_C3B_E5B_AUTHORIZATION_PACKAGE.md` — **offline-only E5B decision package**; current-slot/COW/group analysis without device contact or write-capable commands.
+- `titan2/N1D_C3B_E5B_TITAN_DEPLOYMENT_MODEL.md` — **current Titan 2 deployment authority** correcting generic inactive-slot assumptions and binding E5B to the proven N1B active-system path.
 
 ## Current milestone snapshot
 

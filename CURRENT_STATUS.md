@@ -167,8 +167,34 @@ idle/no snapshot update state, and 2954141696 bytes of measured total-`super`
 headroom remaining after the planned active-system growth. E5B remains a
 separate mutation authorization.
 
-The next canonical step is offline-only generation of the E5B authorization
-package. No additional device contact is required for that step.
+The first E5B offline package is superseded because it assumed a conventional inactive logical-system target. The corrected next step is offline-only active-system/COW/group analysis from the same sealed E5A evidence. No additional device contact is required.
+
+## Titan 2 C3B E5B deployment-model correction
+
+The first offline E5B package exposed `system_b=0`. Historical Titan 2 evidence
+and the research repository confirm this is expected Virtual A/B behavior:
+inactive dynamic logical partitions need not be materialized while slot A is
+active.
+
+The generic inactive-slot preference is superseded.
+
+```text
+TITAN2_VIRTUAL_AB_MODEL=METADATA_SLOTTED_ACTIVE_LOGICAL_MATERIALIZATION
+CURRENT_SLOT=a
+C3B_TARGET_LOGICAL_PARTITION=system_a
+C3B_SLOT_POLICY=KEEP_CURRENT_SLOT_NO_SLOT_SWITCH
+N1B_PROVEN_PATH=ACTIVE_SYSTEM_COW_CLEANUP_RESIZE_WRITE_FACTORY_RESET
+N1B_FIRST_BOOT=PASS
+N1C_WHOLE_SUPER_RESULT=FLASHED_BUT_BOOT_FAILED
+C3B_WHOLE_SUPER_PRIMARY_PATH=NO
+E5B_FLASH_AUTHORIZED=NO
+E5B_LP_MUTATION_AUTHORIZED=NO
+E5B_FACTORY_RESET_AUTHORIZED=NO
+```
+
+The corrected E5B offline package uses the sealed E5A `lpdump` and Phase 11
+`getvar all` to prove active-slot COW and group capacity before a manual
+mutation authorization is considered.
 
 ## Keyboard-first design closure
 

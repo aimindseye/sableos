@@ -76,24 +76,37 @@ separate authorization.
 
 ## Offline E5B decision package
 
-The sealed E5A JSON may now be consumed offline to produce a sanitized E5B
-decision package. This step performs no device contact and emits no write-capable
-commands.
+The first E5B package's inactive-slot preference is superseded.
 
-The package must expose both the active and inactive `system_*` candidates.
-Current engineering preference is to preserve the proven stock active slot and
-use the inactive slot only if all of the following are established:
+Titan 2's Virtual A/B dynamic-partition layout can report `system_b=0` while
+slot A is active; the research baseline explicitly records that the B logical
+partitions may be described in LP metadata without being materialized/openable
+in fastbootd.
+
+The proven booting N1B path is the authority for E5B planning:
 
 ```text
-inactive system partition exists with a valid current allocation
-total-super growth remains above the safety floor
-fresh logical-partition group capacity supports the proposed target
-inactive stock boot/vendor_boot/init_boot + AVB chain is coherent
-slot switch/rollback policy is explicitly authorized
-userdata remains preserved
+ACTIVE_SLOT=a
+TARGET=system_a
+snapshot-update-status=none
+review/delete stale active-slot COW logical partitions if present
+resize active system
+write active system
+SLOT_CHANGE=NO
+AVB_MUTATION=NO
+BOOT_VENDOR_VBMETA_WRITE=NO
+explicit factory reset
+FIRST_N1B_BOOT=PASS
 ```
 
-Until those checks are reviewed, no E5B mutation authorization exists.
+N1C whole-`super` replacement wrote successfully but failed to boot and is not
+the primary C3B deployment path.
+
+The corrected offline package must therefore prove active-slot COW and group
+capacity from the already captured E5A evidence. It does not authorize any
+mutation.
+
+See `N1D_C3B_E5B_TITAN_DEPLOYMENT_MODEL.md`.
 
 ## Current state
 
