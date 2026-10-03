@@ -182,9 +182,12 @@ Setup helper does not become Setup Wizard. Prototype screens, standalone HOME,
 reference-only source, presigned APKs and platform-certificate signing remain
 excluded.
 
-Composition is **defined but not yet parsed or compiled**. Target-files, OTA,
-device contact, flash, production signing, physical runtime and release remain
-blocked.
+Composition is **defined but not yet parsed or compiled**. The canonical
+operator entry point for this stage is
+`build/titan2/qualify-n1d-c3b-e2-product-composition.sh`, which runs the
+offline source-bound app build, bounded Android staging, parse and exact
+five-module build in that order. Target-files, OTA, device contact, flash,
+production signing, physical runtime and release remain blocked.
 
 See `build/titan2/n1d-c3b-e2-product-admission.env`,
 `build/titan2/n1d-c3b-e2-product-composition.env`,
