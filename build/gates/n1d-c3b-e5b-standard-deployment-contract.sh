@@ -21,16 +21,14 @@ PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache" \
   python3 -m py_compile "$GSI_INFO"
 python3 "$GSI_INFO" --self-test | grep -Fxq 'SABLE_GSI_IMAGE_INFO_SELF_TEST=PASS'
 
-grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$ADAPTER" ||
-  fail titan_global_flash_fail_closed_missing
-grep -Fq 'SABLE_DEVICE_PRESERVED_DATA_FLASH_SUPPORTED=NO' "$ADAPTER" ||
-  fail titan_global_preserved_data_fail_closed_missing
-grep -Fq 'TITAN2_FLASH_EXECUTION_SUPPORTED=NO' "$ADAPTER" ||
-  fail titan_historical_execution_fail_closed_missing
-grep -Fq 'TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO' "$ADAPTER" ||
-  fail titan_standalone_write_script_block_missing
+ADAPTER_TEXT="$(cat "$ADAPTER")"
+PLAN_TEXT="$(cat "$PLAN")"
 
 for marker in \
+  'SABLE_DEVICE_FLASH_SUPPORTED=NO' \
+  'SABLE_DEVICE_PRESERVED_DATA_FLASH_SUPPORTED=NO' \
+  'TITAN2_FLASH_EXECUTION_SUPPORTED=NO' \
+  'TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO' \
   '|N1D|' \
   'caf98dde723d07a071d95aaa1ef27d578d3208d8' \
   '998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5' \
@@ -43,7 +41,7 @@ for marker in \
   'artifacts.e5b_freeze.path' \
   'artifacts.e5b_freeze.sha256'
 do
-  grep -Fq -- "$marker" "$ADAPTER" || fail "adapter_marker=$marker"
+  [[ "$ADAPTER_TEXT" == *"$marker"* ]] || fail "adapter_marker=$marker"
 done
 
 for marker in \
@@ -67,7 +65,7 @@ for marker in \
   'FLASH_AUTHORIZED=NO' \
   'N1D_C3B_E5B_STANDARD_FLASH_PLAN=PASS_PREPARED_NO_WRITE'
 do
-  grep -Fq -- "$marker" "$PLAN" || fail "plan_marker=$marker"
+  [[ "$PLAN_TEXT" == *"$marker"* ]] || fail "plan_marker=$marker"
 done
 
 if grep -Eq '^[[:space:]]*(sudo[[:space:]]+)?(adb|fastboot)([[:space:]]|$)' "$PLAN"; then
