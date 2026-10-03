@@ -103,16 +103,6 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 [[ "$BASELINE_E5B_SHA256" == "$EXPECTED_BASELINE_E5B_SHA256" ]] || fail baseline_e5b_binding 64
 [[ "$REGISTRY_VERIFIED" == PASS ]] || fail registry_verification_required 64
 
-[[ "$(basename "$PREFLIGHT_SUMS")" == SHA256SUMS.txt ]] || fail preflight_sums_name
-[[ "$(basename "$PREFLIGHT_JSON")" == c3a-v010014-fastboot-entry-preflight.json ]] || fail preflight_json_name
-[[ "$(dirname "$PREFLIGHT_JSON")" == "$(dirname "$PREFLIGHT_SUMS")" ]] || fail preflight_json_not_in_sealed_dir
-[[ "$(basename "$OFFLINE_SUMS")" == SHA256SUMS.txt ]] || fail offline_sums_name
-[[ "$(basename "$OFFLINE_PLAN")" == c3a-v010014-control-plan.env ]] || fail offline_plan_name
-[[ "$(dirname "$OFFLINE_PLAN")" == "$(dirname "$OFFLINE_SUMS")" ]] || fail offline_plan_not_in_sealed_dir
-[[ "$(basename "$BASELINE_E5A")" == e5a-readonly-device-state.json ]] || fail baseline_e5a_name
-[[ "$(basename "$BASELINE_E5B")" == e5b-authorization-package.json ]] || fail baseline_e5b_name
-[[ "$(dirname "$BASELINE_E5A")" == "$(dirname "$BASELINE_E5B")" ]] || fail baseline_evidence_dir_mismatch
-
 for p in   "$SYSTEM_IMG"   "$PREFLIGHT_JSON"   "$PREFLIGHT_SUMS"   "$OFFLINE_PLAN"   "$OFFLINE_SUMS"   "$BASELINE_E5A"   "$BASELINE_E5B"   "$C3A_ENV"
 do
   [[ -f "$p" ]] || fail "missing_file=$p" 66
@@ -134,6 +124,13 @@ mkdir -p "$EVIDENCE_DIR"
   fail offline_plan_basename
 [[ "$(basename "$OFFLINE_SUMS")" == "SHA256SUMS.txt" ]] ||
   fail offline_sums_basename
+
+[[ "$(basename "$BASELINE_E5A")" == "e5a-readonly-device-state.json" ]] ||
+  fail baseline_e5a_basename
+[[ "$(basename "$BASELINE_E5B")" == "e5b-authorization-package.json" ]] ||
+  fail baseline_e5b_basename
+[[ "$(dirname "$BASELINE_E5A")" == "$(dirname "$BASELINE_E5B")" ]] ||
+  fail baseline_evidence_dir_mismatch
 
 # shellcheck source=/dev/null
 source "$C3A_ENV"
