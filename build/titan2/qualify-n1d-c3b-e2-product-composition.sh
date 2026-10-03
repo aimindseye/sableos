@@ -6,6 +6,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PROFILE="$ROOT/build/titan2/n1d-c3b-e2-product-composition.env"
+TRANSITION="$ROOT/build/titan2/n1d-c3b-transition.env"
 STORAGE_PROFILE="$ROOT/build/config/storage.env"
 GATE="$ROOT/build/gates/n1d-c3b-e2-product-composition-contract.sh"
 APP_BUILD="$ROOT/build/titan2/build-n1d-c3b-e2-product-apps.sh"
@@ -41,12 +42,14 @@ done
 [[ "$AUTHORIZE_COMPOSITION_QUALIFICATION" == YES ]] ||
     fail explicit_composition_qualification_authority_required
 
-for f in "$PROFILE" "$STORAGE_PROFILE" "$GATE" "$APP_BUILD" "$STAGER" "$PARSE" "$MODULE_BUILD"; do
+for f in "$PROFILE" "$TRANSITION" "$STORAGE_PROFILE" "$GATE" "$APP_BUILD" "$STAGER" "$PARSE" "$MODULE_BUILD"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
 # shellcheck source=/dev/null
 source "$PROFILE"
+# shellcheck source=/dev/null
+source "$TRANSITION"
 # shellcheck source=/dev/null
 source "$STORAGE_PROFILE"
 
@@ -56,7 +59,8 @@ CURRENT_HEAD="$(git -C "$ROOT" rev-parse HEAD)"
 git -C "$ROOT" merge-base --is-ancestor "$N1D_C3B_E2_SOURCE_IMPORT_COMMIT" "$CURRENT_HEAD" ||
     fail "source_import_not_ancestor=$N1D_C3B_E2_SOURCE_IMPORT_COMMIT"
 
-ANDROID_ROOT="$SABLE_BUILD_ROOT/workspaces/titan2-n1d-c3b/android"
+ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_ANDROID_ROOT_REL"
+OUT_ROOT="$SABLE_BUILD_ROOT/$N1D_C3B_OUT_ROOT_REL"
 [[ -d "$ANDROID_ROOT/.repo" ]] || fail "android_workspace_missing=$ANDROID_ROOT"
 
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -122,7 +126,7 @@ bash "$MODULE_BUILD" \
     --parse-evidence "$PARSE_EVIDENCE" \
     --jobs "$JOBS"
 
-if find "$SABLE_BUILD_ROOT/workspaces/titan2-n1d-c3b/out-c3b-engineering/e2-modules" \
+if find "$OUT_ROOT/e2-modules" \
     -type f \( -name 'system.img' -o -name '*target_files*.zip' -o -name '*-ota*.zip' \) \
     -print -quit 2>/dev/null | grep -q .
 then
