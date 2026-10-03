@@ -133,6 +133,20 @@ TITAN2_V1_PRODUCT_DESIGN=COMPLETE
 Implementation remains queued until P1-P4 and P5 qualification completes. See
 `docs/titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md`.
 
+
+## P1-P4 prequalification review
+
+Developer A froze P1-P4 candidate heads, but operator source review found one normalized-key semantic issue before ai-g732 qualification: Android cursor/list Home movement must not be conflated with system HOME. The canonical boundary is now published at `sableos-project/platform_sable@80e3097bdef4cd2d5cbfd8ebde16390c29767918`, `docs/NORMALIZED_KEY_INPUT_CONTRACT.md`.
+
+```text
+P1_P4_PREQUAL_RESTACK_REQUIRED=YES
+P1_MOVE_HOME_SYSTEM_HOME_CONFLATION=FIX_REQUIRED
+P1_P4_PLATFORM_SABLE_REBIND=80e3097bdef4cd2d5cbfd8ebde16390c29767918
+AI_G732_P1_P4_BATCH_QUALIFICATION=HOLD_UNTIL_RESTACK
+```
+
+P2 Android glue remains specifically subject to the operator offline Android compile after the corrected stack is frozen. P4 canonical admission must also adopt the per-city Weather cache key before user-managed cities are runtime-safe.
+
 ## Next execution order
 
 ```text
