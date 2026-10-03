@@ -283,8 +283,8 @@ else:
 
 system_current = per_family["system"]["active"] or int(str(meta11.get("system_current_bytes", "0")) or 0)
 growth = max(0, target - system_current)
-fresh_headroom = super_bytes - allocated_total if super_bytes else 0
-remaining = fresh_headroom - growth if super_bytes else 0
+fresh_headroom = super_bytes - allocated_total if super_bytes and allocation_complete else 0
+remaining = fresh_headroom - growth if fresh_headroom else 0
 capacity_safe = super_bytes > 0 and system_current > 0 and allocated_total > 0 and allocation_complete and fresh_headroom >= 0 and remaining >= minimum_remaining
 snapshot_status, snapshot_class = classify_snapshot(snapshot_text, update_text, snapshot_fastboot)
 
