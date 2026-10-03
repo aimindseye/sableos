@@ -4,13 +4,15 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WRAPPER="$ROOT/build/titan2/collect-c3a-v010014-fastboot-entry-preflight.sh"
 QUALIFIER="$ROOT/build/titan2/qualify-c3a-v010014-fastboot-entry-preflight.sh"
+PHASE10B_COLLECTOR="$ROOT/build/titan2/collect-n1b-phase-10b-fastboot-readonly-preflight.sh"
+PHASE11_COLLECTOR="$ROOT/build/titan2/collect-n1b-phase-11-fastbootd-lp-sizing.sh"
 
 fail() {
   echo "C3A_FASTBOOT_ENTRY_PREFLIGHT_CONTRACT=FAIL reason=$*" >&2
   exit 1
 }
 
-for f in "$WRAPPER" "$QUALIFIER"; do
+for f in "$WRAPPER" "$QUALIFIER" "$PHASE10B_COLLECTOR" "$PHASE11_COLLECTOR"; do
   [[ -f "$f" ]] || fail "missing=$f"
   bash -n "$f" || fail "bash_n=$f"
 done
