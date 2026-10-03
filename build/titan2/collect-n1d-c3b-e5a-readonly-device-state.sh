@@ -148,7 +148,7 @@ adb -s "$DEVICE_SERIAL" shell 'lpdump 2>/dev/null || true' > "$EVIDENCE_DIR/adb-
 
 if ! SABLE_N1B_PHASE_10_EVIDENCE_ROOT="$PHASE10_ROOT" \
      TITAN_ADB_SERIAL="$DEVICE_SERIAL" \
-     TITAN_FASTBOOT_SERIAL="${FASTBOOT_SERIAL:-$DEVICE_SERIAL}" \
+     TITAN_FASTBOOT_SERIAL="$FASTBOOT_SERIAL" \
      TITAN_FASTBOOT_WAIT_SECONDS="$WAIT_SECONDS" \
      TITAN_FASTBOOT_COMMAND_TIMEOUT_SECONDS="$COMMAND_TIMEOUT_SECONDS" \
      bash "$ROOT/build/titan2/collect-n1b-phase-10b-fastboot-readonly-preflight.sh" \
@@ -162,10 +162,22 @@ fi
 mapfile -t phase10b_jsons < <(find "$PHASE10_ROOT" -type f -path '*/10b-fastboot/phase10b-fastboot-readonly-preflight.json' -print | sort)
 [[ "${#phase10b_jsons[@]}" -eq 1 ]] || fail phase10b_json_count
 PHASE10B_JSON="${phase10b_jsons[0]}"
+FASTBOOT_DISCOVERED_SERIAL="$(python3 - "$PHASE10B_JSON" <<'PY'
+import json, pathlib, sys
+data = json.loads(pathlib.Path(sys.argv[1]).read_text())
+serial = str(data.get("metadata", {}).get("explicit_titan_serial", "")).strip()
+if not serial:
+    raise SystemExit(2)
+print(serial)
+PY
+)" || fail phase10b_fastboot_serial_missing
+FASTBOOT_BINDING_SHA256="$(printf '%s' "$FASTBOOT_DISCOVERED_SERIAL" | sha256sum | awk '{print $1}')"
+echo "N1D_C3B_E5A_FASTBOOT_BINDING_SHA256=$FASTBOOT_BINDING_SHA256"
+echo "N1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION"
 echo "N1D_C3B_E5A_PHASE10B=PASS_READ_ONLY_FASTBOOTD"
 
 if ! SABLE_N1B_PHASE_11_EVIDENCE_ROOT="$PHASE11_ROOT" \
-     TITAN_FASTBOOT_SERIAL="${FASTBOOT_SERIAL:-$DEVICE_SERIAL}" \
+     TITAN_FASTBOOT_SERIAL="$FASTBOOT_DISCOVERED_SERIAL" \
      COMMAND_TIMEOUT_SECONDS="$COMMAND_TIMEOUT_SECONDS" \
      bash "$ROOT/build/titan2/collect-n1b-phase-11-fastbootd-lp-sizing.sh" \
        --require-fastbootd \
@@ -184,6 +196,7 @@ bash "$ROOT/build/titan2/qualify-n1d-c3b-e5a-readonly-device-state.sh" \
   --phase11-json "$PHASE11_JSON" \
   --adb-extra-dir "$EVIDENCE_DIR/adb-extra" \
   --device-binding-sha256 "$DEVICE_BINDING_SHA256" \
+  --fastboot-binding-sha256 "$FASTBOOT_BINDING_SHA256" \
   --system-image "$SYSTEM_IMG" \
   --output-json "$EVIDENCE_DIR/e5a-readonly-device-state.json"
 

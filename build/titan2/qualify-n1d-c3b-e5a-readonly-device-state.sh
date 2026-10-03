@@ -6,6 +6,7 @@ PHASE10B_JSON=""
 PHASE11_JSON=""
 ADB_EXTRA_DIR=""
 DEVICE_BINDING_SHA256=""
+FASTBOOT_BINDING_SHA256=""
 SYSTEM_IMAGE=""
 OUTPUT_JSON=""
 EXPECTED_SYSTEM_SHA256="998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5"
@@ -25,6 +26,7 @@ usage:
     --phase11-json PATH \
     --adb-extra-dir DIR \
     --device-binding-sha256 SHA256 \
+    --fastboot-binding-sha256 SHA256 \
     --system-image PATH \
     --output-json PATH
 
@@ -39,6 +41,7 @@ while (($#)); do
     --phase11-json) PHASE11_JSON="$2"; shift 2 ;;
     --adb-extra-dir) ADB_EXTRA_DIR="$2"; shift 2 ;;
     --device-binding-sha256) DEVICE_BINDING_SHA256="$2"; shift 2 ;;
+    --fastboot-binding-sha256) FASTBOOT_BINDING_SHA256="$2"; shift 2 ;;
     --system-image) SYSTEM_IMAGE="$2"; shift 2 ;;
     --output-json) OUTPUT_JSON="$2"; shift 2 ;;
     -h|--help) usage; exit 0 ;;
@@ -57,6 +60,7 @@ for pair in \
 done
 [[ -d "$ADB_EXTRA_DIR" ]] || { echo "N1D_C3B_E5A_QUALIFIER=FAIL_ADB_EXTRA_DIR" >&2; exit 64; }
 [[ "$DEVICE_BINDING_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "N1D_C3B_E5A_QUALIFIER=FAIL_DEVICE_BINDING" >&2; exit 64; }
+[[ "$FASTBOOT_BINDING_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "N1D_C3B_E5A_QUALIFIER=FAIL_FASTBOOT_BINDING" >&2; exit 64; }
 [[ -n "$OUTPUT_JSON" ]] || { echo "N1D_C3B_E5A_QUALIFIER=FAIL_OUTPUT_JSON" >&2; exit 64; }
 mkdir -p "$(dirname "$OUTPUT_JSON")"
 
@@ -71,6 +75,7 @@ python3 - \
   "$PHASE11_JSON" \
   "$ADB_EXTRA_DIR" \
   "$DEVICE_BINDING_SHA256" \
+  "$FASTBOOT_BINDING_SHA256" \
   "$actual_sha" \
   "$actual_bytes" \
   "$EXPECTED_STOCK_FINGERPRINT" \
@@ -93,14 +98,15 @@ p10b = pathlib.Path(sys.argv[2])
 p11 = pathlib.Path(sys.argv[3])
 adb_extra = pathlib.Path(sys.argv[4])
 device_hash = sys.argv[5]
-system_sha = sys.argv[6]
-system_bytes = int(sys.argv[7])
-expected_fp = sys.argv[8]
-expected_inc = sys.argv[9]
-target = int(sys.argv[10])
-minimum_remaining = int(sys.argv[11])
-minimum_battery = int(sys.argv[12])
-out = pathlib.Path(sys.argv[13])
+fastboot_hash = sys.argv[6]
+system_sha = sys.argv[7]
+system_bytes = int(sys.argv[8])
+expected_fp = sys.argv[9]
+expected_inc = sys.argv[10]
+target = int(sys.argv[11])
+minimum_remaining = int(sys.argv[12])
+minimum_battery = int(sys.argv[13])
+out = pathlib.Path(sys.argv[14])
 
 def load(path: pathlib.Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -162,8 +168,9 @@ device_binding_ok = (
     and bool(serial10b)
     and bool(serial11)
     and binding10a == device_hash
-    and binding10b == device_hash
-    and binding11 == device_hash
+    and binding10b == fastboot_hash
+    and binding11 == fastboot_hash
+    and serial10b == serial11
 )
 
 p10a_dir = p10a.parent
@@ -201,17 +208,46 @@ snapshot_fastboot = getvars.get("snapshot-update-status", "UNKNOWN")
 super_bytes = as_int(getvars.get("partition-size:super", "")) or int(str(meta11.get("super_bytes", "0")) or 0)
 
 families = ["system", "system_ext", "product", "vendor", "odm", "system_dlkm", "vendor_dlkm", "odm_dlkm"]
-per_family: dict[str, dict[str, int]] = {}
+per_family: dict[str, dict[str, Any]] = {}
 fallback_all_slots_total = 0
 active_total = 0
+complete_family_evidence = True
 for base in families:
     unsuffixed = as_int(getvars.get(f"partition-size:{base}", ""))
     a = as_int(getvars.get(f"partition-size:{base}_a", ""))
     b = as_int(getvars.get(f"partition-size:{base}_b", ""))
+    has_slot = getvars.get(f"has-slot:{base}", "").lower()
     active = as_int(getvars.get(f"partition-size:{base}_{slot}", "")) if slot in {"a", "b"} else 0
     active = active or unsuffixed or max(a, b)
-    all_slots = a + b if (a or b) else unsuffixed
-    per_family[base] = {"unsuffixed": unsuffixed, "a": a, "b": b, "active": active, "all_slots": all_slots}
+
+    if has_slot == "yes":
+        complete = a > 0 and b > 0
+        all_slots = a + b if complete else 0
+    elif has_slot == "no":
+        complete = unsuffixed > 0 or active > 0
+        all_slots = unsuffixed or active
+    elif a or b:
+        complete = a > 0 and b > 0
+        all_slots = a + b if complete else 0
+    elif unsuffixed:
+        complete = True
+        all_slots = unsuffixed
+    else:
+        complete = True
+        all_slots = 0
+
+    if not complete:
+        complete_family_evidence = False
+
+    per_family[base] = {
+        "has_slot": has_slot or "UNKNOWN",
+        "unsuffixed": unsuffixed,
+        "a": a,
+        "b": b,
+        "active": active,
+        "all_slots": all_slots,
+        "complete": complete,
+    }
     active_total += active
     fallback_all_slots_total += all_slots
 
@@ -225,19 +261,31 @@ for name in list(logical_names):
     if not (name.endswith("_a") or name.endswith("_b")):
         if f"{name}_a" in logical_names or f"{name}_b" in logical_names:
             deduped.discard(name)
-reported_logical_total = sum(as_int(getvars.get(f"partition-size:{name}", "")) for name in deduped)
-if reported_logical_total > 0:
-    allocated_total = reported_logical_total
-    allocation_basis = "GETVAR_ALL_LOGICAL_PARTITIONS"
-else:
+
+reported_sizes = {
+    name: as_int(getvars.get(f"partition-size:{name}", ""))
+    for name in deduped
+}
+reported_logical_complete = bool(reported_sizes) and all(size > 0 for size in reported_sizes.values())
+
+if reported_logical_complete:
+    allocated_total = sum(reported_sizes.values())
+    allocation_basis = "GETVAR_ALL_LOGICAL_PARTITIONS_COMPLETE"
+    allocation_complete = True
+elif complete_family_evidence and fallback_all_slots_total > 0:
     allocated_total = fallback_all_slots_total
-    allocation_basis = "KNOWN_FAMILY_FALLBACK"
+    allocation_basis = "KNOWN_FAMILY_COMPLETE_FALLBACK"
+    allocation_complete = True
+else:
+    allocated_total = 0
+    allocation_basis = "INCOMPLETE"
+    allocation_complete = False
 
 system_current = per_family["system"]["active"] or int(str(meta11.get("system_current_bytes", "0")) or 0)
 growth = max(0, target - system_current)
-fresh_headroom = super_bytes - allocated_total if super_bytes else 0
-remaining = fresh_headroom - growth if super_bytes else 0
-capacity_safe = super_bytes > 0 and system_current > 0 and allocated_total > 0 and fresh_headroom >= 0 and remaining >= minimum_remaining
+fresh_headroom = super_bytes - allocated_total if super_bytes and allocation_complete else 0
+remaining = fresh_headroom - growth if fresh_headroom else 0
+capacity_safe = super_bytes > 0 and system_current > 0 and allocated_total > 0 and allocation_complete and fresh_headroom >= 0 and remaining >= minimum_remaining
 snapshot_status, snapshot_class = classify_snapshot(snapshot_text, update_text, snapshot_fastboot)
 
 failures: list[str] = []
@@ -266,8 +314,10 @@ if battery < 0:
     failures.append("BATTERY_LEVEL_UNKNOWN")
 elif battery < minimum_battery:
     failures.append("BATTERY_BELOW_FUTURE_MUTATION_THRESHOLD")
-if allocation_basis != "GETVAR_ALL_LOGICAL_PARTITIONS":
-    reviews.append("ALLOCATION_BASIS_FALLBACK_REQUIRES_MANUAL_REVIEW")
+if not allocation_complete:
+    failures.append("ALLOCATION_EVIDENCE_INCOMPLETE")
+elif allocation_basis != "GETVAR_ALL_LOGICAL_PARTITIONS_COMPLETE":
+    reviews.append("ALLOCATION_BASIS_COMPLETE_FALLBACK_REQUIRES_MANUAL_REVIEW")
 
 if failures:
     final_state = "BLOCKED_" + failures[0]
@@ -280,7 +330,9 @@ result = {
     "schema": 1,
     "phase": "N1D_C3B_E5A_READONLY_DEVICE_STATE",
     "device": "titan2",
-    "device_binding_sha256": device_hash,
+    "adb_device_binding_sha256": device_hash,
+    "fastboot_device_binding_sha256": fastboot_hash,
+    "device_binding_method": "CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION",
     "device_binding_verified": device_binding_ok,
     "sealed_system_sha256": system_sha,
     "sealed_system_bytes": system_bytes,
@@ -311,6 +363,8 @@ result = {
         "partition_sizes": per_family,
         "active_selected_dynamic_total_bytes": active_total,
         "allocation_basis": allocation_basis,
+        "allocation_complete": allocation_complete,
+        "complete_family_evidence": complete_family_evidence,
         "all_slots_reported_dynamic_total_bytes": allocated_total,
         "fresh_super_headroom_all_slots_estimate_bytes": fresh_headroom,
         "system_current_bytes": system_current,
@@ -339,6 +393,8 @@ result = {
 out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 print(f"N1D_C3B_E5A_DEVICE_BINDING_SHA256={device_hash}")
+print(f"N1D_C3B_E5A_FASTBOOT_BINDING_SHA256={fastboot_hash}")
+print("N1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION")
 print(f"N1D_C3B_E5A_DEVICE_BINDING_VERIFIED={'PASS' if device_binding_ok else 'FAIL'}")
 print(f"N1D_C3B_E5A_STOCK_FINGERPRINT_MATCH={'PASS' if fingerprint == expected_fp else 'FAIL'}")
 print(f"N1D_C3B_E5A_STOCK_INCREMENTAL_MATCH={'PASS' if incremental == expected_inc else 'FAIL'}")
@@ -352,6 +408,7 @@ print(f"N1D_C3B_E5A_FASTBOOTD_UNLOCKED={unlocked or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_SYSTEM_CURRENT_BYTES={system_current}")
 print(f"N1D_C3B_E5A_SUPER_BYTES={super_bytes}")
 print(f"N1D_C3B_E5A_ALLOCATION_BASIS={allocation_basis}")
+print(f"N1D_C3B_E5A_ALLOCATION_COMPLETE={'YES' if allocation_complete else 'NO'}")
 print(f"N1D_C3B_E5A_ALL_SLOTS_REPORTED_DYNAMIC_TOTAL_BYTES={allocated_total}")
 print(f"N1D_C3B_E5A_FRESH_SUPER_HEADROOM_BYTES={fresh_headroom}")
 print(f"N1D_C3B_E5A_PLANNED_SYSTEM_TARGET_BYTES={target}")
