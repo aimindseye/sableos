@@ -115,9 +115,9 @@ The developer proceeds P1 -> P4 without waiting for ai-g732. Each stage is
 frozen separately and not merged. After P4, the operator runs one batched
 exact-head ai-g732 qualification session across all four stages before admission.
 
-P5 Sable Reader v2 is currently design/scope work only. Direction: common
-keyboard-first books/PDF-style reading, local-first comics/manga/webtoons and
-audiobooks; Text Reader remains a separate lightweight product.
+P5 Sable Reader v2 architecture is accepted. It is a sibling implementation track: local-first keyboard-first EPUB/PDF, CBZ comics/manga/webtoons and audiobooks; Text Reader remains separate. Remote AI/account sync is excluded from P5. See docs/SABLE_READER_V2_ARCHITECTURE.md.
+
+The 23-screen titan2-temp/apps/titan2/screens catalog is now explicitly retained as a design/reference baseline, not a runtime product. See docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md.
 
 ## Next execution order
 
@@ -134,7 +134,7 @@ E3 finish + seal
 
 parallel:
 P1 -> P2 -> P3 -> P4 -> freeze heads -> batched ai-g732 qualification
-P5 Reader v2 -> finalize design -> separate implementation package
+P5 Reader v2 -> accepted architecture -> separate P5A-P5F implementation train
 ```
 
 ## Historical execution plans
