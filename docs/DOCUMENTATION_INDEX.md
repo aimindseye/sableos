@@ -20,6 +20,7 @@ accepted ADR, `CURRENT_STATUS.md` or this index, the newer normative/current
 status document takes precedence.
 
 - `titan2/N1D_C3B_CURRENT_PLAN_AND_ASSIGNMENTS.md` — **current Titan 2 execution roadmap and P1-P5 assignment authority**. N0/N1B/N1B2/N1B3/N1C execution documents are historical evidence.
+- `titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md` — **current Titan 2 runtime-recovery authority**: sealed N1B-on-V01.00.14 control first, then minimal N1E isolation only if N1B boots; N1D/E6 frozen meanwhile.
 - `SABLE_READER_V2_ARCHITECTURE.md` — **accepted P5 product architecture** for EPUB/PDF, comics/manga/webtoons and audiobooks; Text Reader remains separate.
 - `titan2/SABLESCREENS_REFERENCE_BASELINE.md` — **accepted design/reference baseline** mapping the 23-screen catalog into P1-P5/E8; not a runtime product.
 - `titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md` — **implementation-ready queue** for accepted DESIGN-KF-A through DESIGN-KF-D after P1-P5 qualification.
@@ -42,7 +43,7 @@ THEME_PROPAGATION                         DEFERRED_SEPARATE_PHYSICAL_APPEARANCE_
 CLEAN_BASELINE_APPSTORE                   NOT_CLAIMED_ON_PRESERVED_DATA_DEVICE
 
 NON_PIXEL_ASSURANCE_MODEL                 N0_GSI_USERSPACE_LAB -> N1_INTEGRATED_VENDOR_BSP_PORT -> N2_PRODUCTION_QUALIFIED
-TITAN2_ROLE                               ACTIVE_N1D_C3B_E5B_OFFLINE_DECISION
+TITAN2_ROLE                               ACTIVE_N1D_C3B_RUNTIME_RECOVERY_N1B_CONTROL
 TITAN2_ELITE_ROLE                         NEXT_INDEPENDENT_KEYBOARD_FIRST_TARGET
 Q27_ROLE                                  RESEARCH / FUTURE CANDIDATE
 
@@ -104,8 +105,9 @@ Current product progression:
 ```text
 frozen Panther touch-first reference
     -> keyboard-first SableOS design V1 merged
-    -> Titan 2 N1D/C3B E3 systemimage engineering and runtime bring-up
-    -> first Titan 2 keyboard-first SableOS artifact + deployment path
+    -> Titan 2 N1D/C3B sealed build evidence + runtime-recovery control
+    -> sealed N1B on current firmware -> minimal N1E isolation if N1B boots
+    -> first boot-qualified Titan 2 keyboard-first SableOS baseline + deployment path
     -> close remaining open Panther/Titan shared polish issues where proven or superseded
     -> Titan 2 Elite independent evidence and deployment sequence
     -> common Sable Camera Control Deck + Sable Keyboard/system input integration
