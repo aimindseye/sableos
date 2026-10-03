@@ -99,15 +99,20 @@ fresh remaining capacity after proposed E3 system growth
 
 ## Privacy
 
-The device serial is needed internally to bind ADB, bootloader fastboot and
-fastbootd to the same phone. All raw serial-bearing Phase 10/11 JSON, command output and console logs are
-kept beneath the local `private/` evidence subtree. The C3B summary independently
-hash-verifies that 10A, 10B and Phase 11 refer to the same device.
+ADB and fastboot identifiers are transport-local. E5A no longer assumes those
+raw strings must be identical. Phase 10A must match the ADB binding hash; Phase
+10B and Phase 11 must agree with one another and match a separately recorded
+fastboot binding hash after the controlled single-device mode transition.
+
+All raw serial-bearing Phase 10/11 JSON, command output and console logs remain
+beneath the local `private/` evidence subtree.
 
 Normal console/final C3B evidence records only:
 
 ```text
-N1D_C3B_E5A_DEVICE_BINDING_SHA256=<hash>
+N1D_C3B_E5A_DEVICE_BINDING_SHA256=<adb hash>
+N1D_C3B_E5A_FASTBOOT_BINDING_SHA256=<fastboot hash>
+N1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION
 ```
 
 Do not publish the raw private Phase 10/11 logs.
@@ -126,10 +131,12 @@ userspace fastbootd for review.
 
 ## Fresh capacity rule
 
-E4 used historical sizing. E5A uses fresh fastbootd evidence and prefers all
-logical partitions reported by getvar-all. If the device does not expose
-logical markers, it may calculate a known-family fallback estimate, but that
-fallback is explicitly marked for manual review and cannot by itself clear E5B.
+E4 used historical sizing. E5A uses fresh fastbootd evidence and prefers a
+complete logical-partition inventory reported by getvar-all. If that inventory
+is unavailable, the known-family fallback is accepted only when its slotted
+partition evidence is complete. Missing inactive-slot sizes are never treated as
+zero/free space. Incomplete allocation evidence blocks E5A capacity clearance;
+a complete fallback is still marked for manual review before E5B.
 
 ```text
 PLANNED_SYSTEM_TARGET_BYTES=3263168512
