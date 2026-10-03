@@ -1,11 +1,13 @@
 # Titan 2 C3A V01.00.14 fresh live preflight
 
-Status: **authorized read-only device revalidation / no write / no reset**
+Status: **alternate Android-entry preflight; not current while device is bootlooping in fastboot**
 
 Updated: **2026-10-03 ET**
 
-This is the next canonical Titan 2 engineering step after the sealed offline C3A
-control preparation.
+This path is retained for a future state where Android can boot and ADB is
+available. It is not the current recovery path because the N1D device is
+bootlooping and already in fastboot. Current authority:
+`docs/titan2/N1D_C3A_V010014_FASTBOOT_ENTRY_PREFLIGHT.md`.
 
 Bound offline evidence:
 
