@@ -40,7 +40,12 @@ grep -Fq 'KEEP_AS_PROTOTYPE' "$ADAPTER" || fail prototype_exclusion_missing
 grep -Fq 'KEEP_REFERENCE_ONLY' "$ADAPTER" || fail reference_exclusion_missing
 
 grep -Fq 'git", "-C", str(source), "ls-files", "-s", "-z"' "$ADAPTER" || fail tracked_file_inventory_missing
-grep -Fq 'git -C "$ROOT" diff --cached --check' "$ADAPTER" || fail diff_check_missing
+grep -Fq 'git -C "$ROOT" -c core.whitespace=cr-at-eol diff --cached --check' "$ADAPTER" || fail crlf_safe_diff_check_missing
+grep -Fq 'C3B_PRODUCT_STAGE_LINE_ENDINGS=PASS crlf_batch_files=1' "$ADAPTER" || fail line_ending_pass_marker_missing
+grep -Fq 'N1D_C3B_E2_CRLF_BATCH_FILE_1' "$ADAPTER" || fail crlf_batch_path_binding_missing
+grep -Fq 'N1D_C3B_E2_CRLF_BATCH_FILE_1_GIT_BLOB' "$ADAPTER" || fail crlf_batch_blob_binding_missing
+grep -Fq 'unexpected_cr_path=' "$ADAPTER" || fail non_batch_cr_rejection_missing
+grep -Fq 'malformed_crlf_path=' "$ADAPTER" || fail malformed_crlf_rejection_missing
 grep -Fq 'xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"' "$ADAPTER" || fail approved_ignored_file_stage_missing
 grep -Fq 'if staged != copied:' "$ADAPTER" || fail staged_equals_copied_guard_missing
 grep -Fq 'git -C "$ROOT" check-ignore -z --stdin < "$COPIED_NUL"' "$ADAPTER" || fail ignored_copied_path_discovery_missing
@@ -76,6 +81,7 @@ echo "N1D_C3B_PRODUCT_REVIEW_STAGING_TREE_BINDING=PASS_EXACT_QUALIFIED_TREE"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_OWNERSHIP=PASS_FAIL_CLOSED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_COLLISION_POLICY=PASS_REJECT_DIFFERING"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_IGNORED_INPUT_POLICY=PASS_EXACT_2_QUALIFIED_PINYIN_ARCHIVES"
+echo "N1D_C3B_PRODUCT_REVIEW_STAGING_LINE_ENDING_POLICY=PASS_EXACT_1_QUALIFIED_CRLF_BATCH_WRAPPER"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_PROTOTYPE_POLICY=PASS_EXCLUDED"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_NETWORK=PASS_FORBIDDEN"
 echo "N1D_C3B_PRODUCT_REVIEW_STAGING_DEVICE_CONTACT=PASS_FORBIDDEN"
