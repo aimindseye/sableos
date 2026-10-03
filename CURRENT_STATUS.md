@@ -115,7 +115,7 @@ N1D_C3B_E3_DEVICE_CONTACT_AUTHORIZED=NO
 N1D_C3B_E3_RELEASE_ELIGIBLE=NO
 ```
 
-E3 is sealed. E4 is also sealed PASS; E5A read-only revalidation is the active authorized checkpoint. Flash remains unauthorized.
+E3 and E4 are sealed PASS. E5A fresh read-only device-state revalidation is also sealed PASS; E5B remains an offline/manual authorization boundary with all mutation unauthorized.
 
 ## Titan 2 C3B E4 deployment readiness
 
@@ -131,7 +131,14 @@ N1D_C3B_E4_STOCK_RESTORE_PROOF=PASS
 E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
 E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
 E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
-E5A_STATUS=AUTHORIZED_READY_TO_RUN
+E5A_STATUS=PASS_REVIEW_READY_SEALED
+E5A_EVIDENCE_TIMESTAMP_UTC=20261003T053441Z
+E5A_CURRENT_SLOT=a
+E5A_FASTBOOTD_IS_USERSPACE=yes
+E5A_ALLOCATION_COMPLETE=YES
+E5A_CAPACITY_SAFE=YES
+E5A_REMAINING_HEADROOM_AFTER_PLANNED_GROWTH_BYTES=2954141696
+E5B_AUTHORIZATION_PACKAGE=OFFLINE_PREPARATION_READY
 E5B_FLASH_AUTHORIZED=NO
 ```
 
@@ -154,8 +161,14 @@ E5B_UNLOCK_LOCK_AUTHORIZED=NO
 E5B_FACTORY_RESET_AUTHORIZED=NO
 ```
 
-E5A may collect fresh state and leave the phone in fastbootd. E5B remains a
-separate mutation authorization after fresh evidence review.
+E5A completed cleanly and left the phone in userspace fastbootd. The sealed
+result is `PASS_REVIEW_READY` with complete logical-partition accounting,
+idle/no snapshot update state, and 2954141696 bytes of measured total-`super`
+headroom remaining after the planned active-system growth. E5B remains a
+separate mutation authorization.
+
+The next canonical step is offline-only generation of the E5B authorization
+package. No additional device contact is required for that step.
 
 ## Keyboard-first design closure
 
@@ -190,8 +203,8 @@ P2 Android glue remains specifically subject to the operator offline Android com
 ```text
 E3 sealed
  -> E4 sealed PASS
- -> E5A read-only authorization GRANTED
- -> fresh device-state revalidation
+ -> E5A read-only revalidation PASS / SEALED
+ -> offline E5B authorization package
  -> separate E5B mutation authorization
  -> E5 physical C3B boot
  -> E6 read-only runtime baseline
