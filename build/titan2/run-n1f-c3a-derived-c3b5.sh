@@ -115,7 +115,14 @@ done
 (
   cd "$ANDROID_ROOT"
   "$SABLE_REPO_TOOL" manifest -r -o "$C3A_HISTORY/repo-manifest-r.xml"
+  "$SABLE_REPO_TOOL" forall -c \
+    'printf "%s\\t%s\\n" "$REPO_PATH" "$(git rev-parse HEAD)"' \
+    | LC_ALL=C sort > "$C3A_HISTORY/all-project-heads.tsv"
+  "$SABLE_REPO_TOOL" forall -c \
+    's="$(git status --porcelain --untracked-files=all)"; if [ -n "$s" ]; then printf "### %s\\n%s\\n" "$REPO_PATH" "$s"; fi' \
+    > "$C3A_HISTORY/dirty-project-state.txt"
 )
+printf '%s\n' "$(git -C "$ROOT" rev-parse HEAD)" > "$C3A_HISTORY/sableos-integration-head.txt"
 cat > "$C3A_HISTORY/runtime-result.env" <<EOF
 C3A_V010014_SYSTEM_FLASH=PASS
 C3A_V010014_ANDROID_BOOT=PASS
