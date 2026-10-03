@@ -62,8 +62,7 @@ Before reboot, E5A records read-only Android state:
 - snapshot/update state;
 - read-only `lpdump` and block-size observations when available.
 
-It then hash-binds the same physical device across ADB and fastboot, without
-printing the raw device serial to the console.
+It performs a controlled single-device mode transition: exactly one authorized ADB device is accepted before reboot, and exactly one fastboot device is accepted after the commanded transition unless an explicit fastboot serial is supplied. ADB and fastboot identifiers are hashed separately and raw serials are not printed.
 
 In bootloader and fastbootd it records only read-only `getvar` information,
 including current slot, userspace state, unlocked/secure state, snapshot/update
@@ -94,7 +93,7 @@ device serial. Do not publish them.
 Console output uses only:
 
 ```text
-N1D_C3B_E5A_DEVICE_BINDING_SHA256=<sha256>
+N1D_C3B_E5A_DEVICE_BINDING_SHA256=<adb-sha256>\nN1D_C3B_E5A_FASTBOOT_BINDING_SHA256=<fastboot-sha256>\nN1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION
 ```
 
 ## Operator run
