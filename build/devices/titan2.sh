@@ -736,10 +736,10 @@ sable_device_flash_preflight() {
   local live_fastboot_hash
   live_fastboot_hash="$(printf '%s' "$SERIAL" | sha256sum | awk '{print $1}')"
   [[ "$live_fastboot_hash" == "$EXPECTED_FASTBOOT_BINDING_SHA256" ]] || {
-    echo "TITAN2_N1D_E5B_FASTBOOT_SERIAL_BINDING=FAIL"
+    echo "TITAN2_N1D_FASTBOOT_SERIAL_BINDING=FAIL"
     return 1
   }
-  echo "TITAN2_N1D_E5B_FASTBOOT_SERIAL_BINDING=PASS"
+  echo "TITAN2_N1D_FASTBOOT_SERIAL_BINDING=PASS"
 
   LIVE_GETVAR_ALL="$EVIDENCE_DIR/fastboot-getvar-all-prewrite.txt"
   set +e
@@ -747,7 +747,7 @@ sable_device_flash_preflight() {
   local getvar_rc=$?
   set -e
   [[ "$getvar_rc" -eq 0 ]] || {
-    echo "TITAN2_N1D_E5B_GETVAR_ALL=FAIL rc=$getvar_rc"
+    echo "TITAN2_N1D_GETVAR_ALL=FAIL rc=$getvar_rc"
     return 1
   }
 
@@ -801,7 +801,7 @@ for key, expected in required.items():
     actual = values.get(key, "")
     if actual.lower() != expected.lower():
         raise SystemExit(
-            f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL key={key} expected={expected} actual={actual or 'MISSING'}"
+            f"TITAN2_N1D_LIVE_PREFLIGHT=FAIL key={key} expected={expected} actual={actual or 'MISSING'}"
         )
 
 system_bytes = parse_int(values.get("partition-size:system_a", ""))
@@ -810,15 +810,15 @@ system_b_bytes = parse_int(values.get("partition-size:system_b", ""))
 
 if system_bytes != expected_system:
     raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL system_a_bytes={system_bytes} expected={expected_system}"
+        f"TITAN2_N1D_LIVE_PREFLIGHT=FAIL system_a_bytes={system_bytes} expected={expected_system}"
     )
 if super_bytes != expected_super:
     raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL super_bytes={super_bytes} expected={expected_super}"
+        f"TITAN2_N1D_LIVE_PREFLIGHT=FAIL super_bytes={super_bytes} expected={expected_super}"
     )
 if system_b_bytes != 0:
     raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL system_b_bytes={system_b_bytes} expected=0"
+        f"TITAN2_N1D_LIVE_PREFLIGHT=FAIL system_b_bytes={system_b_bytes} expected=0"
     )
 
 logical_names = sorted(
@@ -833,21 +833,21 @@ logical_sizes = {
 if any(size <= 0 for size in logical_sizes.values()):
     bad = sorted(name for name, size in logical_sizes.items() if size <= 0)
     raise SystemExit(
-        "TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL logical_size_missing="
+        "TITAN2_N1D_LIVE_PREFLIGHT=FAIL logical_size_missing="
         + ",".join(bad)
     )
 
 active_cows = sorted(name for name in logical_names if name.endswith("_a-cow"))
 if active_cows:
     raise SystemExit(
-        "TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL active_cows="
+        "TITAN2_N1D_LIVE_PREFLIGHT=FAIL active_cows="
         + ",".join(active_cows)
     )
 
 allocated = sum(logical_sizes.values())
 if allocated != expected_allocated:
     raise SystemExit(
-        f"TITAN2_N1D_E5B_LIVE_PREFLIGHT=FAIL allocated={allocated} expected={expected_allocated}"
+        f"TITAN2_N1D_LIVE_PREFLIGHT=FAIL allocated={allocated} expected={expected_allocated}"
     )
 
 out.write_text(
@@ -866,18 +866,18 @@ out.write_text(
     ]),
     encoding="utf-8",
 )
-print("TITAN2_N1D_E5B_LIVE_PREFLIGHT=PASS")
+print("TITAN2_N1D_LIVE_PREFLIGHT=PASS")
 PY
   [[ -f "$LIVE_STATE_ENV" ]] || return 1
   # shellcheck source=/dev/null
   source "$LIVE_STATE_ENV"
 
-  echo "TITAN2_N1D_E5B_LIVE_PRODUCT=$LIVE_PRODUCT"
-  echo "TITAN2_N1D_E5B_LIVE_CURRENT_SLOT=$LIVE_CURRENT_SLOT"
-  echo "TITAN2_N1D_E5B_LIVE_SYSTEM_A_BYTES=$LIVE_SYSTEM_A_BYTES"
-  echo "TITAN2_N1D_E5B_LIVE_SUPER_BYTES=$LIVE_SUPER_BYTES"
-  echo "TITAN2_N1D_E5B_LIVE_ACTIVE_COW_COUNT=$LIVE_ACTIVE_COW_COUNT"
-  echo "TITAN2_N1D_E5B_DEVICE_FLASH_PREFLIGHT=PASS"
+  echo "TITAN2_N1D_LIVE_PRODUCT=$LIVE_PRODUCT"
+  echo "TITAN2_N1D_LIVE_CURRENT_SLOT=$LIVE_CURRENT_SLOT"
+  echo "TITAN2_N1D_LIVE_SYSTEM_A_BYTES=$LIVE_SYSTEM_A_BYTES"
+  echo "TITAN2_N1D_LIVE_SUPER_BYTES=$LIVE_SUPER_BYTES"
+  echo "TITAN2_N1D_LIVE_ACTIVE_COW_COUNT=$LIVE_ACTIVE_COW_COUNT"
+  echo "TITAN2_N1D_DEVICE_FLASH_PREFLIGHT=PASS"
 }
 
 sable_device_flash_execute() {
@@ -901,7 +901,7 @@ sable_device_flash_execute() {
   set -e
   echo "FASTBOOT_FLASH_SYSTEM_A_RC=$flash_rc"
   [[ "$flash_rc" -eq 0 ]] || {
-    echo "TITAN2_N1D_E5B_FLASH=FAIL_NO_AUTOMATIC_RETRY"
+    echo "TITAN2_N1D_FLASH=FAIL_NO_AUTOMATIC_RETRY"
     return 1
   }
 
@@ -924,14 +924,14 @@ PY
   [[ "${post_userspace,,}" == yes ]] || return 1
   [[ "${post_snapshot,,}" == none ]] || return 1
 
-  echo "TITAN2_N1D_E5B_POSTFLASH_SYSTEM_A_BYTES=PASS value=$TITAN2_N1D_ACTIVE_SYSTEM_LOGICAL_BYTES"
-  echo "TITAN2_N1D_E5B_POSTFLASH_SLOT=PASS value=$post_slot"
-  echo "TITAN2_N1D_E5B_POSTFLASH_FASTBOOTD=PASS"
-  echo "TITAN2_N1D_E5B_POSTFLASH_SNAPSHOT=PASS_NONE"
+  echo "TITAN2_N1D_POSTFLASH_SYSTEM_A_BYTES=PASS value=$TITAN2_N1D_ACTIVE_SYSTEM_LOGICAL_BYTES"
+  echo "TITAN2_N1D_POSTFLASH_SLOT=PASS value=$post_slot"
+  echo "TITAN2_N1D_POSTFLASH_FASTBOOTD=PASS"
+  echo "TITAN2_N1D_POSTFLASH_SNAPSHOT=PASS_NONE"
 
   "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null || return 1
   POSTFLASH_REBOOT_SENT=YES
-  echo "TITAN2_N1D_E5B_FINAL_REBOOT=PASS_SENT_ONCE"
+  echo "TITAN2_N1D_FINAL_REBOOT=PASS_SENT_ONCE"
 }
 
 sable_device_flash_postboot() {
@@ -954,8 +954,8 @@ sable_device_flash_postboot() {
     if [[ "$fastboot_present" == NO ]]; then
       fastboot_seen_absent=YES
     elif [[ "$fastboot_seen_absent" == YES ]]; then
-      echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=FASTBOOT_RETURNED"
-      echo "TITAN2_N1D_E5B_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
+      echo "TITAN2_N1D_FIRST_BOOT_OBSERVATION=FASTBOOT_RETURNED"
+      echo "TITAN2_N1D_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
       return 1
     fi
 
@@ -987,25 +987,25 @@ sable_device_flash_postboot() {
       } > "$EVIDENCE_DIR/postboot-observation.env"
 
       if [[ "${bootmode,,}" == *recovery* ]]; then
-        echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=RECOVERY"
-        echo "TITAN2_N1D_E5B_FACTORY_RESET=NOT_AUTHORIZED"
-        echo "TITAN2_N1D_E5B_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
+        echo "TITAN2_N1D_FIRST_BOOT_OBSERVATION=RECOVERY"
+        echo "TITAN2_N1D_FACTORY_RESET=NOT_AUTHORIZED"
+        echo "TITAN2_N1D_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
         return 1
       fi
 
       if [[ "$boot_completed" == 1 ]]; then
-        echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=ANDROID_BOOT_COMPLETED"
-        echo "TITAN2_N1D_E5B_POSTBOOT_SLOT_SUFFIX=${slot_suffix:-UNKNOWN}"
-        echo "TITAN2_N1D_E5B_POSTBOOT_VERIFIED_BOOT=${verified_boot:-UNKNOWN}"
-        echo "TITAN2_N1D_E5B_POSTBOOT_FINGERPRINT=${fingerprint:-UNKNOWN}"
+        echo "TITAN2_N1D_FIRST_BOOT_OBSERVATION=ANDROID_BOOT_COMPLETED"
+        echo "TITAN2_N1D_POSTBOOT_SLOT_SUFFIX=${slot_suffix:-UNKNOWN}"
+        echo "TITAN2_N1D_POSTBOOT_VERIFIED_BOOT=${verified_boot:-UNKNOWN}"
+        echo "TITAN2_N1D_POSTBOOT_FINGERPRINT=${fingerprint:-UNKNOWN}"
         return 0
       fi
     fi
 
     now="$(date +%s)"
     if (( now - start >= timeout )); then
-      echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=TIMEOUT_NO_TERMINAL_STATE"
-      echo "TITAN2_N1D_E5B_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
+      echo "TITAN2_N1D_FIRST_BOOT_OBSERVATION=TIMEOUT_NO_TERMINAL_STATE"
+      echo "TITAN2_N1D_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
       return 1
     fi
     sleep 2
