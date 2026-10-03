@@ -44,13 +44,19 @@ HISTORICAL_N1B_BOOT_FIRMWARE=V01.00.13
 N1D_REFLASH=HOLD
 E6_RUNTIME_BASELINE=HOLD
 N1B_V010014_CONTROL=BLOCKED_EXACT_ARTIFACT_NOT_RETAINED
-N1B_EXACT_RECONSTRUCTION_FEASIBILITY=PENDING_AUDIT
+N1B_EXACT_RECONSTRUCTION_FEASIBILITY=PINNED_MANIFEST_CONFIRMED_RELOCATION_AUDIT_PENDING
 N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
 N1E_FLASH_AUTHORIZED=NO
 ```
 
 The intended next physical experiment remains the exact sealed N1B system
-artifact on the current V01.00.14 state. However, the original N1B workspace,
+artifact on the current V01.00.14 state. Historical housekeeping deliberately
+retired the original N1B/N0B Android workspaces and standardized build storage,
+source checkouts and host tooling. Therefore absence of the old recorded
+ANDROID_SRC path is expected and is not evidence that the pinned Git objects
+are unavailable. The relocation-aware audit must search surviving Repo
+`.repo/project-objects` / `.repo/projects` stores and standardized checkouts
+before any remote fetch or rebuild is considered. However, the original N1B workspace,
 the exact `system.img`, and the exact target-files archive are no longer
 present in retained storage. Physical execution is therefore blocked while an
 exact-reconstruction feasibility audit determines whether the historical
