@@ -63,7 +63,7 @@ C3B_E3_STATUS=SEALED_PASS
 C3B_E3_PREBUILD_QUALIFICATION=PASS
 C3B_E3_SYSTEM_SHA256=998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5
 C3B_E3_SYSTEM_BYTES=2994405376
-DEVICE_CONTACT_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY_E5A
 FLASH_AUTHORIZED=NO
 TARGET_FILES_AUTHORIZED=NO
 OTA_AUTHORIZED=NO
@@ -107,9 +107,7 @@ STOCK_BOOT_AVB_RESOLUTION=PASS count=6
 STOCK_RESTORE_PROOF=PASS
 ```
 
-E5 is now a manual authorization boundary. E5A is fresh read-only device-state
-revalidation; E5B physical deployment is considered only after E5A review and a
-separate mutation authorization.
+E5A read-only device contact and the Android->bootloader->fastbootd transitions are explicitly authorized. E5B physical deployment remains a separate mutation authorization after E5A review.
 
 See:
 - `docs/titan2/N1D_C3B_E4_DEPLOYMENT_READINESS_EVIDENCE.md`
@@ -139,6 +137,29 @@ E5B_FACTORY_RESET_AUTHORIZED=NO
 E5A reuses the audited N1B Phase 10A/10B and Phase 11 read-only collectors,
 then applies a C3B-specific offline qualifier. It intentionally leaves the
 device in fastbootd after evidence capture.
+
+See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
+
+## E5A authorized execution
+
+```text
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+E5A_FLASH_AUTHORIZED=NO
+E5A_ERASE_AUTHORIZED=NO
+E5A_LP_MUTATION_AUTHORIZED=NO
+E5A_AVB_MUTATION_AUTHORIZED=NO
+E5A_SLOT_MUTATION_AUTHORIZED=NO
+E5A_UNLOCK_LOCK_AUTHORIZED=NO
+E5A_FACTORY_RESET_AUTHORIZED=NO
+E5B_FLASH_AUTHORIZED=NO
+```
+
+E5A reuses the audited N1B Phase 10/11 read-only collectors and a C3B offline
+qualifier. The device is left in userspace fastbootd. Raw serial-bearing
+evidence stays in the local private evidence subtree; console/final evidence
+uses only a SHA-256 device binding.
 
 See `docs/titan2/N1D_C3B_E5A_READONLY_DEVICE_STATE.md`.
 
@@ -337,7 +358,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 E3 completes
  -> seal exact artifact
  -> E4 deployment preflight
- -> explicit E5A read-only device-contact authorization
+ -> E5A read-only authorization GRANTED
  -> fresh device-state revalidation
  -> separate E5B mutation authorization
  -> first physical C3B boot
