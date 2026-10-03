@@ -84,6 +84,8 @@ bash build/titan2/prepare-n1b-v010014-control.sh \
   --e5b-json "$E5A_DIR/e5b-authorization-package.json"
 ```
 
+`n1d-c2-prebuilt-control` is **not** the N1B control. C2 is the published RestlessOS 16.0.0-202606230923 asset with SHA-256 `52ea47d7...`; it must not be substituted for the historical N1B system image whose SHA-256 is `bc550bfa...`.
+
 The original N1B workspace was retired during later N1D cleanup. `--system-img` is therefore optional. If the supplied path is absent, the preparation script reuses the C0 recovery model: release registry -> surviving exact-size local images -> retained N1B target-files archives. Target-files recovery accepts only `IMAGES/system.img` with the historical byte size and SHA-256, then stores a read-only recovered copy under `/srv/data/sable-build/artifacts/titan2/n1b-control-recovered/`. No network access or rebuild is used.
 
 ## Expected result
