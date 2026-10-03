@@ -115,6 +115,7 @@ GETVARS=(
   secure
   product
   slot-count
+  snapshot-update-status
   max-download-size
   logical-block-size
   super-partition-name
@@ -157,6 +158,22 @@ GETVARS=(
   is-logical:product
   is-logical:product_a
   is-logical:product_b
+  is-logical:system_a-cow
+  is-logical:system_ext_a-cow
+  is-logical:product_a-cow
+  is-logical:vendor_a-cow
+  is-logical:odm_a-cow
+  is-logical:system_dlkm_a-cow
+  is-logical:vendor_dlkm_a-cow
+  is-logical:odm_dlkm_a-cow
+  partition-size:system_a-cow
+  partition-size:system_ext_a-cow
+  partition-size:product_a-cow
+  partition-size:vendor_a-cow
+  partition-size:odm_a-cow
+  partition-size:system_dlkm_a-cow
+  partition-size:vendor_dlkm_a-cow
+  partition-size:odm_dlkm_a-cow
 )
 
 : > "$EVIDENCE_DIR/getvar-selected.txt"
