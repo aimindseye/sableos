@@ -272,7 +272,7 @@ if allocation_basis != "GETVAR_ALL_LOGICAL_PARTITIONS":
 if failures:
     final_state = "BLOCKED_" + failures[0]
 elif reviews:
-    final_state = "PASS_REVIEW_READY_SNAPSHOT_STATUS_REQUIRES_MANUAL_REVIEW"
+    final_state = "PASS_REVIEW_READY_MANUAL_REVIEW_REQUIRED"
 else:
     final_state = "PASS_REVIEW_READY"
 
