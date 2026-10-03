@@ -1,6 +1,6 @@
 # C3B integrated-product lane delivery contract
 
-Status: **active parallel-development contract; source integration only until the canonical C3B base is published**
+Status: **canonical E2 source admitted; thin-wrapper product composition defined, build/runtime qualification pending**
 
 Date: 2026-10-01
 
@@ -175,17 +175,21 @@ critical-text-entry hardening, D5 icons or canonical C3B bring-up.
 ### Product model
 
 ```text
-C3B_PRODUCT_NAME=sable_titan2_n1d_arm64
-C3B_STAGE_TARGET=vendor/sable/n1d
+C3B_PRODUCT_NAME=sable_titan2
+C3B_BASE_PRODUCT=device/phh/treble/treble_arm64_bvN.mk
+C3B_STAGE_TARGET=vendor/sable/titan2
+C3B_PRODUCT_WRAPPER=THIN_INHERIT_PROVEN_E1_GENERATED_PRODUCT
 C3B_PRODUCT_SOURCE_MODEL=SOURCE_OWNED
+C3B_GENERATED_APK_MODEL=UNSIGNED_SOURCE_BUILD_THEN_ANDROID_DEFAULT_DEV_CERT
 C3B_REPOSITORY_PRESIGNED_APKS=FORBIDDEN
 C3B_PRODUCT_ASSURANCE_PROPERTIES_OWNER=CANONICAL_C3B
 ```
 
-`vendor/sable/titan2` is not a second product authority. The parallel lane
-delivers source, tests, bounded product fragments and interface requirements.
-It does not ship repository-stored presigned APKs or independently define
-release/product-assurance properties.
+During parallel development, `vendor/sable/titan2` was forbidden as a second
+product authority. Canonical E2 now owns that Android-workspace staging path and
+uses it only as a thin wrapper over the proven generated E1 Treble product.
+The parallel lane remains source/test/interface input only and does not define
+release/product-assurance properties or ship repository-stored presigned APKs.
 
 The canonical lane decides the exact Soong/generated-artifact packaging
 mechanism after source qualification. In every case the source is authoritative
