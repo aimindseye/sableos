@@ -71,6 +71,10 @@ if grep -Eq '(^|[[:space:]])(resize-logical-partition|delete-logical-partition|c
   fail forbidden_mutation_command_present
 fi
 
+if grep -Eq '"\$FASTBOOT_BIN".*[[:space:]]flash[[:space:]]+(boot|init_boot|vendor_boot|dtbo|vbmeta|vbmeta_system|vbmeta_vendor|super|product|system_ext|vendor)([[:space:]]|$)' "$TITAN"; then
+  fail forbidden_flash_target_present
+fi
+
 if grep -Eq '^[[:space:]]*(adb|fastboot)([[:space:]]|$)' "$PLAN"; then
   fail plan_device_command_present
 fi
