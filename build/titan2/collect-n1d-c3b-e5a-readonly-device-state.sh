@@ -212,7 +212,7 @@ vbmeta_state = prop("ro.boot.vbmeta.device_state")
 flash_locked = prop("ro.boot.flash.locked")
 dynamic = prop("ro.boot.dynamic_partitions")
 virtual_ab = prop("ro.virtual_ab.enabled")
-virual_ab_compression = prop("ro.virtual_ab.compression.enabled")
+virtual_ab_compression = prop("ro.virtual_ab.compression.enabled")
 level = battery_int("level")
 
 print(f"ADB_STOCK_FINGERPRINT={fingerprint}")
@@ -240,7 +240,143 @@ PY
 source "$EVIDENCE_DIR/adb-summary.env"
 cat "$EVIDENCE_DIR/adb-summary.env"
 
-[[ "$ADB_STOCK_FINGERPRINT_MATCH" == PASS ]] > "$EVIDENCE_DIR/fastbootd-getvar-selected.txt"
+[[ "$ADB_STOCK_FINGERPRINT_MATCH" == PASS ]] || fail "stock_fingerprint_mismatch"
+[[ "$ADB_STOCK_INCREMENTAL_MATCH" == PASS ]] || fail "stock_incremental_mismatch"
+[[ "$ADB_CURRENT_SLOT" == a || "$ADB_CURRENT_SLOT" == b ]] || fail "adb_current_slot_unknown"
+
+echo "N1D_C3B_E5A_ADB_BASELINE=PASS"
+
+echo "N1D_C3B_E5A_ADB_REBOOT_BOOTLOADER=AUTHORIZED_AND_RUNNING"
+"${ADB[@]}" reboot bootloader
+
+wait_for_fastboot_serial() {
+  local expected="$1"
+  local deadline=$((SECONDS + WAIT_SECONDS))
+  while (( SECONDS < deadline )); do
+    timeout "$COMMAND_TIMEOUT_SECONDS" fastboot devices > "$EVIDENCE_DIR/fastboot-devices.txt" 2>/dev/null || true
+    if awk -v s="$expected" '$1 == s {found=1} END {exit !found}' "$EVIDENCE_DIR/fastboot-devices.txt"; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
+expected_fastboot_serial="${FASTBOOT_SERIAL:-$ADB_SERIAL}"
+wait_for_fastboot_serial "$expected_fastboot_serial" || fail "wait_for_bootloader_fastboot"
+FASTBOOT_SERIAL="$expected_fastboot_serial"
+fastboot_binding_sha256="$(printf '%s' "$FASTBOOT_SERIAL" | sha256sum | awk '{print $1}')"
+[[ "$fastboot_binding_sha256" == "$serial_binding_sha256" ]] || fail "adb_fastboot_serial_binding_mismatch"
+echo "N1D_C3B_E5A_FASTBOOT_DEVICE_BINDING=PASS"
+
+FASTBOOT=(fastboot -s "$FASTBOOT_SERIAL")
+
+collect_getvar() {
+  local key="$1"
+  timeout "$COMMAND_TIMEOUT_SECONDS" "${FASTBOOT[@]}" getvar "$key" 2>&1 || true
+}
+
+collect_getvar all > "$EVIDENCE_DIR/bootloader-getvar-all.txt"
+{
+  for key in current-slot is-userspace unlocked secure product slot-count snapshot-update-status super-partition-name; do
+    echo "===== $key ====="
+    collect_getvar "$key"
+  done
+} > "$EVIDENCE_DIR/bootloader-getvar-selected.txt"
+
+python3 - "$EVIDENCE_DIR/bootloader-getvar-all.txt" "$EVIDENCE_DIR/bootloader-getvar-selected.txt" <<'PY' > "$EVIDENCE_DIR/bootloader-summary.env"
+from __future__ import annotations
+import pathlib
+import re
+import sys
+
+text = "\n".join(pathlib.Path(p).read_text(errors="replace") for p in sys.argv[1:])
+
+def get(key: str) -> str:
+    for line in text.splitlines():
+        line = re.sub(r"^\s*\([^)]*\)\s*", "", line.strip())
+        if line.lower().startswith(key.lower() + ":"):
+            return line.split(":", 1)[1].strip()
+    return ""
+
+print(f"BOOTLOADER_CURRENT_SLOT={get('current-slot') or 'UNKNOWN'}")
+print(f"BOOTLOADER_IS_USERSPACE={get('is-userspace') or 'UNKNOWN'}")
+print(f"BOOTLOADER_UNLOCKED={get('unlocked') or 'UNKNOWN'}")
+print(f"BOOTLOADER_SECURE={get('secure') or 'UNKNOWN'}")
+print(f"BOOTLOADER_PRODUCT={get('product') or 'UNKNOWN'}")
+print(f"BOOTLOADER_SLOT_COUNT={get('slot-count') or 'UNKNOWN'}")
+print(f"BOOTLOADER_SNAPSHOT_UPDATE_STATUS={get('snapshot-update-status') or 'UNKNOWN'}")
+PY
+
+# shellcheck disable=SC1090
+source "$EVIDENCE_DIR/bootloader-summary.env"
+cat "$EVIDENCE_DIR/bootloader-summary.env"
+
+[[ "$BOOTLOADER_CURRENT_SLOT" == a || "$BOOTLOADER_CURRENT_SLOT" == b ]] || fail "bootloader_current_slot_unknown"
+[[ "$BOOTLOADER_CURRENT_SLOT" == "$ADB_CURRENT_SLOT" ]] || fail "slot_changed_between_adb_and_bootloader"
+[[ "$BOOTLOADER_UNLOCKED" == yes ]] || fail "bootloader_not_unlocked_do_not_unlock"
+[[ "$BOOTLOADER_IS_USERSPACE" == no || "$BOOTLOADER_IS_USERSPACE" == yes ]] || fail "bootloader_mode_unknown"
+
+if [[ "$BOOTLOADER_IS_USERSPACE" == no ]]; then
+  echo "N1D_C3B_E5A_FASTBOOT_REBOOT_FASTBOOTD=AUTHORIZED_AND_RUNNING"
+  timeout "$COMMAND_TIMEOUT_SECONDS" "${FASTBOOT[@]}" reboot fastboot
+  wait_for_fastboot_serial "$FASTBOOT_SERIAL" || fail "wait_for_fastbootd"
+fi
+
+collect_getvar all > "$EVIDENCE_DIR/fastbootd-getvar-all.txt"
+
+GETVARS=(
+  current-slot
+  is-userspace
+  unlocked
+  secure
+  product
+  slot-count
+  snapshot-update-status
+  max-download-size
+  logical-block-size
+  super-partition-name
+  partition-size:super
+  partition-size:system
+  partition-size:system_a
+  partition-size:system_b
+  partition-size:system_ext
+  partition-size:system_ext_a
+  partition-size:system_ext_b
+  partition-size:product
+  partition-size:product_a
+  partition-size:product_b
+  partition-size:vendor
+  partition-size:vendor_a
+  partition-size:vendor_b
+  partition-size:odm
+  partition-size:odm_a
+  partition-size:odm_b
+  partition-size:system_dlkm
+  partition-size:system_dlkm_a
+  partition-size:system_dlkm_b
+  partition-size:vendor_dlkm
+  partition-size:vendor_dlkm_a
+  partition-size:vendor_dlkm_b
+  partition-size:odm_dlkm
+  partition-size:odm_dlkm_a
+  partition-size:odm_dlkm_b
+  has-slot:system
+  has-slot:system_ext
+  has-slot:product
+  has-slot:vendor
+  has-slot:odm
+  has-slot:system_dlkm
+  has-slot:vendor_dlkm
+  has-slot:odm_dlkm
+)
+
+: > "$EVIDENCE_DIR/fastbootd-getvar-selected.txt"
+for key in "${GETVARS[@]}"; do
+  {
+    echo "===== $key ====="
+    collect_getvar "$key"
+  } >> "$EVIDENCE_DIR/fastbootd-getvar-selected.txt"
 done
 
 python3 - \
@@ -294,23 +430,46 @@ snapshot = get("snapshot-update-status") or "UNKNOWN"
 super_bytes = as_int(get("partition-size:super"))
 
 bases = ["system", "system_ext", "product", "vendor", "odm", "system_dlkm", "vendor_dlkm", "odm_dlkm"]
-per_base: dict[str, dict[str, int]] = {}
+per_base: dict[str, dict[str, object]] = {}
 active_total = 0
 fallback_all_slots_total = 0
+complete_all_slot_evidence = True
 
 for base in bases:
     unsuffixed = as_int(get(f"partition-size:{base}"))
     a = as_int(get(f"partition-size:{base}_a"))
     b = as_int(get(f"partition-size:{base}_b"))
+    has_slot = get(f"has-slot:{base}").lower()
     active = as_int(get(f"partition-size:{base}_{slot}")) if slot in {"a", "b"} else 0
     active = active or unsuffixed or max(a, b)
-    all_slots = a + b if (a or b) else unsuffixed
+
+    if has_slot == "yes":
+        complete = a > 0 and b > 0
+        all_slots = a + b if complete else 0
+    elif has_slot == "no":
+        complete = unsuffixed > 0 or active > 0
+        all_slots = unsuffixed or active
+    elif a or b:
+        complete = a > 0 and b > 0
+        all_slots = a + b if complete else 0
+    elif unsuffixed:
+        complete = True
+        all_slots = unsuffixed
+    else:
+        complete = True
+        all_slots = 0
+
+    if not complete:
+        complete_all_slot_evidence = False
+
     per_base[base] = {
+        "has_slot": has_slot or "UNKNOWN",
         "unsuffixed": unsuffixed,
         "a": a,
         "b": b,
         "active": active,
         "all_slots": all_slots,
+        "complete": complete,
     }
     active_total += active
     fallback_all_slots_total += all_slots
@@ -326,21 +485,31 @@ for name in list(logical_names):
         if f"{name}_a" in logical_names or f"{name}_b" in logical_names:
             deduped_logical_names.discard(name)
 
-reported_logical_total = sum(
-    as_int(get(f"partition-size:{name}"))
+reported_logical_sizes = {
+    name: as_int(get(f"partition-size:{name}"))
     for name in sorted(deduped_logical_names)
+}
+reported_logical_complete = bool(reported_logical_sizes) and all(
+    size > 0 for size in reported_logical_sizes.values()
 )
-if reported_logical_total > 0:
-    all_slots_total = reported_logical_total
-    allocation_basis = "GETVAR_ALL_LOGICAL_PARTITIONS"
-else:
-    all_slots_total = fallback_all_slots_total
-    allocation_basis = "KNOWN_FAMILY_FALLBACK"
 
-system_current = per_base["system"]["active"]
+if reported_logical_complete:
+    all_slots_total = sum(reported_logical_sizes.values())
+    allocation_basis = "GETVAR_ALL_LOGICAL_PARTITIONS_COMPLETE"
+    allocation_complete = True
+elif complete_all_slot_evidence and fallback_all_slots_total > 0:
+    all_slots_total = fallback_all_slots_total
+    allocation_basis = "KNOWN_FAMILY_COMPLETE_FALLBACK"
+    allocation_complete = True
+else:
+    all_slots_total = 0
+    allocation_basis = "INCOMPLETE"
+    allocation_complete = False
+
+system_current = int(per_base["system"]["active"])
 growth = max(0, target - system_current)
-headroom_all_slots = super_bytes - all_slots_total if super_bytes else 0
-remaining_after_growth = headroom_all_slots - growth if super_bytes else 0
+headroom_all_slots = super_bytes - all_slots_total if super_bytes and allocation_complete else 0
+remaining_after_growth = headroom_all_slots - growth if headroom_all_slots else 0
 
 snapshot_safe = snapshot.lower() in {"none", "no", "idle", "cancelled", "canceled"}
 snapshot_review = snapshot == "UNKNOWN"
@@ -348,6 +517,7 @@ capacity_safe = (
     super_bytes > 0
     and system_current > 0
     and all_slots_total > 0
+    and allocation_complete
     and headroom_all_slots >= 0
     and remaining_after_growth >= minimum_remaining
 )
@@ -380,6 +550,8 @@ result = {
     "reported_logical_partition_count": len(deduped_logical_names),
     "all_slots_reported_dynamic_total_bytes": all_slots_total,
     "allocation_basis": allocation_basis,
+    "allocation_complete": allocation_complete,
+    "complete_all_slot_evidence": complete_all_slot_evidence,
     "fresh_super_headroom_all_slots_estimate_bytes": headroom_all_slots,
     "system_current_bytes": system_current,
     "planned_system_target_bytes": target,
@@ -405,6 +577,8 @@ print(f"FASTBOOTD_SUPER_BYTES={super_bytes}")
 print(f"FASTBOOTD_ACTIVE_SELECTED_DYNAMIC_TOTAL_BYTES={active_total}")
 print(f"FASTBOOTD_LOGICAL_NAME_COUNT={len(deduped_logical_names)}")
 print(f"FASTBOOTD_ALLOCATION_BASIS={allocation_basis}")
+print(f"FASTBOOTD_ALLOCATION_COMPLETE={'YES' if allocation_complete else 'NO'}")
+print(f"FASTBOOTD_COMPLETE_ALL_SLOT_EVIDENCE={'YES' if complete_all_slot_evidence else 'NO'}")
 print(f"FASTBOOTD_ALL_SLOTS_REPORTED_DYNAMIC_TOTAL_BYTES={all_slots_total}")
 print(f"FASTBOOTD_FRESH_SUPER_HEADROOM_ALL_SLOTS_ESTIMATE_BYTES={headroom_all_slots}")
 print(f"FASTBOOTD_PLANNED_SYSTEM_TARGET_BYTES={target}")
