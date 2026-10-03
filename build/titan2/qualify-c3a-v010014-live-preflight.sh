@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 E5A=""; CAP=""; PLAN=""; OUT=""
+EXPECTED_C3A_SHA256="4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16"
+EXPECTED_C3A_BYTES=3146977280
+EXPECTED_STOCK_FINGERPRINT="Unihertz/Titan_2/Titan_2:16/BP2A.250605.031.A3/V01.00.14:user/release-keys"
+EXPECTED_STOCK_INCREMENTAL="V01.00.14"
+EXPECTED_SLOT="a"
+EXPECTED_SUPER_BYTES=9663676416
 while (($#)); do
   case "$1" in
     --e5a-json) E5A="$2"; shift 2;;
@@ -12,10 +18,11 @@ while (($#)); do
 done
 for f in "$E5A" "$CAP" "$PLAN"; do [[ -f "$f" ]] || exit 64; done
 [[ -n "$OUT" ]] || exit 64
-python3 - "$E5A" "$CAP" "$PLAN" "$OUT" <<'PY'
+python3 - "$E5A" "$CAP" "$PLAN" "$OUT" "$EXPECTED_C3A_SHA256" "$EXPECTED_C3A_BYTES" "$EXPECTED_STOCK_FINGERPRINT" "$EXPECTED_STOCK_INCREMENTAL" "$EXPECTED_SLOT" "$EXPECTED_SUPER_BYTES" <<'PY'
 import json,pathlib,sys
 e=json.loads(pathlib.Path(sys.argv[1]).read_text())
 c=json.loads(pathlib.Path(sys.argv[2]).read_text())
+expected_sha=sys.argv[5]; expected_bytes=int(sys.argv[6]); expected_fp=sys.argv[7]; expected_inc=sys.argv[8]; expected_slot=sys.argv[9]; expected_super=int(sys.argv[10])
 p={}
 for x in pathlib.Path(sys.argv[3]).read_text().splitlines():
     if x and not x.startswith("#") and "=" in x:
@@ -23,20 +30,20 @@ for x in pathlib.Path(sys.argv[3]).read_text().splitlines():
 f=e.get("fastbootd") or {}; s=e.get("stock") or {}; cows=c.get("active_cow_partitions") or {}
 checks={
 "OFFLINE_PLAN_STATE":p.get("C3A_V010014_CONTROL_PLAN")=="PREPARED_NO_WRITE",
-"C3A_SHA":e.get("sealed_system_sha256")=="4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16",
-"C3A_BYTES":int(e.get("sealed_system_bytes",0) or 0)==3146977280,
+"C3A_SHA":e.get("sealed_system_sha256")==expected_sha,
+"C3A_BYTES":int(e.get("sealed_system_bytes",0) or 0)==expected_bytes,
 "E5A_CLEAN_PASS":e.get("final_state")=="PASS_REVIEW_READY",
 "DEVICE_BINDING":e.get("device_binding_verified") is True,
-"STOCK_FP":s.get("fingerprint")=="Unihertz/Titan_2/Titan_2:16/BP2A.250605.031.A3/V01.00.14:user/release-keys",
-"STOCK_INC":s.get("incremental")=="V01.00.14",
-"SLOT_A":f.get("current_slot")=="a",
+"STOCK_FP":s.get("fingerprint")==expected_fp,
+"STOCK_INC":s.get("incremental")==expected_inc,
+"SLOT_A":f.get("current_slot")==expected_slot,
 "FASTBOOTD":f.get("is_userspace")=="yes",
 "UNLOCKED":f.get("unlocked")=="yes",
 "SNAPSHOT_NONE":e.get("snapshot_update_review")=="PASS_IDLE_OR_NONE",
-"SUPER_BYTES":int(f.get("super_bytes",0) or 0)==9663676416,
+"SUPER_BYTES":int(f.get("super_bytes",0) or 0)==expected_super,
 "ALLOCATION_COMPLETE":f.get("allocation_complete") is True,
 "E5A_CAPACITY":f.get("capacity_safe") is True,
-"TARGET_BYTES":int(f.get("planned_system_target_bytes",0) or 0)==3146977280,
+"TARGET_BYTES":int(f.get("planned_system_target_bytes",0) or 0)==expected_bytes,
 "TARGET_SYSTEM_A":c.get("target_system_partition")=="system_a",
 "NO_SLOT_SWITCH":c.get("slot_policy")=="KEEP_CURRENT_SLOT_NO_SLOT_SWITCH",
 "ACTIVE_COW_COUNT_ZERO":isinstance(cows,dict) and len(cows)==0,
