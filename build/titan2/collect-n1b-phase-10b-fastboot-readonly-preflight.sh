@@ -216,6 +216,7 @@ collect_getvars() {
     secure
     product
     slot-count
+    snapshot-update-status
     partition-size:system
     partition-size:system_a
     partition-size:system_b
