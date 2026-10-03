@@ -35,6 +35,8 @@ required=(
 'collect-n1b-phase-10b-fastboot-readonly-preflight.sh'
 'collect-n1b-phase-11-fastbootd-lp-sizing.sh'
 'qualify-n1d-c3b-e5a-readonly-device-state.sh'
+'N1D_C3B_E5A_FASTBOOT_BINDING_SHA256='
+'N1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION'
 )
 for token in "${required[@]}"; do
   grep -Fq -- "$token" "$COLLECTOR" || fail "collector_missing_token=$token"
@@ -66,12 +68,22 @@ if grep -En '^[[:space:]]*(adb|fastboot)[[:space:]]' "$QUALIFIER"; then
 fi
 echo "N1D_C3B_E5A_QUALIFIER_DEVICE_COMMANDS=PASS_ABSENT"
 
+grep -Fq -- '--fastboot-binding-sha256' "$COLLECTOR" || fail fastboot_binding_handoff_missing
+if grep -Fq 'TITAN_FASTBOOT_SERIAL="${FASTBOOT_SERIAL:-$DEVICE_SERIAL}"' "$COLLECTOR"; then
+  fail adb_serial_forced_as_fastboot_serial
+fi
+grep -Fq 'allocation_complete' "$QUALIFIER" || fail allocation_completeness_gate_missing
+grep -Fq 'ALLOCATION_EVIDENCE_INCOMPLETE' "$QUALIFIER" || fail incomplete_allocation_block_missing
+
 for token in \
   'N1D_C3B_E5A_FLASH_AUTHORIZED=NO' \
   'N1D_C3B_E5A_LP_MUTATION_AUTHORIZED=NO' \
   'N1D_C3B_E5A_AVB_MUTATION_AUTHORIZED=NO' \
   'N1D_C3B_E5A_SLOT_MUTATION_AUTHORIZED=NO' \
   'N1D_C3B_E5A_REBOOT_BACK_TO_ANDROID=NO_NOT_AUTHORIZED' \
+  'N1D_C3B_E5A_FASTBOOT_BINDING_SHA256=' \
+  'N1D_C3B_E5A_DEVICE_BINDING_METHOD=CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION' \
+  'N1D_C3B_E5A_ALLOCATION_COMPLETE=' \
   'N1D_C3B_E5A_READONLY_DEVICE_STATE='; do
   grep -Fq "$token" "$QUALIFIER" || fail "qualifier_missing_token=$token"
 done
