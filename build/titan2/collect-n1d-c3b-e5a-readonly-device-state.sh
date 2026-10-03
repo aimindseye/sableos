@@ -663,6 +663,7 @@ fi
 python3 - \
   "$EVIDENCE_DIR" \
   "$serial_binding_sha256" \
+  "$fastboot_binding_sha256" \
   "$final_state" \
   "$actual_system_sha" \
   "$actual_system_bytes" \
@@ -673,11 +674,12 @@ import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
-serial_hash = sys.argv[2]
-final_state = sys.argv[3]
-system_sha = sys.argv[4]
-system_bytes = int(sys.argv[5])
-out = pathlib.Path(sys.argv[6])
+adb_serial_hash = sys.argv[2]
+fastboot_serial_hash = sys.argv[3]
+final_state = sys.argv[4]
+system_sha = sys.argv[5]
+system_bytes = int(sys.argv[6])
+out = pathlib.Path(sys.argv[7])
 
 def env_file(name: str) -> dict[str, str]:
     result = {}
@@ -694,7 +696,8 @@ result = {
     "schema": 1,
     "phase": "N1D_C3B_E5A_READONLY_DEVICE_STATE",
     "device": "titan2",
-    "adb_device_binding_sha256": serial_hash,
+    "adb_device_binding_sha256": adb_serial_hash,
+    "fastboot_device_binding_sha256": fastboot_serial_hash,
     "device_binding_method": "CONTROLLED_SINGLE_DEVICE_MODE_TRANSITION",
     "sealed_system_sha256": system_sha,
     "sealed_system_bytes": system_bytes,
