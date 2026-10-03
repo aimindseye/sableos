@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROFILE="$ROOT/build/titan2/n1d-c3b-e2-product-admission.env"
+ADAPTER="$ROOT/build/titan2/stage-c3b-product-review.sh"
+STAGING_GATE="$ROOT/build/gates/n1d-c3b-product-review-staging-contract.sh"
+TRANSITION="$ROOT/build/titan2/n1d-c3b-transition.env"
+
+fail() {
+    echo "N1D_C3B_E2_PRODUCT_ADMISSION_CONTRACT=FAIL $*" >&2
+    exit 1
+}
+
+for f in "$PROFILE" "$ADAPTER" "$STAGING_GATE" "$TRANSITION"; do
+    [[ -f "$f" ]] || fail "missing_file=$f"
+done
+
+bash -n "$PROFILE" || fail "syntax=$PROFILE"
+bash -n "$ADAPTER" || fail "syntax=$ADAPTER"
+bash "$STAGING_GATE"
+
+require_line() {
+    local line="$1"
+    grep -Fxq "$line" "$PROFILE" || fail "missing_line=$line"
+}
+
+for line in     'N1D_C3B_E2_ADMISSION_VERSION=1'     'N1D_C3B_E2_ADMISSION_DATE=2026-10-02'     'N1D_C3B_E2_PHASE=C3B_E2_PRODUCT_SOURCE_ADMISSION'     'N1D_C3B_E2_E1_PR=234'     'N1D_C3B_E2_E1_MERGE_COMMIT=39b0733817fa8482fe168277fb0cd119cdc7ae1a'     'N1D_C3B_E2_E1_SYSTEM_SHA256=9ce0144220b3a5bf531a1b0da7ec97543a89c9181ab9d69b6390ea5a86ad45dd'     'N1D_C3B_E2_E1_SYSTEM_BYTES=2940891136'     'N1D_C3B_E2_E1_PREREQUISITE=PASS_SYSTEMIMAGE'     'N1D_C3B_E2_PRODUCT_SOURCE_REPO=aimindseye/titan2-temp'     'N1D_C3B_E2_PRODUCT_SOURCE_PR=18'     'N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD=769feb9b9f662deda2a9110e85d95bb6114ceace'     'N1D_C3B_E2_PRODUCT_QUALIFIED_TREE=cf5c232be3bc79eec4bd30ee0a90ab9247852053'     'N1D_C3B_E2_PRODUCT_MERGED_MAIN=dbbb96cc01a0e366ea56817b54028b5686cb4035'     'N1D_C3B_E2_PRODUCT_MERGED_MAIN_TREE=cf5c232be3bc79eec4bd30ee0a90ab9247852053'     'N1D_C3B_E2_PRODUCT_TREE_EQUIVALENCE=PASS'     'N1D_C3B_E2_PRODUCT_MODULE_COUNT=5'     'N1D_C3B_E2_PRODUCT_MODULES=SableTitan2Keyboard,SableTitan2Camera,SableTitan2DisplayCompat,SableTitan2Setup,SableTitan2RadioDiag'     'N1D_C3B_E2_PROTOTYPE_ADMISSION_ALLOWED=NO'     'N1D_C3B_E2_STANDALONE_HOME_ADMISSION_ALLOWED=NO'     'N1D_C3B_E2_REFERENCE_SOURCE_RUNTIME_ADMISSION_ALLOWED=NO'     'N1D_C3B_E2_PRESIGNED_PRODUCT_APK_ADMISSION_ALLOWED=NO'     'N1D_C3B_E2_STAGING_ADAPTER=build/titan2/stage-c3b-product-review.sh'     'N1D_C3B_E2_STAGING_CONTRACT=build/gates/n1d-c3b-product-review-staging-contract.sh'     'N1D_C3B_E2_SOURCE_ADMISSION_STATUS=PENDING_CANONICAL_STAGING_REVIEW'     'N1D_C3B_E2_PRODUCT_IDENTITY_STATUS=PENDING_CANONICAL_PRODUCT_COMPOSITION'     'N1D_C3B_E2_TARGET_FILES_AUTHORIZED=NO'     'N1D_C3B_E2_OTA_AUTHORIZED=NO'     'N1D_C3B_E2_DEVICE_CONTACT_AUTHORIZED=NO'     'N1D_C3B_E2_FLASH_AUTHORIZED=NO'     'N1D_C3B_E2_SIGNING_AUTHORIZED=NO'     'N1D_C3B_E2_PHYSICAL_RUNTIME_AUTHORIZED=NO'     'N1D_C3B_E2_RELEASE_ELIGIBLE=NO'
+do
+    require_line "$line"
+done
+
+# shellcheck source=/dev/null
+source "$PROFILE"
+
+[[ "$N1D_C3B_E2_PRODUCT_QUALIFIED_TREE" == "$N1D_C3B_E2_PRODUCT_MERGED_MAIN_TREE" ]] ||
+    fail "qualified_and_main_tree_mismatch"
+
+grep -Fxq 'N1D_C3B_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2' "$TRANSITION" ||
+    fail "e1_transition_no_longer_hands_product_identity_to_e2"
+grep -Fxq 'N1D_C3B_SABLE_PRODUCT_ADMISSION_OWNER=E2_CANONICAL_ENGINEERING_LANE' "$TRANSITION" ||
+    fail "e2_admission_owner_missing"
+
+grep -Fq 'n1d-c3b-e2-product-admission.env' "$ADAPTER" ||
+    fail "adapter_not_bound_to_e2_profile"
+grep -Fq 'N1D_C3B_E2_PRODUCT_QUALIFIED_HEAD' "$ADAPTER" ||
+    fail "adapter_missing_qualified_head_binding"
+grep -Fq 'N1D_C3B_E2_PRODUCT_QUALIFIED_TREE' "$ADAPTER" ||
+    fail "adapter_missing_qualified_tree_binding"
+grep -Fq 'C3B_PRODUCT_STAGE_TREE=PASS' "$ADAPTER" ||
+    fail "adapter_missing_tree_pass_marker"
+
+if grep -Eq 'N1D_C3B_E2_(TARGET_FILES|OTA|DEVICE_CONTACT|FLASH|SIGNING|PHYSICAL_RUNTIME|RELEASE_ELIGIBLE)_(AUTHORIZED|ELIGIBLE)=YES' "$PROFILE"; then
+    fail "forbidden_e2_authorization"
+fi
+
+echo "N1D_C3B_E2_E1_PREREQUISITE=PASS_SYSTEMIMAGE"
+echo "N1D_C3B_E2_PRODUCT_SOURCE_BINDING=PASS_EXACT_QUALIFIED_HEAD_AND_TREE"
+echo "N1D_C3B_E2_PRODUCT_TREE_EQUIVALENCE=PASS"
+echo "N1D_C3B_E2_PRODUCT_MODULE_SCOPE=PASS_5_SOURCE_CANDIDATES"
+echo "N1D_C3B_E2_PROTOTYPE_POLICY=PASS_EXCLUDED"
+echo "N1D_C3B_E2_RUNTIME_AUTHORITY=PASS_BLOCKED"
+echo "N1D_C3B_E2_RELEASE_AUTHORITY=PASS_BLOCKED"
+echo "N1D_C3B_E2_PRODUCT_ADMISSION_CONTRACT=PASS"
