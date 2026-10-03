@@ -834,7 +834,7 @@ sable_device_flash_postboot() {
        grep -Fxq -- "$SERIAL"; then
       echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=FASTBOOT_RETURNED"
       echo "TITAN2_N1D_E5B_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
-      return 0
+      return 1
     fi
 
     adb_serial=""
@@ -868,7 +868,7 @@ sable_device_flash_postboot() {
         echo "TITAN2_N1D_E5B_FIRST_BOOT_OBSERVATION=RECOVERY"
         echo "TITAN2_N1D_E5B_FACTORY_RESET=NOT_AUTHORIZED"
         echo "TITAN2_N1D_E5B_FURTHER_MUTATION=BLOCKED_OWNER_REVIEW_REQUIRED"
-        return 0
+        return 1
       fi
 
       if [[ "$boot_completed" == 1 ]]; then
