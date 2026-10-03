@@ -24,7 +24,8 @@ status document takes precedence.
 - `titan2/N1B_V010014_CONTROL.md` — retired unexecutable exact-N1B control plan; historical evidence only.
 - `titan2/N1B_PINNED_REMOTE_AVAILABILITY.md` — completed bounded N1B source-availability evidence; historical reconstruction evidence.
 - `titan2/N1B_PROVIDER_OBJECT_EXISTENCE.md` — completed provider-specific evidence confirming both critical exact N1B source objects are not addressable.
-- `titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md` — **current Titan 2 runtime-recovery authority**: sealed C3A compatibility control on V01.00.14, C2 fallback only if needed, N1F reserved after C3A boot.
+- `titan2/N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md` — **current Titan 2 operator step**: archive boot-qualified C3A, add exactly five admitted Sable apps, rebuild, preserve and flash `system_a` in one bounded experiment.
+- `titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md` — historical C3A runtime-control preparation; C3A has now physically booted V01.00.14.
 - `titan2/N1D_C3A_V010014_FASTBOOT_ENTRY_PREFLIGHT.md` — completed sealed prerequisite; fastboot-only binding/snapshot/COW/group/capacity revalidation passed and authorized no write/reset.
 - `titan2/N1D_C3A_V010014_STANDARD_FLASH_PLAN.md` — **current operator step**: canonical C3A registration + sealed no-write flash plan; physical execution remains closed pending exact plan-seal scope binding.
 - `titan2/N1D_C3A_V010014_LIVE_PREFLIGHT.md` — alternate Android/ADB-entry preflight retained for a future bootable state; not current during the bootloop.
