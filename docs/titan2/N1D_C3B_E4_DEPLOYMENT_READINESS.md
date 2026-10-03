@@ -20,8 +20,7 @@ Historical read-only fastbootd sizing evidence:
 /srv/data/sable-build/evidence/titan2/n1b-phase-11-lp-super-sizing/20260928_195308/fastbootd-lp-sizing/phase11-fastbootd-lp-sizing.json
 ```
 
-Stock restore evidence defaults to the inspected TEE14 reference and N1C proven
-restore evidence. Local paths may be overridden explicitly.
+Stock boot/AVB components default to the inspected TEE14 reference. Stock `super` is resolved separately: E4 first accepts an explicit `--stock-super-image`, then `STOCK_REF_DIR/super.img` when present, otherwise exactly one real stock-super artifact found in or referenced by the proven N1C stock-super restore evidence directory. This matches the existing C0 recovery/evidence model and avoids assuming `super.img` lives beside TEE14 boot/AVB files.
 
 ## Current sizing expectation
 
@@ -56,7 +55,7 @@ The qualifier verifies:
 1. exact E3 SHA-256 and byte size;
 2. E3 evidence contract;
 3. parseable AVB metadata for the sealed system image;
-4. stock super/boot/vbmeta restore components are present;
+4. the exact stock `super` restore artifact resolves from the proven restore evidence, and boot/vbmeta restore components are present;
 5. prior stock super and boot/AVB restore proof is recorded;
 6. E3 partition-fit calculation against historical read-only fastbootd evidence;
 7. no device/build/network/mutation authorization.

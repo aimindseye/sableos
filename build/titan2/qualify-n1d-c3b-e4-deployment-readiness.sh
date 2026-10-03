@@ -7,6 +7,7 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 SYSTEM_IMG="/srv/sable-build/workspaces/titan2-n1d-c3b/out-c3b-engineering/e3-systemimage/20261003T014638Z/target/product/tdgsi_arm64_ab/system.img"
 PHASE11_JSON="/srv/data/sable-build/evidence/titan2/n1b-phase-11-lp-super-sizing/20260928_195308/fastbootd-lp-sizing/phase11-fastbootd-lp-sizing.json"
 STOCK_REF_DIR="/srv/data/sable-build/titan2/artifacts/stock-firmware/unihertz-device-fota-20260922/inspection/bit-equivalence/TEE14-large-reference"
+STOCK_SUPER_IMG=""
 STOCK_SUPER_EVID="/srv/data/sable-build/evidence/titan2/n1c-stock-super-restore-artifact-r1c-20260930_200124"
 BOOT_AVB_EVID="/srv/data/sable-build/evidence/titan2/n1c-restore-tee14-boot-avb-direct-20260930_204335"
 EVIDENCE_DIR="/srv/sable-build/evidence/titan2/n1d-c3b-e4-deployment-readiness/$STAMP"
@@ -27,6 +28,7 @@ Options:
   --system-image PATH
   --phase11-json PATH
   --stock-ref-dir DIR
+  --stock-super-image PATH
   --stock-super-evidence DIR
   --boot-avb-evidence DIR
   --avbtool PATH
@@ -43,6 +45,7 @@ while (($#)); do
     --system-image) SYSTEM_IMG="$2"; shift 2 ;;
     --phase11-json) PHASE11_JSON="$2"; shift 2 ;;
     --stock-ref-dir) STOCK_REF_DIR="$2"; shift 2 ;;
+    --stock-super-image) STOCK_SUPER_IMG="$2"; shift 2 ;;
     --stock-super-evidence) STOCK_SUPER_EVID="$2"; shift 2 ;;
     --boot-avb-evidence) BOOT_AVB_EVID="$2"; shift 2 ;;
     --avbtool) AVBTOOL="$2"; shift 2 ;;
@@ -117,7 +120,63 @@ fi
   fail "system_avb_info_image_failed"
 echo "N1D_C3B_E4_SYSTEM_AVB_INFO=PASS"
 
-for required in super.img vendor_boot.img init_boot.img vbmeta.img vbmeta_system.img vbmeta_vendor.img; do
+resolve_stock_super() {
+  local explicit="$1"
+  local ref_dir="$2"
+  local evidence_dir="$3"
+  local -a raw=()
+  local -a unique=()
+  local -A seen=()
+  local item resolved
+
+  if [[ -n "$explicit" ]]; then
+    [[ -f "$explicit" ]] || fail "stock_super_explicit_missing path=$explicit"
+    realpath "$explicit"
+    return 0
+  fi
+
+  if [[ -f "$ref_dir/super.img" ]]; then
+    realpath "$ref_dir/super.img"
+    return 0
+  fi
+
+  while IFS= read -r item; do
+    [[ -n "$item" ]] && raw+=("$item")
+  done < <(
+    {
+      find "$evidence_dir" -type f \( -iname '*super*.img' -o -iname '*super*.sparse.img' \) -print 2>/dev/null || true
+      grep -RhoE "/[^[:space:]\"']*super[^[:space:]\"']*\.img" "$evidence_dir" 2>/dev/null || true
+    } | sort -u
+  )
+
+  for item in "${raw[@]:-}"; do
+    [[ -f "$item" ]] || continue
+    resolved="$(realpath "$item")"
+    if [[ -z "${seen[$resolved]+x}" ]]; then
+      unique+=("$resolved")
+      seen["$resolved"]=1
+    fi
+  done
+
+  if [[ "${#unique[@]}" -ne 1 ]]; then
+    {
+      echo "N1D_C3B_E4_STOCK_SUPER_RESOLUTION=FAIL candidate_count=${#unique[@]}"
+      printf 'candidate=%s\n' "${unique[@]:-}"
+      echo "Use --stock-super-image PATH only after identifying the exact proven stock restore artifact."
+    } >&2
+    return 1
+  fi
+
+  printf '%s\n' "${unique[0]}"
+}
+
+STOCK_SUPER_IMG="$(resolve_stock_super "$STOCK_SUPER_IMG" "$STOCK_REF_DIR" "$STOCK_SUPER_EVID")" ||
+  fail "stock_super_resolution_failed"
+echo "STOCK_SUPER_IMG=$STOCK_SUPER_IMG"
+echo "N1D_C3B_E4_STOCK_SUPER_RESOLUTION=PASS"
+sha256sum "$STOCK_SUPER_IMG" | tee "$EVIDENCE_DIR/stock-super.sha256"
+
+for required in vendor_boot.img init_boot.img vbmeta.img vbmeta_system.img vbmeta_vendor.img; do
   [[ -f "$STOCK_REF_DIR/$required" ]] || fail "stock_restore_component_missing file=$required"
 done
 echo "N1D_C3B_E4_STOCK_REFERENCE_COMPONENTS=PASS"
