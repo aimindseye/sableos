@@ -30,7 +30,7 @@ grep -Fq 'TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO' "$ADAPTER" ||
   fail titan_standalone_write_script_block_missing
 
 for marker in \
-  'N1D|n1d' \
+  '|N1D|' \
   'caf98dde723d07a071d95aaa1ef27d578d3208d8' \
   '998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5' \
   'TITAN2_N1D_C3B_E3_ARTIFACT_GATE=PASS' \
