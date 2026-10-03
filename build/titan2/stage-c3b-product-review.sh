@@ -324,7 +324,12 @@ print(f"C3B_PRODUCT_STAGE_COPY=PASS copied={len(copied)} identical={identical}")
 PY
 
 if [[ -s "$COPIED_NUL" ]]; then
-    xargs -0 -r git -C "$ROOT" add -- < "$COPIED_NUL"
+    # The product source may intentionally track provenance inputs whose suffixes
+    # are ignored by the canonical repository (for example pinned corpus ZIPs).
+    # Force-add only the exact NUL-delimited paths already approved by the
+    # ownership plan and copied by this adapter. The index equality check below
+    # still rejects any staged path outside this approved copied set.
+    xargs -0 -r git -C "$ROOT" add -f -- < "$COPIED_NUL"
 fi
 
 git -C "$ROOT" diff --cached --check
