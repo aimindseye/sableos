@@ -204,6 +204,7 @@ slot = (getvars.get("current-slot") or str(meta11.get("active_slot", ""))).lstri
 is_userspace = getvars.get("is-userspace") or str(meta11.get("is_userspace", ""))
 unlocked = getvars.get("unlocked") or str(meta11.get("unlocked", ""))
 secure = getvars.get("secure") or str(meta11.get("secure", ""))
+product = getvars.get("product") or str(meta11.get("product", ""))
 snapshot_fastboot = getvars.get("snapshot-update-status", "UNKNOWN")
 super_bytes = as_int(getvars.get("partition-size:super", "")) or int(str(meta11.get("super_bytes", "0")) or 0)
 
@@ -358,6 +359,7 @@ result = {
         "is_userspace": is_userspace,
         "unlocked": unlocked,
         "secure": secure,
+        "product": product,
         "snapshot_update_status": snapshot_fastboot,
         "super_bytes": super_bytes,
         "partition_sizes": per_family,
@@ -405,6 +407,7 @@ print(f"N1D_C3B_E5A_BATTERY_PERCENT={battery if battery >= 0 else 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_FASTBOOTD_CURRENT_SLOT={slot or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_FASTBOOTD_IS_USERSPACE={is_userspace or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_FASTBOOTD_UNLOCKED={unlocked or 'UNKNOWN'}")
+print(f"N1D_C3B_E5A_FASTBOOTD_PRODUCT={product or 'UNKNOWN'}")
 print(f"N1D_C3B_E5A_SYSTEM_CURRENT_BYTES={system_current}")
 print(f"N1D_C3B_E5A_SUPER_BYTES={super_bytes}")
 print(f"N1D_C3B_E5A_ALLOCATION_BASIS={allocation_basis}")
