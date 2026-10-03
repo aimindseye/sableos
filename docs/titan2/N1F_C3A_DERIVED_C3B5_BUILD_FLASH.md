@@ -39,8 +39,15 @@ There is no compatibility-patch delta.
 ## Single operator runner
 
 ```text
-build/titan2/run-n1f-c3a-derived-c3b5.sh
+build/titan2/run-n1f-c3a-derived-c3b5-r2.sh
 ```
+
+
+R2 supersedes the original combined runner because the original self-check
+reused the historical C3A verifier, which still asserted the retired
+`NO_UNTIL_C3A_CONTROL_EVIDENCE` C3B boundary. R2 checks the sealed C3A stage
+evidence, exact 991 project heads and the three expected build-residue projects
+directly, without reopening historical C3A authorization semantics.
 
 The runner first preserves the exact C3A system image and evidence, then builds
 the five APKs offline, stages only Android.bp + apps.mk + five APKs, adds one
@@ -61,9 +68,9 @@ target-files build, OTA build or production signing.
 ```bash
 cd /srv/sable-build/sableos/repo
 
-bash build/titan2/run-n1f-c3a-derived-c3b5.sh selfcheck
+bash build/titan2/run-n1f-c3a-derived-c3b5-r2.sh selfcheck
 
-bash build/titan2/run-n1f-c3a-derived-c3b5.sh run \
+bash build/titan2/run-n1f-c3a-derived-c3b5-r2.sh run \
   --authorize-build \
   --authorize-flash
 ```
