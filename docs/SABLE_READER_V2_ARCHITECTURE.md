@@ -292,6 +292,32 @@ metadata is absent.
 For M4B/MP4 audio, use Media3 chapter metadata when available rather than adding
 a separate MP4 parser dependency.
 
+## Android audiobook service contract
+
+Audiobook playback is not an Activity-lifetime feature. P5D must provide a
+Media3 `MediaLibraryService` (or equivalently justified MediaSession service)
+hosting the player/session.
+
+For target SDK 36 the Sable Reader manifest must explicitly declare the
+media-playback foreground-service boundary:
+
+~~~
+android.permission.FOREGROUND_SERVICE
+android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK
+
+service:
+  exported = false
+  foregroundServiceType = mediaPlayback
+~~~
+
+The service must own the active MediaSession, playback notification/system media
+controls and restore current audiobook/chapter/progress state after UI
+re-creation. The UI binds/controls the service; it must not create an independent
+second player.
+
+No broad background networking permission is implied by background local audio
+playback.
+
 ## Keyboard-first interaction
 
 Reader consumes common semantic actions. Do not branch on Titan model names or
@@ -477,6 +503,7 @@ READER_COMIC_RTL=PASS
 READER_WEBTOON=PASS
 READER_AUDIOBOOK=PASS
 READER_AUDIO_BACKGROUND_SESSION=PASS
+READER_AUDIO_MEDIA_PLAYBACK_FGS=PASS
 READER_M4B_CHAPTERS=PASS_WHEN_PRESENT
 READER_LOCAL_BACKUP=PASS
 READER_CBR=DEFERRED
