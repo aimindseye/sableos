@@ -128,12 +128,34 @@ N1D_C3B_E4_ESTIMATED_REMAINING_SUPER_HEADROOM_BYTES=3003637760
 N1D_C3B_E4_STOCK_SUPER_RESOLUTION=PASS
 N1D_C3B_E4_STOCK_BOOT_AVB_RESOLUTION=PASS count=6
 N1D_C3B_E4_STOCK_RESTORE_PROOF=PASS
-E5A_DEVICE_CONTACT_AUTHORIZED=NO
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+E5A_STATUS=AUTHORIZED_READY_TO_RUN
 E5B_FLASH_AUTHORIZED=NO
 ```
 
-E4 is sealed. E5 requires explicit manual authorization; fresh read-only device
-state must be revalidated before any mutation is considered.
+E4 is sealed. E5A read-only device contact and the two required mode transitions are explicitly authorized. E5B remains unauthorized until the fresh E5A evidence is reviewed.
+
+## Titan 2 C3B E5A authorization
+
+```text
+E5A_DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY
+E5A_ADB_READONLY_AUTHORIZED=YES
+E5A_FASTBOOT_READONLY_AUTHORIZED=YES
+E5A_REBOOT_BOOTLOADER_AUTHORIZED=YES
+E5A_REBOOT_FASTBOOTD_AUTHORIZED=YES
+E5B_FLASH_AUTHORIZED=NO
+E5B_ERASE_AUTHORIZED=NO
+E5B_LP_MUTATION_AUTHORIZED=NO
+E5B_AVB_MUTATION_AUTHORIZED=NO
+E5B_SLOT_MUTATION_AUTHORIZED=NO
+E5B_UNLOCK_LOCK_AUTHORIZED=NO
+E5B_FACTORY_RESET_AUTHORIZED=NO
+```
+
+E5A may collect fresh state and leave the phone in fastbootd. E5B remains a
+separate mutation authorization after fresh evidence review.
 
 ## Keyboard-first design closure
 
@@ -168,7 +190,7 @@ P2 Android glue remains specifically subject to the operator offline Android com
 ```text
 E3 sealed
  -> E4 sealed PASS
- -> explicit E5A read-only device-contact authorization
+ -> E5A read-only authorization GRANTED
  -> fresh device-state revalidation
  -> separate E5B mutation authorization
  -> E5 physical C3B boot
