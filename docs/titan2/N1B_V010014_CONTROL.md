@@ -1,14 +1,18 @@
 # Titan 2 N1B on V01.00.14 control
 
-Status: **offline qualification package / no device contact / no mutation**
+Status: **retired unexecutable control plan; retained as historical evidence**
 
-This is the next canonical Titan 2 engineering control after the N1D physical
-reboot-loop result.
+This control was never executed on V01.00.14. It is retired because the exact
+historical N1B image/target-files are not retained and provider-specific checks
+confirmed both critical pinned source objects are no longer addressable.
+
+Do not run the commands in this document as current authority. The active
+replacement control is `docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md`.
 
 ```text
-N1B_V010014_CONTROL=BLOCKED_PENDING_EXACT_ARTIFACT_OR_EXACT_RECONSTRUCTION
+N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE
 COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
-N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
+N1E_STATUS=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
 N1E_FLASH_AUTHORIZED=NO
 ```
 

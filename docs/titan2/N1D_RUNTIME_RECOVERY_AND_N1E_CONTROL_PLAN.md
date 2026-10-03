@@ -1,7 +1,14 @@
 # Titan 2 N1D runtime recovery and N1E control plan
 
-Status: **current runtime-recovery authority**
+Status: **superseded exact-N1B/N1E recovery plan; retained as evidence**
 Updated: **2026-10-03 ET**
+
+> Superseded on 2026-10-03 after provider-specific verification confirmed that
+> both critical exact N1B source objects are no longer addressable and the exact
+> N1B image/target-files are not retained. The active runtime-recovery authority
+> is now `docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md`. N1E is retired and
+> must not be redefined.
+
 
 This document supersedes the earlier assumption that the next canonical step is
 another N1D/C3B boot attempt followed directly by E6. The N1D build remains a

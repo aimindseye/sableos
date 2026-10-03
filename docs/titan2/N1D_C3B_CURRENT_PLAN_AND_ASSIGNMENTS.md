@@ -9,33 +9,48 @@ be used for requirements, deployment lessons and acceptance criteria.
 
 ## Runtime-recovery override
 
-The previous E5-first-boot -> E6 sequence is suspended after the N1D physical
-attempt entered a reboot loop. Build qualification is preserved as evidence,
-but N1D is not a boot-qualified baseline.
+The previous E5-first-boot -> E6 sequence remains suspended after the N1D
+physical attempt entered a reboot loop. Build qualification is preserved as
+evidence, but N1D is not a boot-qualified baseline.
 
-Current control sequence:
+The exact-N1B path has now been exhausted:
 
 ```text
-N1D_PHYSICAL_RESULT=FAIL_REBOOT_LOOP
-COUNT_ZERO_STATUS=PRIMARY_SUSPECT_NOT_PROVEN_ROOT_CAUSE
-N1B_V010014_CONTROL=PENDING
-N1E_BUILD_AUTHORIZED=NO_PENDING_N1B_CONTROL
-N1E_FLASH_AUTHORIZED=NO
+N1B_EXACT_IMAGE=NOT_RETAINED
+N1B_EXACT_TARGET_FILES=NOT_RETAINED
+N1B_CRITICAL_SOURCE_OBJECTS_LOCAL=NOT_FOUND
+N1B_CRITICAL_SOURCE_OBJECTS_PROVIDER=ABSENT_CONFIRMED_BOTH
+N1B_V010014_CONTROL=RETIRED_UNEXECUTABLE
+N1E=RETIRED_EXACT_N1B_PREREQUISITE_UNAVAILABLE
+```
+
+No available artifact is relabeled as N1B.
+
+The current control sequence is:
+
+```text
+CONTROL_1=C3A_SOURCE_BUILT_PUBLIC_FUNCTIONAL_REPRODUCTION
+C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
+C3A_SYSTEM_BYTES=3146977280
+C3A_CONTROL_PATCH_COUNT=369
+C3A_V010014_CONTROL=OFFLINE_PREPARATION_NEXT
+N1F=RESERVED_PENDING_C3A_BOOT
+CONTROL_2=C2_PINNED_PUBLISHED_RESTLESSOS_PREBUILT_REVIEW_ONLY_IF_NEEDED
 E6_RUNTIME_BASELINE=HOLD
 ```
 
-The immediate physical control is the exact sealed N1B artifact on current
-V01.00.14. If it boots, N1E uses the exact N1B generated product/lunch identity
-and adds only the five C3B apps. If it fails, N1E stops and the firmware,
-boot-chain and current-device-state delta is investigated.
+If C3A boots on current V01.00.14, it establishes that the current device/vendor
+state can boot the broad public Restless/TrebleDroid compatibility substrate.
+It does not prove any one patch or `COUNT=0` alone is causal. N1F is then the
+reserved later minimal five-Sable-app isolation derived from the exact qualified
+C3A baseline.
 
-N1E deliberately does not use the `sable_titan2` wrapper product. Its
-qualification is G0 -> G1 -> G2 with exact source/product/staged-payload and
-artifact parity. The reviewed synthetic self-test currently passes 47 cases;
-the real host self-test and first successful real capture remain operator work.
+If C3A is unavailable or its physical result is inconclusive/fails, C2 may be
+reviewed as an independent second diagnostic control. C2 is not N1B and is not
+a Sable release baseline.
 
 Authority:
-`docs/titan2/N1D_RUNTIME_RECOVERY_AND_N1E_CONTROL_PLAN.md`.
+`docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md`.
 
 ## Current state
 
@@ -216,8 +231,7 @@ Keep both PRs draft until their operator-side qualifications are attached.
 PR #28 changed Reader Kotlin/test sources and therefore needs exact-head Android
 compile/lint/unit/merged-manifest verification. PR #29 adds readiness tooling,
 matrices and docs only; its delegated Android-offline path still needs an
-operator run with the correct pre-Android-source base. Neither PR authorizes
-device contact or changes the canonical boot-recovery sequence.
+operator run with the correct pre-Android-source base. Neither PR authorizes device contact or changes the canonical C3A-first compatibility-control sequence.
 
 ## Assignment model
 
@@ -399,8 +413,9 @@ P2 Android glue remains specifically subject to the operator offline Android com
 | --- | --- | --- | --- |
 | E3 | first Sable-composed Titan 2 systemimage | exact system.img + five module membership + hashes | **PASS / SEALED** |
 | E4 | artifact seal and deployment readiness | image audit, partition fit, restore/fastbootd plan | **PASS / SEALED** |
-| E5 | first physical C3B boot | E5A sealed evidence, corrected E5B package, owner authorization, standardized flash plan, then separately qualified execution | **E5A PASS; E5B OWNER AUTH APPROVED; STANDARD FLASH PLAN PENDING** |
-| E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | AFTER E5 |
+| Recovery-C3A | current-firmware compatibility control | exact sealed C3A + fresh physical boot evidence | **OFFLINE PREP NEXT** |
+| N1F | C3A-derived minimal five-app isolation | defined only after C3A boot + provenance capture | **RESERVED / NOT AUTHORIZED** |
+| E6 | runtime baseline qualification | radio/input/display/camera/setup/security classified | **HOLD UNTIL BOOT-QUALIFIED BASELINE** |
 | E7 | evidence-driven compatibility peel | only reproduced runtime fixes admitted | AFTER E6 |
 | E8A | core OS usability | Start, Keyboard, Setup, Settings, Hub/Messages, browser/files | PARALLEL SOURCE WORK |
 | E8B | daily-driver apps/privacy | Phone, People, Mail, Calendar, Media, Weather, Reader, privacy surfaces | PLANNED |

@@ -1,6 +1,23 @@
 # Titan 2 N1B provider-specific source-object existence
 
-Status: **bounded provider verification / no sync / no build / no device**
+Status: **complete / both critical exact objects provider-confirmed absent**
+
+Provider-specific execution completed on 2026-10-03 and is sealed at:
+
+```text
+EVIDENCE_DIR=/srv/sable-build/evidence/titan2/n1b-provider-object-existence/20261003T191916Z
+EVIDENCE_SEAL_SHA256=fce7ed70c41ef99ccfa0ff4ec9e8c5a39a738cef6cdb266fc1ba3496c0203730
+N1B_TREBLE_RECORDED_REMOTE_STATUS=ABSENT_CONFIRMED
+N1B_TREBLE_UPSTREAM_LINEAGE_STATUS=ABSENT_CONFIRMED
+N1B_TREBLE_EXACT_OBJECT_EXISTENCE=ABSENT_FROM_CHECKED_AUTHENTIC_GITHUB_LINEAGE
+N1B_VNDK29_EXACT_OBJECT_EXISTENCE=ABSENT_CONFIRMED
+N1B_PROVIDER_OBJECT_EXISTENCE=BLOCKED_BOTH_EXACT_OBJECTS_NOT_ADDRESSABLE
+N1B_NEXT_STEP=RETIRE_EXACT_N1B_RECONSTRUCTION_UNLESS_AUTHENTIC_ARCHIVE_FOUND
+```
+
+This closes exact-N1B reconstruction under the available authentic source and
+artifact evidence. The current replacement-control authority is
+`docs/titan2/N1D_C3A_V010014_RUNTIME_CONTROL.md`.
 
 The generic exact-SHA fetch probe completed with both projects in
 `EXACT_FETCH_FAILED_REVIEW_REQUIRED`. That result does not prove absence:
