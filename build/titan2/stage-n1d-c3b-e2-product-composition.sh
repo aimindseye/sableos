@@ -174,7 +174,9 @@ grep -Fxq '$(call inherit-product, vendor/sable/titan2/sable-titan2-apps.mk)' "$
 grep -Fxq 'PRODUCT_NAME := sable_titan2' "$DEST/sable_titan2.mk" ||
     fail final_product_name_missing
 
-if grep -Eq 'generic_system_arm64|gsi_release|vendor/sable/n1d' "$DEST/sable_titan2.mk"; then
+if grep -Ev '^[[:space:]]*#' "$DEST/sable_titan2.mk" |
+    grep -Eq 'generic_system_arm64|gsi_release|vendor/sable/n1d'
+then
     fail retired_or_direct_gsi_inheritance_present
 fi
 if grep -Eq 'presigned:[[:space:]]*true|certificate:[[:space:]]*"platform"|privileged:[[:space:]]*true' "$DEST/Android.bp"; then

@@ -106,7 +106,7 @@ exec > >(tee "$EVIDENCE_DIR/parse.log") 2>&1
 
     build/soong/soong_ui.bash \
         --dumpvars-mode \
-        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
+        --vars="TARGET_PRODUCT TARGET_BUILD_VARIANT PRODUCT_DEVICE PRODUCT_BRAND PRODUCT_MODEL PRODUCT_MANUFACTURER TARGET_COPY_OUT_PRODUCT BUILD_ID PLATFORM_VERSION PRODUCT_OUT" \
         > "$EVIDENCE_DIR/product-vars.env"
 )
 
@@ -122,6 +122,8 @@ grep -Fxq "PRODUCT_MODEL='$N1D_C3B_E2_PRODUCT_MODEL'" "$EVIDENCE_DIR/product-var
     fail dumpvars_product_model
 grep -Fxq "PRODUCT_MANUFACTURER='$N1D_C3B_E2_PRODUCT_MANUFACTURER'" "$EVIDENCE_DIR/product-vars.env" ||
     fail dumpvars_product_manufacturer
+grep -Fxq "TARGET_COPY_OUT_PRODUCT='system/product'" "$EVIDENCE_DIR/product-vars.env" ||
+    fail dumpvars_product_not_folded_into_system
 
 if find "$PARSE_OUT" -type f \( -name '*.img' -o -name '*target_files*.zip' -o -name '*-ota*.zip' \) -print -quit | grep -q .; then
     fail "unexpected_target_artifact=$PARSE_OUT"
@@ -151,6 +153,7 @@ fi
 
 echo "N1D_C3B_E2_PRODUCT_PARSE_IDENTITY=PASS_SABLE_TITAN2"
 echo "N1D_C3B_E2_PRODUCT_PARSE_BASE_INHERIT=PASS_GENERATED_E1_TREBLE"
+echo "N1D_C3B_E2_PRODUCT_PARSE_PRODUCT_ROUTE=PASS_SYSTEM_PRODUCT"
 echo "N1D_C3B_E2_PRODUCT_PARSE_NO_TARGET_ARTIFACTS=PASS"
 echo "N1D_C3B_E2_PRODUCT_PARSE=PASS"
 echo "EVIDENCE_DIR=$EVIDENCE_DIR"
