@@ -1,0 +1,7 @@
+path	reason	retired_in
+apps/titan2/platform/home/	Standalone HOME app rejected; HOME owner is Launcher3QuickStep hosting Sable Start	D1b
+product/	Parallel product authority (Android.bp, .mk, overlay, keylayout, permissions) retired; final product delta is canonical	D1b
+build/titan2/audit-sable-image.sh	Audited the retired image composition	D1b
+build/titan2/stage-sablescreens.sh	Presigned prebuilt APK staging model rejected	D1b
+build/titan2/audit-sablescreens-source.sh	Replaced by checks inside qualify-c3b-product-source.sh	D1b
+build/titan2/capture-n1b2-cellular-runtime.sh	Name collides with canonical capture; renamed to capture-c3b-cellular-runtime-reference.sh	D1a
