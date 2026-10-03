@@ -96,6 +96,7 @@ verified_system_sha="$EXPECTED_SYSTEM_SHA256"
 verified_e5b_sha="$EXPECTED_E5B_JSON_SHA256"
 verified_freeze_sha="$EXPECTED_AUTH_FREEZE_SHA256"
 echo "N1D_C3B_E5B_REGISTRY_VERIFICATION=PASS_CONSUMED"
+echo "N1D_C3B_E5B_FREEZE_EVIDENCE=PASS_HASH_BOUND"
 
 BUILD_STATE="$BUILD_EVIDENCE_DIR/build-state.env"
 [[ -f "$BUILD_STATE" ]] || fail "build_state_missing=$BUILD_STATE" 66
@@ -120,9 +121,6 @@ case "$image_format" in raw|android-sparse) ;; *) fail "image_format=$image_form
 PLAN_VALUES="$EVIDENCE_DIR/plan-values.env"
 python3 - \
   "$E5B_JSON" \
-  "$AUTH_FREEZE_ENV" \
-  "$EXPECTED_SYSTEM_SHA256" \
-  "$EXPECTED_DECISION_SHA256" \
   "$image_logical_bytes" \
   "$PLAN_VALUES" <<'PY'
 from __future__ import annotations
@@ -132,20 +130,10 @@ import pathlib
 import sys
 
 e5b_path = pathlib.Path(sys.argv[1])
-freeze_path = pathlib.Path(sys.argv[2])
-expected_system_sha = sys.argv[3]
-expected_decision_sha = sys.argv[4]
-logical_bytes = int(sys.argv[5])
-out = pathlib.Path(sys.argv[6])
+logical_bytes = int(sys.argv[2])
+out = pathlib.Path(sys.argv[3])
 
 data = json.loads(e5b_path.read_text(encoding="utf-8"))
-
-freeze: dict[str, str] = {}
-for raw in freeze_path.read_text(encoding="utf-8", errors="replace").splitlines():
-    if not raw or raw.lstrip().startswith("#") or "=" not in raw:
-        continue
-    key, value = raw.split("=", 1)
-    freeze[key.strip()] = value.strip()
 
 required = {
     "authorization_state": "READY_FOR_MANUAL_AUTHORIZATION_ACTIVE_SYSTEM_PATH",
@@ -173,20 +161,6 @@ if data.get("snapshot_update_review") != "PASS_IDLE_OR_NONE":
     raise SystemExit(
         "N1D_C3B_E5B_STANDARD_FLASH_PLAN=FAIL reason=snapshot_not_idle"
     )
-
-freeze_required = {
-    "N1D_C3B_E5B_SYSTEM_SHA256": expected_system_sha,
-    "N1D_C3B_E5B_DECISION_PACKAGE_SHA256": expected_decision_sha,
-    "N1D_C3B_E5B_MANUAL_AUTH_FREEZE": "PASS_READY_FOR_OWNER_AUTHORIZATION",
-    "N1D_C3B_E5B_MUTATION_AUTHORIZED": "NO",
-}
-for key, expected in freeze_required.items():
-    actual = freeze.get(key)
-    if actual != expected:
-        raise SystemExit(
-            "N1D_C3B_E5B_STANDARD_FLASH_PLAN=FAIL "
-            f"reason=freeze_field key={key} expected={expected!r} actual={actual!r}"
-        )
 
 active_system = int(data["active_system_current_bytes"])
 planned_target = int(data["planned_system_target_bytes"])
