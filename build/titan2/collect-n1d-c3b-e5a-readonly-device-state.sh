@@ -703,3 +703,59 @@ case "$final_state" in
     exit 4
     ;;
 esac
+" in line:
+            k, v = line.split("=", 1)
+            result[k] = v
+    return result
+
+result = {
+    "schema": 1,
+    "phase": "N1D_C3B_E5A_READONLY_DEVICE_STATE",
+    "device": "titan2",
+    "device_binding_sha256": serial_hash,
+    "sealed_system_sha256": system_sha,
+    "sealed_system_bytes": system_bytes,
+    "adb": env_file("adb-summary.env"),
+    "bootloader": env_file("bootloader-summary.env"),
+    "fastbootd": env_file("fastbootd-summary.env"),
+    "lpdump_captured": (root / "lpdump.txt").exists() and (root / "lpdump.txt").stat().st_size > 0,
+    "device_contact_authorized": "YES_READ_ONLY_E5A",
+    "reboot_bootloader_authorized": "YES",
+    "reboot_fastbootd_authorized": "YES",
+    "flash_authorized": "NO",
+    "erase_authorized": "NO",
+    "lp_mutation_authorized": "NO",
+    "avb_mutation_authorized": "NO",
+    "slot_mutation_authorized": "NO",
+    "unlock_lock_authorized": "NO",
+    "factory_reset_authorized": "NO",
+    "custom_boot_authorized": "NO",
+    "final_device_mode": "FASTBOOTD",
+    "reboot_back_to_android": "NO_NOT_AUTHORIZED",
+    "final_state": final_state,
+}
+out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+
+echo "N1D_C3B_E5A_FLASH_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_ERASE_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_LP_MUTATION_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_AVB_MUTATION_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_SLOT_MUTATION_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_UNLOCK_LOCK_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_FACTORY_RESET_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_CUSTOM_BOOT_AUTHORIZED=NO"
+echo "N1D_C3B_E5A_FINAL_DEVICE_MODE=FASTBOOTD"
+echo "N1D_C3B_E5A_REBOOT_BACK_TO_ANDROID=NO_NOT_AUTHORIZED"
+echo "N1D_C3B_E5A_EVIDENCE_JSON=$JSON_OUT"
+echo "N1D_C3B_E5A_EVIDENCE_DIR=$EVIDENCE_DIR"
+echo "N1D_C3B_E5A_READONLY_DEVICE_STATE=$final_state"
+
+case "$final_state" in
+  PASS_REVIEW_READY|PASS_REVIEW_READY_SNAPSHOT_STATUS_REQUIRES_ADB_EVIDENCE_REVIEW)
+    exit 0
+    ;;
+  *)
+    exit 4
+    ;;
+esac
