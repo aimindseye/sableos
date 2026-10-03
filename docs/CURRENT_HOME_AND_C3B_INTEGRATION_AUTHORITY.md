@@ -77,9 +77,26 @@ C3B_E1_PRODUCT_IDENTITY_STATUS=ENGINEERING_GENERATED_TREBLEDROID_PENDING_E2
 ```
 
 C3B E2 owns the final Sable product identity, source-module admission and
-partition/product inheritance model. Parallel product work must not create a
-second `vendor/sable/titan2` authority or revive the retired handcrafted
-product path.
+partition/product inheritance model. The qualified parallel product source is
+now imported into canonical SableOS at commit
+`aafb543565c9d59ed5e0d9cda876aabb4967f8aa`.
+
+Canonical E2 uses `vendor/sable/titan2` only as the Android-workspace staging
+path for a thin wrapper around the proven generated E1 product:
+
+```text
+BASE_PRODUCT=device/phh/treble/treble_arm64_bvN.mk
+PRODUCT_NAME=sable_titan2
+LUNCH_TARGET=sable_titan2-bp4a-userdebug
+APP_PARTITION=product
+APP_COUNT=5
+PACKAGING=source-built unsigned APK -> android_app_import
+USERDEBUG_SIGNING=default_dev_cert
+```
+
+This does not revive the retired `sable_titan2_n1d_arm64` /
+`vendor/sable/n1d` implementation. Parallel product work still must not create
+an independent product authority.
 
 Canonical source:
 
@@ -90,6 +107,11 @@ build/titan2/n1d-c3b-scaffold-decisions.tsv
 build/titan2/apply-n1d-c3b-phh-base-hardening.py
 build/titan2/n1d-c3b-engineering.mk
 build/titan2/n1d-product-contract.env
+build/titan2/n1d-c3b-e2-product-admission.env
+build/titan2/n1d-c3b-e2-product-composition.env
+build/gates/n1d-c3b-e2-product-admission-contract.sh
+build/gates/n1d-c3b-e2-product-composition-contract.sh
+product/titan2/c3b/
 docs/titan2/N1D_C3_PRODUCT_COMPOSITION_R1.md
 docs/titan2/N1D_C3B_TRANSITION_R1.md
 ```
