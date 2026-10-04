@@ -203,10 +203,12 @@ def main() -> int:
              and lib["libsynth.so"]["provider_class"] == "APK_PACKAGED", "")
         case("dt_needed_platform_apex_provider", lib.get("libdep.so", {}).get("partition") == "apex"
              and lib["libdep.so"]["provider_class"] == "PLATFORM_OR_APEX"
+             and lib["libdep.so"]["namespace_visibility"] == "EXPLICIT"
              and "DT_NEEDED:libsynth.so" in lib["libdep.so"]["admitted_by"]
              and "USES_NATIVE_LIBRARY:required" in lib["libdep.so"]["admitted_by"], lib.get("libdep.so", {}).get("admitted_by", "-"))
         case("vendor_file_namespace_unproven", lib.get("libvendoronly.so", {}).get("status")
              == "FILE_PRESENT_NAMESPACE_UNPROVEN"
+             and lib["libvendoronly.so"].get("namespace_visibility") == "UNPROVEN"
              and env.get("N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN") == "libvendoronly.so"
              and env.get("N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED") == "NO", "")
         case("dt_needed_missing_reported", lib.get("libgone.so", {}).get("status") == "NOT_FOUND", "")
@@ -214,12 +216,14 @@ def main() -> int:
         plib = {x["library"]: x for x in op.get("NATIVE_CLOSURE", [])}
         case("system_file_presence_not_namespace_proof",
              plib.get("libprivate.so", {}).get("status") == "FILE_PRESENT_NAMESPACE_UNPROVEN"
+             and plib.get("libprivate.so", {}).get("namespace_visibility") == "UNPROVEN"
              and op.get("env", {}).get("N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING") == "libprivate.so", "")
         r, ov = run(f, td, "vendor-visible", ["--namespace-visible-library", "libvendoronly.so"])
         vlib = {x["library"]: x for x in ov.get("NATIVE_CLOSURE", [])}
         case("explicit_vendor_namespace_visibility_can_admit",
              vlib.get("libvendoronly.so", {}).get("status") == "FOUND"
-             and vlib["libvendoronly.so"].get("partition") == "vendor", "")
+             and vlib["libvendoronly.so"].get("partition") == "vendor"
+             and vlib["libvendoronly.so"].get("namespace_visibility") == "EXPLICIT", "")
         case("constant_load_roots_resolved_or_reported", lib.get("librtlib.so", {}).get("status") == "NOT_FOUND"
              and lib.get("libabs.so", {}).get("status") == "NOT_FOUND"
              and "LOADLIBRARY:" in lib.get("libvend.so", {}).get("admitted_by", ""), "")
