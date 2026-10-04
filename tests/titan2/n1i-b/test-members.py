@@ -215,7 +215,7 @@ def main() -> int:
         td = Path(td)
         try:
             f = build(td / "build")
-            case("fixture_build", True, "javac -source 8 + dx")
+            case("fixture_build", True, f"javac -source 8 + {find_dex_compiler()[0]}")
         except RuntimeError as e:
             case("fixture_build", False, str(e))
             return 1
