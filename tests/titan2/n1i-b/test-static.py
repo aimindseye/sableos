@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """N1I-B n1i_static.py self-test: DEX decoder vs dexdump oracle, ELF reader vs readelf oracle.
 
-All fixtures are synthetic and built at test time (javac + dx/d8; gcc/clang+lld).
+All fixtures are synthetic and built at test time (javac + dx/d8; clang+lld).
 Missing tools are a FAIL, never a skip. Prints CASE lines; exit 0 only if all pass.
 Optional: N1I_STATIC_EXTRA_CORPUS="a.jar:b.jar" adds oracle comparisons on extra jars.
 """
@@ -23,7 +23,7 @@ ROOT = Path(subprocess.check_output(["git", "-C", str(HERE), "rev-parse", "--sho
 sys.path.insert(0, str(HERE / "lib"))
 from toolchain import compile_dex, find_dex_compiler, prepare_tool_path  # noqa: E402
 
-prepare_tool_path(("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "llvm-objcopy", "gcc", "readelf"))
+prepare_tool_path(("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "llvm-objcopy", "readelf"))
 sys.path.insert(0, str(ROOT / "build/titan2"))
 import n1i_static as S  # noqa: E402
 
@@ -296,14 +296,15 @@ def dex_cases(td: Path) -> None:
 
 
 def elf_cases(td: Path) -> None:
-    need = {"gcc": shutil.which("gcc"), "clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld"),
-            "llvm-objcopy": shutil.which("llvm-objcopy"), "readelf": shutil.which("readelf")}
+    need = {"clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld"),
+            "llvm-objcopy": shutil.which("llvm-objcopy"),
+            "readelf": shutil.which("readelf") or shutil.which("llvm-readelf")}
     if not all(need.values()):
         case("elf_fixture_build", False, f"missing {[k for k, v in need.items() if not v]}")
         return
     src = FX / "elf"
     builds = {
-        "x64": (["gcc"], ["-Wl,--hash-style=both"]),
+        "x64": (["clang", "--target=x86_64-linux-gnu", "-fuse-ld=lld"], ["-Wl,--hash-style=both"]),
         "a64": (["clang", "--target=aarch64-linux-gnu", "-fuse-ld=lld"], ["-Wl,--hash-style=gnu"]),
         "a32": (["clang", "--target=armv7a-linux-gnueabi", "-fuse-ld=lld"], ["-Wl,--hash-style=sysv"]),
     }
@@ -363,7 +364,8 @@ def elf_cases(td: Path) -> None:
         case("elf_bad_magic", ok, msg)
         st = td / "static"
         (td / "start.c").write_text("void _start(void) { for (;;) {} }\n")
-        r = sh(["gcc", "-nostdlib", "-static", "-o", str(st), str(td / "start.c")])
+        r = sh(["clang", "--target=x86_64-linux-gnu", "-fuse-ld=lld", "-nostdlib", "-static",
+                "-o", str(st), str(td / "start.c")])
         ok, msg = (raises(lambda: S.load_elf(st), S.ElfError) if not r.returncode else (False, r.stderr[-100:]))
         case("elf_static_without_dynamic_refused", ok, msg)
 
