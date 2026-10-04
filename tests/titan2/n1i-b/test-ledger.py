@@ -86,8 +86,8 @@ def fixture(root: Path) -> dict[str, Path]:
         "N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING": "NONE",
         "N1I_B2_NATIVE_JNI_CANDIDATE_ONLY": "0",
         "N1I_B2_NATIVE_JNI_UNRESOLVED": "0",
-        "N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN": "NONE",
-        "N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED": "NO",
+        "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN": "NONE",
+        "N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED": "NO",
         "N1I_B2_NATIVE_KEYWORD_ROOTS_USED": "NO",
     }
     write_env(d["ns"] / "NATIVE_SUMMARY.env", native_common)
@@ -227,10 +227,10 @@ def main() -> int:
         case("duplicate_edge_refused", r.returncode == 2 and not (td / "o-duplicate").exists(), r.stderr[-200:])
 
         x = copy_fixture(base, td / "namespace")
-        set_env(x["nc"] / "NATIVE_SUMMARY.env", "N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN", "libmtk.so")
+        set_env(x["nc"] / "NATIVE_SUMMARY.env", "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN", "libmtk.so")
         p = x["nc"] / "NATIVE_CLOSURE.tsv"
         p.write_text(p.read_text(encoding="utf-8").replace(
-            "libmtk.so\tNOT_FOUND\tNOT_FOUND", "libmtk.so\tVENDOR_ONLY_NAMESPACE_UNPROVEN\tvendor", 1),
+            "libmtk.so\tNOT_FOUND\tNOT_FOUND", "libmtk.so\tFILE_PRESENT_NAMESPACE_UNPROVEN\tvendor", 1),
             encoding="utf-8")
         r = invoke(x, td / "o-namespace")
         s = env(td / "o-namespace/LEDGER_SUMMARY.env") if r.returncode == 0 else {}
