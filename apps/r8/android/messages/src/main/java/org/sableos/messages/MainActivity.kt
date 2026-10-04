@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package org.sableos.messages
 
 import android.content.Intent
@@ -42,6 +44,9 @@ import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableSpacing
 import android.view.KeyEvent as AndroidKeyEvent
 
+private const val VISIBLE_MESSAGE_COUNT = 3
+private const val ACTION_GRID_COLUMNS = 3
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,12 +84,7 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
     val sortedThreads = remember { MessagesInteractionModel.latestFirstThreads(sampleThreads) }
 
     fun apply(action: MessagesAction) {
-        state =
-            MessagesInteractionModel.reduce(
-                state = state,
-                action = action,
-                threadCount = sortedThreads.size,
-            )
+        state = MessagesInteractionModel.reduce(state, action, sortedThreads.size)
     }
 
     fun sendToProvider() {
@@ -166,129 +166,86 @@ private fun handleMessagesKey(
 ): Boolean {
     if (event.action != AndroidKeyEvent.ACTION_DOWN) return false
 
-    val action =
-        when (event.keyCode) {
-            AndroidKeyEvent.KEYCODE_SLASH -> {
-                MessagesAction.SearchInConversation
-            }
-
-            AndroidKeyEvent.KEYCODE_L -> {
-                if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
-            }
-
-            AndroidKeyEvent.KEYCODE_MOVE_END -> {
-                MessagesAction.ReturnToLatest
-            }
-
-            AndroidKeyEvent.KEYCODE_PAGE_UP -> {
-                MessagesAction.PageUpHistory
-            }
-
-            AndroidKeyEvent.KEYCODE_PAGE_DOWN -> {
-                MessagesAction.PageDownTowardLatest
-            }
-
-            AndroidKeyEvent.KEYCODE_N -> {
-                MessagesAction.NextUnread
-            }
-
-            AndroidKeyEvent.KEYCODE_D -> {
-                MessagesAction.JumpToDate
-            }
-
-            AndroidKeyEvent.KEYCODE_A -> {
-                MessagesAction.JumpToAttachment
-            }
-
-            AndroidKeyEvent.KEYCODE_BACK,
-            AndroidKeyEvent.KEYCODE_ESCAPE,
-            -> {
-                MessagesAction.BackOrEsc
-            }
-
-            AndroidKeyEvent.KEYCODE_DPAD_UP -> {
-                if (state.mode == MessagesMode.ConversationList) {
-                    MessagesAction.ConversationListUp
-                } else {
-                    MessagesAction.MessageFocusUp
-                }
-            }
-
-            AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (state.mode == MessagesMode.ConversationList) {
-                    MessagesAction.ConversationListDown
-                } else {
-                    MessagesAction.MessageFocusDown
-                }
-            }
-
-            AndroidKeyEvent.KEYCODE_MOVE_HOME -> {
-                MessagesAction.ConversationListHome
-            }
-
-            AndroidKeyEvent.KEYCODE_ENTER,
-            AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
-            -> {
-                when {
-                    event.isShiftPressed -> {
-                        MessagesAction.ComposerShiftEnterNewline
-                    }
-
-                    event.isAltPressed -> {
-                        MessagesAction.ComposerAltEnterProviderSend
-                    }
-
-                    state.mode == MessagesMode.ConversationList -> {
-                        MessagesAction.OpenFocusedConversation
-                    }
-
-                    state.mode == MessagesMode.History -> {
-                        MessagesAction.ReturnToLatest
-                    }
-
-                    state.mode == MessagesMode.Search -> {
-                        MessagesAction.ReturnToLatest
-                    }
-
-                    state.mode == MessagesMode.MessageActions -> {
-                        MessagesAction.MessageEnterDetails
-                    }
-
-                    else -> {
-                        sendToProvider()
-                        return true
-                    }
-                }
-            }
-
-            AndroidKeyEvent.KEYCODE_SPACE -> {
-                MessagesAction.MessageSpacePreview
-            }
-
-            AndroidKeyEvent.KEYCODE_DEL -> {
-                MessagesAction.ComposerBackspace
-            }
-
-            AndroidKeyEvent.KEYCODE_FORWARD_DEL -> {
-                MessagesAction.ComposerDelete
-            }
-
-            AndroidKeyEvent.KEYCODE_MENU -> {
-                MessagesAction.ComposerMenuActions
-            }
-
-            else -> {
-                if (state.mode == MessagesMode.ConversationList) {
-                    MessagesAction.TypeToFilter
-                } else {
-                    MessagesAction.ComposerTyping
-                }
-            }
-        }
-
-    apply(action)
+    val action = resolveMessagesKeyAction(event, state)
+    if (action == MessagesAction.ComposerEnterSend) {
+        sendToProvider()
+    } else {
+        apply(action)
+    }
     return true
 }
+
+private fun resolveMessagesKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction = shortcutKeyAction(event, state) ?: interactionKeyAction(event, state)
+
+private fun shortcutKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction? =
+    when (event.keyCode) {
+        AndroidKeyEvent.KEYCODE_SLASH -> MessagesAction.SearchInConversation
+        AndroidKeyEvent.KEYCODE_L ->
+            if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
+        AndroidKeyEvent.KEYCODE_MOVE_END -> MessagesAction.ReturnToLatest
+        AndroidKeyEvent.KEYCODE_PAGE_UP -> MessagesAction.PageUpHistory
+        AndroidKeyEvent.KEYCODE_PAGE_DOWN -> MessagesAction.PageDownTowardLatest
+        AndroidKeyEvent.KEYCODE_N -> MessagesAction.NextUnread
+        AndroidKeyEvent.KEYCODE_D -> MessagesAction.JumpToDate
+        AndroidKeyEvent.KEYCODE_A -> MessagesAction.JumpToAttachment
+        AndroidKeyEvent.KEYCODE_BACK,
+        AndroidKeyEvent.KEYCODE_ESCAPE,
+        -> MessagesAction.BackOrEsc
+        AndroidKeyEvent.KEYCODE_MOVE_HOME -> MessagesAction.ConversationListHome
+        else -> null
+    }
+
+private fun interactionKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction =
+    when (event.keyCode) {
+        AndroidKeyEvent.KEYCODE_DPAD_UP ->
+            if (state.mode == MessagesMode.ConversationList) {
+                MessagesAction.ConversationListUp
+            } else {
+                MessagesAction.MessageFocusUp
+            }
+        AndroidKeyEvent.KEYCODE_DPAD_DOWN ->
+            if (state.mode == MessagesMode.ConversationList) {
+                MessagesAction.ConversationListDown
+            } else {
+                MessagesAction.MessageFocusDown
+            }
+        AndroidKeyEvent.KEYCODE_ENTER,
+        AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
+        -> enterKeyAction(event, state)
+        AndroidKeyEvent.KEYCODE_SPACE -> MessagesAction.MessageSpacePreview
+        AndroidKeyEvent.KEYCODE_DEL -> MessagesAction.ComposerBackspace
+        AndroidKeyEvent.KEYCODE_FORWARD_DEL -> MessagesAction.ComposerDelete
+        AndroidKeyEvent.KEYCODE_MENU -> MessagesAction.ComposerMenuActions
+        else ->
+            if (state.mode == MessagesMode.ConversationList) {
+                MessagesAction.TypeToFilter
+            } else {
+                MessagesAction.ComposerTyping
+            }
+    }
+
+private fun enterKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction =
+    when {
+        event.isShiftPressed -> MessagesAction.ComposerShiftEnterNewline
+        event.isAltPressed -> MessagesAction.ComposerAltEnterProviderSend
+        state.mode == MessagesMode.ConversationList -> MessagesAction.OpenFocusedConversation
+        state.mode == MessagesMode.History -> MessagesAction.ReturnToLatest
+        state.mode == MessagesMode.Search -> MessagesAction.ReturnToLatest
+        state.mode == MessagesMode.MessageActions -> MessagesAction.MessageEnterDetails
+        else -> MessagesAction.ComposerEnterSend
+    }
 
 @Composable
 private fun Header() {
@@ -324,15 +281,7 @@ private fun LatestAnchoredThread(
     onProviderHandoff: () -> Unit,
 ) {
     ContractPanel(title = "Latest-anchored conversation") {
-        ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
-        ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
-        ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
-        ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
-        ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
-        ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
-        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
-        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
-        Spacer(Modifier.height(SableSpacing.Md))
+        LatestThreadContractRows()
 
         Text(
             text = thread.person,
@@ -346,13 +295,7 @@ private fun LatestAnchoredThread(
         )
         Spacer(Modifier.height(SableSpacing.Md))
 
-        thread.messages.takeLast(3).forEachIndexed { index, message ->
-            MessageBubble(
-                message = message,
-                latest = index == thread.messages.takeLast(3).lastIndex,
-                focused = state.focus == MessagesFocus.LatestMessage && state.focusedMessageIndex == index,
-            )
-        }
+        LatestMessages(state = state, thread = thread)
 
         Spacer(Modifier.height(SableSpacing.Md))
         Text(
@@ -390,6 +333,34 @@ private fun LatestAnchoredThread(
     }
 }
 
+
+@Composable
+private fun LatestThreadContractRows() {
+    ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
+    ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
+    ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
+    ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
+    ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
+    ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
+    ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
+    ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
+    Spacer(Modifier.height(SableSpacing.Md))
+}
+
+@Composable
+private fun LatestMessages(
+    state: MessagesUiState,
+    thread: SableThread,
+) {
+    val messages = thread.messages.takeLast(VISIBLE_MESSAGE_COUNT)
+    messages.forEachIndexed { index, message ->
+        MessageBubble(
+            message = message,
+            latest = index == messages.lastIndex,
+            focused = state.focus == MessagesFocus.LatestMessage && state.focusedMessageIndex == index,
+        )
+    }
+}
 @Composable
 private fun HistoryAndSearchPanel(
     state: MessagesUiState,
@@ -506,20 +477,25 @@ private fun ConversationList(
             }
             Spacer(Modifier.height(SableSpacing.Sm))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
-            Button(onClick = { onAction(MessagesAction.ConversationListUp) }) {
-                Text("Up")
-            }
-            Button(onClick = { onAction(MessagesAction.ConversationListDown) }) {
-                Text("Down")
-            }
-            Button(onClick = { onAction(MessagesAction.TypeToFilter) }) {
-                Text("Type filter")
-            }
-        }
+        ConversationListControls(onAction)
     }
 }
 
+
+@Composable
+private fun ConversationListControls(onAction: (MessagesAction) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+        Button(onClick = { onAction(MessagesAction.ConversationListUp) }) {
+            Text("Up")
+        }
+        Button(onClick = { onAction(MessagesAction.ConversationListDown) }) {
+            Text("Down")
+        }
+        Button(onClick = { onAction(MessagesAction.TypeToFilter) }) {
+            Text("Type filter")
+        }
+    }
+}
 @Composable
 private fun MessageActionsPanel(onAction: (MessagesAction) -> Unit) {
     ContractPanel(title = "Keyboard message and attachment actions") {
@@ -544,7 +520,7 @@ private fun MessageActionsPanel(onAction: (MessagesAction) -> Unit) {
                 "Camera" to MessagesAction.CameraHandoff,
                 "Media" to MessagesAction.MediaPicker,
             )
-        actions.chunked(3).forEach { row ->
+        actions.chunked(ACTION_GRID_COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
                 row.forEach { (label, action) ->
                     Button(onClick = { onAction(action) }) {
@@ -602,7 +578,7 @@ private fun HandoffPanel(
                 "Private" to MessagesAction.PrivateModeRedaction,
                 "Restricted" to MessagesAction.SourceRestrictedMode,
             )
-        actions.chunked(3).forEach { row ->
+        actions.chunked(ACTION_GRID_COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
                 row.forEach { (label, action) ->
                     Button(onClick = { onAction(action) }) {
