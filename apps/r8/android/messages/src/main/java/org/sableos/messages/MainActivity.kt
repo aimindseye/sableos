@@ -87,12 +87,7 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
 
     fun sendToProvider() {
         val thread = sortedThreads[state.selectedThreadIndex]
-        providerStatus =
-            if (onProviderHandoff(thread.route, state.draft)) {
-                "Provider-safe smsto: handoff opened for ${thread.person}."
-            } else {
-                "No provider accepted smsto: handoff on this build."
-            }
+        providerStatus = providerHandoffStatus(thread, state.draft, onProviderHandoff)
         apply(MessagesAction.SendMessage)
     }
 
@@ -134,6 +129,17 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
         KeyboardModel()
     }
 }
+
+private fun providerHandoffStatus(
+    thread: SableThread,
+    draft: String,
+    onProviderHandoff: (String, String) -> Boolean,
+): String =
+    if (onProviderHandoff(thread.route, draft)) {
+        "Provider-safe smsto: handoff opened for ${thread.person}."
+    } else {
+        "No provider accepted smsto: handoff on this build."
+    }
 
 @Composable
 private fun messagesAppModifier(
