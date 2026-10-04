@@ -1,0 +1,2 @@
+[ro.build.fingerprint]: [SableOS/c3a/tdgsi_arm64_ab:16/BP2A/eng.synthetic:userdebug/test-keys]
+[sys.boot_completed]: [1]

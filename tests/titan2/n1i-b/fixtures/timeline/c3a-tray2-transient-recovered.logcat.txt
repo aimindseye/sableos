@@ -1,0 +1,17 @@
+# synthetic C3A tray-2: transient identical to one stock run, recovered
+2026-10-01 10:00:00.000  1001  1001  2000  2000 D MtkProxyController: mainCapabilityPhoneId=0
+2026-10-01 10:00:01.000  1001  1001  2000  2000 D RILJ    : [0001]> SET_RADIO_CAPABILITY phase=FINISH status=success
+2026-10-01 10:00:02.000  1001  1001  2000  2000 D RILJ    : [0002]> setInitialAttachApn apn=fast.t-mobile.com protocol=IPV6
+2026-10-01 10:00:03.000  1001  1001  2000  2000 D DataNetwork: onSetupDataCallDone apn=fast.t-mobile.com rat=LTE cause=NONE CONNECTED
+2026-10-01 10:00:04.000  1001  1001  2000  2000 D DataNetwork: onSetupDataCallDone apn=ims types=ims rat=LTE cause=NONE CONNECTED
+2026-10-01 10:00:05.000  1001  1001  2000  2000 D ImsServiceController: bound com.mediatek.ims onServiceConnected
+2026-10-01 10:00:06.000  1001  1001  2000  2000 D MmTelFeatureConnection: MmTelFeature state STATE_READY
+2026-10-01 10:00:07.000  1001  1001  2000  2000 D volte_imsm: volte_ua started
+2026-10-01 10:00:08.000  1001  1001  2000  2000 D ImsRegistrationCb: onRegistering tech=LTE
+2026-10-01 10:00:09.000  1001  1001  2000  2000 D ImsRegistrationCb: onRegistered tech=LTE
+2026-10-01 10:00:10.000  1001  1001  2000  2000 D ServiceStateTracker: mVoiceRegState=0(IN_SERVICE) mDataRegState=0(IN_SERVICE)
+2026-10-01 10:01:00.000  1001  1001  2000  2000 D DataNetwork: onSetupDataCallDone apn=fast.t-mobile.com rat=LTE fail cause=ERROR_UNSPECIFIED
+2026-10-01 10:01:01.000  1001  1001  2000  2000 D ServiceStateTracker: mDataRegState=1(OUT_OF_SERVICE) rejectCause=27
+2026-10-01 10:01:30.000  1001  1001  2000  2000 D ServiceStateTracker: mVoiceRegState=0(IN_SERVICE) mDataRegState=0(IN_SERVICE)
+2026-10-01 10:10:09.000  1001  1001  2000  2000 D ImsRegistrationCb: onRegistered tech=LTE
+2026-10-01 10:12:00.000  1001  1001  2000  2000 D ServiceStateTracker: mVoiceRegState=0(IN_SERVICE) mDataRegState=0(IN_SERVICE)

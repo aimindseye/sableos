@@ -1,0 +1,2 @@
+[ro.vendor.build.fingerprint]: [Unihertz/Titan_2/Titan_2:14/UP1A.231005.007/V01.00.13:user/release-keys]
+[ro.boot.slot_suffix]: [_a]
