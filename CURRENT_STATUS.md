@@ -390,6 +390,33 @@ Implementation remains queued until P1-P4 and P5 qualification completes. See
 `docs/titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md`.
 
 
+
+## Battery usage / health / charging design
+
+A new common-product Battery Settings workstream is design-ready and queued as
+pending implementation.
+
+```text
+BATTERY_USER_SURFACE=Settings -> Battery
+BATTERY_SEPARATE_LAUNCHER_APP=NO
+BATTERY_KEYBOARD_FIRST_TITAN2=YES
+BATTERY_TITAN2_VISUAL_TARGET=DESIGN_READY
+BATTERY_USAGE_ACCOUNTING=PLANNED
+BATTERY_HEALTH_PROVENANCE_MODEL=PLANNED
+BATTERY_CHARGING_CAPABILITY_DISCOVERY=PLANNED
+BATTERY_MUTABLE_CHARGING_CONTROLS=NOT_AUTHORIZED_PENDING_BACKEND_PROOF
+BATTERY_CLOUD_ANALYTICS=NO
+BATTERY_RAW_SYSFS_COMMON_UI_WRITE=NO
+BATTERY_IMPLEMENTATION_ISSUE=#302
+```
+
+Public design is staged in `sableos-project/platform_sable`; private sequencing
+is `docs/BATTERY_HEALTH_USAGE_IMPLEMENTATION_PLAN.md`.
+
+This feature is non-blocking for N1I cellular closure and does not authorize a
+device flash, charge-control mutation or expansion of the frozen historical S1.7
+PowerSnapshot interface.
+
 ## P1-P4 prequalification review
 
 Developer A froze P1-P4 candidate heads, but operator source review found one normalized-key semantic issue before ai-g732 qualification: Android cursor/list Home movement must not be conflated with system HOME. The canonical boundary is now published at `sableos-project/platform_sable@80e3097bdef4cd2d5cbfd8ebde16390c29767918`, `docs/NORMALIZED_KEY_INPUT_CONTRACT.md`.
