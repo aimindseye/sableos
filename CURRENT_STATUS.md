@@ -6,6 +6,43 @@ This file is the private integration repository's current execution authority.
 Historical milestone documents remain evidence but do not override this file or
 the active Titan roadmap.
 
+## 2026-10-04 non-cellular execution checkpoint
+
+The project is using the BE2 cellular pause to advance only work that does not
+change Titan telephony state.
+
+```text
+NONCELLULAR_VALIDATION_WINDOW=ACTIVE
+TITAN_CELLULAR_MUTATION=HOLD_FOR_BE2
+N1I_IMS_APN_QNS_IWLAN_VENDOR_TELEPHONY=NO_CHANGE_AUTHORIZED
+TITAN2_FLASH=HOLD
+PANTHER_COMMON_PRODUCT_VALIDATION=AUTHORIZED
+PR28_OPERATOR_ANDROID_QUALIFICATION=PENDING
+PR29_OPERATOR_ANDROID_QUALIFICATION=PENDING
+
+BATTERY_PUBLIC_DESIGN=MERGED_PLATFORM_SABLE_PR50
+BATTERY_PUBLIC_ROADMAP=MERGED_ORG_PR38
+BATTERY_PRIVATE_PLAN=MERGED_SABLEOS_PR303
+
+ORIGINAL_DEV_A_STATUS=UNAVAILABLE_ASSUMED_NOT_RETURNING
+ORIGINAL_DEV_B_STATUS=UNAVAILABLE_ASSUMED_NOT_RETURNING
+REPLACEMENT_DEV_A_SEQUENCE=KF-D-I_KF-A-I_KF-B-I
+REPLACEMENT_DEV_B_SEQUENCE=KF-C-I1_I5
+KF_D_I_ISSUE=305
+KF_A_I_ISSUE=304
+KF_B_I_ISSUE=79
+KF_C_I_ISSUE=48
+```
+
+P1-P4 source handoffs are already merged in `aimindseye/titan2-temp`.
+P5A-P5E are also merged. PR #28 and #29 remain exact-head operator-qualification
+candidates; their original developer branches must not be silently rewritten.
+
+Canonical replacement-developer packages are
+`docs/titan2/P1_P5_CANONICAL_INTEGRATION_PACKAGES.md`.
+The waiting-period operator sequence is
+`docs/NONCELLULAR_VALIDATION_EXECUTION_PLAN_20261004.md`.
+
 ## Executive state
 
 ```text
@@ -259,25 +296,40 @@ THIRD_PARTY_IME_SELECTION_ALLOWED=YES
 FORCE_SABLE_IME_AFTER_USER_SELECTION=NO
 ```
 
-## Parallel P1-P4 product train
+## P1-P5 product-source handoff state
 
-Developer work stays in `aimindseye/titan2-temp`.
+The prior stacked P1-P4 development train is complete at the source-handoff
+level in `aimindseye/titan2-temp`.
 
 ```text
-BASE_MAIN=dbbb96cc01a0e366ea56817b54028b5686cb4035
-P1=Sable Start keyboard-first source/handoff
-P2=Sable Keyboard provisioning readiness
-P3=SetupWizard2 keyboard/square-display integration preparation
-P4=Weather city-management + keyboard-first closure
+P1_PR19=MERGED
+P2_PR20=MERGED
+P3_PR21=MERGED
+P4_PR22=MERGED
+
+P1_P4_NORMALIZED_KEY_CORRECTION=MERGED
+P1_P4_CANONICAL_ANDROID_ADMISSION=PENDING
+P1_P4_DEVICE_RUNTIME=NO
+
+P5A_PR23=MERGED
+P5B_PR24=MERGED
+P5C_PR25=MERGED
+P5D_PR26=MERGED
+P5E_PR27=MERGED
+P5E_QUALIFIED_FEATURE_BASELINE=4089c1274a9e4a402a2c617cc00a7c166112f195
+
+P5F_PR28=DRAFT_PENDING_OPERATOR_ANDROID_QUALIFICATION
+NON_READER_PR29=DRAFT_PENDING_OPERATOR_ANDROID_QUALIFICATION
 ```
 
-The developer proceeds P1 -> P4 without waiting for ai-g732. Each stage is
-frozen separately and not merged. After P4, the operator runs one batched
-exact-head ai-g732 qualification session across all four stages before admission.
+The old `P1_P4_PREQUAL_RESTACK_REQUIRED=YES` state is superseded: the corrected
+normalized key semantics are already in the merged P1-P4 source handoffs.
+What remains is canonical integration and Android/runtime evidence.
 
-P5 Sable Reader v2 architecture is accepted. It is a sibling implementation track: local-first keyboard-first EPUB/PDF, CBZ comics/manga/webtoons and audiobooks; Text Reader remains separate. Remote AI/account sync is excluded from P5. See docs/SABLE_READER_V2_ARCHITECTURE.md.
-
-The 23-screen titan2-temp/apps/titan2/screens catalog is now explicitly retained as a design/reference baseline, not a runtime product. See docs/titan2/SABLESCREENS_REFERENCE_BASELINE.md.
+P2 still requires real Android provisioning/compile validation before IR-005 can
+close. P4 canonical Weather must implement the per-city cache key before user
+cities are runtime-safe. P5 device runtime remains separate from source/Android
+qualification.
 
 ## Titan 2 C3B E3 image
 
@@ -386,7 +438,8 @@ KEYBOARD_FIRST_V1_FOUNDATIONAL_DESIGN=COMPLETE
 TITAN2_V1_PRODUCT_DESIGN=COMPLETE
 ```
 
-Implementation remains queued until P1-P4 and P5 qualification completes. See
+Replacement ownership is active: KF-D -> KF-A -> KF-B belongs to replacement
+Dev A, and KF-C belongs to replacement Dev B. See
 `docs/titan2/KEYBOARD_FIRST_DESIGN_IMPLEMENTATION_QUEUE.md`.
 
 
@@ -410,25 +463,27 @@ BATTERY_RAW_SYSFS_COMMON_UI_WRITE=NO
 BATTERY_IMPLEMENTATION_ISSUE=#302
 ```
 
-Public design is staged in `sableos-project/platform_sable`; private sequencing
-is `docs/BATTERY_HEALTH_USAGE_IMPLEMENTATION_PLAN.md`.
+Public Battery design and roadmap are merged; private BH1-BH7 sequencing is
+merged in `docs/BATTERY_HEALTH_USAGE_IMPLEMENTATION_PLAN.md`.
 
 This feature is non-blocking for N1I cellular closure and does not authorize a
 device flash, charge-control mutation or expansion of the frozen historical S1.7
 PowerSnapshot interface.
 
-## P1-P4 prequalification review
+## P1-P4 canonical admission gap
 
-Developer A froze P1-P4 candidate heads, but operator source review found one normalized-key semantic issue before ai-g732 qualification: Android cursor/list Home movement must not be conflated with system HOME. The canonical boundary is now published at `sableos-project/platform_sable@80e3097bdef4cd2d5cbfd8ebde16390c29767918`, `docs/NORMALIZED_KEY_INPUT_CONTRACT.md`.
+P1-P4 corrected source handoffs are merged in `titan2-temp`. No additional
+source restack is required.
 
 ```text
-P1_P4_PREQUAL_RESTACK_REQUIRED=YES
-P1_MOVE_HOME_SYSTEM_HOME_CONFLATION=FIX_REQUIRED
-P1_P4_PLATFORM_SABLE_REBIND=80e3097bdef4cd2d5cbfd8ebde16390c29767918
-AI_G732_P1_P4_BATCH_QUALIFICATION=HOLD_UNTIL_RESTACK
+P1_P4_SOURCE_HANDOFFS=MERGED
+P1_P4_PLATFORM_SABLE_KEY_CONTRACT=80e3097bdef4cd2d5cbfd8ebde16390c29767918
+P1_P4_CANONICAL_INTEGRATION=PENDING
+P1_P4_DEVICE_RUNTIME=NO
 ```
 
-P2 Android glue remains specifically subject to the operator offline Android compile after the corrected stack is frozen. P4 canonical admission must also adopt the per-city Weather cache key before user-managed cities are runtime-safe.
+The remaining work is canonical owner integration plus operator Android/runtime
+qualification, not another developer-source restack.
 
 ## Current developer deliverables
 
