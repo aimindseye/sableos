@@ -72,7 +72,7 @@ commits = [
 ]
 paths = ['''^build/gates/n1d-c3b-engineering-contract\.sh$''']
 regexTarget = "line"
-regexes = ['''^.*N1D_C3B_LPTOOLS_API_COMPAT_(?:BASE|POST)_BLOB=[0-9a-f]{40}.*$''']
+regexes = ['''^.*N1D_C3B_LPTOOLS_API_COMPAT_(BASE|POST)_BLOB=[0-9a-f]{40}.*$''']
 
 [[allowlists]]
 description = "Historical C3B transition contract lptools API compatibility Git blob IDs; not API keys"
@@ -89,4 +89,4 @@ paths = [
   '''^build/titan2/n1d-c3b-transition\.env$''',
 ]
 regexTarget = "line"
-regexes = ['''^.*N1D_C3B_LPTOOLS_API_COMPAT_(?:BASE|POST)_BLOB=[0-9a-f]{40}.*$''']
+regexes = ['''^.*N1D_C3B_LPTOOLS_API_COMPAT_(BASE|POST)_BLOB=[0-9a-f]{40}.*$''']
