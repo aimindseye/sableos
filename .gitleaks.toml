@@ -94,3 +94,17 @@ commits = ["e2838299280e7c0c89f7eab9d2354b56f862f3fe"]
 paths = ['''^build/titan2/n1d-c3b-transition\.env$''']
 regexTarget = "match"
 regexes = ['''^N1D_C3B_LPTOOLS_API_COMPAT_(BASE|POST)_BLOB=''']
+
+[[allowlists]]
+description = "Historical N1I sanitizer synthetic IMS auth fixtures; deliberately planted non-secret test material"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["0bbcfe4eb81641939c4a03f8e790b832d0f3ffdd"]
+paths = [
+  '''^tests/titan2/n1i-b/fixtures/sanitizer/planted\.tsv$''',
+  '''^tests/titan2/n1i-b/fixtures/sanitizer/raw/T1/ims\.txt$''',
+]
+regexTarget = "line"
+regexes = [
+  '''ImsSimAuth:[ \t]+RAND=0011223344556677[ \t]+AUTN=8899aabbccddeeff''',
+]
