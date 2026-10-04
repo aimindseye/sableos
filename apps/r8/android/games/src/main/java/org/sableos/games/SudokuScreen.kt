@@ -201,21 +201,31 @@ private fun SudokuBoard(
 
                                         val container =
                                             when {
-                                                selected ->
+                                                selected -> {
                                                     MaterialTheme.colorScheme.primary
-                                                peer ->
+                                                }
+
+                                                peer -> {
                                                     MaterialTheme.colorScheme.surfaceVariant
-                                                else ->
+                                                }
+
+                                                else -> {
                                                     MaterialTheme.colorScheme.surface
+                                                }
                                             }
                                         val content =
                                             when {
-                                                selected ->
+                                                selected -> {
                                                     MaterialTheme.colorScheme.onPrimary
-                                                given ->
+                                                }
+
+                                                given -> {
                                                     MaterialTheme.colorScheme.onSurface
-                                                else ->
+                                                }
+
+                                                else -> {
                                                     MaterialTheme.colorScheme.primary
+                                                }
                                             }
 
                                         Surface(

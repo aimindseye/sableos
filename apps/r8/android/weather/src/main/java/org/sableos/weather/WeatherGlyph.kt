@@ -38,6 +38,7 @@ internal fun WeatherGlyph(
             WeatherCondition.Fog,
             WeatherCondition.Unknown,
             -> muted
+
             else -> accent
         }
 

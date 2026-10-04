@@ -501,7 +501,6 @@ private fun windDirection(degrees: Int): String {
     return directions[index]
 }
 
-private fun hourLabel(value: String): String =
-    value.substringAfter('T', value)
+private fun hourLabel(value: String): String = value.substringAfter('T', value)
 
 private fun dayLabel(value: String): String = value

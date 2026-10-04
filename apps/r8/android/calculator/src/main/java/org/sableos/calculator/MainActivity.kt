@@ -22,14 +22,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.sableos.convert.ConverterScreen
 import org.sableos.design.SableActionButton
+import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
 import org.sableos.design.SableSpacing
-import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableTile
 import org.sableos.design.SableValuePanel
 
-private enum class CalculatorMode(val label: String) {
+private enum class CalculatorMode(
+    val label: String,
+) {
     Regular("Basic"),
     Scientific("Scientific"),
     Converter("Convert"),
@@ -42,16 +44,17 @@ private data class ScientificChoice(
 
 private val operationLabels = listOf("+", "−", "×", "÷")
 
-private val scientificChoices = listOf(
-    ScientificChoice(0, "√x"),
-    ScientificChoice(1, "x²"),
-    ScientificChoice(2, "1/x"),
-    ScientificChoice(3, "sin"),
-    ScientificChoice(4, "cos"),
-    ScientificChoice(5, "tan"),
-    ScientificChoice(6, "ln"),
-    ScientificChoice(7, "log₁₀"),
-)
+private val scientificChoices =
+    listOf(
+        ScientificChoice(0, "√x"),
+        ScientificChoice(1, "x²"),
+        ScientificChoice(2, "1/x"),
+        ScientificChoice(3, "sin"),
+        ScientificChoice(4, "cos"),
+        ScientificChoice(5, "tan"),
+        ScientificChoice(6, "ln"),
+        ScientificChoice(7, "log₁₀"),
+    )
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,26 +96,27 @@ private fun CalculatorApp() {
         }
 
         when (mode) {
-            CalculatorMode.Regular ->
+            CalculatorMode.Regular -> {
                 CalculatorPad(
                     scientific = false,
                 )
+            }
 
-            CalculatorMode.Scientific ->
+            CalculatorMode.Scientific -> {
                 CalculatorPad(
                     scientific = true,
                 )
+            }
 
-            CalculatorMode.Converter ->
+            CalculatorMode.Converter -> {
                 ConverterScreen()
+            }
         }
     }
 }
 
 @Composable
-private fun CalculatorPad(
-    scientific: Boolean,
-) {
+private fun CalculatorPad(scientific: Boolean) {
     var display by remember { mutableStateOf("0") }
     var leftOperand by remember { mutableStateOf<String?>(null) }
     var operation by remember { mutableStateOf<Int?>(null) }
@@ -439,11 +443,12 @@ private data class RenderedResult(
 
 private fun renderResult(protocol: String): RenderedResult =
     when {
-        protocol.startsWith("OK:") ->
+        protocol.startsWith("OK:") -> {
             RenderedResult(
                 value = protocol.removePrefix("OK:"),
                 error = null,
             )
+        }
 
         protocol.startsWith("ERR:") -> {
             val error =
@@ -456,9 +461,10 @@ private fun renderResult(protocol: String): RenderedResult =
             )
         }
 
-        else ->
+        else -> {
             RenderedResult(
                 value = "0",
                 error = "Native bridge failure",
             )
+        }
     }

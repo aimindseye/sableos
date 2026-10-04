@@ -13,15 +13,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import java.math.BigDecimal
-import java.math.RoundingMode
 import org.sableos.design.SableActionButton
-import org.sableos.design.SableValuePanel
 import org.sableos.design.SableSectionHeader
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableTile
+import org.sableos.design.SableValuePanel
+import java.math.BigDecimal
+import java.math.RoundingMode
 
-private enum class UnitCategory(val label: String) {
+private enum class UnitCategory(
+    val label: String,
+) {
     Length("Length"),
     Mass("Mass"),
     Temperature("Temperature"),
@@ -35,31 +37,30 @@ private data class UnitChoice(
     val category: UnitCategory,
 )
 
-private val units = listOf(
-    UnitChoice(0, "Millimeters", "mm", UnitCategory.Length),
-    UnitChoice(1, "Centimeters", "cm", UnitCategory.Length),
-    UnitChoice(2, "Meters", "m", UnitCategory.Length),
-    UnitChoice(3, "Kilometers", "km", UnitCategory.Length),
-    UnitChoice(4, "Inches", "in", UnitCategory.Length),
-    UnitChoice(5, "Feet", "ft", UnitCategory.Length),
-    UnitChoice(6, "Miles", "mi", UnitCategory.Length),
-    UnitChoice(7, "Grams", "g", UnitCategory.Mass),
-    UnitChoice(8, "Kilograms", "kg", UnitCategory.Mass),
-    UnitChoice(9, "Ounces", "oz", UnitCategory.Mass),
-    UnitChoice(10, "Pounds", "lb", UnitCategory.Mass),
-    UnitChoice(11, "Celsius", "°C", UnitCategory.Temperature),
-    UnitChoice(12, "Fahrenheit", "°F", UnitCategory.Temperature),
-    UnitChoice(13, "Kelvin", "K", UnitCategory.Temperature),
-    UnitChoice(14, "Milliliters", "mL", UnitCategory.Volume),
-    UnitChoice(15, "Liters", "L", UnitCategory.Volume),
-    UnitChoice(16, "Cups", "cup", UnitCategory.Volume),
-    UnitChoice(17, "Gallons", "gal", UnitCategory.Volume),
-)
+private val units =
+    listOf(
+        UnitChoice(0, "Millimeters", "mm", UnitCategory.Length),
+        UnitChoice(1, "Centimeters", "cm", UnitCategory.Length),
+        UnitChoice(2, "Meters", "m", UnitCategory.Length),
+        UnitChoice(3, "Kilometers", "km", UnitCategory.Length),
+        UnitChoice(4, "Inches", "in", UnitCategory.Length),
+        UnitChoice(5, "Feet", "ft", UnitCategory.Length),
+        UnitChoice(6, "Miles", "mi", UnitCategory.Length),
+        UnitChoice(7, "Grams", "g", UnitCategory.Mass),
+        UnitChoice(8, "Kilograms", "kg", UnitCategory.Mass),
+        UnitChoice(9, "Ounces", "oz", UnitCategory.Mass),
+        UnitChoice(10, "Pounds", "lb", UnitCategory.Mass),
+        UnitChoice(11, "Celsius", "°C", UnitCategory.Temperature),
+        UnitChoice(12, "Fahrenheit", "°F", UnitCategory.Temperature),
+        UnitChoice(13, "Kelvin", "K", UnitCategory.Temperature),
+        UnitChoice(14, "Milliliters", "mL", UnitCategory.Volume),
+        UnitChoice(15, "Liters", "L", UnitCategory.Volume),
+        UnitChoice(16, "Cups", "cup", UnitCategory.Volume),
+        UnitChoice(17, "Gallons", "gal", UnitCategory.Volume),
+    )
 
 @Composable
-fun ConverterScreen(
-    modifier: Modifier = Modifier,
-) {
+fun ConverterScreen(modifier: Modifier = Modifier) {
     val nativeQualification = remember { NativeBridge.selfTest() }
     check(nativeQualification.startsWith("PASS:")) { nativeQualification }
 
@@ -137,18 +138,19 @@ fun ConverterScreen(
             modifier = Modifier.fillMaxWidth(),
             onClick = {
                 val valueMilli = parseMilli(input)
-                result = if (valueMilli == null) {
-                    "Enter a number with up to three decimal places"
-                } else {
-                    renderResult(
-                        NativeBridge.convertMilli(
-                            valueMilli,
-                            from.code,
-                            to.code,
-                        ),
-                        to.symbol,
-                    )
-                }
+                result =
+                    if (valueMilli == null) {
+                        "Enter a number with up to three decimal places"
+                    } else {
+                        renderResult(
+                            NativeBridge.convertMilli(
+                                valueMilli,
+                                from.code,
+                                to.code,
+                            ),
+                            to.symbol,
+                        )
+                    }
             },
         )
 
@@ -199,11 +201,18 @@ private fun renderResult(
                 "${formatMilli(milli)} $symbol"
             }
         }
-        protocol.startsWith("ERR:") -> protocol.removePrefix("ERR:").replace('_', ' ')
-        else -> "Native bridge failure"
+
+        protocol.startsWith("ERR:") -> {
+            protocol.removePrefix("ERR:").replace('_', ' ')
+        }
+
+        else -> {
+            "Native bridge failure"
+        }
     }
 
 private fun formatMilli(valueMilli: Long): String =
-    BigDecimal.valueOf(valueMilli, 3)
+    BigDecimal
+        .valueOf(valueMilli, 3)
         .stripTrailingZeros()
         .toPlainString()

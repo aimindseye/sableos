@@ -44,7 +44,12 @@ class CalendarRepository(
 
         val zone = ZoneId.systemDefault()
         val begin = date.atStartOfDay(zone).toInstant().toEpochMilli()
-        val end = date.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        val end =
+            date
+                .plusDays(1)
+                .atStartOfDay(zone)
+                .toInstant()
+                .toEpochMilli()
         val builder = CalendarContract.Instances.CONTENT_URI.buildUpon()
         ContentUris.appendId(builder, begin)
         ContentUris.appendId(builder, end)
@@ -61,44 +66,47 @@ class CalendarRepository(
 
         return runCatching {
             buildList {
-                resolver.query(
-                    builder.build(),
-                    projection,
-                    null,
-                    null,
-                    CalendarContract.Instances.BEGIN + " ASC",
-                )?.use { cursor ->
-                    val id = cursor.getColumnIndexOrThrow(CalendarContract.Instances.EVENT_ID)
-                    val title = cursor.getColumnIndexOrThrow(CalendarContract.Instances.TITLE)
-                    val start = cursor.getColumnIndexOrThrow(CalendarContract.Instances.BEGIN)
-                    val finish = cursor.getColumnIndexOrThrow(CalendarContract.Instances.END)
-                    val allDay = cursor.getColumnIndexOrThrow(CalendarContract.Instances.ALL_DAY)
-                    val calendar =
-                        cursor.getColumnIndexOrThrow(
-                            CalendarContract.Instances.CALENDAR_DISPLAY_NAME,
-                        )
+                resolver
+                    .query(
+                        builder.build(),
+                        projection,
+                        null,
+                        null,
+                        CalendarContract.Instances.BEGIN + " ASC",
+                    )?.use { cursor ->
+                        val id = cursor.getColumnIndexOrThrow(CalendarContract.Instances.EVENT_ID)
+                        val title = cursor.getColumnIndexOrThrow(CalendarContract.Instances.TITLE)
+                        val start = cursor.getColumnIndexOrThrow(CalendarContract.Instances.BEGIN)
+                        val finish = cursor.getColumnIndexOrThrow(CalendarContract.Instances.END)
+                        val allDay = cursor.getColumnIndexOrThrow(CalendarContract.Instances.ALL_DAY)
+                        val calendar =
+                            cursor.getColumnIndexOrThrow(
+                                CalendarContract.Instances.CALENDAR_DISPLAY_NAME,
+                            )
 
-                    while (cursor.moveToNext()) {
-                        add(
-                            CalendarEvent(
-                                id = cursor.getLong(id),
-                                title =
-                                    cursor.getString(title)
-                                        ?.trim()
-                                        .orEmpty()
-                                        .ifEmpty { "Calendar event" },
-                                startMillis = cursor.getLong(start),
-                                endMillis = cursor.getLong(finish),
-                                allDay = cursor.getInt(allDay) != 0,
-                                calendarName =
-                                    cursor.getString(calendar)
-                                        ?.trim()
-                                        .orEmpty()
-                                        .ifEmpty { "Calendar" },
-                            ),
-                        )
+                        while (cursor.moveToNext()) {
+                            add(
+                                CalendarEvent(
+                                    id = cursor.getLong(id),
+                                    title =
+                                        cursor
+                                            .getString(title)
+                                            ?.trim()
+                                            .orEmpty()
+                                            .ifEmpty { "Calendar event" },
+                                    startMillis = cursor.getLong(start),
+                                    endMillis = cursor.getLong(finish),
+                                    allDay = cursor.getInt(allDay) != 0,
+                                    calendarName =
+                                        cursor
+                                            .getString(calendar)
+                                            ?.trim()
+                                            .orEmpty()
+                                            .ifEmpty { "Calendar" },
+                                ),
+                            )
+                        }
                     }
-                }
             }
         }.getOrDefault(emptyList())
     }
@@ -152,7 +160,8 @@ class CalendarRepository(
         }
 
         val today =
-            Instant.ofEpochMilli(nowMillis)
+            Instant
+                .ofEpochMilli(nowMillis)
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate()
         val next = agenda(today).firstOrNull { event -> event.endMillis > nowMillis }
@@ -194,21 +203,22 @@ class CalendarRepository(
             )
 
         return runCatching {
-            resolver.query(
-                CalendarContract.Calendars.CONTENT_URI,
-                projection,
-                selection,
-                args,
-                CalendarContract.Calendars._ID + " ASC",
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    cursor.getLong(
-                        cursor.getColumnIndexOrThrow(CalendarContract.Calendars._ID),
-                    )
-                } else {
-                    null
+            resolver
+                .query(
+                    CalendarContract.Calendars.CONTENT_URI,
+                    projection,
+                    selection,
+                    args,
+                    CalendarContract.Calendars._ID + " ASC",
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        cursor.getLong(
+                            cursor.getColumnIndexOrThrow(CalendarContract.Calendars._ID),
+                        )
+                    } else {
+                        null
+                    }
                 }
-            }
         }.getOrNull()
     }
 }

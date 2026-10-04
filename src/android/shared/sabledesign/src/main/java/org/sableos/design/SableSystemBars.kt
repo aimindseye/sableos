@@ -10,13 +10,20 @@ fun resolveSableDarkAppearance(
     appearance: SableAppearance,
 ): Boolean =
     when (appearance.mode) {
-        AppearanceMode.FollowSystem ->
+        AppearanceMode.FollowSystem -> {
             (
                 context.resources.configuration.uiMode and
                     Configuration.UI_MODE_NIGHT_MASK
             ) == Configuration.UI_MODE_NIGHT_YES
-        AppearanceMode.Light -> false
-        AppearanceMode.Dark -> true
+        }
+
+        AppearanceMode.Light -> {
+            false
+        }
+
+        AppearanceMode.Dark -> {
+            true
+        }
     }
 
 fun applySableSystemBars(

@@ -34,11 +34,12 @@ class CalendarSnapshotProvider : ContentProvider() {
         }
     }
 
-    override fun getType(uri: Uri): String =
-        "vnd.android.cursor.item/vnd.org.sableos.calendar.snapshot"
+    override fun getType(uri: Uri): String = "vnd.android.cursor.item/vnd.org.sableos.calendar.snapshot"
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw UnsupportedOperationException("Read-only provider")
+    override fun insert(
+        uri: Uri,
+        values: ContentValues?,
+    ): Uri? = throw UnsupportedOperationException("Read-only provider")
 
     override fun delete(
         uri: Uri,
@@ -57,7 +58,8 @@ class CalendarSnapshotProvider : ContentProvider() {
         val callingUid = Binder.getCallingUid()
         if (callingUid == Process.myUid()) return
         val packages =
-            context.packageManager.getPackagesForUid(callingUid)
+            context.packageManager
+                .getPackagesForUid(callingUid)
                 ?.toSet()
                 .orEmpty()
         if ("org.sableos.launcher" !in packages) {
