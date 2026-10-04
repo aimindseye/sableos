@@ -51,6 +51,23 @@ ro.build.version.release=16
 ro.build.version.incremental=V01.00.14
 ```
 
+## 2026-10-03 stock-control guardrail
+
+A later attempt to create a stock control by flashing only the retained
+V01.00.14 `system.img` to `system_a` reproduced the mixed-partition failure
+class and booted to recovery.
+
+```text
+STOCK_SYSTEM_A_ONLY_RESTORE=PROHIBITED
+STOCK_CONTROL_REQUIRES_MATCHED_DYNAMIC_PARTITION_AND_AVB_STATE=YES
+RECOVERY_TO_FASTBOOT_TRANSITION_MAY_FAIL=YES
+FACTORY_RESET_RECOVERED_COMPLETE_STOCK_V010014=YES
+```
+
+This is consistent with the original N1C recovery evidence: a complete stock
+control must be treated as a matched firmware state, not as a single logical
+partition replacement.
+
 ## Corrective action rules
 
 ```text
