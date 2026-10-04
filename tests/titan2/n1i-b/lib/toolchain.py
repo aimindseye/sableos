@@ -166,4 +166,5 @@ def tool_summary() -> dict[str, str]:
 if __name__ == "__main__":
     summary = tool_summary()
     for key in sorted(summary):
-        print(f"N1I_B_TOOL_{key.upper()}={summary[key]}")
+        marker = "".join(ch if ch.isalnum() else "_" for ch in key.upper())
+        print(f"N1I_B_TOOL_{marker}={summary[key]}")
