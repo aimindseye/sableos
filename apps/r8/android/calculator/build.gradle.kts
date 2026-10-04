@@ -44,16 +44,17 @@ android {
                     layout.buildDirectory
                         .dir("generated/rustJni")
                         .get()
-                        .asFile
-                )
+                        .asFile,
+                ),
             )
         }
     }
 }
 
-tasks.matching {
-    it.name.startsWith("merge") &&
-        it.name.endsWith("JniLibFolders")
-}.configureEach {
-    dependsOn(rootProject.tasks.named("stageCalculatorRustJni"))
-}
+tasks
+    .matching {
+        it.name.startsWith("merge") &&
+            it.name.endsWith("JniLibFolders")
+    }.configureEach {
+        dependsOn(rootProject.tasks.named("stageCalculatorRustJni"))
+    }

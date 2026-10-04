@@ -3,9 +3,9 @@ package org.sableos.games
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableHeroHeader
 import org.sableos.design.SableScrollableScreen
-import org.sableos.design.SableGlobalTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,10 +44,11 @@ class MainActivity : ComponentActivity() {
                             Game2048Screen()
                         }
 
-                        else ->
+                        else -> {
                             error(
                                 "Unsupported Sable game flavor: ${BuildConfig.SABLE_GAME}",
                             )
+                        }
                     }
                 }
             }

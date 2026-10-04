@@ -149,12 +149,10 @@ internal class WeatherRepository(
             .putString(
                 WeatherSnapshotContract.KEY_PROTOCOL,
                 protocol,
-            )
-            .putLong(
+            ).putLong(
                 WeatherSnapshotContract.KEY_OBSERVED_EPOCH_SECONDS,
                 nowEpochSeconds,
-            )
-            .apply()
+            ).apply()
 
         appContext.contentResolver.notifyChange(
             WeatherSnapshotContract.SNAPSHOT_URI,
@@ -186,8 +184,7 @@ internal class WeatherRepository(
             .putString(
                 WeatherSnapshotContract.KEY_LOCATION_NAME,
                 location.name,
-            )
-            .apply()
+            ).apply()
     }
 
     private fun fetchHttps(url: String): String {

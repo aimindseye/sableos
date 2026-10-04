@@ -28,7 +28,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(
-                org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+                org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17,
             )
         }
     }
@@ -58,7 +58,7 @@ dependencies {
     implementation(project(":sablestart-presentation-check"))
 
     implementation(
-        platform("androidx.compose:compose-bom:2026.02.01")
+        platform("androidx.compose:compose-bom:2026.02.01"),
     )
 
     implementation("androidx.activity:activity-compose:1.12.4")

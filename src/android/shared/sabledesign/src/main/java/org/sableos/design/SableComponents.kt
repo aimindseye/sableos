@@ -3,8 +3,6 @@ package org.sableos.design
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +17,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,19 +46,19 @@ fun SableScreen(
         color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .padding(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.ScreenVertical,
-                ),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .padding(
+                        horizontal = SableSpacing.ScreenHorizontal,
+                        vertical = SableSpacing.ScreenVertical,
+                    ),
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
             content = content,
         )
     }
 }
-
 
 @Composable
 fun SableScrollableScreen(
@@ -70,15 +70,16 @@ fun SableScrollableScreen(
         color = MaterialTheme.colorScheme.background,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .safeDrawingPadding()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.ScreenVertical,
-                ),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .safeDrawingPadding()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = SableSpacing.ScreenHorizontal,
+                        vertical = SableSpacing.ScreenVertical,
+                    ),
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Lg),
             content = content,
         )
@@ -171,11 +172,12 @@ fun SablePageHeader(
             )
         }
         Box(
-            modifier = Modifier
-                .padding(top = SableSpacing.Sm)
-                .width(SableSpacing.Xxxl)
-                .height(SableSize.AccentBarWidth)
-                .background(MaterialTheme.colorScheme.primary),
+            modifier =
+                Modifier
+                    .padding(top = SableSpacing.Sm)
+                    .width(SableSpacing.Xxxl)
+                    .height(SableSize.AccentBarWidth)
+                    .background(MaterialTheme.colorScheme.primary),
         )
     }
 }
@@ -212,11 +214,12 @@ fun SableHeroHeader(
             )
         }
         Box(
-            modifier = Modifier
-                .padding(top = SableSpacing.Sm)
-                .width(SableSpacing.Xxxl)
-                .height(SableSize.AccentBarWidth)
-                .background(MaterialTheme.colorScheme.primary),
+            modifier =
+                Modifier
+                    .padding(top = SableSpacing.Sm)
+                    .width(SableSpacing.Xxxl)
+                    .height(SableSize.AccentBarWidth)
+                    .background(MaterialTheme.colorScheme.primary),
         )
     }
 }
@@ -291,30 +294,33 @@ fun SableListRow(
         }
 
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.small)
-            .background(background)
-            .clickable(onClick = onClick)
-            .height(SableSize.ListRowHeight),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.small)
+                .background(background)
+                .clickable(onClick = onClick)
+                .height(SableSize.ListRowHeight),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .width(SableSize.AccentBarWidth)
-                .height(SableSpacing.Xxl)
-                .background(
-                    if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outlineVariant
-                    },
-                ),
+            modifier =
+                Modifier
+                    .width(SableSize.AccentBarWidth)
+                    .height(SableSpacing.Xxl)
+                    .background(
+                        if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                    ),
         )
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = SableSpacing.Lg),
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .padding(horizontal = SableSpacing.Lg),
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
@@ -376,9 +382,10 @@ fun SableTile(
         tonalElevation = 0.dp,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(SableSpacing.Lg),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(SableSpacing.Lg),
             verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
         ) {
             Text(
@@ -397,9 +404,7 @@ fun SableTile(
 }
 
 @Composable
-fun SableDivider(
-    modifier: Modifier = Modifier,
-) {
+fun SableDivider(modifier: Modifier = Modifier) {
     HorizontalDivider(
         modifier = modifier,
         color = MaterialTheme.colorScheme.outlineVariant,

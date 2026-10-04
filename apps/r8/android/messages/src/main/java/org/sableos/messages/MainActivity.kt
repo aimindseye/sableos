@@ -3,7 +3,6 @@ package org.sableos.messages
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableSpacing
+import android.view.KeyEvent as AndroidKeyEvent
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,9 +71,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MessagesApp(
-    onProviderHandoff: (String, String) -> Boolean,
-) {
+private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
     var state by remember { mutableStateOf(MessagesInteractionModel.initialState()) }
     var providerStatus by remember {
         mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no")
@@ -112,8 +110,7 @@ private fun MessagesApp(
                         apply = ::apply,
                         sendToProvider = ::sendToProvider,
                     )
-                }
-                .verticalScroll(rememberScrollState())
+                }.verticalScroll(rememberScrollState())
                 .padding(
                     horizontal = SableSpacing.ScreenHorizontal,
                     vertical = SableSpacing.Xl,
@@ -171,18 +168,44 @@ private fun handleMessagesKey(
 
     val action =
         when (event.keyCode) {
-            AndroidKeyEvent.KEYCODE_SLASH -> MessagesAction.SearchInConversation
+            AndroidKeyEvent.KEYCODE_SLASH -> {
+                MessagesAction.SearchInConversation
+            }
+
             AndroidKeyEvent.KEYCODE_L -> {
                 if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
             }
-            AndroidKeyEvent.KEYCODE_MOVE_END -> MessagesAction.ReturnToLatest
-            AndroidKeyEvent.KEYCODE_PAGE_UP -> MessagesAction.PageUpHistory
-            AndroidKeyEvent.KEYCODE_PAGE_DOWN -> MessagesAction.PageDownTowardLatest
-            AndroidKeyEvent.KEYCODE_N -> MessagesAction.NextUnread
-            AndroidKeyEvent.KEYCODE_D -> MessagesAction.JumpToDate
-            AndroidKeyEvent.KEYCODE_A -> MessagesAction.JumpToAttachment
+
+            AndroidKeyEvent.KEYCODE_MOVE_END -> {
+                MessagesAction.ReturnToLatest
+            }
+
+            AndroidKeyEvent.KEYCODE_PAGE_UP -> {
+                MessagesAction.PageUpHistory
+            }
+
+            AndroidKeyEvent.KEYCODE_PAGE_DOWN -> {
+                MessagesAction.PageDownTowardLatest
+            }
+
+            AndroidKeyEvent.KEYCODE_N -> {
+                MessagesAction.NextUnread
+            }
+
+            AndroidKeyEvent.KEYCODE_D -> {
+                MessagesAction.JumpToDate
+            }
+
+            AndroidKeyEvent.KEYCODE_A -> {
+                MessagesAction.JumpToAttachment
+            }
+
             AndroidKeyEvent.KEYCODE_BACK,
-            AndroidKeyEvent.KEYCODE_ESCAPE -> MessagesAction.BackOrEsc
+            AndroidKeyEvent.KEYCODE_ESCAPE,
+            -> {
+                MessagesAction.BackOrEsc
+            }
+
             AndroidKeyEvent.KEYCODE_DPAD_UP -> {
                 if (state.mode == MessagesMode.ConversationList) {
                     MessagesAction.ConversationListUp
@@ -190,6 +213,7 @@ private fun handleMessagesKey(
                     MessagesAction.MessageFocusUp
                 }
             }
+
             AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
                 if (state.mode == MessagesMode.ConversationList) {
                     MessagesAction.ConversationListDown
@@ -197,26 +221,62 @@ private fun handleMessagesKey(
                     MessagesAction.MessageFocusDown
                 }
             }
-            AndroidKeyEvent.KEYCODE_MOVE_HOME -> MessagesAction.ConversationListHome
+
+            AndroidKeyEvent.KEYCODE_MOVE_HOME -> {
+                MessagesAction.ConversationListHome
+            }
+
             AndroidKeyEvent.KEYCODE_ENTER,
-            AndroidKeyEvent.KEYCODE_NUMPAD_ENTER -> {
+            AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
+            -> {
                 when {
-                    event.isShiftPressed -> MessagesAction.ComposerShiftEnterNewline
-                    event.isAltPressed -> MessagesAction.ComposerAltEnterProviderSend
-                    state.mode == MessagesMode.ConversationList -> MessagesAction.OpenFocusedConversation
-                    state.mode == MessagesMode.History -> MessagesAction.ReturnToLatest
-                    state.mode == MessagesMode.Search -> MessagesAction.ReturnToLatest
-                    state.mode == MessagesMode.MessageActions -> MessagesAction.MessageEnterDetails
+                    event.isShiftPressed -> {
+                        MessagesAction.ComposerShiftEnterNewline
+                    }
+
+                    event.isAltPressed -> {
+                        MessagesAction.ComposerAltEnterProviderSend
+                    }
+
+                    state.mode == MessagesMode.ConversationList -> {
+                        MessagesAction.OpenFocusedConversation
+                    }
+
+                    state.mode == MessagesMode.History -> {
+                        MessagesAction.ReturnToLatest
+                    }
+
+                    state.mode == MessagesMode.Search -> {
+                        MessagesAction.ReturnToLatest
+                    }
+
+                    state.mode == MessagesMode.MessageActions -> {
+                        MessagesAction.MessageEnterDetails
+                    }
+
                     else -> {
                         sendToProvider()
                         return true
                     }
                 }
             }
-            AndroidKeyEvent.KEYCODE_SPACE -> MessagesAction.MessageSpacePreview
-            AndroidKeyEvent.KEYCODE_DEL -> MessagesAction.ComposerBackspace
-            AndroidKeyEvent.KEYCODE_FORWARD_DEL -> MessagesAction.ComposerDelete
-            AndroidKeyEvent.KEYCODE_MENU -> MessagesAction.ComposerMenuActions
+
+            AndroidKeyEvent.KEYCODE_SPACE -> {
+                MessagesAction.MessageSpacePreview
+            }
+
+            AndroidKeyEvent.KEYCODE_DEL -> {
+                MessagesAction.ComposerBackspace
+            }
+
+            AndroidKeyEvent.KEYCODE_FORWARD_DEL -> {
+                MessagesAction.ComposerDelete
+            }
+
+            AndroidKeyEvent.KEYCODE_MENU -> {
+                MessagesAction.ComposerMenuActions
+            }
+
             else -> {
                 if (state.mode == MessagesMode.ConversationList) {
                     MessagesAction.TypeToFilter
@@ -420,8 +480,7 @@ private fun ConversationList(
                             } else {
                                 MaterialTheme.colorScheme.surfaceVariant
                             },
-                        )
-                        .clickable { onSelectThread(index) }
+                        ).clickable { onSelectThread(index) }
                         .padding(SableSpacing.Md),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -594,8 +653,7 @@ private fun MessageBubble(
                         message.incoming -> MaterialTheme.colorScheme.surfaceVariant
                         else -> MaterialTheme.colorScheme.secondaryContainer
                     },
-                )
-                .padding(SableSpacing.Md),
+                ).padding(SableSpacing.Md),
     ) {
         Column {
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {

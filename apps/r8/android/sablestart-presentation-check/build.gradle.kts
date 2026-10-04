@@ -24,7 +24,7 @@ android {
     kotlin {
         compilerOptions {
             jvmTarget.set(
-                org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+                org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17,
             )
         }
     }
@@ -32,7 +32,7 @@ android {
     sourceSets {
         getByName("main") {
             java.srcDir(
-                layout.buildDirectory.dir("generated/sablestartPresentation")
+                layout.buildDirectory.dir("generated/sablestartPresentation"),
             )
         }
     }
@@ -40,7 +40,7 @@ android {
 
 val canonicalPresentationRoot =
     layout.projectDirectory.dir(
-        "../../../../src/android/packages/apps/SableStart/src"
+        "../../../../src/android/packages/apps/SableStart/src",
     )
 val generatedPresentationDir =
     layout.buildDirectory.dir("generated/sablestartPresentation")
@@ -97,7 +97,7 @@ dependencies {
     implementation(project(":design"))
 
     implementation(
-        platform("androidx.compose:compose-bom:2026.02.01")
+        platform("androidx.compose:compose-bom:2026.02.01"),
     )
 
     implementation("androidx.compose.runtime:runtime")
