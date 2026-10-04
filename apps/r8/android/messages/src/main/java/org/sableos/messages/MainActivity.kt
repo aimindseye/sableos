@@ -187,20 +187,51 @@ private fun resolveMessagesKeyAction(
 
 private fun shortcutKeyAction(event: AndroidKeyEvent): MessagesAction? =
     when (event.keyCode) {
-        AndroidKeyEvent.KEYCODE_SLASH -> MessagesAction.SearchInConversation
-        AndroidKeyEvent.KEYCODE_L ->
+        AndroidKeyEvent.KEYCODE_SLASH -> {
+            MessagesAction.SearchInConversation
+        }
+
+        AndroidKeyEvent.KEYCODE_L -> {
             if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
-        AndroidKeyEvent.KEYCODE_MOVE_END -> MessagesAction.ReturnToLatest
-        AndroidKeyEvent.KEYCODE_PAGE_UP -> MessagesAction.PageUpHistory
-        AndroidKeyEvent.KEYCODE_PAGE_DOWN -> MessagesAction.PageDownTowardLatest
-        AndroidKeyEvent.KEYCODE_N -> MessagesAction.NextUnread
-        AndroidKeyEvent.KEYCODE_D -> MessagesAction.JumpToDate
-        AndroidKeyEvent.KEYCODE_A -> MessagesAction.JumpToAttachment
+        }
+
+        AndroidKeyEvent.KEYCODE_MOVE_END -> {
+            MessagesAction.ReturnToLatest
+        }
+
+        AndroidKeyEvent.KEYCODE_PAGE_UP -> {
+            MessagesAction.PageUpHistory
+        }
+
+        AndroidKeyEvent.KEYCODE_PAGE_DOWN -> {
+            MessagesAction.PageDownTowardLatest
+        }
+
+        AndroidKeyEvent.KEYCODE_N -> {
+            MessagesAction.NextUnread
+        }
+
+        AndroidKeyEvent.KEYCODE_D -> {
+            MessagesAction.JumpToDate
+        }
+
+        AndroidKeyEvent.KEYCODE_A -> {
+            MessagesAction.JumpToAttachment
+        }
+
         AndroidKeyEvent.KEYCODE_BACK,
         AndroidKeyEvent.KEYCODE_ESCAPE,
-        -> MessagesAction.BackOrEsc
-        AndroidKeyEvent.KEYCODE_MOVE_HOME -> MessagesAction.ConversationListHome
-        else -> null
+        -> {
+            MessagesAction.BackOrEsc
+        }
+
+        AndroidKeyEvent.KEYCODE_MOVE_HOME -> {
+            MessagesAction.ConversationListHome
+        }
+
+        else -> {
+            null
+        }
     }
 
 private fun interactionKeyAction(
@@ -208,31 +239,51 @@ private fun interactionKeyAction(
     state: MessagesUiState,
 ): MessagesAction =
     when (event.keyCode) {
-        AndroidKeyEvent.KEYCODE_DPAD_UP ->
+        AndroidKeyEvent.KEYCODE_DPAD_UP -> {
             if (state.mode == MessagesMode.ConversationList) {
                 MessagesAction.ConversationListUp
             } else {
                 MessagesAction.MessageFocusUp
             }
-        AndroidKeyEvent.KEYCODE_DPAD_DOWN ->
+        }
+
+        AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
             if (state.mode == MessagesMode.ConversationList) {
                 MessagesAction.ConversationListDown
             } else {
                 MessagesAction.MessageFocusDown
             }
+        }
+
         AndroidKeyEvent.KEYCODE_ENTER,
         AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
-        -> enterKeyAction(event, state)
-        AndroidKeyEvent.KEYCODE_SPACE -> MessagesAction.MessageSpacePreview
-        AndroidKeyEvent.KEYCODE_DEL -> MessagesAction.ComposerBackspace
-        AndroidKeyEvent.KEYCODE_FORWARD_DEL -> MessagesAction.ComposerDelete
-        AndroidKeyEvent.KEYCODE_MENU -> MessagesAction.ComposerMenuActions
-        else ->
+        -> {
+            enterKeyAction(event, state)
+        }
+
+        AndroidKeyEvent.KEYCODE_SPACE -> {
+            MessagesAction.MessageSpacePreview
+        }
+
+        AndroidKeyEvent.KEYCODE_DEL -> {
+            MessagesAction.ComposerBackspace
+        }
+
+        AndroidKeyEvent.KEYCODE_FORWARD_DEL -> {
+            MessagesAction.ComposerDelete
+        }
+
+        AndroidKeyEvent.KEYCODE_MENU -> {
+            MessagesAction.ComposerMenuActions
+        }
+
+        else -> {
             if (state.mode == MessagesMode.ConversationList) {
                 MessagesAction.TypeToFilter
             } else {
                 MessagesAction.ComposerTyping
             }
+        }
     }
 
 private fun enterKeyAction(
@@ -335,7 +386,6 @@ private fun LatestAnchoredThread(
     }
 }
 
-
 @Composable
 private fun LatestThreadContractRows() {
     ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
@@ -363,6 +413,7 @@ private fun LatestMessages(
         )
     }
 }
+
 @Composable
 private fun HistoryAndSearchPanel(
     state: MessagesUiState,
@@ -483,7 +534,6 @@ private fun ConversationList(
     }
 }
 
-
 @Composable
 private fun ConversationListControls(onAction: (MessagesAction) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
@@ -498,6 +548,7 @@ private fun ConversationListControls(onAction: (MessagesAction) -> Unit) {
         }
     }
 }
+
 @Composable
 private fun MessageActionsPanel(onAction: (MessagesAction) -> Unit) {
     ContractPanel(title = "Keyboard message and attachment actions") {
