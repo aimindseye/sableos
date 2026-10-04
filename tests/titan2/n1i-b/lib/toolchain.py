@@ -118,7 +118,15 @@ def compile_dex(
         return subprocess.CompletedProcess(command, 2, "", f"no class inputs under {source}")
     with tempfile.TemporaryDirectory(prefix="n1i-d8-") as td:
         out_dir = Path(td)
-        args = [*command, "--min-api", str(min_api), "--output", str(out_dir), *map(str, inputs)]
+        args = [
+            *command,
+            "--min-api",
+            str(min_api),
+            "--no-desugaring",
+            "--output",
+            str(out_dir),
+            *map(str, inputs),
+        ]
         result = subprocess.run(args, capture_output=True, text=True)
         if result.returncode:
             return result
@@ -130,7 +138,7 @@ def compile_dex(
 
 
 def tool_summary() -> dict[str, str]:
-    names = ("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "llvm-objcopy", "gcc", "readelf")
+    names = ("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "llvm-objcopy", "readelf")
     found = prepare_tool_path(names)
     compiler = find_dex_compiler()
     out = {name: (found[name] or "MISSING") for name in names}
