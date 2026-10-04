@@ -503,8 +503,8 @@ run_security() {
 
   (
     cd "$ROOT/apps/r8/rust"
-    "$SABLE_CARGO" audit --deny warnings
-    "$SABLE_CARGO" deny check advisories bans sources
+    "$SABLE_CARGO" audit --no-fetch --deny warnings
+    "$SABLE_CARGO" deny --offline check advisories bans sources
   )
 
   gitleaks_report="$EVIDENCE_DIR/gitleaks-results.json"
