@@ -54,11 +54,19 @@ The stock `product` and `system_ext` bytes can remain present in `super` while b
 | `C0_09_LP_METADATA` | Yes | Which LP metadata fields differ from stock for partitions intended to be preserved? |
 | `C0_10_CONTROL_DIFF` | Yes | How does N1C differ from the exact known-booting Restless/GSI control? |
 | `C0_11_CELLULAR_STATIC` | No for boot architecture | What historical N1B1/N1B2 telephony differences are worth carrying into later IMS work? |
-| `C0_12_TOOLCHAIN_SEAL` | Yes | Are the reviewed audit/capture/classifier tools exactly the reviewed hashes? |
+| `C0_12_TOOLCHAIN_SEAL` | Yes | Do the frozen audit/classifier hashes match, and does the evolving capture tool preserve the hash-sealed reviewed base plus legacy/default read-only behavior? |
 
 `C0_01` deliberately allows `UNQUALIFIED_HISTORICAL`. Missing old hashes must not be reconstructed or guessed; the later device-side ladder can create a fresh, sealed control.
 
 `C0_11` is informational until the project enters cellular/IMS restoration. Boot architecture must be proven before Option B work changes framework or telephony behavior.
+
+`C0_12` intentionally treats the runtime capture tool differently from the
+frozen audit and classifier tools. The reviewed capture revision remains sealed
+by commit and SHA-256, while later N1I capture profiles may extend the tool only
+if the offline guard suite proves that the legacy/default read-only guard remains
+text-identical and verdict-equivalent to the reviewed base. This prevents an
+authorized additive evidence profile from becoming false C0 hash drift without
+weakening the reviewed legacy safety boundary.
 
 ## AVB interpretation
 

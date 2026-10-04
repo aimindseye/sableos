@@ -1,0 +1,8 @@
+<!-- SYNTHETIC: a framework-type matrix found on a vendor-side partition. It states what a
+     framework requires, so it must never be read as a vendor->system requirement edge. -->
+<compatibility-matrix version="1.0" type="framework">
+    <hal format="aidl" optional="false">
+        <name>android.hardware.synthetic.odm</name>
+        <interface><name>ISynthetic</name><instance>default</instance></interface>
+    </hal>
+</compatibility-matrix>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SYNTHETIC fixture. Not a copy of any shipped database. -->
+<apns version="8">
+  <apn carrier="T-Mobile US" mcc="310" mnc="260" apn="fast.t-mobile.com" type="supl,default,mms" protocol="IPV6" roaming_protocol="IPV6" user="synthapnuser" password="synthapnpass"/>
+  <apn carrier="T-Mobile IMS" mcc="310" mnc="260" apn="ims" type="ims" protocol="IPV4V6" roaming_protocol="IPV6"/>
+  <apn carrier="Synthetic MVNO" mcc="310" mnc="260" apn="pwg" type="default,supl" mvno_type="gid" mvno_match_data="5050"/>
+  <apn carrier="Synthetic 240" mcc="310" mnc="240" apn="pwg" type="default,supl"/>
+</apns>

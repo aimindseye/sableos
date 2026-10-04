@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CI="$ROOT/build/local-ci/run.sh"
+AUDIT_CONFIG="$ROOT/apps/r8/rust/.cargo/audit.toml"
 
 fail() {
   echo "N1D_LOCAL_CI_SCOPE_CONTRACT=FAIL $*" >&2
@@ -10,6 +11,7 @@ fail() {
 }
 
 [[ -f "$CI" ]] || fail "missing_local_ci=$CI"
+[[ -f "$AUDIT_CONFIG" ]] || fail "missing_audit_config=$AUDIT_CONFIG"
 bash -n "$CI" || fail "local_ci_syntax"
 
 require() {
@@ -25,6 +27,12 @@ require ':messages:ktlintCheck'
 require ':messages:testDebugUnitTest'
 require ':messages:assembleDebug'
 require ':messages:lintDebug'
+require '"$SABLE_CARGO" audit --no-fetch --deny warnings'
+require '"$SABLE_CARGO" deny --offline check advisories bans sources'
+grep -Fxq 'fetch = false' "$AUDIT_CONFIG" || fail 'audit_database_fetch_not_disabled'
+grep -Fxq 'stale = false' "$AUDIT_CONFIG" || fail 'audit_stale_policy_not_fail_closed'
+grep -Fxq 'enabled = true' "$AUDIT_CONFIG" || fail 'audit_yanked_check_not_enabled'
+grep -Fxq 'update_index = false' "$AUDIT_CONFIG" || fail 'audit_yanked_index_update_not_disabled'
 
 for panther_only in   'r8-build-driver-contract.sh'   'r9-physical-remediation-contract.py'   'r9-system-cohesion-contract.py'   'r9-physical-ux-closure-contract.py'   'r9-launcher3-foundation-contract.py'
 do

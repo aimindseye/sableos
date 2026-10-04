@@ -37,12 +37,30 @@
 #   CELLULAR_RUNTIME_REPORT.md     timeline, first data loss, signatures
 #   redacted/timeline.tsv  events.tsv  signatures.tsv  data_loss_window.log  ...
 #
+# PROFILES
+#   default  The behaviour above, unchanged (same guard, same dumps).
+#   n1i-b1   N1I-B1 stock-vs-C3A registration-collapse capture. Adds:
+#              - an identity gate before any dump (stock: expected system + vendor
+#                fingerprints, ro.build.type=user, ro.debuggable=0; c3a: expected vendor
+#                fingerprint, non-stock system fingerprint, vbmeta digest + slot recorded)
+#              - an exact-literal allowlist of extra read-only commands (pm path, two
+#                dumpsys activity forms, one lshal form, four `cmd phone ims get-ims-service`
+#                queries, three `content query` URIs). Under this profile every other
+#                cmd / content / lshal / dumpsys activity / pm path form is refused.
+#              - inventory checkpoints T1 (start), T2 (T1 + 10 min), T3 (end), each command
+#                stored as .txt (stdout), .err (stderr) and .rc (exit status)
+#            --bugreport is refused under n1i-b1 (exit 2, before adb is looked up).
+#            There is no adb root / su path in this script under any profile.
+#            The host-side C3A artifact SHA-256 is recorded as HOST_ASSERTED only; it is never
+#            claimed to equal any on-device block hash.
+#
 # Exit codes: 0 capture completed   2 usage error   3 adb/device problem
 #             5 read-only guard refused a command (bug in this script; nothing was sent)
+#             6 n1i-b1 identity gate mismatch (no dumps taken)
 
 set -euo pipefail
 
-SCRIPT_VERSION="1.3.1"
+SCRIPT_VERSION="1.4.0"
 CLASSIFIER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
@@ -66,8 +84,13 @@ Usage:
                    sys.boot_completed never arrives (failed boots are the ones you need logs for).
   --boot-timeout-sec  Seconds to wait for the new boot to appear, and again for
                    sys.boot_completed (default 900 each).
-  --bugreport      Also take an adb bugreport at the end (large; read-only).
+  --bugreport      Also take an adb bugreport at the end (large; read-only). Refused under n1i-b1.
   --out            Output directory.
+  --profile        default (unchanged behaviour) or n1i-b1.
+  --b1-target      n1i-b1 only, required: stock | c3a.
+  --c3a-artifact-sha256  n1i-b1 + c3a only, required: SHA-256 of the host image artifact that was
+                   verified before the (separately authorised) flash. Recorded as host-asserted.
+  --c3a-artifact-ref     n1i-b1 + c3a only, optional: artifact name/reference, [A-Za-z0-9._:/+-]{1,200}.
 
 Stop early with Ctrl-C; the capture is finalised and the report still written.
 EOF
@@ -77,8 +100,13 @@ die() { echo "ERROR: $1" >&2; exit "${2:-1}"; }
 log() { echo "[$(date +%H:%M:%S)] $*" >&2; }
 
 SERIAL="" LABEL="" DURATION_MIN=45 INTERVAL=10 WAIT_BOOT=0 BUGREPORT=0 OUT="" BOOT_TIMEOUT=900
+PROFILE="default" B1_TARGET="" C3A_SHA="" C3A_REF="" B1_OPT_SEEN=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --profile)       PROFILE="${2:-}"; shift 2 ;;
+    --b1-target)     B1_TARGET="${2:-}"; B1_OPT_SEEN=1; shift 2 ;;
+    --c3a-artifact-sha256) C3A_SHA="${2:-}"; B1_OPT_SEEN=1; shift 2 ;;
+    --c3a-artifact-ref)    C3A_REF="${2:-}"; B1_OPT_SEEN=1; shift 2 ;;
     --boot-timeout-sec) BOOT_TIMEOUT="${2:-}"; shift 2 ;;
     --serial)        SERIAL="${2:-}"; shift 2 ;;
     --label)         LABEL="${2:-}"; shift 2 ;;
@@ -97,9 +125,38 @@ done
 [[ "$DURATION_MIN" =~ ^[0-9]+$ && "$DURATION_MIN" -ge 1 ]] || die "--duration-min must be a positive integer" 2
 [[ "$INTERVAL" =~ ^[0-9]+$ && "$INTERVAL" -ge 2 ]] || die "--interval-sec must be an integer >= 2" 2
 [[ "$BOOT_TIMEOUT" =~ ^[0-9]+$ && "$BOOT_TIMEOUT" -ge 1 ]] || die "--boot-timeout-sec must be a positive integer" 2
+# Profile validation happens before adb is even looked up, so a refused combination can never
+# reach a device.
+case "$PROFILE" in
+  default)
+    [[ "$B1_OPT_SEEN" -eq 0 ]] || die "--b1-target/--c3a-artifact-* require --profile n1i-b1" 2 ;;
+  n1i-b1)
+    [[ "$BUGREPORT" -eq 0 ]] || die "--bugreport is not permitted under --profile n1i-b1" 2
+    case "$B1_TARGET" in
+      stock)
+        [[ -z "$C3A_SHA" && -z "$C3A_REF" ]] || die "--c3a-artifact-* are only valid with --b1-target c3a" 2 ;;
+      c3a)
+        [[ "$C3A_SHA" =~ ^[0-9a-f]{64}$ ]] || die "--c3a-artifact-sha256 must be 64 lowercase hex chars" 2
+        [[ -z "$C3A_REF" || "$C3A_REF" =~ ^[A-Za-z0-9._:/+-]{1,200}$ ]] || die "--c3a-artifact-ref has invalid characters" 2 ;;
+      *) die "--profile n1i-b1 requires --b1-target stock|c3a" 2 ;;
+    esac ;;
+  *) die "--profile must be default or n1i-b1" 2 ;;
+esac
 command -v adb >/dev/null || die "adb not found in PATH" 3
 command -v python3 >/dev/null || die "python3 is required" 3
 [[ -f "$CLASSIFIER_DIR/classify-n1b2-nr-state.py" ]] || die "classify-n1b2-nr-state.py must sit next to this script" 3
+
+# n1i-b1: expected stock identity comes from the committed N1I-F control record (single source).
+B1_EXPECT_SYSTEM_FP="" B1_EXPECT_VENDOR_FP=""
+if [[ "$PROFILE" == "n1i-b1" ]]; then
+  b1_ctl="$CLASSIFIER_DIR/n1i-f-stock-v010014-control.env"
+  [[ -f "$b1_ctl" ]] || die "n1i-b1 needs $b1_ctl" 3
+  B1_EXPECT_SYSTEM_FP="$(sed -n 's/^STOCK_BUILD_FINGERPRINT=//p' "$b1_ctl")"
+  B1_EXPECT_VENDOR_FP="$(sed -n 's/^STOCK_VENDOR_FINGERPRINT=//p' "$b1_ctl")"
+  [[ "$B1_EXPECT_SYSTEM_FP" =~ ^Unihertz/Titan_2/Titan_2:16/.+:user/release-keys$ ]] || die "n1i-b1: bad STOCK_BUILD_FINGERPRINT in $b1_ctl" 3
+  [[ "$B1_EXPECT_VENDOR_FP" =~ ^Unihertz/Titan_2/Titan_2:14/.+:user/release-keys$ ]] || die "n1i-b1: bad STOCK_VENDOR_FINGERPRINT in $b1_ctl" 3
+  command -v sha256sum >/dev/null || die "n1i-b1 needs sha256sum" 3
+fi
 
 TO=""; command -v timeout >/dev/null && TO="timeout"
 
@@ -140,10 +197,47 @@ is_read_only() {
   return 1
 }
 
+# n1i-b1 extra commands: exact literal strings only (no patterns, no prefixes).
+B1_EXTRA_CMDS=(
+  "pm path com.mediatek.ims"
+  "dumpsys activity services com.mediatek.ims"
+  "dumpsys activity service com.android.phone/.TelephonyDebugService"
+  "lshal --types=b,c,l -i"
+  "cmd phone ims get-ims-service -s 0 -d -f 1"
+  "cmd phone ims get-ims-service -s 0 -c -f 1"
+  "cmd phone ims get-ims-service -s 1 -d -f 1"
+  "cmd phone ims get-ims-service -s 1 -c -f 1"
+  "content query --uri content://telephony/carriers/preferapn"
+  "content query --uri content://telephony/siminfo"
+  "content query --uri content://telephony/carriers --where \"numeric='310260' OR numeric='310240'\""
+)
+is_b1_extra() {
+  local c="$1" x
+  for x in "${B1_EXTRA_CMDS[@]}"; do [[ "$c" == "$x" ]] && return 0; done
+  return 1
+}
+
+# n1i-b1 guard: exact extras, otherwise the legacy allowlist minus the families the extras
+# belong to. Any cmd / content / lshal (other than the plain `lshal list` the fixed dumps use),
+# dumpsys activity, pm path, su or adb-root-like word that is not an exact extra is refused.
+is_read_only_b1() {
+  local c="$1"
+  is_b1_extra "$c" && return 0
+  [[ "$c" =~ ^[[:space:]]*(cmd|content|su|pm[[:space:]]+path|dumpsys[[:space:]]+activity|bugreport|bugreportz|dumpstate)([[:space:]]|$) ]] && return 1
+  [[ "$c" =~ ^[[:space:]]*lshal ]] && { [[ "$c" == "lshal list" ]] || return 1; }
+  [[ "$c" =~ (^|[[:space:]])(root|unroot|remount|disable-verity|enable-verity)([[:space:]]|$) ]] && return 1
+  is_read_only "$c"
+}
+
+# Profile dispatch. Under the default profile this is exactly is_read_only.
+guard_ok() {
+  if [[ "$PROFILE" == "n1i-b1" ]]; then is_read_only_b1 "$1"; else is_read_only "$1"; fi
+}
+
 # Run a read-only shell command on the device. Refuses anything off the allowlist.
 adb_ro() {
   local c="$1"
-  is_read_only "$c" || die "read-only guard refused device command: '$c'" 5
+  guard_ok "$c" || die "read-only guard refused device command: '$c'" 5
   ${TO:+$TO 120} adb -s "$SERIAL" shell "$c"
 }
 
@@ -187,7 +281,7 @@ dev_state() {
 # The guard is checked here, in the parent shell, so a refusal is always fatal.
 adb_try() {
   local n="$1" c="$2" out i
-  is_read_only "$c" || die "read-only guard refused device command: '$c'" 5
+  guard_ok "$c" || die "read-only guard refused device command: '$c'" 5
   for ((i = 0; i < n; i++)); do
     if out="$(${TO:+$TO 30} adb -s "$SERIAL" shell "$c" 2>/dev/null)"; then
       printf '%s' "${out//$'\r'/}"
@@ -303,7 +397,7 @@ supervise_stream() {
 
 SUP_PIDS=()
 start_supervisor() {
-  is_read_only "$2" || die "read-only guard refused stream command: '$2'" 5
+  guard_ok "$2" || die "read-only guard refused stream command: '$2'" 5
   supervise_stream "$1" "$2" "$3" &
   SUP_PIDS+=($!)
 }
@@ -348,6 +442,100 @@ UPTIME="$(adb_try 3 "cat /proc/uptime" | cut -d' ' -f1 || echo "-")"
 log "device=$DEVICE model=$MODEL uptime=${UPTIME}s label=$LABEL"
 log "fingerprint=$FINGERPRINT"
 
+# ------------------------------------------------------------ n1i-b1 identity gate + inventory
+B1_DIR="$RAW/b1"
+b1_prop() { local v; v="$(adb_try 3 "getprop $1" || true)"; printf '%s' "${v:-UNREADABLE}"; }
+
+b1_identity_gate() {
+  local sys ven typ dbg vbm slot reasons=()
+  mkdir -p "$B1_DIR"
+  sys="$(b1_prop ro.build.fingerprint)"
+  ven="$(b1_prop ro.vendor.build.fingerprint)"
+  typ="$(b1_prop ro.build.type)"
+  dbg="$(b1_prop ro.debuggable)"
+  vbm="$(b1_prop ro.boot.vbmeta.digest)"
+  slot="$(b1_prop ro.boot.slot_suffix)"
+  [[ "$ven" == "$B1_EXPECT_VENDOR_FP" ]] || reasons+=("VENDOR_FINGERPRINT_MISMATCH")
+  if [[ "$B1_TARGET" == "stock" ]]; then
+    [[ "$sys" == "$B1_EXPECT_SYSTEM_FP" ]] || reasons+=("SYSTEM_FINGERPRINT_MISMATCH")
+    [[ "$typ" == "user" ]] || reasons+=("BUILD_TYPE_NOT_USER")
+    [[ "$dbg" == "0" ]] || reasons+=("DEBUGGABLE_NOT_0")
+  else
+    [[ "$sys" != "UNREADABLE" ]] || reasons+=("SYSTEM_FINGERPRINT_UNREADABLE")
+    [[ "$sys" != "$B1_EXPECT_SYSTEM_FP" ]] || reasons+=("SYSTEM_FINGERPRINT_IS_STOCK")
+    [[ "$vbm" =~ ^[0-9a-f]{64}$ ]] || reasons+=("VBMETA_DIGEST_UNREADABLE")
+  fi
+  [[ "$slot" =~ ^_[ab]$ ]] || reasons+=("SLOT_SUFFIX_UNREADABLE")
+  {
+    echo "B1_TARGET=$B1_TARGET"
+    echo "B1_DEVICE_BUILD_FINGERPRINT=$sys"
+    echo "B1_DEVICE_VENDOR_FINGERPRINT=$ven"
+    echo "B1_DEVICE_BUILD_TYPE=$typ"
+    echo "B1_DEVICE_DEBUGGABLE=$dbg"
+    echo "B1_DEVICE_VBMETA_DIGEST=$vbm"
+    echo "B1_DEVICE_SLOT_SUFFIX=$slot"
+    echo "B1_EXPECTED_VENDOR_FINGERPRINT=$B1_EXPECT_VENDOR_FP"
+    [[ "$B1_TARGET" == "stock" ]] && echo "B1_EXPECTED_BUILD_FINGERPRINT=$B1_EXPECT_SYSTEM_FP"
+    if [[ "$B1_TARGET" == "c3a" ]]; then
+      echo "B1_C3A_ARTIFACT_SHA256_HOST_ASSERTED=$C3A_SHA"
+      echo "B1_C3A_ARTIFACT_REF=${C3A_REF:--}"
+      echo "B1_BLOCK_HASH_EQUIVALENCE=NOT_CLAIMED"
+    fi
+    echo "B1_IDENTITY_GATE=$([[ ${#reasons[@]} -eq 0 ]] && echo PASS || echo FAIL)"
+    echo "B1_IDENTITY_GATE_REASONS=$(IFS=,; echo "${reasons[*]:-NONE}")"
+  } > "$B1_DIR/identity.env"
+  # Every identity key also goes into the summary through boot_meta.
+  grep -E '^B1_' "$B1_DIR/identity.env" >> "$RAW/boot_meta.env"
+  [[ ${#reasons[@]} -eq 0 ]]
+}
+
+# One inventory command: stdout, stderr and exit status are all kept.
+b1_run() {
+  local dir="$1" slug="$2" c="$3" rc=0
+  guard_ok "$c" || die "read-only guard refused device command: '$c'" 5
+  ${TO:+$TO 120} adb -s "$SERIAL" shell "$c" > "$dir/$slug.txt" 2> "$dir/$slug.err" || rc=$?
+  printf '%s\n' "$rc" > "$dir/$slug.rc"
+  printf '%s\t%s\t%s\t%s\n' "$slug" "$(date +%s)" "$rc" "$c" >> "$dir/INDEX.tsv"
+}
+
+B1_SLUGS=(ims_pm_path ims_activity_services telephony_debug_service lshal_types_bcl
+          ims_get_s0_device ims_get_s0_carrier ims_get_s1_device ims_get_s1_carrier
+          apn_preferapn siminfo apn_carriers_310260_310240)
+b1_checkpoint() {
+  local name="$1" dir="$B1_DIR/$1" i
+  mkdir -p "$dir"
+  printf 'slug\thost_epoch\trc\tcommand\n' > "$dir/INDEX.tsv"
+  log "n1i-b1 inventory checkpoint $name"
+  for i in "${!B1_EXTRA_CMDS[@]}"; do b1_run "$dir" "${B1_SLUGS[$i]}" "${B1_EXTRA_CMDS[$i]}"; done
+  b1_run "$dir" getprop "getprop"
+  b1_run "$dir" telephony_registry "dumpsys telephony.registry"
+  b1_run "$dir" carrier_config "dumpsys carrier_config"
+  b1_run "$dir" isub "dumpsys isub"
+  b1_run "$dir" logcat_radio "logcat -d -b radio -v threadtime,uid,year"
+  meta "B1_CHECKPOINT_$name" "CAPTURED@$(date +%s)"
+  tl "B1_CHECKPOINT" "$name"
+}
+
+if [[ "$PROFILE" == "n1i-b1" ]]; then
+  [[ ${#B1_SLUGS[@]} -eq ${#B1_EXTRA_CMDS[@]} ]] || die "internal: B1 slug/command tables differ" 5
+  meta CAPTURE_PROFILE "n1i-b1"
+  meta B1_SERIAL_SHA256 "$(printf '%s' "$SERIAL" | sha256sum | cut -d' ' -f1)"
+  if ! b1_identity_gate; then
+    tl B1_IDENTITY_GATE "FAIL $(sed -n 's/^B1_IDENTITY_GATE_REASONS=//p' "$B1_DIR/identity.env")"
+    {
+      echo "CELLULAR_RUNTIME_CAPTURE=IDENTITY_GATE_FAILED"
+      echo "CAPTURE_SCRIPT_VERSION=$SCRIPT_VERSION"
+      echo "CAPTURE_LABEL=$LABEL"
+      echo "CAPTURE_PROFILE=n1i-b1"
+      echo "READ_ONLY=YES"
+      grep -E '^B1_(TARGET|IDENTITY_GATE|IDENTITY_GATE_REASONS)=' "$B1_DIR/identity.env"
+    } > "$OUT/CELLULAR_RUNTIME_SUMMARY.env"
+    echo "SUMMARY=$OUT/CELLULAR_RUNTIME_SUMMARY.env"
+    die "n1i-b1 identity gate failed; no dumps taken (see $B1_DIR/identity.env)" 6
+  fi
+  tl B1_IDENTITY_GATE "PASS target=$B1_TARGET"
+fi
+
 # ------------------------------------------------------------ fixed dumps
 TEL_PKGS_RE='phone|telephony|telecom|carrierconfig|cellbroadcast|mms|stk|ims|euicc|lpa|radio|mediatek\.(ims|tele)|mtk.*(ims|tele)|phh|trebledroid'
 TEL_SVCS_RE='^[0-9]+[[:space:]]+(telephony\.registry|phone|isub|carrier_config|telecom|ims|imms|iphonesubinfo|econtroller|euicc_card_controller|telephony_ims|connectivity|netpolicy|simphonebook|sip)[[:space:]:]'
@@ -384,6 +572,11 @@ dump_fixed() {
   adb_ro "dmesg" > "$dir/dmesg.txt" 2>&1 || true
 }
 dump_fixed "$RAW/start"
+B1_T2_AT=0
+if [[ "$PROFILE" == "n1i-b1" ]]; then
+  b1_checkpoint T1
+  B1_T2_AT=$(( $(date +%s) + 600 ))
+fi
 
 # ------------------------------------------------------------ snapshot loop
 TIMELINE_RAW="$RAW/snapshots/snapshots.jsonl"
@@ -457,17 +650,25 @@ for r in rows:
     r.update(common); print(json.dumps(r))
 PYEOF
   then :; else log "snapshot $n parse failed; continuing"; fi
+  if [[ "$PROFILE" == "n1i-b1" && "$B1_T2_AT" -gt 0 && "$(date +%s)" -ge "$B1_T2_AT" ]]; then
+    b1_checkpoint T2; B1_T2_AT=0
+  fi
   sleep "$INTERVAL" || true
 done
+if [[ "$PROFILE" == "n1i-b1" && "$B1_T2_AT" -gt 0 ]]; then
+  meta B1_CHECKPOINT_T2 "NOT_REACHED_CAPTURE_ENDED_BEFORE_T1_PLUS_600S"
+  tl "B1_CHECKPOINT" "T2 not reached"
+fi
 
 # ------------------------------------------------------------ end of capture
 trap - INT TERM
 dump_fixed "$RAW/end"
 adb_ro "dumpsys dropbox --print" > "$RAW/end/dropbox.txt" 2>&1 || true
+[[ "$PROFILE" == "n1i-b1" ]] && b1_checkpoint T3
 finish_streams
 trap - EXIT
 
-if [[ "$BUGREPORT" -eq 1 ]]; then
+if [[ "$BUGREPORT" -eq 1 && "$PROFILE" != "n1i-b1" ]]; then
   log "taking bugreport (read-only, may take several minutes)"
   adb -s "$SERIAL" bugreport "$RAW/end/bugreport.zip" >/dev/null 2>&1 || log "bugreport failed; continuing"
 fi

@@ -1,0 +1,18 @@
+# Facts that must survive strict sanitization (over-redaction guard).
+Unihertz/Titan_2/Titan_2:16/BP2A.250605.031.A3/V01.00.14:user/release-keys
+Unihertz/Titan_2/Titan_2:14/UP1A.231005.007/V01.00.14:user/release-keys
+ab01234567890123456cd0f1e2d3c4b5a69788796a5b4c3d2e1f00112233aabb
+[gsm.sim.operator.numeric]: [310240]
+[gsm.operator.numeric]: [310260]
+numeric=310260
+apn=fast.t-mobile.com
+apn=pwg
+user=NULL
+type=default,supl,mms
+mcc_string=310, mnc_string=240
+carrier_name=T-Mobile
+MtkDynamicImsService ImsRegistration state=REGISTERED
+setupDataCall failed ERROR_UNSPECIFIED rejectCause=13
+reasonForDenial=15
+mEarfcn=66786
+user=0 app=ProcessRecord

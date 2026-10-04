@@ -1,0 +1,6 @@
+[ro.vendor.build.fingerprint]: [Unihertz/Titan_2/Titan_2:14/UP1A.231005.007/V01.00.14:user/release-keys]
+[ro.vendor_dlkm.build.fingerprint]: [Unihertz/Titan_2/Titan_2:14/UP1A.231005.007/V01.00.14:user/release-keys]
+[ro.bootimage.build.fingerprint]: [Unihertz/Titan_2/Titan_2:14/UP1A.231005.007/V01.00.14:user/release-keys]
+[ro.boot.slot_suffix]: [_a]
+[ro.boot.verifiedbootstate]: [green]
+[ro.boot.vbmeta.digest]: [2222222222222222222222222222222222222222222222222222222222222222]

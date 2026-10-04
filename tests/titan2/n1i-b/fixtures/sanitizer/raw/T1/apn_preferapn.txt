@@ -1,0 +1,2 @@
+Row: 0 _id=2, name=T-Mobile, numeric=310260, mcc=310, mnc=260, apn=fast.t-mobile.com, user=synthapnuser, password=synthapnpass, mmsc=http://mms.msg.eng.t-mobile.com/mms/wapenc, type=default,supl,mms, carrier_id=1, mvno_type=, user_visible=1
+Row: 1 _id=3, name=PWG, numeric=310260, apn=pwg, user=NULL, password=, type=default,supl

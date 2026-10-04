@@ -1,0 +1,6 @@
+; SYNTHETIC vendor policy fragment
+(allow mtk_hal_rild mtk_sys_svc_service (service_manager (find)))
+(allow mtk_hal_rild radio_service (service_manager (find)))
+(allow mtk_hal_rild mtk_vendor_own_service (service_manager (find add)))
+(allow mtk_hal_rild mtk_fw_hwservice (hwservice_manager (find)))
+(allow mtk_hal_rild self (capability (net_admin)))

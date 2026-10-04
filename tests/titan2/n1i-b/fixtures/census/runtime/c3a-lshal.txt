@@ -1,0 +1,1 @@
+android.frameworks.sensorservice@1.0::ISensorManager/default

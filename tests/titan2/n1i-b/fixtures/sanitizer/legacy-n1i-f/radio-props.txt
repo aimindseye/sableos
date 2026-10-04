@@ -1,0 +1,5 @@
+# synthetic radio-props
+imei=350000000000006 mCi=1234 SSID: SynthNet
+LinkAddresses: [10.1.2.3/24]
+addr 2001:db8::1 hw 02:00:00:00:00:02
+number=5555550199 phoneNumber=+15555550198

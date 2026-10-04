@@ -137,7 +137,9 @@ run_static() {
       'build/gates/*.sh' \
       'tests/sablestart/host/*.sh' \
       'tests/sablestart/device/*.sh' \
-      'tests/launcher3/device/*.sh'
+      'tests/launcher3/device/*.sh' \
+      'tests/titan2/n1i-b/*.sh' \
+      'tests/titan2/n1i-b/lib/*.sh'
   )
   echo "SABLE_LOCAL_CI_ACTIVE_SHELL_SYNTAX_COUNT=$shell_count"
 
@@ -148,7 +150,9 @@ run_static() {
       'build/*.py' \
       'build/deploy/*.py' \
       'build/gates/*.py' \
-      'patches/android-17-grapheneos-2026081300/*.py'
+      'patches/android-17-grapheneos-2026081300/*.py' \
+      'tests/titan2/n1i-b/*.py' \
+      'tests/titan2/n1i-b/lib/*.py'
   )
   local python_count="${#python_files[@]}"
 
@@ -231,6 +235,14 @@ PY
     echo "SABLE_LOCAL_CI_PANTHER_R9_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
   fi
 
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == N1B2 ]]; then
+    run_static_contract n1b2-canonical-ci \
+      bash "$ROOT/build/gates/n1b2-canonical-ci-contract.sh"
+    echo "SABLE_LOCAL_CI_TITAN2_N1B2_STATIC_CONTRACTS=PASS_EXECUTED"
+  else
+    echo "SABLE_LOCAL_CI_TITAN2_N1B2_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
+  fi
+
   run_static_contract r9-textreader-standalone \
     python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
@@ -271,6 +283,111 @@ PY
     return 1
   fi
   echo "SABLE_LOCAL_CI_STATIC_CONTRACTS=PASS"
+}
+
+run_titan2_n1b2_evidence() {
+  local ndk_llvm_bin="$SABLE_ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+  local toolchain_log="$EVIDENCE_DIR/N1I_B_TOOLCHAIN.env"
+  local selftest_log="$EVIDENCE_DIR/N1I_B_SELFTEST.log"
+  local selftest_table="$EVIDENCE_DIR/N1I_B_SELFTEST_CASES.tsv"
+  local tool
+
+  echo "DEVICE_CONTACT_AUTHORIZED=NO"
+  echo "ADB_COMMANDS_RUN=NO_REAL_DEVICE"
+  echo "FASTBOOT_COMMANDS_RUN=NO"
+  echo "FLASH_AUTHORIZED=NO"
+  echo "TITAN_CELLULAR_MUTATION_AUTHORIZED=NO"
+  echo "NETWORK_FETCH_AUTHORIZED=NO"
+
+  for tool in \
+    "$SABLE_JDK17/bin/java" \
+    "$SABLE_JDK17/bin/javac" \
+    "$SABLE_ANDROID_BUILD_TOOLS/d8" \
+    "$SABLE_ANDROID_BUILD_TOOLS/dexdump" \
+    "$ndk_llvm_bin/clang" \
+    "$ndk_llvm_bin/ld.lld" \
+    "$ndk_llvm_bin/llvm-objcopy" \
+    "$ndk_llvm_bin/llvm-readelf"
+  do
+    [[ -x "$tool" ]] || {
+      echo "TITAN2_N1B2_EVIDENCE_TOOLCHAIN=FAIL_MISSING path=$tool"
+      return 1
+    }
+  done
+
+  export JAVA_HOME="$SABLE_JDK17"
+  export ANDROID_HOME="$SABLE_ANDROID_SDK"
+  export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
+  export PATH="$SABLE_ANDROID_BUILD_TOOLS:$ndk_llvm_bin:$JAVA_HOME/bin:$PATH"
+
+  export N1I_TOOL_DX="$EVIDENCE_DIR/NO_LEGACY_DX"
+  export N1I_TOOL_JAVA="$SABLE_JDK17/bin/java"
+  export N1I_TOOL_JAVAC="$SABLE_JDK17/bin/javac"
+  export N1I_TOOL_D8="$SABLE_ANDROID_BUILD_TOOLS/d8"
+  export N1I_TOOL_DEXDUMP="$SABLE_ANDROID_BUILD_TOOLS/dexdump"
+  export N1I_TOOL_CLANG="$ndk_llvm_bin/clang"
+  export N1I_TOOL_LD_LLD="$ndk_llvm_bin/ld.lld"
+  export N1I_TOOL_LLVM_OBJCOPY="$ndk_llvm_bin/llvm-objcopy"
+  export N1I_TOOL_READELF="$ndk_llvm_bin/llvm-readelf"
+
+  python3 "$ROOT/tests/titan2/n1i-b/lib/toolchain.py" | tee "$toolchain_log"
+
+  for expected in \
+    'N1I_B_TOOL_DEX_COMPILER_KIND=d8' \
+    'N1I_B_TOOL_HISTORICAL_WORKSPACE_DISCOVERY=NO' \
+    "N1I_B_TOOL_D8=$SABLE_ANDROID_BUILD_TOOLS/d8" \
+    "N1I_B_TOOL_DEXDUMP=$SABLE_ANDROID_BUILD_TOOLS/dexdump" \
+    "N1I_B_TOOL_JAVA=$SABLE_JDK17/bin/java" \
+    "N1I_B_TOOL_JAVAC=$SABLE_JDK17/bin/javac" \
+    "N1I_B_TOOL_CLANG=$ndk_llvm_bin/clang" \
+    "N1I_B_TOOL_LD_LLD=$ndk_llvm_bin/ld.lld" \
+    "N1I_B_TOOL_LLVM_OBJCOPY=$ndk_llvm_bin/llvm-objcopy" \
+    "N1I_B_TOOL_READELF=$ndk_llvm_bin/llvm-readelf"
+  do
+    grep -Fxq "$expected" "$toolchain_log" || {
+      echo "TITAN2_N1B2_EVIDENCE_TOOLCHAIN=FAIL_UNPINNED expected=$expected"
+      return 1
+    }
+  done
+  echo "TITAN2_N1B2_EVIDENCE_TOOLCHAIN=PASS_CANONICAL"
+
+  set +e
+  bash "$ROOT/tests/titan2/n1i-b/run-selftests.sh" --table "$selftest_table" \
+    2>&1 | tee "$selftest_log"
+  local selftest_rc=${PIPESTATUS[0]}
+  set -e
+
+  [[ "$selftest_rc" -eq 0 ]] || {
+    echo "TITAN2_N1B2_EVIDENCE_SELFTESTS=FAIL rc=$selftest_rc"
+    return "$selftest_rc"
+  }
+
+  for marker in \
+    'READ_ONLY_GUARD_TESTS=PASS' \
+    'SANITIZER_FIXTURE_TESTS=PASS' \
+    'TIMELINE_B0_APN_TESTS=PASS' \
+    'N1I_STATIC_DEXDUMP_ORACLE=PASS' \
+    'MEMBER_RESOLVER_TESTS=PASS' \
+    'NATIVE_DATAFLOW_TESTS=PASS' \
+    'REVERSE_CENSUS_TESTS=PASS' \
+    'EVIDENCE_LEDGER_TESTS=PASS' \
+    'SELFTEST_FAILED=0' \
+    'SELFTEST=PASS'
+  do
+    grep -Fxq "$marker" "$selftest_log" || {
+      echo "TITAN2_N1B2_EVIDENCE_SELFTESTS=FAIL_MISSING marker=$marker"
+      return 1
+    }
+  done
+
+  grep -Eq '^SELFTEST_CASES=[1-9][0-9]*$' "$selftest_log" || {
+    echo "TITAN2_N1B2_EVIDENCE_SELFTESTS=FAIL_CASE_COUNT"
+    return 1
+  }
+
+  echo "TITAN2_N1B2_EVIDENCE_SELFTESTS=PASS"
+  echo "TITAN2_N1B2_IMPORT_AUTHORIZED=NO"
+  echo "TITAN2_N1B2_DEVICE_MUTATION_AUTHORIZED=NO"
 }
 
 run_rust() {
@@ -386,8 +503,8 @@ run_security() {
 
   (
     cd "$ROOT/apps/r8/rust"
-    "$SABLE_CARGO" audit --deny warnings
-    "$SABLE_CARGO" deny check advisories bans sources
+    "$SABLE_CARGO" audit --no-fetch --deny warnings
+    "$SABLE_CARGO" deny --offline check advisories bans sources
   )
 
   gitleaks_report="$EVIDENCE_DIR/gitleaks-results.json"
@@ -657,6 +774,13 @@ write_attestation() {
 
 stage POLICY run_policy
 stage STATIC run_static
+
+if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == N1B2 ]]; then
+  stage TITAN2_N1B2_EVIDENCE run_titan2_n1b2_evidence
+else
+  echo "SABLE_LOCAL_CI_TITAN2_N1B2_EVIDENCE=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
+fi
+
 stage RUST run_rust
 stage ANDROID run_android
 stage APK_SEAL run_apk_seal

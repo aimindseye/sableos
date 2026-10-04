@@ -1,0 +1,5 @@
+# SYNTHETIC carrier list fixture
+carrier_id {
+  canonical_id: 1
+  carrier_attribute { mccmnc_tuple: "310260" mccmnc_tuple: "310240" }
+}

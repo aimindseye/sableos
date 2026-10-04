@@ -1,0 +1,1 @@
+android.hidl.allocator::IAllocator       u:object_r:hidl_allocator_hwservice:s0

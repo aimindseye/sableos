@@ -1,0 +1,3 @@
+<?xml version="1.0"?>
+<!DOCTYPE apns [ <!ENTITY x "y"> ]>
+<apns><apn carrier="&x;" mcc="310" mnc="260" apn="a"/></apns>

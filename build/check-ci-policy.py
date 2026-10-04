@@ -56,8 +56,81 @@ if gitleaks_config.is_file():
         failures.append(f"invalid .gitleaks.toml: {exc}")
     else:
         allowlists = parsed_gitleaks.get("allowlists")
-        if not isinstance(allowlists, list) or len(allowlists) != 4:
-            failures.append(".gitleaks.toml must contain exactly four scoped allowlists")
+        allowlist_failures_before = len(failures)
+        if not isinstance(allowlists, list) or not allowlists:
+            failures.append(".gitleaks.toml must contain scoped allowlists")
+        else:
+            commit_pattern = re.compile(r"^[0-9a-f]{40}$")
+            for index, allowlist in enumerate(allowlists, start=1):
+                prefix = f".gitleaks.toml allowlist {index}"
+                if not isinstance(allowlist, dict):
+                    failures.append(f"{prefix} must be a table")
+                    continue
+
+                target_rules = allowlist.get("targetRules")
+                if (
+                    not isinstance(target_rules, list)
+                    or not target_rules
+                    or any(
+                        not isinstance(rule, str) or not rule
+                        for rule in target_rules
+                    )
+                ):
+                    failures.append(f"{prefix} must scope targetRules")
+
+                if allowlist.get("condition") != "AND":
+                    failures.append(f"{prefix} condition must be AND")
+
+                commits = allowlist.get("commits")
+                if (
+                    not isinstance(commits, list)
+                    or not commits
+                    or any(
+                        not isinstance(commit, str)
+                        or commit_pattern.fullmatch(commit) is None
+                        for commit in commits
+                    )
+                ):
+                    failures.append(
+                        f"{prefix} must have exact 40-hex commit scope"
+                    )
+
+                paths = allowlist.get("paths")
+                if (
+                    not isinstance(paths, list)
+                    or not paths
+                    or any(
+                        not isinstance(path, str)
+                        or not path.startswith("^")
+                        or not path.endswith("$")
+                        for path in paths
+                    )
+                ):
+                    failures.append(f"{prefix} must have anchored path scope")
+
+                regexes = allowlist.get("regexes")
+                if regexes is not None:
+                    if (
+                        not isinstance(regexes, list)
+                        or not regexes
+                        or any(
+                            not isinstance(regex, str) or not regex
+                            for regex in regexes
+                        )
+                    ):
+                        failures.append(
+                            f"{prefix} regexes must be non-empty strings"
+                        )
+                    if allowlist.get("regexTarget") not in ("line", "match"):
+                        failures.append(
+                            f"{prefix} regexTarget must be line or match"
+                        )
+
+        if len(failures) == allowlist_failures_before:
+            print(
+                "SABLE_GITLEAKS_ALLOWLIST_SCOPE=PASS "
+                f"count={len(allowlists)}"
+            )
 
 policy_path = ROOT / "build" / "trusted-runner-policy.json"
 if policy_path.is_file():

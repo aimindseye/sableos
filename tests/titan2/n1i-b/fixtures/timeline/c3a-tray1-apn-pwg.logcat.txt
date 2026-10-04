@@ -1,0 +1,9 @@
+# synthetic C3A tray-1: initial attach and default data use pwg; IMS provider not found
+2026-10-01 10:00:00.000  1001  1001  2000  2000 D MtkProxyController: mainCapabilityPhoneId=0
+2026-10-01 10:00:01.000  1001  1001  2000  2000 D RILJ    : [0001]> SET_RADIO_CAPABILITY phase=FINISH status=success
+2026-10-01 10:00:02.000  1001  1001  2000  2000 D RILJ    : [0002]> setInitialAttachApn apn=pwg protocol=IPV6
+2026-10-01 10:00:03.000  1001  1001  2000  2000 D DataNetwork: onSetupDataCallDone apn=pwg rat=LTE cause=NONE CONNECTED
+2026-10-01 10:00:04.000  1001  1001  2000  2000 D DataNetwork: onSetupDataCallDone apn=ims types=ims rat=LTE cause=NONE CONNECTED
+2026-10-01 10:00:05.000  1001  1001  2000  2000 D ImsResolver: com.mediatek.ims not found for slot 0
+2026-10-01 10:00:10.000  1001  1001  2000  2000 D ServiceStateTracker: mVoiceRegState=0(IN_SERVICE) mDataRegState=0(IN_SERVICE)
+2026-10-01 10:12:00.000  1001  1001  2000  2000 D ServiceStateTracker: mVoiceRegState=0(IN_SERVICE) mDataRegState=0(IN_SERVICE)

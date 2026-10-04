@@ -23,6 +23,13 @@ text = text.replace(
     f'ROOT={root!r}',
     1,
 )
+text = text.replace(
+    "set -euo pipefail",
+    "set -Euo pipefail\n"
+    "trap 'rc=$?; printf \"SABLE_PIPELINE_BASE_FAILURE=rc=%s line=%s command=%q\\n\" "
+    "\"$rc\" \"${BASH_LINENO[0]:-0}\" \"${BASH_COMMAND:-UNKNOWN}\" >&2' ERR",
+    1,
+)
 old = '''for d in titan2 titan2-elite q27; do
   f="$ROOT/build/devices/$d.sh"
   grep -Fq 'SABLE_DEVICE_FLASH_SUPPORTED=NO' "$f"
@@ -69,10 +76,12 @@ path.write_text(text, encoding="utf-8")
 print("SABLE_PIPELINE_BASE_PATCH=PASS")
 PY
 
+echo "SABLE_PIPELINE_STEP=BASE_STANDARD_PIPELINE"
 set +e
 bash "$core" | tee "$core_log"
 core_rc="${PIPESTATUS[0]}"
 set -e
+echo "SABLE_PIPELINE_STEP_RESULT=BASE_STANDARD_PIPELINE rc=$core_rc"
 if ! grep -Fq 'SABLE_STANDARD_PIPELINE_CONTRACT=PASS' "$core_log"; then
   echo "SABLE_PIPELINE_BASE_CONTRACT=FAIL rc=$core_rc"
   exit "$core_rc"
@@ -96,38 +105,70 @@ echo "SABLE_PIPELINE_N1B_LOCAL_CI_BINDING=PASS"
 
 SABLEOS_DEVICE=titan2 \
 SABLEOS_RELEASE_VERSION=N1B \
-  bash "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1b-titan2-local-ci-static-contracts.sh"
+bash "$ROOT/build/gates/n1b-titan2-local-ci-static-contracts.sh"
 
+echo "SABLE_PIPELINE_STEP=build/gates/storage-root-contract.sh"
 bash "$ROOT/build/gates/storage-root-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/host-tools-contract.sh"
 bash "$ROOT/build/gates/host-tools-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-script-quality-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-script-quality-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-product-review-staging-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-product-review-staging-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e2-product-admission-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e2-product-admission-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e2-product-composition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e2-product-composition-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e3-systemimage-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e3-systemimage-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e4-deployment-readiness-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e4-deployment-readiness-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-execution-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e5b-standard-execution-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e6-standard-deployment-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e6-standard-deployment-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-restless-security-boundary-contract.sh"
 bash "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-source-lock-contract.sh"
 bash "$ROOT/build/gates/n1d-source-lock-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-fresh-source-contract.sh"
 bash "$ROOT/build/gates/n1d-fresh-source-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c2-source-admission-contract.sh"
 bash "$ROOT/build/gates/n1d-c2-source-admission-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c2-prebuilt-control-contract.sh"
 bash "$ROOT/build/gates/n1d-c2-prebuilt-control-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-phase-split-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-phase-split-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3a-control-evidence-contract.sh"
 bash "$ROOT/build/gates/n1d-c3a-control-evidence-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/c3a-v010014-control-contract.sh"
 bash "$ROOT/build/gates/c3a-v010014-control-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/c3a-v010014-live-preflight-contract.sh"
 bash "$ROOT/build/gates/c3a-v010014-live-preflight-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/c3a-v010014-fastboot-entry-preflight-contract.sh"
 bash "$ROOT/build/gates/c3a-v010014-fastboot-entry-preflight-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/c3a-v010014-standard-flash-plan-contract.sh"
 bash "$ROOT/build/gates/c3a-v010014-standard-flash-plan-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-transition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-transition-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-trebledroid-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-trebledroid-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-product-composition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-engineering-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-engineering-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-hub-parity-contract.py"
 python3 "$ROOT/build/gates/n1d-c3b-hub-parity-contract.py"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-product-parse-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-trebledroid-build-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-trebledroid-build-contract.sh"
 
 echo "SABLE_STANDARD_PIPELINE_CONTRACT=PASS"

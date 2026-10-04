@@ -1,0 +1,28 @@
+# class	secret_literal	line_used_for_mutation_test
+# SYNTHETIC VALUES ONLY. None of these identify a real device, SIM, person or place.
+# Every class in VERIFY_CLASS_NAMES must appear at least once (fixture completeness test).
+iccid	89012400000000000017	iccid: 89012400000000000017
+iccid	89012400000000000041	RIL_UNSOL_ICCID_CHANGED 89012400000000000041
+imei_imsi_meid	350000000000006	imei=350000000000006
+imei_imsi_meid	310240000000001	imsi: 310240000000001
+long_digit_run	310240000000099	Device id 310240000000099 attached
+e164_number	+15555550100	incoming from +15555550100 now
+phone_number_label	5555550101	line1Number=5555550101
+sip_uri_user	synthuser	P-Asserted-Identity sip:synthuser@example.net
+tel_uri	5555550103	handle tel:5555550103 state
+impi_impu	synthimpi	impi=synthimpi.private
+device_serial	SYNTHSERIAL0001	[ro.serialno]: [SYNTHSERIAL0001]
+device_serial	SYNTHSERIAL0002	serialno=SYNTHSERIAL0002
+literal_serial	SYNTHSERIAL0003	adb device SYNTHSERIAL0003 online
+cell_identity	20481357	CellIdentityLte:{ mCi=20481357 mPci=301 mTac=12345 mEarfcn=66786 }
+location	37.12345	mLatitude=37.12345 mLongitude=-122.12345
+siminfo_identity	Synthetic Owner Phone	Row: 9 display_name=Synthetic Owner Phone, carrier_name=T-Mobile
+email_or_account	synth.person@example.com	owner synth.person@example.com
+auth_material	0011223344556677	ImsSimAuth: RAND=0011223344556677 AUTN=8899aabbccddeeff
+message_content	Synthetic secret message 4242	SmsMessage body=Synthetic secret message 4242
+wifi_ssid_bssid	SynthHomeNet	SSID: SynthHomeNet
+literal_mac	02:00:00:aa:bb:cc	wlan0 hwaddr 02:00:00:aa:bb:cc
+literal_ipv4	10.123.45.67	addr 10.123.45.67 up
+literal_ipv6	2001:db8::1234	addr 2001:db8::1234 up
+apn_credential	synthapnpass	Row: 7 apn=fast.t-mobile.com, user=synthapnuser, password=synthapnpass, type=default
+modem_dump_payload	00112233445566778899AABB	modem DUMP=00112233445566778899AABB
