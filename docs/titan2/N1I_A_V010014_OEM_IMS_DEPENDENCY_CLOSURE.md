@@ -1,6 +1,6 @@
 # Titan 2 N1I-A — V01.00.14 OEM IMS dependency closure
 
-Status: **TOOLING READY — RESULTS PENDING FIRST BUILD-HOST RUN**
+Status: **REAL V01.00.14 HOST AUDIT COMPLETE — ONE AUDIT CLASSIFICATION FIX REQUIRES RE-RUN**
 
 This lane determines, from the exact retained stock V01.00.14 firmware, the
 minimum OEM MediaTek IMS payload a Titan-specific SableOS system image would have
@@ -102,29 +102,143 @@ by `apksigner`, `dalvik-exchange` dex, ELF libraries, rc and policy files:
 
 ## Results
 
-**Pending.** Run on the build host, then replace this section with the generated
-`N1I_A_V010014_OEM_IMS_REPORT.md` content (A1–A8, the 8-part minimal dependency
-table and the computed feasibility), the `inputs.tsv` hashes, and the reviewer's
-explicit:
+The real build-host run used the exact C3A control image and the retained
+V01.00.14 TEE14 reference. Both configured TEE14 roots contain identical pinned
+`product.img`, `system_ext.img`, `vendor.img`, and an identical
+`system.img`; the canonical `/srv/sable-build` root is selected for future
+runs.
 
 ```text
-OEM_MTKIMS_PORT_FEASIBILITY=
-REVIEWER_BASIS=
+STOCK_SYSTEM_SHA256=b2074e20afb6b1dccb87f804ec93b2b8cc64ac6f2366b8d3e6d52522f7f431bd
+STOCK_SYSTEM_BYTES=757059584
+C3A_SYSTEM_SHA256=4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16
 ```
 
-The acceptance markers below are emitted by the run; none is claimed here.
+### OEM IMS provider
+
+The V01.00.14 IMS provider is unambiguous:
 
 ```text
-N1I_A_V010014_STOCK_SOURCE=
-N1I_A_OEM_IMS_PACKAGE=
-N1I_A_OEM_IMS_SIGNATURE=
-N1I_A_FRAMEWORK_DEPENDENCY_CLOSURE=
-N1I_A_NATIVE_DEPENDENCY_CLOSURE=
-N1I_A_PERMISSIONS_SYSCONFIG=
-N1I_A_INIT_SERVICE_INVENTORY=
-N1I_A_SELINUX_INVENTORY=
-N1I_A_OPERATOR_PROFILE_INVENTORY=
-N1I_A_NO_BLOB_IMPORT=
-N1I_A_NO_DEVICE_CONTACT=
-N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE=
+OEM_IMS_PACKAGE_PATH=/system_ext/priv-app/ImsService/ImsService.apk
+OEM_IMS_PACKAGE_NAME=com.mediatek.ims
+OEM_IMS_VERSION=16
+OEM_IMS_TARGET_SDK=36
+OEM_IMS_APK_SHA256=30db90de9e21d153f93deff2cf3d6c1a73f9c3fd7090533055267ee64cc66539
+OEM_IMS_SHARED_UID=android.uid.phone
+BIND_IMS_SERVICE_USED=YES
 ```
+
+The APK is signed with the stock platform certificate
+`328c836238b9baf6864d462cf31c03da58953758df88f833ff19b5a8282d0836`.
+C3A uses a different platform certificate
+`c8a2e9bccf597c2fb6dc66bee293fc13f2fc47ec77bc6b2b0d52c11f51192ab8`.
+Therefore an OEM-port build cannot use the stock signature unchanged: the
+provider must be admitted/resigned consistently with the SableOS platform
+signature and the `android.uid.phone` shared-UID contract.
+
+### Framework closure
+
+The APK's Java dependency closure is substantially smaller than feared:
+
+```text
+REQUIRED_JARS=
+  /system_ext/framework/mediatek-common.jar
+  /system_ext/framework/mediatek-ims-base.jar
+
+APK_REFS_UNRESOLVED_COUNT=0
+APK_REFS_UNRESOLVED_MEDIATEK_COUNT=0
+APK_REFS_INTO_STOCK_AOSP_FRAMEWORK_JARS_NOT_IN_C3A=0
+```
+
+This is the key result: the real OEM provider does **not** statically require
+MediaTek modifications to AOSP `framework.jar`, `telephony-common.jar`,
+`ims-common.jar`, or `services.jar` that are absent from C3A. An OEM IMS
+fallback is therefore a Titan-specific compatibility layer, not presently a
+large framework fork.
+
+### Native closure
+
+The first host run reported:
+
+```text
+N1I_A_NATIVE_DEPENDENCY_CLOSURE=FAIL_UNRESOLVED_NEEDED
+NATIVE_UNRESOLVED=
+  libandroidicu.so
+  libdl_android.so
+  libicu.so
+  libnativehelper.so
+```
+
+Review found this to be an **audit classification defect**, not evidence of four
+missing MediaTek libraries. These are Android platform/runtime module libraries:
+the ICU libraries are supplied by the i18n module, `libnativehelper` by the ART
+runtime module, and `libdl_android` by bionic/runtime. They can be absent from
+the extracted flat `/system/lib64` tree while still being platform-provided at
+runtime. The audit has been corrected to classify these as platform/APEX
+dependencies. Re-run the corrected audit before marking the PR complete.
+
+The stock analysis also identifies 32 relevant native/vendor components already
+satisfied by the preserved V01.00.14 vendor, including the MTK RadioEx IMS
+interface and VoLTE/RCS UA components. The candidate OEM fallback still brings a
+non-trivial system-side native closure, so it remains a **moderate** Titan
+compatibility layer rather than an APK-only change.
+
+### Permissions, init, SELinux and dual IMS
+
+Required/likely configuration includes the MediaTek privapp allowlists,
+`system-ext-permissions-mediatek.xml`, and
+`com.mediatek.ims.config.xml`. The preserved vendor contains the VoLTE client
+service, but the static analysis does not prove that a GSI must manually start
+it.
+
+The stock vendor configuration includes:
+
+```text
+persist.vendor.ims_support=1
+persist.vendor.mims_support=2
+persist.vendor.mtk.volte.enable=1
+persist.vendor.mtk_dynamic_ims_switch=1
+persist.vendor.mtk_wfc_support=1
+persist.vendor.volte_support=1
+```
+
+`persist.vendor.mims_support=2` is important for SableOS product requirements:
+Titan 2 has two physical SIM slots and no eSIM fallback, so any final IMS
+solution must support both physical subscriptions and dual-SIM operation. This
+property is supporting stock evidence, not by itself proof that both slots work
+under C3A.
+
+### Reviewer feasibility decision
+
+```text
+OEM_MTKIMS_PORT_FEASIBILITY=MODERATE_TITAN_SPECIFIC_LAYER
+REVIEWER_BASIS=API36 OEM provider; two required MTK framework jars; no unresolved Java/MediaTek references; no dependency on MTK-modified AOSP core framework; shared android.uid.phone signature boundary and non-trivial native/policy closure remain.
+```
+
+This makes OEM MtkIms a viable **fallback**, but not the preferred first
+experiment. The existing TrebleDroid GSI-oriented MTK IMS provider should be
+tested first because C3A already contains the corresponding compatibility
+shims.
+
+### Host-run markers
+
+First real host run:
+
+```text
+N1I_A_V010014_STOCK_SOURCE=PASS
+N1I_A_OEM_IMS_PACKAGE=PASS
+N1I_A_OEM_IMS_SIGNATURE=PASS
+N1I_A_FRAMEWORK_DEPENDENCY_CLOSURE=PASS
+N1I_A_NATIVE_DEPENDENCY_CLOSURE=FAIL_UNRESOLVED_NEEDED
+N1I_A_PERMISSIONS_SYSCONFIG=PASS
+N1I_A_INIT_SERVICE_INVENTORY=PASS
+N1I_A_SELINUX_INVENTORY=PASS
+N1I_A_OPERATOR_PROFILE_INVENTORY=PASS
+N1I_A_NO_BLOB_IMPORT=PASS
+N1I_A_NO_DEVICE_CONTACT=PASS
+N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE=FAIL
+```
+
+The sole failure is the corrected A4 platform/APEX classification above. A
+second host run is required to confirm all markers PASS before #295 is marked
+ready for review.
