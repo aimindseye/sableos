@@ -2,7 +2,7 @@
 """N1I-B2 native rederivation / JNI attribution self-test (synthetic fixtures built at test time).
 
 Prints CASE<TAB>native<TAB>id<TAB>PASS|FAIL<TAB>detail ; exit 0 only if every case passes.
-Missing javac / dx / dexdump / clang+lld / gcc is a FAIL, never a skip.
+Missing javac / dx-or-d8 / dexdump / clang+lld / gcc is a FAIL, never a skip.
 """
 from __future__ import annotations
 
@@ -18,6 +18,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(subprocess.check_output(["git", "-C", str(HERE), "rev-parse", "--show-toplevel"], text=True).strip())
+sys.path.insert(0, str(HERE / "lib"))
+from toolchain import compile_dex, find_dex_compiler, prepare_tool_path  # noqa: E402
+
+prepare_tool_path(("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "gcc", "readelf"))
 sys.path.insert(0, str(ROOT / "build/titan2"))
 import n1i_static as S  # noqa: E402
 
@@ -35,13 +39,6 @@ def case(cid: str, ok: bool, detail: str = "") -> None:
 
 def sh(cmd) -> subprocess.CompletedProcess:
     return subprocess.run([str(c) for c in cmd], capture_output=True, text=True)
-
-
-def find_dx() -> str | None:
-    for c in (shutil.which("dx"), "/usr/lib/android-sdk/build-tools/debian/dx"):
-        if c and Path(c).exists():
-            return c
-    return None
 
 
 def refix(data: bytearray) -> bytes:
@@ -71,8 +68,8 @@ def craft_moved(dex_path: Path) -> bytes:
 
 
 def build(td: Path) -> dict:
-    dx = find_dx()
-    need = {"javac": shutil.which("javac"), "dx": dx, "dexdump": shutil.which("dexdump"),
+    compiler = find_dex_compiler()
+    need = {"javac": shutil.which("javac"), "dex_compiler": compiler, "dexdump": shutil.which("dexdump"),
             "clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld"), "gcc": shutil.which("gcc")}
     if not all(need.values()):
         raise RuntimeError(f"missing tools {[k for k, v in need.items() if not v]}")
@@ -86,9 +83,9 @@ def build(td: Path) -> dict:
     r = sh(jc + ["-bootclasspath", td / "core", "-d", td / "app"] + sorted((NAT / "java/app").rglob("*.java")))
     if r.returncode:
         raise RuntimeError("javac app: " + r.stderr[-300:])
-    r = sh([dx, "--dex", "--min-sdk-version=26", f"--output={td / 'app.dex'}", td / "app"])
+    r = compile_dex(compiler, td / "app", td / "app.dex", min_api=26)
     if r.returncode:
-        raise RuntimeError("dx: " + r.stderr[-300:])
+        raise RuntimeError(f"{compiler[0]}: " + r.stderr[-300:])
     (td / "app-crafted.dex").write_bytes(craft_moved(td / "app.dex"))
 
     cc = ["clang", "--target=aarch64-linux-gnu", "-fuse-ld=lld", "-shared", "-fPIC", "-nostdlib"]
