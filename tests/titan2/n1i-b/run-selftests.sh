@@ -24,6 +24,7 @@ COMPONENTS=(
   "capture_cli|READ_ONLY_GUARD_TESTS|bash $HERE/test-capture-cli.sh $([[ $QUICK -eq 1 ]] && echo --quick)"
   "sanitizer|SANITIZER_FIXTURE_TESTS|python3 $HERE/test-sanitizer.py"
   "timeline|TIMELINE_B0_APN_TESTS|python3 $HERE/test-timeline.py"
+  "static|N1I_STATIC_DEXDUMP_ORACLE|python3 $HERE/test-static.py"
 )
 
 declare -A MARK_STATE=()
