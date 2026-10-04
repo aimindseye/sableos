@@ -190,6 +190,17 @@ def semantic_rule_tests() -> None:
          decl is not None and decl.desc == base.desc and field is not None and missing is None,
          decl.desc if decl else str(missing))
 
+    root_i = klass("Lfw/RootI;", access=m.S.ACC_PUBLIC | m.S.ACC_INTERFACE)
+    left_i = klass("Lfw/LeftI;", interfaces=(root_i.desc,), access=m.S.ACC_PUBLIC | m.S.ACC_INTERFACE)
+    right_i = klass("Lfw/RightI;", interfaces=(root_i.desc,), access=m.S.ACC_PUBLIC | m.S.ACC_INTERFACE)
+    diamond_i = klass("Lfw/DiamondI;", interfaces=(left_i.desc, right_i.desc),
+                      access=m.S.ACC_PUBLIC | m.S.ACC_INTERFACE)
+    for k in (root_i, left_i, right_i, diamond_i):
+        w.classes[k.desc] = k
+    decl, field, missing = m.lookup_field(w, diamond_i, "absent", "I")
+    case("field_resolution_diamond_not_cycle",
+         decl is None and field is None and missing is None, str(missing))
+
     # Cross-package protected instance access also constrains the symbolic owner.
     caller = klass("Lapp/Sub;", superclass=base.desc, access=m.S.ACC_PUBLIC)
     sibling = klass("Lfw/Sibling;", superclass=base.desc, access=m.S.ACC_PUBLIC)
