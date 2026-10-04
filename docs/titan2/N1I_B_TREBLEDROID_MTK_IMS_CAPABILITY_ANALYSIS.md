@@ -17,16 +17,16 @@ Verification script: `build/titan2/audit-n1i-b-trebledroid-mtk-ims-capability.sh
 
 Telephony on Titan 2 is two separable problems. Do not merge them.
 
-1. **Registration/capability placement.** A controlled physical tray test now
-   materially narrows this fault. With the SIM in tray 1, the observed
-   `simswitch=1` / capability-slot=1 state is aligned and the phone remained
-   HOME / NOT_ROAMING on 310260 for roughly 15 minutes with LTE band 66,
-   NR_NSA/ENDC available, packet data connected, no cause-13 rejection and no
-   `ERROR_UNSPECIFIED` teardown. In the earlier tray-2 state the SIM was
-   `ABSENT,LOADED` while capability remained 1 and registration later failed.
-   This strongly supports capability placement as a contributor, but does not
-   prove the vendor properties themselves are causal because the physical SIM
-   move also involved a power/SIM reset.
+1. **Registration/capability placement.** Later runtime evidence supersedes
+   the earlier property-mismatch interpretation. Factory V01.00.14 provides
+   full data, SMS/MMS and bidirectional voice with the same SIM alone in either
+   physical tray. In stock tray 2, `simswitch=1` and
+   `c_capability_slot=1` remain unchanged while default phone/data routing
+   moves to phone 1 and a real radio-capability transaction is executed. The
+   vendor properties therefore are not a demonstrated tray selector. The GSI
+   registration collapse can also reproduce on tray 1, so physical-tray
+   placement is not the primary explanation. Whether the GSI executes the same
+   real capability/recovery path remains unproven.
 2. **IMS / voice.** The configuration routes MMTEL to `com.mediatek.ims`, but no
    package provides it. The tray-1 runtime cleanly separates this from basic
    registration: cellular data and SMS/MMS send/receive work while outgoing
@@ -45,8 +45,11 @@ On capability switching:
   appear in no AOSP, TrebleDroid or Restless source. They are vendor-namespace
   state, not an AOSP interface. Writing them is not equivalent to the modem
   operation, so we do not recommend forcing them.
-- Whether AOSP actually issues the HAL call on Titan 2 is **unproven offline**.
-  A single read-only log line discriminates it (section 6).
+- Factory-stock Titan 2 runtime now proves that the real capability path is
+  exercised: the log contains MediaTek `NW_SET_RADIO_CAPABILITY_REQ`,
+  framework `SET_RADIO_CAPABILITY` / `MtkProxyController`, and the default
+  data phone moves to phone 1 when the only SIM is in tray 2. Whether the
+  **GSI** runtime executes the equivalent transaction remains unproven.
 
 On IMS:
 
@@ -286,7 +289,7 @@ Settings / any MODIFY_PHONE_STATE caller
 | Who chooses the primary capability phone? | `remapRafIfApplicable`: the phone whose slot maps to the default data subId gets the maximum RAF. No vendor input is consulted. |
 | Does default data SIM trigger it? | YES, on change only. |
 | Does default voice SIM trigger it? | NO. `setDefaultVoiceSubId` sets the Settings value, the Telecom outgoing account and the default-sub broadcast, and never calls `remapRafIfApplicable`. (AtlasOS 0096 deliberately adds a voice-driven path; that is not AOSP behavior.) |
-| Does AOSP currently issue it on Titan 2? | **UNPROVEN offline.** Three conditions must all hold: the default data subId changes; per-phone RAF currently differs, otherwise it is a logged no-op; the HAL supports the call. When the SIM keeps its subscription record (same ICCID, the normal case), moving it between trays keeps the same subId; `MultiSimSettingController` compares subId lists and returns `PRIMARY_SUB_NO_CHANGE`, so a physical tray swap by itself issues nothing. |
+| Does the real capability transaction occur on Titan 2? | **YES on factory V01.00.14 stock; GSI runtime remains UNPROVEN.** Stock tray 2 logs show `NW_SET_RADIO_CAPABILITY_REQ`, `MtkProxyController`, `SET_RADIO_CAPABILITY`, successful capability responses, and `Default data phoneid = 1`. This is stronger than the prior offline prediction. |
 | Can a privileged system component request it without vendor framework code? | Indirectly YES, by changing the default data sub. Directly NO: `ProxyController.setRadioCapability` is not exposed over Binder (`PhoneInterfaceManager` only reads RAF) and there is no `cmd phone` subcommand for it. A second HAL client calling `IRadioModem` would bypass RIL's session, and the response routes to RIL's callbacks. We do not recommend it. |
 | Does the vendor HAL return success/failure? | Yes. `setRadioCapabilityResponse` carries `RadioResponseInfo`. `REQUEST_NOT_SUPPORTED` is a permanent failure and aborts. A failed START or APPLY triggers FINISH with failure and a revert to the old RAF. What the **MTK** HAL returns is UNVERIFIED. |
 | Does switching cause a modem reset? | The AIDL contract warns it "may cause some vendor modems to reset" and that following commands may not be processed. Whether the MTK modem resets is UNVERIFIED. |
@@ -463,7 +466,7 @@ Verdicts: SUPPORTED, PARTIALLY_SUPPORTED, UNPROVEN, CONTRADICTED.
 
 | ID | Proposition | Verdict | Exact basis |
 |---|---|---|---|
-| P1 | Capability-slot mismatch can explain the tray-2 failure | PARTIALLY_SUPPORTED | The initial tray-1 run was stable for ~15 minutes, but a later tray-1 run after the IMS trial/rollback reproduced the same failure family: a real pwg LTE data session connected on ccmni1, later disconnected with ERROR_UNSPECIFIED, then registration fell through reject causes 13/15/11 into emergency-only. Therefore tray/capability alignment is not sufficient to prevent the collapse. A tray-2 mismatch may still be a separate DSDS/capability defect, but it is no longer evidence for the primary registration failure. |
+| P1 | Capability-slot mismatch can explain the tray-2 failure | UNPROVEN | Stock tray 2 is fully functional while `simswitch=1` and `c_capability_slot=1` remain unchanged. Stock instead performs a real radio-capability transaction and moves default phone/data routing to phone 1. The GSI collapse also reproduces on tray 1. A missing or incomplete real capability transaction in GSI remains possible, but the observed vendor-property values do not establish a mismatch. |
 | P2 | Property forcing is equivalent to real radio-capability switching | CONTRADICTED | The real path is a transactional modem command (section 5). The properties are vendor-namespace state that appear in no AOSP source. Atlas itself says the vendor ignores plain setprop and NVRAM rewrites the value. At most it is a boot-time input, not the operation. |
 | P3 | Missing IMS can cause incoming-call failure | SUPPORTED | Source establishes that `ImsResolver` cannot bind a missing provider. Runtime separation now strengthens this materially: on the stable tray-1 run, packet data and SMS/MMS work, outgoing voice ends immediately, incoming voice routes to voicemail, and IMS remains unavailable. This supports IMS/MMTEL as the active voice blocker while still avoiding the stronger claim that every possible call failure has only one cause. |
 | P4 | Missing IMS causes cause 13 | CONTRADICTED | The tray-1 runtime is stronger evidence than the earlier window: IMS stayed unavailable throughout while LTE/NR_NSA registration, packet data and SMS/MMS remained stable and no cause 13 occurred. Missing IMS is therefore not a sufficient cause of the registration collapse observed on tray 2. |
@@ -668,13 +671,102 @@ restart RIL, `setenforce`, insert APNs, force carrier config, or force network m
 
 `adb shell pm uninstall com.mediatek.ims`. The overlay and image are untouched.
 
+## 10B. Runtime supersession: stock tray 2 and completed IMS trial
+
+Later operator evidence resolves several questions that were intentionally left
+open by this source-analysis lane.
+
+### Real capability switching is proven on stock
+
+With the same SIM alone in physical tray 2, factory V01.00.14 passes cellular
+data, SMS/MMS, outgoing voice and incoming voice. Runtime state moves the active
+subscription to phone 1:
+
+```text
+gsm.sim.state=ABSENT,LOADED
+mDefaultPhoneId=1
+mDefaultSubId=1
+mActiveDataSubId=1
+```
+
+while these vendor properties remain unchanged:
+
+```text
+persist.vendor.radio.simswitch=1
+persist.vendor.radio.c_capability_slot=1
+```
+
+The radio/framework log contains the actual transaction:
+
+```text
+queryMainProtocol, main_sim:1
+NW_SET_RADIO_CAPABILITY_REQ
+MtkProxyController
+SET_RADIO_CAPABILITY
+EVENT_UNSOL_RADIO_CAPABILITY_CHANGED
+DSSExt: Default data phoneid = 1
+```
+
+This proves the distinction made earlier in this report: writing the vendor
+properties is not equivalent to the modem capability transaction, and a
+property-value change is not required for working stock tray-2 operation.
+
+### Stock can recover from the same class of transient data failure
+
+Stock tray 2 briefly shows:
+
+```text
+fast.t-mobile.com CONNECTING
+ERROR_UNSPECIFIED / DISCONNECTED
+rejectCause=27 / EMERGENCY
+```
+
+and then automatically returns to HOME, reconnects the Internet bearer and IMS
+bearer, and reaches IMS registration on phone 1.
+
+Therefore:
+
+```text
+ERROR_UNSPECIFIED_AS_SOLE_ROOT_CAUSE=NO
+APN_ONLY_FIX_JUSTIFIED=NO
+STOCK_RECOVERY_STABILIZATION_PATH=INVESTIGATE
+```
+
+The failing GSI remains different because its later teardown is followed by
+persistent/repeated registration rejection instead of durable recovery.
+
+Stock runtime also exposes MediaTek framework/modem integration markers not
+present in the generic source path studied above: `MtkProxyController`,
+`DSSExt`, `MtkGsmCdmaPhone`, MTK service-state handling, `EDATASIM`,
+`MODE_SWITCH_BY_DATA`, and `IA MD Preferred APN`. These are now the primary
+offline stock-vs-GSI closure targets.
+
+### Generic TrebleDroid IMS trial is complete and failed
+
+The operator separately verified the PHH-signed
+`ims-mtk-u-resigned.apk`, installed it in the bounded C3A-derived runtime,
+and observed that the service bound and MMTEL features became ready but IMS did
+not register. The package was removed after packet data also regressed.
+
+Accordingly, the original source-analysis recommendation to try this provider
+first is completed and superseded:
+
+```text
+TREBLEDROID_MTK_IMS_RUNTIME_TRIAL=FAIL_BOUND_READY_BUT_UNREGISTERED
+TREBLEDROID_MTK_IMS_PROVIDER_RETAIN=NO
+OEM_MTKIMS_WORKING_STOCK_REFERENCE=YES
+```
+
+The next IMS work is the minimal OEM V01.00.14 dependency closure, but it should
+not be combined with the next registration/data experiment.
+
 ## 11. Final decisions
 
 ```text
 TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN
 REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO
 PROPERTY_HOLD_REQUIRED=NO
-TREBLEDROID_MTK_IMS_FIRST_TRIAL=YES
+TREBLEDROID_MTK_IMS_FIRST_TRIAL=NO
 OEM_MTKIMS_NEXT_IF_GSI_IMS_FAILS=YES
 FRAMEWORK_PATCH_REQUIRED_NOW=NO
 MTK_RADIOEX_SHIM_REQUIRED_NOW=NO
@@ -684,10 +776,10 @@ STOCK_SUPER_HYBRID_REQUIRED_NOW=NO
 
 | Decision | Justification |
 |---|---|
-| `TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN` | A later aligned tray-1 run reproduced the same data teardown and registration-reject family. Capability alignment remains required for correct dual-SIM behavior, but it is not sufficient to explain or prevent the primary registration collapse. |
-| `REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO` | The real switch already exists in AOSP and follows default data. No new SableOS code is justified before the read-only check in section 6 shows it is inert. |
+| `TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN` | Stock tray 2 works fully with the observed vendor properties still at 1/1 and performs a real capability transaction. A GSI failure to perform or complete that transaction remains possible, but a property mismatch is not established. |
+| `REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO` | Stock runtime proves the real switch already operates through the framework/vendor path. Do not invent a parallel Sable switch implementation; first identify why the GSI does or does not exercise the equivalent path. |
 | `PROPERTY_HOLD_REQUIRED=NO` | Properties are vendor-owned, absent from all framework source, and not shown necessary. A blind periodic hold also violates the healing rules. |
-| `TREBLEDROID_MTK_IMS_FIRST_TRIAL=YES` | Cheapest option, already wired in C3A with its compatibility shims. Gated on host-side provenance and signer verification and limited to the C3A lab image. |
+| `TREBLEDROID_MTK_IMS_FIRST_TRIAL=NO` | The operator completed the bounded trial. The provider installed and bound, but IMS remained unregistered and the trial preceded a cellular-data regression; it was removed. Do not repeat this as the next experiment. |
 | `OEM_MTKIMS_NEXT_IF_GSI_IMS_FAILS=YES` | Next in preference order after routing correction. Crosses the proprietary boundary, so it needs a separate admission decision. |
 | `FRAMEWORK_PATCH_REQUIRED_NOW=NO` | The needed MTK-IMS shims are already in C3A. A further patch needs a specific observed symbol failure. |
 | `MTK_RADIOEX_SHIM_REQUIRED_NOW=NO` | The null indication is not shown to affect registration, and no vendor interface definition exists in the source set. |

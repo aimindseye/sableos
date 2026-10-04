@@ -60,9 +60,9 @@ mobile_data=1
 data_roaming=0
 ```
 
-This is a single-SIM tray-1 control. It does not qualify tray 2 or two-SIM DSDS;
-those remain mandatory product requirements because Titan 2 has two physical
-SIM slots and no eSIM fallback.
+This section is the single-SIM tray-1 control. A separate stock tray-2 control
+below also passes. Two-SIM DSDS remains a mandatory pending product requirement
+because Titan 2 has two physical SIM slots and no eSIM fallback.
 
 ## Registration and data
 
@@ -157,21 +157,134 @@ STOCK_INCOMING_VOICE=PASS
 STOCK_TELEPHONY_CONTROL=PASS
 ```
 
+## Stock tray-2 single-SIM control
+
+The same physical SIM was moved to tray 2 under the unchanged factory-stock
+V01.00.14 stack and the phone was power-cycled. Raw tray-2 logs are deliberately
+kept off-repo and hash-pinned:
+
+```text
+TRAY2_TELEPHONY_RAW_SHA256=b77da3775575310401bbaaa5cc998cd9d2f31e828fde334c08b00aca51dc4a89
+TRAY2_TELEPHONY_RAW_BYTES=149824
+TRAY2_RADIO_RAW_SHA256=3e23000d91cd216a07cee55d90eab1d411c82baf26901547a4f3ed50bbdda76c
+TRAY2_RADIO_RAW_BYTES=1476929
+```
+
+Observed stable end state:
+
+```text
+gsm.sim.state=ABSENT,LOADED
+gsm.sim.operator.numeric=,310240
+gsm.operator.numeric=,310260
+gsm.network.type=Unknown,LTE
+
+persist.vendor.radio.simswitch=1
+persist.vendor.radio.c_capability_slot=1
+
+mDefaultPhoneId=1
+mDefaultSubId=1
+mActiveDataSubId=1
+
+DEFAULT_APN=fast.t-mobile.com
+DATA_INTERFACE=ccmni1
+IMS_INTERFACE=ccmni2
+TRAY2_IMS_REGISTRATION=PASS
+```
+
+The key capability result is that stock does **not** require the two observed
+vendor properties to numerically change when the active physical SIM moves from
+tray 1 to tray 2. They remain `1` / `1`, while framework/default-subscription
+state moves to phone 1 and the actual modem capability transaction runs.
+
+The stock radio path contains:
+
+```text
+queryMainProtocol, main_sim:1
+NW_SET_RADIO_CAPABILITY_REQ
+MtkProxyController
+SET_RADIO_CAPABILITY
+EVENT_UNSOL_RADIO_CAPABILITY_CHANGED
+DSSExt: Default data phoneid = 1
+```
+
+Therefore writing `persist.vendor.radio.simswitch` or
+`persist.vendor.radio.c_capability_slot` is not the demonstrated mechanism for
+a working tray-2 switch. A property-hold workaround remains rejected.
+
+Stock also exposes modem/framework capability signals absent from the generic
+GSI analysis:
+
+```text
+EDATASIM Supported
+IA MD Preferred APN
+MODE_SWITCH_BY_DATA
+MtkProxyController
+DSSExt
+MtkGsmCdmaPhone
+MediaTek service-state handling (MTKSST)
+```
+
+These are now first-class stock-vs-GSI comparison targets.
+
+### Transient stock failure and successful recovery
+
+During tray-2 boot, stock briefly attempts `fast.t-mobile.com`, receives
+`ERROR_UNSPECIFIED`, and enters an emergency state with reject cause 27.
+Unlike the failing GSI, stock recovers automatically within seconds:
+
+```text
+fast.t-mobile.com CONNECTING
+ -> ERROR_UNSPECIFIED / DISCONNECTED
+ -> rejectCause=27 / EMERGENCY
+ -> HOME / IN_SERVICE
+ -> fast.t-mobile.com CONNECTED on ccmni1
+ -> ims CONNECTED on ccmni2
+ -> +CIREGU:1,f
+ -> setImsRegistrationState registered=true
+```
+
+This materially changes the diagnosis:
+
+```text
+ERROR_UNSPECIFIED_AS_SOLE_ROOT_CAUSE=NO
+TRANSIENT_REGISTRATION_REJECT_CAN_RECOVER_ON_STOCK=YES
+APN_ONLY_FIX_JUSTIFIED=NO
+```
+
+The stock-vs-GSI question is now **why the stock telephony environment
+recovers/stabilizes and the GSI environment eventually does not**, rather than
+whether an `ERROR_UNSPECIFIED` event can occur at all.
+
+### Tray-2 functional qualification
+
+Operator-validated with the same SIM in tray 2:
+
+```text
+TRAY2_CELLULAR_DATA=PASS
+TRAY2_SMS_MMS_SEND_RECEIVE=PASS
+TRAY2_OUTGOING_VOICE=PASS
+TRAY2_INCOMING_VOICE=PASS
+TRAY2_SINGLE_SIM_CONTROL=PASS
+STOCK_BOTH_PHYSICAL_TRAYS_SINGLE_SIM=PASS
+DUAL_SIM_DSDS_CONTROL=PENDING
+```
+
 ## Engineering conclusions
 
-1. The physical SIM, serving network, modem firmware and tray-1 hardware can
-   provide stable full telephony on V01.00.14.
+1. The physical SIM, serving network and modem firmware can provide full
+   telephony on V01.00.14 with the SIM alone in either physical tray.
 2. The GSI registration/data instability is system-environment-dependent rather
    than an unavoidable carrier/SIM/device failure.
-3. Stock uses `fast.t-mobile.com` while the failing GSI used `pwg`; carrier/APN
-   selection must be compared before another long GSI radio trial.
+3. Stock uses `fast.t-mobile.com` while the failing GSI used `pwg`, but stock
+   itself can transiently receive `ERROR_UNSPECIFIED` and recover. APN selection
+   remains a material delta, but an APN-only fix is not justified.
 4. Voice is a separate delta: stock has the OEM API-36 MediaTek IMS closure and
    a validated IMS/MMTEL bearer. The generic TrebleDroid IMS APK did not reach
    the same state.
 5. `mtkImsIndication == NULL` is observed in a fully working stock boot and is
    demoted from a root-cause signal.
-6. Both physical SIM slots plus two-SIM DSDS remain required; this control only
-   proves tray-1 single-SIM behavior.
+6. Single-SIM behavior now passes in both physical trays. Two-SIM DSDS remains
+   unqualified and mandatory.
 
 ## Next comparison
 
@@ -180,8 +293,9 @@ C3A/N1G system environment in two independent lanes:
 
 ```text
 DATA/REGISTRATION:
-  carrier identity + APN selection + carrier config + data profile
-  stock fast.t-mobile.com vs GSI pwg
+  stock MTK capability/recovery path + carrier/APN/data-profile handling
+  MtkProxyController / DSSExt / MTKSST / EDATASIM / MODE_SWITCH_BY_DATA
+  stock fast.t-mobile.com vs GSI pwg remains a delta, not a proven root cause
 
 VOICE/IMS:
   OEM com.mediatek.ims closure + required MTK framework/native/policy pieces

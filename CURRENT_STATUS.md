@@ -178,8 +178,18 @@ GSI_DEFAULT_APN_OBSERVED=pwg
 APN_SELECTION_DELTA_REQUIRES_INVESTIGATION=YES
 OEM_IMS_CLOSURE_REQUIRES_INVESTIGATION=YES
 MTK_IMS_INDICATION_NULL_AS_ROOT_CAUSE=REJECTED_BY_WORKING_STOCK_CONTROL
-TRAY2_SINGLE_SIM_CONTROL=PENDING
+TRAY2_SINGLE_SIM_CONTROL=PASS
+STOCK_BOTH_PHYSICAL_TRAYS_SINGLE_SIM=PASS
+STOCK_REAL_RADIO_CAPABILITY_TRANSACTION=PASS
+STOCK_TRAY2_PROPERTY_VALUE_CHANGE_REQUIRED=NO
+STOCK_TRAY2_TRANSIENT_ERROR_UNSPECIFIED_RECOVERED=YES
+STOCK_TRAY2_TRANSIENT_REJECT_CAUSE_27_RECOVERED=YES
+ERROR_UNSPECIFIED_AS_SOLE_ROOT_CAUSE=NO
+APN_ONLY_FIX_JUSTIFIED=NO
+TREBLEDROID_MTK_IMS_RUNTIME_TRIAL=FAIL_BOUND_READY_BUT_UNREGISTERED
+GSI_REAL_CAPABILITY_SWITCH_RUNTIME_STATUS=UNPROVEN
 DUAL_SIM_DSDS_CONTROL=PENDING
+NEXT_ACTION=OFFLINE_STOCK_VS_GSI_MTK_TELEPHONY_FRAMEWORK_CLOSURE
 ```
 
 The raw stock capture is retained off-repo and hash-pinned. Git stores only the
@@ -187,9 +197,13 @@ sanitized engineering reference and sanitizer. See
 `docs/titan2/evidence/N1I_F_STOCK_V010014_CONTROL_SANITIZED.md`.
 
 The next GSI work must treat registration/data and IMS/voice as separate
-deltas. Stock selects `fast.t-mobile.com` for the validated Internet bearer;
-the failing GSI selected `pwg`. Stock also provides the OEM API-36
-`com.mediatek.ims` closure and a validated IMS/MMTEL bearer.
+deltas. Stock single-SIM functionality now passes in both physical trays.
+Tray-2 stock proves a real radio-capability transaction and moves default
+phone/data routing to phone 1 without changing the observed 1/1 vendor property
+values. Stock can also transiently hit `ERROR_UNSPECIFIED` plus reject cause 27
+and recover automatically, so neither `ERROR_UNSPECIFIED` nor the APN delta is
+a sufficient root cause by itself. The next action is an offline stock-vs-GSI
+MediaTek telephony framework/recovery closure audit before another flash.
 
 ## Titan 2 C3B state
 

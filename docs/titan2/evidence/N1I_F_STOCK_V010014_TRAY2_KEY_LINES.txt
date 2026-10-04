@@ -1,0 +1,82 @@
+# Sanitized key lines derived from stock tray-2 controls
+# Raw source files remain off-repo.
+# stock-tray2-telephony.txt SHA256=b77da3775575310401bbaaa5cc998cd9d2f31e828fde334c08b00aca51dc4a89
+# stock-tray2-radio.txt SHA256=3e23000d91cd216a07cee55d90eab1d411c82baf26901547a4f3ed50bbdda76c
+# Subscriber identifiers, IP addresses, cell CI/PCI/TAC and raw modem payloads omitted.
+
+[slot]
+gsm.sim.state=ABSENT,LOADED
+gsm.sim.operator.numeric=,310240
+gsm.operator.numeric=,310260
+gsm.network.type=Unknown,LTE
+persist.vendor.radio.simswitch=1
+persist.vendor.radio.c_capability_slot=1
+
+[framework_routing]
+phone0=POWER_OFF
+phone1=IN_SERVICE
+mDefaultPhoneId=1
+mDefaultSubId=1
+mActiveDataSubId=1
+voice_registration=HOME
+data_registration=HOME
+roaming=NOT_ROAMING
+rat=LTE
+display_override=NR_NSA
+
+[data_end_state]
+default_apn=fast.t-mobile.com
+default_interface=ccmni1
+default_state=CONNECTED
+default_fail_cause=NONE
+
+[ims_end_state]
+ims_apn=ims
+ims_interface=ccmni2
+ims_state=CONNECTED
+ims_fail_cause=NONE
+ims_registration=PASS
+ims_registration_signal=+CIREGU:1,f
+framework_ims_registered=true
+
+[real_capability_switch]
+queryMainProtocol_main_sim=1
+NW_SET_RADIO_CAPABILITY_REQ_count=2
+MtkProxyController=OBSERVED
+SET_RADIO_CAPABILITY=OBSERVED
+EVENT_UNSOL_RADIO_CAPABILITY_CHANGED=OBSERVED
+DSSExt_Default_data_phoneid=1
+property_value_change_required=NO
+
+[stock_modem_framework_features]
+EDATASIM_Supported=1
+IA_MD_Preferred_APN=1
+MODE_SWITCH_BY_DATA=1
+
+[transient_boot_sequence]
+event_1=fast.t-mobile.com CONNECTING
+event_2=ERROR_UNSPECIFIED DISCONNECTED
+event_3=rejectCause 27 EMERGENCY
+event_4=HOME IN_SERVICE
+event_5=fast.t-mobile.com CONNECTED
+event_6=ims CONNECTED
+event_7=IMS registered
+interpretation=ERROR_UNSPECIFIED and a transient reject are recoverable on stock
+
+[functional_validation]
+cellular_data=PASS
+sms_mms_send_receive=PASS
+outgoing_voice=PASS
+incoming_voice=PASS
+single_sim_tray2=PASS
+single_sim_both_physical_trays=PASS
+two_sim_dsds=PENDING
+
+[gsi_comparison]
+gsi_persistent_failure_after_error_unspecified=YES
+error_unspecified_as_sole_root_cause=NO
+gsi_default_apn_observed=pwg
+stock_default_apn=fast.t-mobile.com
+apn_only_fix_justified=NO
+gsi_real_capability_switch_runtime_status=UNPROVEN
+next_action=OFFLINE_STOCK_VS_GSI_MTK_TELEPHONY_FRAMEWORK_CLOSURE

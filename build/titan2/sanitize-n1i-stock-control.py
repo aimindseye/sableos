@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import re
 from pathlib import Path
 
@@ -28,9 +29,9 @@ RADIO_KEYS = re.compile(
     re.I,
 )
 IPV4 = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?:/\d{1,2})?")
-IPV6 = re.compile(
-    r"(?<![0-9A-Fa-f:])(?:[0-9A-Fa-f]{0,4}:){2,}[0-9A-Fa-f]{0,4}"
-    r"(?:/\d{1,3})?(?![0-9A-Fa-f:])"
+IPV6_CANDIDATE = re.compile(
+    r"(?<![0-9A-Fa-f:])(?:[0-9A-Fa-f]{1,4}:){2,}"
+    r"[0-9A-Fa-f:]*(?:/\d{1,3})?(?![0-9A-Fa-f:])"
 )
 MAC = re.compile(r"(?i)(?<![0-9a-f])(?:[0-9a-f]{2}:){5}[0-9a-f]{2}(?![0-9a-f])")
 LABEL_PATTERNS = (
@@ -41,6 +42,35 @@ LABEL_PATTERNS = (
     (re.compile(r"(?i)(\b(?:LinkAddresses|DnsAddresses|PcscfAddresses)\s*:\s*)\[[^\]]*\]"), r"\1[<REDACTED_IPS>]"),
 )
 
+def redact_ipv6(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        token = match.group(0)
+        address = token.split("/", 1)[0]
+        try:
+            parsed = ipaddress.ip_address(address)
+        except ValueError:
+            return token
+        return "<REDACTED_IP>" if parsed.version == 6 else token
+
+    return IPV6_CANDIDATE.sub(repl, text)
+
+
+def has_ipv6(text: str) -> bool:
+    found = False
+
+    def probe(match: re.Match[str]) -> str:
+        nonlocal found
+        address = match.group(0).split("/", 1)[0]
+        try:
+            found = ipaddress.ip_address(address).version == 6
+        except ValueError:
+            pass
+        return match.group(0)
+
+    IPV6_CANDIDATE.sub(probe, text)
+    return found
+
+
 def sanitize(text: str) -> str:
     text = re.sub(r"(?i)(\bDUMP=)[0-9A-F]+", r"\1<REDACTED_MODEM_PAYLOAD>", text)
     text = re.sub(r"(?i)(RIL_UNSOL_ICCID_CHANGED\s+)([^\s]+)", r"\1<REDACTED_ICCID>", text)
@@ -50,7 +80,7 @@ def sanitize(text: str) -> str:
         text = pattern.sub(replacement, text)
     text = MAC.sub("<REDACTED_MAC>", text)
     text = IPV4.sub("<REDACTED_IP>", text)
-    text = IPV6.sub("<REDACTED_IP>", text)
+    text = redact_ipv6(text)
     return text
 
 def main() -> int:
@@ -91,6 +121,7 @@ def main() -> int:
         "imsi_label_with_digits": bool(re.search(r"(?i)imsi\s*[:=]\s*\d", combined)),
         "literal_ipv4": bool(IPV4.search(combined)),
         "literal_mac": bool(MAC.search(combined)),
+        "literal_ipv6": has_ipv6(combined),
         "unredacted_cell_id": bool(re.search(r"\bm(?:Ci|Pci|Tac)=\d+", combined)),
         "modem_dump_payload": bool(re.search(r"\bDUMP=[0-9A-F]{16,}", combined, re.I)),
     }
