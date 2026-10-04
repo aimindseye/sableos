@@ -104,6 +104,8 @@ def main() -> int:
             sum(1 for d in e.values() if d["counted_as_vendor_expected_system_edge"] == "YES"))
              and env.get("N1I_B2_MTK_SYSTEM_EDGE_PROVEN_COUNT") == "2", env.get("N1I_B2_VENDOR_EXPECTED_SYSTEM_EDGE_COUNT"))
         case("vendor_tree_identity_checked", env.get("N1I_B2_CENSUS_VENDOR_TREES_IDENTICAL") == "YES", "")
+        case("runtime_proof_requires_vendor_identity",
+             env.get("N1I_B2_CENSUS_RUNTIME_PROOF_VENDOR_IDENTITY_REQUIRED") == "YES", "")
         case("every_edge_has_strength_and_one_status", all(d["consumer_evidence_strength"] != "-" and d["status"] for d in e.values()), "")
 
         r, e2, _ = run(td / "nolog", logs=())
@@ -117,12 +119,27 @@ def main() -> int:
              st(e4, "BINDER_SERVICE:mtkradioex_sys") == "MTK_SYSTEM_EDGE_PROVEN"
              and e4["BINDER_SERVICE:mtkradioex_sys"]["consumer_evidence_strength"] == "RUNTIME_OBSERVED", "")
 
-        # vendor trees differ -> reported
+        # Vendor identity is a prerequisite for the strongest runtime proof.
         c3b = td / "c3a-other-vendor"
         shutil.copytree(FX / "c3a", c3b)
         (c3b / "vendor/build.prop").write_text("ro.vendor.build.fingerprint=Synthetic/other\n")
-        r, _, env5 = run(td / "vdiff", c3a=c3b)
+        r, e5, env5 = run(td / "vdiff", c3a=c3b)
         case("vendor_tree_mismatch_reported", env5.get("N1I_B2_CENSUS_VENDOR_TREES_IDENTICAL") == "NO", "")
+        case("vendor_tree_mismatch_blocks_proven_edge",
+             env5.get("N1I_B2_MTK_SYSTEM_EDGE_PROVEN_COUNT") == "0"
+             and st(e5, "BINDER_SERVICE:mtk.sys.svc") == "MISSING_ON_C3A_RUNTIME_CONFIRMED"
+             and st(e5, "AIDL_HIDL_INTERFACE:vendor.mediatek.framework.hw::IMtkFwHw")
+             != "MTK_SYSTEM_EDGE_PROVEN", "")
+
+        c3nov = td / "c3a-no-vendor"
+        shutil.copytree(FX / "c3a", c3nov)
+        shutil.rmtree(c3nov / "vendor")
+        r, e6, env6 = run(td / "vabsent", c3a=c3nov)
+        case("c3a_vendor_absent_reported",
+             env6.get("N1I_B2_CENSUS_VENDOR_TREES_IDENTICAL") == "C3A_VENDOR_NOT_PROVIDED", "")
+        case("c3a_vendor_absent_blocks_proven_edge",
+             env6.get("N1I_B2_MTK_SYSTEM_EDGE_PROVEN_COUNT") == "0"
+             and st(e6, "BINDER_SERVICE:mtk.sys.svc") == "MISSING_ON_C3A_RUNTIME_CONFIRMED", "")
 
         # fail closed
         bad = td / "badvintf"
