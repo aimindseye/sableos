@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """N1I-B n1i_static.py self-test: DEX decoder vs dexdump oracle, ELF reader vs readelf oracle.
 
-All fixtures are synthetic and built at test time (javac --release 8 + dx; gcc/clang+lld).
+All fixtures are synthetic and built at test time (javac + dx/d8; gcc/clang+lld).
 Missing tools are a FAIL, never a skip. Prints CASE lines; exit 0 only if all pass.
-Optional: N1I_STATIC_EXTRA_CORPUS="a.jar:b.jar" adds oracle comparisons on extra jars (dexed with dx).
+Optional: N1I_STATIC_EXTRA_CORPUS="a.jar:b.jar" adds oracle comparisons on extra jars.
 """
 from __future__ import annotations
 
@@ -20,6 +20,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(subprocess.check_output(["git", "-C", str(HERE), "rev-parse", "--show-toplevel"], text=True).strip())
+sys.path.insert(0, str(HERE / "lib"))
+from toolchain import compile_dex, find_dex_compiler, prepare_tool_path  # noqa: E402
+
+prepare_tool_path(("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "llvm-objcopy", "gcc", "readelf"))
 sys.path.insert(0, str(ROOT / "build/titan2"))
 import n1i_static as S  # noqa: E402
 
@@ -43,20 +47,13 @@ def raises(fn, exc) -> tuple[bool, str]:
     return False, "no exception"
 
 
-def find_dx() -> str | None:
-    for c in (shutil.which("dx"), "/usr/lib/android-sdk/build-tools/debian/dx"):
-        if c and Path(c).exists():
-            return c
-    return None
-
-
 def sh(cmd: list, **kw) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
 
 
 def build_dex(td: Path) -> dict:
-    dx = find_dx()
-    tools = {"javac": shutil.which("javac"), "dx": dx, "dexdump": shutil.which("dexdump")}
+    compiler = find_dex_compiler()
+    tools = {"javac": shutil.which("javac"), "dex_compiler": compiler, "dexdump": shutil.which("dexdump")}
     missing = [k for k, v in tools.items() if not v]
     if missing:
         raise RuntimeError(f"missing tools {missing}")
@@ -71,10 +68,11 @@ def build_dex(td: Path) -> dict:
         raise RuntimeError("javac q failed: " + r.stderr[-300:])
     out = {}
     for name, cls in (("a", c1), ("b", c2)):
-        r = sh([dx, "--dex", "--min-sdk-version=26", f"--output={td / (name + '.dex')}", str(cls)])
+        target = td / f"{name}.dex"
+        r = compile_dex(compiler, cls, target, min_api=26)
         if r.returncode:
-            raise RuntimeError(f"dx {name} failed: " + r.stderr[-300:])
-        out[name] = td / f"{name}.dex"
+            raise RuntimeError(f"{compiler[0]} {name} failed: " + r.stderr[-300:])
+        out[name] = target
     apk = td / "multi.apk"
     with zipfile.ZipFile(apk, "w") as z:
         z.write(out["a"], "classes.dex")
@@ -185,9 +183,13 @@ def dex_cases(td: Path) -> None:
     extra = [p for p in os.environ.get("N1I_STATIC_EXTRA_CORPUS", "").split(":") if p]
     for j in extra:
         out = td / (Path(j).stem + ".dex")
-        rr = sh([find_dx(), "--dex", "--min-sdk-version=26", f"--output={out}", j])
+        compiler = find_dex_compiler()
+        if compiler is None:
+            case(f"extra_corpus_dex:{Path(j).name}", False, "DEX compiler unavailable")
+            continue
+        rr = compile_dex(compiler, Path(j), out, min_api=26)
         if rr.returncode:
-            case(f"extra_corpus_dx:{Path(j).name}", False, rr.stderr[-200:])
+            case(f"extra_corpus_dex:{Path(j).name}", False, rr.stderr[-200:])
             continue
         try:
             r = S.oracle_check_dex(S.DexFile(out.read_bytes(), out.name))
