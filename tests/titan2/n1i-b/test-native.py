@@ -2,7 +2,7 @@
 """N1I-B2 native rederivation / JNI attribution self-test (synthetic fixtures built at test time).
 
 Prints CASE<TAB>native<TAB>id<TAB>PASS|FAIL<TAB>detail ; exit 0 only if every case passes.
-Missing javac / dx-or-d8 / dexdump / clang+lld / gcc is a FAIL, never a skip.
+Missing javac / dx-or-d8 / dexdump / clang+lld is a FAIL, never a skip.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ ROOT = Path(subprocess.check_output(["git", "-C", str(HERE), "rev-parse", "--sho
 sys.path.insert(0, str(HERE / "lib"))
 from toolchain import compile_dex, find_dex_compiler, prepare_tool_path  # noqa: E402
 
-prepare_tool_path(("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "gcc", "readelf"))
+prepare_tool_path(("java", "javac", "d8", "dx", "dexdump", "clang", "ld.lld", "readelf"))
 sys.path.insert(0, str(ROOT / "build/titan2"))
 import n1i_static as S  # noqa: E402
 
@@ -70,7 +70,7 @@ def craft_moved(dex_path: Path) -> bytes:
 def build(td: Path) -> dict:
     compiler = find_dex_compiler()
     need = {"javac": shutil.which("javac"), "dex_compiler": compiler, "dexdump": shutil.which("dexdump"),
-            "clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld"), "gcc": shutil.which("gcc")}
+            "clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld")}
     if not all(need.values()):
         raise RuntimeError(f"missing tools {[k for k, v in need.items() if not v]}")
     core = td / "coresrc"
@@ -106,9 +106,10 @@ def build(td: Path) -> dict:
     shutil.copy(dirs["link"] / "libdep.so", dirs["apex"] / "libdep.so")           # explicitly public in tests
     shutil.copy(dirs["link"] / "libgone.so", dirs["system"] / "libprivate.so")     # present but not namespace-public
     shutil.copy(dirs["link"] / "libvendoronly.so", dirs["vendor"] / "libvendoronly.so")  # present, visibility unproven
-    r = sh(["gcc", "-shared", "-fPIC", "-nostdlib", "-o", td / "libsynth-x86_64.so", NAT / "elf/gone.c"])
+    r = sh(["clang", "--target=x86_64-linux-gnu", "-fuse-ld=lld", "-shared", "-fPIC", "-nostdlib",
+            "-o", td / "libsynth-x86_64.so", NAT / "elf/gone.c"])
     if r.returncode:
-        raise RuntimeError("gcc: " + r.stderr[-200:])
+        raise RuntimeError("clang x86_64: " + r.stderr[-200:])
 
     def apk(name: str, dex: Path, extra_entries: dict | None = None) -> Path:
         p = td / name
@@ -151,7 +152,7 @@ def main() -> int:
         td = Path(td)
         try:
             f = build(td / "b")
-            case("fixture_build", True, "javac+dx, clang aarch64+lld, gcc x86_64")
+            case("fixture_build", True, f"javac+{find_dex_compiler()[0]}, clang+lld aarch64/x86_64")
         except RuntimeError as e:
             case("fixture_build", False, str(e))
             return 1
