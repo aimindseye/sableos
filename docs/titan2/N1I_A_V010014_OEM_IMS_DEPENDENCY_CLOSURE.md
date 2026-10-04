@@ -215,10 +215,43 @@ OEM_MTKIMS_PORT_FEASIBILITY=MODERATE_TITAN_SPECIFIC_LAYER
 REVIEWER_BASIS=API36 OEM provider; two required MTK framework jars; no unresolved Java/MediaTek references; no dependency on MTK-modified AOSP core framework; shared android.uid.phone signature boundary and non-trivial native/policy closure remain.
 ```
 
-This makes OEM MtkIms a viable **fallback**, but not the preferred first
-experiment. The existing TrebleDroid GSI-oriented MTK IMS provider should be
-tested first because C3A already contains the corresponding compatibility
-shims.
+This makes OEM MtkIms a viable **Titan-specific compatibility layer**.
+
+The earlier recommendation to test the TrebleDroid GSI-oriented provider first
+has now been executed and is superseded by runtime evidence. The PHH-signed
+provider installed, bound and created MMTEL features, but IMS did not register
+and the provider was removed after the bounded trial. OEM V01.00.14 IMS is
+therefore the next IMS implementation path, subject to this audit reaching
+PASS on its corrected second host run.
+
+### Runtime supersession after stock tray-2 control
+
+Factory V01.00.14 has now passed full single-SIM telephony with the same SIM in
+both physical trays: cellular data, SMS/MMS, outgoing voice and incoming voice.
+
+The tray-2 control also proves that stock routes default phone/data to phone 1
+and performs a real radio-capability transaction while the observed
+`persist.vendor.radio.simswitch` and
+`persist.vendor.radio.c_capability_slot` values remain `1` / `1`.
+Accordingly, this OEM IMS layer must support both phone slots through normal
+subscription/capability routing; it must not depend on a tray-specific property
+hold.
+
+Stock tray 2 briefly produces `ERROR_UNSPECIFIED` plus reject cause 27 during
+boot and then recovers to HOME, reconnects `fast.t-mobile.com`, connects the
+IMS bearer and registers IMS. This confirms that the OEM port should reproduce
+the stock IMS/dependency environment rather than introduce healing loops or
+treat a single transient data failure as terminal.
+
+```text
+STOCK_TRAY1_SINGLE_SIM_TELEPHONY=PASS
+STOCK_TRAY2_SINGLE_SIM_TELEPHONY=PASS
+STOCK_BOTH_PHYSICAL_TRAYS_SINGLE_SIM=PASS
+DUAL_SIM_DSDS_CONTROL=PENDING
+TREBLEDROID_MTK_IMS_RUNTIME_TRIAL=FAIL_BOUND_READY_BUT_UNREGISTERED
+OEM_MTKIMS_NEXT_IMPLEMENTATION_PATH=YES
+PROPERTY_HOLD_REQUIRED=NO
+```
 
 ### Host-run markers
 
