@@ -383,7 +383,18 @@ run_titan2_n1b2_evidence() {
       return 1
     }
   done
-  grep -Eq '^SELFTEST_CASES=[1-9][0-9]*  export CARGO_HOME="$SABLE_CARGO_HOME"
+  grep -Eq '^SELFTEST_CASES=[1-9][0-9]*$' "$selftest_log" || {
+    echo "TITAN2_N1B2_EVIDENCE_SELFTESTS=FAIL_CASE_COUNT"
+    return 1
+  }
+
+  echo "TITAN2_N1B2_EVIDENCE_SELFTESTS=PASS"
+  echo "TITAN2_N1B2_IMPORT_AUTHORIZED=NO"
+  echo "TITAN2_N1B2_DEVICE_MUTATION_AUTHORIZED=NO"
+}
+
+run_rust() {
+  export CARGO_HOME="$SABLE_CARGO_HOME"
   export RUSTUP_HOME="$SABLE_RUSTUP_HOME"
   export PATH="$SABLE_RUST_TOOLCHAIN_ROOT/bin:$PATH"
 
