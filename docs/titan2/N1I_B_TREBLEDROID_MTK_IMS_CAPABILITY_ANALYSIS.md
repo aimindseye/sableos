@@ -17,11 +17,21 @@ Verification script: `build/titan2/audit-n1i-b-trebledroid-mtk-ims-capability.sh
 
 Telephony on Titan 2 is two separable problems. Do not merge them.
 
-1. **Registration stability.** LTE/NR_NSA attach, then ERROR_UNSPECIFIED data
-   teardown, then reject cause 13. Nothing in C3A source ties this to IMS or to
-   `mtkNetworkIndication == NULL`. Cause 13 is a network-originated EMM reject.
+1. **Registration/capability placement.** A controlled physical tray test now
+   materially narrows this fault. With the SIM in tray 1, the observed
+   `simswitch=1` / capability-slot=1 state is aligned and the phone remained
+   HOME / NOT_ROAMING on 310260 for roughly 15 minutes with LTE band 66,
+   NR_NSA/ENDC available, packet data connected, no cause-13 rejection and no
+   `ERROR_UNSPECIFIED` teardown. In the earlier tray-2 state the SIM was
+   `ABSENT,LOADED` while capability remained 1 and registration later failed.
+   This strongly supports capability placement as a contributor, but does not
+   prove the vendor properties themselves are causal because the physical SIM
+   move also involved a power/SIM reset.
 2. **IMS / voice.** The configuration routes MMTEL to `com.mediatek.ims`, but no
-   package provides it. This is a definite, source-explained defect
+   package provides it. The tray-1 runtime cleanly separates this from basic
+   registration: cellular data and SMS/MMS send/receive work while outgoing
+   calls end immediately, incoming calls go to voicemail, and IMS remains
+   unavailable. This is a definite, source-explained defect
    (`CONFIGURATION_POINTS_TO_MISSING_PROVIDER=YES`).
 
 On capability switching:
@@ -453,14 +463,48 @@ Verdicts: SUPPORTED, PARTIALLY_SUPPORTED, UNPROVEN, CONTRADICTED.
 
 | ID | Proposition | Verdict | Exact basis |
 |---|---|---|---|
-| P1 | Capability-slot mismatch can explain the tray-2 failure | PARTIALLY_SUPPORTED | For: Atlas lab claim that MTK IMS/MMTEL follows `simswitch` and that `simswitch=1` with the voice SIM in tray 2 yields a null MMTEL. Against: the tray-2 SIM did register LTE/NR_NSA with working data while `simswitch=1`, so a mismatch does not block basic registration. It is a candidate for the IMS stage only, and unproven even there. The tray-1 result is the arbiter. |
+| P1 | Capability-slot mismatch can explain the tray-2 failure | PARTIALLY_SUPPORTED | The controlled tray-1 result is now positive differential evidence: with the SIM physically in tray 1 and capability state still 1, LTE/NR_NSA, packet data and HOME registration stayed stable for ~15 minutes with no cause 13 or ERROR_UNSPECIFIED teardown. Earlier tray 2 had the populated SIM on phone 1 while capability remained 1 and later failed. This strongly supports capability placement as a contributor, but it does not isolate the vendor properties as the causal mechanism because SIM removal/power reset also clears modem/network state. |
 | P2 | Property forcing is equivalent to real radio-capability switching | CONTRADICTED | The real path is a transactional modem command (section 5). The properties are vendor-namespace state that appear in no AOSP source. Atlas itself says the vendor ignores plain setprop and NVRAM rewrites the value. At most it is a boot-time input, not the operation. |
-| P3 | Missing IMS can cause incoming-call failure | SUPPORTED | `ImsResolver` does not bind a missing package, so no MMTEL feature exists. A VoLTE-only network then has no voice path. Scope: "can". No call test was run in this lane, and this does not show IMS is the only cause. |
-| P4 | Missing IMS causes cause 13 | CONTRADICTED | EMM cause 13 is a network reject ("roaming not allowed in this tracking area", 3GPP TS 24.301). No AOSP code turns IMS state into a registration reject. IMS was equally absent during the earlier good LTE window (`N1B2_RADIO_COMPAT_R1.md`), so a constant condition does not explain the change. Scope: direct or sufficient cause. Vendor-modem coupling cannot be excluded offline. |
+| P3 | Missing IMS can cause incoming-call failure | SUPPORTED | Source establishes that `ImsResolver` cannot bind a missing provider. Runtime separation now strengthens this materially: on the stable tray-1 run, packet data and SMS/MMS work, outgoing voice ends immediately, incoming voice routes to voicemail, and IMS remains unavailable. This supports IMS/MMTEL as the active voice blocker while still avoiding the stronger claim that every possible call failure has only one cause. |
+| P4 | Missing IMS causes cause 13 | CONTRADICTED | The tray-1 runtime is stronger evidence than the earlier window: IMS stayed unavailable throughout while LTE/NR_NSA registration, packet data and SMS/MMS remained stable and no cause 13 occurred. Missing IMS is therefore not a sufficient cause of the registration collapse observed on tray 2. |
 | P5 | `mtkNetworkIndication == NULL` causes LTE data teardown | UNPROVEN | Section 7. The null log is vendor-side, appears in the good window too, and the teardown arrived through the standard AOSP indication path. No mechanism linking the null channel to `ERROR_UNSPECIFIED` is shown, but data and network events in the MediaTek channel cannot be ruled out offline. |
 | P6 | OEM MtkIms is required before trying GSI-native MTK IMS | CONTRADICTED | As an ordering requirement. C3A already ships the selection logic, the PHH trust patch and five MTK-IMS compatibility shims, and the trial is a download. Atlas also uses `ims-mtk-u-resigned`. This does **not** say the GSI APK will work. |
-| P7 | System-only Titan-specific GSI remains viable | PARTIALLY_SUPPORTED | For: C3A and N1F boot on stock vendor/boot with voice, data and NR_NSA registration observed (`N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md`), and Atlas is also a system GSI over stock vendor. Against: IMS/voice end to end is unproven, and Atlas needed provider injection. |
+| P7 | System-only Titan-specific GSI remains viable | PARTIALLY_SUPPORTED | Evidence is now stronger: the system-only image boots and, on aligned tray 1, sustains LTE/NR_NSA registration, packet data, SMS and MMS. The remaining blocker is IMS/voice plus tray-2/DSDS capability behavior. Full viability therefore remains only partial until both physical SIM slots and voice are qualified. |
 | P8 | Stock-super / system_ext hybrid is required | UNPROVEN | No evidence either way. Policy already forbids stock MTK framework JAR/SO and full vendor copy. Atlas bans "full native IMS inject" after a bootloop history. |
+
+## 9A. Physical dual-SIM product requirement
+
+Titan 2 has two physical SIM slots and no eSIM fallback. SableOS therefore must
+not ship with a "tray 1 only" workaround. Both physical slots and DSDS behavior
+are release requirements.
+
+```text
+DUAL_SIM_BOTH_PHYSICAL_SLOTS_REQUIRED=YES
+DUAL_SIM_SINGLE_SIM_TRAY1_REQUIRED=YES
+DUAL_SIM_SINGLE_SIM_TRAY2_REQUIRED=YES
+DUAL_SIM_DSDS_REQUIRED=YES
+DUAL_SIM_PROPERTY_HOLD_ACCEPTABLE=NO
+```
+
+Required qualification after the IMS provider works:
+
+1. **Single SIM, tray 1:** LTE/NR_NSA, data, SMS/MMS, MO voice and MT voice.
+2. **Single SIM, tray 2:** the same functions, with the real modem capability
+   moved to phone 1/second tray. A persistent property loop is not acceptable.
+3. **Two physical SIMs inserted:** both subscriptions register; incoming SMS and
+   incoming calls reach the correct subscription; default SMS and voice choices
+   work; changing the default data SIM performs the real
+   `ProxyController -> RIL -> IRadioModem.setRadioCapability` transaction when
+   needed; LTE/NR registration remains stable across the change.
+4. Reboot and repeat the selected default-data configuration to ensure the modem
+   capability does not silently fall back to tray 1.
+5. No blind `simswitch`/capability-slot hold, no periodic RIL restart, and no
+   eSIM assumption are acceptable production fixes.
+
+The current tray-1 success is therefore an isolation result, not the final
+product solution. If read-only `ProxyController` evidence shows Android does
+not issue or complete a real capability switch for tray 2, a narrow Titan
+system-side trigger using the existing AOSP transaction path becomes justified.
 
 ## 10. B8: cheapest IMS experiment (design only)
 
@@ -476,11 +520,14 @@ architecture works.
 
 ### Preconditions
 
-- Run the **tray-1 registration test first**, with the SIM in tray 1. Then the
-  capability slot (`simswitch=1`) is aligned and P1 stops confounding the IMS
-  result.
+- The **tray-1 registration test is complete and PASS** for the isolation goal:
+  registration/data/SMS are stable while IMS/voice remains broken. Keep the SIM
+  in tray 1 for the first IMS-provider trial so capability placement does not
+  confound provider bring-up.
 - One change at a time. Record raw failures.
-- C3A lab image only. Not a release path (PHH trust patch).
+- After IMS/voice works on tray 1, tray 2 and two-SIM DSDS qualification are
+  mandatory before telephony is considered complete.
+- C3A/N1F-derived lab image only. Not a release path (PHH trust patch).
 
 ### Step 0: read-only baseline (before any change)
 
@@ -547,7 +594,7 @@ restart RIL, `setenforce`, insert APNs, force carrier config, or force network m
 ## 11. Final decisions
 
 ```text
-TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN
+TRAY2_CAPABILITY_MISMATCH_RELEVANCE=YES
 REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO
 PROPERTY_HOLD_REQUIRED=NO
 TREBLEDROID_MTK_IMS_FIRST_TRIAL=YES
@@ -560,7 +607,7 @@ STOCK_SUPER_HYBRID_REQUIRED_NOW=NO
 
 | Decision | Justification |
 |---|---|
-| `TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN` | Plausible for the IMS stage, but the tray-2 SIM registered LTE/NR_NSA with data while `simswitch=1`. The tray-1 test and the `ProxyController` log decide it. |
+| `TRAY2_CAPABILITY_MISMATCH_RELEVANCE=YES` | The tray-1 A/B result makes capability placement operationally relevant: aligned tray 1 stayed registered with LTE/NR_NSA and data while the earlier misaligned tray-2 state later collapsed. This is a relevance decision, not proof that writing the vendor properties is the fix. |
 | `REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO` | The real switch already exists in AOSP and follows default data. No new SableOS code is justified before the read-only check in section 6 shows it is inert. |
 | `PROPERTY_HOLD_REQUIRED=NO` | Properties are vendor-owned, absent from all framework source, and not shown necessary. A blind periodic hold also violates the healing rules. |
 | `TREBLEDROID_MTK_IMS_FIRST_TRIAL=YES` | Cheapest option, already wired in C3A with its compatibility shims. Gated on host-side provenance and signer verification and limited to the C3A lab image. |
