@@ -1,6 +1,6 @@
 # Titan 2 N1I-B: TrebleDroid MTK IMS and real radio-capability-switch analysis
 
-Status: **source analysis only. No device contact, no build, no flash, no install.**
+Status: **source analysis plus incorporated operator runtime evidence. This lane performed no device contact, build, flash or install.**
 
 Date: 2026-10-03
 
