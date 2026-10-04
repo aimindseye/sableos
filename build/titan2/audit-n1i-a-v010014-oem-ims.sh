@@ -546,7 +546,7 @@ def elf_info(p):
 def lib_dirs(parts, roots, bits):
     sub = "lib64" if bits == 64 else "lib"
     return [os.path.join(roots[p], sub) for p in parts if p in roots] + [os.path.join(roots[p], sub, "hw") for p in parts if p in roots]
-PLATFORM = re.compile(r"^lib(c|m|dl|log|c\+\+|binder|binder_ndk|utils|cutils|hidlbase|base|vndksupport|z|ssl|crypto|android|nativewindow|sync|ui|hardware|fmq|jsoncpp|xml2|protobuf-cpp-lite|protobuf-cpp-full|selinux|sqlite|stdc\+\+|clang_rt\..*|hidl.*|android\.hidl\..*)\.so$")
+PLATFORM = re.compile(r"^lib(c|m|dl|dl_android|log|c\+\+|binder|binder_ndk|utils|cutils|hidlbase|base|vndksupport|z|ssl|crypto|android|androidicu|icu|nativehelper|nativewindow|sync|ui|hardware|fmq|jsoncpp|xml2|protobuf-cpp-lite|protobuf-cpp-full|selinux|sqlite|stdc\+\+|clang_rt\..*|hidl.*|android\.hidl\..*)\.so$")
 def resolve(name, side, bits):
     if side == "vendor":
         for d in lib_dirs(VENDOR_SIDE, S, bits):
