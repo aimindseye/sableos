@@ -56,8 +56,8 @@ if gitleaks_config.is_file():
         failures.append(f"invalid .gitleaks.toml: {exc}")
     else:
         allowlists = parsed_gitleaks.get("allowlists")
-        if not isinstance(allowlists, list) or len(allowlists) != 4:
-            failures.append(".gitleaks.toml must contain exactly four scoped allowlists")
+        if not isinstance(allowlists, list) or len(allowlists) != 8:
+            failures.append(".gitleaks.toml must contain exactly eight scoped allowlists")
 
 policy_path = ROOT / "build" / "trusted-runner-policy.json"
 if policy_path.is_file():
