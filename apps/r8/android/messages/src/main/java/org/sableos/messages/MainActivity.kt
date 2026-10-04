@@ -97,22 +97,7 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
     }
 
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .onPreviewKeyEvent { event ->
-                    handleMessagesKey(
-                        event = event.nativeKeyEvent,
-                        state = state,
-                        apply = ::apply,
-                        sendToProvider = ::sendToProvider,
-                    )
-                }.verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.Xl,
-                ),
+        modifier = messagesAppModifier(state, ::apply, ::sendToProvider),
     ) {
         Header()
         Spacer(Modifier.height(SableSpacing.Xl))
@@ -149,6 +134,28 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
         KeyboardModel()
     }
 }
+
+@Composable
+private fun messagesAppModifier(
+    state: MessagesUiState,
+    apply: (MessagesAction) -> Unit,
+    sendToProvider: () -> Unit,
+): Modifier =
+    Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+        .onPreviewKeyEvent { event ->
+            handleMessagesKey(
+                event = event.nativeKeyEvent,
+                state = state,
+                apply = apply,
+                sendToProvider = sendToProvider,
+            )
+        }.verticalScroll(rememberScrollState())
+        .padding(
+            horizontal = SableSpacing.ScreenHorizontal,
+            vertical = SableSpacing.Xl,
+        )
 
 private fun handleMessagesKey(
     event: AndroidKeyEvent,
