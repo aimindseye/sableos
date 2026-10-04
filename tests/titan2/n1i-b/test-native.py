@@ -106,8 +106,9 @@ def build(td: Path) -> dict:
     so(NAT / "elf/gone.c", dirs["link"] / "libgone.so", "libgone.so")
     so(FX / "elf/synth.c", dirs["apklib"] / "libsynth.so", "libsynth.so", ["dep"])
     so(NAT / "elf/vend.c", dirs["apklib"] / "libvend.so", "libvend.so", ["vendoronly", "gone"])
-    shutil.copy(dirs["link"] / "libdep.so", dirs["apex"] / "libdep.so")           # platform / APEX provider
-    shutil.copy(dirs["link"] / "libvendoronly.so", dirs["vendor"] / "libvendoronly.so")  # vendor only
+    shutil.copy(dirs["link"] / "libdep.so", dirs["apex"] / "libdep.so")           # explicitly public in tests
+    shutil.copy(dirs["link"] / "libgone.so", dirs["system"] / "libprivate.so")     # present but not namespace-public
+    shutil.copy(dirs["link"] / "libvendoronly.so", dirs["vendor"] / "libvendoronly.so")  # present, visibility unproven
     r = sh(["gcc", "-shared", "-fPIC", "-nostdlib", "-o", td / "libsynth-x86_64.so", NAT / "elf/gone.c"])
     if r.returncode:
         raise RuntimeError("gcc: " + r.stderr[-200:])
@@ -130,7 +131,8 @@ def build(td: Path) -> dict:
 
 def run(f: dict, td: Path, name: str, extra=()) -> tuple[subprocess.CompletedProcess, dict]:
     r = sh([sys.executable, TOOL, "--side", "c3a", "--apk", f["apk"], "--lib-dir", f"system={f['system']}",
-            "--lib-dir", f"apex={f['apex']}", "--lib-dir", f"vendor={f['vendor']}", "--badging", NAT / "badging.txt",
+            "--lib-dir", f"apex={f['apex']}", "--lib-dir", f"vendor={f['vendor']}",
+            "--namespace-visible-library", "libdep.so", "--badging", NAT / "badging.txt",
             "--search-superset", NAT / "n1i-a-superset.txt", "--out", td / name, *extra])
     out = {}
     if r.returncode == 0:
@@ -203,11 +205,21 @@ def main() -> int:
              and lib["libdep.so"]["provider_class"] == "PLATFORM_OR_APEX"
              and "DT_NEEDED:libsynth.so" in lib["libdep.so"]["admitted_by"]
              and "USES_NATIVE_LIBRARY:required" in lib["libdep.so"]["admitted_by"], lib.get("libdep.so", {}).get("admitted_by", "-"))
-        case("vendor_only_dependency_namespace_unproven", lib.get("libvendoronly.so", {}).get("status")
-             == "VENDOR_ONLY_NAMESPACE_UNPROVEN"
-             and env.get("N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN") == "libvendoronly.so"
-             and env.get("N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED") == "NO", "")
+        case("vendor_file_namespace_unproven", lib.get("libvendoronly.so", {}).get("status")
+             == "FILE_PRESENT_NAMESPACE_UNPROVEN"
+             and env.get("N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN") == "libvendoronly.so"
+             and env.get("N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED") == "NO", "")
         case("dt_needed_missing_reported", lib.get("libgone.so", {}).get("status") == "NOT_FOUND", "")
+        r, op = run(f, td, "private", ["--uses-native-library", "libprivate.so:required"])
+        plib = {x["library"]: x for x in op.get("NATIVE_CLOSURE", [])}
+        case("system_file_presence_not_namespace_proof",
+             plib.get("libprivate.so", {}).get("status") == "FILE_PRESENT_NAMESPACE_UNPROVEN"
+             and op.get("env", {}).get("N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING") == "libprivate.so", "")
+        r, ov = run(f, td, "vendor-visible", ["--namespace-visible-library", "libvendoronly.so"])
+        vlib = {x["library"]: x for x in ov.get("NATIVE_CLOSURE", [])}
+        case("explicit_vendor_namespace_visibility_can_admit",
+             vlib.get("libvendoronly.so", {}).get("status") == "FOUND"
+             and vlib["libvendoronly.so"].get("partition") == "vendor", "")
         case("constant_load_roots_resolved_or_reported", lib.get("librtlib.so", {}).get("status") == "NOT_FOUND"
              and lib.get("libabs.so", {}).get("status") == "NOT_FOUND"
              and "LOADLIBRARY:" in lib.get("libvend.so", {}).get("admitted_by", ""), "")
