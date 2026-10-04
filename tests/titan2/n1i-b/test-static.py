@@ -81,6 +81,7 @@ def build_dex(td: Path) -> dict:
         z.write(out["b"], "assets/extra.dex")      # not primary code
         z.writestr("AndroidManifest.xml", b"synthetic")
     out["apk"] = apk
+    out["compiler_kind"] = compiler[0]
     return out
 
 
@@ -149,7 +150,7 @@ def dex_cases(td: Path) -> None:
     except RuntimeError as e:
         case("dex_fixture_build", False, str(e))
         return
-    case("dex_fixture_build", True, "javac --release 8 + dx --min-sdk-version=26")
+    case("dex_fixture_build", True, f"javac --release 8 + {fx['compiler_kind']} min-api=26")
     a = S.DexFile(fx["a"].read_bytes(), "a.dex")
     b = S.DexFile(fx["b"].read_bytes(), "b.dex")
     covered = set()
@@ -296,9 +297,9 @@ def dex_cases(td: Path) -> None:
 
 
 def elf_cases(td: Path) -> None:
+    readelf_tool = shutil.which("llvm-readelf") or shutil.which("readelf")
     need = {"clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld"),
-            "llvm-objcopy": shutil.which("llvm-objcopy"),
-            "readelf": shutil.which("readelf") or shutil.which("llvm-readelf")}
+            "llvm-objcopy": shutil.which("llvm-objcopy"), "readelf": readelf_tool}
     if not all(need.values()):
         case("elf_fixture_build", False, f"missing {[k for k, v in need.items() if not v]}")
         return
@@ -326,7 +327,7 @@ def elf_cases(td: Path) -> None:
     for arch, d in libs.items():
         p = d / "libsynth.so"
         info = S.load_elf(p)
-        o = S.readelf_oracle(p)
+        o = S.readelf_oracle(p, readelf_tool)
         case(f"elf_dt_needed_vs_readelf_{arch}", info.needed == o["needed"] == ("libdep.so",), f"{info.needed} {o['needed']}")
         case(f"elf_soname_vs_readelf_{arch}", info.soname == o["soname"] == "libsynth.so", "")
         ours = [(s.name, s.defined) for s in info.symbols if s.name]
