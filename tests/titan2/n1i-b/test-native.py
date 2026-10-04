@@ -203,8 +203,10 @@ def main() -> int:
              and lib["libdep.so"]["provider_class"] == "PLATFORM_OR_APEX"
              and "DT_NEEDED:libsynth.so" in lib["libdep.so"]["admitted_by"]
              and "USES_NATIVE_LIBRARY:required" in lib["libdep.so"]["admitted_by"], lib.get("libdep.so", {}).get("admitted_by", "-"))
-        case("vendor_only_dependency_not_satisfied", lib.get("libvendoronly.so", {}).get("status") == "VENDOR_ONLY_NOT_LOADABLE"
-             and env.get("N1I_B2_NATIVE_VENDOR_ONLY_NOT_LOADABLE") == "libvendoronly.so", "")
+        case("vendor_only_dependency_namespace_unproven", lib.get("libvendoronly.so", {}).get("status")
+             == "VENDOR_ONLY_NAMESPACE_UNPROVEN"
+             and env.get("N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN") == "libvendoronly.so"
+             and env.get("N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED") == "NO", "")
         case("dt_needed_missing_reported", lib.get("libgone.so", {}).get("status") == "NOT_FOUND", "")
         case("constant_load_roots_resolved_or_reported", lib.get("librtlib.so", {}).get("status") == "NOT_FOUND"
              and lib.get("libabs.so", {}).get("status") == "NOT_FOUND"
