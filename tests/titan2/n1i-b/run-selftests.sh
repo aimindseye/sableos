@@ -18,6 +18,10 @@ done
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 ALL="$TMP/cases.tsv"; : > "$ALL"
 
+echo "===== N1I-B RESOLVED HOST TOOLCHAIN ====="
+python3 "$HERE/lib/toolchain.py"
+echo
+
 # component  marker  command...
 COMPONENTS=(
   "guard|READ_ONLY_GUARD_TESTS|bash $HERE/test-guard.sh"
