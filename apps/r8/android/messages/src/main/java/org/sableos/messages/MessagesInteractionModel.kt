@@ -203,10 +203,59 @@ object MessagesInteractionModel {
         threadCount: Int = sampleThreads.size,
     ): MessagesUiState =
         when (action) {
+            MessagesAction.OpenThread, MessagesAction.RestoreThread, MessagesAction.IncomingMessage,
+            MessagesAction.SearchInConversation, MessagesAction.ReturnToLatest, MessagesAction.BackOrEsc,
+            MessagesAction.TypeToFilter,
+            -> reduceTimeline(state, action)
+
+            MessagesAction.JumpToDate, MessagesAction.JumpToUnread, MessagesAction.JumpToAttachment,
+            MessagesAction.PageUpHistory, MessagesAction.PageDownTowardLatest, MessagesAction.NextUnread,
+            -> reduceHistory(state, action)
+
+            MessagesAction.ConversationListUp, MessagesAction.ConversationListDown,
+            MessagesAction.ConversationListHome, MessagesAction.ConversationListEnd,
+            MessagesAction.OpenFocusedConversation,
+            -> reduceConversationList(state, action, threadCount)
+
+            MessagesAction.SendMessage, MessagesAction.ComposerTyping, MessagesAction.ComposerBackspace,
+            MessagesAction.ComposerDelete, MessagesAction.ComposerEnterSend,
+            MessagesAction.ComposerShiftEnterNewline, MessagesAction.ComposerAltEnterProviderSend,
+            -> reduceComposerInput(state, action)
+
+            MessagesAction.ComposerMenuActions, MessagesAction.OnscreenKeyboardFallback,
+            MessagesAction.AltSymFnTextEntry,
+            -> reduceComposerUi(state, action)
+
+            MessagesAction.MessageFocusUp, MessagesAction.MessageFocusDown, MessagesAction.MessageEnterDetails,
+            MessagesAction.MessageSpacePreview, MessagesAction.MessageMenuActions, MessagesAction.CopyText,
+            MessagesAction.ReplyIfProviderSafe, MessagesAction.ForwardIfProviderSafe,
+            MessagesAction.DeleteIfProviderSafe, MessagesAction.DetailsIfProviderSafe,
+            -> reduceMessageActions(state, action)
+
+            MessagesAction.AttachmentActions, MessagesAction.CameraHandoff, MessagesAction.MediaPicker,
+            -> reduceAttachments(state, action)
+
+            MessagesAction.ContactsHandoff, MessagesAction.PhoneHandoff, MessagesAction.HubHandoff,
+            MessagesAction.CommandSearchHandoff, MessagesAction.NotificationShadeHandoff,
+            -> reduceProviderHandoff(state, action)
+
+            MessagesAction.LockscreenHandoff, MessagesAction.LockedModeRedaction,
+            MessagesAction.PrivateModeRedaction, MessagesAction.SourceRestrictedMode,
+            -> reducePrivacy(state, action)
+        }
+
+    private fun reduceTimeline(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
             MessagesAction.OpenThread,
             MessagesAction.RestoreThread,
             MessagesAction.ReturnToLatest,
-            MessagesAction.BackOrEsc -> state.toLatest("RETURN_TO_LATEST_KEY")
+            MessagesAction.BackOrEsc,
+            -> {
+                state.toLatest("RETURN_TO_LATEST_KEY")
+            }
 
             MessagesAction.IncomingMessage -> {
                 if (state.mode == MessagesMode.History || state.mode == MessagesMode.Search) {
@@ -216,45 +265,59 @@ object MessagesInteractionModel {
                         lastEvent = "HISTORY_MODE_SHOWS_NEW_MESSAGE_INDICATOR",
                     )
                 } else {
-                    state.toLatest("AUTO_ADVANCE_TO_LATEST_ON_INCOMING")
+                    state
+                        .toLatest("AUTO_ADVANCE_TO_LATEST_ON_INCOMING")
                         .copy(autoAdvancedOnIncoming = true)
                 }
             }
 
-            MessagesAction.SendMessage,
-            MessagesAction.ComposerEnterSend,
-            MessagesAction.ComposerAltEnterProviderSend ->
-                state.toLatest("AUTO_ADVANCE_TO_LATEST_ON_SEND")
-                    .copy(
-                        draft = "",
-                        sentMessageVisibleImmediately = true,
-                        autoAdvancedOnSend = true,
-                    )
-
             MessagesAction.SearchInConversation,
-            MessagesAction.TypeToFilter ->
+            MessagesAction.TypeToFilter,
+            -> {
                 state.copy(
                     mode = MessagesMode.Search,
                     focus = MessagesFocus.SearchField,
                     historyAccessExplicit = true,
                     lastEvent = "SEARCH_IN_CONVERSATION",
                 )
+            }
 
-            MessagesAction.JumpToDate -> state.toHistory(1, "JUMP_TO_DATE")
-            MessagesAction.JumpToUnread -> state.toHistory(0, "JUMP_TO_UNREAD")
-            MessagesAction.NextUnread -> state.toHistory(0, "NEXT_UNREAD")
-            MessagesAction.JumpToAttachment ->
+            else -> {
+                error("Unexpected timeline action: $action")
+            }
+        }
+
+    private fun reduceHistory(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.JumpToDate -> {
+                state.toHistory(1, "JUMP_TO_DATE")
+            }
+
+            MessagesAction.JumpToUnread -> {
+                state.toHistory(0, "JUMP_TO_UNREAD")
+            }
+
+            MessagesAction.NextUnread -> {
+                state.toHistory(0, "NEXT_UNREAD")
+            }
+
+            MessagesAction.JumpToAttachment -> {
                 state.copy(
                     mode = MessagesMode.AttachmentActions,
                     focus = MessagesFocus.AttachmentAction,
                     lastEvent = "JUMP_TO_ATTACHMENT",
                 )
+            }
 
-            MessagesAction.PageUpHistory ->
+            MessagesAction.PageUpHistory -> {
                 state.toHistory(
                     slice = state.historySlice + 1,
                     event = "PAGE_UP_HISTORY",
                 )
+            }
 
             MessagesAction.PageDownTowardLatest -> {
                 if (state.historySlice <= 0) {
@@ -267,101 +330,180 @@ object MessagesInteractionModel {
                 }
             }
 
-            MessagesAction.ConversationListUp ->
+            else -> {
+                error("Unexpected history action: $action")
+            }
+        }
+
+    private fun reduceConversationList(
+        state: MessagesUiState,
+        action: MessagesAction,
+        threadCount: Int,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.ConversationListUp -> {
                 state.toConversationList(
                     row = (state.focusedConversationRow - 1).coerceAtLeast(0),
                     event = "CONVERSATION_LIST_UP",
                 )
+            }
 
-            MessagesAction.ConversationListDown ->
+            MessagesAction.ConversationListDown -> {
                 state.toConversationList(
                     row = (state.focusedConversationRow + 1).coerceAtMost(threadCount - 1),
                     event = "CONVERSATION_LIST_DOWN",
                 )
+            }
 
-            MessagesAction.ConversationListHome ->
+            MessagesAction.ConversationListHome -> {
                 state.toConversationList(row = 0, event = "CONVERSATION_LIST_HOME")
+            }
 
-            MessagesAction.ConversationListEnd ->
+            MessagesAction.ConversationListEnd -> {
                 state.toConversationList(
                     row = (threadCount - 1).coerceAtLeast(0),
                     event = "CONVERSATION_LIST_END",
                 )
+            }
 
-            MessagesAction.OpenFocusedConversation ->
-                state.toLatest("OPEN_SELECTED_THREAD_AT_LATEST")
+            MessagesAction.OpenFocusedConversation -> {
+                state
+                    .toLatest("OPEN_SELECTED_THREAD_AT_LATEST")
                     .copy(selectedThreadIndex = state.focusedConversationRow)
+            }
 
-            MessagesAction.ComposerTyping ->
+            else -> {
+                error("Unexpected conversation-list action: $action")
+            }
+        }
+
+    private fun reduceComposerInput(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.SendMessage,
+            MessagesAction.ComposerEnterSend,
+            MessagesAction.ComposerAltEnterProviderSend,
+            -> {
+                state
+                    .toLatest("AUTO_ADVANCE_TO_LATEST_ON_SEND")
+                    .copy(
+                        draft = "",
+                        sentMessageVisibleImmediately = true,
+                        autoAdvancedOnSend = true,
+                    )
+            }
+
+            MessagesAction.ComposerTyping -> {
                 state.copy(
                     mode = MessagesMode.Composer,
                     focus = MessagesFocus.Composer,
                     draft = state.draft + "x",
                     lastEvent = "PHYSICAL_KEYBOARD_COMPOSITION",
                 )
+            }
 
             MessagesAction.ComposerBackspace,
-            MessagesAction.ComposerDelete ->
+            MessagesAction.ComposerDelete,
+            -> {
                 state.copy(
                     mode = MessagesMode.Composer,
                     focus = MessagesFocus.Composer,
                     draft = state.draft.dropLast(1),
                     lastEvent = "DRAFT_EDIT",
                 )
+            }
 
-            MessagesAction.ComposerShiftEnterNewline ->
+            MessagesAction.ComposerShiftEnterNewline -> {
                 state.copy(
                     mode = MessagesMode.Composer,
                     focus = MessagesFocus.Composer,
                     draft = state.draft + "\n",
                     lastEvent = "SHIFT_ENTER_NEWLINE",
                 )
+            }
 
-            MessagesAction.ComposerMenuActions,
-            MessagesAction.MessageMenuActions,
-            MessagesAction.MessageEnterDetails,
-            MessagesAction.MessageSpacePreview ->
+            else -> {
+                error("Unexpected composer-input action: $action")
+            }
+        }
+
+    private fun reduceComposerUi(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.ComposerMenuActions -> {
                 state.copy(
                     mode = MessagesMode.MessageActions,
                     focus = MessagesFocus.MessageAction,
                     providerSafeAction = true,
                     lastEvent = "MESSAGE_ACTIONS_KEYBOARD_ACCESSIBLE",
                 )
+            }
 
-            MessagesAction.OnscreenKeyboardFallback ->
+            MessagesAction.OnscreenKeyboardFallback -> {
                 state.copy(
                     onscreenKeyboardFallback = true,
                     physicalAndOnscreenDraftShareState = true,
                     focus = MessagesFocus.Composer,
                     lastEvent = "ONSCREEN_KEYBOARD_FALLBACK",
                 )
+            }
 
-            MessagesAction.AltSymFnTextEntry ->
+            MessagesAction.AltSymFnTextEntry -> {
                 state.copy(
                     altSymFnTextEntry = true,
                     focus = MessagesFocus.Composer,
                     lastEvent = "ALT_SYM_FN_TEXT_ENTRY",
                 )
+            }
 
-            MessagesAction.MessageFocusUp ->
+            else -> {
+                error("Unexpected composer-UI action: $action")
+            }
+        }
+
+    private fun reduceMessageActions(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.MessageFocusUp -> {
                 state.copy(
                     focus = MessagesFocus.LatestMessage,
                     focusedMessageIndex = (state.focusedMessageIndex - 1).coerceAtLeast(0),
                     lastEvent = "MESSAGE_FOCUS_UP",
                 )
+            }
 
-            MessagesAction.MessageFocusDown ->
+            MessagesAction.MessageFocusDown -> {
                 state.copy(
                     focus = MessagesFocus.LatestMessage,
                     focusedMessageIndex = state.focusedMessageIndex + 1,
                     lastEvent = "MESSAGE_FOCUS_DOWN",
                 )
+            }
+
+            MessagesAction.MessageEnterDetails,
+            MessagesAction.MessageSpacePreview,
+            MessagesAction.MessageMenuActions,
+            -> {
+                state.copy(
+                    mode = MessagesMode.MessageActions,
+                    focus = MessagesFocus.MessageAction,
+                    providerSafeAction = true,
+                    lastEvent = "MESSAGE_ACTIONS_KEYBOARD_ACCESSIBLE",
+                )
+            }
 
             MessagesAction.CopyText,
             MessagesAction.ReplyIfProviderSafe,
             MessagesAction.ForwardIfProviderSafe,
             MessagesAction.DeleteIfProviderSafe,
-            MessagesAction.DetailsIfProviderSafe ->
+            MessagesAction.DetailsIfProviderSafe,
+            -> {
                 state.copy(
                     mode = MessagesMode.MessageActions,
                     focus = MessagesFocus.MessageAction,
@@ -369,37 +511,86 @@ object MessagesInteractionModel {
                     unsupportedProviderActions = false,
                     lastEvent = action.name,
                 )
+            }
 
-            MessagesAction.AttachmentActions ->
+            else -> {
+                error("Unexpected message action: $action")
+            }
+        }
+
+    private fun reduceAttachments(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.AttachmentActions -> {
                 state.copy(
                     mode = MessagesMode.AttachmentActions,
                     focus = MessagesFocus.AttachmentAction,
                     attachmentActionsProviderSafe = true,
                     lastEvent = "ATTACHMENT_ACTIONS_PROVIDER_SAFE",
                 )
+            }
 
-            MessagesAction.CameraHandoff ->
+            MessagesAction.CameraHandoff -> {
                 state.copy(
                     mode = MessagesMode.AttachmentActions,
                     focus = MessagesFocus.AttachmentAction,
                     cameraHandoffProviderSafe = true,
                     lastEvent = "CAMERA_HANDOFF_PROVIDER_SAFE",
                 )
+            }
 
-            MessagesAction.MediaPicker ->
+            MessagesAction.MediaPicker -> {
                 state.copy(
                     mode = MessagesMode.AttachmentActions,
                     focus = MessagesFocus.AttachmentAction,
                     mediaPickerPermissionAware = true,
                     lastEvent = "MEDIA_PICKER_PERMISSION_AWARE",
                 )
+            }
 
-            MessagesAction.ContactsHandoff -> state.toHandoff(MessagesMode.ContactsHandoff, "CONTACTS_HANDOFF")
-            MessagesAction.PhoneHandoff -> state.toHandoff(MessagesMode.PhoneHandoff, "PHONE_HANDOFF")
-            MessagesAction.HubHandoff -> state.toHandoff(MessagesMode.HubHandoff, "HUB_HANDOFF")
-            MessagesAction.CommandSearchHandoff -> state.toHandoff(MessagesMode.CommandSearchHandoff, "COMMAND_SEARCH_HANDOFF")
-            MessagesAction.NotificationShadeHandoff -> state.toHandoff(MessagesMode.NotificationShadeHandoff, "NOTIFICATION_SHADE_HANDOFF")
-            MessagesAction.LockscreenHandoff ->
+            else -> {
+                error("Unexpected attachment action: $action")
+            }
+        }
+
+    private fun reduceProviderHandoff(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.ContactsHandoff -> {
+                state.toHandoff(MessagesMode.ContactsHandoff, "CONTACTS_HANDOFF")
+            }
+
+            MessagesAction.PhoneHandoff -> {
+                state.toHandoff(MessagesMode.PhoneHandoff, "PHONE_HANDOFF")
+            }
+
+            MessagesAction.HubHandoff -> {
+                state.toHandoff(MessagesMode.HubHandoff, "HUB_HANDOFF")
+            }
+
+            MessagesAction.CommandSearchHandoff -> {
+                state.toHandoff(MessagesMode.CommandSearchHandoff, "COMMAND_SEARCH_HANDOFF")
+            }
+
+            MessagesAction.NotificationShadeHandoff -> {
+                state.toHandoff(MessagesMode.NotificationShadeHandoff, "NOTIFICATION_SHADE_HANDOFF")
+            }
+
+            else -> {
+                error("Unexpected provider-handoff action: $action")
+            }
+        }
+
+    private fun reducePrivacy(
+        state: MessagesUiState,
+        action: MessagesAction,
+    ): MessagesUiState =
+        when (action) {
+            MessagesAction.LockscreenHandoff -> {
                 state.copy(
                     mode = MessagesMode.Lockscreen,
                     focus = MessagesFocus.PrivacyPanel,
@@ -407,20 +598,35 @@ object MessagesInteractionModel {
                     messageBodyHiddenWhenLocked = true,
                     lastEvent = "LOCKSCREEN_PRIVACY_COMPATIBLE",
                 )
+            }
 
-            MessagesAction.LockedModeRedaction -> state.redacted("LOCKED_MODE_REDACTION")
-            MessagesAction.PrivateModeRedaction ->
+            MessagesAction.LockedModeRedaction -> {
+                state.redacted("LOCKED_MODE_REDACTION")
+            }
+
+            MessagesAction.PrivateModeRedaction -> {
                 state.redacted("PRIVATE_MODE_REDACTION").copy(privateModeRedaction = true)
+            }
 
-            MessagesAction.SourceRestrictedMode ->
+            MessagesAction.SourceRestrictedMode -> {
                 state.redacted("SOURCE_RESTRICTED_MODE").copy(sourceRestrictedMode = true)
+            }
+
+            else -> {
+                error("Unexpected privacy action: $action")
+            }
         }
 
     fun latestFirstThreads(threads: List<SableThread>): List<SableThread> =
         threads.sortedWith(
             compareByDescending<SableThread> { it.priority }
                 .thenByDescending { it.unreadCount }
-                .thenByDescending { it.messages.lastOrNull()?.time.orEmpty() },
+                .thenByDescending {
+                    it.messages
+                        .lastOrNull()
+                        ?.time
+                        .orEmpty()
+                },
         )
 
     fun visibleReleaseMarkers(state: MessagesUiState): Map<String, String> =
@@ -429,23 +635,27 @@ object MessagesInteractionModel {
                 "PROVIDER_OWNERSHIP_RETAINED" to pass(state.providerOwnershipRetained),
                 "PROVIDER_SAFE_ACTIONS" to pass(state.providerSafeAction),
                 "NO_TOUCHPAD_SCROLL_DEPENDENCY" to pass(state.noTouchpadScrollDependency),
-                "PHYSICAL_AND_ONSCREEN_DRAFT_SHARE_STATE" to pass(
-                    state.physicalAndOnscreenDraftShareState,
-                ),
+                "PHYSICAL_AND_ONSCREEN_DRAFT_SHARE_STATE" to
+                    pass(
+                        state.physicalAndOnscreenDraftShareState,
+                    ),
                 "DRAFT_PERSISTENCE" to pass(state.draftPersistence),
-                "ATTACHMENT_ACTIONS_PROVIDER_SAFE" to pass(
-                    state.attachmentActionsProviderSafe,
-                ),
+                "ATTACHMENT_ACTIONS_PROVIDER_SAFE" to
+                    pass(
+                        state.attachmentActionsProviderSafe,
+                    ),
                 "CAMERA_HANDOFF_PROVIDER_SAFE" to pass(state.cameraHandoffProviderSafe),
                 "MEDIA_PICKER_PERMISSION_AWARE" to pass(state.mediaPickerPermissionAware),
-                "MESSAGE_BODY_HIDDEN_WHEN_LOCKED" to pass(
-                    state.messageBodyHiddenWhenLocked || state.lockedModeRedaction,
-                ),
+                "MESSAGE_BODY_HIDDEN_WHEN_LOCKED" to
+                    pass(
+                        state.messageBodyHiddenWhenLocked || state.lockedModeRedaction,
+                    ),
                 "CONTACT_NAME_POLICY_AWARE" to pass(state.contactNamePolicyAware),
                 "HUB_PRIVACY_COMPATIBLE" to pass(state.hubPrivacyCompatible),
-                "NOTIFICATION_SHADE_PRIVACY_COMPATIBLE" to pass(
-                    state.notificationShadePrivacyCompatible,
-                ),
+                "NOTIFICATION_SHADE_PRIVACY_COMPATIBLE" to
+                    pass(
+                        state.notificationShadePrivacyCompatible,
+                    ),
             )
 
     private fun MessagesUiState.toLatest(event: String): MessagesUiState =

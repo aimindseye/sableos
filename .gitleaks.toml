@@ -40,3 +40,57 @@ commits = ["dc2fa126ef805a49dde4c98ffe0f18cfed09f37b"]
 paths = ['''^tools/validation/release-r1/SABLE_R1_R0_RELEASE_PREFLIGHT\.py$''']
 regexTarget = "line"
 regexes = ['''^\s*"PASS" if common_keys == SIGNING_KEYS_2026081300 else "ERROR",\s*$''']
+
+[[allowlists]]
+description = "Historical P1-P4 platform-sable Git commit contract marker; not a credential"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["4ca3239354a0aa85025870c5ab2f20280f359b06"]
+paths = ['''^CURRENT_STATUS\.md$''']
+regexTarget = "match"
+regexes = ['''^P1_P4_PLATFORM_SABLE_KEY_CONTRACT=''']
+
+[[allowlists]]
+description = "Historical N1I hypothesis environment-key names; not API keys"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["17d21c2bf9b33200a72a4fc04801ecf86f7a8021"]
+paths = ['''^build/titan2/audit-n1i-b-trebledroid-mtk-ims-capability\.sh$''']
+regexTarget = "match"
+regexes = ['''^hyp_env_keys=''']
+
+[[allowlists]]
+description = "Historical C3B engineering contract Git blob assertions; not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = [
+  "1272b22ea2070a700074354bb2afc83f2e53ffc7",
+  "fedcee9bf4109c1b95b32a906bd8234dff775d5c",
+  "e19980c77d54011266d11705480e0ddcd36f1b24",
+  "7460d6f6aef61ddb11b6f27d85f998e620220d05",
+]
+paths = ['''^build/gates/n1d-c3b-engineering-contract\.sh$''']
+regexTarget = "line"
+regexes = ['''^for required in .*N1D_C3B_LPTOOLS_API_COMPAT_(PATCH_BLOB_SHA|BASE_BLOB|POST_BLOB)=[0-9a-f]{40}.*$''']
+
+[[allowlists]]
+description = "Historical C3B transition contract Git blob assertions; not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = [
+  "361ce98f12be292f6c8c7b425a0ea0acbafa5291",
+  "eb7cc931e28ca2360d3f04e6c9062e21fc61bd09",
+  "ffe399735fafa8f69062329cf78c33e292da9894",
+]
+paths = ['''^build/gates/n1d-c3b-transition-contract\.sh$''']
+regexTarget = "line"
+regexes = ['''^for required in .*N1D_C3B_LPTOOLS_API_COMPAT_(PATCH_BLOB_SHA|BASE_BLOB|POST_BLOB)=[0-9a-f]{40}.*$''']
+
+[[allowlists]]
+description = "Historical C3B transition LPTools Git blob IDs; not credentials"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["e2838299280e7c0c89f7eab9d2354b56f862f3fe"]
+paths = ['''^build/titan2/n1d-c3b-transition\.env$''']
+regexTarget = "match"
+regexes = ['''^N1D_C3B_LPTOOLS_API_COMPAT_(BASE|POST)_BLOB=''']

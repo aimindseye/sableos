@@ -24,6 +24,10 @@ python3 "$GSI_INFO" --self-test | grep -Fxq 'SABLE_GSI_IMAGE_INFO_SELF_TEST=PASS
 ADAPTER_TEXT="$(cat "$ADAPTER")"
 PLAN_TEXT="$(cat "$PLAN")"
 
+# Plan generation and physical execution are separate contracts.
+# The Titan adapter must remain globally fail-closed while the exact sealed
+# N1D E5B scope is represented by a scope token. The write-capable execution
+# surface is validated separately by n1d-c3b-e5b-standard-execution-contract.sh.
 for marker in \
   'SABLE_DEVICE_FLASH_SUPPORTED=NO' \
   'SABLE_DEVICE_PRESERVED_DATA_FLASH_SUPPORTED=NO' \
@@ -33,8 +37,10 @@ for marker in \
   'caf98dde723d07a071d95aaa1ef27d578d3208d8' \
   '998a8b99cd4d1a631006291a96c6f0160c5a4400c4bf6bba62c319c4ed3c82a5' \
   'TITAN2_N1D_C3B_E3_ARTIFACT_GATE=PASS' \
-  'TITAN2_N1D_C3B_E5B_STANDARD_FLASH_PLAN_SUPPORTED=YES' \
-  'TITAN2_N1D_C3B_E5B_FLASH_EXECUTION_SUPPORTED=NO' \
+  'SABLE_DEVICE_FLASH_PLAN_SUPPORTED=YES' \
+  'TITAN2_N1D_STANDARD_FLASH_PLAN_SUPPORTED=YES' \
+  'TITAN2_N1D_E5B_SCOPE_TOKEN="N1D-C3B-E5B:system_a:2994405376:62f92bff11821979b070b5568038dbae132e6714c87b9b43016be9c5ae503d69"' \
+  'TITAN2_STANDARD_FLASH_POLICY=BLOCKED_SCOPE_TOKEN' \
   'prepare-n1d-c3b-e5b-flash-plan.sh' \
   'artifacts.e5b_decision.path' \
   'artifacts.e5b_decision.sha256' \

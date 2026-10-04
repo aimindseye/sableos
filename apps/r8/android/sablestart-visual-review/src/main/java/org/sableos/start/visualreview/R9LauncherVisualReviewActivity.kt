@@ -139,7 +139,11 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 .flatMap { user ->
                     launcherApps.getActivityList(null, user).mapNotNull { info ->
                         val component = info.componentName
-                        val rawLabel = info.label?.toString()?.trim().orEmpty()
+                        val rawLabel =
+                            info.label
+                                ?.toString()
+                                ?.trim()
+                                .orEmpty()
                         val label = rawLabel
                         if (
                             label.isEmpty() ||
@@ -164,8 +168,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                             )
                         }
                     }
-                }
-                .distinctBy { entry -> entry.stableKey() }
+                }.distinctBy { entry -> entry.stableKey() }
                 .sortedWith(
                     compareBy<AppEntry> { entry ->
                         entry.label.lowercase(locale)
@@ -177,9 +180,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                 )
     }
 
-    private fun buildPrivacyPermissionSummary(
-        packageName: String,
-    ): String {
+    private fun buildPrivacyPermissionSummary(packageName: String): String {
         val packageInfo =
             runCatching {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -207,7 +208,7 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
                     val permissionFlags = flags.getOrNull(index) ?: 0
                     if (
                         permissionFlags and
-                            PackageInfo.REQUESTED_PERMISSION_GRANTED != 0
+                        PackageInfo.REQUESTED_PERMISSION_GRANTED != 0
                     ) {
                         add(permission)
                     }
@@ -277,11 +278,12 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         val selected = linkedMapOf<String, AppEntry>()
 
         REVIEW_START_LABELS.forEach { preferred ->
-            apps.firstOrNull { entry ->
-                entry.label.equals(preferred, ignoreCase = true)
-            }?.let { entry ->
-                selected.putIfAbsent(entry.stableKey(), entry)
-            }
+            apps
+                .firstOrNull { entry ->
+                    entry.label.equals(preferred, ignoreCase = true)
+                }?.let { entry ->
+                    selected.putIfAbsent(entry.stableKey(), entry)
+                }
         }
 
         apps.forEach { entry ->
@@ -299,11 +301,12 @@ class R9LauncherVisualReviewActivity : ComponentActivity() {
         val selected = linkedMapOf<String, AppEntry>()
 
         REVIEW_PIN_LABELS.forEach { preferred ->
-            apps.firstOrNull { entry ->
-                entry.label.equals(preferred, ignoreCase = true)
-            }?.let { entry ->
-                selected.putIfAbsent(entry.stableKey(), entry)
-            }
+            apps
+                .firstOrNull { entry ->
+                    entry.label.equals(preferred, ignoreCase = true)
+                }?.let { entry ->
+                    selected.putIfAbsent(entry.stableKey(), entry)
+                }
         }
 
         apps.forEach { entry ->

@@ -14,14 +14,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-enum class AppearanceMode(val stableValue: String) {
+enum class AppearanceMode(
+    val stableValue: String,
+) {
     FollowSystem("follow-system"),
     Light("light"),
-    Dark("dark");
+    Dark("dark"),
+    ;
 
     companion object {
-        fun fromStableValue(value: String?): AppearanceMode =
-            entries.firstOrNull { it.stableValue == value } ?: FollowSystem
+        fun fromStableValue(value: String?): AppearanceMode = entries.firstOrNull { it.stableValue == value } ?: FollowSystem
     }
 }
 
@@ -35,11 +37,11 @@ enum class AccentPreset(
     Green("green", "Green", Color(0xFF35C66B), Color(0xFF04140A)),
     Purple("purple", "Purple", Color(0xFF7A42E8), Color.White),
     Orange("orange", "Orange", Color(0xFFF28C45), Color(0xFF1D0C02)),
-    Slate("slate", "Slate", Color(0xFF64748B), Color.White);
+    Slate("slate", "Slate", Color(0xFF64748B), Color.White),
+    ;
 
     companion object {
-        fun fromStableValue(value: String?): AccentPreset =
-            entries.firstOrNull { it.stableValue == value } ?: Blue
+        fun fromStableValue(value: String?): AccentPreset = entries.firstOrNull { it.stableValue == value } ?: Blue
     }
 }
 
@@ -96,101 +98,113 @@ object SableColorTokens {
     val LightTextMuted = Color(0xFF515B66)
 }
 
-private val SableTypography = Typography(
-    displayLarge = TextStyle(
-        fontSize = 44.sp,
-        lineHeight = 50.sp,
-        fontWeight = FontWeight.Light,
-        letterSpacing = (-0.8).sp,
-    ),
-    headlineLarge = TextStyle(
-        fontSize = 34.sp,
-        lineHeight = 40.sp,
-        fontWeight = FontWeight.Light,
-        letterSpacing = (-0.4).sp,
-    ),
-    headlineMedium = TextStyle(
-        fontSize = 26.sp,
-        lineHeight = 32.sp,
-        fontWeight = FontWeight.Normal,
-    ),
-    titleLarge = TextStyle(
-        fontSize = 21.sp,
-        lineHeight = 27.sp,
-        fontWeight = FontWeight.Medium,
-    ),
-    titleMedium = TextStyle(
-        fontSize = 17.sp,
-        lineHeight = 23.sp,
-        fontWeight = FontWeight.Medium,
-    ),
-    bodyLarge = TextStyle(
-        fontSize = 17.sp,
-        lineHeight = 24.sp,
-        fontWeight = FontWeight.Normal,
-    ),
-    bodyMedium = TextStyle(
-        fontSize = 15.sp,
-        lineHeight = 21.sp,
-        fontWeight = FontWeight.Normal,
-    ),
-    labelLarge = TextStyle(
-        fontSize = 14.sp,
-        lineHeight = 18.sp,
-        fontWeight = FontWeight.Medium,
-    ),
-)
+private val SableTypography =
+    Typography(
+        displayLarge =
+            TextStyle(
+                fontSize = 44.sp,
+                lineHeight = 50.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = (-0.8).sp,
+            ),
+        headlineLarge =
+            TextStyle(
+                fontSize = 34.sp,
+                lineHeight = 40.sp,
+                fontWeight = FontWeight.Light,
+                letterSpacing = (-0.4).sp,
+            ),
+        headlineMedium =
+            TextStyle(
+                fontSize = 26.sp,
+                lineHeight = 32.sp,
+                fontWeight = FontWeight.Normal,
+            ),
+        titleLarge =
+            TextStyle(
+                fontSize = 21.sp,
+                lineHeight = 27.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+        titleMedium =
+            TextStyle(
+                fontSize = 17.sp,
+                lineHeight = 23.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+        bodyLarge =
+            TextStyle(
+                fontSize = 17.sp,
+                lineHeight = 24.sp,
+                fontWeight = FontWeight.Normal,
+            ),
+        bodyMedium =
+            TextStyle(
+                fontSize = 15.sp,
+                lineHeight = 21.sp,
+                fontWeight = FontWeight.Normal,
+            ),
+        labelLarge =
+            TextStyle(
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+    )
 
-private val SableShapes = Shapes(
-    extraSmall = RoundedCornerShape(2.dp),
-    small = RoundedCornerShape(3.dp),
-    medium = RoundedCornerShape(4.dp),
-    large = RoundedCornerShape(6.dp),
-    extraLarge = RoundedCornerShape(6.dp),
-)
+private val SableShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(2.dp),
+        small = RoundedCornerShape(3.dp),
+        medium = RoundedCornerShape(4.dp),
+        large = RoundedCornerShape(6.dp),
+        extraLarge = RoundedCornerShape(6.dp),
+    )
 
 @Composable
 fun SableTheme(
     appearance: SableAppearance = SableAppearance(),
     content: @Composable () -> Unit,
 ) {
-    val dark = when (appearance.mode) {
-        AppearanceMode.FollowSystem -> isSystemInDarkTheme()
-        AppearanceMode.Light -> false
-        AppearanceMode.Dark -> true
-    }
+    val dark =
+        when (appearance.mode) {
+            AppearanceMode.FollowSystem -> isSystemInDarkTheme()
+            AppearanceMode.Light -> false
+            AppearanceMode.Dark -> true
+        }
     val accent = appearance.accent
-    val colors = if (dark) {
-        darkColorScheme(
-            primary = accent.color,
-            onPrimary = accent.onColor,
-            background = SableColorTokens.DarkBackground,
-            onBackground = SableColorTokens.DarkText,
-            surface = SableColorTokens.DarkSurface,
-            onSurface = SableColorTokens.DarkText,
-            surfaceVariant = SableColorTokens.DarkSurfaceRaised,
-            onSurfaceVariant = SableColorTokens.DarkTextMuted,
-            outline = Color(0xFF526170),
-            outlineVariant = Color(0xFF26313D),
-            error = Color(0xFFFFB4AB),
-            onError = Color(0xFF690005),
-        )
-    } else {
-        lightColorScheme(
-            primary = accent.color,
-            onPrimary = accent.onColor,
-            background = SableColorTokens.LightBackground,
-            onBackground = SableColorTokens.LightText,
-            surface = SableColorTokens.LightSurface,
-            onSurface = SableColorTokens.LightText,
-            surfaceVariant = SableColorTokens.LightSurfaceRaised,
-            onSurfaceVariant = SableColorTokens.LightTextMuted,
-            outline = Color(0xFF737E8A),
-            outlineVariant = Color(0xFFD0D6DD),
-            error = Color(0xFFBA1A1A),
-            onError = Color.White,
-        )
-    }
+    val colors =
+        if (dark) {
+            darkColorScheme(
+                primary = accent.color,
+                onPrimary = accent.onColor,
+                background = SableColorTokens.DarkBackground,
+                onBackground = SableColorTokens.DarkText,
+                surface = SableColorTokens.DarkSurface,
+                onSurface = SableColorTokens.DarkText,
+                surfaceVariant = SableColorTokens.DarkSurfaceRaised,
+                onSurfaceVariant = SableColorTokens.DarkTextMuted,
+                outline = Color(0xFF526170),
+                outlineVariant = Color(0xFF26313D),
+                error = Color(0xFFFFB4AB),
+                onError = Color(0xFF690005),
+            )
+        } else {
+            lightColorScheme(
+                primary = accent.color,
+                onPrimary = accent.onColor,
+                background = SableColorTokens.LightBackground,
+                onBackground = SableColorTokens.LightText,
+                surface = SableColorTokens.LightSurface,
+                onSurface = SableColorTokens.LightText,
+                surfaceVariant = SableColorTokens.LightSurfaceRaised,
+                onSurfaceVariant = SableColorTokens.LightTextMuted,
+                outline = Color(0xFF737E8A),
+                outlineVariant = Color(0xFFD0D6DD),
+                error = Color(0xFFBA1A1A),
+                onError = Color.White,
+            )
+        }
 
     MaterialTheme(
         colorScheme = colors,

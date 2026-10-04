@@ -26,9 +26,7 @@ object SableGlobalAppearanceContract {
         Uri.parse("content://$AUTHORITY/$PATH_APPEARANCE")
 }
 
-fun readGlobalSableAppearance(
-    context: Context,
-): SableAppearance =
+fun readGlobalSableAppearance(context: Context): SableAppearance =
     runCatching {
         context.contentResolver
             .query(
@@ -40,8 +38,7 @@ fun readGlobalSableAppearance(
                 null,
                 null,
                 null,
-            )
-            ?.use { cursor ->
+            )?.use { cursor ->
                 if (!cursor.moveToFirst()) {
                     return@use SableAppearance()
                 }
@@ -66,7 +63,6 @@ fun readGlobalSableAppearance(
             }
             ?: SableAppearance()
     }.getOrDefault(SableAppearance())
-
 
 fun writeGlobalSableAppearance(
     context: Context,
@@ -94,9 +90,7 @@ fun writeGlobalSableAppearance(
     }.getOrDefault(false)
 
 @Composable
-fun rememberGlobalSableAppearance(
-    context: Context = LocalContext.current,
-): SableAppearance {
+fun rememberGlobalSableAppearance(context: Context = LocalContext.current): SableAppearance {
     var appearance by remember(context) {
         mutableStateOf(readGlobalSableAppearance(context))
     }

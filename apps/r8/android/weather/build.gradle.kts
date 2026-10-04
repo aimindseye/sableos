@@ -42,8 +42,8 @@ android {
                     layout.buildDirectory
                         .dir("generated/rustJni")
                         .get()
-                        .asFile
-                )
+                        .asFile,
+                ),
             )
         }
     }
@@ -60,9 +60,10 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
 
-tasks.matching {
-    it.name.startsWith("merge") &&
-        it.name.endsWith("JniLibFolders")
-}.configureEach {
-    dependsOn(rootProject.tasks.named("stageWeatherRustJni"))
-}
+tasks
+    .matching {
+        it.name.startsWith("merge") &&
+            it.name.endsWith("JniLibFolders")
+    }.configureEach {
+        dependsOn(rootProject.tasks.named("stageWeatherRustJni"))
+    }

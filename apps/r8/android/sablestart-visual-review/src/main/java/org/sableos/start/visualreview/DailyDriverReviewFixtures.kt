@@ -47,14 +47,11 @@ abstract class ReviewFixtureActivity(
     }
 }
 
-class WeatherFixtureActivity :
-    ReviewFixtureActivity("Sable Weather")
+class WeatherFixtureActivity : ReviewFixtureActivity("Sable Weather")
 
-class MailFixtureActivity :
-    ReviewFixtureActivity("Sable Mail")
+class MailFixtureActivity : ReviewFixtureActivity("Sable Mail")
 
-class CalculatorFixtureActivity :
-    ReviewFixtureActivity("Sable Calculator")
+class CalculatorFixtureActivity : ReviewFixtureActivity("Sable Calculator")
 
 class ReviewWeatherSnapshotProvider : ContentProvider() {
     override fun onCreate(): Boolean = true
@@ -77,11 +74,12 @@ class ReviewWeatherSnapshotProvider : ContentProvider() {
             )
         }
 
-    override fun getType(uri: Uri): String =
-        "vnd.android.cursor.item/vnd.sableos.weather.snapshot"
+    override fun getType(uri: Uri): String = "vnd.android.cursor.item/vnd.sableos.weather.snapshot"
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw UnsupportedOperationException("Read-only fixture")
+    override fun insert(
+        uri: Uri,
+        values: ContentValues?,
+    ): Uri? = throw UnsupportedOperationException("Read-only fixture")
 
     override fun delete(
         uri: Uri,
@@ -123,11 +121,12 @@ class ReviewMailSnapshotProvider : ContentProvider() {
             )
         }
 
-    override fun getType(uri: Uri): String =
-        "vnd.android.cursor.item/vnd.org.sableos.mail.snapshot"
+    override fun getType(uri: Uri): String = "vnd.android.cursor.item/vnd.org.sableos.mail.snapshot"
 
-    override fun insert(uri: Uri, values: ContentValues?): Uri? =
-        throw UnsupportedOperationException("Read-only fixture")
+    override fun insert(
+        uri: Uri,
+        values: ContentValues?,
+    ): Uri? = throw UnsupportedOperationException("Read-only fixture")
 
     override fun delete(
         uri: Uri,

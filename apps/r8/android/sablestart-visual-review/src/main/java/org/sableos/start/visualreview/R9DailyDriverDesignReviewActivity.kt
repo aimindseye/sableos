@@ -1,7 +1,5 @@
 package org.sableos.start.visualreview
 
-import android.graphics.Paint as AndroidPaint
-import androidx.core.graphics.PathParser
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,10 +44,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.PathParser
 import org.sableos.design.AccentPreset
 import org.sableos.design.AppearanceMode
 import org.sableos.design.SableAppearance
 import org.sableos.design.SableTheme
+import android.graphics.Paint as AndroidPaint
 
 /**
  * Design-only R9 daily-driver review.
@@ -104,11 +104,11 @@ private enum class ReviewFrame(
     Files("files", "files"),
     Photos("photos", "photos"),
     Browser("browser", "vanadium"),
-    Messages("messages", "messages");
+    Messages("messages", "messages"),
+    ;
 
     companion object {
-        fun fromStableValue(value: String?): ReviewFrame =
-            entries.firstOrNull { it.stableValue == value } ?: StartDark
+        fun fromStableValue(value: String?): ReviewFrame = entries.firstOrNull { it.stableValue == value } ?: StartDark
     }
 }
 
@@ -247,17 +247,25 @@ private fun ReviewRoot(frame: ReviewFrame) {
         Spacer(Modifier.height(10.dp))
         when (frame) {
             ReviewFrame.Icons -> IconSystemReview()
+
             ReviewFrame.StartDark,
             ReviewFrame.StartLight,
             -> StartReview()
 
             ReviewFrame.Live -> LiveReview()
+
             ReviewFrame.Calendar -> CalendarReview()
+
             ReviewFrame.Clock -> ClockReview()
+
             ReviewFrame.Camera -> CameraReview()
+
             ReviewFrame.Files -> FilesReview()
+
             ReviewFrame.Photos -> PhotosReview()
+
             ReviewFrame.Browser -> BrowserReview()
+
             ReviewFrame.Messages -> MessagesReview()
         }
     }
@@ -744,8 +752,7 @@ private fun SableAppIcon(
                             app.accent.copy(alpha = 0.30f),
                         ),
                     ),
-                )
-                .border(1.dp, app.accent.copy(alpha = 0.55f), shape),
+                ).border(1.dp, app.accent.copy(alpha = 0.55f), shape),
         contentAlignment = Alignment.Center,
     ) {
         PhosphorGlyph(
@@ -923,8 +930,7 @@ private fun DimensionalTileSurface(
                                 accent.copy(alpha = 0.11f),
                             ),
                     ),
-                )
-                .border(1.dp, accent.copy(alpha = 0.30f), shape),
+                ).border(1.dp, accent.copy(alpha = 0.30f), shape),
     ) {
         Box(
             modifier =
@@ -1002,15 +1008,16 @@ private fun WeekStrip() {
                         .weight(1f)
                         .clip(RoundedCornerShape(6.dp))
                         .background(
-                            if (selected) SableBlue.copy(alpha = 0.22f)
-                            else MaterialTheme.colorScheme.surface,
-                        )
-                        .border(
+                            if (selected) {
+                                SableBlue.copy(alpha = 0.22f)
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        ).border(
                             1.dp,
                             if (selected) SableBlue else MaterialTheme.colorScheme.outlineVariant,
                             RoundedCornerShape(6.dp),
-                        )
-                        .padding(vertical = 9.dp),
+                        ).padding(vertical = 9.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(day, style = MaterialTheme.typography.labelLarge)
@@ -1290,8 +1297,11 @@ private fun ConversationRow(
                 Modifier
                     .size(46.dp)
                     .background(
-                        if (unread) SableGreen.copy(alpha = 0.18f)
-                        else MaterialTheme.colorScheme.surfaceVariant,
+                        if (unread) {
+                            SableGreen.copy(alpha = 0.18f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        },
                         CircleShape,
                     ),
             contentAlignment = Alignment.Center,

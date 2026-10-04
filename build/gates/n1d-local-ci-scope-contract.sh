@@ -20,6 +20,11 @@ require() {
 require 'if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then'
 require 'SABLE_LOCAL_CI_PANTHER_R9_STATIC_CONTRACTS=SKIP'
 require 'SABLE_LOCAL_CI_R9_LAUNCHER3_FOUNDATION=SKIP'
+require ':messages:detekt'
+require ':messages:ktlintCheck'
+require ':messages:testDebugUnitTest'
+require ':messages:assembleDebug'
+require ':messages:lintDebug'
 
 for panther_only in   'r8-build-driver-contract.sh'   'r9-physical-remediation-contract.py'   'r9-system-cohesion-contract.py'   'r9-physical-ux-closure-contract.py'   'r9-launcher3-foundation-contract.py'
 do
@@ -27,7 +32,7 @@ do
   [[ "$count" -ge 1 ]] || fail "missing_panther_contract=$panther_only"
 done
 
-for shared in   'sable-pipeline-contract.sh'   'r9-textreader-standalone-contract.py'   'r9-sms-mms-blocking-contract.py'   'r9-first-party-app-icon-contract.py'   'r9-media-flow-contract.py'   'r9-messages-native-first-contract.py'   'r9-messages-local-conversation-contract.py'   'r9-messages-source-style.py'   'r9-sablestart-design-contract.py'
+for shared in   'sable-pipeline-contract.sh'   'r9-textreader-standalone-contract.py'   'r9-sms-mms-blocking-contract.py'   'r9-first-party-app-icon-contract.py'   'r9-media-flow-contract.py'   'r9-messages-native-first-contract.py'   'r9-messages-local-conversation-contract.py'   'r9-standalone-messages-quality-contract.py'   'r9-messages-source-style.py'   'r9-sablestart-design-contract.py'
 do
   grep -Fq "$shared" "$CI" || fail "missing_shared_contract=$shared"
 done

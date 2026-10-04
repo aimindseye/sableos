@@ -1,9 +1,10 @@
+@file:Suppress("FunctionNaming")
+
 package org.sableos.messages
 
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -41,6 +42,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableSpacing
+import android.view.KeyEvent as AndroidKeyEvent
+
+private const val VISIBLE_MESSAGE_COUNT = 3
+private const val ACTION_GRID_COLUMNS = 3
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,53 +76,23 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MessagesApp(
-    onProviderHandoff: (String, String) -> Boolean,
-) {
+private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
     var state by remember { mutableStateOf(MessagesInteractionModel.initialState()) }
-    var providerStatus by remember {
-        mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no")
-    }
+    var providerStatus by remember { mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no") }
     val sortedThreads = remember { MessagesInteractionModel.latestFirstThreads(sampleThreads) }
 
     fun apply(action: MessagesAction) {
-        state =
-            MessagesInteractionModel.reduce(
-                state = state,
-                action = action,
-                threadCount = sortedThreads.size,
-            )
+        state = MessagesInteractionModel.reduce(state, action, sortedThreads.size)
     }
 
     fun sendToProvider() {
         val thread = sortedThreads[state.selectedThreadIndex]
-        providerStatus =
-            if (onProviderHandoff(thread.route, state.draft)) {
-                "Provider-safe smsto: handoff opened for ${thread.person}."
-            } else {
-                "No provider accepted smsto: handoff on this build."
-            }
+        providerStatus = providerHandoffStatus(thread, state.draft, onProviderHandoff)
         apply(MessagesAction.SendMessage)
     }
 
     Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .onPreviewKeyEvent { event ->
-                    handleMessagesKey(
-                        event = event.nativeKeyEvent,
-                        state = state,
-                        apply = ::apply,
-                        sendToProvider = ::sendToProvider,
-                    )
-                }
-                .verticalScroll(rememberScrollState())
-                .padding(
-                    horizontal = SableSpacing.ScreenHorizontal,
-                    vertical = SableSpacing.Xl,
-                ),
+        modifier = messagesAppModifier(state, ::apply, ::sendToProvider),
     ) {
         Header()
         Spacer(Modifier.height(SableSpacing.Xl))
@@ -126,9 +101,7 @@ private fun MessagesApp(
         LatestAnchoredThread(
             state = state,
             thread = sortedThreads[state.selectedThreadIndex],
-            onDraftChanged = { draft ->
-                state = state.copy(draft = draft)
-            },
+            onDraftChanged = { draft -> state = state.copy(draft = draft) },
             onAction = ::apply,
             onProviderHandoff = ::sendToProvider,
         )
@@ -140,11 +113,7 @@ private fun MessagesApp(
             threads = sortedThreads,
             onAction = ::apply,
             onSelectThread = { index ->
-                state =
-                    state.copy(
-                        focusedConversationRow = index,
-                        selectedThreadIndex = index,
-                    )
+                state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
                 apply(MessagesAction.OpenFocusedConversation)
             },
         )
@@ -161,6 +130,39 @@ private fun MessagesApp(
     }
 }
 
+private fun providerHandoffStatus(
+    thread: SableThread,
+    draft: String,
+    onProviderHandoff: (String, String) -> Boolean,
+): String =
+    if (onProviderHandoff(thread.route, draft)) {
+        "Provider-safe smsto: handoff opened for ${thread.person}."
+    } else {
+        "No provider accepted smsto: handoff on this build."
+    }
+
+@Composable
+private fun messagesAppModifier(
+    state: MessagesUiState,
+    apply: (MessagesAction) -> Unit,
+    sendToProvider: () -> Unit,
+): Modifier =
+    Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)
+        .onPreviewKeyEvent { event ->
+            handleMessagesKey(
+                event = event.nativeKeyEvent,
+                state = state,
+                apply = apply,
+                sendToProvider = sendToProvider,
+            )
+        }.verticalScroll(rememberScrollState())
+        .padding(
+            horizontal = SableSpacing.ScreenHorizontal,
+            vertical = SableSpacing.Xl,
+        )
+
 private fun handleMessagesKey(
     event: AndroidKeyEvent,
     state: MessagesUiState,
@@ -169,66 +171,134 @@ private fun handleMessagesKey(
 ): Boolean {
     if (event.action != AndroidKeyEvent.ACTION_DOWN) return false
 
-    val action =
-        when (event.keyCode) {
-            AndroidKeyEvent.KEYCODE_SLASH -> MessagesAction.SearchInConversation
-            AndroidKeyEvent.KEYCODE_L -> {
-                if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
-            }
-            AndroidKeyEvent.KEYCODE_MOVE_END -> MessagesAction.ReturnToLatest
-            AndroidKeyEvent.KEYCODE_PAGE_UP -> MessagesAction.PageUpHistory
-            AndroidKeyEvent.KEYCODE_PAGE_DOWN -> MessagesAction.PageDownTowardLatest
-            AndroidKeyEvent.KEYCODE_N -> MessagesAction.NextUnread
-            AndroidKeyEvent.KEYCODE_D -> MessagesAction.JumpToDate
-            AndroidKeyEvent.KEYCODE_A -> MessagesAction.JumpToAttachment
-            AndroidKeyEvent.KEYCODE_BACK,
-            AndroidKeyEvent.KEYCODE_ESCAPE -> MessagesAction.BackOrEsc
-            AndroidKeyEvent.KEYCODE_DPAD_UP -> {
-                if (state.mode == MessagesMode.ConversationList) {
-                    MessagesAction.ConversationListUp
-                } else {
-                    MessagesAction.MessageFocusUp
-                }
-            }
-            AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
-                if (state.mode == MessagesMode.ConversationList) {
-                    MessagesAction.ConversationListDown
-                } else {
-                    MessagesAction.MessageFocusDown
-                }
-            }
-            AndroidKeyEvent.KEYCODE_MOVE_HOME -> MessagesAction.ConversationListHome
-            AndroidKeyEvent.KEYCODE_ENTER,
-            AndroidKeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                when {
-                    event.isShiftPressed -> MessagesAction.ComposerShiftEnterNewline
-                    event.isAltPressed -> MessagesAction.ComposerAltEnterProviderSend
-                    state.mode == MessagesMode.ConversationList -> MessagesAction.OpenFocusedConversation
-                    state.mode == MessagesMode.History -> MessagesAction.ReturnToLatest
-                    state.mode == MessagesMode.Search -> MessagesAction.ReturnToLatest
-                    state.mode == MessagesMode.MessageActions -> MessagesAction.MessageEnterDetails
-                    else -> {
-                        sendToProvider()
-                        return true
-                    }
-                }
-            }
-            AndroidKeyEvent.KEYCODE_SPACE -> MessagesAction.MessageSpacePreview
-            AndroidKeyEvent.KEYCODE_DEL -> MessagesAction.ComposerBackspace
-            AndroidKeyEvent.KEYCODE_FORWARD_DEL -> MessagesAction.ComposerDelete
-            AndroidKeyEvent.KEYCODE_MENU -> MessagesAction.ComposerMenuActions
-            else -> {
-                if (state.mode == MessagesMode.ConversationList) {
-                    MessagesAction.TypeToFilter
-                } else {
-                    MessagesAction.ComposerTyping
-                }
+    val action = resolveMessagesKeyAction(event, state)
+    if (action == MessagesAction.ComposerEnterSend) {
+        sendToProvider()
+    } else {
+        apply(action)
+    }
+    return true
+}
+
+private fun resolveMessagesKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction = shortcutKeyAction(event) ?: interactionKeyAction(event, state)
+
+private fun shortcutKeyAction(event: AndroidKeyEvent): MessagesAction? =
+    when (event.keyCode) {
+        AndroidKeyEvent.KEYCODE_SLASH -> {
+            MessagesAction.SearchInConversation
+        }
+
+        AndroidKeyEvent.KEYCODE_L -> {
+            if (event.isCtrlPressed) MessagesAction.ReturnToLatest else MessagesAction.ComposerTyping
+        }
+
+        AndroidKeyEvent.KEYCODE_MOVE_END -> {
+            MessagesAction.ReturnToLatest
+        }
+
+        AndroidKeyEvent.KEYCODE_PAGE_UP -> {
+            MessagesAction.PageUpHistory
+        }
+
+        AndroidKeyEvent.KEYCODE_PAGE_DOWN -> {
+            MessagesAction.PageDownTowardLatest
+        }
+
+        AndroidKeyEvent.KEYCODE_N -> {
+            MessagesAction.NextUnread
+        }
+
+        AndroidKeyEvent.KEYCODE_D -> {
+            MessagesAction.JumpToDate
+        }
+
+        AndroidKeyEvent.KEYCODE_A -> {
+            MessagesAction.JumpToAttachment
+        }
+
+        AndroidKeyEvent.KEYCODE_BACK,
+        AndroidKeyEvent.KEYCODE_ESCAPE,
+        -> {
+            MessagesAction.BackOrEsc
+        }
+
+        AndroidKeyEvent.KEYCODE_MOVE_HOME -> {
+            MessagesAction.ConversationListHome
+        }
+
+        else -> {
+            null
+        }
+    }
+
+private fun interactionKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction =
+    when (event.keyCode) {
+        AndroidKeyEvent.KEYCODE_DPAD_UP -> {
+            if (state.mode == MessagesMode.ConversationList) {
+                MessagesAction.ConversationListUp
+            } else {
+                MessagesAction.MessageFocusUp
             }
         }
 
-    apply(action)
-    return true
-}
+        AndroidKeyEvent.KEYCODE_DPAD_DOWN -> {
+            if (state.mode == MessagesMode.ConversationList) {
+                MessagesAction.ConversationListDown
+            } else {
+                MessagesAction.MessageFocusDown
+            }
+        }
+
+        AndroidKeyEvent.KEYCODE_ENTER,
+        AndroidKeyEvent.KEYCODE_NUMPAD_ENTER,
+        -> {
+            enterKeyAction(event, state)
+        }
+
+        AndroidKeyEvent.KEYCODE_SPACE -> {
+            MessagesAction.MessageSpacePreview
+        }
+
+        AndroidKeyEvent.KEYCODE_DEL -> {
+            MessagesAction.ComposerBackspace
+        }
+
+        AndroidKeyEvent.KEYCODE_FORWARD_DEL -> {
+            MessagesAction.ComposerDelete
+        }
+
+        AndroidKeyEvent.KEYCODE_MENU -> {
+            MessagesAction.ComposerMenuActions
+        }
+
+        else -> {
+            if (state.mode == MessagesMode.ConversationList) {
+                MessagesAction.TypeToFilter
+            } else {
+                MessagesAction.ComposerTyping
+            }
+        }
+    }
+
+private fun enterKeyAction(
+    event: AndroidKeyEvent,
+    state: MessagesUiState,
+): MessagesAction =
+    when {
+        event.isShiftPressed -> MessagesAction.ComposerShiftEnterNewline
+        event.isAltPressed -> MessagesAction.ComposerAltEnterProviderSend
+        state.mode == MessagesMode.ConversationList -> MessagesAction.OpenFocusedConversation
+        state.mode == MessagesMode.History -> MessagesAction.ReturnToLatest
+        state.mode == MessagesMode.Search -> MessagesAction.ReturnToLatest
+        state.mode == MessagesMode.MessageActions -> MessagesAction.MessageEnterDetails
+        else -> MessagesAction.ComposerEnterSend
+    }
 
 @Composable
 private fun Header() {
@@ -264,15 +334,7 @@ private fun LatestAnchoredThread(
     onProviderHandoff: () -> Unit,
 ) {
     ContractPanel(title = "Latest-anchored conversation") {
-        ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
-        ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
-        ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
-        ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
-        ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
-        ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
-        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
-        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
-        Spacer(Modifier.height(SableSpacing.Md))
+        LatestThreadContractRows()
 
         Text(
             text = thread.person,
@@ -286,13 +348,7 @@ private fun LatestAnchoredThread(
         )
         Spacer(Modifier.height(SableSpacing.Md))
 
-        thread.messages.takeLast(3).forEachIndexed { index, message ->
-            MessageBubble(
-                message = message,
-                latest = index == thread.messages.takeLast(3).lastIndex,
-                focused = state.focus == MessagesFocus.LatestMessage && state.focusedMessageIndex == index,
-            )
-        }
+        LatestMessages(state = state, thread = thread)
 
         Spacer(Modifier.height(SableSpacing.Md))
         Text(
@@ -327,6 +383,34 @@ private fun LatestAnchoredThread(
                 Text("ALT/SYM/FN entry")
             }
         }
+    }
+}
+
+@Composable
+private fun LatestThreadContractRows() {
+    ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
+    ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
+    ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
+    ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
+    ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
+    ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
+    ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
+    ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
+    Spacer(Modifier.height(SableSpacing.Md))
+}
+
+@Composable
+private fun LatestMessages(
+    state: MessagesUiState,
+    thread: SableThread,
+) {
+    val messages = thread.messages.takeLast(VISIBLE_MESSAGE_COUNT)
+    messages.forEachIndexed { index, message ->
+        MessageBubble(
+            message = message,
+            latest = index == messages.lastIndex,
+            focused = state.focus == MessagesFocus.LatestMessage && state.focusedMessageIndex == index,
+        )
     }
 }
 
@@ -420,8 +504,7 @@ private fun ConversationList(
                             } else {
                                 MaterialTheme.colorScheme.surfaceVariant
                             },
-                        )
-                        .clickable { onSelectThread(index) }
+                        ).clickable { onSelectThread(index) }
                         .padding(SableSpacing.Md),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
@@ -447,16 +530,21 @@ private fun ConversationList(
             }
             Spacer(Modifier.height(SableSpacing.Sm))
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
-            Button(onClick = { onAction(MessagesAction.ConversationListUp) }) {
-                Text("Up")
-            }
-            Button(onClick = { onAction(MessagesAction.ConversationListDown) }) {
-                Text("Down")
-            }
-            Button(onClick = { onAction(MessagesAction.TypeToFilter) }) {
-                Text("Type filter")
-            }
+        ConversationListControls(onAction)
+    }
+}
+
+@Composable
+private fun ConversationListControls(onAction: (MessagesAction) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
+        Button(onClick = { onAction(MessagesAction.ConversationListUp) }) {
+            Text("Up")
+        }
+        Button(onClick = { onAction(MessagesAction.ConversationListDown) }) {
+            Text("Down")
+        }
+        Button(onClick = { onAction(MessagesAction.TypeToFilter) }) {
+            Text("Type filter")
         }
     }
 }
@@ -485,7 +573,7 @@ private fun MessageActionsPanel(onAction: (MessagesAction) -> Unit) {
                 "Camera" to MessagesAction.CameraHandoff,
                 "Media" to MessagesAction.MediaPicker,
             )
-        actions.chunked(3).forEach { row ->
+        actions.chunked(ACTION_GRID_COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
                 row.forEach { (label, action) ->
                     Button(onClick = { onAction(action) }) {
@@ -543,7 +631,7 @@ private fun HandoffPanel(
                 "Private" to MessagesAction.PrivateModeRedaction,
                 "Restricted" to MessagesAction.SourceRestrictedMode,
             )
-        actions.chunked(3).forEach { row ->
+        actions.chunked(ACTION_GRID_COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
                 row.forEach { (label, action) ->
                     Button(onClick = { onAction(action) }) {
@@ -594,8 +682,7 @@ private fun MessageBubble(
                         message.incoming -> MaterialTheme.colorScheme.surfaceVariant
                         else -> MaterialTheme.colorScheme.secondaryContainer
                     },
-                )
-                .padding(SableSpacing.Md),
+                ).padding(SableSpacing.Md),
     ) {
         Column {
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {

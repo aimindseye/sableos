@@ -77,7 +77,10 @@ internal fun MinesweeperScreen() {
         }
     }
 
-    fun selectCell(x: Int, y: Int) {
+    fun selectCell(
+        x: Int,
+        y: Int,
+    ) {
         applyResponse(
             if (flagMode) {
                 NativeBridge.minesweeperToggleFlag(

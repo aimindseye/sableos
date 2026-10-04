@@ -10,8 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -41,18 +41,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.ZoneId
-import java.util.Calendar
-import java.util.Date
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,6 +55,11 @@ import org.sableos.design.SableActionButton
 import org.sableos.design.SableGlobalTheme
 import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableSpacing
+import java.time.LocalDate
+import java.time.YearMonth
+import java.time.ZoneId
+import java.util.Calendar
+import java.util.Date
 
 class MainActivity : ComponentActivity() {
     private lateinit var repository: CalendarRepository
@@ -172,7 +172,7 @@ private fun CalendarApp(
                 }
 
                 when (mode) {
-                    CalendarMode.Agenda ->
+                    CalendarMode.Agenda -> {
                         ApprovedCalendarLanding(
                             selectedDate = selectedDate,
                             events = events,
@@ -180,6 +180,7 @@ private fun CalendarApp(
                             onOpenMonth = { mode = CalendarMode.Month },
                             onNewEvent = { mode = CalendarMode.NewEvent },
                         )
+                    }
 
                     CalendarMode.Month -> {
                         SableActionButton(
@@ -305,8 +306,7 @@ private fun CalendarIdentityMark() {
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.20f),
                         ),
                     ),
-                )
-                .border(
+                ).border(
                     1.dp,
                     MaterialTheme.colorScheme.primary.copy(alpha = 0.55f),
                     shape,
@@ -354,8 +354,7 @@ private fun CalendarWeekStrip(
                             } else {
                                 MaterialTheme.colorScheme.surface
                             },
-                        )
-                        .border(
+                        ).border(
                             1.dp,
                             if (selected) {
                                 MaterialTheme.colorScheme.primary
@@ -363,8 +362,7 @@ private fun CalendarWeekStrip(
                                 MaterialTheme.colorScheme.outlineVariant
                             },
                             RoundedCornerShape(6.dp),
-                        )
-                        .clickable { onSelectDate(date) }
+                        ).clickable { onSelectDate(date) }
                         .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -569,8 +567,7 @@ private fun MonthView(
                             .height(46.dp)
                             .clickable(enabled = date != null) {
                                 date?.let(onSelectDate)
-                            }
-                            .background(
+                            }.background(
                                 if (selected) {
                                     MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
                                 } else {
@@ -688,7 +685,8 @@ private fun NewEventView(
                 },
                 calendar.get(Calendar.HOUR_OF_DAY),
                 calendar.get(Calendar.MINUTE),
-                android.text.format.DateFormat.is24HourFormat(context),
+                android.text.format.DateFormat
+                    .is24HourFormat(context),
             ).show()
         },
     )

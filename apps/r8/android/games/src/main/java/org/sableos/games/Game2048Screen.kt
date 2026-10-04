@@ -24,10 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
 import org.sableos.design.SableActionButton
 import org.sableos.design.SableSpacing
 import org.sableos.design.SableValuePanel
+import kotlin.math.abs
 
 private val TileEmpty = Color(0xFF10161D)
 private val Tile2 = Color(0xFF26384B)
@@ -233,8 +233,20 @@ private fun tileColor(value: Int): Color =
 
 private fun initial2048Board(): IntArray =
     intArrayOf(
-        2, 2, 4, 4,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
+        2,
+        2,
+        4,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
     )
