@@ -17,8 +17,8 @@ TITAN_CELLULAR_MUTATION=HOLD_FOR_BE2
 N1I_IMS_APN_QNS_IWLAN_VENDOR_TELEPHONY=NO_CHANGE_AUTHORIZED
 TITAN2_FLASH=HOLD
 PANTHER_COMMON_PRODUCT_VALIDATION=AUTHORIZED
-PR28_OPERATOR_ANDROID_QUALIFICATION=PENDING
-PR29_OPERATOR_ANDROID_QUALIFICATION=PENDING
+PR28_OPERATOR_ANDROID_QUALIFICATION=PASS_MERGED_TITAN2_TEMP_PR32
+PR29_OPERATOR_ANDROID_QUALIFICATION=PASS_MERGED_TITAN2_TEMP_PR34
 
 BATTERY_PUBLIC_DESIGN=MERGED_PLATFORM_SABLE_PR50
 BATTERY_PUBLIC_ROADMAP=MERGED_ORG_PR38
@@ -35,8 +35,10 @@ KF_C_I_ISSUE=48
 ```
 
 P1-P4 source handoffs are already merged in `aimindseye/titan2-temp`.
-P5A-P5E are also merged. PR #28 and #29 remain exact-head operator-qualification
-candidates; their original developer branches must not be silently rewritten.
+P5A-P5E are also merged. P5F operator Android qualification is complete via
+`titan2-temp#32`, and the non-Reader runtime-readiness layer is operator-qualified
+and merged via `titan2-temp#34`. Original developer drafts #28/#29 are preserved
+closed as superseded.
 
 Canonical replacement-developer packages are
 `docs/titan2/P1_P5_CANONICAL_INTEGRATION_PACKAGES.md`.
@@ -318,8 +320,11 @@ P5D_PR26=MERGED
 P5E_PR27=MERGED
 P5E_QUALIFIED_FEATURE_BASELINE=4089c1274a9e4a402a2c617cc00a7c166112f195
 
-P5F_PR28=DRAFT_PENDING_OPERATOR_ANDROID_QUALIFICATION
-NON_READER_PR29=DRAFT_PENDING_OPERATOR_ANDROID_QUALIFICATION
+P5F_PR28=CLOSED_SUPERSEDED_BY_PR32
+P5F_PR32=MERGED_OPERATOR_QUALIFIED
+NON_READER_PR29=CLOSED_SUPERSEDED_BY_PR34
+NON_READER_PR34=MERGED_OPERATOR_QUALIFIED
+TITAN2_TEMP_MAIN=7570470d1c5a27ef94ed4751f5ccb91af41761fe
 ```
 
 The old `P1_P4_PREQUAL_RESTACK_REQUIRED=YES` state is superseded: the corrected
@@ -485,40 +490,41 @@ P1_P4_DEVICE_RUNTIME=NO
 The remaining work is canonical owner integration plus operator Android/runtime
 qualification, not another developer-source restack.
 
-## Current developer deliverables
+## Current product-source qualification state
 
-The product-source repository is now based on
-`aimindseye/titan2-temp@4089c1274a9e4a402a2c617cc00a7c166112f195`
-after the accepted P5E merge.
+`aimindseye/titan2-temp` has completed the waiting-period operator qualification
+of both developer handoff drafts.
 
 ```text
-DEVELOPER_B_PR_28=P5F_READER_RUNTIME_READINESS_DRAFT
-PR_28_HEAD=e8a5ddd374a0d78ca175b2137cf73707150ca28a
-PR_28_ANDROID_COMPILE=PENDING_OPERATOR
-PR_28_LINT=PENDING_OPERATOR
-PR_28_ANDROID_UNIT_TESTS=PENDING_OPERATOR
-PR_28_MERGED_MANIFEST=PENDING_OPERATOR
-PR_28_DEVICE_RUNTIME=NOT_RUN
+TITAN2_TEMP_MAIN=7570470d1c5a27ef94ed4751f5ccb91af41761fe
 
-DEVELOPER_A_PR_29=C3B_NON_READER_RUNTIME_READINESS_DRAFT
-PR_29_HEAD=5468758dc42c372854fc6936e3800afc1ee33def
-PR_29_STATIC_GATE=PASS_DEVELOPER
-PR_29_MUTATION_TESTS=PASS_DEVELOPER
-PR_29_ANDROID_OFFLINE=PENDING_OPERATOR
-PR_29_DEVICE_RUNTIME=NOT_RUN
+P5F_ORIGINAL_PR28=CLOSED_SUPERSEDED
+P5F_QUALIFIED_PR32=MERGED
+P5F_STATIC_GATE=PASS
+P5F_JVM_TESTS=PASS
+P5F_ANDROID_COMPILE=PASS
+P5F_LINT=PASS
+P5F_ANDROID_UNIT_TESTS=PASS
+P5F_MERGED_MANIFEST=PASS_PERMISSION_DELTA_EXACT
+P5F_DEVICE_RUNTIME_VALIDATED=NO
+
+NON_READER_ORIGINAL_PR29=CLOSED_SUPERSEDED
+NON_READER_QUALIFIED_PR34=MERGED
+PR29_QUALIFIED_BLOBS_PRESERVED=PASS
+PR29_COMPLETE_OWNERSHIP_AUDIT=PASS
+C3B_PRODUCT_RUNTIME_READINESS_SELFTEST=PASS
+C3B_PRODUCT_SOURCE_STATIC_QUALIFICATION=PASS
+C3B_PRODUCT_RUNTIME_READINESS_STATIC=PASS
+C3B_PRODUCT_FULL_ANDROID_CHECKS=PASS
+C3B_PRODUCT_MERGED_MANIFEST_AUDIT=PASS_MODULES_6
+C3B_PRODUCT_ANDROID_OFFLINE_QUALIFICATION=PASS
+C3B_RUNTIME_MARKERS_CLAIMED=0
+DEVICE_RUNTIME_VALIDATED=NO
 ```
 
-PR #28 includes Reader runtime-readiness tooling and bounded Reader source fixes,
-so exact-head operator Android compile, lint, Android unit tests and merged-
-manifest verification are required before admission. Warning counts must come
-from the real lint XML rather than being invented. Device runtime remains a
-separate later qualification.
-
-PR #29 adds non-Reader runtime-readiness/evidence tooling and no feature code.
-Its static/Python/mutation evidence is useful, but the Android-offline path must
-be run by the operator with a base that precedes the Android source delta.
-Neither draft is canonical runtime admission, and neither changes the
-C3A-first runtime-recovery control order.
+The next waiting-period operator phase is broad current `sableos/main` offline
+qualification, followed by a Panther validation release-candidate build only if
+the same source commit passes.
 
 ## Next execution order
 
@@ -554,8 +560,9 @@ if C3A FAIL_OR_INCONCLUSIVE:
  -> do not relabel C2 as N1B or as a Sable baseline
 
 parallel:
- -> operator-qualify developer PR #28 and #29 exact heads
- -> no developer PR may claim Titan device runtime yet
+ -> PR #28/#29 operator qualification = COMPLETE via #32/#34
+ -> broad current SableOS/Panther offline qualification
+ -> no product-source result may claim Titan device runtime yet
 ```
 
 ## Historical execution plans
