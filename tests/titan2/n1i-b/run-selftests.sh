@@ -28,6 +28,7 @@ COMPONENTS=(
   "members|MEMBER_RESOLVER_TESTS|python3 $HERE/test-members.py"
   "native|NATIVE_DATAFLOW_TESTS|python3 $HERE/test-native.py"
   "census|REVERSE_CENSUS_TESTS|python3 $HERE/test-census.py"
+  "ledger|EVIDENCE_LEDGER_TESTS|python3 $HERE/test-ledger.py"
 )
 
 declare -A MARK_STATE=()
