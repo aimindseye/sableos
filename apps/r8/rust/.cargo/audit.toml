@@ -1,0 +1,11 @@
+# Local CI runs the Rust security stage without network access.
+# Advisory and crates.io index freshness are managed by the pinned host-tool/cache
+# bootstrap outside the build. Keep the checks enabled, but do not update them here.
+
+[database]
+fetch = false
+stale = false
+
+[yanked]
+enabled = true
+update_index = false

@@ -25,6 +25,7 @@ required = (
     ROOT / "build" / "local-ci" / "run.sh",
     ROOT / "build" / "local-ci" / "README.md",
     ROOT / ".gitleaks.toml",
+    ROOT / "apps" / "r8" / "rust" / ".cargo" / "audit.toml",
     ROOT / "build" / "trusted-runner-policy.json",
     ROOT / "build" / "check-runner-policy.py",
     ROOT / "build" / "audit-trusted-runner-host.py",
@@ -56,8 +57,8 @@ if gitleaks_config.is_file():
         failures.append(f"invalid .gitleaks.toml: {exc}")
     else:
         allowlists = parsed_gitleaks.get("allowlists")
-        if not isinstance(allowlists, list) or len(allowlists) != 4:
-            failures.append(".gitleaks.toml must contain exactly four scoped allowlists")
+        if not isinstance(allowlists, list) or len(allowlists) != 8:
+            failures.append(".gitleaks.toml must contain exactly eight scoped allowlists")
 
 policy_path = ROOT / "build" / "trusted-runner-policy.json"
 if policy_path.is_file():
@@ -158,6 +159,9 @@ if local_ci.is_file():
         "SABLE_SECURITY_BIN",
         "SABLE_GITLEAKS",
         "SABLE_MOBSFSCAN",
+        "CARGO_NET_OFFLINE",
+        "audit --no-fetch --deny warnings",
+        "deny --offline check advisories bans sources",
         "r9-sms-mms-blocking-contract.py",
         "r9-first-party-app-icon-contract.py",
         "r9-system-cohesion-contract.py",

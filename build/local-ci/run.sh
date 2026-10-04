@@ -381,13 +381,14 @@ need_tool() {
 run_security() {
   export CARGO_HOME="$SABLE_CARGO_HOME"
   export RUSTUP_HOME="$SABLE_RUSTUP_HOME"
+  export CARGO_NET_OFFLINE=true
   export PATH="$SABLE_SECURITY_BIN:$SABLE_RUST_TOOLCHAIN_ROOT/bin:$SABLE_CARGO_HOME/bin:$PATH"
   verify_shared_security_tools
 
   (
     cd "$ROOT/apps/r8/rust"
-    "$SABLE_CARGO" audit --deny warnings
-    "$SABLE_CARGO" deny check advisories bans sources
+    "$SABLE_CARGO" audit --no-fetch --deny warnings
+    "$SABLE_CARGO" deny --offline check advisories bans sources
   )
 
   gitleaks_report="$EVIDENCE_DIR/gitleaks-results.json"
