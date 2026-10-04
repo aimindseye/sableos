@@ -12,11 +12,13 @@ R9
 
 R10R3
   PANTHER_P1B_D4_B2B2R10R3_preserved_data_flash_execution.sh
-  target-files-only staged exact flash harness actually used for the successful B2 deployment
-  FLASH=PASS
-  ANDROID_BOOT=PASS
-  BUILDMANIFEST_IDENTITY=PASS
-  final historical script status BOUNDED_FAIL only at the post-boot adb/stdin ART loop
+  fail-closed historical stub; it performs no device or flash operation
+  the originally checked-in R10R3 blob is corrupted and is preserved byte-for-byte at:
+    archive/PANTHER_P1B_D4_B2B2R10R3_preserved_data_flash_execution.corrupt
+  preserved corrupt Git blob:
+    c1e600a98b3dc285a585d8098d426f8a236a27d8
+  historical validation records still document the successful B2 deployment and later bounded
+  post-boot failure, but the damaged executable archive is not trusted as reusable deployment code
 
 run_sablectl_b2_smoke.sh
   convenience wrapper for the canonical B2 target-files + sablectl smoke suite
@@ -26,7 +28,7 @@ test_panther_d4_validation_static.sh
   regression guard for the canonical `panther-target_files.zip` filename
 ```
 
-`SHA256SUMS` binds these checked-in executable bytes.
+`SHA256SUMS` binds the checked-in executable scripts/stubs. The corrupted R10R3 historical blob is bound by its preserved Git blob id above rather than reconstructed or executed.
 
 ## Historical milestone scripts identified by validation records
 
