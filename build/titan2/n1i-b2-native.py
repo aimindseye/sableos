@@ -24,7 +24,7 @@ JNI attribution per app native method:
 
 Library lookup models the app (system-side) linker namespace: APK libs, then system / system_ext /
 product / apex directories as given. A library present only under vendor/odm is recorded as
-VENDOR_ONLY_NOT_LOADABLE, never as satisfied.
+VENDOR_ONLY_NAMESPACE_UNPROVEN, never as satisfied.
 
 Exit codes: 0 completed   2 input error or decoder/oracle disagreement (nothing written)
 """
@@ -206,7 +206,7 @@ class Lib:
     name: str
     path: Path | None
     partition: str           # apk | system | ... | NOT_FOUND
-    status: str              # FOUND | VENDOR_ONLY_NOT_LOADABLE | NOT_FOUND | WRONG_ABI
+    status: str              # FOUND | VENDOR_ONLY_NAMESPACE_UNPROVEN | NOT_FOUND | WRONG_ABI
     info: S.ElfInfo | None = None
     sha256: str = "-"
     reasons: list = field(default_factory=list)   # how it was admitted
@@ -236,7 +236,7 @@ class Finder:
         if partition_hint is None:
             for k, d in self.dirs:
                 if k in ("vendor", "odm") and (d / name).is_file():
-                    return Lib(name, d / name, k, "VENDOR_ONLY_NOT_LOADABLE",
+                    return Lib(name, d / name, k, "VENDOR_ONLY_NAMESPACE_UNPROVEN",
                                sha256=hashlib.sha256((d / name).read_bytes()).hexdigest())
         return Lib(name, None, "NOT_FOUND", "NOT_FOUND")
 
@@ -497,8 +497,9 @@ def cmd_derive(a) -> int:
            ("N1I_B2_NATIVE_DYNAMIC_LOAD_UNRESOLVED", str(len(unresolved_sites))),
            ("N1I_B2_NATIVE_ADMITTED_LIBRARIES", str(len(admitted))),
            ("N1I_B2_NATIVE_NOT_FOUND", ",".join(sorted(n for n, l in libs.items() if l.status == "NOT_FOUND")) or "NONE"),
-           ("N1I_B2_NATIVE_VENDOR_ONLY_NOT_LOADABLE",
-            ",".join(sorted(n for n, l in libs.items() if l.status == "VENDOR_ONLY_NOT_LOADABLE")) or "NONE"),
+           ("N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN",
+            ",".join(sorted(n for n, l in libs.items() if l.status == "VENDOR_ONLY_NAMESPACE_UNPROVEN")) or "NONE"),
+           ("N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED", "NO"),
            ("N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING", ",".join(req_missing) or "NONE"),
            ("N1I_B2_NATIVE_SEARCH_SUPERSET_COUNT", str(len(superset)) if superset else "NOT_PROVIDED"),
            ("N1I_B2_NATIVE_EVIDENCE_CANDIDATE_COUNT", str(len(evidence_candidates))),
