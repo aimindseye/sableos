@@ -235,6 +235,14 @@ PY
     echo "SABLE_LOCAL_CI_PANTHER_R9_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
   fi
 
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == N1B2 ]]; then
+    run_static_contract n1b2-canonical-ci \
+      bash "$ROOT/build/gates/n1b2-canonical-ci-contract.sh"
+    echo "SABLE_LOCAL_CI_TITAN2_N1B2_STATIC_CONTRACTS=PASS_EXECUTED"
+  else
+    echo "SABLE_LOCAL_CI_TITAN2_N1B2_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
+  fi
+
   run_static_contract r9-textreader-standalone \
     python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
