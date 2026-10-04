@@ -24,7 +24,7 @@ JNI attribution per app native method:
 
 Library lookup models the app (system-side) linker namespace: APK libs, then system / system_ext /
 product / apex directories as given. A library present only under vendor/odm is recorded as
-VENDOR_ONLY_NAMESPACE_UNPROVEN, never as satisfied.
+FILE_PRESENT_NAMESPACE_UNPROVEN, never as satisfied.
 
 Exit codes: 0 completed   2 input error or decoder/oracle disagreement (nothing written)
 """
@@ -47,7 +47,6 @@ import n1i_static as S  # noqa: E402
 TOOL_VERSION = "1.0.0"
 ABI_MACHINE = {"arm64-v8a": "aarch64", "armeabi-v7a": "arm", "x86_64": "x86_64", "x86": "x86"}
 PARTITIONS = ("system", "system_ext", "product", "apex", "vendor", "odm")
-APP_VISIBLE = ("system", "system_ext", "product", "apex")
 PROVIDER_CLASS = {"apk": "APK_PACKAGED", "system": "PLATFORM_OR_APEX", "apex": "PLATFORM_OR_APEX",
                   "system_ext": "SYSTEM_EXT_OR_PRODUCT", "product": "SYSTEM_EXT_OR_PRODUCT",
                   "vendor": "VENDOR", "odm": "VENDOR"}
@@ -206,18 +205,26 @@ class Lib:
     name: str
     path: Path | None
     partition: str           # apk | system | ... | NOT_FOUND
-    status: str              # FOUND | VENDOR_ONLY_NAMESPACE_UNPROVEN | NOT_FOUND | WRONG_ABI
+    status: str              # FOUND | FILE_PRESENT_NAMESPACE_UNPROVEN | NOT_FOUND | WRONG_ABI
     info: S.ElfInfo | None = None
     sha256: str = "-"
     reasons: list = field(default_factory=list)   # how it was admitted
 
 
 class Finder:
-    def __init__(self, apk_libs: dict[str, tuple[bytes, str]], dirs: list[tuple[str, Path]], machine: str, tmp: Path):
+    def __init__(
+        self,
+        apk_libs: dict[str, tuple[bytes, str]],
+        dirs: list[tuple[str, Path]],
+        machine: str,
+        tmp: Path,
+        namespace_visible: set[str],
+    ):
         self.apk = apk_libs
         self.dirs = dirs
         self.machine = machine
         self.tmp = tmp
+        self.namespace_visible = namespace_visible
 
     def _elf(self, path: Path) -> S.ElfInfo:
         return S.load_elf(path)
@@ -228,17 +235,27 @@ class Finder:
             p = self.tmp / f"apk-{name}"
             p.write_bytes(data)
             return self._admit(name, p, "apk")
-        visible = [(k, d) for k, d in self.dirs if (k == partition_hint if partition_hint else k in APP_VISIBLE)]
-        for k, d in visible:
+
+        present: list[tuple[str, Path]] = []
+        for k, d in self.dirs:
+            if partition_hint is not None and k != partition_hint:
+                continue
             p = d / name
             if p.is_file():
-                return self._admit(name, p, k)
-        if partition_hint is None:
-            for k, d in self.dirs:
-                if k in ("vendor", "odm") and (d / name).is_file():
-                    return Lib(name, d / name, k, "VENDOR_ONLY_NAMESPACE_UNPROVEN",
-                               sha256=hashlib.sha256((d / name).read_bytes()).hexdigest())
-        return Lib(name, None, "NOT_FOUND", "NOT_FOUND")
+                present.append((k, p))
+        if not present:
+            return Lib(name, None, "NOT_FOUND", "NOT_FOUND")
+
+        k, p = present[0]
+        if name not in self.namespace_visible:
+            return Lib(
+                name,
+                p,
+                k,
+                "FILE_PRESENT_NAMESPACE_UNPROVEN",
+                sha256=hashlib.sha256(p.read_bytes()).hexdigest(),
+            )
+        return self._admit(name, p, k)
 
     def _admit(self, name: str, p: Path, part: str) -> Lib:
         info = self._elf(p)
@@ -379,6 +396,21 @@ def cmd_derive(a) -> int:
         if not Path(p).is_dir():
             raise InputError(f"--lib-dir {p} is not a directory")
         dirs.append((k, Path(p)))
+    namespace_visible = set(a.namespace_visible_library or [])
+    for name in namespace_visible:
+        if not re.fullmatch(r"[A-Za-z0-9_.+-]+\\.so", name):
+            raise InputError(f"--namespace-visible-library must be NAME.so, got {name!r}")
+    for p in a.namespace_visible_list or []:
+        if not p.is_file():
+            raise InputError(f"missing --namespace-visible-list {p}")
+        for line in p.read_text(errors="replace").splitlines():
+            line = line.split("#", 1)[0].strip()
+            if not line:
+                continue
+            name = line.split()[0]
+            if name.endswith(".so"):
+                namespace_visible.add(name)
+
     uses_native = []
     for u in a.uses_native_library or []:
         m = re.fullmatch(r"([A-Za-z0-9_.+-]+\.so):(required|optional)", u)
@@ -454,7 +486,7 @@ def cmd_derive(a) -> int:
             root_rows.append(("LOAD_CONSTANT_PATH", s.value, s.site, "DEX_CALLSITE"))
 
     with tempfile.TemporaryDirectory() as td:
-        finder = Finder(apk_libs, dirs, ABI_MACHINE[a.abi], Path(td))
+        finder = Finder(apk_libs, dirs, ABI_MACHINE[a.abi], Path(td), namespace_visible)
         libs = closure(finder, roots)
         attrs = attribute(natives, libs, runtime)
 
@@ -497,9 +529,10 @@ def cmd_derive(a) -> int:
            ("N1I_B2_NATIVE_DYNAMIC_LOAD_UNRESOLVED", str(len(unresolved_sites))),
            ("N1I_B2_NATIVE_ADMITTED_LIBRARIES", str(len(admitted))),
            ("N1I_B2_NATIVE_NOT_FOUND", ",".join(sorted(n for n, l in libs.items() if l.status == "NOT_FOUND")) or "NONE"),
-           ("N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN",
-            ",".join(sorted(n for n, l in libs.items() if l.status == "VENDOR_ONLY_NAMESPACE_UNPROVEN")) or "NONE"),
-           ("N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED", "NO"),
+           ("N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN",
+            ",".join(sorted(n for n, l in libs.items() if l.status == "FILE_PRESENT_NAMESPACE_UNPROVEN")) or "NONE"),
+           ("N1I_B2_NATIVE_NAMESPACE_VISIBLE_LIBRARY_COUNT", str(len(namespace_visible))),
+           ("N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED", "NO"),
            ("N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING", ",".join(req_missing) or "NONE"),
            ("N1I_B2_NATIVE_SEARCH_SUPERSET_COUNT", str(len(superset)) if superset else "NOT_PROVIDED"),
            ("N1I_B2_NATIVE_EVIDENCE_CANDIDATE_COUNT", str(len(evidence_candidates))),
@@ -526,6 +559,10 @@ def main(argv: list[str]) -> int:
     p.add_argument("--abi", default="arm64-v8a")
     p.add_argument("--lib-dir", action="append", help="PARTITION=DIR, searched in the order given")
     p.add_argument("--uses-native-library", action="append", help="NAME.so:required|optional")
+    p.add_argument("--namespace-visible-library", action="append",
+                   help="NAME.so explicitly proven visible in the app linker namespace")
+    p.add_argument("--namespace-visible-list", type=Path, action="append",
+                   help="public/shared native library list; first whitespace-delimited token is the SONAME")
     p.add_argument("--badging", type=Path, help="`aapt2 dump badging` output (uses-native-library lines)")
     p.add_argument("--runtime-registrations", type=Path,
                    help="RUNTIME_OBSERVED RegisterNatives evidence: class<TAB>method<TAB>proto<TAB>library")
