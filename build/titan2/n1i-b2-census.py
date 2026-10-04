@@ -23,8 +23,9 @@ Edge status (exactly one per edge):
   MISSING_ON_C3A_STRING_ONLY_CANDIDATE consumer evidence is STRING_ONLY: never counted, never proven
   MISSING_ON_C3A_CANDIDATE             non-string consumer evidence, absence on C3A is static only
   MISSING_ON_C3A_RUNTIME_CONFIRMED     non-string consumer evidence and runtime absent on C3A / present on stock
-  MTK_SYSTEM_EDGE_PROVEN               a vendor process was observed waiting for it on C3A (runtime) and stock
-                                       provides it. STRING_ONLY evidence can never reach this state on its own.
+  MTK_SYSTEM_EDGE_PROVEN               a vendor process was observed waiting for it on C3A (runtime), stock
+                                       provides it, and the C3A vendor tree is byte-identical to the stock vendor
+                                       tree. STRING_ONLY evidence can never reach this state on its own.
 
 N1I_B2_VENDOR_EXPECTED_SYSTEM_EDGE_COUNT counts the last three only.
 
@@ -290,8 +291,18 @@ def vendor_waits(logs: list[Path], ps: Path | None, vendor_names: set[str]) -> t
                     mm = re.match(r"([A-Za-z0-9_.]+)@\d+\.\d+::(\w+)", name)
                     name = f"{mm.group(1)}::{mm.group(2)}" if mm else name
                 cols = line.split()
-                pid = cols[3] if len(cols) > 3 and re.match(r"\d{4}-\d{2}-\d{2}", cols[0]) else (
-                    cols[2] if len(cols) > 2 else "")
+                pid = ""
+                # B1 capture uses: logcat -v threadtime,uid,year
+                #   YYYY-MM-DD HH:MM:SS.mmm UID PID TID P ...
+                # Also accept year+threadtime without uid:
+                #   YYYY-MM-DD HH:MM:SS.mmm PID TID P ...
+                priorities = {"V", "D", "I", "W", "E", "A", "F", "S"}
+                if len(cols) > 5 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", cols[0]) and cols[5] in priorities:
+                    pid = cols[3] if cols[3].isdigit() else ""
+                elif len(cols) > 4 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", cols[0]) and cols[4] in priorities:
+                    pid = cols[2] if cols[2].isdigit() else ""
+                elif len(cols) > 4 and re.fullmatch(r"\d{2}-\d{2}", cols[0]) and cols[4] in priorities:
+                    pid = cols[2] if cols[2].isdigit() else ""
                 proc = pid_name.get(pid)
                 if proc and proc in vendor_names:
                     out.append((name, f"{lp.name}:{no}"))
@@ -331,7 +342,7 @@ def tree_hash(d: Path) -> str:
 # =============================================================================
 # Census
 # =============================================================================
-def classify(e: Edge) -> str:
+def classify(e: Edge, vendor_identity_proven: bool) -> str:
     if e.vendor_producers:
         return "VENDOR_SELF_PROVIDED"
     # Runtime lists, when provided, are authoritative for presence; otherwise static producers are used.
@@ -343,10 +354,10 @@ def classify(e: Edge) -> str:
         return "SATISFIED_ON_C3A"
     if e.optional:
         return "MISSING_ON_C3A_OPTIONAL"
-    if e.vendor_waits:
-        return "MTK_SYSTEM_EDGE_PROVEN"
     if e.consumer_strength() in ("STRING_ONLY", "-"):
         return "MISSING_ON_C3A_STRING_ONLY_CANDIDATE"
+    if e.vendor_waits and vendor_identity_proven:
+        return "MTK_SYSTEM_EDGE_PROVEN"
     if e.c3a_runtime == "ABSENT" and e.stock_runtime == "PRESENT":
         return "MISSING_ON_C3A_RUNTIME_CONFIRMED"
     return "MISSING_ON_C3A_CANDIDATE"
@@ -466,9 +477,13 @@ def census(a) -> tuple[dict, list, list, dict]:
             if crt is not None:
                 e.c3a_runtime = "PRESENT" if name in crt else "ABSENT"
 
+    vendor_tree_stock = tree_hash(stock / "vendor")
+    vendor_tree_c3a = tree_hash(c3a / "vendor")
+    vendor_identity_proven = vendor_tree_c3a != "ABSENT" and vendor_tree_c3a == vendor_tree_stock
     for e in edges.values():
-        e.status = classify(e)
-    meta = {"vendor_tree_stock": tree_hash(stock / "vendor"), "vendor_tree_c3a": tree_hash(c3a / "vendor"),
+        e.status = classify(e, vendor_identity_proven)
+    meta = {"vendor_tree_stock": vendor_tree_stock, "vendor_tree_c3a": vendor_tree_c3a,
+            "vendor_identity_proven": vendor_identity_proven,
             "unattributed_waits": unattributed, "unmapped_policy": unmapped,
             "vendor_provided": vendor_provided, "framework_requires": framework_requires,
             "runtime": {"stock_service_list": srt is not None, "c3a_service_list": crt is not None,
@@ -543,6 +558,7 @@ def main(argv: list[str]) -> int:
                 ("N1I_B2_CENSUS_VENDOR_TREES_IDENTICAL",
                  "C3A_VENDOR_NOT_PROVIDED" if meta["vendor_tree_c3a"] == "ABSENT"
                  else ("YES" if meta["vendor_tree_c3a"] == meta["vendor_tree_stock"] else "NO")),
+                ("N1I_B2_CENSUS_RUNTIME_PROOF_VENDOR_IDENTITY_REQUIRED", "YES"),
                 ("N1I_B2_CENSUS_UNMAPPED_POLICY_FINDS", str(len(meta["unmapped_policy"]))),
                 ("N1I_B2_CENSUS_UNATTRIBUTED_WAITS_IGNORED", str(meta["unattributed_waits"])),
                 ("N1I_B2_CENSUS_RUNTIME_INPUTS", ",".join(k for k, v in meta["runtime"].items() if v) or "NONE"),
