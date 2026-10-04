@@ -12,19 +12,20 @@ or release.
 ## Source authorities
 
 ```text
-SABLEOS_MAIN_AT_HANDOFF=0e42f2abf37182a8bc0f31bef26c337bb0e02211
-TITAN2_TEMP_MAIN=8dcca6d27e7451885fbffbd81e011166d71ddb05
+SABLEOS_MAIN_AT_HANDOFF=708c49731fd361b20f7315ec914e09f70c3eb00d
+TITAN2_TEMP_MAIN=7570470d1c5a27ef94ed4751f5ccb91af41761fe
 
 P1_PR=19  source_head=97cec2ceb9b86699b6de5b36b6012aaa793bec2c
 P2_PR=20  source_head=912d0cb8802504f06a1c77ada630c3c834a68715
 P3_PR=21  source_head=832106e2e590d7aba3289f464b220836ce1c56f2
 P4_PR=22  source_head=7dcf17a2b70ea42553c19f1c2678bd3ac95c51c4
 P5E_PR=27 qualified_feature_baseline=4089c1274a9e4a402a2c617cc00a7c166112f195
-P5F_PR=28 runtime_readiness_head=e8a5ddd374a0d78ca175b2137cf73707150ca28a
+P5F_ORIGINAL_PR=28 runtime_readiness_head=e8a5ddd374a0d78ca175b2137cf73707150ca28a
+P5F_QUALIFIED_PR=32 merged_head=2f232a1c2883ab9b88f89a08d859a5329b03c5da
 ```
 
-P1-P4 are merged in `titan2-temp/main`. P5A-P5E are merged. P5F remains
-draft until exact-head operator Android qualification is attached.
+P1-P4 are merged in `titan2-temp/main`. P5A-P5E are merged. P5F operator
+qualification is complete and merged via PR #32; physical runtime remains separate.
 
 ## Common admission rule
 
@@ -271,7 +272,7 @@ handoff_doc=docs/P5F_READER_ADMISSION_HANDOFF.md
 primary_ir=IR-011
 ```
 
-P5A-P5E are merged. P5F is the exact runtime-readiness candidate.
+P5A-P5E are merged. P5F source/JVM/Android qualification is complete; physical runtime remains pending.
 
 ### Product capability
 
@@ -328,7 +329,7 @@ retire or convert the other into non-product historical/adaptation material.
 
 ### Admission prerequisite
 
-PR #28 exact-head operator qualification must pass before canonical import:
+Operator-qualified P5F evidence required before canonical import is now satisfied:
 
 ```text
 P5F_STATIC_GATE=PASS
@@ -347,8 +348,8 @@ Device runtime remains a separate stage.
 ## Replacement-developer execution order
 
 ```text
-1. operator qualify PR #28 and #29
-2. freeze exact evidence
+1. PR #28/#29 operator qualification — COMPLETE via #32/#34
+2. exact evidence frozen
 3. P1 canonical Launcher3 integration
 4. P2 canonical IME first-boot provisioning
 5. P3 SetupWizard2 keyboard integration
