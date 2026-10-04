@@ -78,9 +78,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
     var state by remember { mutableStateOf(MessagesInteractionModel.initialState()) }
-    var providerStatus by remember {
-        mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no")
-    }
+    var providerStatus by remember { mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no") }
     val sortedThreads = remember { MessagesInteractionModel.latestFirstThreads(sampleThreads) }
 
     fun apply(action: MessagesAction) {
@@ -123,9 +121,7 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
         LatestAnchoredThread(
             state = state,
             thread = sortedThreads[state.selectedThreadIndex],
-            onDraftChanged = { draft ->
-                state = state.copy(draft = draft)
-            },
+            onDraftChanged = { draft -> state = state.copy(draft = draft) },
             onAction = ::apply,
             onProviderHandoff = ::sendToProvider,
         )
@@ -137,11 +133,7 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
             threads = sortedThreads,
             onAction = ::apply,
             onSelectThread = { index ->
-                state =
-                    state.copy(
-                        focusedConversationRow = index,
-                        selectedThreadIndex = index,
-                    )
+                state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
                 apply(MessagesAction.OpenFocusedConversation)
             },
         )
@@ -178,12 +170,9 @@ private fun handleMessagesKey(
 private fun resolveMessagesKeyAction(
     event: AndroidKeyEvent,
     state: MessagesUiState,
-): MessagesAction = shortcutKeyAction(event, state) ?: interactionKeyAction(event, state)
+): MessagesAction = shortcutKeyAction(event) ?: interactionKeyAction(event, state)
 
-private fun shortcutKeyAction(
-    event: AndroidKeyEvent,
-    state: MessagesUiState,
-): MessagesAction? =
+private fun shortcutKeyAction(event: AndroidKeyEvent): MessagesAction? =
     when (event.keyCode) {
         AndroidKeyEvent.KEYCODE_SLASH -> MessagesAction.SearchInConversation
         AndroidKeyEvent.KEYCODE_L ->
