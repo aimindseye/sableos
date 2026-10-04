@@ -2,7 +2,7 @@
 """N1I-B2 exact member resolver self-test (synthetic fixtures built at test time).
 
 Prints CASE<TAB>members<TAB>id<TAB>PASS|FAIL<TAB>detail ; exit 0 only if every case passes.
-Missing javac / dx / dexdump is a FAIL, never a skip.
+Missing javac / dx-or-d8 / dexdump is a FAIL, never a skip.
 """
 from __future__ import annotations
 
@@ -17,6 +17,10 @@ from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(subprocess.check_output(["git", "-C", str(HERE), "rev-parse", "--show-toplevel"], text=True).strip())
+sys.path.insert(0, str(HERE / "lib"))
+from toolchain import compile_dex, find_dex_compiler, prepare_tool_path  # noqa: E402
+
+prepare_tool_path(("java", "javac", "d8", "dx", "dexdump"))
 TOOL = ROOT / "build/titan2/n1i-b2-members.py"
 FX = HERE / "fixtures/members"
 FAILS = 0
@@ -73,17 +77,10 @@ def sh(cmd) -> subprocess.CompletedProcess:
     return subprocess.run([str(c) for c in cmd], capture_output=True, text=True)
 
 
-def find_dx() -> str | None:
-    for c in (shutil.which("dx"), "/usr/lib/android-sdk/build-tools/debian/dx"):
-        if c and Path(c).exists():
-            return c
-    return None
-
-
 def build(td: Path) -> dict:
-    dx = find_dx()
-    if not (shutil.which("javac") and dx and shutil.which("dexdump")):
-        raise RuntimeError("javac, dx and dexdump are required")
+    compiler = find_dex_compiler()
+    if not (shutil.which("javac") and compiler and shutil.which("dexdump")):
+        raise RuntimeError("javac, dx-or-d8 and dexdump are required")
     jc = ["javac", "-nowarn", "-source", "8", "-target", "8"]
 
     def javac(args, srcdir: Path):
@@ -93,9 +90,9 @@ def build(td: Path) -> dict:
             raise RuntimeError(f"javac {srcdir.name}: {r.stderr[-400:]}")
 
     def dex(clsdir: Path, out: Path, core=False):
-        r = sh([dx, "--dex", "--min-sdk-version=26", *(["--core-library"] if core else []), f"--output={out}", clsdir])
+        r = compile_dex(compiler, clsdir, out, min_api=26, core_library=core)
         if r.returncode:
-            raise RuntimeError(f"dx {clsdir.name}: {r.stderr[-400:]}")
+            raise RuntimeError(f"{compiler[0]} {clsdir.name}: {r.stderr[-400:]}")
 
     c = {}
     javac(["-bootclasspath", FX / "core", "-sourcepath", FX / "core", "-d", td / "core"], FX / "core")
