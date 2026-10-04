@@ -47,33 +47,32 @@ BATTERY_BH1_BH7=#302
 
 ## Immediate operator work
 
-### O1 — PR #28 P5F Reader
-
-Exact head:
+### O1 — P5F Reader — COMPLETE
 
 ```text
-e8a5ddd374a0d78ca175b2137cf73707150ca28a
+ORIGINAL_PR28=CLOSED_SUPERSEDED
+QUALIFIED_PR32=MERGED
+P5F_OPERATOR_ANDROID=PASS
+P5F_DEVICE_RUNTIME_VALIDATED=NO
 ```
 
-Run exact-head static/JVM/Android-offline qualification. Do not contact a device.
-
-### O2 — PR #29 C3B non-Reader readiness
-
-Exact head:
+### O2 — C3B non-Reader readiness — COMPLETE
 
 ```text
-5468758dc42c372854fc6936e3800afc1ee33def
+ORIGINAL_PR29=CLOSED_SUPERSEDED
+QUALIFIED_PR34=MERGED
+TITAN2_TEMP_MAIN=7570470d1c5a27ef94ed4751f5ccb91af41761fe
+C3B_PRODUCT_ANDROID_OFFLINE_QUALIFICATION=PASS
+C3B_RUNTIME_MARKERS_CLAIMED=0
+DEVICE_RUNTIME_VALIDATED=NO
 ```
-
-Run self-test, readiness/static and Android-offline merged-manifest qualification.
-Do not contact a device.
 
 ### O3 — current SableOS main
 
 Current design/planning main after Battery merge:
 
 ```text
-0e42f2abf37182a8bc0f31bef26c337bb0e02211
+708c49731fd361b20f7315ec914e09f70c3eb00d
 ```
 
 Run:
