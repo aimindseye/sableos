@@ -75,6 +75,7 @@ P1-P4 frozen + operator qualification
  -> KF-D-I All Apps/responsive polish
  -> KF-A-I Notification/Attention/Hub
  -> KF-B-I SystemUI convergence
+ -> KF-E-I Battery usage/health Settings (non-blocking; BH1-BH7)
 ```
 
 KF-B should consume the effective notification/attention ownership decided by
@@ -210,6 +211,66 @@ focus restoration
 large-font compact-layout behavior
 ```
 
+
+## Pending DESIGN-KF-E — Battery usage, health and charging
+
+Battery usage/health is added as the next Settings-focused keyboard-first design
+workstream.
+
+```text
+DESIGN_KF_E_BATTERY_USAGE_HEALTH=DESIGN_READY_PENDING_PUBLIC_MERGE
+USER_SURFACE=Settings -> Battery
+IMPLEMENTATION_ISSUE=#302
+IMPLEMENTATION_STARTED=NO
+```
+
+Public design paths:
+
+```text
+docs/design/BATTERY_HEALTH_USAGE_UX.md
+docs/design/BATTERY_HEALTH_USAGE_VISUAL_CONFIRMATION.md
+docs/design/artifacts/sable-battery-health-usage-titan2.svg
+```
+
+Recommended implementation train after the already queued KF work:
+
+```text
+KF-E-I1  Settings Battery overview + focus/type-ahead
+KF-E-I2  Android usage/accounting + consumers
+KF-E-I3  health availability/source/confidence model
+KF-E-I4  bounded local history + chart inspection
+KF-E-I5  charging-capability discovery
+KF-E-I6  mutable controls only where a backend is qualified
+KF-E-I7  Panther/Titan physical UX/runtime qualification
+```
+
+KF-E must remain separate from the Titan 2 N1I cellular lane. Read-only BH1-BH4
+can complete without BH6.
+
+Cross-lane dependencies:
+
+```text
+KF-E-I depends on:
+  Android Settings Battery ownership
+  normalized key input contract
+  keyboard-first Settings UX
+  device battery capability/profile facts
+  Android BatteryStats/Health/framework evidence
+  explicit Settings source-owner selection before BH1 implementation
+```
+
+Hard boundary:
+
+```text
+NO_SEPARATE_BATTERY_APP
+NO_FABRICATED_HEALTH_PERCENTAGE
+NO_FABRICATED_CYCLE_COUNT
+NO_COMMON_UI_RAW_SYSFS_WRITE
+NO_UNQUALIFIED_CHARGING_MUTATION
+NO_CLOUD_BATTERY_ANALYTICS
+NO_DEVICE_CAPABILITY_INHERITANCE
+```
+
 ## Issue relationship
 
 Implementation remains tracked by existing open product/runtime issues where
@@ -219,6 +280,7 @@ applicable, including:
 #79  SystemUI/notifications/branding convergence
 #86  All Apps granted privacy permissions
 #48  keyboard-device Sable Tools
+#302 Battery usage, health and charging Settings workstream
 ```
 
 Those issues should not be closed merely because design is complete. They close
