@@ -206,6 +206,7 @@ class Lib:
     path: Path | None
     partition: str           # apk | system | ... | NOT_FOUND
     status: str              # FOUND | FILE_PRESENT_NAMESPACE_UNPROVEN | NOT_FOUND | WRONG_ABI
+    namespace_visibility: str = "-"  # APK_PACKAGED | EXPLICIT | UNPROVEN | -
     info: S.ElfInfo | None = None
     sha256: str = "-"
     reasons: list = field(default_factory=list)   # how it was admitted
@@ -234,7 +235,7 @@ class Finder:
             data, _entry = self.apk[name]
             p = self.tmp / f"apk-{name}"
             p.write_bytes(data)
-            return self._admit(name, p, "apk")
+            return self._admit(name, p, "apk", "APK_PACKAGED")
 
         present: list[tuple[str, Path]] = []
         for k, d in self.dirs:
@@ -253,15 +254,32 @@ class Finder:
                 p,
                 k,
                 "FILE_PRESENT_NAMESPACE_UNPROVEN",
+                "UNPROVEN",
                 sha256=hashlib.sha256(p.read_bytes()).hexdigest(),
             )
-        return self._admit(name, p, k)
+        return self._admit(name, p, k, "EXPLICIT")
 
-    def _admit(self, name: str, p: Path, part: str) -> Lib:
+    def _admit(self, name: str, p: Path, part: str, visibility: str) -> Lib:
         info = self._elf(p)
         if info.machine != self.machine:
-            return Lib(name, p, part, "WRONG_ABI", info, hashlib.sha256(p.read_bytes()).hexdigest())
-        return Lib(name, p, part, "FOUND", info, hashlib.sha256(p.read_bytes()).hexdigest())
+            return Lib(
+                name,
+                p,
+                part,
+                "WRONG_ABI",
+                visibility,
+                info,
+                hashlib.sha256(p.read_bytes()).hexdigest(),
+            )
+        return Lib(
+            name,
+            p,
+            part,
+            "FOUND",
+            visibility,
+            info,
+            hashlib.sha256(p.read_bytes()).hexdigest(),
+        )
 
 
 def closure(finder: Finder, roots: list[tuple[str, str, str | None]]) -> dict[str, Lib]:
@@ -505,11 +523,13 @@ def cmd_derive(a) -> int:
     files["LOAD_SITES.tsv"] = "caller\tsite\tapi\tstatus\tvalue\treason\tproof_chain\tevidence_strength\n" + "".join(
         "\t".join(clean(x) for x in (s.caller, s.site, s.api, s.status, s.value, s.reason, s.chain or "-",
                                      "DEX_CALLSITE")) + "\n" for s in sites)
-    files["NATIVE_CLOSURE.tsv"] = ("library\tstatus\tpartition\tprovider_class\tpath\tsha256\tneeded\tadmitted_by\t"
-                                   "evidence_strength\n") + "".join(
+    files["NATIVE_CLOSURE.tsv"] = (
+        "library\tstatus\tpartition\tprovider_class\tpath\tsha256\tneeded\tadmitted_by\t"
+        "namespace_visibility\tevidence_strength\n"
+    ) + "".join(
         "\t".join(clean(x) for x in (
             l.name, l.status, l.partition, PROVIDER_CLASS.get(l.partition, "-"), l.path or "-", l.sha256,
-            ",".join(l.info.needed) if l.info else "-", ";".join(l.reasons),
+            ",".join(l.info.needed) if l.info else "-", ";".join(l.reasons), l.namespace_visibility,
             "ELF_REFERENCE" if any(r.startswith("DT_NEEDED") for r in l.reasons) else "PARSED_DECLARATION"
             if any(r.startswith(("APK", "USES")) for r in l.reasons) else "DEX_CALLSITE")) + "\n"
         for l in sorted(libs.values(), key=lambda l: l.name))
