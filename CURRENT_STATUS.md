@@ -155,6 +155,42 @@ fingerprint is Android 14 / UP1A.
 A future stock restore must use the verified matched stock restore procedure,
 not a standalone stock `system_a` flash.
 
+## Titan 2 N1I-F stock telephony control
+
+Fresh factory-reset V01.00.14 is now the canonical working telephony control.
+
+```text
+N1I_F_STOCK_CONTROL=PASS
+STOCK_CELLULAR_DATA=PASS
+STOCK_SMS_MMS_SEND_RECEIVE=PASS
+STOCK_OUTGOING_VOICE=PASS
+STOCK_INCOMING_VOICE=PASS
+STOCK_DEFAULT_APN=fast.t-mobile.com
+STOCK_DATA_VALIDATED=YES
+STOCK_IMS_PACKAGE=com.mediatek.ims
+STOCK_IMS_MMTEL_VALIDATED=YES
+STOCK_IMS_REGISTRATION=PASS
+STOCK_ERROR_UNSPECIFIED_COUNT=0
+STOCK_REJECT_CAUSE_11_COUNT=0
+STOCK_REJECT_CAUSE_13_COUNT=0
+STOCK_REJECT_CAUSE_15_COUNT=0
+GSI_DEFAULT_APN_OBSERVED=pwg
+APN_SELECTION_DELTA_REQUIRES_INVESTIGATION=YES
+OEM_IMS_CLOSURE_REQUIRES_INVESTIGATION=YES
+MTK_IMS_INDICATION_NULL_AS_ROOT_CAUSE=REJECTED_BY_WORKING_STOCK_CONTROL
+TRAY2_SINGLE_SIM_CONTROL=PENDING
+DUAL_SIM_DSDS_CONTROL=PENDING
+```
+
+The raw stock capture is retained off-repo and hash-pinned. Git stores only the
+sanitized engineering reference and sanitizer. See
+`docs/titan2/evidence/N1I_F_STOCK_V010014_CONTROL_SANITIZED.md`.
+
+The next GSI work must treat registration/data and IMS/voice as separate
+deltas. Stock selects `fast.t-mobile.com` for the validated Internet bearer;
+the failing GSI selected `pwg`. Stock also provides the OEM API-36
+`com.mediatek.ims` closure and a validated IMS/MMTEL bearer.
+
 ## Titan 2 C3B state
 
 C3A sealed the Restless/Treble public-functional control. C3B is the actual
