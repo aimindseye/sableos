@@ -455,6 +455,42 @@ A prebuilt-kernel/BSP target can be a valuable N0/N1 engineering platform but is
 
 The Brax3/iodéOS review is a device-port reference for these rules, not a SableOS security baseline. See `BRAX3_IODEOS_REFERENCE.md`.
 
+
+## Battery usage, health and charging experience
+
+Status: **PLANNED / DESIGN READY / IMPLEMENTATION PENDING**.
+
+SableOS will extend Android's existing `Settings -> Battery` surface so users
+do not need a third-party application for ordinary battery usage and health
+visibility.
+
+```text
+BH1  Battery overview + keyboard/focus contract
+BH2  platform usage/accounting + consumer detail
+BH3  health source/availability/provenance model
+BH4  bounded local history + keyboard chart inspection
+BH5  per-device charging-capability discovery
+BH6  mutable controls only for validated device backends
+BH7  Panther/Titan keyboard/touch/accessibility/runtime qualification
+```
+
+Product rules:
+
+- Battery stays inside Settings; no separate launcher app.
+- Titan 2 uses the square keyboard-first Settings layout with deterministic focus.
+- Maximum capacity, cycle count and battery age are never fabricated.
+- Estimated values must identify source/confidence.
+- Unsupported data renders as unavailable.
+- Charge-limit/adaptive-charging controls remain disabled or absent until the
+  device profile proves a safe backend.
+- Common UI never writes arbitrary raw vendor sysfs/procfs controls.
+- Analytics/history are local-only and bounded.
+- The frozen historical S1.7 `PowerSnapshot` API remains unchanged.
+
+This work is non-blocking for current Titan 2 N1I cellular closure and P1-P5.
+Pending implementation is tracked by issue #302 and
+`docs/BATTERY_HEALTH_USAGE_IMPLEMENTATION_PLAN.md`.
+
 ## Security/product tracks after shell foundation
 
 ### S2 — Secure Package Intelligence
