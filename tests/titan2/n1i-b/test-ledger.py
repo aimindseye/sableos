@@ -88,24 +88,25 @@ def fixture(root: Path) -> dict[str, Path]:
         "N1I_B2_NATIVE_JNI_UNRESOLVED": "0",
         "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN": "NONE",
         "N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED": "NO",
+        "N1I_B2_NATIVE_NAMESPACE_VISIBLE_LIBRARY_COUNT": "1",
         "N1I_B2_NATIVE_KEYWORD_ROOTS_USED": "NO",
     }
     write_env(d["ns"] / "NATIVE_SUMMARY.env", native_common)
     write_env(d["nc"] / "NATIVE_SUMMARY.env", native_common)
     native_head = [
         "library", "status", "partition", "provider_class", "path", "sha256", "needed",
-        "admitted_by", "evidence_strength",
+        "admitted_by", "namespace_visibility", "evidence_strength",
     ]
     write_tsv(
         d["ns"] / "NATIVE_CLOSURE.tsv",
         native_head,
         [["libmtk.so", "FOUND", "system_ext", "SYSTEM_EXT_OR_PRODUCT", "/stock/libmtk.so",
-          "b" * 64, "-", "LOADLIBRARY:site", "DEX_CALLSITE"]],
+          "b" * 64, "-", "LOADLIBRARY:site", "EXPLICIT", "DEX_CALLSITE"]],
     )
     write_tsv(
         d["nc"] / "NATIVE_CLOSURE.tsv",
         native_head,
-        [["libmtk.so", "NOT_FOUND", "NOT_FOUND", "-", "-", "-", "-", "LOADLIBRARY:site", "DEX_CALLSITE"]],
+        [["libmtk.so", "NOT_FOUND", "NOT_FOUND", "-", "-", "-", "-", "LOADLIBRARY:site", "-", "DEX_CALLSITE"]],
     )
 
     write_env(
@@ -230,7 +231,10 @@ def main() -> int:
         set_env(x["nc"] / "NATIVE_SUMMARY.env", "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN", "libmtk.so")
         p = x["nc"] / "NATIVE_CLOSURE.tsv"
         p.write_text(p.read_text(encoding="utf-8").replace(
-            "libmtk.so\tNOT_FOUND\tNOT_FOUND", "libmtk.so\tFILE_PRESENT_NAMESPACE_UNPROVEN\tvendor", 1),
+            "libmtk.so\tNOT_FOUND\tNOT_FOUND\t-\t-\t-\t-\tLOADLIBRARY:site\t-\tDEX_CALLSITE",
+            "libmtk.so\tFILE_PRESENT_NAMESPACE_UNPROVEN\tvendor\tVENDOR\t/vendor/libmtk.so\t"
+            + "d" * 64 + "\t-\tLOADLIBRARY:site\tUNPROVEN\tDEX_CALLSITE",
+            1),
             encoding="utf-8")
         r = invoke(x, td / "o-namespace")
         s = env(td / "o-namespace/LEDGER_SUMMARY.env") if r.returncode == 0 else {}
@@ -239,6 +243,14 @@ def main() -> int:
              and s.get("N1I_B2_LEDGER_NAMESPACE_UNPROVEN_COUNT") == "1"
              and s.get("N1I_B2_LEDGER_COVERAGE_COMPLETE") == "NO"
              and s.get("N1I_B2_LEDGER_NEXT_STEP") == "HOLD_FOR_EVIDENCE", r.stderr[-200:])
+
+        x = copy_fixture(base, td / "bad-provenance")
+        p = x["ns"] / "NATIVE_CLOSURE.tsv"
+        p.write_text(p.read_text(encoding="utf-8").replace("\tEXPLICIT\tDEX_CALLSITE", "\t-\tDEX_CALLSITE", 1),
+                     encoding="utf-8")
+        r = invoke(x, td / "o-bad-provenance")
+        case("found_native_without_namespace_provenance_refused",
+             r.returncode == 2 and not (td / "o-bad-provenance").exists(), r.stderr[-200:])
 
         x = copy_fixture(base, td / "dynamic")
         set_env(x["nc"] / "NATIVE_SUMMARY.env", "N1I_B2_NATIVE_DYNAMIC_LOAD_UNRESOLVED", "1")
