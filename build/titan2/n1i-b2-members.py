@@ -31,7 +31,7 @@ Subcommands
 
 Not modelled (reported as limitations, never silently assumed): hidden-API enforcement, the
 verification-time protected target receiver subtype rule, verifier type checks of arguments,
-nest-based access, and selection-time AbstractMethodError for invoke-super. Link-time protected
+nest-based access, and selection-time AbstractMethodError / multiple-default selection conflicts. Link-time protected
 symbolic-owner access is modelled explicitly.
 
 Exit codes: 0 completed   2 input error or decoder/oracle disagreement (nothing written)
@@ -223,35 +223,35 @@ def member_accessible(
 def lookup_field(w: World, c: Klass, name: str, ftype: str):
     """JVMS 5.4.3.2 recursive order. Returns (decl, field/near_type, missing_type)."""
     near = None
-    seen: set[str] = set()
 
-    def visit(k: Klass):
+    def visit(k: Klass, path: frozenset[str]):
         nonlocal near
-        if k.desc in seen:
+        if k.desc in path:
             return None, None, f"{k.desc} (cycle)"
-        seen.add(k.desc)
+        path = path | {k.desc}
         for f in k.cd.fields:
             if f.ref.name == name:
                 if f.ref.type == ftype:
                     return k, f, None
                 near = near or f.ref.type
         # Field resolution searches this class/interface's direct superinterfaces
-        # recursively before recursing into its direct superclass.
+        # recursively before recursing into its direct superclass. Cycle detection is
+        # path-local so a legal diamond does not look like a hierarchy cycle.
         for desc in k.cd.interfaces:
             ik = w.klass(desc)
             if ik is None:
                 return None, None, desc
-            decl, field, missing = visit(ik)
+            decl, field, missing = visit(ik, path)
             if field is not None or missing is not None:
                 return decl, field, missing
         if k.cd.superclass:
             sk = w.klass(k.cd.superclass)
             if sk is None:
                 return None, None, k.cd.superclass
-            return visit(sk)
+            return visit(sk, path)
         return None, None, None
 
-    decl, field, missing = visit(c)
+    decl, field, missing = visit(c, frozenset())
     if field is not None:
         return decl, field, None
     return None, near, missing
