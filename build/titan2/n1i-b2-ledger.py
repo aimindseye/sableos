@@ -52,7 +52,7 @@ NATIVE_STATUSES = {
     "FOUND",
     "NOT_FOUND",
     "WRONG_ABI",
-    "VENDOR_ONLY_NAMESPACE_UNPROVEN",
+    "FILE_PRESENT_NAMESPACE_UNPROVEN",
 }
 
 
@@ -268,8 +268,8 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
         "N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING",
         "N1I_B2_NATIVE_JNI_CANDIDATE_ONLY",
         "N1I_B2_NATIVE_JNI_UNRESOLVED",
-        "N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN",
-        "N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED",
+        "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN",
+        "N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED",
         "N1I_B2_NATIVE_KEYWORD_ROOTS_USED",
     }
     se = env_file(stock / "NATIVE_SUMMARY.env", req)
@@ -279,8 +279,8 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
     app_sha = se["N1I_B2_NATIVE_APK_SHA256"]
     require_sha(app_sha, "native APK SHA-256")
     for label, env in (("stock", se), ("c3a", ce)):
-        if env["N1I_B2_NATIVE_VENDOR_NAMESPACE_ACCESS_INFERRED"] != "NO":
-            raise InputError(f"{label} native output inferred unmodelled vendor namespace access")
+        if env["N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED"] != "NO":
+            raise InputError(f"{label} native output inferred namespace visibility")
         if env["N1I_B2_NATIVE_KEYWORD_ROOTS_USED"] != "NO":
             raise InputError(f"{label} native output used keyword roots")
 
@@ -310,7 +310,7 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
         cstatus = c["status"] if c else "NOT_ANALYSED"
         if sstatus != "FOUND" or cstatus == "FOUND":
             continue
-        if cstatus == "VENDOR_ONLY_NAMESPACE_UNPROVEN":
+        if cstatus == "FILE_PRESENT_NAMESPACE_UNPROVEN":
             status = "NATIVE_NAMESPACE_UNPROVEN"
         elif cstatus == "WRONG_ABI":
             status = "NATIVE_WRONG_ABI"
@@ -332,8 +332,8 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
         )
 
     native_unproven = sorted(
-        set(comma_values(se["N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN"]))
-        | set(comma_values(ce["N1I_B2_NATIVE_VENDOR_ONLY_NAMESPACE_UNPROVEN"]))
+        set(comma_values(se["N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN"]))
+        | set(comma_values(ce["N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN"]))
     )
     required_missing = sorted(
         set(comma_values(se["N1I_B2_NATIVE_REQUIRED_USES_NATIVE_LIBRARY_MISSING"]))
