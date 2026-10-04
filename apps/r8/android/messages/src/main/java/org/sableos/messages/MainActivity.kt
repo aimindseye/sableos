@@ -281,15 +281,7 @@ private fun LatestAnchoredThread(
     onProviderHandoff: () -> Unit,
 ) {
     ContractPanel(title = "Latest-anchored conversation") {
-        ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
-        ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
-        ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
-        ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
-        ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
-        ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
-        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
-        ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
-        Spacer(Modifier.height(SableSpacing.Md))
+        LatestThreadContractRows()
 
         Text(
             text = thread.person,
@@ -341,6 +333,19 @@ private fun LatestAnchoredThread(
     }
 }
 
+
+@Composable
+private fun LatestThreadContractRows() {
+    ContractRow("LATEST_ANCHORED_CONVERSATION", "PASS")
+    ContractRow("LATEST_MESSAGE_ALWAYS_VISIBLE", "PASS")
+    ContractRow("SCROLLING_REQUIRED_TO_SEE_LATEST_MESSAGE", "NO")
+    ContractRow("CONTINUOUS_TOUCHPAD_SCROLLING_REQUIRED", "NO")
+    ContractRow("OPEN_THREAD_AT_LATEST", "PASS")
+    ContractRow("RESTORE_THREAD_AT_LATEST", "PASS")
+    ContractRow("AUTO_ADVANCE_TO_LATEST_ON_INCOMING", "PASS")
+    ContractRow("AUTO_ADVANCE_TO_LATEST_ON_SEND", "PASS")
+    Spacer(Modifier.height(SableSpacing.Md))
+}
 
 @Composable
 private fun LatestMessages(
