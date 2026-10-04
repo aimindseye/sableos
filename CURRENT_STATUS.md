@@ -120,6 +120,41 @@ See `docs/titan2/N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md`.
 
 
 
+## Titan 2 stock-control recovery checkpoint
+
+A stock-`system_a`-only control attempt is now explicitly retired. Flashing the
+retained V01.00.14 `TEE14-large-reference/system.img` over the GSI composition
+booted the device into recovery rather than Android. Recovery-mode ADB could not
+transition the device into usable fastboot for the planned GSI restore.
+
+The owner then performed a recovery factory reset. The device returned to the
+complete Unihertz V01.00.14 factory image and USB debugging was re-enabled.
+
+```text
+STOCK_SYSTEM_ONLY_CONTROL=INVALID_MIXED_PARTITION_TEST
+STOCK_SYSTEM_A_ONLY_FLASH_ALLOWED=NO
+FACTORY_RESET_FROM_RECOVERY=PERFORMED
+DEVICE_STATE=UNIHERTZ_V010014_FACTORY_IMAGE
+USB_DEBUGGING=ENABLED
+NEXT_ACTION=READ_ONLY_STOCK_TELEPHONY_CONTROL
+GSI_REFLASH=HOLD_UNTIL_STOCK_CONTROL_CAPTURED
+```
+
+The retained N1G artifact is present at:
+
+```text
+/srv/sable-build/artifacts/titan2/n1g-sable-product-identity/20261003T222829Z/system.img
+SHA256=ce399effa7771e6ef0f6a0e6fb2efb94b5e1cdf1d212694396ff69d5ebb01ff6
+```
+
+Do not infer active runtime identity from the vendor-side
+`UP1A.231005.007` fingerprint. Stock V01.00.14 is a split-generation stack:
+the recovered system fingerprint is Android 16 / BP2A while the vendor
+fingerprint is Android 14 / UP1A.
+
+A future stock restore must use the verified matched stock restore procedure,
+not a standalone stock `system_a` flash.
+
 ## Titan 2 C3B state
 
 C3A sealed the Restless/Treble public-functional control. C3B is the actual
