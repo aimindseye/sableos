@@ -161,3 +161,9 @@ def tool_summary() -> dict[str, str]:
     out["dex_compiler_kind"] = compiler[0] if compiler else "MISSING"
     out["aosp_roots"] = ",".join(map(str, aosp_roots())) or "NONE"
     return out
+
+
+if __name__ == "__main__":
+    summary = tool_summary()
+    for key in sorted(summary):
+        print(f"N1I_B_TOOL_{key.upper()}={summary[key]}")
