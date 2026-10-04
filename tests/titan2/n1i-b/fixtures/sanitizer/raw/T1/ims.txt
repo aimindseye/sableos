@@ -1,0 +1,10 @@
+ImsService for slot 0: MtkDynamicImsService ImsRegistration state=REGISTERED
+P-Asserted-Identity sip:+15555550102@ims.mnc260.mcc310.3gppnetwork.org
+P-Associated-URI sip:synthuser@example.net
+handle tel:5555550103 state=ACTIVE
+impi=synthimpi.private
+mImpu=sip:synthimpu@example.org
+Authorization: Digest username="synth", realm="ims", nonce="abcdef0123"
+ImsSimAuth: RAND=0011223344556677 AUTN=8899aabbccddeeff
+cnapName=Synthetic Caller
+ServiceRecord{3f2a1b0 u0 com.mediatek.ims/.ImsService} user=0 app=ProcessRecord

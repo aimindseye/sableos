@@ -1,0 +1,1 @@
+Row: 0 _id=1, icc_id=89012400000000000033, sim_id=0, display_name=Synthetic Owner Phone, carrier_name=T-Mobile, number=+15555550104, card_id=89012400000000000033, mcc_string=310, mnc_string=240, imsi=310240000000003, port_index=0

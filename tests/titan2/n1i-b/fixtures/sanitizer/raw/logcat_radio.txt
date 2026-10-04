@@ -1,0 +1,14 @@
+2026-10-01 10:00:00.000  1001  1001  1234  1234 D RILJ    : [UNSL]< RIL_UNSOL_ICCID_CHANGED 89012400000000000041
+2026-10-01 10:00:01.000  1001  1001  1234  1234 D RILJ    : imei=350000000000006 imsi: 310240000000001 iccid: 89012400000000000017
+2026-10-01 10:00:02.000  1001  1001  1234  1234 D SST     : Device id 310240000000099 attached
+2026-10-01 10:00:03.000  1001  1001  1234  1234 D SST     : CellIdentityLte:{ mCi=20481357 mPci=301 mTac=12345 mEarfcn=66786 } mLatitude=37.12345 mLongitude=-122.12345
+2026-10-01 10:00:04.000  1001  1001  1234  1234 D DataNetwork: setupDataCall failed ERROR_UNSPECIFIED rejectCause=13 apn=fast.t-mobile.com
+2026-10-01 10:00:05.000  1001  1001  1234  1234 D Sms     : SmsMessage body=Synthetic secret message 4242
+2026-10-01 10:00:06.000  1001  1001  1234  1234 D Sms     : mMessageBody=hello synthetic
+2026-10-01 10:00:07.000  1001  1001  1234  1234 D Phone   : incoming from +15555550100 now line1Number=5555550101
+2026-10-01 10:00:08.000  1001  1001  1234  1234 D Net     : addr 10.123.45.67 up addr 2001:db8::1234 up wlan0 hwaddr 02:00:00:aa:bb:cc
+2026-10-01 10:00:09.000  1001  1001  1234  1234 D Wifi    : SSID: SynthHomeNet BSSID: 02:00:00:00:00:01
+2026-10-01 10:00:10.000  1001  1001  1234  1234 D Modem   : modem DUMP=00112233445566778899AABB
+2026-10-01 10:00:11.000  1001  1001  1234  1234 D Acct    : owner synth.person@example.com Account {name=synth.account@example.com, type=com.google}
+2026-10-01 10:00:12.000  1001  1001  1234  1234 D Adb     : adb device SYNTHSERIAL0003 online serialno=SYNTHSERIAL0002
+2026-10-01 10:00:13.000  1001  1001  1234  1234 D ServiceState: mVoiceRegState=0(IN_SERVICE) mDataRegState=1(OUT_OF_SERVICE) reasonForDenial=15

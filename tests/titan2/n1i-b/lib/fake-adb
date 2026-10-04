@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Fake adb for N1I-B self-tests. Never touches a real device.
+# Logs every invocation (argv joined by US 0x1f) to $FAKE_ADB_LOG, then answers from
+# $FAKE_PROPS (lines "prop=value") with synthetic data only.
+set -u
+log="${FAKE_ADB_LOG:?FAKE_ADB_LOG unset}"
+( IFS=$'\x1f'; printf '%s\n' "$*" ) >> "$log"
+serial="${FAKE_SERIAL:-SYNTHSERIAL0003}"
+
+prop() { sed -n "s/^$1=//p" "${FAKE_PROPS:?FAKE_PROPS unset}" | head -1; }
+
+case "${1:-}" in
+  devices) printf 'List of devices attached\n%s\tdevice\n\n' "$serial"; exit 0 ;;
+  -s) shift 2 ;;
+  *) exit 1 ;;
+esac
+sub="${1:-}"; shift || true
+case "$sub" in
+  shell) ;;
+  *) exit 1 ;;            # bugreport, root, reboot, ... are logged and refused
+esac
+c="${1:-}"
+case "$c" in
+  "getprop "*) prop "${c#getprop }"; exit 0 ;;
+  getprop) sed -E 's/^([^=]+)=(.*)$/[\1]: [\2]/' "$FAKE_PROPS"; exit 0 ;;
+  "cat /proc/sys/kernel/random/boot_id") echo "00000000-0000-4000-8000-000000000001" ;;
+  "cat /proc/uptime") echo "100.00 50.00" ;;
+  "date +%s") date +%s ;;
+  "date +%z") echo "+0000" ;;
+  logcat\ -b*) exit 0 ;;   # streams end immediately; supervisor restarts them
+  "cmd phone ims get-ims-service -s 0 -d -f 1") echo "com.mediatek.ims" ;;
+  "cmd phone ims get-ims-service -s 1 -d -f 1") echo "com.mediatek.ims" ;;
+  "cmd phone ims get-ims-service -s "*) echo "" ;;
+  "content query --uri content://telephony/siminfo")
+    echo "Row: 0 _id=1, icc_id=89012400000000000033, display_name=Synthetic Owner Phone, number=+15555550104, card_id=89012400000000000033, mcc_string=310, mnc_string=240" ;;
+  "content query --uri content://telephony/carriers/preferapn")
+    echo "Row: 0 _id=2, name=T-Mobile, numeric=310260, apn=fast.t-mobile.com, user=synthapnuser, password=synthapnpass, type=default,supl,mms" ;;
+  "pm path com.mediatek.ims") echo "package:/system_ext/priv-app/ImsService/ImsService.apk" ;;
+  "lshal --types=b,c,l -i") echo "synthetic lshal"; echo "stderr line" >&2; exit 3 ;;
+  *) exit 0 ;;
+esac
+exit 0
