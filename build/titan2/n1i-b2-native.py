@@ -44,7 +44,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import n1i_static as S  # noqa: E402
 
-TOOL_VERSION = "1.0.0"
+TOOL_VERSION = "1.0.1"
 ABI_MACHINE = {"arm64-v8a": "aarch64", "armeabi-v7a": "arm", "x86_64": "x86_64", "x86": "x86"}
 PARTITIONS = ("system", "system_ext", "product", "apex", "vendor", "odm")
 PROVIDER_CLASS = {"apk": "APK_PACKAGED", "system": "PLATFORM_OR_APEX", "apex": "PLATFORM_OR_APEX",
@@ -416,7 +416,7 @@ def cmd_derive(a) -> int:
         dirs.append((k, Path(p)))
     namespace_visible = set(a.namespace_visible_library or [])
     for name in namespace_visible:
-        if not re.fullmatch(r"[A-Za-z0-9_.+-]+\\.so", name):
+        if not re.fullmatch(r"[A-Za-z0-9_.+-]+\.so", name):
             raise InputError(f"--namespace-visible-library must be NAME.so, got {name!r}")
     for p in a.namespace_visible_list or []:
         if not p.is_file():

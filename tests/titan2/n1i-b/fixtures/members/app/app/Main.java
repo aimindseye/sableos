@@ -2,7 +2,8 @@ package app;
 
 /** Synthetic app. Every call below is one member-resolution case; see test-members.py. */
 public class Main {
-    public void cases() throws Throwable {
+    // Keep mismatch receivers opaque to D8 so later synthetic references remain reachable.
+    public void cases(fw.WasClass wc, fw.WasIface wi) throws Throwable {
         fw.Base b = new fw.Base();              // invoke-direct <init>()V: RESOLVED
         b.m(1);                                 // invoke-virtual: RESOLVED
         fw.Base.sm();                           // invoke-static: RESOLVED
@@ -15,9 +16,7 @@ public class Main {
         fw.Removed.r();                         // CLASS_MISSING
         b.wasPublic();                          // ACCESS_VIOLATION (private at runtime)
         b.becameProtected();                    // ACCESS_VIOLATION (protected, caller not a subclass)
-        fw.WasClass wc = null;
         wc.w();                                 // ICCE_KIND (invoke-virtual on an interface)
-        fw.WasIface wi = null;
         wi.i();                                 // ICCE_KIND (invoke-interface on a class)
         fw.Child c = new fw.Child();            // RESOLVED
         c.m(2);                                 // inherited method (declared in Base)
