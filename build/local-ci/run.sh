@@ -243,6 +243,8 @@ PY
     python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
   run_static_contract r9-messages-local-conversation \
     python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  run_static_contract r9-standalone-messages-quality \
+    python3 "$ROOT/build/gates/r9-standalone-messages-quality-contract.py"
   run_static_contract r9-messages-source-style \
     python3 "$ROOT/build/gates/r9-messages-source-style.py"
   run_static_contract r8-no-stale-product-code \
@@ -299,7 +301,7 @@ run_android() {
 
   (
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin        :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :weather:assembleDebug       :calendar:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :weather:lintDebug       :calendar:lintDebug       :sablestart-presentation-check:lintDebug        --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:testDebugUnitTest       :hub:testDebugUnitTest       :messages:testDebugUnitTest       :sablestart-presentation-check:compileDebugKotlin        :calculator:assembleDebug       :games:assembleSudokuDebug       :games:assembleMinesweeperDebug       :games:assembleGame2048Debug       :media:assembleDebug       :hub:assembleDebug       :messages:assembleDebug       :weather:assembleDebug       :calendar:assembleDebug       :design:lintDebug       :calculator:lintDebug       :convert:lintDebug       :games:lintSudokuDebug       :games:lintMinesweeperDebug       :games:lintGame2048Debug       :media:lintDebug       :hub:lintDebug       :messages:lintDebug       :weather:lintDebug       :calendar:lintDebug       :sablestart-presentation-check:lintDebug        --stacktrace --console=plain --no-daemon
   )
 }
 
@@ -348,7 +350,7 @@ run_quality() {
   (
     set -euo pipefail
     cd "$ROOT/apps/r8/android"
-    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :weather:detekt       :calendar:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :weather:ktlintCheck       :calendar:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
+    ./gradlew "${GRADLE_NETWORK_ARGS[@]}"       :design:detekt       :calculator:detekt       :convert:detekt       :games:detekt       :media:detekt       :hub:detekt       :messages:detekt       :weather:detekt       :calendar:detekt       :design:ktlintCheck       :calculator:ktlintCheck       :convert:ktlintCheck       :games:ktlintCheck       :media:ktlintCheck       :hub:ktlintCheck       :messages:ktlintCheck       :weather:ktlintCheck       :calendar:ktlintCheck       :design:koverXmlReportDebug       :design:koverHtmlReportDebug       --stacktrace --console=plain --no-daemon
   ) || android_quality_rc=$?
 
   if [[ "$android_quality_rc" -ne 0 ]]; then
