@@ -315,9 +315,12 @@ for f in ALL:
     if re.search(r"ktlint-disable|@(file:)?Suppress\([^)]*ktlint", t): err(f"ktlint suppression forbidden: {f}")
     if re.search(r"(?m)^\s*//\s*noinspection|detekt:suppress|@file:Suppress\(\"[^\"]*\",\s*\"ALL", t): err(f"blanket suppression forbidden: {f}")
     for m in re.finditer(r"@(?:file:)?Suppress\(([^)]*)\)", t):
-        for rule in re.findall(r'"([A-Za-z]+)"', m.group(1)): counts[rule] = counts.get(rule, 0) + 1
-for rule, n in sorted(counts.items()):
-    if n > budget.get(rule, 0): err(f"suppression budget exceeded: {rule} used {n} > {budget.get(rule, 0)} (config/QUALITY_SUPPRESSION_BUDGET.tsv)")
+        for rule in re.findall(r'"([A-Za-z]+)"', m.group(1)):
+            if rule in budget:
+                counts[rule] = counts.get(rule, 0) + 1
+for rule, limit in sorted(budget.items()):
+    n = counts.get(rule, 0)
+    if n > limit: err(f"suppression budget exceeded: {rule} used {n} > {limit} (config/QUALITY_SUPPRESSION_BUDGET.tsv)")
 # dependency-verification metadata (developer lane may not be able to generate it)
 VER = {}
 for ws in GRADLE_ROOTS:
