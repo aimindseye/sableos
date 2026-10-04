@@ -1,0 +1,3 @@
+# SYNTHETIC C3A system init: no MTK property producer.
+on boot
+    setprop sys.gsi.example 1

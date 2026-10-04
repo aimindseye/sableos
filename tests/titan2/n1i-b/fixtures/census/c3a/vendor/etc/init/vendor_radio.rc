@@ -1,0 +1,19 @@
+# SYNTHETIC vendor init script for the N1I-B2 reverse-census self-test.
+on property:sys.mtk.ready=1
+    start mtk_after_system
+
+on property:ro.mtk.sys.flag=1 && property:vendor.ril.ready=1
+    start mtk_flagged
+
+on property:vendor.ril.ready=1
+    start ril_helper
+
+on property:sys.boot_completed=1
+    start vendor_late
+
+on boot
+    setprop vendor.ril.ready 1
+
+service mtkradio_helper /vendor/bin/mtkradio_helper
+    class main
+    user radio

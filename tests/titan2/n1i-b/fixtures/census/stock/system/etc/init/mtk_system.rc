@@ -1,0 +1,3 @@
+# SYNTHETIC stock system init: produces a property the vendor waits on.
+on boot
+    setprop sys.mtk.ready 1

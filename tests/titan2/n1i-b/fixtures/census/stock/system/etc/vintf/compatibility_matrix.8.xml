@@ -1,0 +1,7 @@
+<!-- SYNTHETIC framework compatibility matrix: what the FRAMEWORK requires from the vendor (context only). -->
+<compatibility-matrix version="1.0" type="framework" level="8">
+    <hal format="aidl" optional="true">
+        <name>android.hardware.radio.ims</name>
+        <interface><name>IRadioIms</name><instance>slot1</instance></interface>
+    </hal>
+</compatibility-matrix>

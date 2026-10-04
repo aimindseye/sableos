@@ -27,6 +27,7 @@ COMPONENTS=(
   "static|N1I_STATIC_DEXDUMP_ORACLE|python3 $HERE/test-static.py"
   "members|MEMBER_RESOLVER_TESTS|python3 $HERE/test-members.py"
   "native|NATIVE_DATAFLOW_TESTS|python3 $HERE/test-native.py"
+  "census|REVERSE_CENSUS_TESTS|python3 $HERE/test-census.py"
 )
 
 declare -A MARK_STATE=()

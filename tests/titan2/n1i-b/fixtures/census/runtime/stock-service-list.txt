@@ -1,0 +1,4 @@
+Found 3 services:
+0	phone: [com.android.internal.telephony.ITelephony]
+1	mtk.sys.svc: [com.mediatek.synthetic.IMtkSys]
+2	mtkradioex_sys: [com.mediatek.synthetic.IRadioExSys]

@@ -1,0 +1,3 @@
+phone                            u:object_r:radio_service:s0
+mtk.sys.svc                      u:object_r:mtk_sys_svc_service:s0
+mtkradioex_sys                   u:object_r:mtk_radioex_sys_service:s0
