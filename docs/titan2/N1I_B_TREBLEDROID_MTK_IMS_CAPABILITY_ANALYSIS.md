@@ -506,6 +506,45 @@ product solution. If read-only `ProxyController` evidence shows Android does
 not issue or complete a real capability switch for tray 2, a narrow Titan
 system-side trigger using the existing AOSP transaction path becomes justified.
 
+## 9B. Verified TrebleDroid MTK IMS artifact
+
+The first TrebleDroid MTK IMS trial artifact has now been fetched and verified
+on the build host before any device installation.
+
+```text
+IMS_APK_FILENAME=ims-mtk-u-resigned.apk
+IMS_APK_SHA256=2ea638def3891b3105f16ea0151a36b1295f24349ff61ac4ea5929fe3650b04e
+IMS_APK_PACKAGE=com.mediatek.ims
+IMS_APK_VERSION_NAME=13
+IMS_APK_VERSION_CODE=33
+IMS_APK_MIN_SDK=33
+IMS_APK_TARGET_SDK=33
+IMS_APK_SIGNER_DN=TrebleDroid/phh
+IMS_APK_SIGNER_SHA256=9f6b1facddf4da61b0dd7a0cc08e07fe99938c2d0842b2cefd819c63e1c072f3
+C3A_PHH_TRUST_CERT_SHA256=9f6b1facddf4da61b0dd7a0cc08e07fe99938c2d0842b2cefd819c63e1c072f3
+IMS_APK_PACKAGE_VERIFICATION=PASS
+IMS_APK_SIGNER_VERIFICATION=PASS
+IMS_APK_VERIFICATION=PASS
+```
+
+The package identity and signer therefore match the exact C3A trust mechanism
+used by the TrebleDroid IMS installer path. The artifact is an older
+targetSdk-33 IMS provider rather than the stock API-36 provider; this is expected
+for the GSI-oriented compatibility trial and is not by itself a reason to reject
+the experiment. Runtime compatibility still has to be demonstrated.
+
+This authorizes one bounded lab experiment on the known-good tray-1 state:
+
+1. install only this APK;
+2. reboot once;
+3. verify the provider binds;
+4. test data, SMS/MMS, outgoing voice, incoming voice and IMS state;
+5. make no APN, CarrierConfig, simswitch, capability-slot, RIL, network-mode or
+   SELinux changes.
+
+Rollback is package uninstall plus one reboot if the provider itself causes a
+regression.
+
 ## 10. B8: cheapest IMS experiment (design only)
 
 ```text
