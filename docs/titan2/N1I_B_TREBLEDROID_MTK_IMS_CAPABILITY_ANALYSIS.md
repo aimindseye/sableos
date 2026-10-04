@@ -463,7 +463,7 @@ Verdicts: SUPPORTED, PARTIALLY_SUPPORTED, UNPROVEN, CONTRADICTED.
 
 | ID | Proposition | Verdict | Exact basis |
 |---|---|---|---|
-| P1 | Capability-slot mismatch can explain the tray-2 failure | PARTIALLY_SUPPORTED | The controlled tray-1 result is now positive differential evidence: with the SIM physically in tray 1 and capability state still 1, LTE/NR_NSA, packet data and HOME registration stayed stable for ~15 minutes with no cause 13 or ERROR_UNSPECIFIED teardown. Earlier tray 2 had the populated SIM on phone 1 while capability remained 1 and later failed. This strongly supports capability placement as a contributor, but it does not isolate the vendor properties as the causal mechanism because SIM removal/power reset also clears modem/network state. |
+| P1 | Capability-slot mismatch can explain the tray-2 failure | PARTIALLY_SUPPORTED | The initial tray-1 run was stable for ~15 minutes, but a later tray-1 run after the IMS trial/rollback reproduced the same failure family: a real pwg LTE data session connected on ccmni1, later disconnected with ERROR_UNSPECIFIED, then registration fell through reject causes 13/15/11 into emergency-only. Therefore tray/capability alignment is not sufficient to prevent the collapse. A tray-2 mismatch may still be a separate DSDS/capability defect, but it is no longer evidence for the primary registration failure. |
 | P2 | Property forcing is equivalent to real radio-capability switching | CONTRADICTED | The real path is a transactional modem command (section 5). The properties are vendor-namespace state that appear in no AOSP source. Atlas itself says the vendor ignores plain setprop and NVRAM rewrites the value. At most it is a boot-time input, not the operation. |
 | P3 | Missing IMS can cause incoming-call failure | SUPPORTED | Source establishes that `ImsResolver` cannot bind a missing provider. Runtime separation now strengthens this materially: on the stable tray-1 run, packet data and SMS/MMS work, outgoing voice ends immediately, incoming voice routes to voicemail, and IMS remains unavailable. This supports IMS/MMTEL as the active voice blocker while still avoiding the stronger claim that every possible call failure has only one cause. |
 | P4 | Missing IMS causes cause 13 | CONTRADICTED | The tray-1 runtime is stronger evidence than the earlier window: IMS stayed unavailable throughout while LTE/NR_NSA registration, packet data and SMS/MMS remained stable and no cause 13 occurred. Missing IMS is therefore not a sufficient cause of the registration collapse observed on tray 2. |
@@ -505,6 +505,44 @@ The current tray-1 success is therefore an isolation result, not the final
 product solution. If read-only `ProxyController` evidence shows Android does
 not issue or complete a real capability switch for tray 2, a narrow Titan
 system-side trigger using the existing AOSP transaction path becomes justified.
+
+## 9AA. Post-trial registration-collapse evidence
+
+A later read-only rollback/data-session capture materially changes the registration diagnosis.
+
+Observed on **tray 1 with capability state 1 and the TrebleDroid IMS package removed**:
+
+```text
+20:37:59  LTE HOME on 310260
+20:37:59  US Mobile pwg data session CONNECTED
+            interface=ccmni1
+            IPv4=25.97.94.218/32
+            default route via ccmni1
+20:39:30  data session DISCONNECTED
+            fail cause=ERROR_UNSPECIFIED
+20:39:30  service falls to EMERGENCY
+            rejectCause=13
+20:39:31  rejectCause=15
+20:39:31  rejectCause=11
+20:39:39  LTE HOME returns
+20:39:42  pwg data setup begins again
+20:41:43  service again collapses
+            rejectCause=11 -> 13 -> 15
+```
+
+This proves:
+
+- Android APN selection and the initial data-session bring-up path can work.
+- The failure is not simply "no data profile" or "no setupDataCall".
+- The registration collapse can occur on aligned tray 1.
+- The PHH IMS APK is therefore **not necessary** for the collapse to occur; the
+  underlying registration/data instability survives package removal.
+- The initial 15-minute tray-1 success was a useful good window, not proof that
+  capability placement solved the registration defect.
+
+Accordingly, capability switching remains a **separate mandatory dual-SIM
+product requirement**, while registration stability must be investigated
+independently against stock V01.00.14 behavior.
 
 ## 9B. Verified TrebleDroid MTK IMS artifact
 
@@ -633,7 +671,7 @@ restart RIL, `setenforce`, insert APNs, force carrier config, or force network m
 ## 11. Final decisions
 
 ```text
-TRAY2_CAPABILITY_MISMATCH_RELEVANCE=YES
+TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN
 REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO
 PROPERTY_HOLD_REQUIRED=NO
 TREBLEDROID_MTK_IMS_FIRST_TRIAL=YES
@@ -646,7 +684,7 @@ STOCK_SUPER_HYBRID_REQUIRED_NOW=NO
 
 | Decision | Justification |
 |---|---|
-| `TRAY2_CAPABILITY_MISMATCH_RELEVANCE=YES` | The tray-1 A/B result makes capability placement operationally relevant: aligned tray 1 stayed registered with LTE/NR_NSA and data while the earlier misaligned tray-2 state later collapsed. This is a relevance decision, not proof that writing the vendor properties is the fix. |
+| `TRAY2_CAPABILITY_MISMATCH_RELEVANCE=UNPROVEN` | A later aligned tray-1 run reproduced the same data teardown and registration-reject family. Capability alignment remains required for correct dual-SIM behavior, but it is not sufficient to explain or prevent the primary registration collapse. |
 | `REAL_CAPABILITY_SWITCH_IMPLEMENTATION=NO` | The real switch already exists in AOSP and follows default data. No new SableOS code is justified before the read-only check in section 6 shows it is inert. |
 | `PROPERTY_HOLD_REQUIRED=NO` | Properties are vendor-owned, absent from all framework source, and not shown necessary. A blind periodic hold also violates the healing rules. |
 | `TREBLEDROID_MTK_IMS_FIRST_TRIAL=YES` | Cheapest option, already wired in C3A with its compatibility shims. Gated on host-side provenance and signer verification and limited to the C3A lab image. |
