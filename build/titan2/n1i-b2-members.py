@@ -30,8 +30,9 @@ Subcommands
             authorization to import stock framework code.
 
 Not modelled (reported as limitations, never silently assumed): hidden-API enforcement, the
-protected instance-receiver rule, verifier type checks of arguments, nest-based access, and
-selection-time AbstractMethodError for invoke-super.
+verification-time protected target receiver subtype rule, verifier type checks of arguments,
+nest-based access, and selection-time AbstractMethodError for invoke-super. Link-time protected
+symbolic-owner access is modelled explicitly.
 
 Exit codes: 0 completed   2 input error or decoder/oracle disagreement (nothing written)
 """
@@ -184,15 +185,31 @@ def class_accessible(caller: Klass, target: Klass) -> bool:
     return bool(target.cd.access & S.ACC_PUBLIC) or same_runtime_package(caller, target)
 
 
-def member_accessible(w: World, caller: Klass, decl: Klass, acc: int) -> tuple[bool, str]:
+def member_accessible(
+    w: World,
+    caller: Klass,
+    symbolic_owner: Klass,
+    decl: Klass,
+    acc: int,
+    is_static: bool,
+) -> tuple[bool, str]:
     if acc & S.ACC_PUBLIC:
         return True, ""
     if acc & S.ACC_PRIVATE:
         return caller.desc == decl.desc, "private member of another class"
     if acc & S.ACC_PROTECTED:
-        if same_runtime_package(caller, decl) or w.is_subclass(caller, decl):
+        if same_runtime_package(caller, decl):
             return True, ""
-        return False, "protected member, caller is neither a subclass nor in the same runtime package"
+        if not w.is_subclass(caller, decl):
+            return False, "protected member, caller is neither a subclass nor in the same runtime package"
+        if not is_static:
+            owner_related = w.is_subclass(caller, symbolic_owner) or w.is_subclass(symbolic_owner, caller)
+            if not owner_related:
+                return False, (
+                    "protected instance member: symbolic owner is neither caller, "
+                    "a superclass of caller, nor a subclass of caller"
+                )
+        return True, ""
     if same_runtime_package(caller, decl):
         return True, ""
     if caller.package == decl.package:
@@ -204,36 +221,40 @@ def member_accessible(w: World, caller: Klass, decl: Klass, acc: int) -> tuple[b
 # Field and method lookup
 # =============================================================================
 def lookup_field(w: World, c: Klass, name: str, ftype: str):
-    """JVMS 5.4.3.2 order. Returns (Klass, EncodedField) or (None, near_miss_type or None, missing_super)."""
+    """JVMS 5.4.3.2 recursive order. Returns (decl, field/near_type, missing_type)."""
     near = None
+    seen: set[str] = set()
 
-    def scan(k: Klass):
+    def visit(k: Klass):
         nonlocal near
+        if k.desc in seen:
+            return None, None, f"{k.desc} (cycle)"
+        seen.add(k.desc)
         for f in k.cd.fields:
             if f.ref.name == name:
                 if f.ref.type == ftype:
-                    return f
+                    return k, f, None
                 near = near or f.ref.type
-        return None
+        # Field resolution searches this class/interface's direct superinterfaces
+        # recursively before recursing into its direct superclass.
+        for desc in k.cd.interfaces:
+            ik = w.klass(desc)
+            if ik is None:
+                return None, None, desc
+            decl, field, missing = visit(ik)
+            if field is not None or missing is not None:
+                return decl, field, missing
+        if k.cd.superclass:
+            sk = w.klass(k.cd.superclass)
+            if sk is None:
+                return None, None, k.cd.superclass
+            return visit(sk)
+        return None, None, None
 
-    f = scan(c)
-    if f:
-        return c, f, None
-    ifaces, miss_i = w.superinterfaces(c)
-    for ik in ifaces:
-        f = scan(ik)
-        if f:
-            return ik, f, None
-    sups, miss_s = w.superclasses(c)
-    for sk in sups:
-        f = scan(sk)
-        if f:
-            return sk, f, None
-        for ik in w.superinterfaces(sk)[0]:
-            f = scan(ik)
-            if f:
-                return ik, f, None
-    return None, near, (miss_s or miss_i)
+    decl, field, missing = visit(c)
+    if field is not None:
+        return decl, field, None
+    return None, near, missing
 
 
 def _find(k: Klass, name: str, proto: str, near: list):
@@ -335,7 +356,7 @@ def resolve_field(w: World, caller: Klass, ref: S.FieldRef, kind: str) -> Outcom
     if bool(f.access & S.ACC_STATIC) != want_static:
         return Outcome("STATIC_INSTANCE_MISMATCH",
                        f"{kind} on {'static' if f.access & S.ACC_STATIC else 'instance'} field", decl, f.access)
-    ok, why = member_accessible(w, caller, decl, f.access)
+    ok, why = member_accessible(w, caller, c, decl, f.access, bool(f.access & S.ACC_STATIC))
     if not ok:
         return Outcome("ACCESS_VIOLATION", why, decl, f.access)
     if kind in ("iput", "sput") and f.access & S.ACC_FINAL and caller.desc != decl.desc:
@@ -390,7 +411,7 @@ def resolve_method(w: World, caller: Klass, ref: S.MethodRef, kind: str) -> Outc
     if (kind == "static") != is_static:
         return Outcome("STATIC_INSTANCE_MISMATCH",
                        f"invoke-{kind} on {'static' if is_static else 'instance'} method", decl, m.access)
-    ok, why = member_accessible(w, caller, decl, m.access)
+    ok, why = member_accessible(w, caller, c, decl, m.access, bool(m.access & S.ACC_STATIC))
     if not ok:
         return Outcome("ACCESS_VIOLATION", why, decl, m.access)
     return Outcome("RESOLVED", "", decl, m.access)
