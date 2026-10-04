@@ -40,3 +40,53 @@ commits = ["dc2fa126ef805a49dde4c98ffe0f18cfed09f37b"]
 paths = ['''^tools/validation/release-r1/SABLE_R1_R0_RELEASE_PREFLIGHT\.py$''']
 regexTarget = "line"
 regexes = ['''^\s*"PASS" if common_keys == SIGNING_KEYS_2026081300 else "ERROR",\s*$''']
+
+
+[[allowlists]]
+description = "Historical P1-P4 platform_sable key-contract Git commit; not API key material"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["4ca3239354a0aa85025870c5ab2f20280f359b06"]
+paths = ['''^CURRENT_STATUS\.md$''']
+regexTarget = "line"
+regexes = ['''^P1_P4_PLATFORM_SABLE_KEY_CONTRACT=80e3097bdef4cd2d5cbfd8ebde16390c29767918$''']
+
+[[allowlists]]
+description = "Historical N1I hypothesis environment key-name list; contains no credential value"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = ["17d21c2bf9b33200a72a4fc04801ecf86f7a8021"]
+paths = ['''^build/titan2/audit-n1i-b-trebledroid-mtk-ims-capability\.sh$''']
+regexTarget = "line"
+regexes = ['''^hyp_env_keys='P1_CAPABILITY_SLOT_MISMATCH_EXPLAINS_TRAY2_FAILURE P2_PROPERTY_FORCING_EQUALS_REAL_CAPABILITY_SWITCH P3_MISSING_IMS_CAN_CAUSE_INCOMING_CALL_FAILURE P4_MISSING_IMS_CAUSES_CAUSE_13 P5_MTK_NETWORK_INDICATION_NULL_CAUSES_LTE_DATA_TEARDOWN P6_OEM_MTKIMS_REQUIRED_BEFORE_GSI_NATIVE_MTK_IMS P7_SYSTEM_ONLY_TITAN_GSI_REMAINS_VIABLE P8_STOCK_SUPER_SYSTEM_EXT_HYBRID_REQUIRED'$''']
+
+[[allowlists]]
+description = "Historical C3B engineering contract lptools API compatibility Git blob IDs; not API keys"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = [
+  "1272b22ea2070a700074354bb2afc83f2e53ffc7",
+  "fedcee9bf4109c1b95b32a906bd8234dff775d5c",
+  "e19980c77d54011266d11705480e0ddcd36f1b24",
+  "7460d6f6aef61ddb11b6f27d85f998e620220d05",
+]
+paths = ['''^build/gates/n1d-c3b-engineering-contract\.sh$''']
+regexTarget = "line"
+regexes = ['''^.*N1D_C3B_LPTOOLS_API_COMPAT_(?:BASE|POST)_BLOB=[0-9a-f]{40}.*$''']
+
+[[allowlists]]
+description = "Historical C3B transition contract lptools API compatibility Git blob IDs; not API keys"
+targetRules = ["generic-api-key"]
+condition = "AND"
+commits = [
+  "361ce98f12be292f6c8c7b425a0ea0acbafa5291",
+  "eb7cc931e28ca2360d3f04e6c9062e21fc61bd09",
+  "ffe399735fafa8f69062329cf78c33e292da9894",
+  "e2838299280e7c0c89f7eab9d2354b56f862f3fe",
+]
+paths = [
+  '''^build/gates/n1d-c3b-transition-contract\.sh$''',
+  '''^build/titan2/n1d-c3b-transition\.env$''',
+]
+regexTarget = "line"
+regexes = ['''^.*N1D_C3B_LPTOOLS_API_COMPAT_(?:BASE|POST)_BLOB=[0-9a-f]{40}.*$''']
