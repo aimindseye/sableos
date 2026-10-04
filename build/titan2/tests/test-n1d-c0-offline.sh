@@ -128,10 +128,51 @@ grep -Fq "IMAGES/system.img" "$DRIVER" || fail n1b_target_files_control_recovery
 grep -Fq "N1B_CONTROL_TARGET_FILES_SOURCE" "$DRIVER" || fail n1b_target_files_provenance
 pass c0_closure_contract
 
-# Reviewed Engineer-2 tool hashes are immutable inputs to C0_12.
+# C0_12 keeps exact-byte seals for the still-frozen Engineer-2 audit and
+# classifier tools. The capture tool is an evolving N1I evidence tool, so its
+# reviewed historical base remains hash-sealed while the current default
+# read-only contract must prove legacy equivalence to that base.
+CAPTURE_REVIEWED_BASE="8adfac494380d36dcf1951bcef4adb9dca106b5e"
+CAPTURE_REVIEWED_SHA256="50344ffe5de82986299175587e152b493add8e930a90aa9dd55aba89351b721a"
+CAPTURE_REL="build/titan2/capture-n1b2-cellular-runtime.sh"
+CAPTURE_GUARD_TEST="$ROOT/tests/titan2/n1i-b/test-guard.sh"
+
 [[ "$(sha256sum "$AUDIT" | awk '{print $1}')" == "b02d0da22de0f0cecca8a0793acd216ddecebafd9a51fae9c708936832c17c28" ]] || fail audit_hash
-[[ "$(sha256sum "$CAPTURE" | awk '{print $1}')" == "50344ffe5de82986299175587e152b493add8e930a90aa9dd55aba89351b721a" ]] || fail capture_hash
 [[ "$(sha256sum "$CLASSIFIER" | awk '{print $1}')" == "7833e2235a151f4ae2f628c597624c02d93cd81ed558da5af5eaa73a47f5a6e9" ]] || fail classifier_hash
+
+git -C "$ROOT" cat-file -e   "$CAPTURE_REVIEWED_BASE:$CAPTURE_REL" 2>/dev/null   || fail capture_reviewed_base_missing
+
+[[ "$(
+  git -C "$ROOT" show "$CAPTURE_REVIEWED_BASE:$CAPTURE_REL" |
+    sha256sum |
+    awk '{print $1}'
+)" == "$CAPTURE_REVIEWED_SHA256" ]] || fail capture_reviewed_base_hash
+
+[[ -f "$CAPTURE_GUARD_TEST" ]] || fail capture_guard_test_missing
+
+if ! N1I_B_BASE_COMMIT="$CAPTURE_REVIEWED_BASE"   bash "$CAPTURE_GUARD_TEST" > "$TMP/capture-legacy-guard.log" 2>&1; then
+  cat "$TMP/capture-legacy-guard.log" >&2
+  fail capture_legacy_guard
+fi
+
+for case_name in   legacy_is_read_only_text_identical   legacy_default_verdicts_identical   b1_subset_of_legacy_or_extra; do
+  awk -F '\t' -v case_name="$case_name" '
+    $1 == "CASE" &&
+    $2 == "guard" &&
+    $3 == case_name &&
+    $4 == "PASS" {
+      found = 1
+    }
+    END {
+      exit found ? 0 : 1
+    }
+  ' "$TMP/capture-legacy-guard.log" || {
+    cat "$TMP/capture-legacy-guard.log" >&2
+    fail "capture_legacy_case=$case_name"
+  }
+done
+
+pass capture_legacy_compat
 pass reviewed_tool_hashes
 
 # system-report fixture

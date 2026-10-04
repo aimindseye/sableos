@@ -3,7 +3,7 @@
 # Host-only. No adb, no fastboot, no build, no flash, no network fetch.
 set -euo pipefail
 
-SCRIPT_VERSION="1.2.0"
+SCRIPT_VERSION="1.2.1"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HELPER="$SCRIPT_DIR/n1d-c0-inspect.py"
 CONFIG=""
@@ -162,6 +162,9 @@ N1C_EXPECTED_SYSTEM_SHA256="ed9edad3c65e4908028bb6087bbb712efff81bd4fe6601cc6cc6
 N1C_EXPECTED_SUPER_SHA256="d97e53f5e4b3f23245b600b311c6071eb9ab7897be093ea21dea83bbde3f3711"
 ENG2_AUDIT_SHA256="b02d0da22de0f0cecca8a0793acd216ddecebafd9a51fae9c708936832c17c28"
 ENG2_CAPTURE_SHA256="50344ffe5de82986299175587e152b493add8e930a90aa9dd55aba89351b721a"
+ENG2_CAPTURE_BASE_COMMIT="8adfac494380d36dcf1951bcef4adb9dca106b5e"
+ENG2_CAPTURE_RELATIVE_PATH="build/titan2/capture-n1b2-cellular-runtime.sh"
+CAPTURE_GUARD_TEST="$SABLE_REPO/tests/titan2/n1i-b/test-guard.sh"
 ENG2_CLASSIFIER_SHA256="7833e2235a151f4ae2f628c597624c02d93cd81ed558da5af5eaa73a47f5a6e9"
 
 sha() { sha256sum "$1" | awk '{print $1}'; }
@@ -780,14 +783,85 @@ if [[ -x "$CELLULAR_AUDIT_TOOL" && -n "$N1B1_INPUT" && -e "$N1B1_INPUT" && -n "$
 else gate C0_11_CELLULAR_STATIC INFO "historical N1B1/N1B2 inputs not supplied; defer to B0/PR207 evidence"; fi
 
 # ---------------------------- C0_12 toolchain seal
+# Audit and classifier remain exact-byte Engineer-2 seals. Capture evolved for
+# N1I, so preserve the exact reviewed historical object and require the current
+# default read-only guard to remain equivalent to that reviewed base.
 TOOL_FAIL=0
-for spec in "audit:$CELLULAR_AUDIT_TOOL:$ENG2_AUDIT_SHA256" "capture:$CAPTURE_TOOL:$ENG2_CAPTURE_SHA256" "classifier:$CLASSIFIER_TOOL:$ENG2_CLASSIFIER_SHA256"; do
+for spec in "audit:$CELLULAR_AUDIT_TOOL:$ENG2_AUDIT_SHA256" "classifier:$CLASSIFIER_TOOL:$ENG2_CLASSIFIER_SHA256"; do
   name="${spec%%:*}"; rem="${spec#*:}"; path="${rem%%:*}"; exp="${rem##*:}"
-  if [[ -f "$path" ]]; then h="$(sha "$path")"; record "TOOL_${name^^}_SHA256" "$h"; [[ "$h" == "$exp" ]] || TOOL_FAIL=1
-  else TOOL_FAIL=1; fi
+  if [[ -f "$path" ]]; then
+    h="$(sha "$path")"
+    record "TOOL_${name^^}_SHA256" "$h"
+    [[ "$h" == "$exp" ]] || TOOL_FAIL=1
+  else
+    TOOL_FAIL=1
+  fi
 done
-SELF_SHA="$(sha "$0")"; HELPER_SHA="$(sha "$HELPER")"; record N1D_C0_DRIVER_SHA256 "$SELF_SHA"; record N1D_C0_HELPER_SHA256 "$HELPER_SHA"
-if [[ "$TOOL_FAIL" -eq 0 ]]; then gate C0_12_TOOLCHAIN_SEAL PASS "Engineer-2 reviewed audit/capture/classifier hashes match"; else gate C0_12_TOOLCHAIN_SEAL FAIL "reviewed tooling missing or hash mismatch"; fi
+
+CAPTURE_CONTRACT_FAIL=0
+CANONICAL_CAPTURE_TOOL="$SABLE_REPO/$ENG2_CAPTURE_RELATIVE_PATH"
+
+if [[ -f "$CAPTURE_TOOL" && -f "$CANONICAL_CAPTURE_TOOL" ]]; then
+  configured_capture="$(
+    python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))'       "$CAPTURE_TOOL"
+  )"
+  canonical_capture="$(
+    python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))'       "$CANONICAL_CAPTURE_TOOL"
+  )"
+
+  record TOOL_CAPTURE_SHA256 "$(sha "$CAPTURE_TOOL")"
+
+  if [[ "$configured_capture" != "$canonical_capture" ]]; then
+    CAPTURE_CONTRACT_FAIL=1
+    record TOOL_CAPTURE_CANONICAL_PATH FAIL
+  else
+    record TOOL_CAPTURE_CANONICAL_PATH PASS
+  fi
+else
+  CAPTURE_CONTRACT_FAIL=1
+  record TOOL_CAPTURE_CANONICAL_PATH FAIL
+fi
+
+if git -C "$SABLE_REPO" cat-file -e   "$ENG2_CAPTURE_BASE_COMMIT:$ENG2_CAPTURE_RELATIVE_PATH" 2>/dev/null; then
+  reviewed_capture_hash="$(
+    git -C "$SABLE_REPO" show       "$ENG2_CAPTURE_BASE_COMMIT:$ENG2_CAPTURE_RELATIVE_PATH" |
+      sha256sum |
+      awk '{print $1}'
+  )"
+
+  record TOOL_CAPTURE_REVIEWED_BASE_COMMIT "$ENG2_CAPTURE_BASE_COMMIT"
+  record TOOL_CAPTURE_REVIEWED_BASE_SHA256 "$reviewed_capture_hash"
+
+  [[ "$reviewed_capture_hash" == "$ENG2_CAPTURE_SHA256" ]]     || CAPTURE_CONTRACT_FAIL=1
+else
+  CAPTURE_CONTRACT_FAIL=1
+  record TOOL_CAPTURE_REVIEWED_BASE_COMMIT MISSING
+fi
+
+if [[ -f "$CAPTURE_GUARD_TEST" ]]; then
+  if N1I_B_BASE_COMMIT="$ENG2_CAPTURE_BASE_COMMIT"     bash "$CAPTURE_GUARD_TEST"       > "$OUT/logs/C0_12_capture_legacy_guard.log" 2>&1; then
+    record TOOL_CAPTURE_LEGACY_COMPAT PASS
+  else
+    CAPTURE_CONTRACT_FAIL=1
+    record TOOL_CAPTURE_LEGACY_COMPAT FAIL
+  fi
+else
+  CAPTURE_CONTRACT_FAIL=1
+  record TOOL_CAPTURE_LEGACY_COMPAT FAIL_MISSING_GUARD_TEST
+fi
+
+[[ "$CAPTURE_CONTRACT_FAIL" -eq 0 ]] || TOOL_FAIL=1
+
+SELF_SHA="$(sha "$0")"
+HELPER_SHA="$(sha "$HELPER")"
+record N1D_C0_DRIVER_SHA256 "$SELF_SHA"
+record N1D_C0_HELPER_SHA256 "$HELPER_SHA"
+
+if [[ "$TOOL_FAIL" -eq 0 ]]; then
+  gate C0_12_TOOLCHAIN_SEAL PASS     "audit/classifier exact seals match; reviewed capture base is sealed and current default guard is legacy-equivalent"
+else
+  gate C0_12_TOOLCHAIN_SEAL FAIL     "reviewed tool seal or capture legacy-compatibility contract failed"
+fi
 
 # ---------------------------- final disposition
 BLOCKED=0
