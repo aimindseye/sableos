@@ -6,12 +6,14 @@ Missing javac / dx / dexdump is a FAIL, never a skip.
 """
 from __future__ import annotations
 
+import importlib.util
 import shutil
 import subprocess
 import sys
 import tempfile
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 
 HERE = Path(__file__).resolve().parent
 ROOT = Path(subprocess.check_output(["git", "-C", str(HERE), "rev-parse", "--show-toplevel"], text=True).strip())
@@ -145,7 +147,62 @@ def resolve(f: dict, td: Path, name: str, side: str = "stock", core: str = "core
     return r, rows, env
 
 
+def load_member_tool():
+    spec = importlib.util.spec_from_file_location("n1i_b2_members", TOOL)
+    if spec is None or spec.loader is None:
+        raise RuntimeError("unable to load member resolver module")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def semantic_rule_tests() -> None:
+    m = load_member_tool()
+
+    def klass(desc, *, superclass=None, interfaces=(), fields=(), access=0):
+        cd = SimpleNamespace(
+            descriptor=desc,
+            superclass=superclass,
+            interfaces=tuple(interfaces),
+            fields=[
+                SimpleNamespace(ref=SimpleNamespace(name=name, type=ftype), access=0)
+                for name, ftype in fields
+            ],
+            methods=[],
+            access=access,
+        )
+        return m.Klass(cd, "boot", "BOOT", desc)
+
+    # JVMS field resolution: class -> direct superinterfaces recursively -> superclass recursively.
+    # An interface inherited only through Base must not beat Base's own field.
+    w = m.World()
+    obj = klass("Ljava/lang/Object;", access=m.S.ACC_PUBLIC)
+    iface = klass("Lfw/FieldCarrier;", interfaces=(), fields=(("order", "I"),),
+                  access=m.S.ACC_PUBLIC | m.S.ACC_INTERFACE)
+    base = klass("Lfw/Base;", superclass=obj.desc, interfaces=(iface.desc,), fields=(("order", "I"),),
+                 access=m.S.ACC_PUBLIC)
+    child = klass("Lfw/Child;", superclass=base.desc, access=m.S.ACC_PUBLIC)
+    for k in (obj, iface, base, child):
+        w.classes[k.desc] = k
+    decl, field, missing = m.lookup_field(w, child, "order", "I")
+    case("field_resolution_superclass_before_its_interfaces",
+         decl is not None and decl.desc == base.desc and field is not None and missing is None,
+         decl.desc if decl else str(missing))
+
+    # Cross-package protected instance access also constrains the symbolic owner.
+    caller = klass("Lapp/Sub;", superclass=base.desc, access=m.S.ACC_PUBLIC)
+    sibling = klass("Lfw/Sibling;", superclass=base.desc, access=m.S.ACC_PUBLIC)
+    for k in (caller, sibling):
+        w.classes[k.desc] = k
+    ok, why = m.member_accessible(w, caller, sibling, base, m.S.ACC_PROTECTED, False)
+    case("protected_symbolic_owner_sibling_rejected", not ok and "symbolic owner" in why, why)
+    ok, why = m.member_accessible(w, caller, base, base, m.S.ACC_PROTECTED, False)
+    case("protected_symbolic_owner_superclass_allowed", ok, why)
+
+
 def main() -> int:
+    semantic_rule_tests()
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
         try:
