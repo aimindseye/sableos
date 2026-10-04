@@ -26,8 +26,8 @@ text = text.replace(
 text = text.replace(
     "set -euo pipefail",
     "set -Euo pipefail\n"
-    "trap 'rc=$?; printf \\\"SABLE_PIPELINE_BASE_FAILURE=rc=%s line=%s command=%q\\\\n\\\" "
-    "\\\"$rc\\\" \\\"${BASH_LINENO[0]:-0}\\\" \\\"${BASH_COMMAND:-UNKNOWN}\\\" >&2' ERR",
+    "trap 'rc=$?; printf \"SABLE_PIPELINE_BASE_FAILURE=rc=%s line=%s command=%q\\n\" "
+    "\"$rc\" \"${BASH_LINENO[0]:-0}\" \"${BASH_COMMAND:-UNKNOWN}\" >&2' ERR",
     1,
 )
 old = '''for d in titan2 titan2-elite q27; do
