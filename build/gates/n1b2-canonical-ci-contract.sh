@@ -23,7 +23,7 @@ do
   grep -Fq "$marker" "$TITAN" || fail "missing_titan_fail_closed_marker=$marker"
 done
 
-for marker in   'run_titan2_n1b2_evidence()'   'stage TITAN2_N1B2_EVIDENCE run_titan2_n1b2_evidence'   'N1I_TOOL_DX="$EVIDENCE_DIR/NO_LEGACY_DX"'   'N1I_TOOL_D8="$SABLE_ANDROID_BUILD_TOOLS/d8"'   'N1I_TOOL_DEXDUMP="$SABLE_ANDROID_BUILD_TOOLS/dexdump"'   'N1I_TOOL_CLANG="$ndk_llvm_bin/clang"'   'N1I_TOOL_LD_LLD="$ndk_llvm_bin/ld.lld"'   'N1I_TOOL_LLVM_OBJCOPY="$ndk_llvm_bin/llvm-objcopy"'   'N1I_TOOL_READELF="$ndk_llvm_bin/llvm-readelf"'   'TITAN2_N1B2_EVIDENCE_TOOLCHAIN=PASS_CANONICAL'   'TITAN2_N1B2_EVIDENCE_SELFTESTS=PASS'   'TITAN2_N1B2_IMPORT_AUTHORIZED=NO'   'TITAN2_N1B2_DEVICE_MUTATION_AUTHORIZED=NO'
+for marker in   'run_titan2_n1b2_evidence()'   'stage TITAN2_N1B2_EVIDENCE run_titan2_n1b2_evidence'   'N1I_TOOL_DX="$EVIDENCE_DIR/NO_LEGACY_DX"'   'N1I_TOOL_D8="$SABLE_ANDROID_BUILD_TOOLS/d8"'   'N1I_TOOL_DEXDUMP="$SABLE_ANDROID_BUILD_TOOLS/dexdump"'   'N1I_TOOL_CLANG="$ndk_llvm_bin/clang"'   'N1I_TOOL_LD_LLD="$ndk_llvm_bin/ld.lld"'   'N1I_TOOL_LLVM_OBJCOPY="$ndk_llvm_bin/llvm-objcopy"'   'N1I_TOOL_READELF="$ndk_llvm_bin/llvm-readelf"'   'N1I_B_TOOL_HISTORICAL_WORKSPACE_DISCOVERY=NO'   'TITAN2_N1B2_EVIDENCE_TOOLCHAIN=PASS_CANONICAL'   'TITAN2_N1B2_EVIDENCE_SELFTESTS=PASS'   'TITAN2_N1B2_IMPORT_AUTHORIZED=NO'   'TITAN2_N1B2_DEVICE_MUTATION_AUTHORIZED=NO'
 do
   grep -Fq "$marker" "$CI" || fail "missing_ci_marker=$marker"
 done
