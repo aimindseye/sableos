@@ -561,6 +561,18 @@ last_decision_block_is_final() {
   awk '/^```text$/ { blk = ""; inb = 1; next } /^```$/ { if (inb && blk ~ /TRAY2_CAPABILITY_MISMATCH_RELEVANCE=/ && blk ~ /STOCK_SUPER_HYBRID_REQUIRED_NOW=/) ok = 1; inb = 0; next } inb { blk = blk $0 "\n" } END { exit !ok }' "$DOC"
 }
 chk EXP decisions_in_single_fenced_block last_decision_block_is_final
+
+# Titan 2 has two physical SIM slots and no eSIM fallback. Both trays and DSDS
+# are product requirements; a tray-1-only/property-hold workaround is not enough.
+for k in DUAL_SIM_BOTH_PHYSICAL_SLOTS_REQUIRED DUAL_SIM_SINGLE_SIM_TRAY1_REQUIRED DUAL_SIM_SINGLE_SIM_TRAY2_REQUIRED DUAL_SIM_DSDS_REQUIRED; do
+  chk EXP "dual_sim_required:$k" count_is "$(env_val "$k")" YES
+  chk EXP "dual_sim_requirement_in_report:$k" gf "$k=YES" "$DOC"
+done
+chk EXP dual_sim_property_hold_rejected count_is "$(env_val DUAL_SIM_PROPERTY_HOLD_ACCEPTABLE)" NO
+chk EXP dual_sim_property_hold_rejected_in_report gf 'DUAL_SIM_PROPERTY_HOLD_ACCEPTABLE=NO' "$DOC"
+chk EXP dual_sim_section_present gf '## 9A. Physical dual-SIM product requirement' "$DOC"
+chk EXP dual_sim_real_capability_path gf 'ProxyController -> RIL -> IRadioModem.setRadioCapability' "$DOC"
+
 chk EXP b3_missing_provider_answer_matches_env count_is "$(env_val CONFIGURATION_POINTS_TO_MISSING_PROVIDER)" YES
 
 # --- optional scope check --------------------------------------------------
