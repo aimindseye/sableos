@@ -270,6 +270,7 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
         "N1I_B2_NATIVE_JNI_UNRESOLVED",
         "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN",
         "N1I_B2_NATIVE_NAMESPACE_VISIBILITY_INFERRED",
+        "N1I_B2_NATIVE_NAMESPACE_VISIBLE_LIBRARY_COUNT",
         "N1I_B2_NATIVE_KEYWORD_ROOTS_USED",
     }
     se = env_file(stock / "NATIVE_SUMMARY.env", req)
@@ -293,6 +294,7 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
         "sha256",
         "needed",
         "admitted_by",
+        "namespace_visibility",
         "evidence_strength",
     }
     sr = tsv(stock / "NATIVE_CLOSURE.tsv", required, "library")
@@ -302,6 +304,15 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
     for row in sr + cr:
         if row["status"] not in NATIVE_STATUSES:
             raise InputError(f"unknown native status {row['status']}")
+        visibility = row["namespace_visibility"]
+        if row["status"] == "FOUND":
+            expected = "APK_PACKAGED" if row["partition"] == "apk" else "EXPLICIT"
+            if visibility != expected:
+                raise InputError(
+                    f"{row['library']}: FOUND without {expected} namespace visibility provenance"
+                )
+        elif row["status"] == "FILE_PRESENT_NAMESPACE_UNPROVEN" and visibility != "UNPROVEN":
+            raise InputError(f"{row['library']}: namespace-unproven row lacks UNPROVEN provenance")
 
     out: list[LedgerRow] = []
     for name in sorted(set(sm) | set(cm)):
@@ -356,10 +367,12 @@ def native_rows(stock: Path, c3a: Path) -> tuple[list[LedgerRow], list[Coverage]
             f"c3a={ce['N1I_B2_NATIVE_DYNAMIC_LOAD_UNRESOLVED']}",
         ),
         coverage(
-            "NATIVE_VENDOR_NAMESPACE",
+            "NATIVE_NAMESPACE_VISIBILITY",
             not native_unproven,
             True,
-            "unproven=" + (",".join(native_unproven) or "NONE"),
+            "unproven=" + (",".join(native_unproven) or "NONE")
+            + f" explicit_stock={se['N1I_B2_NATIVE_NAMESPACE_VISIBLE_LIBRARY_COUNT']}"
+            + f" explicit_c3a={ce['N1I_B2_NATIVE_NAMESPACE_VISIBLE_LIBRARY_COUNT']}",
         ),
         coverage(
             "NATIVE_REQUIRED_USES_LIBRARY",
