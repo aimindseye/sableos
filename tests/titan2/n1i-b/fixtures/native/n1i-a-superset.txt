@@ -1,0 +1,4 @@
+# Synthetic stand-in for a keyword-derived search superset (never used as roots).
+libsynth.so
+libdep.so
+libkeyword_ims_only.so

@@ -26,6 +26,7 @@ COMPONENTS=(
   "timeline|TIMELINE_B0_APN_TESTS|python3 $HERE/test-timeline.py"
   "static|N1I_STATIC_DEXDUMP_ORACLE|python3 $HERE/test-static.py"
   "members|MEMBER_RESOLVER_TESTS|python3 $HERE/test-members.py"
+  "native|NATIVE_DATAFLOW_TESTS|python3 $HERE/test-native.py"
 )
 
 declare -A MARK_STATE=()

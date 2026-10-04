@@ -1,0 +1,3 @@
+package: name='app.synthetic.native' versionCode='1' versionName='1'
+uses-native-library:'libdep.so'
+uses-native-library-not-required:'libnotthere.so'
