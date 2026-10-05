@@ -164,8 +164,16 @@ else
     REPLAY_SOURCE=FRESH_PINNED_REPLAY
     echo
     echo "===== GENERATE FRESH READ-ONLY N1I-A REPLAY ====="
-    bash "$N1I_A_AUDIT"         --c3a-system "$C3A_HISTORY/system.img"         --out "$REPLAY"         --tools-dir "$SABLE_ANDROID_BUILD_TOOLS"         > >(tee "$EVIDENCE/n1i-a-replay.log") 2>&1
-    REPLAY_RC=$?
+    if bash "$N1I_A_AUDIT" \
+        --c3a-system "$C3A_HISTORY/system.img" \
+        --out "$REPLAY" \
+        --tools-dir "$SABLE_ANDROID_BUILD_TOOLS" \
+        > >(tee "$EVIDENCE/n1i-a-replay.log") 2>&1
+    then
+        REPLAY_RC=0
+    else
+        REPLAY_RC=$?
+    fi
     [[ "$REPLAY_RC" -eq 0 ]] || fail "fresh_replay_rc=$REPLAY_RC" 66
     usable_replay "$REPLAY" || fail fresh_replay_missing_work 66
 fi
@@ -176,8 +184,16 @@ echo "N1I_C2_MATERIALIZATION_REPLAY=$REPLAY"
 echo
 echo "===== FREEZE STOCK PAYLOAD ====="
 
-"$SABLE_PYTHON" "$MATERIALIZER"     --manifest-evidence "$MANIFEST_EVIDENCE"     --replay-evidence "$REPLAY"     --out "$OUT"     > >(tee "$EVIDENCE/materialization.log") 2>&1
-MATERIALIZE_RC=$?
+if "$SABLE_PYTHON" "$MATERIALIZER" \
+    --manifest-evidence "$MANIFEST_EVIDENCE" \
+    --replay-evidence "$REPLAY" \
+    --out "$OUT" \
+    > >(tee "$EVIDENCE/materialization.log") 2>&1
+then
+    MATERIALIZE_RC=0
+else
+    MATERIALIZE_RC=$?
+fi
 
 [[ "$MATERIALIZE_RC" -eq 0 ]] ||
     fail "materializer_rc=$MATERIALIZE_RC" 67
@@ -202,6 +218,7 @@ grep -Fxq 'N1I_C2_CELLULAR_MVP_STOCK_MATERIALIZATION=PASS'     "$OUT/CELLULAR_MV
     fail sable_repo_changed 68
 
 cat > "$EVIDENCE/materialization-driver.env" <<EOF
+N1I_C2_MATERIALIZATION_SOURCE_COMMIT=$(git -C "$ROOT" rev-parse HEAD)
 N1I_C2_MATERIALIZATION_REPLAY_SOURCE=$REPLAY_SOURCE
 N1I_C2_MATERIALIZATION_REPLAY=$REPLAY
 N1I_C2_MATERIALIZATION_MANIFEST_EVIDENCE=$MANIFEST_EVIDENCE
