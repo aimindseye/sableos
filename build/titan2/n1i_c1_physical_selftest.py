@@ -116,6 +116,11 @@ def _fixture(
         "EVENT_UNSOL_RADIO_CAPABILITY_CHANGED DSSExt Default data phoneid = 1\n",
         encoding="utf-8",
     )
+    # Mirror the collector: every snapshot stdout has a sibling return code.
+    # The evaluator must ignore partial stdout from any command whose rc is nonzero.
+    for snapshot in (root / "raw" / "end").glob("*.txt"):
+        snapshot.with_suffix(".rc").write_text("0\n", encoding="utf-8")
+
     with (root / "be2" / "redacted" / "timeline.tsv").open(
         "w", encoding="utf-8", newline=""
     ) as fp:
@@ -217,6 +222,24 @@ def run_self_test() -> int:
         assert ims_bearer_count(
             "NetworkAgentInfo{ CELLULAR IMS MMTEL InterfaceName=ccmni2 }"
         ) == 0
+
+        # Snapshot stdout is not evidence unless the corresponding command
+        # returned zero. Partial output from a failed command must not false-PASS
+        # data, IMS bearer, or IMS provider surfaces.
+        _fixture(roots["tray1"], "tray1")
+        (roots["tray1"] / "raw" / "end" / "connectivity.rc").write_text(
+            "1\n", encoding="utf-8"
+        )
+        result = evaluate_scenario(roots["tray1"], "tray1", op)
+        assert result.markers["N1I_C1_TRAY1_DATA"] == "FAIL"
+        assert result.markers["N1I_C1_TRAY1_IMS_BEARER"] == "FAIL"
+
+        _fixture(roots["tray1"], "tray1")
+        (roots["tray1"] / "raw" / "end" / "mediatek_ims_package.rc").write_text(
+            "1\n", encoding="utf-8"
+        )
+        result = evaluate_scenario(roots["tray1"], "tray1", op)
+        assert result.markers["N1I_C1_TRAY1_IMS_PROVIDER"] == "FAIL"
 
         # DSDS one-line failure cannot be masked.
         _fixture(roots["dsds"], "dsds")
