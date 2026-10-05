@@ -870,6 +870,8 @@ trap - EXIT
 [[ "$(git -C "$ANDROID_ROOT/device/phh/treble" hash-object "$PHH_REL")" == "$PHH_BASE_BLOB" ]] ||
     { fail phh_restore; exit $?; }
 
+verify_c3a_source || { fail c3a_source_restore; exit $?; }
+echo "N1I_C2_C3A_SOURCE_RESTORE=PASS_EXACT"
 echo "N1I_C2_SOURCE_RESTORE=PASS"
 
 rm -rf --one-file-system "$WORK"
