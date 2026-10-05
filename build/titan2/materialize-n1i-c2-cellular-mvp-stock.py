@@ -148,7 +148,7 @@ def verify_replay(replay: Path) -> None:
 
     inputs = inputs_map(replay / "inputs.tsv")
     expected = {
-        "system.img": EXPECTED_STOCK_SYSTEM_SHA,
+        "stock-system.img": EXPECTED_STOCK_SYSTEM_SHA,
         "product.img": EXPECTED_STOCK_PRODUCT_SHA,
         "system_ext.img": EXPECTED_STOCK_SYSTEM_EXT_SHA,
         "vendor.img": EXPECTED_STOCK_VENDOR_SHA,
@@ -162,7 +162,7 @@ def verify_replay(replay: Path) -> None:
             raise MaterializeError(
                 f"replay_input_sha_mismatch={name}:expected:{digest}:actual:{row['sha256']}"
             )
-        if name != "system.img" and row["match"] != "YES":
+        if name != "stock-system.img" and row["match"] != "YES":
             raise MaterializeError(f"replay_pinned_input_not_match={name}:{row['match']}")
 
     work = replay / "work" / "stock"
