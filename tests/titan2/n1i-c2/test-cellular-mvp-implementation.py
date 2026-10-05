@@ -164,6 +164,10 @@ def test_driver_authority() -> None:
     assert 'MTK_MMTEL_OVERLAY_PACKAGE="me.phh.treble.overlay.mtkims_telephony"' in text
     assert "CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" in text
     assert "N1I_C2_MMTEL_OVERLAY_APK=PASS" in text
+    assert "N1I_C2_STOCK_MAP=FAIL_A4_TARGET_SET" in text
+    assert "N1I_C2_OEM_IMS_PLATFORM_RESIGN=PASS" in text
+    assert "N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS" in text
+    assert "OEM_IMS_PLATFORM_RESIGNED=YES" in text
     assert "DEVICE_CONTACT_AUTHORIZED=NO" in text
     assert "FLASH_AUTHORIZED=NO" in text
 
