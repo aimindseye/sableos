@@ -1,0 +1,56 @@
+// Titan 2 N1I-C1 Android 16 OEM IMS compatibility island.
+// Proprietary payloads are staged from the pinned V01.00.14 stock reference
+// by the canonical N1I build and are never committed to Git.
+//
+// IMPORTANT: native stock .so imports are intentionally absent from the first
+// C1 candidate. N1I-B2 supersedes the N1I-A keyword heuristic for native
+// admission and marks native gaps as candidate/coverage evidence only.
+
+android_app_import {
+    name: "ImsService",
+    apk: "prebuilt/system_ext/priv-app/ImsService/ImsService.apk",
+    filename: "ImsService.apk",
+    certificate: "platform",
+    privileged: true,
+    system_ext_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+dex_import {
+    name: "SableN1IC1MediatekCommon",
+    jars: ["prebuilt/system_ext/framework/mediatek-common.jar"],
+    stem: "mediatek-common",
+    system_ext_specific: true,
+}
+
+dex_import {
+    name: "SableN1IC1MediatekImsBase",
+    jars: ["prebuilt/system_ext/framework/mediatek-ims-base.jar"],
+    stem: "mediatek-ims-base",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "SableN1IC1SystemExtPermissionsMediatek",
+    src: "prebuilt/system_ext/etc/permissions/system-ext-permissions-mediatek.xml",
+    filename: "system-ext-permissions-mediatek.xml",
+    sub_dir: "permissions",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "SableN1IC1ImsSysconfig",
+    src: "prebuilt/system_ext/etc/sysconfig/com.mediatek.ims.config.xml",
+    filename: "com.mediatek.ims.config.xml",
+    sub_dir: "sysconfig",
+    system_ext_specific: true,
+}
+
+prebuilt_etc {
+    name: "SableN1IC1PrivappPermissionsMediatek",
+    src: "prebuilt/system/etc/permissions/privapp-permissions-mediatek.xml",
+    filename: "privapp-permissions-mediatek.xml",
+    sub_dir: "permissions",
+}
