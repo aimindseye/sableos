@@ -6,8 +6,8 @@ import re
 from dataclasses import dataclass, field
 
 from n1i_c1_physical_evidence import (
-    IMAGE_SOURCE_COMMIT, SCENARIOS, SURFACES, QualificationError, cellular_validated,
-    ever_data_connected, expected_sim_state, ims_bearer_count, ims_provider_present,
+    IMAGE_SOURCE_COMMIT, SCENARIOS, SURFACES, QualificationError, captured_text,
+    cellular_validated, ever_data_connected, expected_sim_state, ims_bearer_count, ims_provider_present,
     ims_registered_end_state, ims_registered_for_phone, load_env, operator_pass,
     parse_getprop, scenario_prefix, slot_provider_present, stable_data_connected,
     stable_registration, text, timeline_rows, verdict,
@@ -68,12 +68,12 @@ def evaluate_scenario(root: pathlib.Path, scenario: str, op: dict[str, str]) -> 
     _validate_collector(root, scenario)
     rows = timeline_rows(root)
     end = root / "raw" / "end"
-    props = parse_getprop(text(end / "getprop.txt"))
-    registry = text(end / "telephony_registry.txt")
-    connectivity = text(end / "connectivity.txt")
-    package_dump = text(end / "mediatek_ims_package.txt")
-    path_dump = text(end / "mediatek_ims_path.txt")
-    preferred_apn = text(end / "preferred_apn.txt")
+    props = parse_getprop(captured_text(end / "getprop.txt"))
+    registry = captured_text(end / "telephony_registry.txt")
+    connectivity = captured_text(end / "connectivity.txt")
+    package_dump = captured_text(end / "mediatek_ims_package.txt")
+    path_dump = captured_text(end / "mediatek_ims_path.txt")
+    preferred_apn = captured_text(end / "preferred_apn.txt")
     be2_log = text(root / "be2" / "redacted" / "logcat_stream.log")
     sim_state_ok = props.get("gsm.sim.state") == expected_sim_state(scenario)
     package_provider = ims_provider_present(package_dump, path_dump)
