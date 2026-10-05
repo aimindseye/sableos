@@ -175,12 +175,20 @@ After the build it verifies:
 - integration script/init/config/marker are installed;
 - built `phh-on-boot.sh` contains the Titan marker guard while retaining the
   non-Titan disable behavior;
+- the Telephony MTK IMS RRO is actually present in the product output as
+  `treble-overlay-telephony-mtk-ims.apk` with package
+  `me.phh.treble.overlay.mtkims_telephony`;
+- a 41-row implementation receipt records the realization of every frozen
+  mutation ID, including M004/M005/M006/M040/M041 rather than leaving those
+  rows at proposal status;
 - system image remains within the reviewed logical-group ceiling
   `3263168512` bytes.
 
 The driver reverses the two source patches, restores `rom.mk`, removes the
 temporary `vendor/sable/titan2` staging tree and verifies the original source
-blobs before sealing the artifact.
+blobs before sealing the artifact. The implementation receipt and frozen
+mutation manifest are both copied into the final artifact so post-build and
+flash qualification can bind to the same 41-entry authority.
 
 ## Execution boundary
 
