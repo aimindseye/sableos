@@ -18,7 +18,7 @@ import struct
 import sys
 from pathlib import Path
 
-TOOL_VERSION = "1.0.0"
+TOOL_VERSION = "1.1.0"
 
 EXPECTED_OEM_IMS_SHA = "30db90de9e21d153f93deff2cf3d6c1a73f9c3fd7090533055267ee64cc66539"
 EXPECTED_COMMON_JAR_SHA = "511b674b91dd29e84e06c8e46c718e35650745c0359edd665d5fb3e88e6ed549"
@@ -30,6 +30,44 @@ EXPECTED_STOCK_PRODUCT_SHA = "de1fdecab38b3c5ad7f30beea13f1afb46fa02d98b6cc78d57
 EXPECTED_STOCK_SYSTEM_EXT_SHA = "1d9d25921def9b7e4e767c00a1f34d19ef5e7320138e3522545f2a2f2047d170"
 EXPECTED_STOCK_VENDOR_SHA = "cfeacc74b4289e56921016fedf35a45a995121b874be3cd2f1561b8ed2d61ada"
 EXPECTED_C3A_SHA = "4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16"
+
+EXPECTED_TMETRICS_PATCH_BLOB = "ee353caded6dd07318991eb52d66687e06034c30"
+EXPECTED_IMS_CALL_TRACKER_BLOB = "5f97183b6f8c80859adf3f4922b3f9f56687bab5"
+EXPECTED_PHH_ON_BOOT_BLOB = "9f65610762fec239638bb269b8c72d6cabfc6d7e"
+
+EXPECTED_MUTATION_IDS = {f"M{i:03d}" for i in range(1, 42)}
+EXPECTED_NON_STOCK_MUTATIONS = {
+    "M004": {
+        "domain": "FRAMEWORK",
+        "action": "APPLY_PATCH",
+        "target_suffix": "/frameworks/opt/telephony/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java",
+        "sha256_or_blob": EXPECTED_TMETRICS_PATCH_BLOB,
+    },
+    "M005": {
+        "domain": "TELEPHONY",
+        "action": "SET_PRODUCT_PROPERTY_FALSE",
+        "target": "ro.telephony.block_binder_thread_on_incoming_calls",
+        "sha256_or_blob": EXPECTED_IMS_CALL_TRACKER_BLOB,
+    },
+    "M006": {
+        "domain": "PHH",
+        "action": "TITAN_GUARD_MTKMAL_IMS_DISABLE_BRANCH",
+        "target_suffix": "/device/phh/treble/phh-on-boot.sh",
+        "sha256_or_blob": EXPECTED_PHH_ON_BOOT_BLOB,
+    },
+    "M040": {
+        "domain": "INTEGRATION",
+        "action": "ADD_SABLE_TITAN_CELLULAR_INTEGRATION_PACKAGE",
+        "target": "vendor/sable/titan2/n1i-c2",
+        "sha256_or_blob": "-",
+    },
+    "M041": {
+        "domain": "HEALER",
+        "action": "SHIP_DISABLED_BY_DEFAULT",
+        "target": "Sable Titan cellular integration package",
+        "sha256_or_blob": "-",
+    },
+}
 
 EXPECTED_NATIVE_COUNT = 33
 EXPECTED_STOCK_FILE_COUNT = 36
@@ -199,18 +237,22 @@ def source_for_target(replay: Path, target: str) -> tuple[str, Path]:
         raise MaterializeError(f"target_partition_not_system_side={target}")
     root = partition_root(replay, partition).resolve()
     rel = Path(*p.parts[2:])
-    source = (root / rel).resolve()
+    candidate = root / rel
+    if candidate.is_symlink():
+        raise MaterializeError(f"stock_source_symlink={target}:path:{candidate}")
+    source = candidate.resolve()
     try:
         source.relative_to(root)
     except ValueError as exc:
         raise MaterializeError(f"target_source_escape={target}") from exc
-    if source.is_symlink() or not source.is_file():
-        raise MaterializeError(f"stock_source_missing_or_symlink={target}:resolved:{source}")
+    if not source.is_file():
+        raise MaterializeError(f"stock_source_missing={target}:resolved:{source}")
     return partition, source
 
 
 def elf64_aarch64(path: Path) -> tuple[str, int]:
-    data = path.read_bytes()[:20]
+    with path.open("rb") as fp:
+        data = fp.read(20)
     if len(data) < 20 or data[:4] != b"\x7fELF":
         raise MaterializeError(f"native_not_elf={path}")
     elf_class = data[4]
@@ -247,6 +289,40 @@ def validate_manifest(manifest: Path) -> tuple[list[dict[str, str]], list[dict[s
         raise MaterializeError(f"mutation_count={len(mutations)}")
     if len(natives) != EXPECTED_NATIVE_COUNT:
         raise MaterializeError(f"native_count={len(natives)}")
+
+    by_id = {row.get("id", ""): row for row in mutations}
+    if len(by_id) != len(mutations):
+        raise MaterializeError("duplicate_mutation_id")
+    if set(by_id) != EXPECTED_MUTATION_IDS:
+        missing = sorted(EXPECTED_MUTATION_IDS - set(by_id))
+        extra = sorted(set(by_id) - EXPECTED_MUTATION_IDS)
+        raise MaterializeError(
+            "mutation_id_set_drift="
+            f"missing:{','.join(missing) or 'NONE'};"
+            f"extra:{','.join(extra) or 'NONE'}"
+        )
+    for mid, expected_row in EXPECTED_NON_STOCK_MUTATIONS.items():
+        row = by_id[mid]
+        for field in ("domain", "action", "sha256_or_blob"):
+            if row.get(field) != expected_row[field]:
+                raise MaterializeError(
+                    f"mutation_semantic_drift={mid}:{field}:"
+                    f"expected:{expected_row[field]}:actual:{row.get(field, '')}"
+                )
+        if "target" in expected_row and row.get("target") != expected_row["target"]:
+            raise MaterializeError(
+                f"mutation_semantic_drift={mid}:target:"
+                f"expected:{expected_row['target']}:actual:{row.get('target', '')}"
+            )
+        suffix = expected_row.get("target_suffix")
+        if suffix is not None and not row.get("target", "").endswith(str(suffix)):
+            raise MaterializeError(
+                f"mutation_semantic_drift={mid}:target_suffix:"
+                f"expected:{suffix}:actual:{row.get('target', '')}"
+            )
+    if any(row.get("status") != "PROPOSED_NOT_AUTHORIZED" for row in mutations):
+        raise MaterializeError("mutation_input_status_not_proposed")
+
     return mutations, natives
 
 
@@ -255,8 +331,6 @@ def expected_stock_rows(
     natives: list[dict[str, str]],
 ) -> list[dict[str, str]]:
     by_id = {row["id"]: row for row in mutations}
-    if len(by_id) != len(mutations):
-        raise MaterializeError("duplicate_mutation_id")
 
     expected_core = {
         "M001": ("/system_ext/priv-app/ImsService/ImsService.apk", EXPECTED_OEM_IMS_SHA, "APK"),
