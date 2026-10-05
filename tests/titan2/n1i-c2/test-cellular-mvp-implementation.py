@@ -98,6 +98,10 @@ def test_integration_safety() -> None:
     assert "active_or_emergency_call" in text
     assert "COOLDOWN_SECONDS=300" in text
     assert "OBSERVE_READINESS" in text
+    assert "SABLE_TITAN2_VENDOR_UA_START_MODE" in text
+    assert "UA_OK=YES" in text
+    assert 'VENDOR_UA_START_MODE" != "disabled"' in text
+    assert '"$UA" = "running"' in text
 
     forbidden = (
         r"\bsetenforce\b",
@@ -148,6 +152,8 @@ def test_driver_authority() -> None:
     assert "FROZEN_STOCK_FILE_COUNT=36" in text
     assert "FROZEN_NATIVE_COUNT=33" in text
     assert "20261005T231205Z" in text
+    assert "SABLE_TITAN2_VENDOR_UA_START_MODE" in text
+    assert "N1I_C2_EVIDENCE_SEAL=PASS_EXCLUDES_BUILD_LOG" in text
     assert "adb57fa5bffb24e2fe24f4f0afc6b5550bb570f3" in text
     assert 'PHH_BASE_BLOB="9f65610762fec239638bb269b8c72d6cabfc6d7e"' in text
     assert 'INCOMING_TRACKER_BLOB="5f97183b6f8c80859adf3f4922b3f9f56687bab5"' in text
