@@ -67,8 +67,19 @@ do
   [[ "$FLASH_TEXT" == *"$marker"* ]] || fail "common_flash_marker=$marker"
 done
 
-flash_count="$(grep -Fxc '  "$FASTBOOT_BIN" -s "$SERIAL" flash system_a "$PRIMARY_PATH" </dev/null 2>&1 |' "$TITAN" || true)"
+flash_count="$(grep -Ec '^[[:space:]]*if "\$FASTBOOT_BIN" -s "\$SERIAL" flash system_a "\$PRIMARY_PATH"' "$TITAN" || true)"
 [[ "$flash_count" -eq 1 ]] || fail "system_a_flash_count=$flash_count"
+
+grep -Fq '> >(tee "$EVIDENCE_DIR/fastboot-flash-system-a.log") 2>&1' "$TITAN" ||
+  fail system_a_flash_logging_not_process_substitution
+grep -Fq 'local flash_rc' "$TITAN" ||
+  fail system_a_flash_rc_not_explicit
+if grep -Fq 'PIPESTATUS' "$TITAN"; then
+  fail titan_adapter_pipe_status_dependency
+fi
+if grep -Eq '^[[:space:]]*set [+-]e([[:space:]]|$)' "$TITAN"; then
+  fail titan_adapter_errexit_toggle
+fi
 
 reboot_count="$(grep -Fxc '  "$FASTBOOT_BIN" -s "$SERIAL" reboot </dev/null || return 1' "$TITAN" || true)"
 [[ "$reboot_count" -eq 1 ]] || fail "reboot_count=$reboot_count"

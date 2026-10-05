@@ -128,6 +128,8 @@ echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5a-readonly-device-state-contract
 bash "$ROOT/build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
+echo "SABLE_PIPELINE_STEP=build/gates/titan2-flash-regression-contract.py"
+python3 "$ROOT/build/gates/titan2-flash-regression-contract.py"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-execution-contract.sh"

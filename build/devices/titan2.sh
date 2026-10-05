@@ -32,6 +32,29 @@ TITAN2_VIRTUAL_AB=YES
 TITAN2_FLASH_EXECUTION_SUPPORTED=NO
 TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO
 
+# Transport identities are mode-specific on Titan 2. Android and fastbootd
+# identify as Titan_2; bootloader fastboot identifies as g71v78c2k_dfl_tee.
+TITAN2_ANDROID_ADB_PRODUCT=Titan_2
+TITAN2_BOOTLOADER_FASTBOOT_PRODUCT=g71v78c2k_dfl_tee
+TITAN2_FASTBOOTD_PRODUCT=Titan_2
+TITAN2_FLASH_MODE_HELPER="$ROOT/build/titan2/titan2-flash-mode.sh"
+
+if [[ -f "$TITAN2_FLASH_MODE_HELPER" ]]; then
+  # shellcheck source=/dev/null
+  source "$TITAN2_FLASH_MODE_HELPER"
+fi
+
+titan2_flash_regression_preflight() {
+  python3 "$ROOT/build/gates/titan2-flash-regression-contract.py"
+  local rc=$?
+  if [[ "$rc" -ne 0 ]]; then
+    echo "TITAN2_FLASH_REGRESSION_PREFLIGHT=FAIL rc=$rc"
+    return "$rc"
+  fi
+  echo "TITAN2_FLASH_REGRESSION_PREFLIGHT=PASS"
+  return 0
+}
+
 # N1D C3B E5B standardized execution qualification.
 # Static Titan flash defaults remain fail-closed. sable_device_flash_policy()
 # may open only this exact sealed N1D scope after an explicit scope token.
@@ -78,6 +101,11 @@ sable_device_flash_policy() {
   local release="$1"
   local build_source="$2"
   local scope_token="$3"
+
+  titan2_flash_regression_preflight || {
+    echo "TITAN2_STANDARD_FLASH_POLICY=BLOCKED_FLASH_REGRESSION"
+    return 78
+  }
 
   [[ "${release^^}" == N1D ]] || {
     echo "TITAN2_STANDARD_FLASH_POLICY=BLOCKED_RELEASE release=$release"
@@ -513,6 +541,11 @@ sable_device_flash_plan() {
   local registry_root="$3"
   local evidence_dir="$4"
 
+  titan2_flash_regression_preflight || {
+    echo "TITAN2_FLASH_PLAN=BLOCKED_FLASH_REGRESSION"
+    return 78
+  }
+
   local artifact_kind primary path sha logical_bytes restore_report
   local bootloader_preflight fastbootd_preflight snapshot_status
   local system_current_bytes lp_action avb_action userdata_policy
@@ -819,7 +852,37 @@ PY
 }
 sable_device_flash_preflight() {
   [[ "$SABLE_DEVICE_FLASH_ENTRY_MODE" == fastbootd ]] || return 1
+  [[ -f "$TITAN2_FLASH_MODE_HELPER" ]] || {
+    echo "TITAN2_N1D_MODE_GATE=FAIL_HELPER_MISSING path=$TITAN2_FLASH_MODE_HELPER"
+    return 1
+  }
+  declare -F titan2_ensure_fastbootd_mode >/dev/null 2>&1 || {
+    echo "TITAN2_N1D_MODE_GATE=FAIL_HELPER_NOT_LOADED"
+    return 1
+  }
+
+  titan2_ensure_fastbootd_mode \
+    "$ADB_BIN" \
+    "$FASTBOOT_BIN" \
+    "$SERIAL" \
+    "$EXPECTED_ADB_BINDING_SHA256" \
+    "$EXPECTED_FASTBOOT_BINDING_SHA256" \
+    "$TITAN2_ANDROID_ADB_PRODUCT" \
+    "$TITAN2_BOOTLOADER_FASTBOOT_PRODUCT" \
+    "$TITAN2_N1D_ACTIVE_EXPECTED_FASTBOOT_PRODUCT" \
+    "$EVIDENCE_DIR" || {
+      local mode_rc=$?
+      echo "TITAN2_N1D_MODE_GATE=FAIL rc=$mode_rc mode=${TITAN2_MODE_DETECTED:-UNKNOWN}"
+      return "$mode_rc"
+    }
+
+  SERIAL="$TITAN2_MODE_FASTBOOT_SERIAL"
+  [[ -n "$SERIAL" ]] || {
+    echo "TITAN2_N1D_MODE_GATE=FAIL_FASTBOOT_SERIAL_EMPTY"
+    return 1
+  }
   sable_require_fastboot_serial_exact_once "$FASTBOOT_BIN" "$SERIAL" || return 1
+  echo "TITAN2_N1D_MODE_GATE=PASS final=FASTBOOTD"
 
   local live_fastboot_hash
   live_fastboot_hash="$(printf '%s' "$SERIAL" | sha256sum | awk '{print $1}')"
@@ -830,10 +893,12 @@ sable_device_flash_preflight() {
   echo "TITAN2_N1D_FASTBOOT_SERIAL_BINDING=PASS"
 
   LIVE_GETVAR_ALL="$EVIDENCE_DIR/fastboot-getvar-all-prewrite.txt"
-  set +e
-  "$FASTBOOT_BIN" -s "$SERIAL" getvar all </dev/null > "$LIVE_GETVAR_ALL" 2>&1
-  local getvar_rc=$?
-  set -e
+  local getvar_rc
+  if "$FASTBOOT_BIN" -s "$SERIAL" getvar all </dev/null > "$LIVE_GETVAR_ALL" 2>&1; then
+    getvar_rc=0
+  else
+    getvar_rc=$?
+  fi
   [[ "$getvar_rc" -eq 0 ]] || {
     echo "TITAN2_N1D_GETVAR_ALL=FAIL rc=$getvar_rc"
     return 1
@@ -982,11 +1047,12 @@ sable_device_flash_execute() {
   echo "FLASH_FACTORY_RESET=NO"
 
   FLASH_STARTED=YES
-  set +e
-  "$FASTBOOT_BIN" -s "$SERIAL" flash system_a "$PRIMARY_PATH" </dev/null 2>&1 |
-    tee "$EVIDENCE_DIR/fastboot-flash-system-a.log"
-  local flash_rc=${PIPESTATUS[0]}
-  set -e
+  local flash_rc
+  if "$FASTBOOT_BIN" -s "$SERIAL" flash system_a "$PRIMARY_PATH" </dev/null       > >(tee "$EVIDENCE_DIR/fastboot-flash-system-a.log") 2>&1; then
+    flash_rc=0
+  else
+    flash_rc=$?
+  fi
   echo "FASTBOOT_FLASH_SYSTEM_A_RC=$flash_rc"
   [[ "$flash_rc" -eq 0 ]] || {
     echo "TITAN2_N1D_FLASH=FAIL_NO_AUTOMATIC_RETRY"
@@ -1027,16 +1093,21 @@ sable_device_flash_postboot() {
   local start now
   local adb_serial="" adb_state="" boot_completed="" bootmode=""
   local fingerprint="" slot_suffix="" verified_boot=""
-  local candidate candidate_hash
+  local candidate candidate_state candidate_hash
   local fastboot_seen_absent=NO fastboot_present=NO
+  local fastboot_devices="" adb_devices=""
   start="$(date +%s)"
 
   while :; do
     fastboot_present=NO
-    if "$FASTBOOT_BIN" devices </dev/null 2>/dev/null |
-       awk 'NF>=1 {print $1}' |
-       grep -Fxq -- "$SERIAL"; then
-      fastboot_present=YES
+    if fastboot_devices="$(titan2_mode_capture 3 "$FASTBOOT_BIN" devices)"; then
+      while read -r candidate candidate_state; do
+        [[ -n "$candidate" ]] || continue
+        if [[ "$candidate" == "$SERIAL" ]]; then
+          fastboot_present=YES
+          break
+        fi
+      done <<<"$fastboot_devices"
     fi
 
     if [[ "$fastboot_present" == NO ]]; then
@@ -1048,22 +1119,24 @@ sable_device_flash_postboot() {
     fi
 
     adb_serial=""
-    while IFS= read -r candidate; do
-      [[ -n "$candidate" ]] || continue
-      candidate_hash="$(printf '%s' "$candidate" | sha256sum | awk '{print $1}')"
-      if [[ "$candidate_hash" == "$EXPECTED_ADB_BINDING_SHA256" ]]; then
-        adb_serial="$candidate"
-        break
-      fi
-    done < <("$ADB_BIN" devices </dev/null 2>/dev/null | awk 'NR>1 && NF>=1 {print $1}')
+    if adb_devices="$(titan2_mode_capture 3 "$ADB_BIN" devices)"; then
+      while read -r candidate candidate_state; do
+        [[ -n "$candidate" && "$candidate_state" == device ]] || continue
+        candidate_hash="$(printf '%s' "$candidate" | sha256sum | awk '{print $1}')"
+        if [[ "$candidate_hash" == "$EXPECTED_ADB_BINDING_SHA256" ]]; then
+          adb_serial="$candidate"
+          break
+        fi
+      done <<<"$adb_devices"
+    fi
 
     if [[ -n "$adb_serial" ]]; then
-      adb_state="$("$ADB_BIN" -s "$adb_serial" get-state </dev/null 2>/dev/null || true)"
-      boot_completed="$("$ADB_BIN" -s "$adb_serial" shell getprop sys.boot_completed </dev/null 2>/dev/null | tr -d '\r')"
-      bootmode="$("$ADB_BIN" -s "$adb_serial" shell getprop ro.bootmode </dev/null 2>/dev/null | tr -d '\r')"
-      fingerprint="$("$ADB_BIN" -s "$adb_serial" shell getprop ro.build.fingerprint </dev/null 2>/dev/null | tr -d '\r')"
-      slot_suffix="$("$ADB_BIN" -s "$adb_serial" shell getprop ro.boot.slot_suffix </dev/null 2>/dev/null | tr -d '\r')"
-      verified_boot="$("$ADB_BIN" -s "$adb_serial" shell getprop ro.boot.verifiedbootstate </dev/null 2>/dev/null | tr -d '\r')"
+      adb_state="$(titan2_mode_capture 3 "$ADB_BIN" -s "$adb_serial" get-state || true)"
+      boot_completed="$(titan2_mode_adb_getprop "$ADB_BIN" "$adb_serial" sys.boot_completed || true)"
+      bootmode="$(titan2_mode_adb_getprop "$ADB_BIN" "$adb_serial" ro.bootmode || true)"
+      fingerprint="$(titan2_mode_adb_getprop "$ADB_BIN" "$adb_serial" ro.build.fingerprint || true)"
+      slot_suffix="$(titan2_mode_adb_getprop "$ADB_BIN" "$adb_serial" ro.boot.slot_suffix || true)"
+      verified_boot="$(titan2_mode_adb_getprop "$ADB_BIN" "$adb_serial" ro.boot.verifiedbootstate || true)"
 
       {
         echo "ADB_STATE=$adb_state"

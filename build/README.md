@@ -499,3 +499,21 @@ The first target is the generated
 `treble_arm64_bvN-bp4a-userdebug` engineering `systemimage`.
 Final Sable product admission is E2. Device contact, flash, signing and release
 remain blocked.
+
+## Titan 2 flash-regression preflight
+
+Titan 2 does not use generic Pixel/Panther deployment assumptions. Before a
+Titan flash plan is generated or a scoped Titan flash policy is opened, the
+adapter runs:
+
+```bash
+python3 build/gates/titan2-flash-regression-contract.py
+```
+
+The contract protects the proven userspace-fastbootd / explicit-serial /
+active-logical-system path, matched restore requirements, artifact hash and
+logical-size binding, no implicit userdata reset, no automatic retry, and
+post-write stop rules. See
+`docs/titan2/TITAN2_FLASH_REGRESSION_POLICY.md`.
+
+This regression gate does not itself authorize device contact or flashing.
