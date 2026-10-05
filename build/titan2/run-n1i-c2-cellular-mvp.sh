@@ -704,9 +704,9 @@ cat >> "$ROM_MK" <<'EOF'
 $(call inherit-product, vendor/sable/titan2/n1i-c2/sable-titan2-n1i-c2.mk)
 EOF
 
-git -C "$ANDROID_ROOT/frameworks/opt/telephony" diff --check ||
+git -C "$ANDROID_ROOT/frameworks/opt/telephony" diff --check -- "$TMETRICS_REL" ||
     { fail telephony_diff_check; exit $?; }
-git -C "$ANDROID_ROOT/device/phh/treble" diff --check ||
+git -C "$ANDROID_ROOT/device/phh/treble" diff --check -- "$PHH_REL" ||
     { fail phh_diff_check; exit $?; }
 
 PHH_POST_BLOB="$(git -C "$ANDROID_ROOT/device/phh/treble" hash-object "$PHH_REL")"
