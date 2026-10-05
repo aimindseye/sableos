@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: SableOS Engineering <engineering@sableos.org>
+Date: Mon, 5 Oct 2026 16:10:00 -0400
+Subject: [PATCH] telephony: add Titan 2 legacy writeRilAnswer overload
+
+N1I-C1 V6F proved an exact ABI gap between the Titan 2 stock IMS binary and
+the Android 16 TrebleDroid TelephonyMetrics compatibility stub:
+
+  stock TelephonyMetrics.writeRilAnswer: (II)V
+  C3A/C1 TelephonyMetrics.writeRilAnswer: (IIII)V
+  ImsRILAdapter call site:               (II)V
+
+The Android 16 TelephonyMetrics class in this source graph is already a no-op
+compatibility stub for MediaTek IMS. Add only the legacy two-argument overload
+required by the observed Titan 2 caller. Keep the existing four-argument
+overload unchanged.
+
+This imports no stock framework implementation and changes no metrics
+semantics: both overloads are no-op compatibility surfaces.
+---
+ .../internal/telephony/metrics/TelephonyMetrics.java | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java b/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java
+index 27638e5be9c0..9d5108e0ddb8 100644
+--- a/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java
++++ b/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java
+@@ -60,6 +60,14 @@ public class TelephonyMetrics {
+     }
+ 
+     /**
++     * No-op legacy overload. Titan 2 stock IMS invokes the pre-Android-16
++     * TelephonyMetrics ABI with phoneId and rilSerial only.
++     */
++    public void writeRilAnswer(int phoneId, int rilSerial) {
++        // No-op stub for MediaTek IMS compatibility
++    }
++
++    /**
+      * No-op stub. Called by ImsRILAdapter when answering a call.
+      */
+     public void writeRilAnswer(int phoneId, int rilSerial, int rilError, int rilRequest) {
+-- 
+2.52.0
