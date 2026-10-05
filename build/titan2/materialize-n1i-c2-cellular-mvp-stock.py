@@ -24,6 +24,7 @@ EXPECTED_OEM_IMS_SHA = "30db90de9e21d153f93deff2cf3d6c1a73f9c3fd7090533055267ee6
 EXPECTED_COMMON_JAR_SHA = "511b674b91dd29e84e06c8e46c718e35650745c0359edd665d5fb3e88e6ed549"
 EXPECTED_IMS_BASE_JAR_SHA = "bb5769a098b59f9d299495981e87500da32e0667cf6a22931de2894d324a82ab"
 EXPECTED_A4_SHA = "6dad2e573b912d6a20fd5b16cb667dc15b9d43cb1f831fa2751830282e437fd4"
+EXPECTED_A4_REFERENCE_BLOB = "4eaa02f10b6732c07ffe2fa2e244824297da1cb3"
 
 EXPECTED_STOCK_SYSTEM_SHA = "b2074e20afb6b1dccb87f804ec93b2b8cc64ac6f2366b8d3e6d52522f7f431bd"
 EXPECTED_STOCK_PRODUCT_SHA = "de1fdecab38b3c5ad7f30beea13f1afb46fa02d98b6cc78d57749b34513aad37"
@@ -103,6 +104,35 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: fp.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def git_blob_file(path: Path) -> str:
+    data = path.read_bytes()
+    h = hashlib.sha1()
+    h.update(f"blob {len(data)}\0".encode())
+    h.update(data)
+    return h.hexdigest()
+
+
+def canonical_a4_targets(repo_root: Path) -> set[str]:
+    path = repo_root / "product/titan2/n1i-c1/a4-native-superset.txt"
+    if not path.is_file():
+        raise MaterializeError(f"a4_reference_missing={path}")
+    blob = git_blob_file(path)
+    if blob != EXPECTED_A4_REFERENCE_BLOB:
+        raise MaterializeError(
+            f"a4_reference_blob_drift=expected:{EXPECTED_A4_REFERENCE_BLOB}:actual:{blob}"
+        )
+    targets = {
+        line.strip()
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    }
+    if len(targets) != EXPECTED_NATIVE_COUNT:
+        raise MaterializeError(
+            f"a4_reference_target_count={len(targets)} expected={EXPECTED_NATIVE_COUNT}"
+        )
+    return targets
 
 
 def parse_env(path: Path) -> dict[str, str]:
@@ -282,7 +312,10 @@ def elf64_aarch64(path: Path) -> tuple[str, int]:
     return "ELF64", machine
 
 
-def validate_manifest(manifest: Path) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+def validate_manifest(
+    manifest: Path,
+    repo_root: Path,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
     verify_sha256s(manifest)
     summary = parse_env(manifest / "CELLULAR_MVP_SUMMARY.env")
     expected = {
@@ -306,6 +339,15 @@ def validate_manifest(manifest: Path) -> tuple[list[dict[str, str]], list[dict[s
         raise MaterializeError(f"mutation_count={len(mutations)}")
     if len(natives) != EXPECTED_NATIVE_COUNT:
         raise MaterializeError(f"native_count={len(natives)}")
+
+    native_targets = {row.get("target", "") for row in natives}
+    expected_targets = canonical_a4_targets(repo_root)
+    if native_targets != expected_targets:
+        raise MaterializeError(
+            "native_target_authority_drift="
+            f"missing:{','.join(sorted(expected_targets - native_targets)) or 'NONE'};"
+            f"extra:{','.join(sorted(native_targets - expected_targets)) or 'NONE'}"
+        )
 
     by_id = {row.get("id", ""): row for row in mutations}
     if len(by_id) != len(mutations):
@@ -458,7 +500,7 @@ def main() -> int:
     if out.exists():
         raise MaterializeError(f"out_already_exists={out}")
 
-    mutations, natives = validate_manifest(manifest)
+    mutations, natives = validate_manifest(manifest, repo_root)
     verify_replay(replay)
     planned = expected_stock_rows(mutations, natives)
 
