@@ -13,7 +13,7 @@ one reviewable set covering:
 
 - the already-admitted V01.00.14 OEM `com.mediatek.ims` provider;
 - the two qualified MediaTek boot JARs;
-- the exact N1I-B2 system-side native stock-only dependency closure;
+- the exact N1I-B2 system-side native stock-only dependency closure when retained, otherwise the accepted N1I-A A4 33-path system-side compatibility superset;
 - the V6F-proven `TelephonyMetrics.writeRilAnswer(II)V` compatibility patch;
 - the already-present Restless incoming-call compatibility path;
 - the PHH `mtkmal` branch that can disable MTK IMS/ePDG;
@@ -55,26 +55,32 @@ operator must pass the two exact retained evidence directories explicitly.
 
 ## Native admission rule
 
-The old N1I-A 33-file list remains reference-only.
+The resolver prefers retained N1I-B2 stock and C3A evidence. In that mode a
+native is proposed only when stock resolves it explicitly, C3A does not, the
+namespace evidence is explicit and the stock SHA-256 is exact.
 
-The resolver consumes `NATIVE_SUMMARY.env` and `NATIVE_CLOSURE.tsv` from the
-retained N1I-B2 stock and C3A runs. A native is proposed only when all of these
-hold:
+If **neither** B2 side exists for the accepted OEM IMS APK, the resolver does
+not fail the MVP solely because an analysis run was never retained. It falls
+back to the already-accepted N1I-A A4 compatibility superset and requires exact
+agreement between:
 
 ```text
-stock status = FOUND
-stock partition = system | system_ext | product | system_dlkm
-stock namespace visibility = EXPLICIT
-C3A status = NOT_FOUND (or not analysed)
-stock SHA-256 = valid exact hash
+N1I_A_NATIVE_DEPENDENCY_CLOSURE=PASS
+MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE
+product/titan2/n1i-c1/a4-native-superset.txt
+a4-native-closure.tsv
 ```
 
-Vendor/ODM libraries are preserved from vendor and are not duplicated into the
-system image.
+The fallback is exactly 33 system-side paths, all recorded absent from C3A.
+It is deliberately a compatibility superset for the MVP, not a claim that all
+33 files are independently necessary.
 
-A C3A `FILE_PRESENT_NAMESPACE_UNPROVEN` or wrong-ABI result is a blocker, not
-automatic stock-import authority. This prevents "adding more libraries" from
-masking a linker-namespace problem.
+A partial or ambiguous B2 state still fails closed; fallback is allowed only
+when both B2 sides are absent. Vendor/ODM libraries continue to come from the
+preserved vendor partitions and are not copied.
+
+Per-library stock SHA-256 values for the A4 fallback are frozen by the
+implementation materializer before build authorization.
 
 The result is written to:
 
