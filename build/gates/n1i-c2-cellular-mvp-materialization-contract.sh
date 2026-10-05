@@ -80,15 +80,17 @@ if grep -Eq -- '(^|[[:space:]])(m|mm|mmm|make|ninja|soong_ui\.bash)([[:space:]]|
 fi
 echo "N1I_C2_MATERIALIZATION_CONTRACT_NO_BUILD_COMMAND=PASS"
 
-python3 "$TEST"
+if TEST_OUTPUT="$(python3 "$TEST")"; then
+    printf '%s\n' "$TEST_OUTPUT"
+else
+    fail materialization_regression
+fi
 echo "N1I_C2_MATERIALIZATION_CONTRACT_REGRESSION=PASS"
 
-grep -Fq 'N1I_C2_MATERIALIZATION_TEST_SEMANTIC_DRIFT_FAIL_CLOSED=PASS' <(
-    python3 "$TEST"
-) || fail semantic_drift_regression_marker
-grep -Fq 'N1I_C2_MATERIALIZATION_TEST_SYMLINK_FAIL_CLOSED=PASS' <(
-    python3 "$TEST"
-) || fail symlink_regression_marker
+grep -Fq 'N1I_C2_MATERIALIZATION_TEST_SEMANTIC_DRIFT_FAIL_CLOSED=PASS' <<<"$TEST_OUTPUT" ||
+    fail semantic_drift_regression_marker
+grep -Fq 'N1I_C2_MATERIALIZATION_TEST_SYMLINK_FAIL_CLOSED=PASS' <<<"$TEST_OUTPUT" ||
+    fail symlink_regression_marker
 echo "N1I_C2_MATERIALIZATION_CONTRACT_FAIL_CLOSED_REGRESSIONS=PASS"
 
 echo "N1I_C2_CELLULAR_MVP_MATERIALIZATION_CONTRACT=PASS"
