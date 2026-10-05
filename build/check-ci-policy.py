@@ -23,6 +23,8 @@ if workflow_files:
 
 required = (
     ROOT / "build" / "local-ci" / "run.sh",
+    ROOT / "build" / "local-ci" / "summarize.py",
+    ROOT / "build" / "local-ci" / "test-final-summary-lifecycle.sh",
     ROOT / "build" / "local-ci" / "README.md",
     ROOT / "build" / "BUILD_REGRESSIONS.tsv",
     ROOT / "build" / "gates" / "build-regression-contract.py",
@@ -229,6 +231,18 @@ if local_ci.is_file():
         'SABLE_GITLEAKS_HISTORY_SCOPE=SOURCE_COMMIT commit=$SOURCE_COMMIT',
         '--log-opts="$SOURCE_COMMIT"',
         "SELF_HOSTED_ACTIONS_RUNNER=DISABLED",
+        "build/local-ci/summarize.py",
+        "build/local-ci/test-final-summary-lifecycle.sh",
+        "build/local-ci/*.sh",
+        "LOCAL_CI_SUMMARY.txt",
+        'mkfifo "$LOG_FIFO"',
+        "TEE_PID=$!",
+        'exec 1>&3 2>&4',
+        'wait "$TEE_PID" || tee_rc=$?',
+        "SABLE_LOCAL_CI_LOG_CAPTURE=FAIL",
+        '--exit-code "$final_rc"',
+        '[[ "$final_rc" -ne 0 ]] || final_rc=1',
+        "trap 'emit_final_summary \"$?\"' EXIT",
         "build/check-ci-policy.py",
         "build/gates/build-regression-contract.py",
         "build/check-runner-policy.py",
@@ -260,7 +274,6 @@ if local_ci.is_file():
         "python3 -m venv",
         "pip install",
     )
-
     if '--log-opts="--all"' in text:
         failures.append(
             "local CI gitleaks history must be source-commit scoped; "
@@ -276,6 +289,17 @@ if local_ci.is_file():
             failures.append(
                 f"local CI must not install host tools; forbidden token present: {token}"
             )
+
+    trap_pos = text.find('trap \'emit_final_summary "$?"\' EXIT')
+    dirty_pos = text.find('SOURCE_DIRTY=')
+    if trap_pos < 0 or dirty_pos < 0 or trap_pos > dirty_pos:
+        failures.append(
+            "local CI final-summary trap must be installed before dirty-source failure"
+        )
+    if 'exec > >(tee "$EVIDENCE_DIR/local-ci.log") 2>&1' in text:
+        failures.append(
+            "local CI final-summary must not parse a process-substitution tee that may still be draining"
+        )
 
 titan2_adapter = ROOT / "build" / "devices" / "titan2.sh"
 if titan2_adapter.is_file():
@@ -301,6 +325,40 @@ if toolchain.is_file():
         failures.append("Rust toolchain channel is not an exact x.y.z release")
     if 'targets = ["aarch64-linux-android"]' not in t:
         failures.append("Rust Android target missing from rust-toolchain.toml")
+
+summary_tool = ROOT / "build" / "local-ci" / "summarize.py"
+if summary_tool.is_file():
+    proc = subprocess.run(
+        [sys.executable, str(summary_tool), "--self-test"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.stdout:
+        print(proc.stdout, end="")
+    if proc.returncode != 0:
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr, end="")
+        failures.append("local CI final-summary self-test failed")
+
+lifecycle_test = ROOT / "build" / "local-ci" / "test-final-summary-lifecycle.sh"
+if lifecycle_test.is_file():
+    proc = subprocess.run(
+        ["bash", str(lifecycle_test)],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if proc.stdout:
+        print(proc.stdout, end="")
+    if proc.returncode != 0:
+        if proc.stderr:
+            print(proc.stderr, file=sys.stderr, end="")
+        failures.append("local CI final-summary lifecycle self-test failed")
 
 runner = ROOT / "build" / "check-runner-policy.py"
 if runner.is_file():

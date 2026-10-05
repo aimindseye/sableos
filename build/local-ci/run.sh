@@ -19,12 +19,6 @@ case "$PROFILE" in
 esac
 
 SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
-SOURCE_DIRTY="$(git -C "$ROOT" status --porcelain=v1 --untracked-files=normal)"
-if [[ -n "$SOURCE_DIRTY" ]]; then
-  echo "SABLE_LOCAL_CI=FAIL_DIRTY_SOURCE"
-  printf '%s\n' "$SOURCE_DIRTY"
-  exit 2
-fi
 
 EVIDENCE_ROOT="${SABLE_LOCAL_CI_EVIDENCE_ROOT:-/srv/data/sable-build/sableos/local-ci-evidence}"
 CACHE_ROOT="${SABLE_LOCAL_CI_CACHE_ROOT:-/srv/data/sable-build/sableos/local-ci-cache}"
@@ -33,7 +27,61 @@ RUN_ID="${SABLE_LOCAL_CI_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)-${SOURCE_COMMIT:0:12
 EVIDENCE_DIR="$EVIDENCE_ROOT/$RUN_ID"
 mkdir -p "$EVIDENCE_DIR"
 
-exec > >(tee "$EVIDENCE_DIR/local-ci.log") 2>&1
+LOG_FIFO="$EVIDENCE_DIR/.local-ci.log.fifo"
+rm -f "$LOG_FIFO"
+mkfifo "$LOG_FIFO"
+exec 3>&1 4>&2
+tee "$EVIDENCE_DIR/local-ci.log" < "$LOG_FIFO" >&3 &
+TEE_PID=$!
+exec > "$LOG_FIFO" 2>&1
+
+emit_final_summary() {
+  local rc="${1:-1}"
+  local summary="$EVIDENCE_DIR/LOCAL_CI_SUMMARY.txt"
+  local tee_rc=0
+  local final_rc="$rc"
+  trap - EXIT
+
+  # Stop writing through the FIFO before parsing the log, then wait until tee has
+  # drained every byte. This makes local-ci.log a complete, stable input.
+  exec 1>&3 2>&4
+  wait "$TEE_PID" || tee_rc=$?
+  rm -f "$LOG_FIFO"
+
+  if [[ "$tee_rc" -ne 0 ]]; then
+    echo "SABLE_LOCAL_CI_LOG_CAPTURE=FAIL rc=$tee_rc"
+    printf 'SABLE_LOCAL_CI_LOG_CAPTURE=FAIL rc=%s\n' "$tee_rc" >> "$EVIDENCE_DIR/local-ci.log" || true
+    [[ "$final_rc" -ne 0 ]] || final_rc=1
+  fi
+
+  if python3 "$ROOT/build/local-ci/summarize.py" \
+      --log "$EVIDENCE_DIR/local-ci.log" \
+      --out "$summary" \
+      --profile "$PROFILE" \
+      --device "$SABLEOS_DEVICE" \
+      --release "$SABLEOS_RELEASE_VERSION" \
+      --source-commit "$SOURCE_COMMIT" \
+      --evidence-dir "$EVIDENCE_DIR" \
+      --exit-code "$final_rc"
+  then
+    :
+  else
+    echo "SABLE_LOCAL_CI_SUMMARY=FAIL_GENERATION"
+    echo "EVIDENCE_DIR=$EVIDENCE_DIR"
+    [[ "$final_rc" -ne 0 ]] || final_rc=1
+  fi
+
+  exit "$final_rc"
+}
+
+trap 'emit_final_summary "$?"' EXIT
+
+SOURCE_DIRTY="$(git -C "$ROOT" status --porcelain=v1 --untracked-files=normal)"
+if [[ -n "$SOURCE_DIRTY" ]]; then
+  echo "SABLE_LOCAL_CI=FAIL_DIRTY_SOURCE"
+  printf '%s\n' "$SOURCE_DIRTY"
+  exit 2
+fi
 
 sable_checkpoint_info "Local CI profile=$PROFILE source=$SOURCE_COMMIT"
 echo "===== SABLE LOCAL CI ====="
@@ -131,6 +179,7 @@ run_static() {
       'apps/r8/*.sh' \
       'apps/r8/**/*.sh' \
       'build/*.sh' \
+      'build/local-ci/*.sh' \
       'build/host/*.sh' \
       'build/macos/*.sh' \
       'build/panther/*.sh' \
@@ -150,6 +199,7 @@ run_static() {
       'apps/r8/*.py' \
       'apps/r8/**/*.py' \
       'build/*.py' \
+      'build/local-ci/*.py' \
       'build/deploy/*.py' \
       'build/gates/*.py' \
       'patches/android-17-grapheneos-2026081300/*.py' \
