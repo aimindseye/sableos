@@ -1,0 +1,6 @@
+# Exact radio-domain accesses present in V01.00.14 A7 evidence.
+set_prop(radio, system_mtk_imsconfig_prop)
+set_prop(radio, system_mtk_wfc_entitlement_prop)
+get_prop(radio, system_mtk_dbg_ims_prop)
+set_prop(radio, system_mtk_clientapi_support_prop)
+get_prop(radio, system_mtk_persist_ims_data_prop)

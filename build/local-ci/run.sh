@@ -93,14 +93,15 @@ stage() {
   echo
   echo "===== $name ====="
   if "$@"; then
-    if ! stage_failure_scan "$name" "$stage_start_line"; then
+    if stage_failure_scan "$name" "$stage_start_line"; then
+      echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
+      sable_checkpoint_pass "CI stage $name"
+    else
       local scan_rc=$?
       echo "SABLE_LOCAL_CI_STAGE_$name=FAIL rc=$scan_rc"
       sable_checkpoint_fail "CI stage $name"
       return "$scan_rc"
     fi
-    echo "SABLE_LOCAL_CI_STAGE_$name=PASS"
-    sable_checkpoint_pass "CI stage $name"
   else
     local rc=$?
     echo "SABLE_LOCAL_CI_STAGE_$name=FAIL rc=$rc"
@@ -111,6 +112,7 @@ stage() {
 
 run_policy() {
   python3 "$ROOT/build/check-ci-policy.py"
+  python3 "$ROOT/build/gates/build-regression-contract.py"
   python3 "$ROOT/build/check-runner-policy.py"
   python3 "$ROOT/build/install-pinned-tool.py" --validate-lock
   bash "$ROOT/build/check-repo-layout.sh"
@@ -241,6 +243,14 @@ PY
     echo "SABLE_LOCAL_CI_TITAN2_N1B2_STATIC_CONTRACTS=PASS_EXECUTED"
   else
     echo "SABLE_LOCAL_CI_TITAN2_N1B2_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
+  fi
+
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == N1I ]]; then
+    run_static_contract n1i-c1-android16 \
+      python3 "$ROOT/build/gates/n1i-c1-android16-contract.py"
+    echo "SABLE_LOCAL_CI_TITAN2_N1I_STATIC_CONTRACTS=PASS_EXECUTED"
+  else
+    echo "SABLE_LOCAL_CI_TITAN2_N1I_STATIC_CONTRACTS=SKIP device=$SABLEOS_DEVICE release=$SABLEOS_RELEASE_VERSION"
   fi
 
   run_static_contract r9-textreader-standalone \
@@ -509,10 +519,11 @@ run_security() {
 
   gitleaks_report="$EVIDENCE_DIR/gitleaks-results.json"
   rm -f "$gitleaks_report"
+  echo "SABLE_GITLEAKS_HISTORY_SCOPE=SOURCE_COMMIT commit=$SOURCE_COMMIT"
   set +e
   "$SABLE_GITLEAKS" git \
     --config "$ROOT/.gitleaks.toml" \
-    --log-opts="--all" \
+    --log-opts="$SOURCE_COMMIT" \
     --redact \
     --no-banner \
     --report-format json \

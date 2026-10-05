@@ -24,6 +24,9 @@ if workflow_files:
 required = (
     ROOT / "build" / "local-ci" / "run.sh",
     ROOT / "build" / "local-ci" / "README.md",
+    ROOT / "build" / "BUILD_REGRESSIONS.tsv",
+    ROOT / "build" / "gates" / "build-regression-contract.py",
+    ROOT / "docs" / "BUILD_REGRESSION_POLICY.md",
     ROOT / ".gitleaks.toml",
     ROOT / "build" / "trusted-runner-policy.json",
     ROOT / "build" / "check-runner-policy.py",
@@ -223,8 +226,11 @@ if local_ci.is_file():
     text = local_ci.read_text(encoding="utf-8")
     for token in (
         "GITHUB_ACTIONS_EXECUTION=DISABLED",
+        'SABLE_GITLEAKS_HISTORY_SCOPE=SOURCE_COMMIT commit=$SOURCE_COMMIT',
+        '--log-opts="$SOURCE_COMMIT"',
         "SELF_HOSTED_ACTIONS_RUNNER=DISABLED",
         "build/check-ci-policy.py",
+        "build/gates/build-regression-contract.py",
         "build/check-runner-policy.py",
         "build/check-repo-layout.sh",
         "build/host/verify-r8-host-tools.sh",
@@ -254,11 +260,32 @@ if local_ci.is_file():
         "python3 -m venv",
         "pip install",
     )
+
+    if '--log-opts="--all"' in text:
+        failures.append(
+            "local CI gitleaks history must be source-commit scoped; "
+            "--all makes results depend on unrelated local refs"
+        )
+    if 'if ! stage_failure_scan "$name" "$stage_start_line"; then' in text:
+        failures.append(
+            "local CI stage failure scan must capture the real nonzero status "
+            "before any boolean inversion"
+        )
     for token in forbidden_install_tokens:
         if token in text:
             failures.append(
                 f"local CI must not install host tools; forbidden token present: {token}"
             )
+
+titan2_adapter = ROOT / "build" / "devices" / "titan2.sh"
+if titan2_adapter.is_file():
+    titan2_text = titan2_adapter.read_text(encoding="utf-8")
+    for token in (
+        'python3 "$ROOT/build/gates/build-regression-contract.py"',
+        "TITAN2_BUILD_REGRESSION_PREFLIGHT=PASS",
+    ):
+        if token not in titan2_text:
+            failures.append(f"Titan 2 regression preflight token missing: {token}")
 
 stage = subprocess.check_output(
     ["git", "-C", str(ROOT), "ls-files", "--stage", ".githooks/pre-push"],

@@ -1,0 +1,27 @@
+# Titan 2 has two physical SIM slots; admit only slot1/slot2 labels.
+imsa          u:object_r:radio_service:s0
+mtkIms        u:object_r:radio_service:s0
+vendor.mediatek.hardware.mtkradioex.data.IMtkRadioExData/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.data.IMtkRadioExData/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.ims.IMtkRadioExIms/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.ims.IMtkRadioExIms/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.messaging.IMtkRadioExMessaging/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.messaging.IMtkRadioExMessaging/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.modem.IMtkRadioExModem/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.modem.IMtkRadioExModem/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.network.IMtkRadioExNetwork/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.network.IMtkRadioExNetwork/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.sim.IMtkRadioExSim/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.sim.IMtkRadioExSim/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.voice.IMtkRadioExVoice/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.voice.IMtkRadioExVoice/slot2 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.rcs.IMtkRadioExRcs/slot1 u:object_r:hal_radio_service:s0
+vendor.mediatek.hardware.mtkradioex.rcs.IMtkRadioExRcs/slot2 u:object_r:hal_radio_service:s0
+android.hardware.radio.modem.IRadioModem/imsSlot1 u:object_r:hal_radio_service:s0
+android.hardware.radio.modem.IRadioModem/imsSlot2 u:object_r:hal_radio_service:s0
+android.hardware.radio.network.IRadioNetwork/imsSlot1 u:object_r:hal_radio_service:s0
+android.hardware.radio.network.IRadioNetwork/imsSlot2 u:object_r:hal_radio_service:s0
+android.hardware.radio.sim.IRadioSim/imsSlot1 u:object_r:hal_radio_service:s0
+android.hardware.radio.sim.IRadioSim/imsSlot2 u:object_r:hal_radio_service:s0
+android.hardware.radio.voice.IRadioVoice/imsSlot1 u:object_r:hal_radio_service:s0
+android.hardware.radio.voice.IRadioVoice/imsSlot2 u:object_r:hal_radio_service:s0

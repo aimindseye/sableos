@@ -1,0 +1,9 @@
+persist.vendor.entitlement_enabled      u:object_r:system_mtk_wfc_entitlement_prop:s0
+persist.vendor.entitlement.dbg.         u:object_r:system_mtk_wfc_entitlement_prop:s0
+persist.vendor.entitlement.sesurl       u:object_r:system_mtk_wfc_entitlement_prop:s0
+persist.vendor.net.wo.epdg_fqdn         u:object_r:system_mtk_wfc_entitlement_prop:s0
+vendor.ril.imsconfig.force.notify       u:object_r:system_mtk_imsconfig_prop:s0
+persist.vendor.dbg.vonr_ui_ovr          u:object_r:system_mtk_dbg_ims_prop:s0
+persist.vendor.dbg.vodata_avail_ovr     u:object_r:system_mtk_dbg_ims_prop:s0
+persist.vendor.mtk_clientapi_support    u:object_r:system_mtk_clientapi_support_prop:s0
+ro.mtk.ims.data.feature_support         u:object_r:system_mtk_persist_ims_data_prop:s0

@@ -1,10 +1,110 @@
 # SableOS current status
 
-Last updated: 2026-10-04 ET
+Last updated: 2026-10-05 ET
 
 This file is the private integration repository's current execution authority.
 Historical milestone documents remain evidence but do not override this file or
 the active Titan roadmap.
+
+## 2026-10-05 N1I-C1 194b bootclasspath composition failure
+
+Post-build qualification of the preserved 194b633 image passed the systemimage,
+GSI, five-app, OEM IMS identity and platform-signature checks, then failed at
+`mediatek_common_bootclasspath_missing`.
+
+Root cause is the Android configured-jar location model: bootclasspath paths are
+derived from the configured module name, while the C1 `dex_import` modules
+install stock-compatible stems. The corrected product adds exact
+`PRODUCT_CONFIGURED_JAR_LOCATION_OVERRIDES` mappings for both MediaTek JARs.
+
+```text
+N1I_C1_194B_SYSTEMIMAGE=PASS
+N1I_C1_194B_GSI=PASS
+N1I_C1_194B_FIVE_APPS=PASS
+N1I_C1_194B_IMS_IDENTITY=PASS
+N1I_C1_194B_IMS_PLATFORM_RESIGN=PASS
+N1I_C1_194B_BOOTCLASSPATH=FAIL_CONFIGURED_JAR_LOCATION
+N1I_C1_194B_PHYSICAL_CANDIDATE=NO
+N1I_C1_CORRECTED_REBUILD_REQUIRED=YES
+```
+
+## 2026-10-05 N1I-C1 next deliverable: corrected bootclasspath rebuild
+
+The preserved `194b633bc2d4` image has completed enough read-only
+qualification to classify it as a composition failure. It is retained as
+evidence and is not a physical candidate.
+
+```text
+N1I_C1_194B_QUALIFICATION=FAIL_BOOTCLASSPATH_LOCATION
+N1I_C1_194B_REBUILD_REUSE=NO
+N1I_C1_194B_FLASH=NO
+N1I_C1_NEXT_ACTION=CANONICAL_FULL_CI_THEN_CORRECTED_FRESH_BUILD
+N1I_C1_BOOTJAR_LOCATION_OVERRIDE_REQUIRED=YES
+N1I_C1_DEVICE_CONTACT=HOLD
+```
+
+## 2026-10-05 N1I-C1 Android-16 build result: compile PASS, verifier false negative
+
+The N1I-C1 systemimage build from source commit
+`194b633bc2d4e09498ae6020c8fc848625729b37` completed successfully:
+
+```text
+N1I_C1_ANDROID_COMPILE=PASS
+N1I_C1_SYSTEM_IMAGE_PATH=/srv/sable-build/workspaces/titan2-n1d/out-n1i-c1-194b633bc2d4/target/product/tdgsi_arm64_ab/system.img
+N1I_C1_SYSTEM_IMAGE_BYTES=3210674176
+N1I_C1_GSI_IMAGE_INFO=PASS
+N1I_C1_POST_BUILD_VERIFIER=FAIL_FALSE_NEGATIVE_IMS_PACKAGE
+```
+
+Read-only inspection of the installed APK proved:
+
+```text
+IMS_PATH=/system_ext/priv-app/ImsService/ImsService.apk
+IMS_PACKAGE=com.mediatek.ims
+IMS_SHARED_UID=android.uid.phone
+IMS_VERSION_CODE=36
+IMS_VERSION_NAME=16
+IMS_PLATFORM_SIGNATURE_MATCH=YES
+```
+
+The false failure came from piping verbose `aapt2` output directly to
+`grep -q` while `pipefail` was enabled. After `grep -q` matched and
+exited, the producer could receive SIGPIPE and make the pipeline nonzero.
+
+PR #321 now contains regression T2-013: APK identity checks capture complete
+`aapt2` output before matching, validate the staged APK before the expensive
+Android build, and prohibit the fragile producer-to-`grep -q` verifier form.
+
+The existing 194b633 systemimage remains preserved as failed composition
+evidence. Its bootclasspath location mismatch requires a corrected rebuild; it
+must not be flashed.
+
+## 2026-10-05 N1I-C1 build-regression transition
+
+N1I-C1 source implementation remains in draft PR #321. A build that was
+already running when the shared build-regression framework was added is allowed
+to complete without interruption. Its result is evidence only for the exact
+source commit from which that build started.
+
+```text
+N1I_C1_PR=321
+N1I_C1_PR_STATE=DRAFT
+N1I_C1_ANDROID_PLATFORM=16
+N1I_C1_RUNNING_BUILD_INTERRUPTION_ALLOWED=NO
+N1I_C1_RUNNING_BUILD_RESULT_SCOPE=EXACT_STARTING_SOURCE_COMMIT_ONLY
+N1I_C1_BUILD_REGRESSION_FRAMEWORK=CHECKED_IN_PR321
+N1I_C1_BUILD_REGRESSION_FRAMEWORK_APPLIES=NEXT_BUILD_AND_LATER
+N1I_C1_REGRESSION_LEDGER=build/BUILD_REGRESSIONS.tsv
+N1I_C1_REGRESSION_GATE=build/gates/build-regression-contract.py
+N1I_C1_CANONICAL_BUILD_ENTRYPOINT=build/sable.sh
+N1I_C1_DEVICE_CONTACT=HOLD
+N1I_C1_FLASH=HOLD
+```
+
+The regression framework does not retroactively change or invalidate an
+already-running build. Before the next Titan 2 build, the exact new source head
+must pass canonical full CI; the Titan adapter then reruns the regression gate
+before invoking the release-specific build driver.
 
 ## 2026-10-04 non-cellular execution checkpoint
 

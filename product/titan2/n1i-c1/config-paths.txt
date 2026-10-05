@@ -1,0 +1,3 @@
+/system_ext/etc/permissions/system-ext-permissions-mediatek.xml
+/system_ext/etc/sysconfig/com.mediatek.ims.config.xml
+/system/etc/permissions/privapp-permissions-mediatek.xml
