@@ -171,6 +171,26 @@ Copy `build/titan2/n1i-c1-operator-results.env.example` to a local evidence
 directory and replace `PENDING` with only `PASS` or `FAIL`. Never place
 phone numbers, IMSI/ICCID/IMEI, contact names or message content in that file.
 
+## Snapshot command-status integrity
+
+Every C1 start/end snapshot command writes three sibling files:
+
+```text
+<name>.txt
+<name>.err
+<name>.rc
+```
+
+The qualifier treats `<name>.txt` as evidence only when `<name>.rc` is
+exactly `0`. Partial stdout from a failed `dumpsys`, `pm`, `cmd phone`,
+`content query` or `getprop` invocation is ignored and cannot create a
+functional or stock-parity PASS. This is intentionally surface-local: a failed
+connectivity snapshot fails data/bearer evidence without rewriting independent
+SMS/MMS or voice operator results.
+
+The qualifier self-test includes nonzero-return fixtures with convincing partial
+stdout and requires DATA, IMS bearer and IMS provider to remain FAIL.
+
 ## Independent functional acceptance
 
 Registration, data, SMS/MMS, IMS provider, IMS registration, IMS bearer,
