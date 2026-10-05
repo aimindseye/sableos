@@ -18,13 +18,14 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import json
 import os
 import re
 import shutil
 import sys
 from pathlib import Path
 
-TOOL_VERSION = "1.1.0"
+TOOL_VERSION = "1.2.0"
 
 DEFAULT_ANDROID_ROOT = Path("/srv/sable-build/workspaces/titan2-n1d/android")
 DEFAULT_N1I_A = Path("/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z")
@@ -77,6 +78,18 @@ def parse_env(path: Path) -> dict[str, str]:
         key, value = line.split("=", 1)
         if key in out:
             raise ManifestError(f"duplicate_env_key={key} file={path} line={no}")
+        if value.startswith('"'):
+            try:
+                decoded = json.loads(value)
+            except json.JSONDecodeError as exc:
+                raise ManifestError(
+                    f"invalid_json_env_value={key} file={path} line={no}: {exc}"
+                ) from exc
+            if not isinstance(decoded, str):
+                raise ManifestError(
+                    f"non_string_json_env_value={key} file={path} line={no}"
+                )
+            value = decoded
         out[key] = value
     return out
 
