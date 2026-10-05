@@ -19,6 +19,21 @@ AUDIT_EVIDENCE=/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z
 The machine-readable implementation boundary is
 `build/titan2/n1i-c-oem-ims-admission.env`.
 
+## Android platform boundary
+
+Titan 2 N1I remains on **Android 16**. The cellular-isolation implementation
+must use the pinned GrapheneOS/AOSP 16 substrate:
+
+```text
+AOSP_REVISION=android-16.0.0_r4
+GRAPHENEOS_TAG=2026061600
+RELEASE_CONFIG=bp4a
+ANDROID_17_ALLOWED=NO
+```
+
+Android 17 source, framework assumptions, or compatibility policy are out of
+scope for Titan 2 N1I.
+
 ## N1I-C1 cellular-isolation rule
 
 The next build is intentionally bounded to:
