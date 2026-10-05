@@ -123,6 +123,7 @@ TMETRICS_QUALIFIER="$ROOT/build/titan2/qualify-n1i-c1-telephonymetrics-compat.sh
 PHH_PATCH="$ROOT/patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-titan2-cellular-mvp.patch"
 GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
+APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
 TMETRICS_POST_BLOB="9d5108e0ddb8d4960d21cda021813b53dbbf4da8"
@@ -365,14 +366,15 @@ built_target_path() {
 
 prepare_stock_map() {
     local out="$1"
-    python3 - "$MATERIALIZED" "$out" <<'PY'
+    python3 - "$MATERIALIZED" "$C1_TEMPLATE/a4-native-superset.txt" "$out" <<'PY'
 import csv
 import hashlib
 import pathlib
 import sys
 
 root = pathlib.Path(sys.argv[1])
-out = pathlib.Path(sys.argv[2])
+a4 = pathlib.Path(sys.argv[2])
+out = pathlib.Path(sys.argv[3])
 manifest = root / "CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv"
 
 def sha256(path):
@@ -416,11 +418,23 @@ for row in sorted(selected, key=lambda r: r["id"]):
 if native != 33:
     raise SystemExit(f"N1I_C2_STOCK_MAP=FAIL_NATIVE_COUNT count={native}")
 
+a4_targets = {
+    line.strip()
+    for line in a4.read_text(encoding="utf-8").splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+}
+native_targets = {row["target"] for row in selected if row["domain"] == "NATIVE"}
+if len(a4_targets) != 33 or native_targets != a4_targets:
+    raise SystemExit(
+        "N1I_C2_STOCK_MAP=FAIL_A4_TARGET_SET "
+        f"expected={len(a4_targets)} actual={len(native_targets)}"
+    )
+
 out.write_text(
     "id\tkind\ttarget\tbundle_rel\tsha256\n" + "\n".join(lines) + "\n",
     encoding="utf-8",
 )
-print("N1I_C2_STOCK_MAP=PASS files=36 natives=33")
+print("N1I_C2_STOCK_MAP=PASS files=36 natives=33 exact_a4_targets=YES")
 PY
 }
 
@@ -564,6 +578,8 @@ selfcheck() {
     bash "$ROOT/build/host/verify-host-tools.sh" aosp-host >/dev/null ||
         { fail host_tools; return $?; }
 
+    [[ -x "$APKSIGNER" ]] || { fail "apksigner_missing=$APKSIGNER"; return $?; }
+
     verify_c3a_source || return $?
     verify_audit || return $?
     verify_materialization || return $?
@@ -658,7 +674,24 @@ cleanup_source() {
     fi
     return "$rc"
 }
-trap 'cleanup_source >/dev/null 2>&1 || true' EXIT
+cleanup_on_exit() {
+    local original_rc=$?
+    local cleanup_rc=0
+    trap - EXIT
+    cleanup_source || cleanup_rc=$?
+    if [[ "$original_rc" -ne 0 ]]; then
+        if [[ "$cleanup_rc" -eq 0 ]]; then
+            echo "N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS" >&2
+        else
+            echo "N1I_C2_EMERGENCY_SOURCE_RESTORE=FAIL rc=$cleanup_rc" >&2
+        fi
+    fi
+    if [[ "$cleanup_rc" -ne 0 && "$original_rc" -eq 0 ]]; then
+        exit "$cleanup_rc"
+    fi
+    exit "$original_rc"
+}
+trap cleanup_on_exit EXIT
 
 echo "===== STAGE C3B + C1 + FROZEN C2 BUNDLE ====="
 mkdir -p "$C3B_STAGE/prebuilt" "$C1_STAGE" "$C2_STAGE/prebuilt" ||
@@ -890,6 +923,19 @@ BUILT_IMS_UID="$(apk_shared_uid "$IMS_OUT")" || { fail ims_shared_uid_parse; exi
 [[ "$BUILT_IMS_PACKAGE" == "$N1I_C_OEM_IMS_PACKAGE" ]] || { fail "ims_package=$BUILT_IMS_PACKAGE"; exit $?; }
 [[ "$BUILT_IMS_UID" == "$N1I_C_OEM_IMS_SHARED_UID" ]] || { fail "ims_shared_uid=$BUILT_IMS_UID"; exit $?; }
 
+"$APKSIGNER" verify "$IMS_OUT" >/dev/null 2>&1 || { fail ims_signature; exit $?; }
+FRAMEWORK_RES="$PRODUCT_OUT/system/framework/framework-res.apk"
+[[ -f "$FRAMEWORK_RES" ]] || { fail framework_res; exit $?; }
+IMS_CERT_OUT="$("$APKSIGNER" verify --print-certs "$IMS_OUT")" ||
+    { fail ims_cert_read; exit $?; }
+PLATFORM_CERT_OUT="$("$APKSIGNER" verify --print-certs "$FRAMEWORK_RES")" ||
+    { fail platform_cert_read; exit $?; }
+IMS_CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$IMS_CERT_OUT" | sed -n '1p')"
+PLATFORM_CERT="$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' <<<"$PLATFORM_CERT_OUT" | sed -n '1p')"
+[[ -n "$IMS_CERT" && "$IMS_CERT" == "$PLATFORM_CERT" ]] ||
+    { fail platform_resign; exit $?; }
+echo "N1I_C2_OEM_IMS_PLATFORM_RESIGN=PASS cert=$IMS_CERT"
+
 for jar in mediatek-common.jar mediatek-ims-base.jar; do
     [[ -f "$PRODUCT_OUT/$COPYOUT/framework/$jar" ]] || { fail "jar=$jar"; exit $?; }
 done
@@ -998,6 +1044,8 @@ PHH_BASE_BLOB=$PHH_BASE_BLOB
 PHH_POST_BLOB=$PHH_POST_BLOB
 INCOMING_CALL_COMPAT_PROPERTY=false
 HEALER_DEFAULT=DISABLED
+OEM_IMS_PLATFORM_RESIGNED=YES
+OEM_IMS_PLATFORM_CERT_SHA256=$IMS_CERT
 SYSTEM_SHA256=$NEW_SHA
 SYSTEM_BYTES=$NEW_BYTES
 DEVICE_CONTACT=NONE
