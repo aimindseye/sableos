@@ -106,7 +106,7 @@ def test_native_namespace_fail_closed(tmp: Path) -> None:
 
 def test_vendor_ua_attribution(tmp: Path) -> None:
     n1i = tmp / "n1i-a"
-    n1i.mkdir()
+    n1i.mkdir(parents=True)
     write_tsv(
         n1i / "a5-init-services.tsv",
         [
