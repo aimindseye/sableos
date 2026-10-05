@@ -151,6 +151,7 @@ def test_driver_authority() -> None:
     assert "MUTATION_COUNT=41" in text
     assert "FROZEN_STOCK_FILE_COUNT=36" in text
     assert "FROZEN_NATIVE_COUNT=33" in text
+    assert "IMPLEMENTATION_RECEIPT_ROWS=41" in text
     assert "20261005T231205Z" in text
     assert "SABLE_TITAN2_VENDOR_UA_START_MODE" in text
     assert "N1I_C2_EVIDENCE_SEAL=PASS_EXCLUDES_BUILD_LOG" in text
@@ -158,8 +159,26 @@ def test_driver_authority() -> None:
     assert 'PHH_BASE_BLOB="9f65610762fec239638bb269b8c72d6cabfc6d7e"' in text
     assert 'INCOMING_TRACKER_BLOB="5f97183b6f8c80859adf3f4922b3f9f56687bab5"' in text
     assert 'SYSTEM_GROUP_SAFE_CEILING=3263168512' in text
+    assert 'C1_SHA="137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160"' in text
+    assert 'MTK_MMTEL_OVERLAY_MODULE="treble-overlay-telephony-mtk-ims"' in text
+    assert 'MTK_MMTEL_OVERLAY_PACKAGE="me.phh.treble.overlay.mtkims_telephony"' in text
+    assert "CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" in text
+    assert "N1I_C2_MMTEL_OVERLAY_APK=PASS" in text
     assert "DEVICE_CONTACT_AUTHORIZED=NO" in text
     assert "FLASH_AUTHORIZED=NO" in text
+
+
+
+def test_receipt_semantics() -> None:
+    text = DRIVER.read_text(encoding="utf-8")
+    assert 'expected_ids = [f"M{i:03d}" for i in range(1, 42)]' in text
+    assert 'status["M004"] = "IMPLEMENTED_EXACT_PATCH"' in text
+    assert 'status["M005"] = "IMPLEMENTED_PRODUCT_PROPERTY"' in text
+    assert 'status["M006"] = "IMPLEMENTED_EXACT_PATCH"' in text
+    assert 'status["M040"] = "IMPLEMENTED_BUILT"' in text
+    assert 'status["M041"] = "IMPLEMENTED_DISABLED_BY_DEFAULT"' in text
+    assert "PRODUCT_OUT_HASH_EQUALS_MATERIALIZATION" in text
+    assert "IMPLEMENTATION_RECEIPT_ROWS=41" in text
 
 
 def main() -> int:
@@ -169,6 +188,7 @@ def main() -> int:
     test_init_and_marker()
     test_patch_authority()
     test_driver_authority()
+    test_receipt_semantics()
 
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_MODULE_SET=PASS count=33")
     print("N1I_C2_IMPLEMENTATION_TEST_PRODUCT_COMPOSITION=PASS")
@@ -176,6 +196,7 @@ def main() -> int:
     print("N1I_C2_IMPLEMENTATION_TEST_INIT_MARKER=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_PATCH_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_DRIVER_AUTHORITY=PASS")
+    print("N1I_C2_IMPLEMENTATION_TEST_RECEIPT_SEMANTICS=PASS")
     print("N1I_C2_CELLULAR_MVP_IMPLEMENTATION_TEST=PASS")
     return 0
 
