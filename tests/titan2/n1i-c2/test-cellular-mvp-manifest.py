@@ -4,6 +4,7 @@ from __future__ import annotations
 import csv
 import importlib.util
 import tempfile
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -12,6 +13,7 @@ TOOL = ROOT / "build/titan2/prepare-n1i-c2-cellular-mvp-mutation-manifest.py"
 spec = importlib.util.spec_from_file_location("n1i_c2_manifest", TOOL)
 assert spec is not None and spec.loader is not None
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod
 spec.loader.exec_module(mod)
 
 
