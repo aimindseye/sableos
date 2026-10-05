@@ -207,7 +207,7 @@ def make_replay(root: Path) -> Path:
 
 def test_manifest_shape(tmp: Path) -> None:
     manifest, refs = make_manifest(tmp)
-    mutations, natives = mod.validate_manifest(manifest)
+    mutations, natives = mod.validate_manifest(manifest, ROOT)
     planned = mod.expected_stock_rows(mutations, natives)
     assert len(refs) == 33
     assert len(planned) == 36
@@ -266,7 +266,7 @@ def test_manifest_semantic_drift_fails(tmp: Path) -> None:
     )
     seal(manifest)
     try:
-        mod.validate_manifest(manifest)
+        mod.validate_manifest(manifest, ROOT)
     except mod.MaterializeError as exc:
         assert "mutation_semantic_drift=M006:action" in str(exc)
     else:
@@ -289,6 +289,44 @@ def test_symlink_source_rejected(tmp: Path) -> None:
         raise AssertionError("stock symlink source was accepted")
 
 
+
+def test_native_target_authority_drift_fails(tmp: Path) -> None:
+    manifest, refs = make_manifest(tmp)
+    rows = read_rows(manifest / "CELLULAR_MVP_NATIVE_CLOSURE.tsv")
+    assert rows
+    original = rows[0]["target"]
+    replacement = "/system_ext/lib64/libfixture-not-authorized.so"
+    rows[0]["target"] = replacement
+    write_tsv(
+        manifest / "CELLULAR_MVP_NATIVE_CLOSURE.tsv",
+        ["library", "partition", "target", "stock_path", "sha256", "needed",
+         "admitted_by", "evidence_strength", "c3a_status", "decision"],
+        rows,
+    )
+
+    mutations = read_rows(manifest / "CELLULAR_MVP_MUTATION_MANIFEST.tsv")
+    for row in mutations:
+        if row["domain"] == "NATIVE" and row["target"] == original:
+            row["target"] = replacement
+            break
+    write_tsv(
+        manifest / "CELLULAR_MVP_MUTATION_MANIFEST.tsv",
+        ["id", "domain", "action", "target", "source", "sha256_or_blob", "basis", "status"],
+        mutations,
+    )
+    seal(manifest)
+
+    try:
+        mod.validate_manifest(manifest, ROOT)
+    except mod.MaterializeError as exc:
+        msg = str(exc)
+        assert "native_target_authority_drift=" in msg
+        assert original in msg
+        assert replacement in msg
+    else:
+        raise AssertionError("native target authority drift was accepted")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -297,6 +335,7 @@ def main() -> int:
         test_partition_mapping_and_elf(root / "case3")
         test_manifest_semantic_drift_fails(root / "case4")
         test_symlink_source_rejected(root / "case5")
+        test_native_target_authority_drift_fails(root / "case6")
 
     print("N1I_C2_MATERIALIZATION_TEST_MANIFEST_SHAPE=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_REPLAY_AUTHORITY=PASS")
@@ -304,6 +343,7 @@ def main() -> int:
     print("N1I_C2_MATERIALIZATION_TEST_ELF64_AARCH64=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_SEMANTIC_DRIFT_FAIL_CLOSED=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_SYMLINK_FAIL_CLOSED=PASS")
+    print("N1I_C2_MATERIALIZATION_TEST_NATIVE_TARGET_AUTHORITY=PASS")
     print("N1I_C2_CELLULAR_MVP_MATERIALIZATION_TEST=PASS")
     return 0
 
