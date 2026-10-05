@@ -75,19 +75,20 @@ C3A control:
 
 ## Replay policy
 
-Preferred source is the already-qualified retained V6E N1I-A replay:
+The authoritative materialization path always performs one fresh **read-only**
+N1I-A replay using the pinned stock reference, the pinned N1I-A audit and the
+sealed C3A control.
 
-```text
-/srv/sable-build/evidence/titan2/n1i-c1-runtime-linkage-v6e/
-  20261005T195904Z-3612ca20/n1i-a-replay
-```
+The previously qualified V6E replay is deliberately **not** stock-byte
+authority for materialization. Its runtime-linkage metadata/log was sealed, but
+the extracted `work/stock/...` tree was not individually sealed. Reusing that
+mutable extraction for first-time native hashes would weaken the materialization
+boundary.
 
-It is used only when its extracted stock `system`, `system_ext`, and
-`product` trees remain present.
-
-If that retained work tree is unavailable, the driver performs one fresh
-**read-only** replay with the pinned N1I-A audit and the sealed C3A control.
-The replay remains offline and performs no device contact.
+The fresh replay remains offline and performs no device contact. The 36 selected
+stock files are copied and hashed immediately. After the sealed stock bundle is
+verified, the temporary replay `work/` extraction is deleted before the
+materialization evidence directory is sealed.
 
 ## Materialization checks
 
@@ -97,6 +98,15 @@ For each proposed stock file:
 2. reject missing files and symlinks;
 3. copy to the same partition-relative path in the sealed bundle;
 4. hash source and copy and require byte identity.
+
+The materializer also pins the complete 41-ID mutation shape. In particular,
+the TelephonyMetrics patch, incoming-call property selection, PHH mtkmal guard,
+integration package and healer actions must match the reviewed V5 semantics;
+materialization is not allowed to silently freeze a different implementation
+plan.
+
+Output paths are rejected if they overlap the SableOS repository, the sealed
+manifest input, or the replay input.
 
 For all 33 native entries additionally require:
 
