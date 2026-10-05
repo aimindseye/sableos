@@ -100,6 +100,8 @@ N1F_CONTROL="$SABLE_ARTIFACTS_ROOT/titan2/n1f-c3a-derived-c3b5/20261003T221350Z/
 C3A_SHA="4c292b9876a43f8df515a163a197e92d71deba598767790681f999ea3c554c16"
 N1F_SHA="dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a"
 N1F_BYTES=3200540672
+C1_SHA="137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160"
+C1_BYTES=3210661888
 SYSTEM_GROUP_SAFE_CEILING=3263168512
 
 MATERIALIZED="/srv/data/sable-build/titan2/artifacts/n1i-c2-cellular-mvp-stock/20261005T231205Z"
@@ -131,6 +133,8 @@ PHH_PATCH_BLOB="d78f41da30514920ff2165d8fe6dea15d0bb5d76"
 TMETRICS_REL="src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java"
 INCOMING_REL="src/java/com/android/internal/telephony/imsphone/ImsPhoneCallTracker.java"
 PHH_REL="phh-on-boot.sh"
+MTK_MMTEL_OVERLAY_MODULE="treble-overlay-telephony-mtk-ims"
+MTK_MMTEL_OVERLAY_PACKAGE="me.phh.treble.overlay.mtkims_telephony"
 
 MODULES=(SableTitan2Keyboard SableTitan2Camera SableTitan2DisplayCompat SableTitan2Setup SableTitan2RadioDiag)
 
@@ -463,6 +467,78 @@ print(
 PY
 }
 
+generate_implementation_receipt() {
+    local output="$1"
+    python3 -         "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv"         "$output"         "$TMETRICS_POST_BLOB"         "$PHH_POST_BLOB"         "$NEW_SHA"         "$NEW_BYTES" <<'PY'
+import csv
+import pathlib
+import sys
+
+manifest = pathlib.Path(sys.argv[1])
+out = pathlib.Path(sys.argv[2])
+tmetrics_post = sys.argv[3]
+phh_post = sys.argv[4]
+system_sha = sys.argv[5]
+system_bytes = sys.argv[6]
+
+with manifest.open(encoding="utf-8", newline="") as fp:
+    rows = list(csv.DictReader(fp, delimiter="\t"))
+
+expected_ids = [f"M{i:03d}" for i in range(1, 42)]
+if [row.get("id") for row in rows] != expected_ids:
+    raise SystemExit("N1I_C2_IMPLEMENTATION_RECEIPT=FAIL_ID_ORDER")
+
+status = {}
+evidence = {}
+
+for mid in ("M001", "M002", "M003"):
+    status[mid] = "IMPLEMENTED_BUILT"
+    evidence[mid] = "PRODUCT_OUT_AND_FINAL_SYSTEMIMAGE"
+for i in range(7, 40):
+    mid = f"M{i:03d}"
+    status[mid] = "IMPLEMENTED_EXACT_FROZEN_HASH"
+    evidence[mid] = "PRODUCT_OUT_HASH_EQUALS_MATERIALIZATION"
+
+status["M004"] = "IMPLEMENTED_EXACT_PATCH"
+evidence["M004"] = f"TelephonyMetrics_post_blob={tmetrics_post}"
+status["M005"] = "IMPLEMENTED_PRODUCT_PROPERTY"
+evidence["M005"] = "ro.telephony.block_binder_thread_on_incoming_calls=false"
+status["M006"] = "IMPLEMENTED_EXACT_PATCH"
+evidence["M006"] = f"phh_on_boot_post_blob={phh_post}"
+status["M040"] = "IMPLEMENTED_BUILT"
+evidence["M040"] = "SableTitan2Cellular+init+config+marker"
+status["M041"] = "IMPLEMENTED_DISABLED_BY_DEFAULT"
+evidence["M041"] = "HEALER_DEFAULT=DISABLED"
+
+fields = [
+    "id", "domain", "action", "target", "authority_sha_or_blob",
+    "implementation_status", "implementation_evidence",
+    "system_sha256", "system_bytes",
+]
+out.parent.mkdir(parents=True, exist_ok=True)
+with out.open("w", encoding="utf-8", newline="") as fp:
+    writer = csv.DictWriter(fp, fieldnames=fields, delimiter="\t", lineterminator="\n")
+    writer.writeheader()
+    for row in rows:
+        mid = row["id"]
+        if mid not in status:
+            raise SystemExit(f"N1I_C2_IMPLEMENTATION_RECEIPT=FAIL_UNCLASSIFIED id={mid}")
+        writer.writerow({
+            "id": mid,
+            "domain": row["domain"],
+            "action": row["action"],
+            "target": row["target"],
+            "authority_sha_or_blob": row["sha256_or_blob"],
+            "implementation_status": status[mid],
+            "implementation_evidence": evidence[mid],
+            "system_sha256": system_sha,
+            "system_bytes": system_bytes,
+        })
+
+print("N1I_C2_IMPLEMENTATION_RECEIPT=PASS rows=41")
+PY
+}
+
 selfcheck() {
     [[ "$N1D_AOSP_REVISION" == android-16.0.0_r4 ]] || { fail "aosp_revision=$N1D_AOSP_REVISION"; return $?; }
     [[ "$N1D_C3_GRAPHENEOS_TAG" == 2026061600 ]] || { fail "graphene_tag=$N1D_C3_GRAPHENEOS_TAG"; return $?; }
@@ -744,7 +820,8 @@ mkdir -p "$OUT_DIR_C2" || { fail out_dir; exit $?; }
     pp="$(get_build_var PRODUCT_PACKAGES)"
     for module in "${MODULES[@]}" \
         ImsService SableN1IC1MediatekCommon SableN1IC1MediatekImsBase \
-        SableTitan2Cellular SableTitan2CellularInit SableTitan2CellularConfig SableTitan2CellularMarker
+        SableTitan2Cellular SableTitan2CellularInit SableTitan2CellularConfig SableTitan2CellularMarker \
+        "$MTK_MMTEL_OVERLAY_MODULE"
     do
         grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" || exit 76
     done
@@ -768,7 +845,8 @@ NEW="$PRODUCT_OUT/system.img"
 NEW_SHA="$(sha256sum "$NEW" | awk '{print $1}')"
 NEW_BYTES="$(stat -c '%s' "$NEW")"
 [[ "$NEW_SHA" != "$N1F_SHA" ]] || { fail unchanged_from_n1f; exit $?; }
-[[ "$NEW_BYTES" -ge "$N1F_BYTES" && "$NEW_BYTES" -le "$SYSTEM_GROUP_SAFE_CEILING" ]] ||
+[[ "$NEW_SHA" != "$C1_SHA" ]] || { fail unchanged_from_c1; exit $?; }
+[[ "$NEW_BYTES" -ge "$C1_BYTES" && "$NEW_BYTES" -le "$SYSTEM_GROUP_SAFE_CEILING" ]] ||
     { fail "image_size=$NEW_BYTES ceiling=$SYSTEM_GROUP_SAFE_CEILING"; exit $?; }
 
 python3 "$GSI_INFO" --image "$NEW" | tee "$EVIDENCE/system-image-info.txt"
@@ -847,12 +925,24 @@ MTK_OVERLAY_SRC="$ANDROID_ROOT/vendor/hardware_overlay/Telephony/MTK-IMS/res/val
 grep -Fq 'config_ims_mmtel_package">com.mediatek.ims' "$MTK_OVERLAY_SRC" ||
     { fail mtk_overlay_provider; exit $?; }
 
+MTK_OVERLAY_APK="$PRODUCT_OUT/system/product/overlay/$MTK_MMTEL_OVERLAY_MODULE.apk"
+[[ -f "$MTK_OVERLAY_APK" ]] || { fail "mtk_overlay_apk=$MTK_OVERLAY_APK"; exit $?; }
+MTK_OVERLAY_PACKAGE="$(apk_package_name "$MTK_OVERLAY_APK")" ||
+    { fail mtk_overlay_package_parse; exit $?; }
+[[ "$MTK_OVERLAY_PACKAGE" == "$MTK_MMTEL_OVERLAY_PACKAGE" ]] ||
+    { fail "mtk_overlay_package=$MTK_OVERLAY_PACKAGE"; exit $?; }
+
 echo "N1I_C2_BUILT_NATIVE_SET=PASS count=$BUILT_NATIVE_COUNT exact_hashes=YES"
 echo "N1I_C2_INCOMING_CALL_COMPAT=PASS_PROPERTY_FALSE"
 echo "N1I_C2_PHH_MTKMAL_GUARD=PASS_MARKER_SCOPED"
 echo "N1I_C2_INTEGRATION_PACKAGE=PASS_HEALER_DISABLED_BY_DEFAULT"
 echo "N1I_C2_MMTEL_PROVIDER_SOURCE=PASS_COM_MEDIATEK_IMS"
+echo "N1I_C2_MMTEL_OVERLAY_APK=PASS package=$MTK_OVERLAY_PACKAGE"
 echo "N1I_C2_SYSTEMIMAGE=PASS sha256=$NEW_SHA bytes=$NEW_BYTES"
+
+echo "===== FREEZE IMPLEMENTATION RECEIPT ====="
+generate_implementation_receipt "$EVIDENCE/CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" ||
+    { fail implementation_receipt; exit $?; }
 
 echo "===== RESTORE ANDROID SOURCE ====="
 cleanup_source
@@ -885,6 +975,8 @@ cp "$EVIDENCE/stock-map.tsv" "$ARTIFACT/" ||
     { fail artifact_stock_map_copy; exit $?; }
 cp "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv" "$ARTIFACT/" ||
     { fail artifact_manifest_copy; exit $?; }
+cp "$EVIDENCE/CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" "$ARTIFACT/" ||
+    { fail artifact_receipt_copy; exit $?; }
 
 cat > "$ARTIFACT/artifact.env" <<EOF
 ROLE=N1I_C2_CELLULAR_MVP
@@ -900,6 +992,7 @@ MATERIALIZATION_SOURCE_COMMIT=$MATERIALIZATION_SOURCE_COMMIT
 FROZEN_MUTATION_COUNT=41
 FROZEN_STOCK_FILE_COUNT=36
 FROZEN_NATIVE_COUNT=33
+IMPLEMENTATION_RECEIPT_ROWS=41
 TELEPHONYMETRICS_POST_BLOB=$TMETRICS_POST_BLOB
 PHH_BASE_BLOB=$PHH_BASE_BLOB
 PHH_POST_BLOB=$PHH_POST_BLOB
