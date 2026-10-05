@@ -710,6 +710,12 @@ git -C "$ANDROID_ROOT/device/phh/treble" diff --check ||
     { fail phh_diff_check; exit $?; }
 
 PHH_POST_BLOB="$(git -C "$ANDROID_ROOT/device/phh/treble" hash-object "$PHH_REL")"
+
+git -C "$ANDROID_ROOT/frameworks/opt/telephony" diff -- "$TMETRICS_REL" > "$EVIDENCE/telephonymetrics.diff"
+git -C "$ANDROID_ROOT/device/phh/treble" diff -- "$PHH_REL" > "$EVIDENCE/phh-on-boot.diff"
+diff -u "$ROM_BACKUP" "$ROM_MK" > "$EVIDENCE/rom-mk.diff" || true
+cp "$C2_STAGE/prebuilt/system_ext/etc/sable/titan2-cellular.conf" "$EVIDENCE/titan2-cellular.conf"
+
 echo "N1I_C2_TMETRICS_POST_BLOB=$TMETRICS_POST_BLOB"
 echo "N1I_C2_PHH_BASE_BLOB=$PHH_BASE_BLOB"
 echo "N1I_C2_PHH_POST_BLOB=$PHH_POST_BLOB"
@@ -913,6 +919,17 @@ EOF
 )
 SEAL_RC=$?
 [[ "$SEAL_RC" -eq 0 ]] || { fail artifact_seal; exit $?; }
+
+(
+    cd "$EVIDENCE" || exit 1
+    find . -type f ! -name build.log ! -name SHA256SUMS.txt -print0 |
+        LC_ALL=C sort -z |
+        xargs -0 sha256sum > SHA256SUMS.txt
+    sha256sum -c SHA256SUMS.txt >/dev/null
+)
+EVIDENCE_SEAL_RC=$?
+[[ "$EVIDENCE_SEAL_RC" -eq 0 ]] || { fail evidence_seal; exit $?; }
+echo "N1I_C2_EVIDENCE_SEAL=PASS_EXCLUDES_BUILD_LOG"
 
 echo "N1I_C2_BUILD=PASS"
 echo "N1I_C2_DEVICE_CONTACT=NONE"
