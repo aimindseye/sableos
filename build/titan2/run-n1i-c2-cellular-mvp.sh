@@ -483,7 +483,13 @@ PY
 
 generate_implementation_receipt() {
     local output="$1"
-    python3 -         "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv"         "$output"         "$TMETRICS_POST_BLOB"         "$PHH_POST_BLOB"         "$NEW_SHA"         "$NEW_BYTES" <<'PY'
+    python3 - \
+        "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv" \
+        "$output" \
+        "$TMETRICS_POST_BLOB" \
+        "$PHH_POST_BLOB" \
+        "$NEW_SHA" \
+        "$NEW_BYTES" <<'PY'
 import csv
 import pathlib
 import sys
