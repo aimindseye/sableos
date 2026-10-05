@@ -118,13 +118,22 @@ def find_unique(root: Path, name: str) -> Path:
     return hits[0]
 
 
-def classify_b2_candidate(path: Path) -> str | None:
-    parts = [p.lower() for p in path.parts]
-    if any("stock" in p for p in parts):
-        return "stock"
-    if any("c3a" in p for p in parts):
-        return "c3a"
-    return None
+def validate_b2_summary(
+    summary: dict[str, str],
+    role: str,
+    apk_sha: str,
+    path: Path,
+) -> None:
+    actual_sha = summary.get("N1I_B2_NATIVE_APK_SHA256", "")
+    if actual_sha != apk_sha:
+        raise ManifestError(
+            f"b2_{role}_apk_sha_mismatch={actual_sha or 'MISSING'} path={path}"
+        )
+    actual_side = summary.get("N1I_B2_NATIVE_SIDE", "")
+    if actual_side != role:
+        raise ManifestError(
+            f"b2_{role}_side_mismatch={actual_side or 'MISSING'} path={path}"
+        )
 
 
 def resolve_b2_dir(
@@ -134,11 +143,9 @@ def resolve_b2_dir(
     apk_sha: str,
 ) -> Path:
     if explicit is not None:
-        summary = parse_env(explicit / "NATIVE_SUMMARY.env")
-        if summary.get("N1I_B2_NATIVE_APK_SHA256") != apk_sha:
-            raise ManifestError(
-                f"b2_{role}_apk_sha_mismatch={summary.get('N1I_B2_NATIVE_APK_SHA256', 'MISSING')}"
-            )
+        summary_path = explicit / "NATIVE_SUMMARY.env"
+        summary = parse_env(summary_path)
+        validate_b2_summary(summary, role, apk_sha, summary_path)
         require_file(explicit / "NATIVE_CLOSURE.tsv", f"b2_{role}_closure")
         return explicit.resolve()
 
@@ -150,8 +157,10 @@ def resolve_b2_dir(
             continue
         if env.get("N1I_B2_NATIVE_APK_SHA256") != apk_sha:
             continue
+        if env.get("N1I_B2_NATIVE_SIDE") != role:
+            continue
         parent = summary_path.parent
-        if classify_b2_candidate(parent) == role and (parent / "NATIVE_CLOSURE.tsv").is_file():
+        if (parent / "NATIVE_CLOSURE.tsv").is_file():
             candidates.append(parent.resolve())
     unique = sorted(set(candidates))
     if len(unique) != 1:
