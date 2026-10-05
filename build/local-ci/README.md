@@ -148,6 +148,32 @@ Evidence defaults to:
 /srv/data/sable-build/sableos/local-ci-evidence/<run-id>/
 ```
 
+Every run also generates and prints a terminal-safe final summary:
+
+```text
+/srv/data/sable-build/sableos/local-ci-evidence/<run-id>/LOCAL_CI_SUMMARY.txt
+```
+
+The summary is emitted on both PASS and FAIL and appears after the normal CI
+output so terminal scrollback limits do not hide the qualification markers that
+matter most. It includes source/profile/device identity, stage PASS/FAIL state,
+high-value contract/regression markers, Titan 2 N1I Android-16 markers when
+applicable, full/release security markers, and the evidence/summary paths. The
+summary is intentionally concise and does not replace `local-ci.log`; the full
+log remains the authoritative detailed evidence.
+
+The log transport is closed and fully drained before the summary parser runs, so
+`LOCAL_CI_SUMMARY.txt` is generated only from a complete `local-ci.log`.
+Dirty-source failures are inside the same final-summary lifecycle. If log capture
+or summary generation fails after the CI work itself would otherwise return zero,
+the final CI exit status is nonzero rather than reporting a false success.
+
+`build/local-ci/test-final-summary-lifecycle.sh` extracts the production
+`emit_final_summary()` function and regression-tests dirty-source summary
+generation, complete tee drain, preservation of an existing nonzero exit, and
+summary-generation failure propagation. CI policy runs this host-only test.
+
+
 A successful `full` or `release` run also writes a source-bound local
 attestation under `.git/sable-local-ci/<commit>.pass`. The committed pre-push
 hook requires that attestation before a governed update of `main`.
