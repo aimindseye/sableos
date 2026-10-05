@@ -24,7 +24,7 @@ import shutil
 import sys
 from pathlib import Path
 
-TOOL_VERSION = "1.0.0"
+TOOL_VERSION = "1.1.0"
 
 DEFAULT_ANDROID_ROOT = Path("/srv/sable-build/workspaces/titan2-n1d/android")
 DEFAULT_N1I_A = Path("/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z")
@@ -136,19 +136,11 @@ def validate_b2_summary(
         )
 
 
-def resolve_b2_dir(
-    explicit: Path | None,
+def b2_candidates(
     role: str,
     evidence_root: Path,
     apk_sha: str,
-) -> Path:
-    if explicit is not None:
-        summary_path = explicit / "NATIVE_SUMMARY.env"
-        summary = parse_env(summary_path)
-        validate_b2_summary(summary, role, apk_sha, summary_path)
-        require_file(explicit / "NATIVE_CLOSURE.tsv", f"b2_{role}_closure")
-        return explicit.resolve()
-
+) -> list[Path]:
     candidates: list[Path] = []
     for summary_path in evidence_root.rglob("NATIVE_SUMMARY.env"):
         try:
@@ -162,7 +154,23 @@ def resolve_b2_dir(
         parent = summary_path.parent
         if (parent / "NATIVE_CLOSURE.tsv").is_file():
             candidates.append(parent.resolve())
-    unique = sorted(set(candidates))
+    return sorted(set(candidates))
+
+
+def resolve_b2_dir(
+    explicit: Path | None,
+    role: str,
+    evidence_root: Path,
+    apk_sha: str,
+) -> Path:
+    if explicit is not None:
+        summary_path = explicit / "NATIVE_SUMMARY.env"
+        summary = parse_env(summary_path)
+        validate_b2_summary(summary, role, apk_sha, summary_path)
+        require_file(explicit / "NATIVE_CLOSURE.tsv", f"b2_{role}_closure")
+        return explicit.resolve()
+
+    unique = b2_candidates(role, evidence_root, apk_sha)
     if len(unique) != 1:
         raise ManifestError(
             f"b2_{role}_authority_count={len(unique)} "
@@ -232,6 +240,76 @@ def native_closure(stock_dir: Path, c3a_dir: Path) -> tuple[list[dict[str, objec
             "decision": "ADMIT_EXACT_STOCK_ONLY_SYSTEM_DEPENDENCY",
         })
     return out, blockers
+
+
+def a4_native_superset(
+    n1i_a: Path,
+    repo_root: Path,
+    n1i_env: dict[str, str],
+) -> tuple[list[dict[str, object]], str]:
+    if n1i_env.get("N1I_A_NATIVE_DEPENDENCY_CLOSURE") != "PASS":
+        raise ManifestError("n1i_a_native_closure_not_pass")
+
+    ref_path = require_file(
+        repo_root / "product/titan2/n1i-c1/a4-native-superset.txt",
+        "a4_native_superset_reference",
+    )
+    refs = [
+        line.strip()
+        for line in ref_path.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if len(refs) != 33 or len(set(refs)) != 33:
+        raise ManifestError(
+            f"a4_native_superset_reference_count={len(refs)} expected=33"
+        )
+
+    env_paths = n1i_env.get(
+        "MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE", ""
+    ).split()
+    if set(env_paths) != set(refs):
+        raise ManifestError(
+            "n1i_a_a4_reference_drift="
+            f"env_count:{len(set(env_paths))},repo_count:{len(set(refs))}"
+        )
+
+    a4_path = require_file(n1i_a / "a4-native-closure.tsv", "n1i_a_a4_native_closure")
+    rows = read_tsv(a4_path)
+    required = {"binary", "side", "bits", "machine", "DT_NEEDED", "present_in_c3a"}
+    if rows and not required.issubset(rows[0]):
+        missing = sorted(required - set(rows[0]))
+        raise ManifestError("n1i_a_a4_columns_missing=" + ",".join(missing))
+
+    by_binary = {row["binary"]: row for row in rows}
+    if len(by_binary) != len(rows):
+        raise ManifestError("n1i_a_a4_duplicate_binary_row")
+
+    out: list[dict[str, object]] = []
+    for target in refs:
+        row = by_binary.get(target)
+        if row is None:
+            raise ManifestError(f"n1i_a_a4_reference_missing={target}")
+        if row["side"] != "system" or row["present_in_c3a"] != "NO":
+            raise ManifestError(
+                f"n1i_a_a4_reference_not_stock_only={target}:"
+                f"side={row['side']}:c3a={row['present_in_c3a']}"
+            )
+        parts = Path(target).parts
+        if len(parts) < 3 or parts[1] not in SYSTEM_SIDE:
+            raise ManifestError(f"n1i_a_a4_bad_target={target}")
+        out.append({
+            "library": Path(target).name,
+            "partition": parts[1],
+            "target": target,
+            "stock_path": "N1I_A_ACCEPTED_STOCK_DEVICE_PATH",
+            "sha256": "FREEZE_DURING_IMPLEMENTATION_MATERIALIZATION",
+            "needed": row["DT_NEEDED"] or "-",
+            "admitted_by": "N1I_A_A4_ACCEPTED_SYSTEM_SIDE_SUPERSET",
+            "evidence_strength": "ACCEPTED_HOST_AUDIT_SUPERSET",
+            "c3a_status": "ABSENT_BY_ACCEPTED_A4",
+            "decision": "ADMIT_ACCEPTED_A4_COMPATIBILITY_SUPERSET",
+        })
+    return out, sha256_file(a4_path)
 
 
 def vendor_ua_inventory(n1i_a: Path) -> list[dict[str, object]]:
@@ -335,18 +413,53 @@ def main() -> int:
     require_file(n1i_a / "a5-init-services.tsv", "n1i_a_init_services")
     require_file(n1i_a / "a5-trigger-property-setters.tsv", "n1i_a_trigger_setters")
 
-    stock_dir = resolve_b2_dir(
-        args.b2_stock_native, "stock", args.evidence_root.resolve(), OEM_IMS_SHA256
-    )
-    c3a_dir = resolve_b2_dir(
-        args.b2_c3a_native, "c3a", args.evidence_root.resolve(), OEM_IMS_SHA256
-    )
-    if stock_dir == c3a_dir:
-        raise ManifestError("b2_stock_and_c3a_same_directory")
+    repo_root = Path(__file__).resolve().parents[2]
+    evidence_root = args.evidence_root.resolve()
+    if (args.b2_stock_native is None) != (args.b2_c3a_native is None):
+        raise ManifestError("b2_explicit_authority_requires_stock_and_c3a_together")
 
-    native_rows, native_blockers = native_closure(stock_dir, c3a_dir)
-    if native_blockers:
-        raise ManifestError("b2_native_closure_not_finite=" + ",".join(native_blockers))
+    stock_dir: Path | None = None
+    c3a_dir: Path | None = None
+    a4_sha = "-"
+    if args.b2_stock_native is not None:
+        stock_dir = resolve_b2_dir(
+            args.b2_stock_native, "stock", evidence_root, OEM_IMS_SHA256
+        )
+        c3a_dir = resolve_b2_dir(
+            args.b2_c3a_native, "c3a", evidence_root, OEM_IMS_SHA256
+        )
+        native_authority = "N1I_B2_EXACT"
+    else:
+        stock_candidates = b2_candidates("stock", evidence_root, OEM_IMS_SHA256)
+        c3a_candidates = b2_candidates("c3a", evidence_root, OEM_IMS_SHA256)
+        if len(stock_candidates) == 1 and len(c3a_candidates) == 1:
+            stock_dir = stock_candidates[0]
+            c3a_dir = c3a_candidates[0]
+            native_authority = "N1I_B2_EXACT"
+        elif not stock_candidates and not c3a_candidates:
+            native_authority = "N1I_A_A4_ACCEPTED_SUPERSET"
+        else:
+            raise ManifestError(
+                "b2_partial_or_ambiguous_authority="
+                f"stock:{len(stock_candidates)},c3a:{len(c3a_candidates)}"
+            )
+
+    if native_authority == "N1I_B2_EXACT":
+        assert stock_dir is not None and c3a_dir is not None
+        if stock_dir == c3a_dir:
+            raise ManifestError("b2_stock_and_c3a_same_directory")
+        native_rows, native_blockers = native_closure(stock_dir, c3a_dir)
+        if native_blockers:
+            raise ManifestError(
+                "b2_native_closure_not_finite=" + ",".join(native_blockers)
+            )
+        native_authority_detail = "EXACT_B2_STOCK_VS_C3A"
+    else:
+        native_rows, a4_sha = a4_native_superset(n1i_a, repo_root, n1i_env)
+        native_authority_detail = (
+            "ACCEPTED_N1I_A_A4_33_FILE_COMPATIBILITY_SUPERSET;"
+            "B2_NOT_RETAINED_NON_BLOCKING_FOR_MVP"
+        )
 
     tmetrics = require_file(
         android / "frameworks/opt/telephony/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java",
@@ -356,7 +469,6 @@ def main() -> int:
     if tmetrics_blob not in {TMETRICS_BASE_BLOB, TMETRICS_POST_BLOB}:
         raise ManifestError(f"telephonymetrics_unexpected_blob={tmetrics_blob}")
 
-    repo_root = Path(__file__).resolve().parents[2]
     tmetrics_patch = require_file(
         repo_root / "patches/android-16-n1i-c1/telephony/0001-telephony-add-titan2-legacy-writeRilAnswer-overload.patch",
         "telephonymetrics_patch",
@@ -443,18 +555,15 @@ def main() -> int:
             "state": "PASS_ACCEPTED",
         },
         {
-            "authority": "B2_STOCK_NATIVE",
-            "path": str(stock_dir),
-            "sha256": "-",
+            "authority": "NATIVE_CLOSURE",
+            "path": (
+                f"stock={stock_dir};c3a={c3a_dir}"
+                if native_authority == "N1I_B2_EXACT"
+                else str(n1i_a / "a4-native-closure.tsv")
+            ),
+            "sha256": a4_sha if native_authority != "N1I_B2_EXACT" else "-",
             "git_blob": "-",
-            "state": "PASS_BOUND",
-        },
-        {
-            "authority": "B2_C3A_NATIVE",
-            "path": str(c3a_dir),
-            "sha256": "-",
-            "git_blob": "-",
-            "state": "PASS_BOUND",
+            "state": native_authority,
         },
     ]
     write_tsv(
@@ -515,10 +624,22 @@ def main() -> int:
 
     next_id = 7
     for row in native_rows:
+        action = (
+            "ADMIT_EXACT_STOCK_LIBRARY"
+            if native_authority == "N1I_B2_EXACT"
+            else "ADMIT_ACCEPTED_A4_COMPATIBILITY_SUPERSET"
+        )
+        basis = (
+            f"B2 exact stock-only system-side closure; {row['evidence_strength']}"
+            if native_authority == "N1I_B2_EXACT"
+            else (
+                "accepted N1I-A native closure PASS; exact 33-path A4 "
+                "compatibility superset; per-file hashes freeze before build"
+            )
+        )
         add(
-            f"M{next_id:03d}", "NATIVE", "ADMIT_EXACT_STOCK_LIBRARY",
-            str(row["target"]), str(row["stock_path"]), str(row["sha256"]),
-            f"B2 exact stock-only system-side closure; {row['evidence_strength']}",
+            f"M{next_id:03d}", "NATIVE", action,
+            str(row["target"]), str(row["stock_path"]), str(row["sha256"]), basis,
         )
         next_id += 1
 
@@ -549,8 +670,11 @@ def main() -> int:
     summary = {
         "N1I_C2_MANIFEST_TOOL_VERSION": TOOL_VERSION,
         "N1I_C2_MANIFEST_OEM_IMS_SHA256": OEM_IMS_SHA256,
-        "N1I_C2_MANIFEST_B2_STOCK_NATIVE_DIR": str(stock_dir),
-        "N1I_C2_MANIFEST_B2_C3A_NATIVE_DIR": str(c3a_dir),
+        "N1I_C2_MANIFEST_NATIVE_AUTHORITY": native_authority,
+        "N1I_C2_MANIFEST_NATIVE_AUTHORITY_DETAIL": native_authority_detail,
+        "N1I_C2_MANIFEST_B2_STOCK_NATIVE_DIR": str(stock_dir or "NONE_NOT_RETAINED"),
+        "N1I_C2_MANIFEST_B2_C3A_NATIVE_DIR": str(c3a_dir or "NONE_NOT_RETAINED"),
+        "N1I_C2_MANIFEST_N1I_A_A4_SHA256": a4_sha,
         "N1I_C2_MANIFEST_NATIVE_IMPORT_COUNT": str(len(native_rows)),
         "N1I_C2_MANIFEST_NATIVE_CLOSURE": "PASS_FINITE",
         "N1I_C2_MANIFEST_TELEPHONYMETRICS_STATE":
