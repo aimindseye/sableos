@@ -33,7 +33,10 @@ def native_fixture(root: Path, role: str, rows: list[dict[str, str]]) -> Path:
     d.mkdir(parents=True)
     write_env(
         d / "NATIVE_SUMMARY.env",
-        {"N1I_B2_NATIVE_APK_SHA256": mod.OEM_IMS_SHA256},
+        {
+            "N1I_B2_NATIVE_SIDE": role,
+            "N1I_B2_NATIVE_APK_SHA256": mod.OEM_IMS_SHA256,
+        },
     )
     fields = [
         "library", "status", "partition", "provider_class", "path", "sha256",
@@ -164,10 +167,31 @@ def test_vendor_ua_attribution(tmp: Path) -> None:
     assert rows[0]["system_attributed_trigger_properties"] == "vendor.mtk.ims.ready"
 
 
-def test_b2_role_classification() -> None:
-    assert mod.classify_b2_candidate(Path("/evidence/stock/native")) == "stock"
-    assert mod.classify_b2_candidate(Path("/evidence/c3a/native")) == "c3a"
-    assert mod.classify_b2_candidate(Path("/evidence/unknown/native")) is None
+def test_b2_side_authority(tmp: Path) -> None:
+    stock = native_fixture(
+        tmp / "neutral-name",
+        "stock",
+        [base_row("libx.so", "FOUND", "system", visibility="EXPLICIT")],
+    )
+    resolved = mod.resolve_b2_dir(
+        None,
+        "stock",
+        tmp,
+        mod.OEM_IMS_SHA256,
+    )
+    assert resolved == stock.resolve()
+
+    try:
+        mod.resolve_b2_dir(
+            stock,
+            "c3a",
+            tmp,
+            mod.OEM_IMS_SHA256,
+        )
+    except mod.ManifestError as exc:
+        assert "b2_c3a_side_mismatch=stock" in str(exc)
+    else:
+        raise AssertionError("explicit B2 side mismatch was accepted")
 
 
 def main() -> int:
@@ -176,11 +200,11 @@ def main() -> int:
         test_native_close_once(root / "case1")
         test_native_namespace_fail_closed(root / "case2")
         test_vendor_ua_attribution(root / "case3")
-    test_b2_role_classification()
+        test_b2_side_authority(root / "case4")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_NATIVE_CLOSE_ONCE=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_NAMESPACE_FAIL_CLOSED=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_VENDOR_UA_ATTRIBUTION=PASS")
-    print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_B2_ROLE_DISCOVERY=PASS")
+    print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_B2_SIDE_AUTHORITY=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST=PASS")
     return 0
 
