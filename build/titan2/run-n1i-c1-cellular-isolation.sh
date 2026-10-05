@@ -266,4 +266,157 @@ copy_payload /system_ext/framework/mediatek-ims-base.jar
   fail mediatek_ims_base_sha
 
 for p in "${NATIVE_PATHS[@]}"; do copy_payload "$p"; done
-copy_payload /system_ext/etc/permissio
+copy_payload /system_ext/etc/permissions/system-ext-permissions-mediatek.xml
+copy_payload /system_ext/etc/sysconfig/com.mediatek.ims.config.xml
+copy_payload /system/etc/permissions/privapp-permissions-mediatek.xml
+
+echo "N1I_C1_NATIVE_PAYLOAD=PASS count=${#NATIVE_PATHS[@]}"
+echo "N1I_C1_CONFIG_PAYLOAD=PASS count=3"
+
+echo
+echo "===== DERIVE NARROW ANDROID-16 SYSTEM_EXT SEPOLICY DELTA ====="
+POL="$CELL_ROOT/sepolicy/system_ext/private"
+mkdir -p "$POL"
+
+python3 - "$stock_sys" "$stock_ext" "$c3a_sys" "$POL" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+stock_sys = Path(sys.argv[1])
+stock_ext = Path(sys.argv[2])
+c3a_sys = Path(sys.argv[3])
+out = Path(sys.argv[4])
+
+property_names = [
+    "persist.vendor.entitlement_enabled",
+    "persist.vendor.entitlement.dbg.",
+    "persist.vendor.entitlement.sesurl",
+    "persist.vendor.net.wo.epdg_fqdn",
+    "persist.vendor.mtk_wfc_opt_in",
+    "persist.vendor.radio.cfu_over_ims",
+    "vendor.gsm.radio.ss.imsdereg",
+    "vendor.ril.imsconfig.force.notify",
+    "persist.vendor.dbg.vonr_ui_ovr",
+    "persist.vendor.dbg.vodata_avail_ovr",
+    "persist.vendor.mtk_clientapi_support",
+    "persist.vendor.radio.simswitchstate",
+    "persist.vendor.radio.waitimsi.roaming",
+    "persist.vendor.radio.wait.imsi",
+    "vendor.ril.imsi.status.",
+    "ro.mtk.ims.data.feature_support",
+]
+service_prefixes = (
+    "imsa", "mtkIms", "epdg_service",
+    "vendor.mediatek.hardware.mtkradioex.",
+)
+
+def existing(paths):
+    lines = []
+    for p in paths:
+        if p.is_file():
+            lines += [x.strip() for x in p.read_text(errors="replace").splitlines()
+                      if x.strip() and not x.lstrip().startswith("#")]
+    return lines
+
+stock_pc = stock_ext / "etc/selinux/system_ext_property_contexts"
+stock_sc = stock_ext / "etc/selinux/system_ext_service_contexts"
+stock_cil = stock_ext / "etc/selinux/system_ext_sepolicy.cil"
+if not all(p.is_file() for p in (stock_pc, stock_sc, stock_cil)):
+    raise SystemExit("N1I_C1_SEPOLICY=FAIL_STOCK_SYSTEM_EXT_POLICY_MISSING")
+
+c3a_pc_lines = set(existing([
+    c3a_sys / "etc/selinux/plat_property_contexts",
+    c3a_sys / "system_ext/etc/selinux/system_ext_property_contexts",
+]))
+c3a_sc_lines = set(existing([
+    c3a_sys / "etc/selinux/plat_service_contexts",
+    c3a_sys / "system_ext/etc/selinux/system_ext_service_contexts",
+]))
+c3a_cil_paths = [
+    c3a_sys / "etc/selinux/plat_sepolicy.cil",
+    c3a_sys / "system_ext/etc/selinux/system_ext_sepolicy.cil",
+]
+c3a_cil_text = "\n".join(
+    p.read_text(errors="replace") for p in c3a_cil_paths if p.is_file()
+)
+c3a_types = set(re.findall(r"\(type ([A-Za-z0-9_]+)\)", c3a_cil_text))
+
+pc_selected = []
+property_types = set()
+for raw in stock_pc.read_text(errors="replace").splitlines():
+    s = raw.strip()
+    if not s or s.startswith("#"):
+        continue
+    key = s.split()[0]
+    if key in property_names:
+        if s not in c3a_pc_lines:
+            pc_selected.append(s)
+        parts = s.split()
+        m = re.search(r":([A-Za-z0-9_]+):s0$", parts[-1])
+        if not m:
+            raise SystemExit(f"N1I_C1_SEPOLICY=FAIL_PROPERTY_TYPE_PARSE line={s}")
+        property_types.add(m.group(1))
+
+sc_selected = []
+service_types = set()
+for raw in stock_sc.read_text(errors="replace").splitlines():
+    s = raw.strip()
+    if not s or s.startswith("#"):
+        continue
+    name = s.split()[0]
+    if name in ("imsa", "mtkIms", "epdg_service") or name.startswith(service_prefixes[3]):
+        if s not in c3a_sc_lines:
+            sc_selected.append(s)
+        m = re.search(r":([A-Za-z0-9_]+):s0$", s.split()[-1])
+        if m and m.group(1) not in c3a_types:
+            service_types.add(m.group(1))
+
+stock_lines = stock_cil.read_text(errors="replace").splitlines()
+
+def has_attr(attr, typ):
+    needle = f"(typeattributeset {attr} "
+    return any(line.startswith(needle) and re.search(rf"\b{re.escape(typ)}\b", line)
+               for line in stock_lines)
+
+macro_for = {}
+for typ in sorted(property_types):
+    if typ in c3a_types:
+        continue
+    if has_attr("system_internal_property_type", typ):
+        macro_for[typ] = "system_internal_prop"
+    elif has_attr("system_restricted_property_type", typ):
+        macro_for[typ] = "system_restricted_prop"
+    elif has_attr("system_public_property_type", typ):
+        macro_for[typ] = "system_public_prop"
+    else:
+        raise SystemExit(f"N1I_C1_SEPOLICY=FAIL_PROPERTY_SCOPE_UNPROVEN type={typ}")
+
+rules = []
+set_pairs = set()
+get_pairs = set()
+svc_rules = set()
+allow_re = re.compile(
+    r"^\(allow ([A-Za-z0-9_]+) ([A-Za-z0-9_]+) "
+    r"\(([A-Za-z0-9_]+) \(([^)]*)\)\)\)$"
+)
+new_types = set(macro_for) | service_types
+known_types = c3a_types | new_types
+for line in stock_lines:
+    m = allow_re.match(line.strip())
+    if not m:
+        continue
+    src, tgt, cls, perms_s = m.groups()
+    if src not in known_types or tgt not in new_types:
+        continue
+    perms = set(perms_s.split())
+    if tgt in property_types:
+        if cls == "property_service" and "set" in perms:
+            set_pairs.add((src, tgt))
+        elif cls == "file" and {"read", "open"} & perms:
+            get_pairs.add((src, tgt))
+    elif tgt in service_types and cls == "service_manager":
+        svc_rules.add((src, tgt, tuple(sorted(perms))))
+
+te = [
+    "# Generated f
