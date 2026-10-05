@@ -42,6 +42,37 @@ echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
 PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache"     python3 -m py_compile "$TEST"
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_PYTHON_SYNTAX=PASS"
 
+python3 - "$DRIVER" <<'PY'
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+lines = path.read_text(encoding="utf-8").splitlines()
+blocks = []
+i = 0
+while i < len(lines):
+    line = lines[i]
+    if "<<'PY'" not in line:
+        i += 1
+        continue
+    start = i + 1
+    i += 1
+    body = []
+    while i < len(lines) and lines[i] != "PY":
+        body.append(lines[i])
+        i += 1
+    if i >= len(lines):
+        raise SystemExit(f"unterminated_python_heredoc_at_line={start}")
+    source = "\n".join(body) + "\n"
+    compile(source, f"{path}:heredoc:{start}", "exec")
+    blocks.append(start)
+    i += 1
+
+if len(blocks) != 4:
+    raise SystemExit(f"unexpected_python_heredoc_count={len(blocks)} starts={blocks}")
+print(f"N1I_C2_IMPLEMENTATION_CONTRACT_EMBEDDED_PYTHON_SYNTAX=PASS blocks={len(blocks)}")
+PY
+
 marker C1_INHERIT "$MK" 'vendor/sable/titan2/n1i-c1/sable-titan2-n1i-c1.mk'
 marker INCOMING_PROPERTY "$MK" 'ro.telephony.block_binder_thread_on_incoming_calls=false'
 marker INTEGRATION_PACKAGE "$MK" 'SableTitan2Cellular'
@@ -69,6 +100,10 @@ marker MMTEL_OVERLAY_MODULE "$DRIVER" 'treble-overlay-telephony-mtk-ims'
 marker MMTEL_OVERLAY_PACKAGE "$DRIVER" 'me.phh.treble.overlay.mtkims_telephony'
 marker IMPLEMENTATION_RECEIPT "$DRIVER" 'CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv'
 marker IMPLEMENTATION_RECEIPT_ROWS "$DRIVER" 'IMPLEMENTATION_RECEIPT_ROWS=41'
+marker STOCK_MAP_A4_EXACT "$DRIVER" 'N1I_C2_STOCK_MAP=FAIL_A4_TARGET_SET'
+marker PLATFORM_RESIGN "$DRIVER" 'N1I_C2_OEM_IMS_PLATFORM_RESIGN=PASS'
+marker EMERGENCY_SOURCE_RESTORE "$DRIVER" 'N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS'
+marker PLATFORM_RESIGN_ARTIFACT "$DRIVER" 'OEM_IMS_PLATFORM_RESIGNED=YES'
 marker SOURCE_AUTH_REQUIRED "$DRIVER" 'source_mutation_requires_authorization'
 marker BUILD_AUTH_REQUIRED "$DRIVER" 'build_requires_authorization'
 marker SOURCE_RESTORE "$DRIVER" 'N1I_C2_SOURCE_RESTORE=PASS'
