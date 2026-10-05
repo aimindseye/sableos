@@ -37,7 +37,9 @@ NATIVE_HASH_COUNT=33
 MUTATION_COUNT=41
 ```
 
-The implementation driver verifies both seals before staging anything.
+The implementation driver verifies both seals before staging anything and
+rechecks that the 33 materialized native targets equal the canonical
+`product/titan2/n1i-c1/a4-native-superset.txt` set exactly.
 
 ## Product composition
 
@@ -169,7 +171,8 @@ After the build it verifies:
 
 - all 33 native outputs exist at the exact partition paths and retain their
   frozen SHA-256;
-- OEM IMS package/shared UID remain correct;
+- OEM IMS package/shared UID remain correct and the built APK certificate
+  equals the platform certificate;
 - both MediaTek boot JARs remain present;
 - incoming-call property is present in the built system;
 - integration script/init/config/marker are installed;
@@ -186,7 +189,8 @@ After the build it verifies:
 
 The driver reverses the two source patches, restores `rom.mk`, removes the
 temporary `vendor/sable/titan2` staging tree and verifies the original source
-blobs before sealing the artifact. The implementation receipt and frozen
+blobs before sealing the artifact. An EXIT trap performs the same bounded
+restore on failure and reports whether emergency restoration succeeded. The implementation receipt and frozen
 mutation manifest are both copied into the final artifact so post-build and
 flash qualification can bind to the same 41-entry authority.
 
