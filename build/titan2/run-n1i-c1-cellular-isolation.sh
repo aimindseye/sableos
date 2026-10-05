@@ -546,4 +546,100 @@ done
 
 BOOTPB="$result/etc/classpaths/bootclasspath.pb"
 [[ -f "$BOOTPB" ]] || fail bootclasspath_pb_missing
-grep -aFq '
+grep -aFq '/system_ext/framework/mediatek-common.jar' "$BOOTPB" || fail bootclasspath_common_missing
+grep -aFq '/system_ext/framework/mediatek-ims-base.jar' "$BOOTPB" || fail bootclasspath_ims_base_missing
+echo "N1I_C1_BOOTCLASSPATH_IMAGE=PASS"
+
+for p in "${NATIVE_PATHS[@]}"; do
+  rel="${p#/}"
+  [[ -f "$result/$rel" ]] || fail "result_native_missing=$p"
+  staged="$PREBUILT/$rel"
+  [[ "$(sha256sum "$result/$rel" | awk '{print $1}')" == "$(sha256sum "$staged" | awk '{print $1}')" ]] ||
+    fail "result_native_sha=$p"
+done
+echo "N1I_C1_NATIVE_IMAGE=PASS count=${#NATIVE_PATHS[@]}"
+
+for p in \
+  system_ext/etc/permissions/system-ext-permissions-mediatek.xml \
+  system_ext/etc/sysconfig/com.mediatek.ims.config.xml \
+  etc/permissions/privapp-permissions-mediatek.xml
+do
+  [[ -f "$result/$p" ]] || fail "result_config_missing=$p"
+done
+echo "N1I_C1_CONFIG_IMAGE=PASS"
+
+for p in \
+  system_ext/etc/selinux/system_ext_property_contexts \
+  system_ext/etc/selinux/system_ext_service_contexts \
+  system_ext/etc/selinux/system_ext_sepolicy.cil
+do
+  [[ -f "$result/$p" ]] || fail "result_policy_missing=$p"
+done
+grep -Fq 'persist.vendor.mtk_clientapi_support' "$result/system_ext/etc/selinux/system_ext_property_contexts" ||
+  fail result_mtk_property_context
+grep -Fq 'mtkIms' "$result/system_ext/etc/selinux/system_ext_service_contexts" ||
+  fail result_mtk_service_context
+grep -Fq 'system_mtk_imsconfig_prop' "$result/system_ext/etc/selinux/system_ext_sepolicy.cil" ||
+  fail result_mtk_policy_type
+echo "N1I_C1_SEPOLICY_IMAGE=PASS_ENFORCING_BUILD"
+
+for i in "${!MODULES[@]}"; do
+  apk="$result/product/app/${MODULES[$i]}/${MODULES[$i]}.apk"
+  [[ -f "$apk" ]] || fail "result_sable_app_missing=${MODULES[$i]}"
+done
+echo "N1I_C1_SABLE_APPS_IMAGE=PASS count=5"
+
+mkdir -p "$ARTIFACT"
+cp --reflink=auto --sparse=always "$PRODUCT_OUT/system.img" "$ARTIFACT/system.img"
+cp "$EVIDENCE/payload-sha256.tsv" "$ARTIFACT/"
+cat > "$ARTIFACT/artifact.env" <<EOF
+ROLE=N1I_C1_CELLULAR_ISOLATION_ANDROID16
+SOURCE_COMMIT=$SOURCE_COMMIT
+AOSP_REVISION=$N1D_AOSP_REVISION
+GRAPHENEOS_TAG=$N1D_C3_GRAPHENEOS_TAG
+RESTLESS_CONTROL_TAG=$N1D_C3_RESTLESS_TAG
+BASE_C3A_SHA256=$C3A_SHA
+SABLE_MODULE_COUNT=5
+REGISTRATION_DATA_DELTA=NONE_INITIAL_C1_PRESERVE_C3A
+OEM_IMS_PACKAGE=com.mediatek.ims
+OEM_IMS_PLATFORM_RESIGN=PASS
+OEM_IMS_REQUIRED_BOOT_JARS=2
+OEM_IMS_SYSTEM_NATIVE_COUNT=${#NATIVE_PATHS[@]}
+SYSTEM_SHA256=$NEW_SHA
+SYSTEM_BYTES=$NEW_BYTES
+DEVICE_CONTACT=NONE
+FLASH=NONE
+EOF
+(
+  cd "$ARTIFACT"
+  find . -type f ! -name system.img ! -name SHA256SUMS.txt -print0 |
+    LC_ALL=C sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+  printf '%s  ./system.img\n' "$NEW_SHA" >> SHA256SUMS.txt
+  sha256sum -c SHA256SUMS.txt >/dev/null
+)
+
+cleanup_source
+trap - EXIT
+[[ "$(sha256sum "$ROM_MK" | awk '{print $1}')" == "$ROM_SHA" ]] || fail rom_restore
+[[ ! -e "$STAGE_ROOT" ]] || fail stage_restore
+[[ -z "$(git -C "$ROOT" status --porcelain=v1 --untracked-files=all)" ]] || fail sable_repo_changed
+
+rm -rf "$WORK"
+
+echo
+echo "===== N1I-C1 BUILD COMPLETE ====="
+echo "N1I_C1_ANDROID_PLATFORM=16"
+echo "N1I_C1_SOURCE_COMMIT=$SOURCE_COMMIT"
+echo "N1I_C1_REGISTRATION_DATA_DELTA=NONE_PRESERVE_C3A"
+echo "N1I_C1_OEM_IMS=PASS_BUILT"
+echo "N1I_C1_BOOTCLASSPATH=PASS"
+echo "N1I_C1_NATIVE_CLOSURE_PASS count=${#NATIVE_PATHS[@]}"
+echo "N1I_C1_SEPOLICY=PASS_NARROW_DERIVED"
+echo "N1I_C1_SABLE_MODULES=PASS count=5"
+echo "N1I_C1_SYSTEM_SHA256=$NEW_SHA"
+echo "N1I_C1_SYSTEM_BYTES=$NEW_BYTES"
+echo "N1I_C1_ARTIFACT_DIR=$ARTIFACT"
+echo "N1I_C1_EVIDENCE_DIR=$EVIDENCE"
+echo "N1I_C1_DEVICE_CONTACT=NONE"
+echo "N1I_C1_FLASH=NONE"
+echo "N1I_C1_READY_FOR_ARTIFACT_REGISTRATION=YES"
