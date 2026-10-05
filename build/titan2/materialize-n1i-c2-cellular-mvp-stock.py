@@ -333,16 +333,33 @@ def expected_stock_rows(
     by_id = {row["id"]: row for row in mutations}
 
     expected_core = {
-        "M001": ("/system_ext/priv-app/ImsService/ImsService.apk", EXPECTED_OEM_IMS_SHA, "APK"),
-        "M002": ("/system_ext/framework/mediatek-common.jar", EXPECTED_COMMON_JAR_SHA, "JAR"),
-        "M003": ("/system_ext/framework/mediatek-ims-base.jar", EXPECTED_IMS_BASE_JAR_SHA, "JAR"),
+        "M001": (
+            "OEM_IMS", "RETAIN",
+            "/system_ext/priv-app/ImsService/ImsService.apk",
+            EXPECTED_OEM_IMS_SHA, "APK",
+        ),
+        "M002": (
+            "JAVA", "RETAIN",
+            "/system_ext/framework/mediatek-common.jar",
+            EXPECTED_COMMON_JAR_SHA, "JAR",
+        ),
+        "M003": (
+            "JAVA", "RETAIN",
+            "/system_ext/framework/mediatek-ims-base.jar",
+            EXPECTED_IMS_BASE_JAR_SHA, "JAR",
+        ),
     }
     rows: list[dict[str, str]] = []
-    for mid, (target, digest, kind) in expected_core.items():
+    for mid, (domain, action, target, digest, kind) in expected_core.items():
         row = by_id.get(mid)
         if row is None:
             raise MaterializeError(f"core_mutation_missing={mid}")
-        if row.get("target") != target or row.get("sha256_or_blob") != digest:
+        if (
+            row.get("domain") != domain
+            or row.get("action") != action
+            or row.get("target") != target
+            or row.get("sha256_or_blob") != digest
+        ):
             raise MaterializeError(f"core_mutation_drift={mid}")
         rows.append({
             "mutation_id": mid,
@@ -362,6 +379,14 @@ def expected_stock_rows(
     ]
     if len(native_mutations) != EXPECTED_NATIVE_COUNT:
         raise MaterializeError(f"native_mutation_count={len(native_mutations)}")
+    expected_native_ids = {f"M{i:03d}" for i in range(7, 40)}
+    actual_native_ids = {row["id"] for row in native_mutations}
+    if actual_native_ids != expected_native_ids:
+        raise MaterializeError(
+            "native_mutation_id_set_drift="
+            f"missing:{','.join(sorted(expected_native_ids - actual_native_ids)) or 'NONE'};"
+            f"extra:{','.join(sorted(actual_native_ids - expected_native_ids)) or 'NONE'}"
+        )
     if {row["target"] for row in native_mutations} != native_targets:
         raise MaterializeError("native_manifest_target_set_mismatch")
 
