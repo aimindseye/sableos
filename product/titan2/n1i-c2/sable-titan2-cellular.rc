@@ -1,0 +1,15 @@
+# SableOS Titan 2 Cellular MVP one-shot readiness probe.
+# Runs as shell after boot_completed so cmd phone/overlay diagnostics use the
+# normal shell permission surface. The healer remains disabled unless the
+# explicit /data/local/tmp enable marker exists.
+
+service sable_titan2_cellular_probe /system_ext/bin/sable-titan2-cellular probe
+    class late_start
+    user shell
+    group shell log
+    seclabel u:r:shell:s0
+    disabled
+    oneshot
+
+on property:sys.boot_completed=1
+    start sable_titan2_cellular_probe
