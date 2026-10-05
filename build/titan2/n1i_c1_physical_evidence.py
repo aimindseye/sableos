@@ -39,6 +39,15 @@ def text(path: pathlib.Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
 
 
+def captured_text(path: pathlib.Path) -> str:
+    """Return snapshot stdout only when the sibling .rc proves command success."""
+    rc_path = path.with_suffix(".rc")
+    if not path.is_file() or not rc_path.is_file():
+        return ""
+    rc = rc_path.read_text(encoding="utf-8", errors="replace").strip()
+    return text(path) if rc == "0" else ""
+
+
 def parse_getprop(raw: str) -> dict[str, str]:
     out: dict[str, str] = {}
     for line in raw.splitlines():
@@ -112,8 +121,8 @@ def ims_provider_present(package_dump: str, path_dump: str) -> bool:
 
 
 def slot_provider_present(end: pathlib.Path, slot: int) -> bool:
-    device = text(end / f"ims_slot{slot}_device.txt")
-    carrier = text(end / f"ims_slot{slot}_carrier.txt")
+    device = captured_text(end / f"ims_slot{slot}_device.txt")
+    carrier = captured_text(end / f"ims_slot{slot}_carrier.txt")
     return "com.mediatek.ims" in device or "com.mediatek.ims" in carrier
 
 
