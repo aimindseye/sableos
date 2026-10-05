@@ -58,12 +58,16 @@ marker FULL_MUTATION_ID_SET "$TOOL" 'EXPECTED_MUTATION_IDS = {f"M{i:03d}" for i 
 marker NON_STOCK_SEMANTICS "$TOOL" 'EXPECTED_NON_STOCK_MUTATIONS = {'
 marker NATIVE_ID_SET "$TOOL" 'expected_native_ids = {f"M{i:03d}" for i in range(7, 40)}'
 marker SYMLINK_FAIL_CLOSED "$TOOL" 'stock_source_symlink='
+marker OUTPUT_PROTECTION "$TOOL" 'output_inside_protected='
 marker AUTH_REQUIRED "$DRIVER" 'materialization_requires_--authorize-materialization'
-marker V6E_REPLAY "$DRIVER" 'QUALIFIED_V6E_RETAINED'
-marker FRESH_REPLAY "$DRIVER" 'FRESH_PINNED_REPLAY'
+marker FRESH_REPLAY_ONLY "$DRIVER" 'FRESH_PINNED_REPLAY_ONLY'
+marker REPLAY_WORK_CLEANUP "$DRIVER" 'PASS_REMOVED_AFTER_FREEZE'
 marker REPLAY_RC_CAPTURE "$DRIVER" 'REPLAY_RC=$?'
 marker MATERIALIZER_RC_CAPTURE "$DRIVER" 'MATERIALIZE_RC=$?'
 marker SOURCE_COMMIT_EVIDENCE "$DRIVER" 'N1I_C2_MATERIALIZATION_SOURCE_COMMIT='
+marker OUTPUT_REPO_GUARD "$DRIVER" 'out_inside_repo='
+marker EVIDENCE_REPO_GUARD "$DRIVER" 'evidence_inside_repo='
+marker MANIFEST_OUTPUT_GUARD "$DRIVER" 'out_inside_manifest_evidence='
 marker AUDIT_BLOB "$DRIVER" '02f7b7330b468a31be8cfc60551673cad127313e'
 marker NO_SOURCE_MUTATION "$DRIVER" 'SOURCE_MUTATION_AUTHORIZED=NO'
 marker NO_BUILD "$DRIVER" 'BUILD_AUTHORIZED=NO'
@@ -79,6 +83,16 @@ if grep -Eq -- '(^|[[:space:]])(m|mm|mmm|make|ninja|soong_ui\.bash)([[:space:]]|
     fail driver_build_surface
 fi
 echo "N1I_C2_MATERIALIZATION_CONTRACT_NO_BUILD_COMMAND=PASS"
+
+if grep -Eq -- '(^|[^A-Za-z_])(adb|fastboot)[[:space:](]' "$DRIVER" "$TOOL"; then
+    fail device_command_surface
+fi
+echo "N1I_C2_MATERIALIZATION_CONTRACT_NO_DEVICE_COMMANDS=PASS"
+
+if grep -Eq -- 'curl|wget|requests|urllib|socket|git[[:space:]]+(fetch|pull|clone)|https?://' "$DRIVER" "$TOOL"; then
+    fail network_surface
+fi
+echo "N1I_C2_MATERIALIZATION_CONTRACT_NO_NETWORK=PASS"
 
 if TEST_OUTPUT="$(python3 "$TEST")"; then
     printf '%s\n' "$TEST_OUTPUT"
