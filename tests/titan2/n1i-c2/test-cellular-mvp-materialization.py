@@ -25,6 +25,11 @@ def write_env(path: Path, values: dict[str, str]) -> None:
     )
 
 
+def read_rows(path: Path) -> list[dict[str, str]]:
+    with path.open(encoding="utf-8", newline="") as fp:
+        return list(csv.DictReader(fp, delimiter="\t"))
+
+
 def write_tsv(path: Path, fields: list[str], rows: list[dict[str, str]]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fp:
@@ -86,12 +91,26 @@ def make_manifest(root: Path) -> tuple[Path, list[str]]:
             "basis": "fixture", "status": "PROPOSED_NOT_AUTHORIZED",
         },
     ]
-    for mid, domain in (("M004", "FRAMEWORK"), ("M005", "TELEPHONY"), ("M006", "PHH")):
-        rows.append({
-            "id": mid, "domain": domain, "action": "FIXTURE",
-            "target": f"fixture/{mid}", "source": "fixture", "sha256_or_blob": "-",
+    rows.extend([
+        {
+            "id": "M004", "domain": "FRAMEWORK", "action": "APPLY_PATCH",
+            "target": "/fixture/android/frameworks/opt/telephony/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java",
+            "source": "fixture", "sha256_or_blob": mod.EXPECTED_TMETRICS_PATCH_BLOB,
             "basis": "fixture", "status": "PROPOSED_NOT_AUTHORIZED",
-        })
+        },
+        {
+            "id": "M005", "domain": "TELEPHONY", "action": "SET_PRODUCT_PROPERTY_FALSE",
+            "target": "ro.telephony.block_binder_thread_on_incoming_calls",
+            "source": "fixture", "sha256_or_blob": mod.EXPECTED_IMS_CALL_TRACKER_BLOB,
+            "basis": "fixture", "status": "PROPOSED_NOT_AUTHORIZED",
+        },
+        {
+            "id": "M006", "domain": "PHH", "action": "TITAN_GUARD_MTKMAL_IMS_DISABLE_BRANCH",
+            "target": "/fixture/android/device/phh/treble/phh-on-boot.sh",
+            "source": "fixture", "sha256_or_blob": mod.EXPECTED_PHH_ON_BOOT_BLOB,
+            "basis": "fixture", "status": "PROPOSED_NOT_AUTHORIZED",
+        },
+    ])
     for index, target in enumerate(refs, start=7):
         rows.append({
             "id": f"M{index:03d}",
@@ -105,14 +124,18 @@ def make_manifest(root: Path) -> tuple[Path, list[str]]:
         })
     rows.extend([
         {
-            "id": "M040", "domain": "INTEGRATION", "action": "FIXTURE",
-            "target": "fixture/M040", "source": "fixture", "sha256_or_blob": "-",
-            "basis": "fixture", "status": "PROPOSED_NOT_AUTHORIZED",
+            "id": "M040", "domain": "INTEGRATION",
+            "action": "ADD_SABLE_TITAN_CELLULAR_INTEGRATION_PACKAGE",
+            "target": "vendor/sable/titan2/n1i-c2", "source": "fixture",
+            "sha256_or_blob": "-", "basis": "fixture",
+            "status": "PROPOSED_NOT_AUTHORIZED",
         },
         {
-            "id": "M041", "domain": "HEALER", "action": "FIXTURE",
-            "target": "fixture/M041", "source": "fixture", "sha256_or_blob": "-",
-            "basis": "fixture", "status": "PROPOSED_NOT_AUTHORIZED",
+            "id": "M041", "domain": "HEALER",
+            "action": "SHIP_DISABLED_BY_DEFAULT",
+            "target": "Sable Titan cellular integration package",
+            "source": "fixture", "sha256_or_blob": "-", "basis": "fixture",
+            "status": "PROPOSED_NOT_AUTHORIZED",
         },
     ])
     assert len(rows) == 41
@@ -228,17 +251,59 @@ def test_partition_mapping_and_elf(tmp: Path) -> None:
     assert mod.elf64_aarch64(sys_file) == ("ELF64", 183)
 
 
+
+def test_manifest_semantic_drift_fails(tmp: Path) -> None:
+    manifest, _ = make_manifest(tmp)
+    rows = read_rows(manifest / "CELLULAR_MVP_MUTATION_MANIFEST.tsv")
+    for row in rows:
+        if row["id"] == "M006":
+            row["action"] = "FIXTURE_UNSAFE"
+            break
+    write_tsv(
+        manifest / "CELLULAR_MVP_MUTATION_MANIFEST.tsv",
+        ["id", "domain", "action", "target", "source", "sha256_or_blob", "basis", "status"],
+        rows,
+    )
+    seal(manifest)
+    try:
+        mod.validate_manifest(manifest)
+    except mod.MaterializeError as exc:
+        assert "mutation_semantic_drift=M006:action" in str(exc)
+    else:
+        raise AssertionError("semantic mutation drift was accepted")
+
+
+def test_symlink_source_rejected(tmp: Path) -> None:
+    replay = make_replay(tmp)
+    system_ext = replay / "work/stock/system_ext"
+    (system_ext / "lib64").mkdir(parents=True)
+    real = system_ext / "lib64/libreal.so"
+    real.write_bytes(b"fixture")
+    link = system_ext / "lib64/libalias.so"
+    link.symlink_to(real.name)
+    try:
+        mod.source_for_target(replay, "/system_ext/lib64/libalias.so")
+    except mod.MaterializeError as exc:
+        assert "stock_source_symlink=" in str(exc)
+    else:
+        raise AssertionError("stock symlink source was accepted")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         test_manifest_shape(root / "case1")
         test_replay_authority(root / "case2")
         test_partition_mapping_and_elf(root / "case3")
+        test_manifest_semantic_drift_fails(root / "case4")
+        test_symlink_source_rejected(root / "case5")
 
     print("N1I_C2_MATERIALIZATION_TEST_MANIFEST_SHAPE=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_REPLAY_AUTHORITY=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_PARTITION_MAPPING=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_ELF64_AARCH64=PASS")
+    print("N1I_C2_MATERIALIZATION_TEST_SEMANTIC_DRIFT_FAIL_CLOSED=PASS")
+    print("N1I_C2_MATERIALIZATION_TEST_SYMLINK_FAIL_CLOSED=PASS")
     print("N1I_C2_CELLULAR_MVP_MATERIALIZATION_TEST=PASS")
     return 0
 
