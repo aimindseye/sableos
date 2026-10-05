@@ -439,20 +439,27 @@ if len(rows) != 1:
 row = rows[0]
 service = row.get("service", "")
 decision = row.get("decision", "")
+start_mode = row.get("start_mode", "")
 if not re.fullmatch(r"[A-Za-z0-9_.-]+", service):
     raise SystemExit(f"N1I_C2_VENDOR_UA_CONFIG=FAIL_SERVICE value={service!r}")
 if decision != "OBSERVE_READINESS":
     raise SystemExit(f"N1I_C2_VENDOR_UA_CONFIG=FAIL_DECISION value={decision!r}")
+if not re.fullmatch(r"[A-Za-z0-9_.-]+", start_mode):
+    raise SystemExit(f"N1I_C2_VENDOR_UA_CONFIG=FAIL_START_MODE value={start_mode!r}")
 
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(
     "SABLE_TITAN2_IMS_PACKAGE=com.mediatek.ims\n"
     "SABLE_TITAN2_SLOT=0\n"
     f"SABLE_TITAN2_VENDOR_UA_SERVICE={service}\n"
-    f"SABLE_TITAN2_VENDOR_UA_DECISION={decision}\n",
+    f"SABLE_TITAN2_VENDOR_UA_DECISION={decision}\n"
+    f"SABLE_TITAN2_VENDOR_UA_START_MODE={start_mode}\n",
     encoding="utf-8",
 )
-print(f"N1I_C2_VENDOR_UA_CONFIG=PASS service={service} decision={decision}")
+print(
+    "N1I_C2_VENDOR_UA_CONFIG=PASS "
+    f"service={service} decision={decision} start_mode={start_mode}"
+)
 PY
 }
 
