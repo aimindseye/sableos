@@ -3,6 +3,7 @@ set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 GUARD="$ROOT/build/titan2/n1i-c1-readonly-guard.sh"
+SNAPSHOT="$ROOT/build/titan2/n1i-c1-physical-snapshot.sh"
 COLLECTOR="$ROOT/build/titan2/collect-n1i-c1-physical-runtime.sh"
 # shellcheck source=/dev/null
 source "$GUARD"
@@ -15,6 +16,9 @@ deny() { if n1i_c1_guard_ok "$1"; then fail "expected_deny=$1"; fi; }
 # Positive surface is intentionally narrow.
 allow "getprop"
 allow "getprop ro.product.device"
+allow "getprop ro.product.vendor.device"
+allow "getprop ro.build.fingerprint"
+allow "getprop ro.boot.slot_suffix"
 allow "dumpsys telephony.registry"
 allow "dumpsys phone"
 allow "dumpsys connectivity"
@@ -59,8 +63,34 @@ deny 'getprop $(setprop x y)'
   exit 0
 }
 
-bash -n "$GUARD" || fail guard_shell_syntax
-bash -n "$COLLECTOR" || fail collector_shell_syntax
+bash -n "$GUARD" "$SNAPSHOT" "$COLLECTOR" || fail shell_syntax
+
+# Runtime identity must tolerate generic GSI system-side identity. Physical
+# identity is stock-vendor-bound, while exact system bytes are host/receipt-bound.
+# shellcheck source=/dev/null
+source "$SNAPSHOT"
+SERIAL="TITAN20000006073"
+EXPECTED_VENDOR_FP="Unihertz/Titan_2/Titan_2:14/fixture:user/release-keys"
+STOCK_SYSTEM_FP="Unihertz/Titan_2/Titan_2:16/stock:user/release-keys"
+n1i_c1_adb_ro_value() {
+  case "$1" in
+    "getprop ro.serialno") echo "$SERIAL" ;;
+    "getprop ro.product.device") echo "tdgsi_arm64_ab" ;;
+    "getprop ro.product.model") echo "TrebleDroid" ;;
+    "getprop ro.product.manufacturer") echo "unknown" ;;
+    "getprop ro.product.vendor.device") echo "Titan_2" ;;
+    "getprop ro.product.vendor.model") echo "Titan 2" ;;
+    "getprop ro.product.vendor.manufacturer") echo "Unihertz" ;;
+    "getprop ro.build.version.release") echo "16" ;;
+    "getprop ro.build.version.sdk") echo "36" ;;
+    "getprop sys.boot_completed") echo "1" ;;
+    "getprop ro.vendor.build.fingerprint") echo "$EXPECTED_VENDOR_FP" ;;
+    "getprop ro.build.fingerprint") echo "SableOS/tdgsi/tdgsi:16/fixture:userdebug/test-keys" ;;
+    "getprop ro.boot.slot_suffix") echo "_a" ;;
+    *) return 1 ;;
+  esac
+}
+n1i_c1_verify_runtime_identity || fail generic_gsi_runtime_identity
 
 TD="$(mktemp -d)"
 trap 'rm -rf "$TD"' EXIT

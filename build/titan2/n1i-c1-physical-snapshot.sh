@@ -13,19 +13,31 @@ n1i_c1_adb_ro_value() {
 n1i_c1_verify_runtime_identity() {
   RUNTIME_SERIAL="$(n1i_c1_adb_ro_value 'getprop ro.serialno')" || fail runtime_serial_unreadable 3
   [[ "$RUNTIME_SERIAL" == "$SERIAL" ]] || fail runtime_serial_mismatch 3
+
+  # System-side product identity can legitimately be generic on a Treble/GSI
+  # composition. Keep it as evidence, but bind the physical handset through
+  # the exact stock-vendor identity plus the host-side artifact/receipt seal.
   DEVICE="$(n1i_c1_adb_ro_value 'getprop ro.product.device')" || fail runtime_device_unreadable 3
   MODEL="$(n1i_c1_adb_ro_value 'getprop ro.product.model')" || fail runtime_model_unreadable 3
   MANUFACTURER="$(n1i_c1_adb_ro_value 'getprop ro.product.manufacturer')" || fail runtime_manufacturer_unreadable 3
+  VENDOR_DEVICE="$(n1i_c1_adb_ro_value 'getprop ro.product.vendor.device')" || fail runtime_vendor_device_unreadable 3
+  VENDOR_MODEL="$(n1i_c1_adb_ro_value 'getprop ro.product.vendor.model')" || fail runtime_vendor_model_unreadable 3
+  VENDOR_MANUFACTURER="$(n1i_c1_adb_ro_value 'getprop ro.product.vendor.manufacturer')" || fail runtime_vendor_manufacturer_unreadable 3
+
   ANDROID_RELEASE="$(n1i_c1_adb_ro_value 'getprop ro.build.version.release')" || fail runtime_android_release_unreadable 3
   ANDROID_SDK="$(n1i_c1_adb_ro_value 'getprop ro.build.version.sdk')" || fail runtime_android_sdk_unreadable 3
   BOOT_COMPLETED="$(n1i_c1_adb_ro_value 'getprop sys.boot_completed')" || fail runtime_boot_completed_unreadable 3
   VENDOR_FP="$(n1i_c1_adb_ro_value 'getprop ro.vendor.build.fingerprint')" || fail runtime_vendor_fingerprint_unreadable 3
-  [[ "$DEVICE" == Titan_2 ]] || fail "runtime_device=$DEVICE" 6
-  [[ "$MODEL" == "Titan 2" || "$MODEL" == "SableOS Titan 2" ]] || fail "runtime_model=$MODEL" 6
-  [[ "$MANUFACTURER" == Unihertz ]] || fail "runtime_manufacturer=$MANUFACTURER" 6
+  BUILD_FP="$(n1i_c1_adb_ro_value 'getprop ro.build.fingerprint')" || fail runtime_build_fingerprint_unreadable 3
+  SLOT_SUFFIX="$(n1i_c1_adb_ro_value 'getprop ro.boot.slot_suffix')" || fail runtime_slot_unreadable 3
+
+  [[ "$VENDOR_DEVICE" == Titan_2 ]] || fail "runtime_vendor_device=$VENDOR_DEVICE" 6
+  [[ "$VENDOR_MANUFACTURER" == Unihertz ]] || fail "runtime_vendor_manufacturer=$VENDOR_MANUFACTURER" 6
   [[ "$ANDROID_RELEASE" == 16 && "$ANDROID_SDK" == 36 ]] || fail "runtime_android=$ANDROID_RELEASE sdk=$ANDROID_SDK" 6
   [[ "$BOOT_COMPLETED" == 1 ]] || fail "runtime_boot_completed=$BOOT_COMPLETED" 6
-  [[ "$VENDOR_FP" == Unihertz/Titan_2/Titan_2:14/*:user/release-keys ]] || fail runtime_vendor_fingerprint 6
+  [[ "$VENDOR_FP" == "$EXPECTED_VENDOR_FP" ]] || fail runtime_vendor_fingerprint_mismatch 6
+  [[ -n "$BUILD_FP" && "$BUILD_FP" != "$STOCK_SYSTEM_FP" ]] || fail runtime_system_identity_not_c1_candidate 6
+  [[ "$SLOT_SUFFIX" == _a ]] || fail "runtime_slot=$SLOT_SUFFIX expected=_a" 6
 }
 
 n1i_c1_adb_ro_capture() {

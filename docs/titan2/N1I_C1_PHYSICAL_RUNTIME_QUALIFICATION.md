@@ -1,9 +1,9 @@
 # Titan 2 N1I-C1 physical runtime qualification
 
-Status: tooling-only physical evidence package. It does not build or flash an
-image and it never mutates a connected device.
+Status: **tooling-only physical evidence package**. It does not build or flash an
+image and never mutates a connected device.
 
-## Image authority
+## Image and tooling authority
 
 The physical run is bound to the already-qualified C1 image-source commit:
 
@@ -13,12 +13,17 @@ ANDROID_PLATFORM=16
 IMAGE_ROLE=N1I_C1_ANDROID16_CELLULAR_ISOLATION
 ```
 
-The exact system-image SHA-256 is deliberately not hard-coded in source. It is
-read from the successful post-build C1 artifact and must equal both the
-operator-supplied SHA and the sealed flash/install receipt SHA.
+The exact `system.img` SHA-256 is deliberately not hard-coded. It comes from
+the successful C1 post-build artifact and must equal both the operator-supplied
+SHA and the sealed flash/install receipt SHA.
 
-The collector is a tooling layer only. Adding or changing this collector does
-not change the C1 image source commit.
+The collector also records `N1I_C1_TOOL_SOURCE_COMMIT`. Before device contact,
+all C1 collector/qualifier files and the reused BE2/N1B capture engine must be
+tracked and byte-identical to that HEAD. Thus a dirty local tool cannot claim
+evidence for an unchanged tool commit.
+
+The tooling branch is independent of the image-source PR. Tool changes do not
+change or requalify the C1 image source.
 
 ## Read-only contract
 
@@ -28,28 +33,34 @@ Device contact requires the literal authorization:
 --authorize-device-contact YES_READ_ONLY
 ```
 
-All artifact, SHA, flash-receipt and CLI validation happens before adb is looked
-up or invoked. The device must already be in fully booted Android/adbd mode.
-The collector never attempts to transition from bootloader fastboot, fastbootd,
-recovery, sideload, offline or unauthorized state.
+All CLI, artifact, SHA, receipt, tool-source and self-test checks happen before
+the first adb command. The device must already be in fully booted Android/adbd
+mode. If it is offline, unauthorized, in recovery/sideload, bootloader fastboot,
+fastbootd, or absent, the collector stops. It never changes device mode.
 
-The collector prohibits property writes, RIL/service restarts, airplane-mode or
-data toggles, APN edits, SIM-switch property writes, package mutation,
-reboot/flash commands, and any recovery/healing behavior. The only `cmd phone`
-forms admitted are the four exact read-only IMS-service queries for slots 0 and
-1. The only `content` forms admitted are exact read-only queries for preferred
-APN and siminfo.
+The collector prohibits:
 
-The existing `capture-n1b2-cellular-runtime.sh` remains the BE2/N1B long-window
-capture engine. C1 does not fork its state/timeline machinery. Before contact,
-the wrapper reruns the historical N1B read-only guard test plus its own C1 guard
-and qualifier self-tests.
+- property writes, including `persist.vendor.radio.simswitch` and
+  `persist.vendor.radio.c_capability_slot`;
+- RIL/modem/service restarts;
+- airplane-mode, data or radio toggles;
+- APN insert/update/delete;
+- package mutation;
+- reboot/flash/erase/resize commands;
+- retry, recovery or “healing” actions.
 
-## Cryptographic binding
+The only admitted `cmd phone` forms are the four exact read-only
+`ims get-ims-service` queries for slots 0 and 1. `content` access is
+read-only and limited to the preferred-APN and siminfo queries.
 
-Three bindings are required.
+The existing `capture-n1b2-cellular-runtime.sh` remains the long-window
+BE2/N1B capture engine in its unchanged default profile. The C1 wrapper adds
+bounded read-only start/end snapshots; it does not fork the BE2 state/timeline
+machinery.
 
-### Qualified artifact
+## Cryptographic device/image binding
+
+### Qualified C1 artifact
 
 The artifact directory must contain:
 
@@ -59,7 +70,7 @@ system.img
 SHA256SUMS.txt
 ```
 
-and `artifact.env` must contain:
+with:
 
 ```text
 ROLE=N1I_C1_ANDROID16_CELLULAR_ISOLATION
@@ -69,35 +80,34 @@ ANDROID_PLATFORM=16
 SYSTEM_SHA256=<exact corrected C1 SHA-256>
 ```
 
-The collector verifies `SHA256SUMS.txt` and independently hashes `system.img`.
+The SHA manifest is verified and `system.img` is independently hashed.
 
 ### Sealed flash/install receipt
 
-The separately governed flashing path must produce a directory containing:
+The separately governed flash path must create:
 
 ```text
 TITAN2_FLASH_RECEIPT.env
 SHA256SUMS.txt
 ```
 
-Minimum receipt contract:
+with at least:
 
 ```text
 TITAN2_FLASH_RECEIPT_VERSION=1
-DEVICE_SERIAL=<exact adb/flash target serial>
+DEVICE_SERIAL=<exact target serial>
+POST_FLASH_DEVICE_SERIAL=<same serial>
 ARTIFACT_ROLE=N1I_C1_ANDROID16_CELLULAR_ISOLATION
 IMAGE_SOURCE_COMMIT=a745c7daa08267d851f45785a5bb7ff762ed4604
 SYSTEM_SHA256=<exact corrected C1 SHA-256>
 TARGET_PARTITION=system_a
 FLASH_RESULT=PASS
-POST_FLASH_DEVICE_SERIAL=<same exact serial>
 POST_FLASH_MODE=ANDROID_ADB
 ```
 
-The receipt is evidence produced by the flash path; do not reconstruct one after
-the fact. Its SHA manifest is verified before any device contact.
+The collector refuses to reconstruct a missing receipt after the fact.
 
-The collector requires:
+Required equality:
 
 ```text
 artifact SYSTEM_SHA256
@@ -109,106 +119,125 @@ CLI --serial
   == receipt POST_FLASH_DEVICE_SERIAL
 ```
 
-Android shell properties are runtime corroboration, not a claim that shell can
-cryptographically re-hash the flashed raw logical system image.
+Android shell properties are runtime corroboration; they are not presented as a
+cryptographic hash of the flashed raw logical partition.
 
-### Runtime identity
+## Runtime corroboration
 
-After host-side binding, the device must report Android 16 / SDK 36, completed
-boot, Titan 2 identity, Unihertz manufacturer and the Titan 2 stock-vendor
-fingerprint family. `ro.serialno` must equal the explicitly selected adb serial.
+After host-side binding passes, the collector verifies:
 
-## Collection scenarios
+- adb transport is exactly the explicitly selected serial;
+- `ro.serialno` matches that serial;
+- exact stock Titan 2 vendor fingerprint from the committed N1I-F stock control;
+- vendor-side device identity is Titan 2 / Unihertz;
+- Android 16 / SDK 36;
+- `sys.boot_completed=1`;
+- active slot is `_a`, matching the sealed `system_a` receipt;
+- the active Android build fingerprint is not the stock system fingerprint.
 
-Run three independent scenarios with the same C1 system-image SHA.
+System-side `ro.product.device`, model and manufacturer are **evidence only**.
+They are not hard-gated to `Titan_2`, because a Treble/GSI system-side product
+identity can legitimately be generic. Physical identity comes from the exact
+stock-vendor authority plus the sealed host artifact/receipt binding.
 
-### Tray 1
+## Scenarios
 
-One physical SIM in tray 1 only. Expected end-state SIM property:
-
-```text
-gsm.sim.state=LOADED,ABSENT
-```
-
-During the capture window manually exercise data, SMS send/receive, MMS
-send/receive, outgoing voice and incoming voice. The collector itself initiates
-none of these actions.
-
-### Tray 2
-
-Move the same SIM to tray 2 only and boot normally before starting collection.
-Expected state:
+Run three independent scenarios using the same exact C1 image SHA and device.
 
 ```text
-gsm.sim.state=ABSENT,LOADED
+tray1: gsm.sim.state=LOADED,ABSENT
+tray2: gsm.sim.state=ABSENT,LOADED
+dsds:  gsm.sim.state=LOADED,LOADED
 ```
 
-Repeat the same user tests. The collector does not reboot the device and does
-not write `persist.vendor.radio.simswitch` or
-`persist.vendor.radio.c_capability_slot`.
+The collector checks this topology before starting the long capture.
 
-### DSDS
-
-Insert two physical SIMs. Expected state:
+For tray 1 and tray 2, manually exercise:
 
 ```text
-gsm.sim.state=LOADED,LOADED
+data
+SMS send
+SMS receive
+MMS send
+MMS receive
+outgoing voice
+incoming voice
 ```
 
-Manually validate data with SIM1 as default-data subscription and then SIM2 as
-default-data subscription. Also validate SMS/MMS and incoming/outgoing voice on
-both subscriptions independently. Any default-data switch is performed through
-the normal Android UI; the collector only observes the resulting state.
+For DSDS, manually exercise both subscriptions, including SIM1 as DDS and SIM2
+as DDS. Any DDS change is an operator UI action. The collector only observes.
 
-## Operator results
+Copy `build/titan2/n1i-c1-operator-results.env.example` to a local evidence
+directory and replace `PENDING` with only `PASS` or `FAIL`. Never place
+phone numbers, IMSI/ICCID/IMEI, contact names or message content in that file.
 
-Copy:
-
-```text
-build/titan2/n1i-c1-operator-results.env.example
-```
-
-to a local evidence directory and replace every required `PENDING` with `PASS`
-or `FAIL`. Never put phone numbers, subscriber IDs or message contents in this
-file.
-
-## Functional acceptance
+## Independent functional acceptance
 
 Registration, data, SMS/MMS, IMS provider, IMS registration, IMS bearer,
-outgoing voice and incoming voice are separate results. A working surface can
-never mask a failed one.
+outgoing voice and incoming voice are independent results. One working surface
+never masks another.
 
-Registration requires the correct tray state and three stable final BE2
-snapshots with voice and packet registration `IN_SERVICE` for the expected
-phone. Data additionally requires three final `CONNECTED` snapshots, a current
-validated cellular network, and the manual data result.
+### Registration
 
-IMS provider requires `com.mediatek.ims` at the expected system_ext priv-app
-path with `android.uid.phone` and privileged/system identity. IMS registration
-uses successful end-state registration evidence; early startup errors are not
-standalone failures. For DSDS, both phone IDs need slot/phone-specific registry
-registration evidence. IMS bearer requires a connected cellular IMS/MMTEL
-network; DSDS requires evidence of two bearer instances/interfaces.
+Single-SIM registration requires the expected SIM topology and three stable
+final snapshots with voice and packet service `IN_SERVICE` for the expected
+phone. DSDS requires that stable registration for both phones.
 
-`dumpsys ims` is deliberately not a standalone gate because the known-working
-stock Titan 2 lacks that service while IMS and real voice work.
+### Data
 
-The following known stock transients are not standalone failure criteria:
+Single-SIM data additionally requires three stable final `CONNECTED`
+snapshots, a current validated cellular network and the operator data test.
+
+DSDS data requires both line-specific operator DDS tests **and** observed runs of
+connected in-service data for each phone during the capture. A PASS flag alone
+cannot substitute for observed phone-level data state.
+
+### SMS/MMS and voice
+
+SMS/MMS requires all send/receive operator tests. Incoming and outgoing voice
+remain separate operator-observed results; they are never inferred from
+registration or IMS.
+
+### IMS provider
+
+Provider PASS requires the real OEM `com.mediatek.ims` package at the expected
+system_ext priv-app path, phone shared-UID / privileged identity, and
+slot-specific IMS service exposure. DSDS requires provider exposure for both
+slots.
+
+### IMS registration
+
+Single-SIM IMS registration uses an **end-state** decision: current
+phone/slot-specific registry evidence when available, otherwise the last
+registration transition in the radio/runtime log. An earlier success followed
+by a later unregister does not PASS.
+
+DSDS requires phone/slot-specific registered end-state evidence for both lines.
+
+### IMS bearer
+
+A bearer must be cellular, advertise IMS + MMTEL, and be connected or validated.
+DSDS aggregate bearer PASS requires two independently observed bearer
+instances/interfaces.
+
+`dumpsys ims` is deliberately not a standalone gate because known-working
+stock lacks that service.
+
+Known stock transients that are not standalone failures:
 
 ```text
 ERROR_UNSPECIFIED
 transient registration reject causes
-an early IMS setup error
+early IMS setup errors
 mtkImsIndication == NULL
 missing dumpsys ims service
 ```
 
 Recovered stable end state controls.
 
-## Stock comparison targets
+## Stock parity is diagnostic only
 
-Functional acceptance and stock parity are reported separately. Diagnostic
-single-SIM targets include:
+Single-SIM comparison targets:
 
 ```text
 APN=fast.t-mobile.com
@@ -217,19 +246,58 @@ IMS_INTERFACE=ccmni2
 IMS_CAPABILITIES=IMS,MMTEL
 ```
 
-For tray 2, the comparison additionally looks for framework/default-phone state
-on phone 1 plus real capability-switch evidence such as `MtkProxyController`,
-`SET_RADIO_CAPABILITY`, `EVENT_UNSOL_RADIO_CAPABILITY_CHANGED`, or `DSSExt`.
-No property-value change is required for `persist.vendor.radio.simswitch` or
-`persist.vendor.radio.c_capability_slot`.
+These are reported independently from functional acceptance. Functional data
+may PASS while the stock APN/interface target FAILs.
 
-Stock-target failures are diagnostic only. For example, functional C1 data may
-PASS while `N1I_C1_TRAY1_STOCK_APN_TARGET=FAIL`; the qualifier preserves both.
+Tray-2 comparison additionally looks for phone-1/default-data movement and real
+capability-switch evidence such as:
 
-## Run collector
+```text
+MtkProxyController
+SET_RADIO_CAPABILITY
+EVENT_UNSOL_RADIO_CAPABILITY_CHANGED
+DSSExt
+```
 
-Example after C1 post-build qualification and a governed flash have both
-produced their seals:
+No numeric change to the two vendor simswitch/capability properties is required
+or performed.
+
+## Static/regression qualification
+
+Before physical use:
+
+```bash
+bash -n \
+  build/titan2/collect-n1i-c1-physical-runtime.sh \
+  build/titan2/n1i-c1-readonly-guard.sh \
+  build/titan2/n1i-c1-physical-host-binding.sh \
+  build/titan2/n1i-c1-physical-snapshot.sh
+
+python3 -m py_compile \
+  build/titan2/n1i_c1_physical_evidence.py \
+  build/titan2/n1i_c1_physical_eval.py \
+  build/titan2/n1i_c1_physical_selftest.py \
+  build/titan2/qualify-n1i-c1-physical-runtime.py \
+  tests/titan2/n1i-c1/test-physical-runtime-qualifier.py
+
+bash tests/titan2/n1i-c1/test-physical-runtime-guard.sh
+python3 tests/titan2/n1i-c1/test-physical-runtime-qualifier.py
+```
+
+The guard regression proves no-contact behavior for missing authorization,
+invalid SHA and mismatched receipt serial; non-Android modes are allowed only
+the single `adb -s SERIAL get-state` observation. It also proves generic GSI
+system-side identity is accepted when the exact vendor/serial/Android/slot
+authority is correct.
+
+The qualifier self-test covers independent registration/IMS/voice verdicts,
+slot-provider enforcement, final IMS registration semantics, usable bearer
+requirements, APN parity separation, stock transient recovery and DSDS
+anti-masking/data observation.
+
+## Collect
+
+After the corrected C1 post-build seal and governed flash receipt exist:
 
 ```bash
 bash build/titan2/collect-n1i-c1-physical-runtime.sh \
@@ -242,13 +310,12 @@ bash build/titan2/collect-n1i-c1-physical-runtime.sh \
   --duration-min 20
 ```
 
-Repeat with `--scenario tray2` and `--scenario dsds`.
+Repeat for `tray2` and `dsds`.
 
-Raw C1 snapshots are intentionally local/private. The reused BE2 capture keeps
-its existing redaction behavior, which remains best-effort and requires manual
-privacy review before sharing.
+Raw C1 snapshots remain local/private. BE2 redaction remains best-effort and
+requires manual privacy review before sharing.
 
-## Final qualification
+## Final qualifier
 
 ```bash
 python3 build/titan2/qualify-n1i-c1-physical-runtime.py \
@@ -268,7 +335,7 @@ N1I_C1_STOCK_COMPARISON.tsv
 N1I_C1_PHYSICAL_RUNTIME_REPORT.md
 ```
 
-The summary always preserves the independent matrix:
+The summary always preserves all independent markers:
 
 ```text
 N1I_C1_TRAY1_REGISTRATION=PASS|FAIL
@@ -305,23 +372,3 @@ Only after all 24 mandatory surfaces PASS does the optional aggregate become:
 ```text
 N1I_C1_PHYSICAL_RUNTIME_MATRIX=PASS
 ```
-
-## Regression/self-tests
-
-Before physical use run:
-
-```bash
-bash -n build/titan2/n1i-c1-readonly-guard.sh
-bash -n build/titan2/collect-n1i-c1-physical-runtime.sh
-
-python3 -m py_compile \
-  build/titan2/qualify-n1i-c1-physical-runtime.py \
-  tests/titan2/n1i-c1/test-physical-runtime-qualifier.py
-
-bash tests/titan2/n1i-c1/test-physical-runtime-guard.sh
-python3 tests/titan2/n1i-c1/test-physical-runtime-qualifier.py
-```
-
-The collector also runs the guard/qualifier self-tests itself before its first
-adb contact. Thus a later regression in the read-only contract blocks physical
-collection instead of relying on an operator to remember a historical rule.
