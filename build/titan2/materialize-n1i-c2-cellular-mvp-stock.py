@@ -80,6 +80,23 @@ class MaterializeError(RuntimeError):
     pass
 
 
+def require_safe_output(out: Path, protected: list[Path]) -> Path:
+    resolved = out.resolve()
+    for base in protected:
+        base_resolved = base.resolve()
+        if resolved == base_resolved:
+            raise MaterializeError(f"output_overlaps_protected={resolved}")
+        try:
+            resolved.relative_to(base_resolved)
+        except ValueError:
+            pass
+        else:
+            raise MaterializeError(
+                f"output_inside_protected={resolved}:protected:{base_resolved}"
+            )
+    return resolved
+
+
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fp:
@@ -424,7 +441,8 @@ def main() -> int:
 
     manifest = args.manifest_evidence.resolve()
     replay = args.replay_evidence.resolve()
-    out = args.out
+    repo_root = Path(__file__).resolve().parents[2]
+    out = require_safe_output(args.out, [repo_root, manifest, replay])
 
     print("===== N1I-C2 CELLULAR MVP STOCK MATERIALIZATION =====")
     print("SOURCE_MUTATION_AUTHORIZED=NO")
