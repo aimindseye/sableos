@@ -1,0 +1,24 @@
+regression_id	scope	status	invariant	owner	evidence
+TF-001	TITAN2	ACTIVE	Titan 2 deployment never inherits Pixel or Panther fastboot assumptions	build/devices/titan2.sh	PR142_PR143
+TF-002	TITAN2	ACTIVE	fastboot boot is unsupported and must never be used as the Titan temporary-boot path	build/devices/titan2.sh	unihertz-titan2_BOOTLOADER_AVB
+TF-003	TITAN2	ACTIVE	Logical-partition writes require userspace fastbootd proven by is-userspace=yes	build/devices/titan2.sh	N1F_PR264
+TF-004	TITAN2	ACTIVE	Every adb or fastboot device operation is bound to an explicit Titan serial	build/devices/titan2.sh	unihertz-titan2_UNIHERTZ_QUIRKS
+TF-005	TITAN2	ACTIVE	Host OKAY is never sufficient device-state proof; live unlocked/product/mode state is re-read before write	build/devices/titan2.sh	unihertz-titan2_BOOTLOADER_AVB
+TF-006	TITAN2	ACTIVE	Virtual A/B does not make an unmaterialized inactive system partition a safe target; current proven path is the active materialized logical system	build/devices/titan2.sh	N1D_E5B_DEPLOYMENT_MODEL
+TF-007	TITAN2	ACTIVE	Dynamic partition queries and targets use slot-qualified logical names such as system_a	build/devices/titan2.sh	unihertz-titan2_UNIHERTZ_QUIRKS
+TF-008	TITAN2	ACTIVE	A write is blocked unless snapshot-update-status is none before mutation and remains none after mutation	build/devices/titan2.sh	N1F_PR264
+TF-009	TITAN2	ACTIVE	COW partitions are evidence-bearing Virtual A/B state and are never blindly deleted as stale leftovers	build/devices/titan2.sh	unihertz-titan2_UNIHERTZ_QUIRKS
+TF-010	TITAN2	ACTIVE	The exact registered artifact SHA-256 and logical size are bound to the reviewed flash plan before execution	build/devices/titan2.sh	PR262_PR264
+TF-011	TITAN2	ACTIVE	A verified matched-stock restore path is mandatory before any Titan write-capable scope is opened	docs/titan2/TITAN2_FLASH_REGRESSION_POLICY.md	N1C_POSTMORTEM
+TF-012	TITAN2	ACTIVE	A standalone stock system_a flash is forbidden as a stock-restore procedure because it creates a mixed-partition state	docs/titan2/TITAN2_FLASH_REGRESSION_POLICY.md	STOCK_SYSTEM_ONLY_CONTROL
+TF-013	TITAN2	ACTIVE	Whole-super replacement is negative evidence and is not the primary Sable deployment path	build/devices/titan2.sh	N1C_POSTMORTEM
+TF-014	TITAN2	ACTIVE	Boot init_boot vendor_boot dtbo vbmeta slot and firmware mutation remain forbidden unless separately evidence-backed and authorized	build/devices/titan2.sh	N1F_PR264
+TF-015	TITAN2	ACTIVE	Userdata erase or factory reset is never implicit and requires a separate explicit destructive authorization	docs/titan2/N0_N1_FLASH_PLAN_LEDGER.md	PR142_PR183
+TF-016	TITAN2	ACTIVE	A failed Titan flash is never automatically retried	build/devices/titan2.sh	N1F_PR264
+TF-017	TITAN2	ACTIVE	After write the logical partition size slot fastbootd mode and snapshot state are verified before reboot	build/devices/titan2.sh	N1F_PR264
+TF-018	TITAN2	ACTIVE	The proven bounded flow sends one post-write reboot and stops on fastboot return recovery or timeout instead of fix-forward mutation	build/devices/titan2.sh	N1F_PR264
+TF-019	TITAN2	ACTIVE	New Titan device/recovery helpers avoid errexit/pipefail hardcoded host tools and command-substitution stdout pollution	docs/titan2/TITAN2_FLASH_REGRESSION_POLICY.md	N1C_POSTMORTEM
+TF-020	TITAN2	ACTIVE	Titan 2 Elite never inherits Titan 2 physical flash evidence or authorization	build/devices/titan2-elite.sh	TITAN_FAMILY_BOUNDARY
+TF-021	TITAN2	ACTIVE	Flash changes must review pinned Titan research successful/failed Sable flash history and current canonical deployment PRs	docs/titan2/TITAN2_FLASH_REGRESSION_POLICY.md	SOURCE_REVIEW
+TF-022	TITAN2	ACTIVE	Flash entry never assumes the current device mode; Android and bootloader fastboot transition to verified fastbootd, existing fastbootd is reused, and recovery or ambiguous state fails closed	build/titan2/titan2-flash-mode.sh	N1F_PR264_UNIHERTZ_TIER2
+TF-023	TITAN2	ACTIVE	Canonical Titan flash scripts must pass shell syntax checks and an offline bounded mode-state self-test; transport commands and transitions have hard timeouts and short polling	build/gates/titan2-flash-regression-contract.py	FLASH_SCRIPT_QUALITY

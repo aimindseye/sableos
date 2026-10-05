@@ -287,6 +287,32 @@ Titan2 deployment PRs should include a source section similar to:
 - Current device evidence: reviewed / not applicable
 ```
 
+## Canonical flash mode handling
+
+Titan 2 deployment must not assume that the phone starts in Android, bootloader
+fastboot, or userspace fastbootd. The canonical flash adapter delegates to:
+
+```text
+build/titan2/titan2-flash-mode.sh
+```
+
+The required state machine is:
+
+```text
+ANDROID_ADB -> BOOTLOADER_FASTBOOT -> FASTBOOTD
+BOOTLOADER_FASTBOOT -> FASTBOOTD
+FASTBOOTD -> FASTBOOTD (no transition)
+RECOVERY_ADB -> BLOCK / OWNER REVIEW
+UNKNOWN_OR_AMBIGUOUS -> BLOCK
+```
+
+Bootloader fastboot and fastbootd are distinguished by both product identity
+and `getvar is-userspace`; screen appearance is never sufficient. Every
+transition remains bound to the previously qualified ADB/fastboot serial hashes.
+
+The mode helper is covered by `TF-022` and the syntax/performance/self-test
+boundary by `TF-023` in `build/TITAN2_FLASH_REGRESSIONS.tsv`.
+
 ## Boundary reminder
 
 Unless a future PR explicitly changes the authorization boundary and is separately approved:
@@ -304,3 +330,33 @@ AVB_MUTATION_AUTHORIZED=NO
 PUBLIC_RELEASE=NO
 PRODUCTION_SIGNING=NO
 ```
+
+## Titan 2 flash-regression memory
+
+The deployment source map is now enforced by a dedicated executable regression
+layer:
+
+```text
+FLASH_REGRESSION_LEDGER=build/TITAN2_FLASH_REGRESSIONS.tsv
+FLASH_REGRESSION_GATE=build/gates/titan2-flash-regression-contract.py
+FLASH_REGRESSION_POLICY=docs/titan2/TITAN2_FLASH_REGRESSION_POLICY.md
+```
+
+The Titan adapter runs this gate before no-write flash-plan generation and again
+before any scoped flash execution policy can open. The shared static pipeline
+also runs it.
+
+Current pinned external review authority:
+
+```text
+UNIHERTZ_TITAN2_RESEARCH_MAIN=7e21667bc37b3fc80ef39d0b9e1c9a71a28cbec5
+TITAN2_TEMP_MAIN=7570470d1c5a27ef94ed4751f5ccb91af41761fe
+```
+
+The current `titan2-temp` tree is a product-source handoff reference. Device
+boot-mode/fastboot/restore authority comes from `aimindseye/unihertz-titan2`
+and physically recorded SableOS evidence.
+
+A future Titan deployment change must update the ledger and executable gate if
+new evidence intentionally supersedes a protected invariant. Documentation
+alone is not sufficient to relax a flash rule.
