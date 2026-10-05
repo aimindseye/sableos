@@ -194,6 +194,51 @@ def test_b2_side_authority(tmp: Path) -> None:
         raise AssertionError("explicit B2 side mismatch was accepted")
 
 
+
+
+def test_a4_superset_fallback(tmp: Path) -> None:
+    ref = ROOT / "product/titan2/n1i-c1/a4-native-superset.txt"
+    refs = [
+        line.strip()
+        for line in ref.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    assert len(refs) == 33
+
+    n1i = tmp / "n1i-a"
+    n1i.mkdir(parents=True)
+    env = {
+        "N1I_A_NATIVE_DEPENDENCY_CLOSURE": "PASS",
+        "MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE": " ".join(refs),
+    }
+    write_env(n1i / "n1i-a-v010014-oem-ims.env", env)
+    write_tsv(
+        n1i / "a4-native-closure.tsv",
+        ["binary", "side", "bits", "machine", "DT_NEEDED", "present_in_c3a"],
+        [
+            {
+                "binary": target,
+                "side": "system",
+                "bits": "64",
+                "machine": "aarch64",
+                "DT_NEEDED": "libc.so libdl.so",
+                "present_in_c3a": "NO",
+            }
+            for target in refs
+        ],
+    )
+    rows, digest = mod.a4_native_superset(n1i, ROOT, env)
+    assert len(rows) == 33
+    assert len(digest) == 64
+    assert all(
+        row["decision"] == "ADMIT_ACCEPTED_A4_COMPATIBILITY_SUPERSET"
+        for row in rows
+    )
+    assert all(
+        row["sha256"] == "FREEZE_DURING_IMPLEMENTATION_MATERIALIZATION"
+        for row in rows
+    )
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -201,10 +246,12 @@ def main() -> int:
         test_native_namespace_fail_closed(root / "case2")
         test_vendor_ua_attribution(root / "case3")
         test_b2_side_authority(root / "case4")
+        test_a4_superset_fallback(root / "case5")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_NATIVE_CLOSE_ONCE=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_NAMESPACE_FAIL_CLOSED=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_VENDOR_UA_ATTRIBUTION=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_B2_SIDE_AUTHORITY=PASS")
+    print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_A4_SUPERSET_FALLBACK=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST=PASS")
     return 0
 
