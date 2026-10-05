@@ -19,10 +19,12 @@ spec.loader.exec_module(mod)
 
 
 def write_env(path: Path, values: dict[str, str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(f"{k}={v}\n" for k, v in values.items()), encoding="utf-8")
 
 
 def write_tsv(path: Path, fields: list[str], rows: list[dict[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as fp:
         w = csv.DictWriter(fp, fieldnames=fields, delimiter="\t", lineterminator="\n")
         w.writeheader()
@@ -71,6 +73,7 @@ def base_row(
 
 def test_parse_env_json_quoted_space_list(tmp: Path) -> None:
     path = tmp / "quoted.env"
+    path.parent.mkdir(parents=True, exist_ok=True)
     value = "/system/lib64/liba.so /system_ext/lib64/libb.so"
     path.write_text(
         "MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE="
