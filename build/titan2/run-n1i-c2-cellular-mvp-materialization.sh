@@ -10,7 +10,6 @@ MATERIALIZER="$ROOT/build/titan2/materialize-n1i-c2-cellular-mvp-stock.py"
 N1I_A_AUDIT="$ROOT/build/titan2/audit-n1i-a-v010014-oem-ims.sh"
 
 MANIFEST_EVIDENCE="/srv/sable-build/evidence/titan2/n1i-c2-cellular-mvp-manifest/20261005T215928Z-8ebeebdb"
-PREFERRED_REPLAY="/srv/sable-build/evidence/titan2/n1i-c1-runtime-linkage-v6e/20261005T195904Z-3612ca20/n1i-a-replay"
 C3A_HISTORY="/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z"
 
 EXPECTED_MANIFEST_A4_SHA="6dad2e573b912d6a20fd5b16cb667dc15b9d43cb1f831fa2751830282e437fd4"
@@ -19,7 +18,6 @@ EXPECTED_N1I_A_AUDIT_BLOB="02f7b7330b468a31be8cfc60551673cad127313e"
 
 OUT=""
 EVIDENCE=""
-REPLAY=""
 AUTHORIZED=NO
 
 fail() {
@@ -33,7 +31,6 @@ Usage:
   run-n1i-c2-cellular-mvp-materialization.sh \
     --authorize-materialization \
     [--manifest-evidence DIR] \
-    [--replay-evidence DIR] \
     [--out DIR] \
     [--evidence DIR]
 
@@ -41,10 +38,10 @@ This driver is host-only. It may write a sealed artifact/evidence bundle but
 does not mutate Android source, build, contact a device, use the network,
 reboot, or flash.
 
-If --replay-evidence is omitted, the already-qualified retained V6E N1I-A
-replay is used when its extracted work tree is present. Otherwise a fresh
-read-only N1I-A replay is generated from the pinned stock reference and sealed
-C3A control.
+The authoritative materialization path always generates one fresh read-only
+N1I-A replay from the pinned stock reference and sealed C3A control. Retained
+runtime-linkage work trees are not stock-byte authority because their extracted
+files were not individually sealed.
 EOF
 }
 
@@ -57,11 +54,6 @@ while [[ $# -gt 0 ]]; do
         --manifest-evidence)
             [[ $# -ge 2 ]] || fail missing_manifest_evidence_value 64
             MANIFEST_EVIDENCE="$2"
-            shift 2
-            ;;
-        --replay-evidence)
-            [[ $# -ge 2 ]] || fail missing_replay_evidence_value 64
-            REPLAY="$2"
             shift 2
             ;;
         --out)
@@ -140,6 +132,31 @@ if [[ -z "$OUT" || -z "$EVIDENCE" ]]; then
         EVIDENCE="$SABLE_EVIDENCE_ROOT/titan2/n1i-c2-cellular-mvp-materialization/$STAMP"
 fi
 
+ROOT_REAL="$(realpath "$ROOT")"
+OUT="$(realpath -m "$OUT")"
+EVIDENCE="$(realpath -m "$EVIDENCE")"
+MANIFEST_EVIDENCE="$(realpath "$MANIFEST_EVIDENCE")"
+
+case "$OUT/" in
+    "$ROOT_REAL"/*) fail "out_inside_repo=$OUT" 64 ;;
+esac
+case "$EVIDENCE/" in
+    "$ROOT_REAL"/*) fail "evidence_inside_repo=$EVIDENCE" 64 ;;
+esac
+case "$OUT/" in
+    "$MANIFEST_EVIDENCE"/*) fail "out_inside_manifest_evidence=$OUT" 64 ;;
+esac
+case "$EVIDENCE/" in
+    "$MANIFEST_EVIDENCE"/*) fail "evidence_inside_manifest_evidence=$EVIDENCE" 64 ;;
+esac
+[[ "$OUT" != "$EVIDENCE" ]] || fail output_and_evidence_same_path 64
+case "$OUT/" in
+    "$EVIDENCE"/*) fail "out_nested_in_evidence=$OUT" 64 ;;
+esac
+case "$EVIDENCE/" in
+    "$OUT"/*) fail "evidence_nested_in_out=$EVIDENCE" 64 ;;
+esac
+
 [[ ! -e "$OUT" ]] || fail "out_exists=$OUT" 64
 [[ ! -e "$EVIDENCE" ]] || fail "evidence_exists=$EVIDENCE" 64
 mkdir -p "$EVIDENCE"
@@ -153,30 +170,23 @@ usable_replay() {
     [[ -d "$r/work/stock/product" ]]
 }
 
-if [[ -n "$REPLAY" ]]; then
-    usable_replay "$REPLAY" || fail "explicit_replay_not_usable=$REPLAY" 65
-    REPLAY_SOURCE=EXPLICIT_RETAINED
-elif usable_replay "$PREFERRED_REPLAY"; then
-    REPLAY="$PREFERRED_REPLAY"
-    REPLAY_SOURCE=QUALIFIED_V6E_RETAINED
+REPLAY="$EVIDENCE/n1i-a-replay"
+REPLAY_SOURCE=FRESH_PINNED_REPLAY_ONLY
+
+echo
+echo "===== GENERATE FRESH READ-ONLY N1I-A REPLAY ====="
+if bash "$N1I_A_AUDIT" \
+    --c3a-system "$C3A_HISTORY/system.img" \
+    --out "$REPLAY" \
+    --tools-dir "$SABLE_ANDROID_BUILD_TOOLS" \
+    > >(tee "$EVIDENCE/n1i-a-replay.log") 2>&1
+then
+    REPLAY_RC=0
 else
-    REPLAY="$EVIDENCE/n1i-a-replay"
-    REPLAY_SOURCE=FRESH_PINNED_REPLAY
-    echo
-    echo "===== GENERATE FRESH READ-ONLY N1I-A REPLAY ====="
-    if bash "$N1I_A_AUDIT" \
-        --c3a-system "$C3A_HISTORY/system.img" \
-        --out "$REPLAY" \
-        --tools-dir "$SABLE_ANDROID_BUILD_TOOLS" \
-        > >(tee "$EVIDENCE/n1i-a-replay.log") 2>&1
-    then
-        REPLAY_RC=0
-    else
-        REPLAY_RC=$?
-    fi
-    [[ "$REPLAY_RC" -eq 0 ]] || fail "fresh_replay_rc=$REPLAY_RC" 66
-    usable_replay "$REPLAY" || fail fresh_replay_missing_work 66
+    REPLAY_RC=$?
 fi
+[[ "$REPLAY_RC" -eq 0 ]] || fail "fresh_replay_rc=$REPLAY_RC" 66
+usable_replay "$REPLAY" || fail fresh_replay_missing_work 66
 
 echo "N1I_C2_MATERIALIZATION_REPLAY_SOURCE=$REPLAY_SOURCE"
 echo "N1I_C2_MATERIALIZATION_REPLAY=$REPLAY"
@@ -214,6 +224,12 @@ grep -Fxq 'N1I_C2_MATERIALIZATION_MUTATION_COUNT=41'     "$OUT/CELLULAR_MVP_MATE
 grep -Fxq 'N1I_C2_CELLULAR_MVP_STOCK_MATERIALIZATION=PASS'     "$OUT/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env" ||
     fail output_not_pass 67
 
+REPLAY_WORK="$REPLAY/work"
+[[ -d "$REPLAY_WORK" ]] || fail replay_work_missing_before_cleanup 68
+rm -rf --one-file-system "$REPLAY_WORK"
+[[ ! -e "$REPLAY_WORK" ]] || fail replay_work_cleanup_failed 68
+echo "N1I_C2_MATERIALIZATION_REPLAY_WORK=PASS_REMOVED_AFTER_FREEZE"
+
 [[ -z "$(git -C "$ROOT" status --porcelain=v1 --untracked-files=all)" ]] ||
     fail sable_repo_changed 68
 
@@ -221,6 +237,7 @@ cat > "$EVIDENCE/materialization-driver.env" <<EOF
 N1I_C2_MATERIALIZATION_SOURCE_COMMIT=$(git -C "$ROOT" rev-parse HEAD)
 N1I_C2_MATERIALIZATION_REPLAY_SOURCE=$REPLAY_SOURCE
 N1I_C2_MATERIALIZATION_REPLAY=$REPLAY
+N1I_C2_MATERIALIZATION_REPLAY_WORK_RETAINED=NO_AFTER_SUCCESS
 N1I_C2_MATERIALIZATION_MANIFEST_EVIDENCE=$MANIFEST_EVIDENCE
 N1I_C2_MATERIALIZATION_ARTIFACT=$OUT
 N1I_C2_MATERIALIZATION_SOURCE_MUTATION_AUTHORIZED=NO
