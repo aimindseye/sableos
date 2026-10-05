@@ -327,6 +327,21 @@ def test_native_target_authority_drift_fails(tmp: Path) -> None:
         raise AssertionError("native target authority drift was accepted")
 
 
+
+def test_output_protection(tmp: Path) -> None:
+    protected = tmp / "protected"
+    protected.mkdir(parents=True)
+    try:
+        mod.require_safe_output(protected / "child", [protected])
+    except mod.MaterializeError as exc:
+        assert "output_inside_protected=" in str(exc)
+    else:
+        raise AssertionError("output inside protected input was accepted")
+
+    safe = tmp / "safe-output"
+    assert mod.require_safe_output(safe, [protected]) == safe.resolve()
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
@@ -336,6 +351,7 @@ def main() -> int:
         test_manifest_semantic_drift_fails(root / "case4")
         test_symlink_source_rejected(root / "case5")
         test_native_target_authority_drift_fails(root / "case6")
+        test_output_protection(root / "case7")
 
     print("N1I_C2_MATERIALIZATION_TEST_MANIFEST_SHAPE=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_REPLAY_AUTHORITY=PASS")
@@ -344,6 +360,7 @@ def main() -> int:
     print("N1I_C2_MATERIALIZATION_TEST_SEMANTIC_DRIFT_FAIL_CLOSED=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_SYMLINK_FAIL_CLOSED=PASS")
     print("N1I_C2_MATERIALIZATION_TEST_NATIVE_TARGET_AUTHORITY=PASS")
+    print("N1I_C2_MATERIALIZATION_TEST_OUTPUT_PROTECTION=PASS")
     print("N1I_C2_CELLULAR_MVP_MATERIALIZATION_TEST=PASS")
     return 0
 
