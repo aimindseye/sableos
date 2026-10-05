@@ -267,10 +267,16 @@ def a4_native_superset(
     env_paths = n1i_env.get(
         "MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE", ""
     ).split()
-    if set(env_paths) != set(refs):
+    env_set = set(env_paths)
+    repo_set = set(refs)
+    if env_set != repo_set:
+        env_only = sorted(env_set - repo_set)
+        repo_only = sorted(repo_set - env_set)
         raise ManifestError(
             "n1i_a_a4_reference_drift="
-            f"env_count:{len(set(env_paths))},repo_count:{len(set(refs))}"
+            f"env_count:{len(env_set)},repo_count:{len(repo_set)};"
+            "env_only=" + (",".join(env_only) or "NONE") + ";"
+            "repo_only=" + (",".join(repo_only) or "NONE")
         )
 
     a4_path = require_file(n1i_a / "a4-native-closure.tsv", "n1i_a_a4_native_closure")
