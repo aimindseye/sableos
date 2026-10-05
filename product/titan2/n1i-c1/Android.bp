@@ -1,0 +1,26 @@
+// Titan 2 N1I-C1 Android 16 OEM IMS compatibility imports.
+// Proprietary payloads are staged locally from the pinned V01.00.14 stock
+// reference by the canonical Titan N1I build and are never committed to Git.
+
+android_app_import {
+    name: "ImsService",
+    apk: "prebuilt/system_ext/priv-app/ImsService/ImsService.apk",
+    certificate: "platform",
+    privileged: true,
+    system_ext_specific: true,
+    dex_preopt: {
+        enabled: false,
+    },
+}
+
+dex_import {
+    name: "mediatek-common",
+    jars: ["prebuilt/system_ext/framework/mediatek-common.jar"],
+    system_ext_specific: true,
+}
+
+dex_import {
+    name: "mediatek-ims-base",
+    jars: ["prebuilt/system_ext/framework/mediatek-ims-base.jar"],
+    system_ext_specific: true,
+}
