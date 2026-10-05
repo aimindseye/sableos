@@ -419,4 +419,131 @@ for line in stock_lines:
         svc_rules.add((src, tgt, tuple(sorted(perms))))
 
 te = [
-    "# Generated f
+    "# Generated from pinned V01.00.14 system_ext policy for N1I-C1.",
+    "# Only types/rules absent from the Android 16 C3A policy are emitted.",
+]
+for typ, macro in sorted(macro_for.items()):
+    te.append(f"{macro}({typ})")
+for typ in sorted(service_types):
+    te.append(f"type {typ}, service_manager_type;")
+for src, typ in sorted(set_pairs):
+    te.append(f"set_prop({src}, {typ})")
+for src, typ in sorted(get_pairs - set_pairs):
+    te.append(f"get_prop({src}, {typ})")
+for src, tgt, perms in sorted(svc_rules):
+    te.append(f"allow {src} {tgt}:service_manager {{ {' '.join(perms)} }};")
+
+(out / "mtk_ims_generated.te").write_text("\n".join(te) + "\n")
+(out / "property_contexts").write_text("\n".join(pc_selected) + ("\n" if pc_selected else ""))
+(out / "service_contexts").write_text("\n".join(sc_selected) + ("\n" if sc_selected else ""))
+
+if not pc_selected:
+    raise SystemExit("N1I_C1_SEPOLICY=FAIL_NO_NEW_PROPERTY_CONTEXTS")
+if not te or len(te) < 4:
+    raise SystemExit("N1I_C1_SEPOLICY=FAIL_NO_POLICY_RULES")
+
+print(f"N1I_C1_SEPOLICY_PROPERTY_CONTEXT_COUNT={len(pc_selected)}")
+print(f"N1I_C1_SEPOLICY_SERVICE_CONTEXT_COUNT={len(sc_selected)}")
+print(f"N1I_C1_SEPOLICY_PROPERTY_TYPE_COUNT={len(macro_for)}")
+print(f"N1I_C1_SEPOLICY_SERVICE_TYPE_COUNT={len(service_types)}")
+print(f"N1I_C1_SEPOLICY_SET_RULE_COUNT={len(set_pairs)}")
+print(f"N1I_C1_SEPOLICY_GET_RULE_COUNT={len(get_pairs - set_pairs)}")
+print(f"N1I_C1_SEPOLICY_SERVICE_RULE_COUNT={len(svc_rules)}")
+print("N1I_C1_SEPOLICY=PASS_DERIVED_NARROW_ANDROID16")
+PY
+
+echo
+echo "===== RECORD PAYLOAD HASHES ====="
+{
+  printf 'path\tsha256\n'
+  find "$PREBUILT" -type f -print0 | LC_ALL=C sort -z |
+    while IFS= read -r -d '' f; do
+      printf '%s\t%s\n' "${f#"$PREBUILT"}" "$(sha256sum "$f" | awk '{print $1}')"
+    done
+} > "$EVIDENCE/payload-sha256.tsv"
+
+ROM_BACKUP="$EVIDENCE/rom.mk.c3a"
+cp "$ROM_MK" "$ROM_BACKUP"
+ROM_SHA="$(sha256sum "$ROM_MK" | awk '{print $1}')"
+
+cat >> "$ROM_MK" <<'EOF'
+
+# SABLE_N1I_C1_CELLULAR_ISOLATION
+$(call inherit-product, vendor/sable/titan2/sable-titan2-apps.mk)
+$(call inherit-product, vendor/sable/titan2/n1i-c1/sable-titan2-n1i-c1.mk)
+EOF
+
+echo "N1I_C1_SOURCE_STAGE=PASS"
+echo "N1I_C1_REGISTRATION_DATA_DELTA=NONE_PRESERVE_C3A"
+
+echo
+echo "===== BUILD ANDROID 16 SYSTEMIMAGE ====="
+mkdir -p "$OUT_DIR_N1I"
+(
+  cd "$ANDROID_ROOT"
+  export OUT_DIR="$OUT_DIR_N1I"
+  set +u
+  source build/envsetup.sh
+  lunch treble_arm64_bvN-bp4a-user
+  set -u
+
+  [[ "$(get_build_var TARGET_PRODUCT)" == treble_arm64_bvN ]] || fail target_product
+  [[ "$(get_build_var TARGET_BUILD_VARIANT)" == user ]] || fail target_variant
+  [[ "$(get_build_var BUILD_ID)" == BP4A.251205.006 ]] || fail "build_id=$(get_build_var BUILD_ID)"
+  [[ "$(get_build_var PLATFORM_VERSION)" == 16 ]] || fail "platform_version=$(get_build_var PLATFORM_VERSION)"
+
+  pp="$(get_build_var PRODUCT_PACKAGES)"
+  for module in "${MODULES[@]}" ImsService mediatek-common mediatek-ims-base; do
+    grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" ||
+      fail "product_package_missing=$module"
+  done
+
+  boot_jars="$(get_build_var PRODUCT_BOOT_JARS)"
+  grep -Fq 'system_ext:mediatek-common' <<<"$boot_jars" || fail bootjar_mediatek_common
+  grep -Fq 'system_ext:mediatek-ims-base' <<<"$boot_jars" || fail bootjar_mediatek_ims_base
+  echo "N1I_C1_BOOTCLASSPATH_CONFIG=PASS"
+
+  make systemimage -j"${SABLE_BUILD_JOBS:-$(nproc --all)}" 2>&1 |
+    tee "$EVIDENCE/systemimage.log"
+)
+[[ -f "$PRODUCT_OUT/system.img" ]] || fail system_img_missing
+
+NEW_SHA="$(sha256sum "$PRODUCT_OUT/system.img" | awk '{print $1}')"
+NEW_BYTES="$(stat -c '%s' "$PRODUCT_OUT/system.img")"
+echo "N1I_C1_SYSTEM_SHA256=$NEW_SHA"
+echo "N1I_C1_SYSTEM_BYTES=$NEW_BYTES"
+
+echo
+echo "===== POSTBUILD IMAGE VERIFICATION ====="
+extract_fs "$PRODUCT_OUT/system.img" "$WORK/result"
+result="$WORK/result"
+[[ -f "$result/system/build.prop" ]] && result="$result/system"
+
+IMS_OUT="$result/system_ext/priv-app/ImsService/ImsService.apk"
+[[ -f "$IMS_OUT" ]] || fail result_ims_missing
+"$SABLE_ANDROID_BUILD_TOOLS/aapt2" dump badging "$IMS_OUT" |
+  grep -Fq "package: name='com.mediatek.ims'" || fail result_ims_package
+
+cert_ims="$("$SABLE_ANDROID_BUILD_TOOLS/apksigner" verify --print-certs "$IMS_OUT" |
+  sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1)"
+framework_res="$result/framework/framework-res.apk"
+cert_platform="$("$SABLE_ANDROID_BUILD_TOOLS/apksigner" verify --print-certs "$framework_res" |
+  sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -n1)"
+[[ -n "$cert_ims" && "$cert_ims" == "$cert_platform" ]] ||
+  fail "ims_platform_signature ims=$cert_ims platform=$cert_platform"
+echo "N1I_C1_IMS_PLATFORM_RESIGN=PASS"
+
+for p in \
+  system_ext/framework/mediatek-common.jar \
+  system_ext/framework/mediatek-ims-base.jar
+do
+  [[ -f "$result/$p" ]] || fail "result_missing=$p"
+done
+[[ "$(sha256sum "$result/system_ext/framework/mediatek-common.jar" | awk '{print $1}')" == "$MTK_COMMON_SHA" ]] ||
+  fail result_mediatek_common_sha
+[[ "$(sha256sum "$result/system_ext/framework/mediatek-ims-base.jar" | awk '{print $1}')" == "$MTK_IMS_BASE_SHA" ]] ||
+  fail result_mediatek_ims_base_sha
+
+BOOTPB="$result/etc/classpaths/bootclasspath.pb"
+[[ -f "$BOOTPB" ]] || fail bootclasspath_pb_missing
+grep -aFq '
