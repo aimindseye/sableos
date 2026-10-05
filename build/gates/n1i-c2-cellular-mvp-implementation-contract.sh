@@ -34,7 +34,9 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 
-bash -n "$DRIVER" "$SCRIPT"
+for shell_file in "$DRIVER" "$SCRIPT"; do
+    bash -n "$shell_file" || fail "shell_syntax=$shell_file"
+done
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
 
 PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache"     python3 -m py_compile "$TEST"
