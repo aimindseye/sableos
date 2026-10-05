@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Titan 2 adapter: Treble/GSI preparation only.
-# Flash execution remains blocked until the N0/N1 ledger is reviewed.
+# Titan 2 adapter.
+# N1I enables the canonical Android 16 cellular-isolation systemimage build.
+# Flash execution remains separately fail-closed until an artifact-specific
+# physical acceptance scope is admitted.
 
 SABLE_DEVICE_CANONICAL=titan2
 SABLE_DEVICE_EXPECTED_PRODUCT=UNQUALIFIED
-SABLE_DEVICE_BUILD_SUPPORTED=NO
+SABLE_DEVICE_BUILD_SUPPORTED=YES
 SABLE_DEVICE_QUALIFY_SUPPORTED=NO
 SABLE_DEVICE_DEFAULT_QUALIFICATION_SUITE=none
 SABLE_DEVICE_FLASH_SUPPORTED=NO
@@ -168,8 +170,19 @@ sable_device_registry_field() {
 }
 
 sable_device_build() {
-  echo "SABLE_DEVICE_BUILD=BLOCKED_UNQUALIFIED device=titan2" >&2
-  return 78
+  local release="$1"
+  local mode="$2"
+
+  case "$release" in
+    N1I|n1i)
+      EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
+        bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"
+      ;;
+    *)
+      echo "SABLE_DEVICE_BUILD=BLOCKED_UNQUALIFIED device=titan2 release=$release" >&2
+      return 78
+      ;;
+  esac
 }
 
 sable_device_qualify() {
@@ -190,7 +203,7 @@ sable_device_artifact_gate() {
   local evidence_dir="$5"
 
   case "$release" in
-    N0|N0_A16|N1|N1B|N1B2|N1D|n0|n0_a16|n1|n1b|n1b2|n1d) ;;
+    N0|N0_A16|N1|N1B|N1B2|N1D|N1I|n0|n0_a16|n1|n1b|n1b2|n1d|n1i) ;;
     *)
       echo "SABLE_DEVICE_ARTIFACT_GATE=FAIL_UNQUALIFIED_TITAN_RELEASE release=$release"
       return 1
