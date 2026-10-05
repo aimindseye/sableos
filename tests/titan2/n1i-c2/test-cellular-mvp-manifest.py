@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import csv
 import importlib.util
+import json
 import tempfile
 import sys
 from pathlib import Path
@@ -66,6 +67,23 @@ def base_row(
         "namespace_visibility": visibility,
         "evidence_strength": "DEX_CALLSITE",
     }
+
+
+def test_parse_env_json_quoted_space_list(tmp: Path) -> None:
+    path = tmp / "quoted.env"
+    value = "/system/lib64/liba.so /system_ext/lib64/libb.so"
+    path.write_text(
+        "MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE="
+        + json.dumps(value)
+        + "\n",
+        encoding="utf-8",
+    )
+    env = mod.parse_env(path)
+    assert env["MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE"] == value
+    assert env["MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE"].split() == [
+        "/system/lib64/liba.so",
+        "/system_ext/lib64/libb.so",
+    ]
 
 
 def test_native_close_once(tmp: Path) -> None:
@@ -291,12 +309,14 @@ def test_a4_equal_count_drift_reports_identities(tmp: Path) -> None:
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
+        test_parse_env_json_quoted_space_list(root / "case0")
         test_native_close_once(root / "case1")
         test_native_namespace_fail_closed(root / "case2")
         test_vendor_ua_attribution(root / "case3")
         test_b2_side_authority(root / "case4")
         test_a4_superset_fallback(root / "case5")
         test_a4_equal_count_drift_reports_identities(root / "case6")
+    print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_QUOTED_ENV_DECODE=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_NATIVE_CLOSE_ONCE=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_NAMESPACE_FAIL_CLOSED=PASS")
     print("N1I_C2_CELLULAR_MVP_MANIFEST_TEST_VENDOR_UA_ATTRIBUTION=PASS")
