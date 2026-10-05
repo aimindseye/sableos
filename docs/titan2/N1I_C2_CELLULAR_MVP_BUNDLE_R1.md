@@ -136,24 +136,36 @@ Do not copy an entire stock `system_ext`, `product` or `system`.
 
 ### 3. Native dependency policy: close once, not one library per build
 
-The A4 33-file list remains a broad reference superset, not automatic import
-authority.
+Prefer the exact N1I-B2 stock-vs-C3A closure when a retained B2 run exists.
 
-For the MVP, run the existing B2 native resolver once across the complete OEM
-IMS package/runtime closure and admit **the entire exact system-side stock-only
-dependency closure returned by that run** in one reviewed change.
+The post-merge host review established that **no B2 native run was ever retained
+for the accepted OEM IMS APK**. That missing analysis artifact is not allowed to
+turn into a new open-ended research milestone.
 
-Policy:
+For the Cellular MVP only, the accepted N1I-A A4 result is therefore an
+authorized bounded fallback when both B2 sides are absent. The fallback is the
+exact 33-path system-side compatibility superset already frozen in
+`product/titan2/n1i-c1/a4-native-superset.txt`, and is accepted only when:
 
 ```text
-system/APEX-provided dependency -> use platform copy
-preserved-vendor dependency     -> use vendor copy
-exact stock-only system dependency needed by OEM IMS -> admit
-keyword-only / unrelated native -> do not admit
+N1I_A_NATIVE_DEPENDENCY_CLOSURE=PASS
+MUST_BE_SUPPLIED_BY_SABLE_SYSTEM_IMAGE == exact 33-path reference set
+every referenced A4 row is side=system
+every referenced A4 row is present_in_c3a=NO
+A4 evidence is sealed and hashed
 ```
 
-The resulting finite closure is frozen with hashes in the candidate. We do not
-repeat one-native-at-a-time build experiments.
+This intentionally favors **getting the complete MediaTek compatibility island
+working** over proving the theoretical minimum native set first. The B2 resolver
+remains a later pruning/validation tool and is still preferred automatically if
+both exact stock and C3A B2 authorities exist.
+
+Vendor/ODM components remain preserved from vendor and are never duplicated
+through this fallback.
+
+The implementation materializer must freeze the exact stock bytes/SHA-256 for
+all admitted A4 paths before build authorization. We still do not add one
+library at a time.
 
 ### 4. Framework compatibility bundle
 
@@ -348,7 +360,7 @@ mutation manifest containing:
 
 - exact OEM IMS artifacts/hashes;
 - exact two JAR hashes;
-- exact B2 native closure/hashes;
+- exact B2 native closure/hashes when retained, otherwise the accepted A4 33-path compatibility superset with hashes frozen by materialization;
 - exact TelephonyMetrics patch;
 - exact incoming-call compatibility activation;
 - exact Titan integration package files;
