@@ -76,6 +76,16 @@ marker NO_BUILD "$DRIVER" 'BUILD_AUTHORIZED=NO'
 marker NO_DEVICE "$DRIVER" 'DEVICE_CONTACT_AUTHORIZED=NO'
 marker NO_FLASH "$DRIVER" 'FLASH_AUTHORIZED=NO'
 
+if UNAUTH_OUTPUT="$(bash "$DRIVER" 2>&1)"; then
+    fail unauthorized_materialization_was_accepted
+else
+    UNAUTH_RC=$?
+fi
+[[ "$UNAUTH_RC" -eq 64 ]] || fail "unauthorized_materialization_rc=$UNAUTH_RC"
+grep -Fq 'N1I_C2_MATERIALIZATION_DRIVER=FAIL reason=materialization_requires_--authorize-materialization' <<<"$UNAUTH_OUTPUT" ||
+    fail unauthorized_materialization_reason
+echo "N1I_C2_MATERIALIZATION_CONTRACT_AUTHORIZATION_FAIL_CLOSED=PASS"
+
 if grep -Eq -- 'subprocess|os\.system|Popen|check_call|check_output|run\(' "$TOOL"; then
     fail materializer_command_execution_surface
 fi
@@ -109,6 +119,8 @@ grep -Fq 'N1I_C2_MATERIALIZATION_TEST_SYMLINK_FAIL_CLOSED=PASS' <<<"$TEST_OUTPUT
     fail symlink_regression_marker
 grep -Fq 'N1I_C2_MATERIALIZATION_TEST_NATIVE_TARGET_AUTHORITY=PASS' <<<"$TEST_OUTPUT" ||
     fail native_target_authority_regression_marker
+grep -Fq 'N1I_C2_MATERIALIZATION_TEST_OUTPUT_PROTECTION=PASS' <<<"$TEST_OUTPUT" ||
+    fail output_protection_regression_marker
 echo "N1I_C2_MATERIALIZATION_CONTRACT_FAIL_CLOSED_REGRESSIONS=PASS"
 
 echo "N1I_C2_CELLULAR_MVP_MATERIALIZATION_CONTRACT=PASS"
