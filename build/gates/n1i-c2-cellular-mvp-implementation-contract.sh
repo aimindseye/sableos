@@ -52,6 +52,8 @@ marker IMS_ENABLE "$SCRIPT" 'cmd phone ims enable'
 marker ACTIVE_CALL_SAFE "$SCRIPT" 'active_or_emergency_call'
 marker RATE_LIMIT "$SCRIPT" 'COOLDOWN_SECONDS=300'
 marker UA_OBSERVE "$SCRIPT" 'OBSERVE_READINESS'
+marker UA_START_MODE "$SCRIPT" 'SABLE_TITAN2_VENDOR_UA_START_MODE'
+marker UA_AUTO_START_READY "$SCRIPT" 'UA_OK=YES'
 marker INIT_BOOT_COMPLETED "$RC" 'on property:sys.boot_completed=1'
 marker INIT_ONESHOT "$RC" 'oneshot'
 marker HEALER_DEFAULT "$MARKER" 'HEALER_DEFAULT=DISABLED'
@@ -66,6 +68,9 @@ marker SOURCE_AUTH_REQUIRED "$DRIVER" 'source_mutation_requires_authorization'
 marker BUILD_AUTH_REQUIRED "$DRIVER" 'build_requires_authorization'
 marker SOURCE_RESTORE "$DRIVER" 'N1I_C2_SOURCE_RESTORE=PASS'
 marker POSTBUILD_LINKAGE "$DRIVER" 'N1I_C2_READY_FOR_POSTBUILD_LINKAGE=YES'
+marker EVIDENCE_SEAL "$DRIVER" 'N1I_C2_EVIDENCE_SEAL=PASS_EXCLUDES_BUILD_LOG'
+marker SCOPED_TMETRICS_DIFF "$DRIVER" 'diff --check -- "$TMETRICS_REL"'
+marker SCOPED_PHH_DIFF "$DRIVER" 'diff --check -- "$PHH_REL"'
 
 PHH_BLOB="$(git -C "$ROOT" hash-object "$PHH_PATCH")"
 [[ "$PHH_BLOB" == d78f41da30514920ff2165d8fe6dea15d0bb5d76 ]] ||
