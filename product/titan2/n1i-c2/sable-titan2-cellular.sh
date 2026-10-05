@@ -41,6 +41,7 @@ IMS_PACKAGE="${SABLE_TITAN2_IMS_PACKAGE:-com.mediatek.ims}"
 SLOT="${SABLE_TITAN2_SLOT:-$DEFAULT_SLOT}"
 VENDOR_UA_SERVICE="${SABLE_TITAN2_VENDOR_UA_SERVICE:-}"
 VENDOR_UA_DECISION="${SABLE_TITAN2_VENDOR_UA_DECISION:-OBSERVE_READINESS}"
+VENDOR_UA_START_MODE="${SABLE_TITAN2_VENDOR_UA_START_MODE:-unknown}"
 
 mkdir -p "$STATE_DIR" 2>/dev/null || true
 
@@ -79,6 +80,7 @@ write_state() {
         echo "SABLE_TITAN2_CELLULAR_CARRIER_IMS=$(safe_value "$carrier_ims")"
         echo "SABLE_TITAN2_CELLULAR_VENDOR_UA_SERVICE=$(safe_value "$VENDOR_UA_SERVICE")"
         echo "SABLE_TITAN2_CELLULAR_VENDOR_UA_DECISION=$(safe_value "$VENDOR_UA_DECISION")"
+        echo "SABLE_TITAN2_CELLULAR_VENDOR_UA_START_MODE=$(safe_value "$VENDOR_UA_START_MODE")"
         echo "SABLE_TITAN2_CELLULAR_VENDOR_UA_STATE=$(safe_value "$ua")"
         echo "SABLE_TITAN2_CELLULAR_MTK_IMS_OVERLAY=$(safe_value "$overlay")"
         echo "SABLE_TITAN2_CELLULAR_RESULT=$(safe_value "$result")"
@@ -103,9 +105,14 @@ probe_once() {
         *) ;;
     esac
 
-    logi "slot=$SLOT device_ims=$DEVICE_IMS carrier_ims=$CARRIER_IMS ua_service=$VENDOR_UA_SERVICE ua_state=$UA ua_decision=$VENDOR_UA_DECISION overlay=$OVERLAY provider_ok=$PROVIDER_OK overlay_ok=$OVERLAY_OK"
+    UA_OK=YES
+    if [ -n "$VENDOR_UA_SERVICE" ] && [ "$VENDOR_UA_START_MODE" != "disabled" ]; then
+        [ "$UA" = "running" ] || UA_OK=NO
+    fi
 
-    if [ "$PROVIDER_OK" = YES ]; then
+    logi "slot=$SLOT device_ims=$DEVICE_IMS carrier_ims=$CARRIER_IMS ua_service=$VENDOR_UA_SERVICE ua_state=$UA ua_start_mode=$VENDOR_UA_START_MODE ua_decision=$VENDOR_UA_DECISION overlay=$OVERLAY provider_ok=$PROVIDER_OK ua_ok=$UA_OK overlay_ok=$OVERLAY_OK"
+
+    if [ "$PROVIDER_OK" = YES ] && [ "$UA_OK" = YES ]; then
         write_state "$DEVICE_IMS" "$CARRIER_IMS" "$UA" "$OVERLAY" PASS_PROVIDER_BOUND
         return 0
     fi
