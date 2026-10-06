@@ -31,8 +31,10 @@ cat > "$TMP/adb" <<'EOF'
 state="$(cat "$TITAN2_TEST_STATE")"
 if [[ "$1" == devices ]]; then
   echo "List of devices attached"
-  if [[ "$state" == android || "$state" == recovery ]]; then
+  if [[ "$state" == android ]]; then
     printf '%s\tdevice\n' "$TITAN2_TEST_ADB_SERIAL"
+  elif [[ "$state" == recovery ]]; then
+    printf '%s\trecovery\n' "$TITAN2_TEST_ADB_SERIAL"
   fi
   exit 0
 fi
@@ -41,11 +43,12 @@ if [[ "$1" == -s ]]; then
   shift 2
   [[ "$serial" == "$TITAN2_TEST_ADB_SERIAL" ]] || exit 9
   if [[ "$1" == shell && "$2" == getprop ]]; then
+    if [[ "$state" == recovery ]]; then
+      exit 13
+    fi
     case "$3" in
       ro.product.device) echo Titan_2 ;;
-      ro.bootmode)
-        [[ "$state" == recovery ]] && echo recovery || echo normal
-        ;;
+      ro.bootmode) echo normal ;;
       *) echo ;;
     esac
     exit 0

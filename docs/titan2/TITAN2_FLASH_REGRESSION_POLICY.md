@@ -163,6 +163,28 @@ MATCHED_STOCK_RESTORE_PROCEDURE_REQUIRED=YES
 RECOVERY_ADB_ASSUMED_TO_REENTER_FASTBOOT=NO
 ```
 
+### N1I-C2 recovery-entry handling
+
+A qualified N1I-C2 candidate may observe and seal a current recovery state, but
+recovery never becomes an implicit transition authority.
+
+```text
+N1I_C2_RECOVERY_ENTRY_READ_ONLY_ALLOWED=YES
+N1I_C2_RECOVERY_AUTOMATIC_REBOOT_ALLOWED=NO
+N1I_C2_RECOVERY_AUTOMATIC_FASTBOOTD_TRANSITION_ALLOWED=NO
+N1I_C2_RECOVERY_FLASH_WRITE_ALLOWED=NO
+N1I_C2_RECOVERY_PASS_ADVANCES_TO=OWNER_REVIEW_OF_RECOVERY_TO_FASTBOOTD
+```
+
+The recovery-entry qualifier must bind the exact previously sealed Titan
+transport and require its ADB transport state to be `recovery`. Titan 2
+recovery is known to enumerate through ADB while rejecting shell/property
+queries, so recovery qualification must not depend on `adb shell getprop`.
+Live product, slot, verified-boot, snapshot/COW and LP geometry are deferred to
+the fastbootd prewrite gate. The recovery gate must reject simultaneous
+ADB/fastboot visibility, preserve the post-build C2 image authority, and stop
+before any mode transition or write.
+
 ## COW, snapshot and LP rules
 
 COW logical partitions may exist even when

@@ -20,13 +20,15 @@ SOURCE_MAP = ROOT / "docs" / "titan2" / "TITAN2_DELIVERABLE_SOURCE_MAP.md"
 POLICY = ROOT / "docs" / "titan2" / "TITAN2_FLASH_REGRESSION_POLICY.md"
 MODE_HELPER = ROOT / "build" / "titan2" / "titan2-flash-mode.sh"
 MODE_SELFTEST = ROOT / "build" / "titan2" / "tests" / "test-titan2-flash-mode.sh"
+C2_RECOVERY_QUALIFIER = ROOT / "build" / "titan2" / "qualify-n1i-c2-recovery-entry.sh"
+C2_RECOVERY_CONTRACT = ROOT / "build" / "gates" / "n1i-c2-recovery-entry-contract.sh"
 E5B_EXECUTION = ROOT / "build" / "gates" / "n1d-c3b-e5b-standard-execution-contract.sh"
 E6_DEPLOYMENT = ROOT / "build" / "gates" / "n1d-c3b-e6-standard-deployment-contract.sh"
 N1F_DOC = ROOT / "docs" / "titan2" / "N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md"
 CURRENT = ROOT / "CURRENT_STATUS.md"
 
 REQUIRED_IDS = {
-    f"TF-{i:03d}" for i in range(1, 24)
+    f"TF-{i:03d}" for i in range(1, 25)
 }
 
 failures: list[str] = []
@@ -57,6 +59,9 @@ source_map = read(SOURCE_MAP)
 policy = read(POLICY)
 mode_helper = read(MODE_HELPER)
 mode_selftest = read(MODE_SELFTEST)
+c2_recovery_qualifier = read(C2_RECOVERY_QUALIFIER)
+c2_recovery_contract = read(C2_RECOVERY_CONTRACT)
+c2_postbuild_qualifier = read(ROOT / "build/titan2/qualify-n1i-c2-postbuild-linkage.sh")
 n1f_doc = read(N1F_DOC)
 current = read(CURRENT)
 
@@ -317,6 +322,10 @@ check(
     and "BOOTLOADER_FASTBOOT_TO_FASTBOOTD" in mode_helper
     and "NONE_ALREADY_FASTBOOTD" in mode_helper
     and "BLOCKED_RECOVERY_MANUAL_REVIEW_REQUIRED" in mode_helper
+    and "device|recovery" in mode_helper
+    and "TITAN2_MODE_ADB_TRANSPORT_STATE" in mode_helper
+    and 'TITAN2_MODE_ADB_TRANSPORT_STATE" == recovery' in mode_helper
+    and "TITAN2_MODE_ADB_PROPERTIES_READABLE=NO" in mode_helper
     and "reboot bootloader" in mode_helper
     and "reboot fastboot" in mode_helper
     and 'getvar "$key"' in mode_helper
@@ -333,6 +342,8 @@ syntax_paths = (
     CENTRAL,
     E5B_EXECUTION,
     E6_DEPLOYMENT,
+    C2_RECOVERY_QUALIFIER,
+    C2_RECOVERY_CONTRACT,
 )
 syntax_ok = True
 syntax_detail: list[str] = []
@@ -394,6 +405,62 @@ check(
     "syntax_and_bounded_mode_selftest "
     + ("syntax=PASS " if syntax_ok else "syntax=FAIL:" + "|".join(syntax_detail) + " ")
     + ("selftest=PASS" if selftest_ok else "selftest=FAIL:" + selftest_detail[-300:]),
+)
+
+c2_recovery_authority_pos = c2_recovery_qualifier.find(
+    "===== VERIFY POSTBUILD AUTHORITY ====="
+)
+c2_recovery_bind_pos = c2_recovery_qualifier.find(
+    "===== BIND SEALED TITAN RECOVERY IDENTITY ====="
+)
+
+check(
+    "TF-024",
+    "DEVICE_CONTACT_AUTHORIZED=YES_READ_ONLY_RECOVERY_STATE_ONLY"
+        in c2_recovery_qualifier
+    and "MODE_TRANSITION_AUTHORIZED=NO" in c2_recovery_qualifier
+    and "REBOOT_AUTHORIZED=NO" in c2_recovery_qualifier
+    and "FLASH_AUTHORIZED=NO" in c2_recovery_qualifier
+    and "FACTORY_RESET_AUTHORIZED=NO" in c2_recovery_qualifier
+    and "SLOT_CHANGE_AUTHORIZED=NO" in c2_recovery_qualifier
+    and "LP_MUTATION_AUTHORIZED=NO" in c2_recovery_qualifier
+    and "AVB_MUTATION_AUTHORIZED=NO" in c2_recovery_qualifier
+    and '[[ "$TITAN2_MODE_DETECTED" == RECOVERY_ADB ]]'
+        in c2_recovery_qualifier
+    and '[[ "$TITAN2_MODE_ADB_TRANSPORT_STATE" == recovery ]]'
+        in c2_recovery_qualifier
+    and "N1I_C2_RECOVERY_ADB_PROPERTIES=NOT_REQUIRED_KNOWN_UNREADABLE"
+        in c2_recovery_qualifier
+    and 'titan2_mode_adb_getprop "$SABLE_ADB"' not in c2_recovery_qualifier
+    and '[[ -z "$TITAN2_MODE_FASTBOOT_SERIAL" ]]'
+        in c2_recovery_qualifier
+    and "N1I_C2_RECOVERY_ENTRY_QUALIFICATION=PASS_RECOVERY_CONFIRMED_NO_TRANSITION"
+        in c2_recovery_qualifier
+    and "N1I_C2_READY_FOR_RECOVERY_TO_FASTBOOTD_REVIEW=YES"
+        in c2_recovery_qualifier
+    and "N1I_C2_READY_FOR_FLASH_WRITE=NO" in c2_recovery_qualifier
+    and "--bind-sealed-recovery" in c2_recovery_qualifier
+    and 'titan2_mode_find_bound_adb "$SABLE_ADB" "$EXPECTED_BINDING_SHA256"'
+        in c2_recovery_qualifier
+    and "BINDING_METHOD=SEALED_HASH_MATCH_READ_ONLY_DISCOVERY"
+        in c2_recovery_qualifier
+    and "serial_and_bound_recovery_are_mutually_exclusive"
+        in c2_recovery_qualifier
+    and '"BUILD_SOURCE_COMMIT=$BUILD_SOURCE"' in c2_recovery_qualifier
+    and "BUILD_SOURCE_COMMIT=$SOURCE_COMMIT" in c2_postbuild_qualifier
+    and c2_recovery_authority_pos >= 0
+    and c2_recovery_bind_pos >= 0
+    and c2_recovery_authority_pos < c2_recovery_bind_pos
+    and "head -n 1" not in c2_recovery_qualifier
+    and "set -euo pipefail" not in c2_recovery_qualifier
+    and "set -o pipefail" not in c2_recovery_qualifier
+    and "set +e" not in c2_recovery_qualifier
+    and "N1I_C2_RECOVERY_ENTRY_READ_ONLY_ALLOWED=YES" in policy
+    and "N1I_C2_RECOVERY_AUTOMATIC_REBOOT_ALLOWED=NO" in policy
+    and "N1I_C2_RECOVERY_AUTOMATIC_FASTBOOTD_TRANSITION_ALLOWED=NO" in policy
+    and "N1I_C2_RECOVERY_FLASH_WRITE_ALLOWED=NO" in policy
+    and "N1I_C2_RECOVERY_ENTRY_CONTRACT=PASS" in c2_recovery_contract,
+    "c2_recovery_entry_is_readonly_bound_and_stops_before_transition_or_write",
 )
 
 if failures:
