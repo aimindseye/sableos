@@ -104,6 +104,13 @@ engineering lane, including:
 - allowing configured boot-jar module names to diverge from installed JAR stems
   without `PRODUCT_CONFIGURED_JAR_LOCATION_OVERRIDES`, which can produce
   classpath metadata pointing at non-existent on-device filenames.
+- allowing a release-specific Titan build path to bypass the shared build
+  regression contract merely because a release-local contract or the central
+  flash guard passed. Active release drivers must run the shared regression
+  contract before source staging/mutation or build work;
+- treating a collision-free module name as sufficient native admission. Native
+  prebuilts must be checked against the final Kati install destination graph;
+  two differently named modules that install the same path are a regression.
 
 ## Post-build reuse rule
 
