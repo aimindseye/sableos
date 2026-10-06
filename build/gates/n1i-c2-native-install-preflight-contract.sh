@@ -99,8 +99,37 @@ do
         fail "native_plan_regression_marker=$expected"
 done
 
-marker RETRY_BLOCK "$DRIVER" 'NATIVE_ADMISSION_INTEGRATED=NO'
-marker RETRY_BLOCK_REASON "$DRIVER" 'native_admission_not_integrated'
+marker ADMISSION_INITIAL_STATE "$DRIVER" 'NATIVE_ADMISSION_INTEGRATED=NO'
+marker ADMISSION_BOUND_TRANSITION "$DRIVER" 'NATIVE_ADMISSION_INTEGRATED=YES'
+marker PREFLIGHT_BOUND_TO_BUILD "$DRIVER" 'N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_BOUND_TO_BUILD'
+marker GENERATED_PACKAGES_STAGE "$DRIVER" 'install -m 0644 "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk"'
+
+python3 - "$DRIVER" <<'PY'
+import pathlib
+import sys
+
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+needles = {
+    "preflight": 'echo "===== N1I-C2 NATIVE INSTALL COLLISION PREFLIGHT ====="',
+    "admit": "NATIVE_ADMISSION_INTEGRATED=YES",
+    "stage": 'echo "===== STAGE C3B + C1 + FROZEN C2 BUNDLE ====="',
+    "mutate": 'echo "===== APPLY EXACT C2 SOURCE DELTA ====="',
+    "build": 'echo "===== BUILD ONE ANDROID 16 CELLULAR MVP SYSTEMIMAGE ====="',
+}
+positions = {name: text.find(value) for name, value in needles.items()}
+missing = [name for name, pos in positions.items() if pos < 0]
+if missing:
+    raise SystemExit("missing_order_marker=" + ",".join(missing))
+if not (
+    positions["preflight"]
+    < positions["admit"]
+    < positions["stage"]
+    < positions["mutate"]
+    < positions["build"]
+):
+    raise SystemExit(f"unsafe_preflight_order={positions}")
+print("N1I_C2_NATIVE_PREFLIGHT_CONTRACT_ORDER=PASS_BEFORE_MUTATION_AND_BUILD")
+PY
 
 [[ "$(grep -c 'make systemimage ' "$DRIVER")" -eq 1 ]] ||
     fail implementation_driver_build_count
