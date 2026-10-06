@@ -26,13 +26,17 @@ C2_FLASH = ROOT / "build" / "titan2" / "flash-n1i-c2-cellular-mvp.sh"
 C2_FASTBOOT_QUAL = ROOT / "build" / "titan2" / "qualify-n1i-c2-fastboot-state.py"
 C2_FLASH_TEST = ROOT / "tests" / "titan2" / "n1i-c2" / "test-flash-executor.sh"
 C2_FLASH_CONTRACT = ROOT / "build" / "gates" / "n1i-c2-flash-executor-contract.sh"
+D0_IMG0_FLASH = ROOT / "build" / "titan2" / "flash-n1i-d0-img0.sh"
+D0_IMG0_FASTBOOT_QUAL = ROOT / "build" / "titan2" / "qualify-n1i-d0-img0-fastboot-state.py"
+D0_IMG0_FLASH_TEST = ROOT / "tests" / "titan2" / "n1i-d0-img0" / "test-flash-executor.sh"
+D0_IMG0_FLASH_CONTRACT = ROOT / "build" / "gates" / "n1i-d0-img0-flash-executor-contract.sh"
 E5B_EXECUTION = ROOT / "build" / "gates" / "n1d-c3b-e5b-standard-execution-contract.sh"
 E6_DEPLOYMENT = ROOT / "build" / "gates" / "n1d-c3b-e6-standard-deployment-contract.sh"
 N1F_DOC = ROOT / "docs" / "titan2" / "N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md"
 CURRENT = ROOT / "CURRENT_STATUS.md"
 
 REQUIRED_IDS = {
-    f"TF-{i:03d}" for i in range(1, 26)
+    f"TF-{i:03d}" for i in range(1, 27)
 }
 
 failures: list[str] = []
@@ -69,6 +73,10 @@ c2_flash = read(C2_FLASH)
 c2_fastboot_qual = read(C2_FASTBOOT_QUAL)
 c2_flash_test = read(C2_FLASH_TEST)
 c2_flash_contract = read(C2_FLASH_CONTRACT)
+d0_img0_flash = read(D0_IMG0_FLASH)
+d0_img0_fastboot_qual = read(D0_IMG0_FASTBOOT_QUAL)
+d0_img0_flash_test = read(D0_IMG0_FLASH_TEST)
+d0_img0_flash_contract = read(D0_IMG0_FLASH_CONTRACT)
 c2_postbuild_qualifier = read(ROOT / "build/titan2/qualify-n1i-c2-postbuild-linkage.sh")
 n1f_doc = read(N1F_DOC)
 current = read(CURRENT)
@@ -355,6 +363,9 @@ syntax_paths = (
     C2_FLASH,
     C2_FLASH_TEST,
     C2_FLASH_CONTRACT,
+    D0_IMG0_FLASH,
+    D0_IMG0_FLASH_TEST,
+    D0_IMG0_FLASH_CONTRACT,
 )
 syntax_ok = True
 syntax_detail: list[str] = []
@@ -532,6 +543,82 @@ check(
     and "N1I_C2_FLASH_EXECUTOR_TEST=PASS" in c2_flash_test
     and "N1I_C2_FLASH_EXECUTOR_CONTRACT=PASS" in c2_flash_contract,
     "c2_exact_mode_aware_fastbootd_single_write_no_retry_with_live_geometry",
+)
+
+d0_img0_python_syntax_ok = True
+try:
+    compile(
+        d0_img0_fastboot_qual,
+        str(D0_IMG0_FASTBOOT_QUAL.relative_to(ROOT)),
+        "exec",
+    )
+except SyntaxError:
+    d0_img0_python_syntax_ok = False
+
+check(
+    "TF-026",
+    "TITAN2_N1I_D0_IMG0_EXACT_WRITE_EXECUTOR_ALLOWED=YES_REVIEWED_SCOPE_ONLY"
+        in adapter
+    and "TITAN2_FLASH_EXECUTION_SUPPORTED=NO" in adapter
+    and "TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO" in adapter
+    and "TITAN2_N1I_D0_IMG0_CELLULAR_DELTA=C1_C2_NOT_INCLUDED" in adapter
+    and 'BUILD_SOURCE="defc7f9c522336732564eb11644331691dcd92a2"'
+        in d0_img0_flash
+    and 'SYSTEM_SHA256="c3cff8cc9f0be512a721fae4c0b3c148688ef95b04c1df3981afb406bc928bd0"'
+        in d0_img0_flash
+    and 'SYSTEM_BYTES="3200548864"' in d0_img0_flash
+    and 'ARTIFACT_ROLE="N1I_D0_IMG0_BUILD_PATH_CLOSURE"' in d0_img0_flash
+    and 'TARGET_PARTITION="system_a"' in d0_img0_flash
+    and 'EXPECTED_SLOT="a"' in d0_img0_flash
+    and "YES_D0_IMG0_MODE_AWARE_FASTBOOTD_AND_FLASH_SYSTEM_A_ONCE"
+        in d0_img0_flash
+    and "YES_D0_IMG0_SYSTEM_A_ONCE" in d0_img0_flash
+    and 'CELLULAR_DELTA=C1_C2_NOT_INCLUDED' in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_HOST_AUTHORITY=PASS" in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_REGRESSION_PREFLIGHT=PASS" in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_ENTRY_MODE=PASS_ANDROID_ADB" in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_ENTRY_MODE=PASS_BOOTLOADER_FASTBOOT" in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_ENTRY_MODE=PASS_FASTBOOTD_DIRECT" in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_MODE_TRANSITION=NONE_ALREADY_FASTBOOTD"
+        in d0_img0_flash
+    and "recovery_entry_blocked_for_write" in d0_img0_flash
+    and "titan2_ensure_fastbootd_mode" in d0_img0_flash
+    and d0_img0_flash.count(
+        '"$SABLE_FASTBOOT" -s "$SERIAL" flash system_a "$SYSTEM_IMG"'
+    ) == 1
+    and d0_img0_flash.count('sha256sum "$SYSTEM_IMG"') == 1
+    and d0_img0_flash.count(
+        '"$SABLE_FASTBOOT" -s "$SERIAL" reboot </dev/null'
+    ) == 1
+    and "AUTOMATIC_FLASH_RETRY=NO" in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_DUPLICATE_WRITE_GUARD=REFUSE_PRIOR_ATTEMPT"
+        in d0_img0_flash
+    and "N1I_D0_IMG0_FLASH_DUPLICATE_WRITE_GUARD=REFUSE_CORRUPT_PRIOR_EVIDENCE"
+        in d0_img0_flash
+    and "N1I_D0_IMG0_DO_NOT_REFLASH_AFTER_THIS_POINT_WITHOUT_OWNER_REVIEW=YES"
+        in d0_img0_flash
+    and "N1I_D0_IMG0_DO_NOT_REFLASH_IF_POSTBOOT_OBSERVATION_FAILS=YES"
+        in d0_img0_flash
+    and "FACTORY_RESET_AUTHORIZED=NO" in d0_img0_flash
+    and "USERDATA_ERASE_AUTHORIZED=NO" in d0_img0_flash
+    and "SLOT_CHANGE_AUTHORIZED=NO" in d0_img0_flash
+    and "AVB_MUTATION_AUTHORIZED=NO" in d0_img0_flash
+    and "BOOT_CHAIN_MUTATION_AUTHORIZED=NO" in d0_img0_flash
+    and "COW_DELETION_AUTHORIZED=NO" in d0_img0_flash
+    and "TARGET_BYTES = 3_200_548_864" in d0_img0_fastboot_qual
+    and "REVIEWED_GROUP_SAFE_SYSTEM_TARGET_CEILING_BYTES = 3_263_168_512"
+        in d0_img0_fastboot_qual
+    and "MIN_REMAINING_SUPER_HEADROOM_BYTES = 536_870_912"
+        in d0_img0_fastboot_qual
+    and 'baseline = "LIVE_CURRENT_SYSTEM_A"' in d0_img0_fastboot_qual
+    and "N1I_D0_IMG0_FASTBOOT_STATE=FAIL_ACTIVE_COWS="
+        in d0_img0_fastboot_qual
+    and d0_img0_python_syntax_ok
+    and "SAME_SIZE_NOT_TREATED_AS_CONTENT_IDENTITY" in d0_img0_flash_test
+    and "N1I_D0_IMG0_FLASH_EXECUTOR_TEST=PASS" in d0_img0_flash_test
+    and "N1I_D0_IMG0_FLASH_EXECUTOR_CONTRACT=PASS"
+        in d0_img0_flash_contract,
+    "d0_img0_exact_mode_aware_single_write_no_retry_marker_only_authority",
 )
 
 if failures:
