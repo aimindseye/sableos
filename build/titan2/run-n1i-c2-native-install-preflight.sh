@@ -27,6 +27,7 @@ PRIOR_FAILED_PRODUCT_OUT="$PRIOR_FAILED_OUT/target/product/tdgsi_arm64_ab"
 PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"
 
 A4="$ROOT/product/titan2/n1i-c1/a4-native-superset.txt"
+PLATFORM_REUSE="$ROOT/product/titan2/n1i-c2/platform-native-reuse.tsv"
 AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
 BASELINE_PROBE="$ROOT/build/titan2/probe-n1i-c2-c1-native-baseline.sh"
 PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
@@ -77,7 +78,7 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 
-for file in     "$C1_CONTROL"     "$C1_CONTROL_DIR/SHA256SUMS.txt"     "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv"     "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env"     "$MATERIALIZED/SHA256SUMS.txt"     "$PRIOR_FAILED_INSTALLS"     "$A4"     "$AUDIT"     "$BASELINE_PROBE"     "$PLANNER"
+for file in     "$C1_CONTROL"     "$C1_CONTROL_DIR/SHA256SUMS.txt"     "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv"     "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env"     "$MATERIALIZED/SHA256SUMS.txt"     "$PRIOR_FAILED_INSTALLS"     "$A4"     "$PLATFORM_REUSE"     "$AUDIT"     "$BASELINE_PROBE"     "$PLANNER"
 do
     [[ -f "$file" ]] || { fail "required_file_missing=$file" 64; exit $?; }
 done
@@ -149,7 +150,15 @@ AUDIT_RC=$?
 echo
 echo "===== PLAN COMPLETE COLLISION-QUALIFIED NATIVE COMPOSITION ====="
 
-python3 "$PLANNER"     --probe-tsv "$OUT/c1-baseline/NATIVE_BASELINE_PROBE.tsv"     --collision-tsv "$OUT/INSTALL_COLLISIONS.tsv"     --a4-reference "$A4"     --composition-out "$OUT/NATIVE_COMPOSITION.tsv"     --packages-out "$OUT/native-packages.mk"     --admission-out "$OUT/native-admission.txt"     > >(tee "$OUT/native-plan.log") 2>&1
+python3 "$PLANNER" \
+    --probe-tsv "$OUT/c1-baseline/NATIVE_BASELINE_PROBE.tsv" \
+    --collision-tsv "$OUT/INSTALL_COLLISIONS.tsv" \
+    --a4-reference "$A4" \
+    --platform-reuse-decisions "$PLATFORM_REUSE" \
+    --composition-out "$OUT/NATIVE_COMPOSITION.tsv" \
+    --packages-out "$OUT/native-packages.mk" \
+    --admission-out "$OUT/native-admission.txt" \
+    > >(tee "$OUT/native-plan.log") 2>&1
 PLAN_RC=$?
 
 COLLISION_COUNT="$(
@@ -183,11 +192,13 @@ if [[ "$PLAN_RC" -eq 0 ]]; then
         { fail composition_missing 68; exit $?; }
 
     ROWS="$(awk 'NR>1 {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
-    REUSE="$(awk -F '\t' 'NR>1 && $11=="REUSE_C1_IDENTICAL" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
+    IDENTICAL_REUSE="$(awk -F '\t' 'NR>1 && $11=="REUSE_C1_IDENTICAL" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
+    PLATFORM_REUSE_COUNT="$(awk -F '\t' 'NR>1 && $11=="REUSE_C1_PLATFORM_DIFFERENT" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
     IMPORTS="$(awk -F '\t' 'NR>1 && $11=="IMPORT_FROZEN_STOCK" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
+    REUSE=$((IDENTICAL_REUSE + PLATFORM_REUSE_COUNT))
 
-    [[ "$ROWS" -eq 33 && $((REUSE + IMPORTS)) -eq 33 ]] ||
-        { fail "composition_count rows=$ROWS reuse=$REUSE imports=$IMPORTS" 68; exit $?; }
+    [[ "$ROWS" -eq 33 && "$PLATFORM_REUSE_COUNT" -eq 5 && $((REUSE + IMPORTS)) -eq 33 ]] ||
+        { fail "composition_count rows=$ROWS identical=$IDENTICAL_REUSE platform=$PLATFORM_REUSE_COUNT imports=$IMPORTS" 68; exit $?; }
 
     KNOWN_ROW="$(
         awk -F '\t'             -v id="$KNOWN_KATI_COLLISION_ID"             -v target="$KNOWN_KATI_COLLISION_TARGET"             'NR>1 && $1==id && $2==target {print $0}'             "$OUT/NATIVE_COMPOSITION.tsv"
@@ -196,18 +207,22 @@ if [[ "$PLAN_RC" -eq 0 ]]; then
 
     echo "N1I_C2_KNOWN_KATI_COLLISION_CLASSIFICATION=$KNOWN_ROW"
     echo "N1I_C2_NATIVE_BASELINE_REUSE_COUNT=$REUSE"
+    echo "N1I_C2_NATIVE_IDENTICAL_REUSE_COUNT=$IDENTICAL_REUSE"
+    echo "N1I_C2_NATIVE_PLATFORM_REUSE_COUNT=$PLATFORM_REUSE_COUNT"
     echo "N1I_C2_NATIVE_IMPORT_COUNT=$IMPORTS"
 
     PLAN_STATE=PASS_CANDIDATE_ADMISSION_READY
 else
     REUSE=BLOCKED
+    IDENTICAL_REUSE=BLOCKED
+    PLATFORM_REUSE_COUNT=BLOCKED
     IMPORTS=BLOCKED
     KNOWN_ROW=UNAVAILABLE_PLAN_BLOCKED
     PLAN_STATE=BLOCKED_EXPLICIT_DECISION_REQUIRED
 fi
 
 cat > "$OUT/PREFLIGHT_SUMMARY.env" <<EOF
-N1I_C2_NATIVE_INSTALL_PREFLIGHT_VERSION=2
+N1I_C2_NATIVE_INSTALL_PREFLIGHT_VERSION=3
 N1I_C2_C1_SYSTEM_SHA256=$C1_SHA
 N1I_C2_MATERIALIZATION_SOURCE_COMMIT=$MATERIALIZATION_SOURCE_COMMIT
 N1I_C2_PRIOR_FAILED_SOURCE_COMMIT=$PRIOR_FAILED_SOURCE_COMMIT
@@ -216,7 +231,10 @@ N1I_C2_INSTALL_COLLISION_COUNT=$COLLISION_COUNT
 N1I_C2_INSTALL_SINGLE_OWNER_COUNT=$SINGLE_OWNER_COUNT
 N1I_C2_INSTALL_UNCLAIMED_COUNT=$UNCLAIMED_COUNT
 N1I_C2_NATIVE_BASELINE_REUSE_COUNT=$REUSE
+N1I_C2_NATIVE_IDENTICAL_REUSE_COUNT=$IDENTICAL_REUSE
+N1I_C2_NATIVE_PLATFORM_REUSE_COUNT=$PLATFORM_REUSE_COUNT
 N1I_C2_NATIVE_IMPORT_COUNT=$IMPORTS
+N1I_C2_PLATFORM_REUSE_DECISION_FILE=product/titan2/n1i-c2/platform-native-reuse.tsv
 N1I_C2_KNOWN_KATI_COLLISION_ID=$KNOWN_KATI_COLLISION_ID
 N1I_C2_KNOWN_KATI_COLLISION_TARGET=$KNOWN_KATI_COLLISION_TARGET
 N1I_C2_NATIVE_INSTALL_PLAN_STATE=$PLAN_STATE
