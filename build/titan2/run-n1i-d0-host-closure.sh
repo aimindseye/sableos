@@ -893,32 +893,84 @@ record N1I_D0_N1F_APEX_ROOT "${N1F_APEX:--}"
 record N1I_D0_C2_APEX_ROOT "${C2_APEX:--}"
 
 run_classpath() {
-  local label="$1" root="$2" apex="$3"
-  if [[ -z "$root" || -z "$apex" || ! -d "$apex" ]]; then
-    gate E "$label" UNKNOWN apex_or_system_root_unavailable
+  local label="$1" system="$2" system_ext="$3" product="$4" apex="$5" api="$6"
+  if [[ -z "$system" || -z "$system_ext" || -z "$product" ||
+        -z "$apex" || ! -d "$apex" ]]; then
+    gate E "$label" UNKNOWN apex_or_partition_root_unavailable
     return
   fi
-  "$SABLE_PYTHON" "$HELPER" classpath     --repo "$ROOT"     --system-root "$root"     --apex-root "$apex"     --static-tool "$PIN_ROOT/build/titan2/n1i_static.py"     --api-level "$API_LEVEL"     --out "$OUT/reports/E_${label}"     >"$OUT/logs/E_${label}.log" 2>&1
+  "$SABLE_PYTHON" "$HELPER" classpath     --repo "$ROOT"     --system-root "$system"     --system-ext-root "$system_ext"     --product-root "$product"     --apex-root "$apex"     --static-tool "$PIN_ROOT/build/titan2/n1i_static.py"     --api-level "$api"     --out "$OUT/reports/E_${label}"     >"$OUT/logs/E_${label}.log" 2>&1
   local rc=$?
   if [[ "$rc" -ne 0 ]]; then
     gate E "$label" UNKNOWN "classpath_helper_rc=$rc"
     return
   fi
   local missing
-  missing="$(sed -n 's/^N1I_D0_CLASSPATH_MISSING_COUNT=//p' "$OUT/logs/E_${label}.log" | tail -1)"
+  missing="$(
+    sed -n 's/^N1I_D0_CLASSPATH_MISSING_COUNT=//p'       "$OUT/logs/E_${label}.log" | tail -1
+  )"
   if [[ "$missing" =~ ^[0-9]+$ && "$missing" -gt 0 ]]; then
     gate E "$label" BOOT_FATAL "runtime_classpath_missing=$missing"
   else
-    # Duplicate classes are evidence only here. Fatality requires a proven
-    # zygote/system_server boot-path ownership change, evaluated after Gate F.
     gate E "$label" PASS PATHS_RESOLVE_DUPLICATES_REPORT_ONLY_PENDING_BOOT_PATH
   fi
 }
-run_classpath N1F "$N1F_ROOT" "$N1F_APEX"
-run_classpath C2 "$C2_ROOT" "$C2_APEX"
+
+run_classpath N1F   "$N1F_ROOT" "$N1F_ROOT/system_ext" "$N1F_ROOT/product"   "$N1F_APEX" "$API_LEVEL"
+run_classpath C2   "$C2_ROOT" "$C2_ROOT/system_ext" "$C2_ROOT/product"   "$C2_APEX" "$API_LEVEL"
 [[ -n "$C1_ROOT" ]] &&
   gate E C1 UNKNOWN C1_APEX_CONTROL_NOT_MATERIALIZED ||
   gate E C1 UNKNOWN c1_binary_control_unavailable
+
+# Stock E2 authority uses its own split system/system_ext/product partitions and
+# Android 14 API level. This decides BCP vs named-library architecture; it does
+# not by itself make a boot-fatal claim about C2.
+STOCK_APEX=""
+if [[ -n "$STOCK_SYSTEM_ROOT" && -d "$STOCK_SYSTEM_ROOT" ]]; then
+  STOCK_APEX="$(
+    prepare_apex_root STOCK "$STOCK_SYSTEM_ROOT" "${STOCK_APEX_ROOT:-}" || true
+  )"
+fi
+record N1I_D0_STOCK_APEX_ROOT "${STOCK_APEX:--}"
+if [[ -n "$STOCK_APEX" ]]; then
+  run_classpath STOCK     "$STOCK_SYSTEM_ROOT" "$STOCK_SYSTEM_EXT_ROOT" "$STOCK_PRODUCT_ROOT"     "$STOCK_APEX" 34
+else
+  gate E STOCK UNKNOWN stock_apex_unavailable
+fi
+
+E2_MODEL=UNKNOWN
+if [[ -f "$OUT/reports/E_STOCK/CLASSPATH.tsv" ]]; then
+  common_stock="$(
+    awk -F '\t' '$1=="BOOT" && $3=="/system_ext/framework/mediatek-common.jar" {print $2}'       "$OUT/reports/E_STOCK/CLASSPATH.tsv" | tail -1
+  )"
+  imsbase_stock="$(
+    awk -F '\t' '$1=="BOOT" && $3=="/system_ext/framework/mediatek-ims-base.jar" {print $2}'       "$OUT/reports/E_STOCK/CLASSPATH.tsv" | tail -1
+  )"
+  common_declared=NO
+  imsbase_declared=NO
+  for r in "$STOCK_SYSTEM_ROOT" "$STOCK_SYSTEM_EXT_ROOT" "$STOCK_PRODUCT_ROOT"; do
+    [[ -d "$r/etc/permissions" ]] || continue
+    grep -RFl 'name="com.mediatek.common"' "$r/etc/permissions" >/dev/null 2>&1 &&
+      common_declared=YES
+    grep -RFl 'name="com.mediatek.ims.base"' "$r/etc/permissions" >/dev/null 2>&1 &&
+      imsbase_declared=YES
+  done
+  if [[ -n "$common_stock" && -n "$imsbase_stock" ]]; then
+    E2_MODEL=STOCK_BOOTCLASSPATH
+  elif [[ "$common_declared" == YES && "$imsbase_declared" == YES ]]; then
+    E2_MODEL=STOCK_NAMED_SHARED_LIBRARIES
+  elif [[ -n "$common_stock$imsbase_stock" ||
+          "$common_declared" == YES || "$imsbase_declared" == YES ]]; then
+    E2_MODEL=STOCK_MIXED_MODEL_REVIEW_REQUIRED
+  fi
+fi
+record N1I_D0_E2_JAR_MODEL "$E2_MODEL"
+
+# Gate E stays UNKNOWN when the stock classloader model itself is unresolved.
+# Append a final C2 row so verdict selection uses this stricter status.
+if [[ "$E2_MODEL" == UNKNOWN ]]; then
+  gate E C2 UNKNOWN stock_jar_classloader_model_unresolved
+fi
 
 # ----------------------------- Gate F IMS runtime role
 if [[ -n "$C2_ROOT" && -f "$C2_ROOT/system_ext/priv-app/ImsService/ImsService.apk" ]]; then
@@ -1081,7 +1133,9 @@ fi
 E2_DECIDED=NO
 F_COMPLETE=NO
 G_COMPLETE=NO
-record N1I_D0_E2_JAR_MODEL UNKNOWN_PENDING_STOCK_CLASSPATH_DECISION
+[[ "$E2_MODEL" == STOCK_BOOTCLASSPATH ||
+   "$E2_MODEL" == STOCK_NAMED_SHARED_LIBRARIES ]] &&
+  E2_DECIDED=YES
 [[ -f "$OUT/reports/F_summary.env" ]] &&
   ! grep -Fq '=UNKNOWN' "$OUT/reports/F_summary.env" &&
   F_COMPLETE=YES
