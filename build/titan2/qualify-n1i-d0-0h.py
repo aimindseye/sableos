@@ -1680,6 +1680,7 @@ def main() -> int:
     if out.exists():
         raise D0Error(f"output_exists={out}")
     out.mkdir(parents=True)
+    pinned_b2 = materialize_pinned_b2(out)
 
     print("===== TITAN 2 N1I-D0-0H HOST BOOT-COMPATIBILITY CLOSURE =====")
     print("BUILD_AUTHORIZED=NO")
@@ -1793,7 +1794,13 @@ def main() -> int:
 
         member = None
         if side == "c2" and base_e.result not in (UNKNOWN, BOOT_FATAL):
-            member = gate_e_member_c2(root, rows, aapt2, out)
+            member = gate_e_member_c2(
+                root,
+                rows,
+                aapt2,
+                pinned_b2,
+                out,
+            )
             gates.append(member)
         gates.append(combine_gate_e(base_e, member))
         e_rows[side] = rows
@@ -1824,6 +1831,7 @@ def main() -> int:
             stock_odm,
             apex_roots["c2"],
             aapt2,
+            pinned_b2,
             out,
         )
     )
