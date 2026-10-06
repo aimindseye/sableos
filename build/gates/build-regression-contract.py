@@ -343,6 +343,8 @@ check(
     and "36b53950faebc954cadb30756833ae5ec857f054"
         in c2_native_preflight
     and "audit-n1i-c2-install-collisions.py" in c2_native_preflight
+    and 'PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"' in c2_native_preflight
+    and '--installs-file "$PRIOR_FAILED_INSTALLS"' in c2_native_preflight
     and "plan-n1i-c2-native-install.py" in c2_native_preflight
     and "NATIVE_BASELINE_PROBE.tsv" in c2_native_preflight
     and "NATIVE_COMPOSITION.tsv" in c2_native_preflight
