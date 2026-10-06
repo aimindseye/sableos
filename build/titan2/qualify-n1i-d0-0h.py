@@ -461,17 +461,27 @@ def gate_c(side: str, side_root: Path, stock_vendor: Path, stock_odm: Path | Non
 
 def prop_values(root: Path, key: str) -> set[str]:
     vals = set()
-    for path in root.rglob("*.prop"):
-        if path.stat().st_size > 4 * 1024 * 1024:
+    search_roots = [root]
+    search_roots += [path for _part, path in partition_roots(root)]
+    seen: set[Path] = set()
+    for base in search_roots:
+        try:
+            base = base.resolve()
+        except OSError:
             continue
-        for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
-            if raw.startswith(key + "="):
-                vals.add(raw.split("=", 1)[1].strip())
-    for name in ("build.prop", "default.prop"):
-        for path in root.rglob(name):
-            if path.stat().st_size > 4 * 1024 * 1024:
+        if base in seen or not base.is_dir():
+            continue
+        seen.add(base)
+        candidates = list(base.rglob("*.prop"))
+        candidates += list(base.rglob("build.prop"))
+        candidates += list(base.rglob("default.prop"))
+        for path in sorted(set(candidates)):
+            if not path.is_file() or path.stat().st_size > 4 * 1024 * 1024:
                 continue
-            for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+            for raw in path.read_text(
+                encoding="utf-8",
+                errors="replace",
+            ).splitlines():
                 if raw.startswith(key + "="):
                     vals.add(raw.split("=", 1)[1].strip())
     return vals
@@ -1564,11 +1574,32 @@ def main() -> int:
     verdict, reason = overall(gates)
     c1j_ready = "NO"
     if verdict != "NOT_CLOSED":
-        d = next((g for g in gates if g.name == "D" and g.side == "c2"), None)
-        e = next((g for g in gates if g.name == "E" and g.side == "c2"), None)
-        g = next((g for g in gates if g.name == "G" and g.side == "c2"), None)
-        if d and d.result == PASS and e and e.result == PASS and g and g.result in (PASS, FUNCTIONAL_RISK):
-            c1j_ready = "YES" if g.result == PASS else "NO"
+        required_ready = [
+            next(
+                (
+                    g
+                    for g in gates
+                    if g.name == name and g.side == "c2"
+                ),
+                None,
+            )
+            for name in ("A", "B", "D", "E", "F", "G")
+        ]
+        g2_env = read_env(out / "gate-g2-status.env") if (
+            out / "gate-g2-status.env"
+        ).is_file() else {}
+        g2_closed = all(
+            g2_env.get(key, "").startswith("NOT_APPLICABLE_")
+            for key in (
+                "SYMBOL_VERSION_CHECK",
+                "LINKER_NAMESPACE_CHECK",
+            )
+        )
+        if (
+            all(g is not None and g.result == PASS for g in required_ready)
+            and g2_closed
+        ):
+            c1j_ready = "YES"
 
     write_tsv(out / "GATES.tsv", ["gate", "side", "result", "detail"], [[g.name, g.side, g.result, g.detail] for g in gates])
     with (out / "SUMMARY.env").open("w", encoding="utf-8") as fp:
