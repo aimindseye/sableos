@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023",
+    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023", "T2-024",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -102,6 +102,13 @@ c2_platform_provider_targets = {
     if len(row) >= 4
 }
 central_guard = read("build/gates/titan2-central-flash-guard-contract.sh")
+d0_driver = read("build/titan2/run-n1i-d0-host-closure.sh")
+d0_audit = read("build/titan2/audit-n1i-d0-host.py")
+d0_apex = read("build/titan2/materialize-n1i-d0-apex.py")
+d0_dex = read("build/titan2/prepare-n1i-d0-dex-container.py")
+d0_native = read("build/titan2/summarize-n1i-d0-native.py")
+d0_contract = read("build/gates/n1i-d0-host-closure-contract.sh")
+d0_doc = read("docs/titan2/N1I_D0_HOST_BOOT_COMPATIBILITY_CLOSURE_R4.md")
 
 check(
     "BR-001",
@@ -498,6 +505,51 @@ check(
     and '--expected-system-sha "$EXPECTED_C1_SHA"'
         in c1_runtime_linkage_driver,
     "c2_postbuild_linkage_is_readonly_source_bound_with_exact_agentpremain_full_classification",
+)
+
+check(
+    "T2-024",
+    "BUILD_AUTHORIZED=NO" in d0_driver
+    and "NETWORK_FETCH_AUTHORIZED=NO" in d0_driver
+    and "DEVICE_CONTACT_AUTHORIZED=NO" in d0_driver
+    and "MODE_TRANSITION_AUTHORIZED=NO" in d0_driver
+    and "REBOOT_AUTHORIZED=NO" in d0_driver
+    and "FLASH_AUTHORIZED=NO" in d0_driver
+    and "1697f21989b8ed6f1db90f8886952894592c7d0f" in d0_driver
+    and "dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a"
+        in d0_driver
+    and "630db78ef3f888b961640d17c5237495e673a953d67f1d52fabe056cbb76bb50"
+        in d0_driver
+    and "PASS_FRESH_FROM_PINNED_N1F_IMAGE" in d0_driver
+    and "PASS_FRESH_FROM_PINNED_C2_IMAGE" in d0_driver
+    and 'C3A_HEADS="$C3A_HISTORY/all-project-heads.tsv"' in d0_driver
+    and "for project in system/core system/sepolicy; do" in d0_driver
+    and "c3a_source_heads_seal_invalid" in d0_driver
+    and "init_selinux_source:$ANDROID_ROOT/system/core/init/selinux.cpp"
+        in d0_driver
+    and "sepolicy_android_bp:$ANDROID_ROOT/system/sepolicy/Android.bp"
+        in d0_driver
+    and "PROPERTY_INFO_CHECKER_UNAVAILABLE" in d0_audit
+    and "PRECOMPILED_POLICY_MATCHES_INIT_HASHES" in d0_audit
+    and "STOCK_ODM_PRESENT_BUT_UNPINNED" in d0_audit
+    and "PASS_CERT_BOUND_SEINFO" in d0_audit
+    and "UNKNOWN_SIGNING_CERT_NOT_BOUND_TO_MAC_PERMISSIONS" in d0_audit
+    and "SEINFO_AUTHORITY_UNCLOSED" in d0_audit
+    and "SYSTEMSERVERCLASSPATH = 2" in d0_audit
+    and "gate-e-{profile}-apex-overlaps.tsv" in d0_audit
+    and "MTK_APEX_CLASS_OVERLAP_UNPROVEN_BOOT_USE=" in d0_audit
+    and "BOOTCLASSPATH_WINNER_CHANGED_UNPROVEN_BOOT_USE" in d0_audit
+    and "N1I_D0_GATE_F_BOOT_EXECUTION_REACHABLE" in d0_audit
+    and "N1I_D0_GATE_G_N1F=NOT_APPLICABLE" in d0_native
+    and "UNKNOWN_NOT_IMPLEMENTED" in d0_native
+    and "Gate G may require" in d0_apex
+    and "SYNTHETIC_FROM_SIBLING_VDEX" in d0_dex
+    and "N1I_D0_A4_IMPORT_AUTHORITY=RETIRED" in d0_driver
+    and "N1I_D0_NEXT_BUILD_AUTHORIZED=NO" in d0_driver
+    and "N1I_D0_HOST_CONTRACT=PASS" in d0_contract
+    and "A4 is never an import fallback" in d0_doc
+    and "N1F-OBS" in d0_doc,
+    "d0_host_closure_is_controlled_pinned_fail_closed_and_non_mutating",
 )
 
 if failures:
