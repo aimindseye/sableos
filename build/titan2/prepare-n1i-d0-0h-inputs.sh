@@ -75,7 +75,7 @@ for p in "$N1F_SYSTEM" "$C2_SYSTEM"; do
 done
 [[ -d "$STOCK_REF" ]] || fail "stock_ref_missing=$STOCK_REF" 64
 
-for t in sha256sum stat od tr find sort awk sed grep cp mkdir rm; do
+for t in sha256sum stat od tr find sort awk sed grep cp mkdir rm ln; do
   command -v "$t" >/dev/null 2>&1 || fail "host_tool_missing=$t" 64
 done
 [[ -x "$SABLE_SIMG2IMG" ]] || fail "simg2img_missing=$SABLE_SIMG2IMG" 64
@@ -256,6 +256,49 @@ if [[ -f "$STOCK_ODM" ]]; then
   materialize_image STOCK_ODM "$STOCK_ODM" "$ROOTS/stock-odm"
 fi
 
+STOCK_RUNTIME="$ROOTS/stock-runtime"
+rm -rf "$STOCK_RUNTIME"
+mkdir -p "$STOCK_RUNTIME" || fail stock_runtime_create 65
+ln -s "$ROOTS/stock-system" "$STOCK_RUNTIME/system" ||
+  fail stock_runtime_system_link 65
+ln -s "$ROOTS/stock-system_ext" "$STOCK_RUNTIME/system_ext" ||
+  fail stock_runtime_system_ext_link 65
+ln -s "$ROOTS/stock-product" "$STOCK_RUNTIME/product" ||
+  fail stock_runtime_product_link 65
+ln -s "$ROOTS/stock-vendor" "$STOCK_RUNTIME/vendor" ||
+  fail stock_runtime_vendor_link 65
+if [[ -d "$ROOTS/stock-odm" ]]; then
+  ln -s "$ROOTS/stock-odm" "$STOCK_RUNTIME/odm" ||
+    fail stock_runtime_odm_link 65
+fi
+
+APEX_TOOL="$ROOT/build/titan2/materialize-n1i-d0-apex.py"
+[[ -f "$APEX_TOOL" ]] || fail apex_materializer_missing 64
+"$SABLE_PYTHON" "$APEX_TOOL" --selftest >/dev/null ||
+  fail apex_materializer_selftest 64
+
+materialize_apex_side() {
+  local side="$1"
+  shift
+  local dest="$OUT/apex/$side"
+  rm -rf "$dest"
+  local -a args
+  args=(--out "$dest" --debugfs "$DEBUGFS")
+  if [[ -n "$FSCK_EROFS" && -x "$FSCK_EROFS" ]]; then
+    args+=(--fsck-erofs "$FSCK_EROFS")
+  fi
+  while [[ "$#" -gt 0 ]]; do
+    args+=(--root "$1")
+    shift
+  done
+  "$SABLE_PYTHON" "$APEX_TOOL" "${args[@]}" ||
+    fail "apex_materialize_failed=$side" 65
+}
+
+materialize_apex_side n1f "$ROOTS/n1f-system"
+materialize_apex_side c2 "$ROOTS/c2-system"
+materialize_apex_side stock   "$ROOTS/stock-system"   "$ROOTS/stock-system_ext"   "$ROOTS/stock-product"
+
 tool_record() {
   local label="$1" path="$2"
   local version=""
@@ -299,11 +342,15 @@ STOCK_SYSTEM_EXT_ROOT=$ROOTS/stock-system_ext
 STOCK_PRODUCT_ROOT=$ROOTS/stock-product
 STOCK_VENDOR_ROOT=$ROOTS/stock-vendor
 STOCK_ODM_ROOT=$ROOTS/stock-odm
+STOCK_RUNTIME_ROOT=$STOCK_RUNTIME
+N1F_APEX_ROOT=$OUT/apex/n1f
+C2_APEX_ROOT=$OUT/apex/c2
+STOCK_APEX_ROOT=$OUT/apex/stock
 EOF
 
 (
   cd "$OUT" || exit 1
-  sha256sum INPUTS.env TOOLS.tsv > SHA256SUMS.txt
+  sha256sum INPUTS.env TOOLS.tsv     apex/n1f/APEX_MANIFEST.tsv apex/n1f/SHA256SUMS.txt     apex/c2/APEX_MANIFEST.tsv apex/c2/SHA256SUMS.txt     apex/stock/APEX_MANIFEST.tsv apex/stock/SHA256SUMS.txt     > SHA256SUMS.txt
   sha256sum -c SHA256SUMS.txt >/dev/null
 ) || fail input_manifest_seal 66
 
