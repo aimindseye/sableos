@@ -17,6 +17,7 @@ TM_PATCH = ROOT / "patches/android-16-n1i-c1/telephony/0001-telephony-add-titan2
 DRIVER = ROOT / "build/titan2/run-n1i-c2-cellular-mvp.sh"
 PREFLIGHT = ROOT / "build/titan2/run-n1i-c2-native-install-preflight.sh"
 BASELINE_PROBE = ROOT / "build/titan2/probe-n1i-c2-c1-native-baseline.sh"
+PLATFORM_REUSE = ROOT / "product/titan2/n1i-c2/platform-native-reuse.tsv"
 
 EXPECTED_PHH_PATCH_BLOB = "d78f41da30514920ff2165d8fe6dea15d0bb5d76"
 EXPECTED_TMETRICS_PATCH_BLOB = "ee353caded6dd07318991eb52d66687e06034c30"
@@ -175,11 +176,13 @@ def test_driver_authority() -> None:
     assert "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS" in text
     assert "NATIVE_ADMISSION_INTEGRATED=NO" in text
     assert "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_BOUND_TO_BUILD" in text
-    assert "N1I_C2_KNOWN_KATI_COLLISION=PASS_REUSE_C1_IDENTICAL id=M029" in text
+    assert "N1I_C2_KNOWN_KATI_COLLISION=PASS_REUSE_C1_PLATFORM_DIFFERENT id=M029" in text
     assert 'install -m 0644 "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk"' in text
     assert 'cmp -s "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk"' in text
     assert "IMPORT_FROZEN_STOCK" in text
     assert "REUSE_C1_IDENTICAL" in text
+    assert "REUSE_C1_PLATFORM_DIFFERENT" in text
+    assert "NATIVE_PLATFORM_REUSE_COUNT" in text
     assert "unexpected reused native package present" in text
     assert "N1I_C2_NATIVE_INSTALL_ADMISSION=PASS_COLLISION_FILTERED" in text
     assert text.count("#!/usr/bin/env bash") == 1
@@ -202,6 +205,8 @@ def test_native_preflight_authority() -> None:
     assert "36b53950faebc954cadb30756833ae5ec857f054" in text
     assert "audit-n1i-c2-install-collisions.py" in text
     assert "plan-n1i-c2-native-install.py" in text
+    assert "platform-native-reuse.tsv" in text
+    assert "--platform-reuse-decisions" in text
     assert "NATIVE_BASELINE_PROBE.tsv" in text
     assert "NATIVE_COMPOSITION.tsv" in text
     assert "/system/lib64/android.hardware.drm-V1-ndk.so" in text
@@ -258,8 +263,29 @@ def test_receipt_semantics() -> None:
     assert 'status["M006"] = "IMPLEMENTED_EXACT_PATCH"' in text
     assert 'status["M040"] = "IMPLEMENTED_BUILT"' in text
     assert 'status["M041"] = "IMPLEMENTED_DISABLED_BY_DEFAULT"' in text
-    assert "PRODUCT_OUT_HASH_EQUALS_MATERIALIZATION" in text
+    assert "IMPLEMENTED_EXACT_FROZEN_HASH" in text
+    assert "IMPLEMENTED_C1_PLATFORM_PROVIDER" in text
+    assert "PRODUCT_OUT_HASH_EQUALS_FROZEN_STOCK" in text
+    assert "PRODUCT_OUT_HASH_EQUALS_C1=" in text
     assert "IMPLEMENTATION_RECEIPT_ROWS=41" in text
+
+
+def test_platform_reuse_decision_authority() -> None:
+    rows = [
+        line.split("\t")
+        for line in PLATFORM_REUSE.read_text(encoding="utf-8").splitlines()[1:]
+        if line.strip()
+    ]
+    expected = {
+        ("M008", "/system/lib64/android.hardware.radio-V4-ndk.so", "android.hardware.radio-V4-ndk"),
+        ("M017", "/system/lib64/android.hardware.graphics.common-V6-ndk.so", "android.hardware.graphics.common-V6-ndk"),
+        ("M029", "/system/lib64/android.hardware.drm-V1-ndk.so", "android.hardware.drm-V1-ndk"),
+        ("M038", "/system/lib64/libheif.so", "libheif"),
+        ("M039", "/system/lib64/libsuspend.so", "libsuspend"),
+    }
+    actual = {(row[0], row[1], row[2]) for row in rows}
+    assert actual == expected
+    assert len(rows) == 5
 
 
 def main() -> int:
@@ -273,6 +299,7 @@ def main() -> int:
     test_native_baseline_probe_authority()
     test_native_preflight_order()
     test_receipt_semantics()
+    test_platform_reuse_decision_authority()
 
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_MODULE_SET=PASS count=33")
     print("N1I_C2_IMPLEMENTATION_TEST_PRODUCT_COMPOSITION=PASS")
@@ -284,6 +311,7 @@ def main() -> int:
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_BASELINE_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_PREFLIGHT_ORDER=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_RECEIPT_SEMANTICS=PASS")
+    print("N1I_C2_IMPLEMENTATION_TEST_PLATFORM_REUSE_DECISIONS=PASS count=5")
     print("N1I_C2_CELLULAR_MVP_IMPLEMENTATION_TEST=PASS")
     return 0
 
