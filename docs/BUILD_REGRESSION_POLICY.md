@@ -118,6 +118,11 @@ engineering lane, including:
   the frozen stock bundle; C1-present-but-different targets fail closed before
   Kati. The Kati install-graph audit remains a second-line verifier and is also
   captured automatically after a failed build when an install graph exists.
+- allowing iterative remediation edits to concatenate an active build driver.
+  Release-specific drivers are structural singletons: one script header, one
+  self-check, one reviewed source-delta phase, and one authorized build call.
+  The shared regression contract rejects duplicated/concatenated driver bodies
+  before source mutation or build authorization.
 
 ## Post-build reuse rule
 
