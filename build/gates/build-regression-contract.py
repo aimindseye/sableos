@@ -338,9 +338,12 @@ check(
     and "REUSE_C1_IDENTICAL" in c2_native_planner
     and "IMPORT_FROZEN_STOCK" in c2_native_planner
     and "BLOCK_C1_DIFFERENT" in c2_native_planner
-    and "android.hardware.drm-V1-ndk.so" in c2_native_plan_test
-    and "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS"
-        in c2_native_plan_test,
+    and "BLOCK_GRAPH_OWNER_NOT_IN_C1" in c2_native_planner
+    and "--collision-tsv" in c2_native_planner
+    and "N1I_C2_NATIVE_PLAN_IDENTICAL_BASELINE_REUSE=PASS" in c2_native_plan_test
+    and "N1I_C2_NATIVE_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS" in c2_native_plan_test
+    and "N1I_C2_NATIVE_PLAN_DIFFERENT_BASELINE_FAIL_CLOSED=PASS" in c2_native_plan_test
+    and "--collision-tsv" in c2_driver,
     "c2_native_install_is_sealed_c1_collision_planned_not_wholesale_installed",
 )
 
