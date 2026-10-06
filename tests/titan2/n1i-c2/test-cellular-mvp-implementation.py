@@ -174,7 +174,14 @@ def test_driver_authority() -> None:
     assert 'python3 "$ROOT/build/gates/build-regression-contract.py"' in text
     assert "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS" in text
     assert "NATIVE_ADMISSION_INTEGRATED=NO" in text
-    assert "native_admission_not_integrated" in text
+    assert "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_BOUND_TO_BUILD" in text
+    assert "N1I_C2_KNOWN_KATI_COLLISION=PASS_REUSE_C1_IDENTICAL id=M029" in text
+    assert 'install -m 0644 "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk"' in text
+    assert 'cmp -s "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk"' in text
+    assert "IMPORT_FROZEN_STOCK" in text
+    assert "REUSE_C1_IDENTICAL" in text
+    assert "unexpected reused native package present" in text
+    assert "N1I_C2_NATIVE_INSTALL_ADMISSION=PASS_COLLISION_FILTERED" in text
     assert text.count("#!/usr/bin/env bash") == 1
     assert text.count("selfcheck() {") == 1
     assert text.count('echo "===== APPLY EXACT C2 SOURCE DELTA ====="') == 1
