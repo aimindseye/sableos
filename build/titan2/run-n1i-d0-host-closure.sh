@@ -340,9 +340,18 @@ record N1I_D0_HOST_HELPER_SELFTEST PASS
 # ----------------------------- exact pinned B2 source
 PIN_ROOT="$WORK/b2-pin"
 mkdir -p "$PIN_ROOT" || fail b2_pin_dir
-git -C "$ROOT" archive "$B2_PIN"   build/titan2/n1i_static.py   build/titan2/n1i-b2-members.py   build/titan2/n1i-b2-native.py   tests/titan2/n1i-b   | tar -x -C "$PIN_ROOT"
-B2_ARCHIVE_RC=$?
-[[ "$B2_ARCHIVE_RC" -eq 0 ]] || fail b2_pin_archive
+B2_TAR="$WORK/b2-pin.tar"
+git -C "$ROOT" archive -o "$B2_TAR" "$B2_PIN" \
+  build/titan2/n1i_static.py \
+  build/titan2/n1i-b2-members.py \
+  build/titan2/n1i-b2-native.py \
+  tests/titan2/n1i-b
+B2_GIT_ARCHIVE_RC=$?
+[[ "$B2_GIT_ARCHIVE_RC" -eq 0 ]] || fail b2_pin_git_archive
+tar -xf "$B2_TAR" -C "$PIN_ROOT"
+B2_TAR_RC=$?
+[[ "$B2_TAR_RC" -eq 0 ]] || fail b2_pin_tar_extract
+rm -f "$B2_TAR"
 git -C "$PIN_ROOT" init -q || fail b2_pin_git_init
 record N1I_D0_B2_PIN_MATERIALIZATION PASS_LOCAL_GIT_OBJECT_ONLY
 for rel in   build/titan2/n1i_static.py   build/titan2/n1i-b2-members.py   build/titan2/n1i-b2-native.py
@@ -834,47 +843,71 @@ gate F N1F NOT_APPLICABLE_CONTROL no_ims_app_in_control
 
 # ----------------------------- Gate G pinned B2 native rederivation
 G_READY=NO
-if [[ "$B2_NATIVE_SELFTEST" == PASS && -n "$C2_ROOT" &&
-      -f "$C2_ROOT/system_ext/priv-app/ImsService/ImsService.apk" ]]; then
+G_COMPLETE_COUNT=0
+G_TARGET_COUNT=3
+APEX_LIB_FLAT=""
+if [[ -n "$C2_APEX" && -d "$C2_APEX" ]]; then
+  APEX_LIB_FLAT="$WORK/c2-apex-lib64-flat"
+  mkdir -p "$APEX_LIB_FLAT"
+  while IFS= read -r lib; do
+    base="$(basename "$lib")"
+    if [[ ! -e "$APEX_LIB_FLAT/$base" ]]; then
+      ln -s "$lib" "$APEX_LIB_FLAT/$base"
+    fi
+  done < <(
+    find "$C2_APEX" -type f -path '*/lib64/*.so' -print 2>/dev/null |
+      LC_ALL=C sort
+  )
+fi
+
+run_b2_native_target() {
+  local label="$1" target="$2" badging="$3"
+  [[ -f "$target" ]] || return 10
+  local -a args=(
+    "$SABLE_PYTHON" "$PIN_ROOT/build/titan2/n1i-b2-native.py"
+    --side c3a
+    --apk "$target"
+    --abi arm64-v8a
+    --lib-dir "system=$C2_ROOT/lib64"
+    --lib-dir "system_ext=$C2_ROOT/system_ext/lib64"
+    --lib-dir "product=$C2_ROOT/product/lib64"
+    --search-superset "$ROOT/product/titan2/n1i-c1/a4-native-superset.txt"
+    --out "$OUT/reports/G_native_$label"
+  )
+  [[ -n "$badging" && -f "$badging" ]] && args+=(--badging "$badging")
+  [[ -n "$APEX_LIB_FLAT" ]] && args+=(--lib-dir "apex=$APEX_LIB_FLAT")
+  [[ -n "$STOCK_VENDOR_ROOT" && -d "$STOCK_VENDOR_ROOT/lib64" ]] &&
+    args+=(--lib-dir "vendor=$STOCK_VENDOR_ROOT/lib64")
+  [[ -n "$STOCK_ODM_ROOT" && -d "$STOCK_ODM_ROOT/lib64" ]] &&
+    args+=(--lib-dir "odm=$STOCK_ODM_ROOT/lib64")
+  "${args[@]}" >"$OUT/logs/G_native_$label.log" 2>&1
+  return $?
+}
+
+if [[ "$B2_NATIVE_SELFTEST" == PASS && -n "$C2_ROOT" ]]; then
   IMS_APK="$C2_ROOT/system_ext/priv-app/ImsService/ImsService.apk"
-  "$AAPT2" dump badging "$IMS_APK" >"$OUT/reports/G_ims_badging.txt" 2>"$OUT/logs/G_badging.err"
-  BADGING_RC=$?
-  if [[ "$BADGING_RC" -eq 0 ]]; then
-    G_ARGS=(
-      "$SABLE_PYTHON" "$PIN_ROOT/build/titan2/n1i-b2-native.py"
-      --side c3a
-      --apk "$IMS_APK"
-      --abi arm64-v8a
-      --lib-dir "system=$C2_ROOT/lib64"
-      --lib-dir "system_ext=$C2_ROOT/system_ext/lib64"
-      --lib-dir "product=$C2_ROOT/product/lib64"
-      --badging "$OUT/reports/G_ims_badging.txt"
-      --search-superset "$ROOT/product/titan2/n1i-c1/a4-native-superset.txt"
-      --out "$OUT/reports/G_native"
-    )
-    # The pinned analyzer models APEX as a visible flat lib directory. A full
-    # multi-APEX linker namespace is not implemented; record that honestly.
-    if [[ -n "$C2_APEX" ]]; then
-      APEX_LIB_FLAT="$WORK/c2-apex-lib64-flat"
-      mkdir -p "$APEX_LIB_FLAT"
-      while IFS= read -r lib; do
-        base="$(basename "$lib")"
-        if [[ ! -e "$APEX_LIB_FLAT/$base" ]]; then
-          ln -s "$lib" "$APEX_LIB_FLAT/$base"
-        fi
-      done < <(find "$C2_APEX" -type f -path '*/lib64/*.so' -print 2>/dev/null | sort)
-      G_ARGS+=(--lib-dir "apex=$APEX_LIB_FLAT")
-    fi
-    "${G_ARGS[@]}" >"$OUT/logs/G_native.log" 2>&1
-    G_RC=$?
-    if [[ "$G_RC" -eq 0 ]]; then
-      G_READY=YES
-      gate G C2 PASS PINNED_B2_REDERIVATION_COMPLETE
-    else
-      gate G C2 UNKNOWN "pinned_b2_rc=$G_RC"
-    fi
+  COMMON_JAR="$C2_ROOT/system_ext/framework/mediatek-common.jar"
+  IMS_BASE_JAR="$C2_ROOT/system_ext/framework/mediatek-ims-base.jar"
+  IMS_BADGING="$OUT/reports/G_ims_badging.txt"
+  if [[ -f "$IMS_APK" ]]; then
+    "$AAPT2" dump badging "$IMS_APK"       >"$IMS_BADGING" 2>"$OUT/logs/G_badging.err"
+    [[ "$?" -eq 0 ]] || IMS_BADGING=""
   else
-    gate G C2 UNKNOWN aapt2_badging_failed
+    IMS_BADGING=""
+  fi
+
+  run_b2_native_target ims "$IMS_APK" "$IMS_BADGING"
+  [[ "$?" -eq 0 ]] && G_COMPLETE_COUNT=$((G_COMPLETE_COUNT + 1))
+  run_b2_native_target common "$COMMON_JAR" ""
+  [[ "$?" -eq 0 ]] && G_COMPLETE_COUNT=$((G_COMPLETE_COUNT + 1))
+  run_b2_native_target imsbase "$IMS_BASE_JAR" ""
+  [[ "$?" -eq 0 ]] && G_COMPLETE_COUNT=$((G_COMPLETE_COUNT + 1))
+
+  if [[ "$G_COMPLETE_COUNT" -eq "$G_TARGET_COUNT" ]]; then
+    G_READY=YES
+    gate G C2 PASS PINNED_B2_APK_AND_TWO_JARS_COMPLETE
+  else
+    gate G C2 UNKNOWN "completed=$G_COMPLETE_COUNT expected=$G_TARGET_COUNT"
   fi
 else
   gate G C2 UNKNOWN pinned_selftest_or_input_unavailable
@@ -883,38 +916,50 @@ gate G N1F NOT_APPLICABLE_CONTROL pinned_B2_selftest_is_control
 record N1I_D0_G2_SYMBOL_VERSION_CHECK UNKNOWN_NOT_IMPLEMENTED
 record N1I_D0_G2_LINKER_NAMESPACE_CHECK UNKNOWN_NOT_IMPLEMENTED
 
-# A4 retirement classification follows Gate G when available.
-if [[ "$G_READY" == YES && -f "$OUT/reports/G_native/SEARCH_SUPERSET.tsv" ]]; then
-  {
-    printf 'library\tclassification\n'
-    tail -n +2 "$OUT/reports/G_native/SEARCH_SUPERSET.tsv" |
-      while IFS=$'\t' read -r lib admitted; do
-        if [[ "$admitted" == YES ]]; then
-          class=B2_REQUIRED_OR_TRANSITIVE
-        else
-          class=SEARCH_SUPERSET_ONLY
-        fi
-        printf '%s\t%s\n' "$lib" "$class"
-      done
-  } > "$OUT/reports/A4_RETIREMENT.tsv"
-else
-  printf 'library\tclassification\n' > "$OUT/reports/A4_RETIREMENT.tsv"
+# A4 retirement classification is evidence only. Union all three B2 reports.
+printf 'library\tclassification\n' > "$OUT/reports/A4_RETIREMENT.tsv"
+if [[ "$G_READY" == YES ]]; then
+  "$SABLE_PYTHON" - "$OUT" <<'PY'
+import csv
+import pathlib
+import sys
+out=pathlib.Path(sys.argv[1])
+seen={}
+for p in sorted(out.glob("reports/G_native_*/SEARCH_SUPERSET.tsv")):
+    with p.open(encoding="utf-8") as fp:
+        for row in csv.DictReader(fp, delimiter="\t"):
+            lib=row["library"]
+            yes=row["admitted_by_evidence"]=="YES"
+            seen[lib]=seen.get(lib,False) or yes
+with (out/"reports/A4_RETIREMENT.tsv").open(
+    "w",encoding="utf-8",newline=""
+) as fp:
+    w=csv.writer(fp,delimiter="\t")
+    w.writerow(("library","classification"))
+    for lib in sorted(seen):
+        w.writerow((
+            lib,
+            "B2_REQUIRED_OR_TRANSITIVE" if seen[lib]
+            else "SEARCH_SUPERSET_ONLY",
+        ))
+PY
 fi
 
 # ----------------------------- verdict semantics
 closure_unknown=0
 fatal_count=0
 for g in A1 B D E; do
-  for c in N1F C2; do
-    status="$(awk -F '\t' -v g="$g" -v c="$c"       '$1==g && $2==c {v=$3} END {print v}' "$GATES")"
-    [[ "$status" == UNKNOWN || -z "$status" ]] && closure_unknown=$((closure_unknown + 1))
-  done
-done
-
-for g in A1 B D E; do
-  c2="$(awk -F '\t' -v g="$g" '$1==g && $2=="C2" {v=$3} END {print v}' "$GATES")"
-  n1f="$(awk -F '\t' -v g="$g" '$1==g && $2=="N1F" {v=$3} END {print v}' "$GATES")"
-  [[ "$c2" == BOOT_FATAL && "$n1f" == PASS ]] &&
+  n1f_status="$(
+    awk -F '\t' -v g="$g"       '$1==g && $2=="N1F" {v=$3} END {print v}' "$GATES"
+  )"
+  c2_status="$(
+    awk -F '\t' -v g="$g"       '$1==g && $2=="C2" {v=$3} END {print v}' "$GATES"
+  )"
+  [[ "$n1f_status" != PASS ]] &&
+    closure_unknown=$((closure_unknown + 1))
+  [[ "$c2_status" == UNKNOWN || -z "$c2_status" ]] &&
+    closure_unknown=$((closure_unknown + 1))
+  [[ "$c2_status" == BOOT_FATAL && "$n1f_status" == PASS ]] &&
     fatal_count=$((fatal_count + 1))
 done
 
@@ -929,9 +974,10 @@ fi
 E2_DECIDED=NO
 F_COMPLETE=NO
 G_COMPLETE=NO
-[[ -f "$OUT/reports/E_C2/SUMMARY.env" ]] && E2_DECIDED=YES
+record N1I_D0_E2_JAR_MODEL UNKNOWN_PENDING_STOCK_CLASSPATH_DECISION
 [[ -f "$OUT/reports/F_summary.env" ]] &&
-  ! grep -Fq '=UNKNOWN' "$OUT/reports/F_summary.env" && F_COMPLETE=YES
+  ! grep -Fq '=UNKNOWN' "$OUT/reports/F_summary.env" &&
+  F_COMPLETE=YES
 [[ "$G_READY" == YES ]] && G_COMPLETE=YES
 
 if [[ "$E2_DECIDED" == YES && "$F_COMPLETE" == YES && "$G_COMPLETE" == YES ]]; then
