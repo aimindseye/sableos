@@ -995,6 +995,130 @@ def duplicate_classes(side: str, rows: list[tuple[str, Path]], out: Path) -> tup
     return len(dup), dup
 
 
+
+def gate_e_member_c2(
+    root: Path,
+    rows: list[tuple[str, Path]],
+    aapt2: Path,
+    out: Path,
+) -> Gate:
+    devices = [device for device, _host in rows]
+    if COMMON not in devices or IMS_BASE not in devices:
+        return Gate(
+            "E_MEMBER",
+            "c2",
+            FUNCTIONAL_RISK,
+            "mtk_jars_not_both_on_current_bootclasspath",
+        )
+
+    ims = find_ims(root)
+    if ims is None:
+        return Gate("E_MEMBER", "c2", UNKNOWN, "ims_apk_missing")
+
+    manifest = out / "gate-e-c2-bootclasspath-manifest.tsv"
+    manifest.write_text(
+        "".join(f"{device}\t{host}\n" for device, host in rows),
+        encoding="utf-8",
+    )
+    badging = out / "gate-e-c2-ims-badging.txt"
+    rc, _ = run(
+        [str(aapt2), "dump", "badging", str(ims)],
+        badging,
+    )
+    if rc != 0:
+        return Gate(
+            "E_MEMBER",
+            "c2",
+            UNKNOWN,
+            f"aapt2_badging_rc={rc}",
+        )
+
+    audit = ROOT / "build/titan2/audit-n1i-c1-runtime-linkage.py"
+    log = out / "gate-e-c2-member-linkage.txt"
+    rc, text = run(
+        [
+            sys.executable,
+            str(audit),
+            "--bootclasspath-manifest",
+            str(manifest),
+            "--ims-apk",
+            str(ims),
+            "--badging",
+            str(badging),
+        ],
+        log,
+    )
+    if rc == 0 and "PASS_ALL_RESOLVED" in text:
+        return Gate("E_MEMBER", "c2", PASS, "all_members_resolved")
+    if rc == 1:
+        unresolved = re.search(
+            r"N1I_C1_RUNTIME_MEMBER_LINKAGE_AUDIT="
+            r"FAIL_UNRESOLVED_MEMBERS count=(\d+)",
+            text,
+        )
+        duplicates = re.search(
+            r"N1I_C1_RUNTIME_MEMBER_LINKAGE_AUDIT="
+            r"FAIL_IMPORTED_BOOT_DUPLICATE_CLASSES count=(\d+)",
+            text,
+        )
+        if unresolved:
+            return Gate(
+                "E_MEMBER",
+                "c2",
+                FUNCTIONAL_RISK,
+                "unresolved_members="
+                + unresolved.group(1)
+                + ":boot_caller_not_proven",
+            )
+        if duplicates:
+            return Gate(
+                "E_MEMBER",
+                "c2",
+                FUNCTIONAL_RISK,
+                "imported_boot_duplicate_classes="
+                + duplicates.group(1)
+                + ":boot_effect_not_proven",
+            )
+        return Gate(
+            "E_MEMBER",
+            "c2",
+            FUNCTIONAL_RISK,
+            "member_audit_nonzero_without_boot_reachability_proof",
+        )
+    return Gate(
+        "E_MEMBER",
+        "c2",
+        UNKNOWN,
+        f"member_audit_rc={rc}",
+    )
+
+
+def combine_gate_e(base: Gate, member: Gate | None) -> Gate:
+    if base.result in (BOOT_FATAL, UNKNOWN):
+        return base
+    if member is None:
+        return base
+    if member.result == UNKNOWN:
+        return Gate(
+            "E",
+            base.side,
+            UNKNOWN,
+            f"{base.detail};member={member.detail}",
+        )
+    if base.result == FUNCTIONAL_RISK or member.result == FUNCTIONAL_RISK:
+        return Gate(
+            "E",
+            base.side,
+            FUNCTIONAL_RISK,
+            f"{base.detail};member={member.detail}",
+        )
+    return Gate(
+        "E",
+        base.side,
+        PASS,
+        f"{base.detail};member={member.detail}",
+    )
+
 def gate_f_c2(root: Path, aapt2: Path, out: Path) -> Gate:
     ims = find_ims(root)
     if ims is None:
@@ -1170,6 +1294,12 @@ def main() -> int:
         )
     )
 
+    # Gate F emits C2 boot-role evidence consumed by Gate E severity
+    # review. N1F has no OEM IMS package by design.
+    gates.append(Gate("F", "n1f", NOT_APPLICABLE, "OEM_IMS_ABSENT"))
+    f_c2 = gate_f_c2(roots["C2_ROOT"], aapt2, out)
+    gates.append(f_c2)
+
     # Gate E must analyze each side's own pinned APEX runtime view.
     e_rows: dict[str, list[tuple[str, Path]]] = {}
     for side, root in (
@@ -1177,16 +1307,35 @@ def main() -> int:
         ("c2", roots["C2_ROOT"]),
         ("stock", roots["STOCK_RUNTIME_ROOT"]),
     ):
-        eg, rows = classpath_for_side(side, root, apex_roots[side], out)
-        if eg.result == PASS:
+        base_e, rows = classpath_for_side(
+            side,
+            root,
+            apex_roots[side],
+            out,
+        )
+        if base_e.result == PASS:
             ndup, _ = duplicate_classes(side, rows, out)
             if ndup < 0:
-                eg = Gate("E", side, UNKNOWN, "duplicate_class_engine_unavailable")
+                base_e = Gate(
+                    "E",
+                    side,
+                    UNKNOWN,
+                    "duplicate_class_engine_unavailable",
+                )
             elif ndup:
-                # A duplicate is a real classpath difference but is not boot-fatal
-                # without proof that boot-reachable code resolves through it.
-                eg = Gate("E", side, FUNCTIONAL_RISK, f"bootclasspath_duplicate_classes={ndup}")
-        gates.append(eg)
+                base_e = Gate(
+                    "E",
+                    side,
+                    FUNCTIONAL_RISK,
+                    f"bootclasspath_duplicate_classes={ndup}:"
+                    "boot_effect_not_proven",
+                )
+
+        member = None
+        if side == "c2" and base_e.result not in (UNKNOWN, BOOT_FATAL):
+            member = gate_e_member_c2(root, rows, aapt2, out)
+            gates.append(member)
+        gates.append(combine_gate_e(base_e, member))
         e_rows[side] = rows
 
     mtk_rows = []
@@ -1207,8 +1356,6 @@ def main() -> int:
         mtk_rows,
     )
 
-    gates.append(Gate("F", "n1f", NOT_APPLICABLE, "OEM_IMS_ABSENT"))
-    gates.append(gate_f_c2(roots["C2_ROOT"], aapt2, out))
     gates.append(Gate("G", "n1f", NOT_APPLICABLE, "OEM_IMS_ABSENT"))
     gates.append(gate_g_c2(roots["C2_ROOT"], aapt2, out))
 
