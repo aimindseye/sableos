@@ -123,6 +123,9 @@ TMETRICS_QUALIFIER="$ROOT/build/titan2/qualify-n1i-c1-telephonymetrics-compat.sh
 PHH_PATCH="$ROOT/patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-titan2-cellular-mvp.patch"
 GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
+BUILD_REGRESSION_CONTRACT="$ROOT/build/gates/build-regression-contract.py"
+INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
+NATIVE_ADMISSION="$ROOT/product/titan2/n1i-c2/native-admission.txt"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
@@ -586,6 +589,10 @@ selfcheck() {
 
     [[ -x "$APKSIGNER" ]] || { fail "apksigner_missing=$APKSIGNER"; return $?; }
 
+    [[ -f "$BUILD_REGRESSION_CONTRACT" ]] || { fail build_regression_contract_missing; return $?; }
+    [[ -f "$INSTALL_COLLISION_AUDIT" ]] || { fail install_collision_audit_missing; return $?; }
+    [[ -f "$NATIVE_ADMISSION" ]] || { fail native_admission_missing; return $?; }
+
     verify_c3a_source || return $?
     verify_audit || return $?
     verify_materialization || return $?
@@ -612,6 +619,13 @@ selfcheck() {
 }
 
 selfcheck || exit $?
+
+echo "===== SHARED BUILD REGRESSION PREFLIGHT ====="
+python3 "$BUILD_REGRESSION_CONTRACT"
+BUILD_REGRESSION_RC=$?
+[[ "$BUILD_REGRESSION_RC" -eq 0 ]] ||
+    { fail "build_regression_rc=$BUILD_REGRESSION_RC"; exit $?; }
+echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE="$SABLE_EVIDENCE_ROOT/titan2/n1i-c2-cellular-mvp-build/$STAMP"
