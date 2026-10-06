@@ -637,6 +637,17 @@ selfcheck() {
         { fail c3a_control; return $?; }
     [[ -f "$N1F_CONTROL" && "$(sha256sum "$N1F_CONTROL" | awk '{print $1}')" == "$N1F_SHA" ]] ||
         { fail n1f_control; return $?; }
+    [[ -f "$C1_CONTROL" && "$(sha256sum "$C1_CONTROL" | awk '{print $1}')" == "$C1_SHA" ]] ||
+        { fail c1_control; return $?; }
+    [[ -f "$C1_CONTROL_DIR/SHA256SUMS.txt" ]] ||
+        { fail c1_control_seal_missing; return $?; }
+    (cd "$C1_CONTROL_DIR"; sha256sum -c SHA256SUMS.txt >/dev/null) ||
+        { fail c1_control_seal; return $?; }
+
+    [[ -d "$PRIOR_FAILED_OUT/soong" && -d "$PRIOR_FAILED_PRODUCT_OUT" ]] ||
+        { fail prior_failed_out_missing; return $?; }
+    [[ -f "$PRIOR_FAILED_INSTALLS" ]] ||
+        { fail prior_failed_installs_missing; return $?; }
 
     [[ -f "$STOCK_SYSTEM" && "$(sha256sum "$STOCK_SYSTEM" | awk '{print $1}')" == "$STOCK_SYSTEM_SHA" ]] ||
         { fail stock_system; return $?; }
@@ -644,6 +655,15 @@ selfcheck() {
         { fail stock_system_ext; return $?; }
 
     bash -n "$0" || { fail driver_syntax; return $?; }
+
+    [[ -f "$BUILD_REGRESSION_CONTRACT" ]] || { fail build_regression_contract_missing; return $?; }
+    [[ -f "$INSTALL_COLLISION_AUDIT" ]] || { fail install_collision_audit_missing; return $?; }
+    [[ -f "$NATIVE_INSTALL_PLANNER" ]] || { fail native_install_planner_missing; return $?; }
+    command -v debugfs >/dev/null 2>&1 || { fail debugfs_missing; return $?; }
+
+    python3 "$BUILD_REGRESSION_CONTRACT" || { fail build_regression_contract; return $?; }
+    echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
+
     bash "$IMPLEMENTATION_CONTRACT" || { fail implementation_contract; return $?; }
     bash "$ROOT/build/host/verify-host-tools.sh" aosp-host >/dev/null ||
         { fail host_tools; return $?; }
