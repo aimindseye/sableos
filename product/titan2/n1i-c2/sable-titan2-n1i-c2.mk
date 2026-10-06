@@ -12,10 +12,10 @@ PRODUCT_PACKAGES += \
     SableTitan2CellularConfig \
     SableTitan2CellularMarker
 
-# Generated at governed build time from the sealed C1 baseline collision
-# preflight. It lists only frozen native modules whose exact target path is
-# absent from C1. C1-identical paths are intentionally reused instead of
-# producing duplicate Kati install commands.
+# Generated at governed build time from the sealed C1 zero-presence probe
+# plus the retained Kati ownership graph. It lists exactly 28 frozen native
+# imports; five reviewed collision targets preserve their existing Android 16
+# platform providers and therefore omit the Sable duplicate package.
 $(call inherit-product, vendor/sable/titan2/n1i-c2/native-packages.mk)
 
 # Enable the already-present Restless legacy incoming-call compatibility path
