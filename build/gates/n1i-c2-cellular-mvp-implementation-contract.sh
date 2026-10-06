@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 DRIVER="$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh"
 TEST="$ROOT/tests/titan2/n1i-c2/test-cellular-mvp-implementation.py"
+INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
+INSTALL_COLLISION_TEST="$ROOT/tests/titan2/n1i-c2/test-install-collision-audit.py"
+BUILD_REGRESSION="$ROOT/build/gates/build-regression-contract.py"
 BP="$ROOT/product/titan2/n1i-c2/Android.bp"
 MK="$ROOT/product/titan2/n1i-c2/sable-titan2-n1i-c2.mk"
 SCRIPT="$ROOT/product/titan2/n1i-c2/sable-titan2-cellular.sh"
@@ -22,7 +25,7 @@ marker() {
     echo "N1I_C2_IMPLEMENTATION_CONTRACT_$name=PASS"
 }
 
-for f in "$DRIVER" "$TEST" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
+for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -39,7 +42,7 @@ for shell_file in "$DRIVER" "$SCRIPT"; do
 done
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
 
-PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache"     python3 -m py_compile "$TEST"
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache"     python3 -m py_compile "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST"
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_PYTHON_SYNTAX=PASS"
 
 python3 - "$DRIVER" <<'PY'
@@ -104,6 +107,9 @@ marker STOCK_MAP_A4_EXACT "$DRIVER" 'N1I_C2_STOCK_MAP=FAIL_A4_TARGET_SET'
 marker PLATFORM_RESIGN "$DRIVER" 'N1I_C2_OEM_IMS_PLATFORM_RESIGN=PASS'
 marker EMERGENCY_SOURCE_RESTORE "$DRIVER" 'N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS'
 marker PLATFORM_RESIGN_ARTIFACT "$DRIVER" 'OEM_IMS_PLATFORM_RESIGNED=YES'
+marker BUILD_REGRESSION_PREFLIGHT "$DRIVER" 'N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS'
+marker INSTALL_COLLISION_AUDIT "$DRIVER" 'audit-n1i-c2-install-collisions.py'
+marker NATIVE_ADMISSION "$DRIVER" 'native-admission.txt'
 marker SOURCE_AUTH_REQUIRED "$DRIVER" 'source_mutation_requires_authorization'
 marker BUILD_AUTH_REQUIRED "$DRIVER" 'build_requires_authorization'
 marker SOURCE_RESTORE "$DRIVER" 'N1I_C2_SOURCE_RESTORE=PASS'
@@ -157,6 +163,25 @@ fi
 grep -Fq 'source_mutation_requires_authorization' <<<"$UNAUTH_OUTPUT" ||
     fail unauthorized_driver_reason
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_AUTHORIZATION_FAIL_CLOSED=PASS"
+
+if BUILD_REGRESSION_OUTPUT="$(python3 "$BUILD_REGRESSION")"; then
+    printf '%s\n' "$BUILD_REGRESSION_OUTPUT"
+else
+    printf '%s\n' "$BUILD_REGRESSION_OUTPUT"
+    fail shared_build_regression_contract
+fi
+grep -Fq 'SABLE_BUILD_REGRESSION_CONTRACT=PASS' <<<"$BUILD_REGRESSION_OUTPUT" ||
+    fail shared_build_regression_marker
+echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHARED_BUILD_REGRESSION=PASS"
+
+if COLLISION_TEST_OUTPUT="$(python3 "$INSTALL_COLLISION_TEST")"; then
+    printf '%s\n' "$COLLISION_TEST_OUTPUT"
+else
+    fail install_collision_audit_regression
+fi
+grep -Fq 'N1I_C2_INSTALL_COLLISION_AUDIT_TEST=PASS' <<<"$COLLISION_TEST_OUTPUT" ||
+    fail install_collision_audit_marker
+echo "N1I_C2_IMPLEMENTATION_CONTRACT_INSTALL_COLLISION_REGRESSION=PASS"
 
 if TEST_OUTPUT="$(python3 "$TEST")"; then
     printf '%s\n' "$TEST_OUTPUT"
