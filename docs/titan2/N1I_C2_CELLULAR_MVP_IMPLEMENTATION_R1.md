@@ -56,8 +56,13 @@ It is intended to satisfy, together:
    the exact sealed C1 image and the retained failed Kati graph. A byte-identical
    C1 target is a reuse candidate and must **not** be reinstalled by a Sable
    prebuilt; only a C1-absent target whose single graph owner is the exact Sable
-   module is an import candidate. C1-present/different, C1-absent/colliding, or
-   owner-identity mismatch states fail closed;
+   module is an import candidate. The real sealed-C1 preflight identified five
+   C1-present/different collisions that are Android 16 platform providers rather
+   than MTK vendor libraries. Those five are explicitly reviewed in
+   `product/titan2/n1i-c2/platform-native-reuse.tsv` and remain supplied by
+   C1/AOSP: M008 radio AIDL, M017 graphics-common AIDL, M029 DRM AIDL,
+   M038 `libheif`, and M039 `libsuspend`. Every other C1-present/different,
+   unexpected-owner, or ambiguous state still fails closed;
 2. the reviewed two-argument TelephonyMetrics no-op overload;
 3. `ro.telephony.block_binder_thread_on_incoming_calls=false` for the Titan
    product so the already-present legacy incoming-call path is active;
@@ -177,10 +182,13 @@ candidate run it must execute the complete read-only native-install preflight
 `YES`.
 
 The generated `native-packages.mk` contains only frozen-stock targets that the
-preflight classifies as `IMPORT_FROZEN_STOCK`. Targets classified
-`REUSE_C1_IDENTICAL` remain in the 33-target compatibility authority but are
-not added as C2 install modules, so the existing platform/C1 owner supplies the
-exact same bytes without a duplicate Kati rule.
+preflight classifies as `IMPORT_FROZEN_STOCK`. For the current sealed
+authority that is exactly 28 modules. Targets classified `REUSE_C1_IDENTICAL`
+or `REUSE_C1_PLATFORM_DIFFERENT` are not added as C2 install modules. The
+latter disposition is legal only for the exact five reviewed entries above,
+with the exact expected Android 16 platform owner in the retained Kati graph.
+This preserves Android 16's platform ABI providers instead of overwriting them
+with older stock-system binaries.
 
 The driver requires both:
 
@@ -205,7 +213,7 @@ Before mutation an authorized candidate run requires:
 - generated `native-packages.mk` containing only admitted imports;
   the known M029 `android.hardware.drm-V1-ndk.so` duplicate-target failure is
   an executable regression fixture and must classify as
-  `REUSE_C1_IDENTICAL`;
+  `REUSE_C1_PLATFORM_DIFFERENT`;
 - exact C3A managed-project authority;
 - exact materialization and mutation-manifest seals;
 - exact TelephonyMetrics, ImsPhoneCallTracker and PHH base blobs;
@@ -224,8 +232,10 @@ regression memory rather than rediscovered during packaging.
 
 After the build it verifies:
 
-- all 33 native outputs exist at the exact partition paths and retain their
-  frozen SHA-256;
+- all 33 native outputs exist at the exact partition paths;
+- the 28 imported native outputs retain their frozen stock SHA-256;
+- the five reviewed Android 16 platform-provider outputs retain the exact
+  SHA-256 observed in the sealed C1 image, and are not replaced by stock bytes;
 - OEM IMS package/shared UID remain correct and the built APK certificate
   equals the platform certificate;
 - both MediaTek boot JARs remain present;
@@ -237,8 +247,9 @@ After the build it verifies:
   `treble-overlay-telephony-mtk-ims.apk` with package
   `me.phh.treble.overlay.mtkims_telephony`;
 - a 41-row implementation receipt records the realization of every frozen
-  mutation ID, including M004/M005/M006/M040/M041 rather than leaving those
-  rows at proposal status;
+  mutation ID, including M004/M005/M006/M040/M041; M008/M017/M029/M038/M039
+  are explicitly recorded as `IMPLEMENTED_C1_PLATFORM_PROVIDER`, while the
+  28 imported natives are recorded against their frozen-stock authority;
 - system image remains within the reviewed logical-group ceiling
   `3263168512` bytes.
 
