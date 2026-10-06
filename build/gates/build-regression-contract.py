@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019",
+    "T2-019", "T2-020",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -81,6 +81,7 @@ c2_mk = read("product/titan2/n1i-c2/sable-titan2-n1i-c2.mk")
 c2_collision_audit = read("build/titan2/audit-n1i-c2-install-collisions.py")
 c2_native_planner = read("build/titan2/plan-n1i-c2-native-install.py")
 c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
+c2_native_preflight = read("build/titan2/run-n1i-c2-native-install-preflight.sh")
 
 check(
     "BR-001",
@@ -331,20 +332,37 @@ check(
     and c2_prebuilt_targets == set(a4_rows)
     and not c2_direct_native_packages
     and "native-packages.mk" in c2_mk
-    and "plan-n1i-c2-native-install.py" in c2_driver
-    and "native-baseline-probe.tsv" in c2_driver
-    and "native-composition.tsv" in c2_driver
-    and "install-collision-after-failure.log" in c2_driver
     and "REUSE_C1_IDENTICAL" in c2_native_planner
     and "IMPORT_FROZEN_STOCK" in c2_native_planner
     and "BLOCK_C1_DIFFERENT" in c2_native_planner
     and "BLOCK_GRAPH_OWNER_NOT_IN_C1" in c2_native_planner
     and "--collision-tsv" in c2_native_planner
-    and "N1I_C2_NATIVE_PLAN_IDENTICAL_BASELINE_REUSE=PASS" in c2_native_plan_test
-    and "N1I_C2_NATIVE_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS" in c2_native_plan_test
-    and "N1I_C2_NATIVE_PLAN_DIFFERENT_BASELINE_FAIL_CLOSED=PASS" in c2_native_plan_test
-    and "--collision-tsv" in c2_driver,
-    "c2_native_install_is_sealed_c1_collision_planned_not_wholesale_installed",
+    and "n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild"
+        in c2_native_preflight
+    and "36b53950faebc954cadb30756833ae5ec857f054"
+        in c2_native_preflight
+    and "audit-n1i-c2-install-collisions.py" in c2_native_preflight
+    and "plan-n1i-c2-native-install.py" in c2_native_preflight
+    and "native-baseline-probe.tsv" in c2_native_preflight
+    and "native-composition.tsv" in c2_native_preflight
+    and "android.hardware.drm-V1-ndk.so" in c2_native_preflight
+    and "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS" in c2_native_preflight
+    and "android.hardware.drm-V1-ndk.so" in c2_native_plan_test
+    and "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS"
+        in c2_native_plan_test,
+    "c2_native_install_is_readonly_preflighted_against_c1_and_prior_kati_graph",
+)
+
+check(
+    "T2-020",
+    c2_driver.count("#!/usr/bin/env bash") == 1
+    and c2_driver.count("selfcheck() {") == 1
+    and c2_driver.count('echo "===== APPLY EXACT C2 SOURCE DELTA ====="') == 1
+    and c2_driver.count(
+        'echo "===== BUILD ONE ANDROID 16 CELLULAR MVP SYSTEMIMAGE ====="'
+    ) == 1
+    and c2_driver.count('make systemimage -j"$JOBS"') == 1,
+    "c2_build_driver_singleton_structure",
 )
 
 if failures:
