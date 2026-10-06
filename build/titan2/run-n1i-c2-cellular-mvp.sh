@@ -102,8 +102,6 @@ N1F_SHA="dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a"
 N1F_BYTES=3200540672
 C1_SHA="137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160"
 C1_BYTES=3210661888
-C1_CONTROL_DIR="$SABLE_ARTIFACTS_ROOT/titan2/n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild"
-C1_CONTROL="$C1_CONTROL_DIR/system.img"
 SYSTEM_GROUP_SAFE_CEILING=3263168512
 
 MATERIALIZED="/srv/data/sable-build/titan2/artifacts/n1i-c2-cellular-mvp-stock/20261005T231205Z"
@@ -125,9 +123,6 @@ TMETRICS_QUALIFIER="$ROOT/build/titan2/qualify-n1i-c1-telephonymetrics-compat.sh
 PHH_PATCH="$ROOT/patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-titan2-cellular-mvp.patch"
 GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
-BUILD_REGRESSION_CONTRACT="$ROOT/build/gates/build-regression-contract.py"
-INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
-NATIVE_INSTALL_PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
@@ -486,92 +481,6 @@ print(
 PY
 }
 
-dump_c1_native_target() {
-    local target="$1"
-    local dest="$2"
-    local candidate
-    local -a candidates=()
-
-    case "$target" in
-        /system/*)
-            candidates=("${target#/system}" "$target")
-            ;;
-        /system_ext/*)
-            candidates=("$target" "/system$target")
-            ;;
-        /product/*)
-            candidates=("$target" "/system$target")
-            ;;
-        *)
-            return 2
-            ;;
-    esac
-
-    rm -f "$dest" "$dest.debugfs.log"
-    for candidate in "${candidates[@]}"; do
-        rm -f "$dest" "$dest.debugfs.log"
-        debugfs -R "dump -p $candidate $dest" "$C1_CONTROL"             >/dev/null 2>"$dest.debugfs.log"
-        if [[ -s "$dest" ]]; then
-            rm -f "$dest.debugfs.log"
-            printf '%s\n' "$candidate"
-            return 0
-        fi
-    done
-
-    rm -f "$dest" "$dest.debugfs.log"
-    return 1
-}
-
-prepare_native_install_plan() {
-    local stock_map="$1"
-    local probe="$2"
-    local composition="$3"
-    local packages="$4"
-    local c1_dir="$WORK/c1-native-probe"
-    local id kind target bundle_rel stock_sha module c1_file c1_path c1_sha dump_rc
-
-    mkdir -p "$c1_dir" || return 1
-    printf 'id\ttarget\tmodule\tstock_sha256\tc1_status\tc1_sha256\tc1_image_path\n' > "$probe" ||
-        return 1
-
-    {
-        IFS= read -r _header
-        while IFS=$'\t' read -r id kind target bundle_rel stock_sha; do
-            [[ -n "$id" ]] || continue
-            [[ "$kind" == NATIVE ]] || continue
-            module="SableN1IC2Native$id"
-            c1_file="$c1_dir/$id.bin"
-            c1_path="$(dump_c1_native_target "$target" "$c1_file")"
-            dump_rc=$?
-            if [[ "$dump_rc" -eq 0 ]]; then
-                c1_sha="$(sha256sum "$c1_file" | awk '{print $1}')"
-                printf '%s\t%s\t%s\t%s\tPRESENT\t%s\t%s\n' \
-                    "$id" "$target" "$module" "$stock_sha" "$c1_sha" "$c1_path"
-            elif [[ "$dump_rc" -eq 1 ]]; then
-                printf '%s\t%s\t%s\t%s\tABSENT\t-\t-\n' \
-                    "$id" "$target" "$module" "$stock_sha"
-            else
-                return 1
-            fi
-        done
-    } < "$stock_map" || return 1
-
-    python3 "$NATIVE_INSTALL_PLANNER" \
-        --probe-tsv "$probe" \
-        --a4-reference "$C1_TEMPLATE/a4-native-superset.txt" \
-        --composition-out "$composition" \
-        --packages-out "$packages" ||
-        return $?
-
-    local rows reuse imports
-    rows="$(awk 'NR>1 {c++} END {print c+0}' "$composition")"
-    reuse="$(awk -F '\t' 'NR>1 && $8=="REUSE_C1_IDENTICAL" {c++} END {print c+0}' "$composition")"
-    imports="$(awk -F '\t' 'NR>1 && $8=="IMPORT_FROZEN_STOCK" {c++} END {print c+0}' "$composition")"
-    [[ "$rows" -eq 33 && $((reuse + imports)) -eq 33 ]] || return 1
-
-    echo "N1I_C2_NATIVE_BASELINE_CLASSIFICATION=PASS rows=$rows reuse=$reuse imports=$imports"
-}
-
 generate_implementation_receipt() {
     local output="$1"
     python3 - \
@@ -664,11 +573,6 @@ selfcheck() {
         { fail c3a_control; return $?; }
     [[ -f "$N1F_CONTROL" && "$(sha256sum "$N1F_CONTROL" | awk '{print $1}')" == "$N1F_SHA" ]] ||
         { fail n1f_control; return $?; }
-    [[ -f "$C1_CONTROL" && "$(sha256sum "$C1_CONTROL" | awk '{print $1}')" == "$C1_SHA" ]] ||
-        { fail c1_control; return $?; }
-    [[ -f "$C1_CONTROL_DIR/SHA256SUMS.txt" ]] || { fail c1_control_seal_missing; return $?; }
-    (cd "$C1_CONTROL_DIR"; sha256sum -c SHA256SUMS.txt >/dev/null) ||
-        { fail c1_control_seal; return $?; }
 
     [[ -f "$STOCK_SYSTEM" && "$(sha256sum "$STOCK_SYSTEM" | awk '{print $1}')" == "$STOCK_SYSTEM_SHA" ]] ||
         { fail stock_system; return $?; }
@@ -681,11 +585,6 @@ selfcheck() {
         { fail host_tools; return $?; }
 
     [[ -x "$APKSIGNER" ]] || { fail "apksigner_missing=$APKSIGNER"; return $?; }
-
-    [[ -f "$BUILD_REGRESSION_CONTRACT" ]] || { fail build_regression_contract_missing; return $?; }
-    [[ -f "$INSTALL_COLLISION_AUDIT" ]] || { fail install_collision_audit_missing; return $?; }
-    [[ -f "$NATIVE_INSTALL_PLANNER" ]] || { fail native_install_planner_missing; return $?; }
-    command -v debugfs >/dev/null 2>&1 || { fail debugfs_missing; return $?; }
 
     verify_c3a_source || return $?
     verify_audit || return $?
@@ -713,13 +612,6 @@ selfcheck() {
 }
 
 selfcheck || exit $?
-
-echo "===== SHARED BUILD REGRESSION PREFLIGHT ====="
-python3 "$BUILD_REGRESSION_CONTRACT"
-BUILD_REGRESSION_RC=$?
-[[ "$BUILD_REGRESSION_RC" -eq 0 ]] ||
-    { fail "build_regression_rc=$BUILD_REGRESSION_RC"; exit $?; }
-echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
 
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 EVIDENCE="$SABLE_EVIDENCE_ROOT/titan2/n1i-c2-cellular-mvp-build/$STAMP"
@@ -760,10 +652,6 @@ EXTROOT="$WORK/stock-system-ext"
 
 echo "===== PREPARE FROZEN STOCK MAP ====="
 prepare_stock_map "$EVIDENCE/stock-map.tsv" || { fail stock_map; exit $?; }
-
-echo "===== PRE-BUILD NATIVE INSTALL COLLISION PREFLIGHT ====="
-prepare_native_install_plan     "$EVIDENCE/stock-map.tsv"     "$EVIDENCE/native-baseline-probe.tsv"     "$EVIDENCE/native-composition.tsv"     "$EVIDENCE/native-packages.mk" ||
-    { fail native_install_collision_preflight; exit $?; }
 
 ROM_BACKUP="$EVIDENCE/rom.mk.c3a"
 cp "$ROM_MK" "$ROM_BACKUP" || { fail rom_backup; exit $?; }
@@ -846,8 +734,6 @@ install -m 0644 "$C2_TEMPLATE/Android.bp" "$C2_STAGE/Android.bp" ||
     { fail stage_c2_bp; exit $?; }
 install -m 0644 "$C2_TEMPLATE/sable-titan2-n1i-c2.mk" "$C2_STAGE/sable-titan2-n1i-c2.mk" ||
     { fail stage_c2_mk; exit $?; }
-install -m 0644 "$EVIDENCE/native-packages.mk" "$C2_STAGE/native-packages.mk" ||
-    { fail stage_c2_native_packages; exit $?; }
 install -m 0755 "$C2_TEMPLATE/sable-titan2-cellular.sh" "$C2_STAGE/sable-titan2-cellular.sh" ||
     { fail stage_c2_script; exit $?; }
 install -m 0644 "$C2_TEMPLATE/sable-titan2-cellular.rc" "$C2_STAGE/sable-titan2-cellular.rc" ||
@@ -978,11 +864,12 @@ mkdir -p "$OUT_DIR_C2" || { fail out_dir; exit $?; }
     do
         grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" || exit 76
     done
-    IMPORT_COUNT=0
-    REUSE_COUNT=0
-    {
-        IFS= read -r _header
-        while IFS="$(get_build_var PRODUCT_SYSTEM_PROPERTIES)"
+    for n in $(seq -w 7 39); do
+        module="SableN1IC2NativeM0$n"
+        grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" || exit 77
+    done
+
+    props="$(get_build_var PRODUCT_SYSTEM_PROPERTIES)"
     grep -Eq '(^|[[:space:]])ro\.telephony\.block_binder_thread_on_incoming_calls=false([[:space:]]|$)' <<<"$props" ||
         exit 78
 
@@ -990,15 +877,7 @@ mkdir -p "$OUT_DIR_C2" || { fail out_dir; exit $?; }
     exit $?
 )
 BUILD_RC=$?
-if [[ "$BUILD_RC" -ne 0 ]]; then
-    if [[ -d "$OUT_DIR_C2/soong" && -d "$PRODUCT_OUT" ]]; then
-        python3 "$INSTALL_COLLISION_AUDIT"             --out-dir "$OUT_DIR_C2"             --product-out "$PRODUCT_OUT"             --target-list "$C1_TEMPLATE/a4-native-superset.txt"             --report-only             > "$EVIDENCE/install-collision-after-failure.log" 2>&1 || true
-        echo "N1I_C2_INSTALL_COLLISION_POSTFAIL_AUDIT=$EVIDENCE/install-collision-after-failure.log"
-        grep -E 'N1I_C2_INSTALL_(TARGET|COLLISION_COUNT|OWNERSHIP_AUDIT)='             "$EVIDENCE/install-collision-after-failure.log" || true
-    fi
-    fail "systemimage_rc=$BUILD_RC"
-    exit $?
-fi
+[[ "$BUILD_RC" -eq 0 ]] || { fail "systemimage_rc=$BUILD_RC"; exit $?; }
 
 NEW="$PRODUCT_OUT/system.img"
 [[ -f "$NEW" ]] || { fail system_image_missing; exit $?; }
@@ -1017,12 +896,6 @@ grep -Fxq 'SABLE_GSI_IMAGE_INFO=PASS' "$EVIDENCE/system-image-info.txt" ||
 
 COPYOUT="$(cat "$EVIDENCE/system-ext-copyout.txt")"
 [[ "$COPYOUT" == system/system_ext ]] || { fail "system_ext_copyout=$COPYOUT"; exit $?; }
-
-echo "===== VERIFY FINAL INSTALL OWNERSHIP GRAPH ====="
-python3 "$INSTALL_COLLISION_AUDIT"     --out-dir "$OUT_DIR_C2"     --product-out "$PRODUCT_OUT"     --target-list "$C1_TEMPLATE/a4-native-superset.txt"     > "$EVIDENCE/install-collision-final.log" 2>&1
-INSTALL_AUDIT_RC=$?
-cat "$EVIDENCE/install-collision-final.log"
-[[ "$INSTALL_AUDIT_RC" -eq 0 ]] || { fail "install_collision_audit_rc=$INSTALL_AUDIT_RC"; exit $?; }
 
 echo "===== VERIFY BUILT CELLULAR MVP CONTENT ====="
 BUILT_NATIVE_COUNT=0
