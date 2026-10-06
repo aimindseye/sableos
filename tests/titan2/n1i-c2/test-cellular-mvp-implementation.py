@@ -228,6 +228,28 @@ def test_native_baseline_probe_authority() -> None:
     assert "fastboot " not in text
 
 
+def test_native_preflight_order() -> None:
+    text = DRIVER.read_text(encoding="utf-8")
+    positions = {
+        "preflight": text.index('echo "===== N1I-C2 NATIVE INSTALL COLLISION PREFLIGHT ====="'),
+        "admit": text.index("NATIVE_ADMISSION_INTEGRATED=YES"),
+        "stage": text.index('echo "===== STAGE C3B + C1 + FROZEN C2 BUNDLE ====="'),
+        "mutate": text.index('echo "===== APPLY EXACT C2 SOURCE DELTA ====="'),
+        "build": text.index('echo "===== BUILD ONE ANDROID 16 CELLULAR MVP SYSTEMIMAGE ====="'),
+    }
+    assert (
+        positions["preflight"]
+        < positions["admit"]
+        < positions["stage"]
+        < positions["mutate"]
+        < positions["build"]
+    ), positions
+
+    preflight = PREFLIGHT.read_text(encoding="utf-8")
+    assert 'PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"' in preflight
+    assert '--installs-file "$PRIOR_FAILED_INSTALLS"' in preflight
+
+
 def test_receipt_semantics() -> None:
     text = DRIVER.read_text(encoding="utf-8")
     assert 'expected_ids = [f"M{i:03d}" for i in range(1, 42)]' in text
@@ -249,6 +271,7 @@ def main() -> int:
     test_driver_authority()
     test_native_preflight_authority()
     test_native_baseline_probe_authority()
+    test_native_preflight_order()
     test_receipt_semantics()
 
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_MODULE_SET=PASS count=33")
@@ -259,6 +282,7 @@ def main() -> int:
     print("N1I_C2_IMPLEMENTATION_TEST_DRIVER_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_PREFLIGHT_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_BASELINE_AUTHORITY=PASS")
+    print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_PREFLIGHT_ORDER=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_RECEIPT_SEMANTICS=PASS")
     print("N1I_C2_CELLULAR_MVP_IMPLEMENTATION_TEST=PASS")
     return 0
