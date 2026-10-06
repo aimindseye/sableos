@@ -207,6 +207,8 @@ grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS' <<<"$NATI
     fail native_install_graph_collision_marker
 grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_different_fail_closed_marker
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_OWNER_IDENTITY=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_owner_identity_marker
 grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_TEST=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_plan_marker
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_NATIVE_INSTALL_PLAN_REGRESSION=PASS"
