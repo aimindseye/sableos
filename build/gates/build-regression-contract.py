@@ -227,7 +227,7 @@ check(
     and "REFERENCE ONLY" in a4_ref
     and "a4-native-superset.txt" in contract
     and "native-paths.txt" not in driver
-    and '--a4-reference "$C1_TEMPLATE/a4-native-superset.txt"' in c2_driver
+    and '--a4-reference "$A4"' in c2_native_preflight
     and "IMPORT_FROZEN_STOCK" in c2_native_planner
     and "REUSE_C1_IDENTICAL" in c2_native_planner,
     "a4_native_superset_reference_only_and_runtime_collision_filtered",
