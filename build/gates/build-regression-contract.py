@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023", "T2-024",
+    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023", "T2-024", "T2-025",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -107,6 +107,10 @@ c2_platform_provider_targets = {
     for row in c2_platform_provider_rows
     if len(row) >= 4
 }
+d0_image_driver = read("build/titan2/run-n1i-d0-image-build.sh")
+d0_image_contract = read("build/gates/n1i-d0-image-build-contract.sh")
+d0_image_bp = read("product/titan2/n1i-d0/Android.bp")
+d0_image_mk = read("product/titan2/n1i-d0/sable-titan2-n1i-d0.mk")
 central_guard = read("build/gates/titan2-central-flash-guard-contract.sh")
 
 check(
@@ -535,6 +539,29 @@ check(
     and "N1I_D0_NATIVE_LOAD_SCAN=PASS" in d0_native_scan
     and "N1I_D0_0H_CONTRACT=PASS" in d0_contract,
     "d0_host_closure_is_control_calibrated_pinned_and_fail_closed",
+)
+
+check(
+    "T2-025",
+    d0_image_driver.count("#!/usr/bin/env bash") == 1
+    and d0_image_driver.count('make systemimage -j"$JOBS"') == 1
+    and "set -euo pipefail" not in d0_image_driver
+    and "set -o pipefail" not in d0_image_driver
+    and 'python3 "$BUILD_REGRESSION_CONTRACT"' in d0_image_driver
+    and 'bash "$IMAGE_CONTRACT"' in d0_image_driver
+    and "BUILD_AUTHORIZED=YES_ONE_SYSTEMIMAGE" in d0_image_driver
+    and "NETWORK_FETCH_AUTHORIZED=NO" in d0_image_driver
+    and "DEVICE_CONTACT_AUTHORIZED=NO" in d0_image_driver
+    and "MODE_TRANSITION_AUTHORIZED=NO" in d0_image_driver
+    and "REBOOT_AUTHORIZED=NO" in d0_image_driver
+    and "FLASH_AUTHORIZED=NO" in d0_image_driver
+    and "BASELINE=N1F_BOOT_QUALIFIED" in d0_image_driver
+    and "CELLULAR_DELTA=C1_C2_NOT_INCLUDED" in d0_image_driver
+    and "N1I_D0_IMAGE_SOURCE_RESTORE=PASS" in d0_image_driver
+    and "N1I_D0_IMAGE_BUILD_CONTRACT=PASS" in d0_image_contract
+    and 'name: "SableTitan2N1ID0Marker"' in d0_image_bp
+    and "SableTitan2N1ID0Marker" in d0_image_mk,
+    "d0_img0_is_single_build_offline_n1f_based_source_restoring_and_device_free",
 )
 
 if failures:
