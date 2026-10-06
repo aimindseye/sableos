@@ -12,6 +12,7 @@ target".
 from __future__ import annotations
 
 import argparse
+import csv
 import pathlib
 import re
 import sys
@@ -90,6 +91,11 @@ def main() -> int:
         action="store_true",
         help="return zero even when collisions are found",
     )
+    ap.add_argument(
+        "--tsv-out",
+        type=pathlib.Path,
+        help="write one machine-readable row per audited target",
+    )
     args = ap.parse_args()
 
     out_dir = args.out_dir.resolve()
@@ -121,6 +127,7 @@ def main() -> int:
     collision_count = 0
     unclaimed_count = 0
     single_owner_count = 0
+    report_rows: list[dict[str, str]] = []
 
     print(f"N1I_C2_INSTALL_AUDIT_TARGET_COUNT={len(targets)}")
     print(f"N1I_C2_INSTALL_AUDIT_GRAPH_FILE_COUNT={len(installs_files)}")
@@ -143,6 +150,18 @@ def main() -> int:
             "N1I_C2_INSTALL_TARGET="
             f"{target}|state={state}|rule_count={count}|final={final}"
         )
+        report_rows.append(
+            {
+                "target": target,
+                "state": state,
+                "rule_count": str(count),
+                "final_path": str(final),
+                "owner_hints": ";".join(
+                    owner_hints(rule)
+                    for _mk, _line_no, rule, _context in rules
+                ) or "NONE",
+            }
+        )
         for idx, (mk, line_no, rule, context) in enumerate(rules):
             print(
                 "N1I_C2_INSTALL_RULE="
@@ -153,6 +172,21 @@ def main() -> int:
                 "N1I_C2_INSTALL_RULE_CONTEXT="
                 f"{target}|index={idx}|context={context}"
             )
+
+    if args.tsv_out is not None:
+        args.tsv_out.parent.mkdir(parents=True, exist_ok=True)
+        with args.tsv_out.open("w", encoding="utf-8", newline="") as fp:
+            writer = csv.DictWriter(
+                fp,
+                fieldnames=[
+                    "target", "state", "rule_count", "final_path", "owner_hints",
+                ],
+                delimiter="\t",
+                lineterminator="\n",
+            )
+            writer.writeheader()
+            writer.writerows(report_rows)
+        print(f"N1I_C2_INSTALL_AUDIT_TSV={args.tsv_out.resolve()}")
 
     print(f"N1I_C2_INSTALL_COLLISION_COUNT={collision_count}")
     print(f"N1I_C2_INSTALL_SINGLE_OWNER_COUNT={single_owner_count}")
