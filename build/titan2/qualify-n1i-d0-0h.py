@@ -477,7 +477,10 @@ def prop_values(root: Path, key: str) -> set[str]:
     return vals
 
 
-def privapp_blocks(roots: list[tuple[str, Path]], package: str | None = None) -> list[tuple[str, str, set[str], set[str]]]:
+def privapp_blocks(
+    roots: list[tuple[str, Path]],
+    package: str | None = None,
+) -> list[tuple[str, str, set[str], set[str], str]]:
     found = []
     for part, root in roots:
         if not root.exists():
@@ -493,10 +496,86 @@ def privapp_blocks(roots: list[tuple[str, Path]], package: str | None = None) ->
                 pkg = node.attrib.get("package", "")
                 if package is not None and pkg != package:
                     continue
-                allow = {n.attrib.get("name", "") for n in node.findall("permission") if n.attrib.get("name")}
-                deny = {n.attrib.get("name", "") for n in node.findall("deny-permission") if n.attrib.get("name")}
-                found.append((part, pkg, allow, deny))
+                allow = {
+                    n.attrib.get("name", "")
+                    for n in node.findall("permission")
+                    if n.attrib.get("name")
+                }
+                deny = {
+                    n.attrib.get("name", "")
+                    for n in node.findall("deny-permission")
+                    if n.attrib.get("name")
+                }
+                found.append((part, pkg, allow, deny, str(path)))
     return found
+
+
+def partition_roots(root: Path) -> list[tuple[str, Path]]:
+    out = []
+    for part in ("system", "system_ext", "product"):
+        path = root_path(root, part, "")
+        if path is not None and path.is_dir():
+            out.append((part, path))
+    return out
+
+
+def privileged_apks(root: Path) -> list[tuple[str, Path]]:
+    out = []
+    for part, base in partition_roots(root):
+        for path in sorted((base / "priv-app").glob("**/*.apk")):
+            if path.is_file():
+                out.append((part, path))
+    return out
+
+
+def cert_digest(apksigner: Path, apk: Path) -> str | None:
+    if not apksigner.is_file():
+        return None
+    rc, text = run([str(apksigner), "verify", "--print-certs", str(apk)])
+    if rc != 0:
+        return None
+    match = re.search(
+        r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F]+)",
+        text,
+    )
+    return match.group(1).lower() if match else None
+
+
+def seapp_candidates(root: Path, package: str) -> list[tuple[str, str]]:
+    rows = []
+    for path in find_all(
+        root,
+        (
+            "plat_seapp_contexts",
+            "system_ext_seapp_contexts",
+            "product_seapp_contexts",
+        ),
+    ):
+        for raw in path.read_text(
+            encoding="utf-8",
+            errors="replace",
+        ).splitlines():
+            line = raw.split("#", 1)[0].strip()
+            if not line:
+                continue
+            fields = dict(
+                token.split("=", 1)
+                for token in line.split()
+                if "=" in token
+            )
+            user = fields.get("user", "")
+            name = fields.get("name", "")
+            seinfo = fields.get("seinfo", "")
+            if user and user != "radio":
+                continue
+            if name and name != package:
+                continue
+            if seinfo and not seinfo.startswith("platform"):
+                continue
+            domain = fields.get("domain", "")
+            if domain:
+                rows.append((domain, f"{path}:{line}"))
+    return rows
 
 
 def aapt_badging(aapt2: Path, apk: Path) -> tuple[str, str]:
@@ -565,7 +644,12 @@ def find_ims(root: Path) -> Path | None:
     return hits[0] if len(hits) == 1 else None
 
 
-def gate_d_n1f(root: Path, aapt2: Path, out: Path) -> Gate:
+def gate_d_n1f(
+    root: Path,
+    aapt2: Path,
+    apksigner: Path,
+    out: Path,
+) -> Gate:
     framework = find_framework(root)
     if framework is None:
         return Gate("D", "n1f", UNKNOWN, "framework_res_missing")
@@ -573,31 +657,89 @@ def gate_d_n1f(root: Path, aapt2: Path, out: Path) -> Gate:
         privileged = privileged_framework_permissions(aapt2, framework)
     except D0Error as exc:
         return Gate("D", "n1f", UNKNOWN, str(exc))
-    system_root = root_path(root, "system", "")
-    sext_root = root_path(root, "system_ext", "")
-    if system_root is None or sext_root is None:
-        return Gate("D", "n1f", UNKNOWN, "partition_roots_missing")
-    blocks = privapp_blocks([("system", system_root), ("system_ext", sext_root)])
+
+    roots = partition_roots(root)
+    blocks = privapp_blocks(roots)
+    enforcement = prop_values(root, "ro.control_privapp_permissions")
+    if len(enforcement) != 1:
+        return Gate(
+            "D",
+            "n1f",
+            UNKNOWN,
+            "privapp_enforcement_values="
+            + (",".join(sorted(enforcement)) or "NONE"),
+        )
+    enforce = "enforce" in next(iter(enforcement)).lower()
+
     rows = []
-    failures = []
-    for apk in sorted(sext_root.glob("priv-app/**/*.apk")):
+    contradictions = []
+    for part, apk in privileged_apks(root):
         try:
             pkg, _ = aapt_badging(aapt2, apk)
-            req = requested_permissions(aapt2, apk) & privileged
-        except D0Error:
-            continue
-        matches = [b for b in blocks if b[1] == pkg]
-        allowed = set().union(*(b[2] for b in matches if b[0] == "system_ext")) if matches else set()
-        wrong = set().union(*(b[2] for b in matches if b[0] != "system_ext")) if matches else set()
-        missing = req - allowed
-        rows.append([pkg, len(req), len(allowed), len(wrong), ",".join(sorted(missing)) or "NONE"])
-        if missing:
-            failures.append(pkg)
-    write_tsv(out / "gate-d-n1f-privapp.tsv", ["package", "required_privileged", "system_ext_allow", "other_partition_allow", "missing"], rows)
-    return Gate("D", "n1f", PASS if not failures else UNKNOWN, "control_missing=" + (",".join(failures) or "NONE"))
+            required = requested_permissions(aapt2, apk) & privileged
+        except D0Error as exc:
+            return Gate("D", "n1f", UNKNOWN, f"control_apk_parse={apk}:{exc}")
+        matches = [b for b in blocks if b[1] == pkg and b[0] == part]
+        allow = set().union(*(b[2] for b in matches)) if matches else set()
+        deny = set().union(*(b[3] for b in matches)) if matches else set()
+        missing = required - allow - deny
+        rows.append(
+            [
+                part,
+                pkg,
+                len(required),
+                len(allow),
+                len(deny),
+                ",".join(sorted(missing)) or "NONE",
+            ]
+        )
+        if enforce and missing:
+            contradictions.append(f"{part}:{pkg}")
+
+    write_tsv(
+        out / "gate-d-n1f-privapp.tsv",
+        [
+            "partition",
+            "package",
+            "required_privileged",
+            "allow",
+            "deny",
+            "missing",
+        ],
+        rows,
+    )
+    (out / "gate-d-n1f.env").write_text(
+        "PRIVAPP_ENFORCEMENT="
+        + next(iter(enforcement))
+        + "\n"
+        + f"PRIVILEGED_APP_COUNT={len(rows)}\n",
+        encoding="utf-8",
+    )
+    if contradictions:
+        # N1F physically booted; an apparent fatal contradiction means the
+        # harness has not modelled permission enforcement correctly.
+        return Gate(
+            "D",
+            "n1f",
+            UNKNOWN,
+            "known_good_control_permission_contradiction="
+            + ",".join(contradictions),
+        )
+    return Gate(
+        "D",
+        "n1f",
+        PASS,
+        f"privileged_apps={len(rows)} enforcement={next(iter(enforcement))}",
+    )
 
 
-def gate_d_c2(root: Path, stock_system: Path, stock_system_ext: Path, stock_product: Path, aapt2: Path, apksigner: Path, out: Path) -> Gate:
+def gate_d_c2(
+    root: Path,
+    stock_runtime: Path,
+    aapt2: Path,
+    apksigner: Path,
+    out: Path,
+) -> Gate:
     ims = find_ims(root)
     framework = find_framework(root)
     if ims is None or framework is None:
@@ -610,68 +752,150 @@ def gate_d_c2(root: Path, stock_system: Path, stock_system_ext: Path, stock_prod
     except D0Error as exc:
         return Gate("D", "c2", UNKNOWN, str(exc))
     if package != "com.mediatek.ims":
-        return Gate("D", "c2", BOOT_FATAL, f"unexpected_ims_package={package}")
+        return Gate(
+            "D",
+            "c2",
+            BOOT_FATAL,
+            f"unexpected_ims_package={package}",
+        )
 
-    sext = root_path(root, "system_ext", "")
-    system = root_path(root, "system", "")
-    product = root_path(root, "product", "")
-    if sext is None or system is None:
-        return Gate("D", "c2", UNKNOWN, "candidate_partition_roots_missing")
+    candidate_blocks = privapp_blocks(partition_roots(root), package)
+    stock_blocks = privapp_blocks(partition_roots(stock_runtime), package)
 
-    candidate_blocks = privapp_blocks([("system", system), ("system_ext", sext), ("product", product or Path("/nonexistent"))], package)
-    stock_blocks = privapp_blocks([
-        ("system", stock_system),
-        ("system_ext", stock_system_ext),
-        ("product", stock_product),
-    ], package)
     required = req & privileged
-    c2_allow = set().union(*(b[2] for b in candidate_blocks if b[0] == "system_ext")) if candidate_blocks else set()
-    c2_wrong = set().union(*(b[2] for b in candidate_blocks if b[0] != "system_ext")) if candidate_blocks else set()
-    missing = required - c2_allow
+    c2_same = [b for b in candidate_blocks if b[0] == "system_ext"]
+    c2_wrong = [b for b in candidate_blocks if b[0] != "system_ext"]
+    c2_allow = set().union(*(b[2] for b in c2_same)) if c2_same else set()
+    c2_deny = set().union(*(b[3] for b in c2_same)) if c2_same else set()
+    c2_wrong_covered = (
+        set().union(*(b[2] | b[3] for b in c2_wrong))
+        if c2_wrong
+        else set()
+    )
+    missing = required - c2_allow - c2_deny
 
-    enforcement = prop_values(root, "ro.control_privapp_permissions")
+    c2_enforcement = prop_values(root, "ro.control_privapp_permissions")
+    stock_enforcement = prop_values(
+        stock_runtime,
+        "ro.control_privapp_permissions",
+    )
+
     write_tsv(
         out / "gate-d-c2-privapp.tsv",
-        ["source", "partition", "allow_count", "deny_count", "permissions"],
-        [["C2", b[0], len(b[2]), len(b[3]), ",".join(sorted(b[2]))] for b in candidate_blocks]
-        + [["STOCK", b[0], len(b[2]), len(b[3]), ",".join(sorted(b[2]))] for b in stock_blocks],
+        ["source", "partition", "path", "allow", "deny"],
+        [
+            [
+                "C2",
+                b[0],
+                b[4],
+                ",".join(sorted(b[2])) or "NONE",
+                ",".join(sorted(b[3])) or "NONE",
+            ]
+            for b in candidate_blocks
+        ]
+        + [
+            [
+                "STOCK",
+                b[0],
+                b[4],
+                ",".join(sorted(b[2])) or "NONE",
+                ",".join(sorted(b[3])) or "NONE",
+            ]
+            for b in stock_blocks
+        ],
     )
-    (out / "gate-d-c2-badging.txt").write_text(badging, encoding="utf-8")
-    (out / "gate-d-c2-manifest-tree.txt").write_text(mtext, encoding="utf-8")
-    write_tsv(out / "gate-d-c2-permissions.tsv", ["kind", "permission"], [["REQUIRED_PRIVILEGED", p] for p in sorted(required)] + [["MISSING_SYSTEM_EXT", p] for p in sorted(missing)])
+    (out / "gate-d-c2-badging.txt").write_text(
+        badging,
+        encoding="utf-8",
+    )
+    (out / "gate-d-c2-manifest-tree.txt").write_text(
+        mtext,
+        encoding="utf-8",
+    )
+    write_tsv(
+        out / "gate-d-c2-permissions.tsv",
+        ["kind", "permission"],
+        [["REQUIRED_PRIVILEGED", p] for p in sorted(required)]
+        + [["SYSTEM_EXT_ALLOW", p] for p in sorted(c2_allow)]
+        + [["SYSTEM_EXT_DENY", p] for p in sorted(c2_deny)]
+        + [["WRONG_PARTITION_COVERAGE", p] for p in sorted(c2_wrong_covered)]
+        + [["MISSING_SYSTEM_EXT", p] for p in sorted(missing)],
+    )
 
+    ims_digest = cert_digest(apksigner, ims)
+    framework_digest = cert_digest(apksigner, framework)
     sig_result = "UNKNOWN"
-    if apksigner.is_file():
-        rc1, t1 = run([str(apksigner), "verify", "--print-certs", str(ims)])
-        rc2, t2 = run([str(apksigner), "verify", "--print-certs", str(framework)])
-        d1 = re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F]+)", t1)
-        d2 = re.search(r"Signer #1 certificate SHA-256 digest:\s*([0-9a-fA-F]+)", t2)
-        if rc1 == 0 and rc2 == 0 and d1 and d2:
-            sig_result = "PASS" if d1.group(1).lower() == d2.group(1).lower() else "FAIL"
+    if ims_digest and framework_digest:
+        sig_result = "PASS" if ims_digest == framework_digest else "FAIL"
+
+    seapp = seapp_candidates(root, package)
+    domains = sorted({domain for domain, _line in seapp})
+    seapp_result = (
+        "PASS_UNIQUE_DOMAIN"
+        if len(domains) == 1
+        else "UNKNOWN_NO_MATCH"
+        if not domains
+        else "UNKNOWN_AMBIGUOUS_DOMAIN"
+    )
+    write_tsv(
+        out / "gate-d-c2-seapp.tsv",
+        ["domain", "matching_rule"],
+        [[domain, rule] for domain, rule in seapp],
+    )
+
     (out / "gate-d-c2-shareduid.env").write_text(
         f"PLATFORM_SIGNATURE_MATCH={sig_result}\n"
-        f"SHARED_UID_PHONE={'YES' if 'android.uid.phone' in mtext else 'UNKNOWN'}\n",
+        f"IMS_CERT_SHA256={ims_digest or 'UNKNOWN'}\n"
+        f"FRAMEWORK_CERT_SHA256={framework_digest or 'UNKNOWN'}\n"
+        f"SHARED_UID_PHONE={'YES' if 'android.uid.phone' in mtext else 'NO_OR_UNPROVEN'}\n"
+        f"SEAPP_RESULT={seapp_result}\n"
+        f"SEAPP_DOMAINS={','.join(domains) or 'NONE'}\n"
+        f"C2_PRIVAPP_ENFORCEMENT={','.join(sorted(c2_enforcement)) or 'NONE'}\n"
+        f"STOCK_PRIVAPP_ENFORCEMENT={','.join(sorted(stock_enforcement)) or 'NONE'}\n",
         encoding="utf-8",
     )
 
-    seapp_files = find_all(root, ("plat_seapp_contexts", "system_ext_seapp_contexts", "product_seapp_contexts"))
-    seapp_lines = []
-    for path in seapp_files:
-        for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-            if "user=radio" in line or "name=com.mediatek.ims" in line:
-                seapp_lines.append(f"{path}\t{line}")
-    (out / "gate-d-c2-seapp.txt").write_text("\n".join(seapp_lines) + ("\n" if seapp_lines else ""), encoding="utf-8")
+    if len(c2_enforcement) != 1:
+        return Gate(
+            "D",
+            "c2",
+            UNKNOWN,
+            "privapp_enforcement_values="
+            + (",".join(sorted(c2_enforcement)) or "NONE"),
+        )
+    enforcement_value = next(iter(c2_enforcement))
+    enforce = "enforce" in enforcement_value.lower()
 
-    enforce = "enforce" in enforcement
-    if len(enforcement) != 1:
-        return Gate("D", "c2", UNKNOWN, "privapp_enforcement_values=" + ",".join(sorted(enforcement)) or "NONE")
     if sig_result == "FAIL":
         return Gate("D", "c2", BOOT_FATAL, "ims_platform_signature_mismatch")
+    if sig_result == "UNKNOWN":
+        return Gate("D", "c2", UNKNOWN, "ims_platform_signature_unproven")
+    if "android.uid.phone" not in mtext:
+        return Gate("D", "c2", BOOT_FATAL, "ims_shared_uid_phone_missing")
     if enforce and missing:
-        return Gate("D", "c2", BOOT_FATAL, f"system_ext_privapp_missing={len(missing)} wrong_partition_entries={len(c2_wrong)}")
+        return Gate(
+            "D",
+            "c2",
+            BOOT_FATAL,
+            f"system_ext_privapp_missing={len(missing)} "
+            f"wrong_partition_coverage={len(c2_wrong_covered)}",
+        )
     if missing:
-        return Gate("D", "c2", FUNCTIONAL_RISK, f"missing_allowlist={len(missing)} enforcement={next(iter(enforcement))}")
-    return Gate("D", "c2", PASS, f"required={len(required)} system_ext_covered={len(c2_allow)} signature={sig_result}")
+        return Gate(
+            "D",
+            "c2",
+            FUNCTIONAL_RISK,
+            f"missing_allowlist={len(missing)} enforcement={enforcement_value}",
+        )
+    if not stock_blocks:
+        return Gate("D", "c2", UNKNOWN, "stock_ims_privapp_authority_missing")
+    return Gate(
+        "D",
+        "c2",
+        PASS,
+        f"required={len(required)} covered={len(c2_allow | c2_deny)} "
+        f"signature=PASS seapp={seapp_result}",
+    )
 
 
 def classpath_for_side(side: str, root: Path, apex_root: Path, out: Path) -> tuple[Gate, list[tuple[str, Path]]]:
@@ -935,8 +1159,16 @@ def main() -> int:
         gates.append(gate_b(side, root, roots["STOCK_VENDOR_ROOT"], stock_odm, policy, property_checker, out, ag.result))
         gates.append(gate_c(side, root, roots["STOCK_VENDOR_ROOT"], stock_odm, policy, checkfc, out))
 
-    gates.append(gate_d_n1f(roots["N1F_ROOT"], aapt2, out))
-    gates.append(gate_d_c2(roots["C2_ROOT"], roots["STOCK_SYSTEM_ROOT"], roots["STOCK_SYSTEM_EXT_ROOT"], roots["STOCK_PRODUCT_ROOT"], aapt2, apksigner, out))
+    gates.append(gate_d_n1f(roots["N1F_ROOT"], aapt2, apksigner, out))
+    gates.append(
+        gate_d_c2(
+            roots["C2_ROOT"],
+            roots["STOCK_RUNTIME_ROOT"],
+            aapt2,
+            apksigner,
+            out,
+        )
+    )
 
     # Gate E must analyze each side's own pinned APEX runtime view.
     e_rows: dict[str, list[tuple[str, Path]]] = {}
