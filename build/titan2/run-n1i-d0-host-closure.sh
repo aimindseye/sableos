@@ -249,13 +249,42 @@ prepare_control_root() {
 
 prepare_stock_partition() {
   local part="$1" override_root="$2" image="$STOCK_REF_DIR/${part}.img"
+  local upper expected_var expected="" actual bytes
+  upper="$(printf '%s' "$part" | tr '[:lower:]' '[:upper:]')"
+  expected_var="STOCK_${upper}_SHA256"
+  expected="${!expected_var:-}"
+
+  if [[ -f "$image" ]]; then
+    [[ -n "$expected" ]] || {
+      record "STOCK_${upper}_STATUS" UNKNOWN_UNPINNED
+      return 1
+    }
+    actual="$(sha_file "$image")" || return 2
+    bytes="$(stat -c '%s' "$image")" || return 2
+    record "STOCK_${upper}_IMG" "$(readlink -f "$image")"
+    record "STOCK_${upper}_SHA256" "$actual"
+    record "STOCK_${upper}_BYTES" "$bytes"
+    if [[ "$actual" != "$expected" ]]; then
+      record "STOCK_${upper}_STATUS" UNKNOWN_IDENTITY_MISMATCH
+      return 3
+    fi
+    record "STOCK_${upper}_STATUS" PASS_EXACT
+  elif [[ -z "$override_root" || ! -d "$override_root/$part" ]]; then
+    record "STOCK_${upper}_STATUS" UNKNOWN_MISSING
+    return 1
+  fi
+
   if [[ -n "$override_root" && -d "$override_root/$part" ]]; then
+    [[ -f "$image" ]] || {
+      record "STOCK_${upper}_STATUS" UNKNOWN_EXTRACTED_ROOT_WITHOUT_PINNED_IMAGE
+      return 1
+    }
     printf '%s\n' "$(readlink -f "$override_root/$part")"
     return 0
   fi
-  [[ -f "$image" ]] || return 1
+
   local dest="$WORK/stock-$part"
-  extract_image "$image" "$dest" "stock-$part" || return 2
+  extract_image "$image" "$dest" "stock-$part" || return 4
   printf '%s\n' "$(runtime_system_root "$dest")"
 }
 
