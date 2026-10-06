@@ -140,8 +140,7 @@ def context_conflicts(rows: dict[str, list[tuple[str, str]]]) -> list[tuple[str,
 
 def write_tsv(path: Path, header: list[str], rows: list[list[object]]) -> None:
     with path.open("w", encoding="utf-8", newline="") as fp:
-        w = csv.writer(fp, delimiter="	", lineterminator="
-")
+        w = csv.writer(fp, delimiter="\t", lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
 
@@ -429,11 +428,24 @@ def gate_c(side: str, side_root: Path, stock_vendor: Path, stock_odm: Path | Non
     rows = parse_contexts(paths)
     conflicts = context_conflicts(rows)
     write_tsv(out / f"gate-c-{side}-conflicts.tsv", ["service", "labels"], [[a, b] for a, b in conflicts])
+    merged = out / f"gate-c-{side}-merged-service-contexts"
+    with merged.open("w", encoding="utf-8") as fp:
+        for src in paths:
+            text = src.read_text(encoding="utf-8", errors="replace")
+            fp.write(text)
+            if text and not text.endswith("\n"):
+                fp.write("\n")
     if policy is None or not checkfc.is_file():
         result = UNKNOWN
         detail = "effective_policy_or_checkfc_missing"
+    elif not paths:
+        result = UNKNOWN
+        detail = "service_context_inputs_missing"
     else:
-        rc, _ = run([str(checkfc), "-s", str(policy), *map(str, paths)], out / f"gate-c-{side}.log")
+        rc, _ = run(
+            [str(checkfc), "-s", str(policy), str(merged)],
+            out / f"gate-c-{side}.log",
+        )
         result = PASS if rc == 0 else FUNCTIONAL_RISK
         detail = f"checkfc_rc={rc}"
     vt = vintf_text(stock_vendor, stock_odm)
