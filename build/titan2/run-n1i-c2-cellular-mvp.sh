@@ -126,6 +126,7 @@ GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
 BUILD_REGRESSION_CONTRACT="$ROOT/build/gates/build-regression-contract.py"
 NATIVE_PREFLIGHT="$ROOT/build/titan2/run-n1i-c2-native-install-preflight.sh"
+PLATFORM_PROVIDER_AUTHORITY="$C2_TEMPLATE/platform-native-provider.tsv"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
@@ -486,6 +487,7 @@ PY
 
 generate_implementation_receipt() {
     local output="$1"
+    local provider_outputs="$2"
     python3 - \
         "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv" \
         "$output" \
@@ -493,7 +495,8 @@ generate_implementation_receipt() {
         "$PHH_POST_BLOB" \
         "$NEW_SHA" \
         "$NEW_BYTES" \
-        "$NATIVE_COMPOSITION" <<'PY'
+        "$NATIVE_COMPOSITION" \
+        "$provider_outputs" <<'PY'
 import csv
 import pathlib
 import sys
@@ -505,6 +508,7 @@ phh_post = sys.argv[4]
 system_sha = sys.argv[5]
 system_bytes = sys.argv[6]
 composition_path = pathlib.Path(sys.argv[7])
+provider_outputs_path = pathlib.Path(sys.argv[8])
 
 with manifest.open(encoding="utf-8", newline="") as fp:
     rows = list(csv.DictReader(fp, delimiter="\t"))
@@ -527,22 +531,36 @@ if len(composition) != 33:
         f"N1I_C2_IMPLEMENTATION_RECEIPT=FAIL_NATIVE_COMPOSITION rows={len(composition)}"
     )
 
+with provider_outputs_path.open(encoding="utf-8", newline="") as fp:
+    provider_rows = list(csv.DictReader(fp, delimiter="\t"))
+provider_outputs = {row["id"]: row for row in provider_rows}
+if len(provider_outputs) != 5:
+    raise SystemExit(
+        f"N1I_C2_IMPLEMENTATION_RECEIPT=FAIL_PLATFORM_PROVIDER_OUTPUTS rows={len(provider_outputs)}"
+    )
+
 for i in range(7, 40):
     mid = f"M{i:03d}"
     native = composition.get(mid)
     if native is None:
         raise SystemExit(f"N1I_C2_IMPLEMENTATION_RECEIPT=FAIL_NATIVE_MISSING id={mid}")
     disposition = native["disposition"]
-    if disposition in {"IMPORT_FROZEN_STOCK", "REUSE_C1_IDENTICAL"}:
+    if disposition == "IMPORT_FROZEN_STOCK":
         status[mid] = "IMPLEMENTED_EXACT_FROZEN_HASH"
         evidence[mid] = (
             "PRODUCT_OUT_HASH_EQUALS_FROZEN_STOCK;"
             f"disposition={disposition}"
         )
-    elif disposition == "REUSE_C1_PLATFORM_DIFFERENT":
-        status[mid] = "IMPLEMENTED_C1_PLATFORM_PROVIDER"
+    elif disposition == "USE_ANDROID_PLATFORM_PROVIDER":
+        provider = provider_outputs.get(mid)
+        if provider is None:
+            raise SystemExit(
+                "N1I_C2_IMPLEMENTATION_RECEIPT="
+                f"FAIL_PLATFORM_PROVIDER_MISSING id={mid}"
+            )
+        status[mid] = "IMPLEMENTED_ANDROID_PLATFORM_PROVIDER"
         evidence[mid] = (
-            f"PRODUCT_OUT_HASH_EQUALS_C1={native['c1_sha256']};"
+            f"PRODUCT_OUT_HASH={provider['sha256']};"
             f"stock_reference={native['stock_sha256']};"
             f"owners={native['install_graph_owner_hints']}"
         )
@@ -703,40 +721,40 @@ grep -Fxq 'N1I_C2_NATIVE_INSTALL_PLAN_STATE=PASS_CANDIDATE_ADMISSION_READY' "$NA
 grep -Fxq 'N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_READ_ONLY_ANALYSIS' "$NATIVE_PREFLIGHT_SUMMARY" ||
     { fail native_preflight_summary_state; exit $?; }
 
-NATIVE_REUSE_COUNT="$(
-    sed -n 's/^N1I_C2_NATIVE_BASELINE_REUSE_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
+C1_NATIVE_REUSE_COUNT="$(
+    sed -n 's/^N1I_C2_C1_NATIVE_REUSE_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
         tail -1
 )"
-NATIVE_PLATFORM_REUSE_COUNT="$(
-    sed -n 's/^N1I_C2_NATIVE_PLATFORM_REUSE_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
+ANDROID_PLATFORM_PROVIDER_COUNT="$(
+    sed -n 's/^N1I_C2_ANDROID_PLATFORM_PROVIDER_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
         tail -1
 )"
 NATIVE_IMPORT_COUNT="$(
     sed -n 's/^N1I_C2_NATIVE_IMPORT_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
         tail -1
 )"
-[[ "$NATIVE_REUSE_COUNT" =~ ^[0-9]+$ &&
-   "$NATIVE_PLATFORM_REUSE_COUNT" =~ ^[0-9]+$ &&
+[[ "$C1_NATIVE_REUSE_COUNT" =~ ^[0-9]+$ &&
+   "$ANDROID_PLATFORM_PROVIDER_COUNT" =~ ^[0-9]+$ &&
    "$NATIVE_IMPORT_COUNT" =~ ^[0-9]+$ ]] ||
     { fail native_preflight_count_parse; exit $?; }
-[[ "$NATIVE_REUSE_COUNT" -eq 5 &&
-   "$NATIVE_PLATFORM_REUSE_COUNT" -eq 5 &&
+[[ "$C1_NATIVE_REUSE_COUNT" -eq 0 &&
+   "$ANDROID_PLATFORM_PROVIDER_COUNT" -eq 5 &&
    "$NATIVE_IMPORT_COUNT" -eq 28 &&
-   $((NATIVE_REUSE_COUNT + NATIVE_IMPORT_COUNT)) -eq 33 ]] ||
-    { fail "native_preflight_count_total=reuse:$NATIVE_REUSE_COUNT,platform:$NATIVE_PLATFORM_REUSE_COUNT,import:$NATIVE_IMPORT_COUNT"; exit $?; }
+   $((ANDROID_PLATFORM_PROVIDER_COUNT + NATIVE_IMPORT_COUNT)) -eq 33 ]] ||
+    { fail "native_preflight_count_total=c1_reuse:$C1_NATIVE_REUSE_COUNT,android_platform:$ANDROID_PLATFORM_PROVIDER_COUNT,import:$NATIVE_IMPORT_COUNT"; exit $?; }
 
 KNOWN_KATI_DISPOSITION="$(
     awk -F '	'         '$1=="M029" && $2=="/system/lib64/android.hardware.drm-V1-ndk.so" {print $11}'         "$NATIVE_COMPOSITION"
 )"
-[[ "$KNOWN_KATI_DISPOSITION" == REUSE_C1_PLATFORM_DIFFERENT ]] ||
+[[ "$KNOWN_KATI_DISPOSITION" == USE_ANDROID_PLATFORM_PROVIDER ]] ||
     { fail "known_kati_disposition=$KNOWN_KATI_DISPOSITION"; exit $?; }
 
 NATIVE_ADMISSION_INTEGRATED=YES
 echo "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_BOUND_TO_BUILD"
-echo "N1I_C2_NATIVE_BASELINE_REUSE_COUNT=$NATIVE_REUSE_COUNT"
-echo "N1I_C2_NATIVE_PLATFORM_REUSE_COUNT=$NATIVE_PLATFORM_REUSE_COUNT"
+echo "N1I_C2_C1_NATIVE_REUSE_COUNT=$C1_NATIVE_REUSE_COUNT"
+echo "N1I_C2_ANDROID_PLATFORM_PROVIDER_COUNT=$ANDROID_PLATFORM_PROVIDER_COUNT"
 echo "N1I_C2_NATIVE_IMPORT_COUNT=$NATIVE_IMPORT_COUNT"
-echo "N1I_C2_KNOWN_KATI_COLLISION=PASS_REUSE_C1_PLATFORM_DIFFERENT id=M029"
+echo "N1I_C2_KNOWN_KATI_COLLISION=PASS_ANDROID_PLATFORM_PROVIDER id=M029"
 
 echo "===== BUILD FIVE N1F APPS OFFLINE ====="
 bash "$APP_BUILD" --authorize-app-build --output-dir "$APP_BUNDLE"
@@ -988,11 +1006,26 @@ mkdir -p "$OUT_DIR_C2" || { fail out_dir; exit $?; }
                     grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" ||
                         exit 77
                     ;;
-                REUSE_C1_IDENTICAL|REUSE_C1_PLATFORM_DIFFERENT)
+                USE_ANDROID_PLATFORM_PROVIDER)
                     if grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp"; then
-                        echo "unexpected reused native package present id=$id module=$module target=$target" >&2
+                        echo "unexpected Sable package for Android platform provider id=$id module=$module target=$target" >&2
                         exit 79
                     fi
+                    expected_provider="$(
+                        awk -F '\t' \
+                            -v id="$id" \
+                            -v target="$target" \
+                            'NR>1 && $1==id && $2==target {print $3}' \
+                            "$PLATFORM_PROVIDER_AUTHORITY"
+                    )"
+                    [[ -n "$expected_provider" ]] || {
+                        echo "missing Android platform provider authority id=$id target=$target" >&2
+                        exit 81
+                    }
+                    grep -Eq "(^|[[:space:]])${expected_provider}([[:space:]]|$)" <<<"$pp" || {
+                        echo "missing Android platform provider package id=$id provider=$expected_provider target=$target" >&2
+                        exit 82
+                    }
                     ;;
                 *)
                     echo "unexpected native disposition id=$id disposition=$disposition" >&2
@@ -1068,7 +1101,9 @@ echo "===== VERIFY BUILT CELLULAR MVP CONTENT ====="
 
 BUILT_NATIVE_COUNT=0
 BUILT_NATIVE_STOCK_COUNT=0
-BUILT_NATIVE_PLATFORM_COUNT=0
+BUILT_ANDROID_PLATFORM_COUNT=0
+PLATFORM_PROVIDER_OUTPUTS="$EVIDENCE/ANDROID_PLATFORM_PROVIDER_OUTPUTS.tsv"
+printf 'id\ttarget\towner_hints\tsha256\n' > "$PLATFORM_PROVIDER_OUTPUTS"
 
 {
     IFS= read -r _header
@@ -1091,41 +1126,31 @@ BUILT_NATIVE_PLATFORM_COUNT=0
         built="$(built_target_path "$target")" || exit 1
 
         [[ -f "$built" ]] || {
-            echo \
-                "missing built native target $target -> $built" \
-                >&2
+            echo "missing built native target $target -> $built" >&2
             exit 1
         }
 
         actual="$(sha256sum "$built" | awk '{print $1}')"
 
         case "$disposition" in
-            IMPORT_FROZEN_STOCK|REUSE_C1_IDENTICAL)
-                expected="$stock_sha"
-                BUILT_NATIVE_STOCK_COUNT=$(
-                    (BUILT_NATIVE_STOCK_COUNT + 1)
-                )
+            IMPORT_FROZEN_STOCK)
+                [[ "$actual" == "$stock_sha" ]] || {
+                    echo "built frozen native hash mismatch id=$id target=$target expected=$stock_sha actual=$actual" >&2
+                    exit 1
+                }
+                BUILT_NATIVE_STOCK_COUNT=$((BUILT_NATIVE_STOCK_COUNT + 1))
                 ;;
-            REUSE_C1_PLATFORM_DIFFERENT)
-                expected="$c1_sha"
-                BUILT_NATIVE_PLATFORM_COUNT=$(
-                    (BUILT_NATIVE_PLATFORM_COUNT + 1)
-                )
+            USE_ANDROID_PLATFORM_PROVIDER)
+                printf '%s\t%s\t%s\t%s\n' \
+                    "$id" "$target" "$owner_hints" "$actual" \
+                    >> "$PLATFORM_PROVIDER_OUTPUTS"
+                BUILT_ANDROID_PLATFORM_COUNT=$((BUILT_ANDROID_PLATFORM_COUNT + 1))
                 ;;
             *)
-                echo \
-                    "unexpected built native disposition id=$id disposition=$disposition" \
-                    >&2
+                echo "unexpected built native disposition id=$id disposition=$disposition" >&2
                 exit 1
                 ;;
         esac
-
-        [[ "$actual" == "$expected" ]] || {
-            echo \
-                "built native hash mismatch id=$id target=$target disposition=$disposition expected=$expected actual=$actual" \
-                >&2
-            exit 1
-        }
 
         BUILT_NATIVE_COUNT=$((BUILT_NATIVE_COUNT + 1))
     done
@@ -1136,9 +1161,13 @@ BUILT_NATIVE_PLATFORM_COUNT=0
 
 [[ "$BUILT_NATIVE_COUNT" -eq 33 &&
    "$BUILT_NATIVE_STOCK_COUNT" -eq 28 &&
-   "$BUILT_NATIVE_PLATFORM_COUNT" -eq 5 ]] || {
-    fail \
-        "built_native_counts=total:$BUILT_NATIVE_COUNT,stock:$BUILT_NATIVE_STOCK_COUNT,platform:$BUILT_NATIVE_PLATFORM_COUNT"
+   "$BUILT_ANDROID_PLATFORM_COUNT" -eq 5 ]] || {
+    fail "built_native_counts=total:$BUILT_NATIVE_COUNT,stock:$BUILT_NATIVE_STOCK_COUNT,android_platform:$BUILT_ANDROID_PLATFORM_COUNT"
+    exit $?
+}
+
+[[ "$(awk 'NR>1 {c++} END {print c+0}' "$PLATFORM_PROVIDER_OUTPUTS")" -eq 5 ]] || {
+    fail platform_provider_output_count
     exit $?
 }
 
@@ -1204,7 +1233,7 @@ MTK_OVERLAY_PACKAGE="$(apk_package_name "$MTK_OVERLAY_APK")" ||
 [[ "$MTK_OVERLAY_PACKAGE" == "$MTK_MMTEL_OVERLAY_PACKAGE" ]] ||
     { fail "mtk_overlay_package=$MTK_OVERLAY_PACKAGE"; exit $?; }
 
-echo "N1I_C2_BUILT_NATIVE_SET=PASS count=$BUILT_NATIVE_COUNT frozen_stock=$BUILT_NATIVE_STOCK_COUNT c1_platform=$BUILT_NATIVE_PLATFORM_COUNT exact_authority_hashes=YES"
+echo "N1I_C2_BUILT_NATIVE_SET=PASS count=$BUILT_NATIVE_COUNT frozen_stock=$BUILT_NATIVE_STOCK_COUNT android_platform=$BUILT_ANDROID_PLATFORM_COUNT frozen_hashes=EXACT platform_outputs=SEALED"
 echo "N1I_C2_INCOMING_CALL_COMPAT=PASS_PROPERTY_FALSE"
 echo "N1I_C2_PHH_MTKMAL_GUARD=PASS_MARKER_SCOPED"
 echo "N1I_C2_INTEGRATION_PACKAGE=PASS_HEALER_DISABLED_BY_DEFAULT"
@@ -1213,7 +1242,7 @@ echo "N1I_C2_MMTEL_OVERLAY_APK=PASS package=$MTK_OVERLAY_PACKAGE"
 echo "N1I_C2_SYSTEMIMAGE=PASS sha256=$NEW_SHA bytes=$NEW_BYTES"
 
 echo "===== FREEZE IMPLEMENTATION RECEIPT ====="
-generate_implementation_receipt "$EVIDENCE/CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" ||
+generate_implementation_receipt "$EVIDENCE/CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" "$PLATFORM_PROVIDER_OUTPUTS" ||
     { fail implementation_receipt; exit $?; }
 
 echo "===== RESTORE ANDROID SOURCE ====="
@@ -1249,6 +1278,8 @@ cp "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv" "$ARTIFACT/" ||
     { fail artifact_manifest_copy; exit $?; }
 cp "$EVIDENCE/CELLULAR_MVP_IMPLEMENTATION_RECEIPT.tsv" "$ARTIFACT/" ||
     { fail artifact_receipt_copy; exit $?; }
+cp "$PLATFORM_PROVIDER_OUTPUTS" "$ARTIFACT/" ||
+    { fail artifact_platform_provider_outputs_copy; exit $?; }
 
 cat > "$ARTIFACT/artifact.env" <<EOF
 ROLE=N1I_C2_CELLULAR_MVP
@@ -1264,8 +1295,8 @@ MATERIALIZATION_SOURCE_COMMIT=$MATERIALIZATION_SOURCE_COMMIT
 FROZEN_MUTATION_COUNT=41
 FROZEN_STOCK_FILE_COUNT=36
 FROZEN_NATIVE_COUNT=33
-NATIVE_BASELINE_REUSE_COUNT=$NATIVE_REUSE_COUNT
-NATIVE_PLATFORM_REUSE_COUNT=$NATIVE_PLATFORM_REUSE_COUNT
+C1_NATIVE_REUSE_COUNT=$C1_NATIVE_REUSE_COUNT
+ANDROID_PLATFORM_PROVIDER_COUNT=$ANDROID_PLATFORM_PROVIDER_COUNT
 NATIVE_IMPORT_COUNT=$NATIVE_IMPORT_COUNT
 KNOWN_KATI_M029_DISPOSITION=$KNOWN_KATI_DISPOSITION
 IMPLEMENTATION_RECEIPT_ROWS=41
@@ -1307,7 +1338,7 @@ echo "N1I_C2_EVIDENCE_SEAL=PASS_EXCLUDES_BUILD_LOG"
 echo "N1I_C2_BUILD=PASS"
 echo "N1I_C2_DEVICE_CONTACT=NONE"
 echo "N1I_C2_FLASH=NONE"
-echo "N1I_C2_NATIVE_INSTALL_ADMISSION=PASS_COLLISION_FILTERED platform_reuse=$NATIVE_PLATFORM_REUSE_COUNT imports=$NATIVE_IMPORT_COUNT"
+echo "N1I_C2_NATIVE_INSTALL_ADMISSION=PASS_COLLISION_FILTERED c1_reuse=$C1_NATIVE_REUSE_COUNT android_platform=$ANDROID_PLATFORM_PROVIDER_COUNT imports=$NATIVE_IMPORT_COUNT"
 echo "N1I_C2_READY_FOR_POSTBUILD_LINKAGE=YES"
 echo "N1I_C2_ARTIFACT_DIR=$ARTIFACT"
 echo "N1I_C2_EVIDENCE_DIR=$EVIDENCE"

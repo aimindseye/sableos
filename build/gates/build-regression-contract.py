@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020", "T2-021",
+    "T2-019", "T2-020", "T2-021", "T2-022",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -62,6 +62,7 @@ for row in rows:
         failures.append(f"{row['regression_id']}:blank_metadata")
 
 local_ci = read("build/local-ci/run.sh")
+entrypoint = read("build/sable.sh")
 adapter = read("build/devices/titan2.sh")
 driver = read("build/titan2/run-n1i-c1-cellular-isolation.sh")
 contract = read("build/gates/n1i-c1-android16-contract.py")
@@ -83,7 +84,17 @@ c2_native_planner = read("build/titan2/plan-n1i-c2-native-install.py")
 c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
 c2_native_preflight = read("build/titan2/run-n1i-c2-native-install-preflight.sh")
 c2_native_baseline_probe = read("build/titan2/probe-n1i-c2-c1-native-baseline.sh")
-c2_platform_reuse = read("product/titan2/n1i-c2/platform-native-reuse.tsv")
+c2_platform_provider = read("product/titan2/n1i-c2/platform-native-provider.tsv")
+c2_platform_provider_rows = [
+    line.split("\t")
+    for line in c2_platform_provider.splitlines()[1:]
+    if line.strip()
+]
+c2_platform_provider_targets = {
+    row[1]
+    for row in c2_platform_provider_rows
+    if len(row) >= 4
+}
 central_guard = read("build/gates/titan2-central-flash-guard-contract.sh")
 
 check(
@@ -230,9 +241,16 @@ check(
     and "a4-native-superset.txt" in contract
     and "native-paths.txt" not in driver
     and '--a4-reference "$A4"' in c2_native_preflight
+    and 'N1I_C2_C1_NATIVE_AUTHORITY=PASS_ZERO_PRESENT present=0 absent=33'
+        in c2_native_preflight
     and "IMPORT_FROZEN_STOCK" in c2_native_planner
-    and "REUSE_C1_IDENTICAL" in c2_native_planner,
-    "a4_native_superset_reference_only_and_runtime_collision_filtered",
+    and "USE_ANDROID_PLATFORM_PROVIDER" in c2_native_planner
+    and "c1_native_present_not_allowed=" in c2_native_planner
+    and 'row["disposition"].startswith("REUSE_C1_")'
+        in c2_native_planner
+    and "REUSE_C1_IDENTICAL" not in c2_native_planner
+    and "REUSE_C1_PLATFORM_DIFFERENT" not in c2_native_planner,
+    "a4_reference_only_with_zero_c1_reuse_and_collision_filtered_c2_admission",
 )
 
 fragile_aapt_pipelines = (
@@ -331,22 +349,41 @@ c2_direct_native_packages = set(
 check(
     "T2-019",
     "N1I_C2_INSTALL_OWNERSHIP_AUDIT" in c2_collision_audit
-    and len(c2_prebuilt_targets) == 33
-    and c2_prebuilt_targets == set(a4_rows)
+    and len(c2_prebuilt_targets) == 28
+    and len(c2_platform_provider_rows) == 5
+    and len(c2_platform_provider_targets) == 5
+    and c2_prebuilt_targets
+        == set(a4_rows) - c2_platform_provider_targets
+    and not c2_prebuilt_targets & c2_platform_provider_targets
+    and c2_prebuilt_targets | c2_platform_provider_targets
+        == set(a4_rows)
     and not c2_direct_native_packages
     and "native-packages.mk" in c2_mk
-    and "REUSE_C1_IDENTICAL" in c2_native_planner
-    and "REUSE_C1_PLATFORM_DIFFERENT" in c2_native_planner
+    and all(
+        provider in c2_mk
+        for provider in (
+            "android.hardware.radio-V4-ndk",
+            "android.hardware.graphics.common-V6-ndk",
+            "android.hardware.drm-V1-ndk",
+            "libheif",
+            "libsuspend",
+        )
+    )
+    and 'PLATFORM_PROVIDER_AUTHORITY="$C2_TEMPLATE/platform-native-provider.tsv"'
+        in c2_driver
+    and "missing Android platform provider package" in c2_driver
+    and "USE_ANDROID_PLATFORM_PROVIDER" in c2_native_planner
     and "IMPORT_FROZEN_STOCK" in c2_native_planner
-    and "BLOCK_C1_DIFFERENT" in c2_native_planner
-    and "EXPECTED_PLATFORM_REUSE" in c2_native_planner
-    and c2_platform_reuse.count("\nM") == 5
-    and "M008\t/system/lib64/android.hardware.radio-V4-ndk.so\tandroid.hardware.radio-V4-ndk" in c2_platform_reuse
-    and "M017\t/system/lib64/android.hardware.graphics.common-V6-ndk.so\tandroid.hardware.graphics.common-V6-ndk" in c2_platform_reuse
-    and "M029\t/system/lib64/android.hardware.drm-V1-ndk.so\tandroid.hardware.drm-V1-ndk" in c2_platform_reuse
-    and "M038\t/system/lib64/libheif.so\tlibheif" in c2_platform_reuse
-    and "M039\t/system/lib64/libsuspend.so\tlibsuspend" in c2_platform_reuse
-    and "BLOCK_GRAPH_OWNER_NOT_IN_C1" in c2_native_planner
+    and "EXPECTED_ANDROID_PLATFORM_PROVIDERS" in c2_native_planner
+    and "c1_native_present_not_allowed=" in c2_native_planner
+    and "platform_provider_admission_blocked=" in c2_native_planner
+    and c2_platform_provider.count("\nM") == 5
+    and "expected_android_owner" in c2_platform_provider
+    and "M008\t/system/lib64/android.hardware.radio-V4-ndk.so\tandroid.hardware.radio-V4-ndk" in c2_platform_provider
+    and "M017\t/system/lib64/android.hardware.graphics.common-V6-ndk.so\tandroid.hardware.graphics.common-V6-ndk" in c2_platform_provider
+    and "M029\t/system/lib64/android.hardware.drm-V1-ndk.so\tandroid.hardware.drm-V1-ndk" in c2_platform_provider
+    and "M038\t/system/lib64/libheif.so\tlibheif" in c2_platform_provider
+    and "M039\t/system/lib64/libsuspend.so\tlibsuspend" in c2_platform_provider
     and "--collision-tsv" in c2_native_planner
     and "n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild"
         in c2_native_preflight
@@ -356,7 +393,9 @@ check(
     and 'PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"' in c2_native_preflight
     and '--installs-file "$PRIOR_FAILED_INSTALLS"' in c2_native_preflight
     and "plan-n1i-c2-native-install.py" in c2_native_preflight
-    and "--platform-reuse-decisions" in c2_native_preflight
+    and "--platform-provider-decisions" in c2_native_preflight
+    and 'N1I_C2_C1_NATIVE_AUTHORITY=PASS_ZERO_PRESENT present=0 absent=33'
+        in c2_native_preflight
     and "NATIVE_BASELINE_PROBE.tsv" in c2_native_preflight
     and "NATIVE_COMPOSITION.tsv" in c2_native_preflight
     and "EXPECTED_C1_SHA=\"137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160\"" in c2_native_baseline_probe
@@ -365,11 +404,11 @@ check(
     and "android.hardware.drm-V1-ndk.so" in c2_native_preflight
     and "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS" in c2_native_preflight
     and "android.hardware.drm-V1-ndk.so" in c2_native_plan_test
-    and "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_PLATFORM_REUSE=PASS"
+    and "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_ANDROID_PLATFORM_PROVIDER=PASS"
         in c2_native_plan_test
-    and "N1I_C2_NATIVE_INSTALL_PLAN_PLATFORM_REUSE_SET=PASS"
+    and "N1I_C2_NATIVE_INSTALL_PLAN_PLATFORM_PROVIDER_SET=PASS"
         in c2_native_plan_test,
-    "c2_native_install_is_collision_qualified_with_finite_platform_reuse_set",
+    "c2_native_install_is_collision_qualified_with_zero_c1_reuse_and_finite_android_provider_set",
 )
 
 check(
@@ -396,6 +435,17 @@ check(
     ) == 1
     and 'TITAN2_CENTRAL_GUARD_SINGLETON_STRUCTURE' in central_guard,
     "titan2_central_guard_singleton_structure",
+)
+
+check(
+    "T2-022",
+    'sable_device_build "$RELEASE" "$MODE"' in entrypoint
+    and 'TITAN2_N1I_BUILD_LANE=C2_CELLULAR_MVP' in adapter
+    and 'bash "$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh" "$mode"' in adapter
+    and '--authorize-source-mutation --authorize-build' in adapter
+    and 'bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"'
+        not in adapter,
+    "canonical_sable_n1i_build_routes_to_c2_only",
 )
 
 if failures:

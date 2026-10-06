@@ -225,8 +225,11 @@ sable_device_build() {
 
   case "$release" in
     N1I|n1i)
+      echo "TITAN2_N1I_BUILD_LANE=C2_CELLULAR_MVP"
+      echo "TITAN2_N1I_BUILD_ENTRYPOINT=build/sable.sh"
       EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
-        bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"
+        bash "$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh" "$mode" \
+          --authorize-source-mutation --authorize-build
       ;;
     *)
       echo "SABLE_DEVICE_BUILD=BLOCKED_UNQUALIFIED device=titan2 release=$release" >&2
