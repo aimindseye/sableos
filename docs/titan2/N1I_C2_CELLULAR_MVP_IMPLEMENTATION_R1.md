@@ -1,6 +1,6 @@
 # Titan 2 N1I-C2 Cellular MVP Implementation R1
 
-Status: **build retry blocked pending sealed native install preflight admission; no device contact or flash**
+Status: **one collision-filtered build retry permitted after full static qualification; no device contact or flash**
 
 ## Objective
 
@@ -189,9 +189,11 @@ The driver requires both:
 --authorize-build
 ```
 
-but operator retry authorization is a separate review decision. Before granting
-that retry, the canonical preflight is run standalone and its complete 33-target
-composition is reviewed.
+and operator retry authorization remains conditional on the full static
+qualification suite. The canonical native preflight is then executed by the
+driver before any Android-source mutation, source-delta staging, or
+`make systemimage`. A failed or ambiguous preflight aborts the run before
+mutation and before the build.
 
 Before mutation an authorized candidate run requires:
 
@@ -211,13 +213,14 @@ Before mutation an authorized candidate run requires:
 - fresh C2 output directory;
 - implementation contract PASS.
 
-The driver contains exactly one `systemimage` invocation. Build retry remains
-unauthorized at this document state until a standalone preflight result is
-reviewed. If any of the 33 targets is C1-different, has an unexpected install
-owner, or cannot be classified in one pass, the retry remains blocked and the
-full blocker set is resolved together. The previous Kati error is therefore
-converted into pre-build regression memory rather than rediscovered during
-packaging.
+The driver contains exactly one `systemimage` invocation and may build exactly one
+collision-filtered C2 candidate after the complete static qualification suite
+passes. The in-driver native preflight remains a mandatory execution gate before
+source mutation and before that single build. If any of the 33 targets is
+C1-different, has an unexpected install owner, or cannot be classified in one
+pass, the run aborts before mutation/build and the full blocker set is resolved
+together. The previous Kati error is therefore converted into pre-build
+regression memory rather than rediscovered during packaging.
 
 After the build it verifies:
 
@@ -251,19 +254,19 @@ flash qualification can bind to the same 41-entry authority.
 Current collision-reconciliation phase:
 
 ```text
-SOURCE_MUTATION_AUTHORIZED=NO
-BUILD_AUTHORIZED=NO
-N1I_C2_BUILD_RETRY_AUTHORIZED=NO_PENDING_STANDALONE_PREFLIGHT_REVIEW
+SOURCE_MUTATION_AUTHORIZED=YES_EXACT_C2_SET_AFTER_STATIC_GATE
+BUILD_AUTHORIZED=YES_ONE_CELLULAR_MVP_SYSTEMIMAGE_AFTER_STATIC_GATE
+N1I_C2_BUILD_RETRY_AUTHORIZED=YES_AFTER_STATIC_GATE_WITH_BOUND_NATIVE_PREFLIGHT
 NETWORK_FETCH_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 REBOOT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ```
 
-Only after the sealed native preflight is reviewed and its exact admission is
-committed may a later transition authorize
-`SOURCE_MUTATION_AUTHORIZED=YES_EXACT_C2_SET` and
-`BUILD_AUTHORIZED=YES_ONE_CELLULAR_MVP_SYSTEMIMAGE`.
+The authorization above is not unconditional: the driver must first complete
+the bound read-only native preflight and produce
+`PASS_CANDIDATE_ADMISSION_READY`. If that preflight fails, source mutation and
+the system-image build remain unexecuted.
 
 A successful build does **not** authorize flashing. The resulting image must
 first pass post-build linkage/content qualification and then enter the governed
