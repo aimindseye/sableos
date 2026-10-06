@@ -46,6 +46,7 @@ def canonical_targets(path: Path) -> set[str]:
 def plan(
     rows: list[dict[str, str]],
     expected_targets: set[str],
+    collision_rows: list[dict[str, str]],
 ) -> tuple[list[dict[str, str]], list[str]]:
     required = {
         "id", "target", "module", "stock_sha256",
@@ -78,6 +79,26 @@ def plan(
     if len(modules) != EXPECTED_COUNT:
         raise PlanError("probe_module_duplicate")
 
+    collision_required = {"target", "state", "rule_count", "final_path", "owner_hints"}
+    if len(collision_rows) != EXPECTED_COUNT:
+        raise PlanError(
+            f"collision_row_count={len(collision_rows)} expected={EXPECTED_COUNT}"
+        )
+    if collision_rows and not collision_required.issubset(collision_rows[0]):
+        raise PlanError(
+            "collision_columns_missing="
+            + ",".join(sorted(collision_required - set(collision_rows[0])))
+        )
+    collision_by_target = {row["target"]: row for row in collision_rows}
+    if len(collision_by_target) != EXPECTED_COUNT:
+        raise PlanError("collision_target_duplicate")
+    if set(collision_by_target) != expected_targets:
+        raise PlanError(
+            "collision_target_set_drift="
+            f"missing:{','.join(sorted(expected_targets - set(collision_by_target))) or 'NONE'};"
+            f"extra:{','.join(sorted(set(collision_by_target) - expected_targets)) or 'NONE'}"
+        )
+
     composition: list[dict[str, str]] = []
     imports: list[str] = []
     blockers: list[str] = []
@@ -89,23 +110,59 @@ def plan(
         if len(stock) != 64:
             raise PlanError(f"bad_stock_sha256={row['id']}:{stock}")
 
+        collision = collision_by_target[row["target"]]
+        state = collision["state"]
+        try:
+            rule_count = int(collision["rule_count"])
+        except ValueError as exc:
+            raise PlanError(
+                f"bad_collision_rule_count={row['id']}:{collision['rule_count']}"
+            ) from exc
+
+        if state == "COLLISION" and rule_count < 2:
+            raise PlanError(f"collision_state_count_mismatch={row['id']}:{rule_count}")
+        if state == "SINGLE_OWNER" and rule_count != 1:
+            raise PlanError(f"single_owner_count_mismatch={row['id']}:{rule_count}")
+        if state == "UNCLAIMED" and rule_count != 0:
+            raise PlanError(f"unclaimed_count_mismatch={row['id']}:{rule_count}")
+        if state not in {"COLLISION", "SINGLE_OWNER", "UNCLAIMED"}:
+            raise PlanError(f"bad_collision_state={row['id']}:{state}")
+
         if c1_status == "ABSENT":
             if c1_sha not in {"", "-"}:
                 raise PlanError(
                     f"absent_with_c1_sha={row['id']}:{c1_sha}"
                 )
-            disposition = "IMPORT_FROZEN_STOCK"
-            imports.append(row["module"])
+            if state == "SINGLE_OWNER":
+                disposition = "IMPORT_FROZEN_STOCK"
+                imports.append(row["module"])
+            elif state == "COLLISION":
+                disposition = "BLOCK_GRAPH_OWNER_NOT_IN_C1"
+                blockers.append(
+                    f"{row['id']}:{row['target']}:"
+                    f"graph_rules={rule_count}:owners={collision['owner_hints']}"
+                )
+            else:
+                disposition = "BLOCK_EXPECTED_SABLE_OWNER_MISSING"
+                blockers.append(
+                    f"{row['id']}:{row['target']}:graph_rules={rule_count}"
+                )
         elif c1_status == "PRESENT":
             if len(c1_sha) != 64:
                 raise PlanError(f"bad_c1_sha256={row['id']}:{c1_sha}")
-            if c1_sha == stock:
-                disposition = "REUSE_C1_IDENTICAL"
-            else:
+            if c1_sha != stock:
                 disposition = "BLOCK_C1_DIFFERENT"
                 blockers.append(
                     f"{row['id']}:{row['target']}:"
                     f"c1={c1_sha}:stock={stock}"
+                )
+            elif state == "COLLISION":
+                disposition = "REUSE_C1_IDENTICAL"
+            else:
+                disposition = "BLOCK_C1_PRESENT_WITHOUT_BASE_GRAPH_OWNER"
+                blockers.append(
+                    f"{row['id']}:{row['target']}:"
+                    f"state={state}:rules={rule_count}"
                 )
         else:
             raise PlanError(
@@ -114,6 +171,9 @@ def plan(
 
         composition.append({
             **row,
+            "install_graph_state": state,
+            "install_graph_rule_count": str(rule_count),
+            "install_graph_owner_hints": collision["owner_hints"],
             "disposition": disposition,
         })
 
@@ -129,7 +189,9 @@ def plan(
 def write_composition(path: Path, rows: list[dict[str, str]]) -> None:
     fields = [
         "id", "target", "module", "stock_sha256",
-        "c1_status", "c1_sha256", "c1_image_path", "disposition",
+        "c1_status", "c1_sha256", "c1_image_path",
+        "install_graph_state", "install_graph_rule_count",
+        "install_graph_owner_hints", "disposition",
     ]
     with path.open("w", encoding="utf-8", newline="") as fp:
         writer = csv.DictWriter(
@@ -161,19 +223,32 @@ def write_packages(path: Path, imports: list[str]) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--probe-tsv", type=Path, required=True)
+    ap.add_argument("--collision-tsv", type=Path, required=True)
     ap.add_argument("--a4-reference", type=Path, required=True)
     ap.add_argument("--composition-out", type=Path, required=True)
     ap.add_argument("--packages-out", type=Path, required=True)
+    ap.add_argument("--admission-out", type=Path, required=True)
     args = ap.parse_args()
 
     rows = read_tsv(args.probe_tsv)
+    collision_rows = read_tsv(args.collision_tsv)
     expected = canonical_targets(args.a4_reference)
-    composition, imports = plan(rows, expected)
+    composition, imports = plan(rows, expected, collision_rows)
 
     args.composition_out.parent.mkdir(parents=True, exist_ok=True)
     args.packages_out.parent.mkdir(parents=True, exist_ok=True)
+    args.admission_out.parent.mkdir(parents=True, exist_ok=True)
     write_composition(args.composition_out, composition)
     write_packages(args.packages_out, imports)
+
+    module_to_target = {row["module"]: row["target"] for row in composition}
+    with args.admission_out.open("w", encoding="utf-8") as fp:
+        fp.write(
+            "# N1I-C2 collision-qualified native admission candidate.\n"
+            "# Generated read-only from sealed C1 baseline + failed C2 install graph.\n"
+        )
+        for module in imports:
+            fp.write(module_to_target[module] + "\n")
 
     reuse_count = sum(
         row["disposition"] == "REUSE_C1_IDENTICAL"
@@ -187,6 +262,7 @@ def main() -> int:
 
     print(f"N1I_C2_NATIVE_BASELINE_REUSE_COUNT={reuse_count}")
     print(f"N1I_C2_NATIVE_IMPORT_COUNT={import_count}")
+    print(f"N1I_C2_NATIVE_ADMISSION_OUT={args.admission_out.resolve()}")
     print(
         "N1I_C2_NATIVE_INSTALL_COLLISION_PREFLIGHT="
         "PASS_NO_DUPLICATE_BASELINE_INSTALLS"
