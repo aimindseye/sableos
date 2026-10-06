@@ -2,9 +2,10 @@
 // Proprietary payload bytes are staged from the sealed C2 materialization
 // bundle at build time and are never committed to Git.
 //
-// C2 deliberately admits the already-reviewed 33-path A4 compatibility
-// superset as one bounded MVP unit. Module names are Sable-unique while stems
-// preserve the exact stock SONAME/install filename.
+// C2 retains 33-path native closure authority, but defines only the 28
+// collision-qualified frozen imports. Five reviewed Android 16 platform
+// providers remain authoritative and therefore have no Sable prebuilt module.
+// Imported module stems preserve the exact stock SONAME/install filename.
 
 sh_binary {
     name: "SableTitan2Cellular",
@@ -49,16 +50,6 @@ cc_prebuilt_library_shared {
     system_ext_specific: true,
 }
 
-cc_prebuilt_library_shared {
-    name: "SableN1IC2NativeM008",
-    srcs: ["prebuilt/system/lib64/android.hardware.radio-V4-ndk.so"],
-    stem: "android.hardware.radio-V4-ndk",
-    compile_multilib: "64",
-    strip: {
-        none: true,
-    },
-    check_elf_files: false,
-}
 
 cc_prebuilt_library_shared {
     name: "SableN1IC2NativeM009",
@@ -156,16 +147,6 @@ cc_prebuilt_library_shared {
     system_ext_specific: true,
 }
 
-cc_prebuilt_library_shared {
-    name: "SableN1IC2NativeM017",
-    srcs: ["prebuilt/system/lib64/android.hardware.graphics.common-V6-ndk.so"],
-    stem: "android.hardware.graphics.common-V6-ndk",
-    compile_multilib: "64",
-    strip: {
-        none: true,
-    },
-    check_elf_files: false,
-}
 
 cc_prebuilt_library_shared {
     name: "SableN1IC2NativeM018",
@@ -299,16 +280,6 @@ cc_prebuilt_library_shared {
     system_ext_specific: true,
 }
 
-cc_prebuilt_library_shared {
-    name: "SableN1IC2NativeM029",
-    srcs: ["prebuilt/system/lib64/android.hardware.drm-V1-ndk.so"],
-    stem: "android.hardware.drm-V1-ndk",
-    compile_multilib: "64",
-    strip: {
-        none: true,
-    },
-    check_elf_files: false,
-}
 
 cc_prebuilt_library_shared {
     name: "SableN1IC2NativeM030",
@@ -405,26 +376,3 @@ cc_prebuilt_library_shared {
     check_elf_files: false,
     system_ext_specific: true,
 }
-
-cc_prebuilt_library_shared {
-    name: "SableN1IC2NativeM038",
-    srcs: ["prebuilt/system/lib64/libheif.so"],
-    stem: "libheif",
-    compile_multilib: "64",
-    strip: {
-        none: true,
-    },
-    check_elf_files: false,
-}
-
-cc_prebuilt_library_shared {
-    name: "SableN1IC2NativeM039",
-    srcs: ["prebuilt/system/lib64/libsuspend.so"],
-    stem: "libsuspend",
-    compile_multilib: "64",
-    strip: {
-        none: true,
-    },
-    check_elf_files: false,
-}
-

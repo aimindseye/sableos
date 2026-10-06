@@ -89,8 +89,12 @@ if 'N1I_C_"/system/' in admission:
     failures.append("admission:malformed_native_marker")
 
 need(adapter, "SABLE_DEVICE_BUILD_SUPPORTED=YES", "adapter")
-need(adapter, "run-n1i-c1-cellular-isolation.sh", "adapter")
+need(adapter, "TITAN2_N1I_BUILD_LANE=C2_CELLULAR_MVP", "adapter")
+need(adapter, "run-n1i-c2-cellular-mvp.sh", "adapter")
+need(adapter, "--authorize-source-mutation --authorize-build", "adapter")
 need(adapter, "SABLE_DEVICE_FLASH_SUPPORTED=NO", "adapter")
+if 'bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"' in adapter:
+    failures.append("adapter:canonical_n1i_route_regressed_to_c1")
 
 if subprocess.run(["bash", "-n", str(ROOT / "build/titan2/run-n1i-c1-cellular-isolation.sh")]).returncode:
     failures.append("driver:bash_syntax")

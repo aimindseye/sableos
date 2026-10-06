@@ -49,20 +49,18 @@ compatibility substrate.
 It is intended to satisfy, together:
 
 1. the exact 33 materialized A4 system/system_ext native compatibility targets.
-   The first C2 build proved that installing all 33 wholesale is invalid:
-   Kati rejected a duplicate final install destination at
-   `/system/lib64/android.hardware.drm-V1-ndk.so` (M029). Before any retry,
-   the read-only native-install preflight compares every frozen target against
-   the exact sealed C1 image and the retained failed Kati graph. A byte-identical
-   C1 target is a reuse candidate and must **not** be reinstalled by a Sable
-   prebuilt; only a C1-absent target whose single graph owner is the exact Sable
-   module is an import candidate. The real sealed-C1 preflight identified five
-   C1-present/different collisions that are Android 16 platform providers rather
-   than MTK vendor libraries. Those five are explicitly reviewed in
-   `product/titan2/n1i-c2/platform-native-reuse.tsv` and remain supplied by
-   C1/AOSP: M008 radio AIDL, M017 graphics-common AIDL, M029 DRM AIDL,
-   M038 `libheif`, and M039 `libsuspend`. Every other C1-present/different,
-   unexpected-owner, or ambiguous state still fails closed;
+   The first C2 packaging attempt proved that installing all 33 wholesale is
+   invalid: the retained Kati graph contains five exact duplicate final targets,
+   including `/system/lib64/android.hardware.drm-V1-ndk.so` (M029). The sealed
+   C1 forensic probe independently proves that **all 33 targets are absent from
+   C1**, so C1 is an authority boundary and not a native-provider source for
+   this set. The collision-qualified plan therefore imports exactly 28 frozen
+   stock natives and preserves the existing Android 16 platform provider for
+   exactly five reviewed collisions. Those five are recorded in
+   `product/titan2/n1i-c2/platform-native-provider.tsv`: M008 radio AIDL,
+   M017 graphics-common AIDL, M029 DRM AIDL, M038 `libheif`, and M039
+   `libsuspend`. Any unexpected C1 presence, owner drift, extra collision,
+   unclaimed target, or ambiguous state still fails closed;
 2. the reviewed two-argument TelephonyMetrics no-op overload;
 3. `ro.telephony.block_binder_thread_on_incoming_calls=false` for the Titan
    product so the already-present legacy incoming-call path is active;
@@ -168,11 +166,15 @@ retained failed-build Kati install graph. Its output is sealed evidence:
 `NATIVE_COMPOSITION.tsv`, `native-packages.mk`, and
 `native-admission.txt`.
 
-The canonical build driver remains:
+The canonical operator build entry point is:
 
-```text
-build/titan2/run-n1i-c2-cellular-mvp.sh
+```bash
+bash build/sable.sh titan2 N1I build --tmux
 ```
+
+`build/sable.sh` dispatches through the Titan 2 adapter to the internal C2
+driver `build/titan2/run-n1i-c2-cellular-mvp.sh`. Direct operator use of the
+release-specific driver is not the canonical build path.
 
 The driver starts with `NATIVE_ADMISSION_INTEGRATED=NO`. During an authorized
 candidate run it must execute the complete read-only native-install preflight
@@ -183,12 +185,17 @@ candidate run it must execute the complete read-only native-install preflight
 
 The generated `native-packages.mk` contains only frozen-stock targets that the
 preflight classifies as `IMPORT_FROZEN_STOCK`. For the current sealed
-authority that is exactly 28 modules. Targets classified `REUSE_C1_IDENTICAL`
-or `REUSE_C1_PLATFORM_DIFFERENT` are not added as C2 install modules. The
-latter disposition is legal only for the exact five reviewed entries above,
-with the exact expected Android 16 platform owner in the retained Kati graph.
-This preserves Android 16's platform ABI providers instead of overwriting them
-with older stock-system binaries.
+authority that is exactly 28 modules. C1-native reuse is exactly zero. The five
+reviewed duplicate targets classify as `USE_ANDROID_PLATFORM_PROVIDER` only
+when the retained Kati graph proves exactly two owners: the reviewed Sable
+candidate and the exact expected Android 16 platform module. C2 `Android.bp`
+therefore defines only the 28 imported Sable native modules. The five duplicate
+Sable provider modules are absent from the Soong file entirely, because merely
+defining them is enough for Kati to create conflicting final-target rules. The
+five reviewed Android owner module names are instead added explicitly to
+`PRODUCT_PACKAGES`, and the driver verifies those exact provider modules are
+selected before `systemimage`. This leaves one build-side owner per target
+while guaranteeing all five provider outputs are installed.
 
 The driver requires both:
 
@@ -210,10 +217,10 @@ Before mutation an authorized candidate run requires:
   invariant and singleton-driver invariant;
 - a sealed native admission derived from the exact C1 baseline and the exact
   retained failed Kati graph;
-- generated `native-packages.mk` containing only admitted imports;
+- generated `native-packages.mk` containing exactly 28 admitted imports;
   the known M029 `android.hardware.drm-V1-ndk.so` duplicate-target failure is
   an executable regression fixture and must classify as
-  `REUSE_C1_PLATFORM_DIFFERENT`;
+  `USE_ANDROID_PLATFORM_PROVIDER`;
 - exact C3A managed-project authority;
 - exact materialization and mutation-manifest seals;
 - exact TelephonyMetrics, ImsPhoneCallTracker and PHH base blobs;
@@ -224,9 +231,9 @@ Before mutation an authorized candidate run requires:
 The driver contains exactly one `systemimage` invocation and may build exactly one
 collision-filtered C2 candidate after the complete static qualification suite
 passes. The in-driver native preflight remains a mandatory execution gate before
-source mutation and before that single build. Any C1-different target outside
-the exact five-entry platform reuse authority, any unexpected install owner,
-or any target that cannot be classified in one pass aborts before
+source mutation and before that single build. Any native presence in sealed C1,
+provider-owner drift, collision outside the exact five-entry Android provider
+authority, or target that cannot be classified in one pass aborts before
 mutation/build. The previous Kati error is therefore converted into pre-build
 regression memory rather than rediscovered during packaging.
 
@@ -234,8 +241,10 @@ After the build it verifies:
 
 - all 33 native outputs exist at the exact partition paths;
 - the 28 imported native outputs retain their frozen stock SHA-256;
-- the five reviewed Android 16 platform-provider outputs retain the exact
-  SHA-256 observed in the sealed C1 image, and are not replaced by stock bytes;
+- the five reviewed Android 16 platform-provider outputs are present in the
+  completed product image and their actual SHA-256 values are sealed into
+  `ANDROID_PLATFORM_PROVIDER_OUTPUTS.tsv`; no C1 hash is used because the
+  sealed C1 image contains none of these five targets;
 - OEM IMS package/shared UID remain correct and the built APK certificate
   equals the platform certificate;
 - both MediaTek boot JARs remain present;
@@ -248,8 +257,8 @@ After the build it verifies:
   `me.phh.treble.overlay.mtkims_telephony`;
 - a 41-row implementation receipt records the realization of every frozen
   mutation ID, including M004/M005/M006/M040/M041; M008/M017/M029/M038/M039
-  are explicitly recorded as `IMPLEMENTED_C1_PLATFORM_PROVIDER`, while the
-  28 imported natives are recorded against their frozen-stock authority;
+  are explicitly recorded as `IMPLEMENTED_ANDROID_PLATFORM_PROVIDER`, while
+  the 28 imported natives are recorded against their frozen-stock authority;
 - system image remains within the reviewed logical-group ceiling
   `3263168512` bytes.
 
