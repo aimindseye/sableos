@@ -102,6 +102,13 @@ N1F_SHA="dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a"
 N1F_BYTES=3200540672
 C1_SHA="137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160"
 C1_BYTES=3210661888
+C1_CONTROL_DIR="$SABLE_ARTIFACTS_ROOT/titan2/n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild"
+C1_CONTROL="$C1_CONTROL_DIR/system.img"
+PRIOR_FAILED_SOURCE_COMMIT="36b53950faebc954cadb30756833ae5ec857f054"
+PRIOR_FAILED_OUT="$SABLE_WORKSPACES_ROOT/titan2-n1d/out-n1i-c2-36b53950faeb"
+PRIOR_FAILED_PRODUCT_OUT="$PRIOR_FAILED_OUT/target/product/tdgsi_arm64_ab"
+PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"
+KNOWN_KATI_COLLISION_TARGET="/system/lib64/android.hardware.drm-V1-ndk.so"
 SYSTEM_GROUP_SAFE_CEILING=3263168512
 
 MATERIALIZED="/srv/data/sable-build/titan2/artifacts/n1i-c2-cellular-mvp-stock/20261005T231205Z"
@@ -123,6 +130,9 @@ TMETRICS_QUALIFIER="$ROOT/build/titan2/qualify-n1i-c1-telephonymetrics-compat.sh
 PHH_PATCH="$ROOT/patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-titan2-cellular-mvp.patch"
 GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
+BUILD_REGRESSION_CONTRACT="$ROOT/build/gates/build-regression-contract.py"
+INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
+NATIVE_INSTALL_PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
