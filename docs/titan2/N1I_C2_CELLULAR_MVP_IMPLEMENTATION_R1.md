@@ -46,9 +46,14 @@ rechecks that the 33 materialized native targets equal the canonical
 C2 inherits the complete C1 OEM IMS island and the existing C3A/Restless
 compatibility substrate.
 
-It adds, together:
+It satisfies, together:
 
-1. the exact 33 materialized A4 system/system_ext native files;
+1. the exact 33 materialized A4 system/system_ext native compatibility targets.
+   Before build, each target is compared against the exact sealed C1 image.
+   A byte-identical C1 target is reused and is **not** reinstalled by a Sable
+   prebuilt; only a target absent from C1 is selected into generated
+   `native-packages.mk`. A C1-present target with a different hash blocks the
+   build before Kati;
 2. the reviewed two-argument TelephonyMetrics no-op overload;
 3. `ro.telephony.block_binder_thread_on_incoming_calls=false` for the Titan
    product so the already-present legacy incoming-call path is active;
@@ -158,6 +163,11 @@ It requires both:
 Before mutation it requires:
 
 - exact SableOS source commit and clean worktree;
+- the exact sealed C1 image as the baseline install-content authority;
+- a 33-row native baseline probe and collision plan;
+- generated `native-packages.mk` containing only frozen targets absent from
+  C1; the known `android.hardware.drm-V1-ndk.so` duplicate-target failure is
+  an executable regression fixture;
 - exact C3A managed-project authority;
 - exact materialization and mutation-manifest seals;
 - exact TelephonyMetrics, ImsPhoneCallTracker and PHH base blobs;
@@ -165,7 +175,10 @@ Before mutation it requires:
 - fresh C2 output directory;
 - implementation contract PASS.
 
-The driver then builds exactly one `systemimage`.
+The driver then builds exactly one `systemimage`. If that build fails after
+an install graph was generated, the driver automatically runs the Kati
+install-ownership audit in report-only mode before source restoration so the
+next fix has complete collision evidence rather than only the first Kati error.
 
 After the build it verifies:
 
