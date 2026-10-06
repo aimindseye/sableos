@@ -1141,39 +1141,232 @@ def gate_f_c2(root: Path, aapt2: Path, out: Path) -> Gate:
     return Gate("F", "c2", PASS, f"boot_reachable={'YES' if boot_reachable else 'NO'}")
 
 
-def gate_g_c2(root: Path, aapt2: Path, out: Path) -> Gate:
+def find_mtk_jars(root: Path) -> tuple[Path | None, Path | None]:
+    return (
+        root_path(root, "system_ext", "framework/mediatek-common.jar"),
+        root_path(root, "system_ext", "framework/mediatek-ims-base.jar"),
+    )
+
+
+def apex_lib_dirs(apex_root: Path) -> list[Path]:
+    out = []
+    if not apex_root.is_dir():
+        return out
+    for path in sorted(apex_root.glob("*.apex")):
+        for rel in ("lib64", "lib"):
+            candidate = path / rel
+            if candidate.is_dir():
+                out.append(candidate)
+    return out
+
+
+def gate_g_c2(
+    root: Path,
+    stock_vendor: Path,
+    stock_odm: Path | None,
+    apex_root: Path,
+    aapt2: Path,
+    out: Path,
+) -> Gate:
     ims = find_ims(root)
+    common, ims_base = find_mtk_jars(root)
     if ims is None:
         return Gate("G", "c2", UNKNOWN, "ims_apk_missing")
+    if common is None or ims_base is None:
+        return Gate("G", "c2", UNKNOWN, "mtk_framework_jar_missing")
+
+    scanner = ROOT / "build/titan2/scan-n1i-d0-native-loads.py"
+    scan_out = out / "gate-g-c2-jar-loads"
+    rc, _ = run(
+        [
+            sys.executable,
+            str(scanner),
+            "--container",
+            str(common),
+            "--container",
+            str(ims_base),
+            "--out",
+            str(scan_out),
+        ],
+        out / "gate-g-c2-jar-loads.log",
+    )
+    if rc != 0:
+        return Gate("G", "c2", UNKNOWN, f"jar_native_load_scan_rc={rc}")
+    scan_env = read_env(scan_out / "SUMMARY.env")
+    jar_constant = int(
+        scan_env.get("N1I_D0_NATIVE_LOAD_SCAN_CONSTANT", "-1")
+    )
+    jar_dynamic = int(
+        scan_env.get("N1I_D0_NATIVE_LOAD_SCAN_DYNAMIC", "-1")
+    )
+    if jar_constant < 0 or jar_dynamic < 0:
+        return Gate("G", "c2", UNKNOWN, "jar_native_load_scan_summary_missing")
+
     tool = ROOT / "build/titan2/n1i-b2-native.py"
     badging = out / "gate-g-c2-badging.txt"
-    rc, text = run([str(aapt2), "dump", "badging", str(ims)], badging)
+    rc, _ = run(
+        [str(aapt2), "dump", "badging", str(ims)],
+        badging,
+    )
     if rc != 0:
         return Gate("G", "c2", UNKNOWN, f"aapt2_badging_rc={rc}")
-    lib_args = []
-    for part, dirs in (
-        ("system", [root_path(root, "system", "lib64")]),
-        ("system_ext", [root_path(root, "system_ext", "lib64")]),
-        ("product", [root_path(root, "product", "lib64")]),
-    ):
-        for d in dirs:
-            if d is not None and d.is_dir():
-                lib_args += ["--lib-dir", f"{part}={d}"]
+
+    lib_args: list[str] = []
+    for part in ("system", "system_ext", "product"):
+        d = root_path(root, part, "lib64")
+        if d is not None and d.is_dir():
+            lib_args += ["--lib-dir", f"{part}={d}"]
+
+    vendor_lib = root_path(stock_vendor, "vendor", "lib64")
+    if vendor_lib is not None and vendor_lib.is_dir():
+        lib_args += ["--lib-dir", f"vendor={vendor_lib}"]
+    if stock_odm is not None:
+        odm_lib = root_path(stock_odm, "odm", "lib64")
+        if odm_lib is not None and odm_lib.is_dir():
+            lib_args += ["--lib-dir", f"odm={odm_lib}"]
+    for d in apex_lib_dirs(apex_root):
+        lib_args += ["--lib-dir", f"apex={d}"]
+
+    visible_args: list[str] = []
+    for part in ("system", "system_ext", "product"):
+        for rel in (
+            "etc/public.libraries.txt",
+            "etc/public.libraries-company.txt",
+        ):
+            candidate = root_path(root, part, rel)
+            if candidate is not None and candidate.is_file():
+                visible_args += [
+                    "--namespace-visible-list",
+                    str(candidate),
+                ]
+
+    a4 = ROOT / "product/titan2/n1i-c1/a4-native-superset.txt"
+    a4_rows = [
+        line.strip()
+        for line in a4.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    a4_basename = out / "gate-g-a4-basenames.txt"
+    a4_basename.write_text(
+        "".join(f"{Path(row).name}\n" for row in a4_rows),
+        encoding="utf-8",
+    )
+
     g_out = out / "gate-g-c2-native"
-    cmd = [sys.executable, str(tool), "--side", "c3a", "--apk", str(ims), "--badging", str(badging), "--search-superset", str(ROOT / "product/titan2/n1i-c1/a4-native-superset.txt"), "--out", str(g_out), *lib_args]
+    cmd = [
+        sys.executable,
+        str(tool),
+        "--side",
+        "c3a",
+        "--apk",
+        str(ims),
+        "--badging",
+        str(badging),
+        "--search-superset",
+        str(a4_basename),
+        "--out",
+        str(g_out),
+        *lib_args,
+        *visible_args,
+    ]
     rc, _ = run(cmd, out / "gate-g-c2.log")
     if rc != 0:
         return Gate("G", "c2", UNKNOWN, f"b2_native_rc={rc}")
+
     env = read_env(g_out / "NATIVE_SUMMARY.env")
-    unresolved = env.get("N1I_B2_NATIVE_DYNAMIC_LOAD_UNRESOLVED", "UNKNOWN")
+    unresolved = env.get(
+        "N1I_B2_NATIVE_DYNAMIC_LOAD_UNRESOLVED",
+        "UNKNOWN",
+    )
     missing = env.get("N1I_B2_NATIVE_NOT_FOUND", "UNKNOWN")
+    namespace_unproven = env.get(
+        "N1I_B2_NATIVE_FILE_PRESENT_NAMESPACE_UNPROVEN",
+        "UNKNOWN",
+    )
+    candidate_count = env.get(
+        "N1I_B2_NATIVE_EVIDENCE_CANDIDATE_COUNT",
+        "UNKNOWN",
+    )
+
+    closure_rows: dict[str, dict[str, str]] = {}
+    closure = g_out / "NATIVE_CLOSURE.tsv"
+    if closure.is_file():
+        with closure.open(encoding="utf-8", newline="") as fp:
+            reader = csv.DictReader(fp, delimiter="\t")
+            for row in reader:
+                closure_rows[row["library"]] = row
+
+    retirement = []
+    for original in a4_rows:
+        name = Path(original).name
+        row = closure_rows.get(name)
+        if row is None or row.get("status") != "FOUND":
+            cls = "SEARCH_SUPERSET_ONLY"
+            evidence = "NOT_IN_B2_CLOSURE"
+        else:
+            admitted_by = row.get("admitted_by", "")
+            if "DT_NEEDED" in admitted_by:
+                cls = "TRANSITIVE_REQUIRED"
+            else:
+                cls = "B2_REQUIRED"
+            evidence = admitted_by or "B2_FOUND"
+        retirement.append([original, name, cls, evidence])
+    write_tsv(
+        out / "A4_RETIREMENT.tsv",
+        ["a4_path", "library", "classification", "evidence"],
+        retirement,
+    )
+
+    g2_status = (
+        "NOT_APPLICABLE_NO_NONPLATFORM_NATIVE"
+        if candidate_count == "0"
+        else "UNKNOWN_NOT_IMPLEMENTED"
+    )
     (out / "gate-g2-status.env").write_text(
-        "SYMBOL_VERSION_CHECK=UNKNOWN_NOT_IMPLEMENTED\n"
-        "LINKER_NAMESPACE_CHECK=UNKNOWN_NOT_IMPLEMENTED\n",
+        f"SYMBOL_VERSION_CHECK={g2_status}\n"
+        f"LINKER_NAMESPACE_CHECK={g2_status}\n"
+        f"N1I_D0_G2_NATIVE_CANDIDATE_COUNT={candidate_count}\n",
         encoding="utf-8",
     )
-    result = PASS if unresolved == "0" and missing == "NONE" else FUNCTIONAL_RISK
-    return Gate("G", "c2", result, f"dynamic_unresolved={unresolved} native_not_found={missing}")
+
+    if jar_constant or jar_dynamic:
+        return Gate(
+            "G",
+            "c2",
+            UNKNOWN,
+            f"framework_jar_native_loads_unclosed="
+            f"constant:{jar_constant},dynamic:{jar_dynamic}",
+        )
+    if unresolved == "UNKNOWN" or missing == "UNKNOWN":
+        return Gate("G", "c2", UNKNOWN, "b2_summary_incomplete")
+    if unresolved != "0":
+        return Gate(
+            "G",
+            "c2",
+            FUNCTIONAL_RISK,
+            f"dynamic_load_unresolved={unresolved}",
+        )
+    if missing != "NONE":
+        return Gate(
+            "G",
+            "c2",
+            FUNCTIONAL_RISK,
+            f"native_not_found={missing}",
+        )
+    if namespace_unproven not in ("NONE", "UNKNOWN"):
+        return Gate(
+            "G",
+            "c2",
+            FUNCTIONAL_RISK,
+            f"namespace_unproven={namespace_unproven}",
+        )
+    return Gate(
+        "G",
+        "c2",
+        PASS,
+        f"evidence_candidates={candidate_count} "
+        "jar_native_loads=0",
+    )
 
 
 def overall(gates: list[Gate]) -> tuple[str, str]:
@@ -1357,7 +1550,16 @@ def main() -> int:
     )
 
     gates.append(Gate("G", "n1f", NOT_APPLICABLE, "OEM_IMS_ABSENT"))
-    gates.append(gate_g_c2(roots["C2_ROOT"], aapt2, out))
+    gates.append(
+        gate_g_c2(
+            roots["C2_ROOT"],
+            roots["STOCK_VENDOR_ROOT"],
+            stock_odm,
+            apex_roots["c2"],
+            aapt2,
+            out,
+        )
+    )
 
     verdict, reason = overall(gates)
     c1j_ready = "NO"
