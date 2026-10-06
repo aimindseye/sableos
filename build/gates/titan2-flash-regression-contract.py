@@ -22,13 +22,17 @@ MODE_HELPER = ROOT / "build" / "titan2" / "titan2-flash-mode.sh"
 MODE_SELFTEST = ROOT / "build" / "titan2" / "tests" / "test-titan2-flash-mode.sh"
 C2_RECOVERY_QUALIFIER = ROOT / "build" / "titan2" / "qualify-n1i-c2-recovery-entry.sh"
 C2_RECOVERY_CONTRACT = ROOT / "build" / "gates" / "n1i-c2-recovery-entry-contract.sh"
+C2_FLASH = ROOT / "build" / "titan2" / "flash-n1i-c2-cellular-mvp.sh"
+C2_FASTBOOT_QUAL = ROOT / "build" / "titan2" / "qualify-n1i-c2-fastboot-state.py"
+C2_FLASH_TEST = ROOT / "tests" / "titan2" / "n1i-c2" / "test-flash-executor.sh"
+C2_FLASH_CONTRACT = ROOT / "build" / "gates" / "n1i-c2-flash-executor-contract.sh"
 E5B_EXECUTION = ROOT / "build" / "gates" / "n1d-c3b-e5b-standard-execution-contract.sh"
 E6_DEPLOYMENT = ROOT / "build" / "gates" / "n1d-c3b-e6-standard-deployment-contract.sh"
 N1F_DOC = ROOT / "docs" / "titan2" / "N1F_C3A_DERIVED_C3B5_BUILD_FLASH.md"
 CURRENT = ROOT / "CURRENT_STATUS.md"
 
 REQUIRED_IDS = {
-    f"TF-{i:03d}" for i in range(1, 25)
+    f"TF-{i:03d}" for i in range(1, 26)
 }
 
 failures: list[str] = []
@@ -61,6 +65,10 @@ mode_helper = read(MODE_HELPER)
 mode_selftest = read(MODE_SELFTEST)
 c2_recovery_qualifier = read(C2_RECOVERY_QUALIFIER)
 c2_recovery_contract = read(C2_RECOVERY_CONTRACT)
+c2_flash = read(C2_FLASH)
+c2_fastboot_qual = read(C2_FASTBOOT_QUAL)
+c2_flash_test = read(C2_FLASH_TEST)
+c2_flash_contract = read(C2_FLASH_CONTRACT)
 c2_postbuild_qualifier = read(ROOT / "build/titan2/qualify-n1i-c2-postbuild-linkage.sh")
 n1f_doc = read(N1F_DOC)
 current = read(CURRENT)
@@ -344,6 +352,9 @@ syntax_paths = (
     E6_DEPLOYMENT,
     C2_RECOVERY_QUALIFIER,
     C2_RECOVERY_CONTRACT,
+    C2_FLASH,
+    C2_FLASH_TEST,
+    C2_FLASH_CONTRACT,
 )
 syntax_ok = True
 syntax_detail: list[str] = []
@@ -461,6 +472,66 @@ check(
     and "N1I_C2_RECOVERY_FLASH_WRITE_ALLOWED=NO" in policy
     and "N1I_C2_RECOVERY_ENTRY_CONTRACT=PASS" in c2_recovery_contract,
     "c2_recovery_entry_is_readonly_bound_and_stops_before_transition_or_write",
+)
+
+check(
+    "TF-025",
+    "TITAN2_N1I_C2_EXACT_WRITE_EXECUTOR_ALLOWED=YES_REVIEWED_SCOPE_ONLY"
+        in adapter
+    and "TITAN2_FLASH_EXECUTION_SUPPORTED=NO" in adapter
+    and "TITAN2_WRITE_CAPABLE_SCRIPT_ALLOWED=NO" in adapter
+    and 'BUILD_SOURCE="27d671b004f5ae7394f147018fc4fffdf4d78498"'
+        in c2_flash
+    and 'SYSTEM_SHA256="630db78ef3f888b961640d17c5237495e673a953d67f1d52fabe056cbb76bb50"'
+        in c2_flash
+    and 'SYSTEM_BYTES="3218440192"' in c2_flash
+    and 'TARGET_PARTITION="system_a"' in c2_flash
+    and 'EXPECTED_SLOT="a"' in c2_flash
+    and "YES_C2_MODE_AWARE_FASTBOOTD_AND_FLASH_SYSTEM_A_ONCE" in c2_flash
+    and "YES_C2_SYSTEM_A_ONCE" in c2_flash
+    and 'EXPECTED_ADB_BINDING_SHA256="bcfdee61b23e3cb002919c27a055389ffe37e284bf5150dfc1d0bbbd7564090a"' in c2_flash
+    and 'EXPECTED_FASTBOOT_BINDING_SHA256="bcfdee61b23e3cb002919c27a055389ffe37e284bf5150dfc1d0bbbd7564090a"' in c2_flash
+    and "N1I_C2_FLASH_ENTRY_MODE=PASS_ANDROID_ADB" in c2_flash
+    and "N1I_C2_FLASH_ENTRY_MODE=PASS_BOOTLOADER_FASTBOOT" in c2_flash
+    and "N1I_C2_FLASH_ENTRY_MODE=PASS_FASTBOOTD_DIRECT" in c2_flash
+    and "N1I_C2_FLASH_MODE_TRANSITION=NONE_ALREADY_FASTBOOTD" in c2_flash
+    and "recovery_entry_blocked_for_write" in c2_flash
+    and "titan2_ensure_fastbootd_mode" in c2_flash
+    and c2_flash.count(
+        '"$SABLE_FASTBOOT" -s "$SERIAL" flash system_a "$SYSTEM_IMG"'
+    ) == 1
+    and c2_flash.count('sha256sum "$SYSTEM_IMG"') == 1
+    and c2_flash.count(
+        '"$SABLE_FASTBOOT" -s "$SERIAL" reboot </dev/null'
+    ) == 1
+    and "AUTOMATIC_FLASH_RETRY=NO" in c2_flash
+    and "N1I_C2_FLASH_DUPLICATE_WRITE_GUARD=REFUSE_PRIOR_ATTEMPT"
+        in c2_flash
+    and "N1I_C2_FLASH_DUPLICATE_WRITE_GUARD=REFUSE_CORRUPT_PRIOR_EVIDENCE"
+        in c2_flash
+    and "N1I_C2_DO_NOT_REFLASH_AFTER_THIS_POINT_WITHOUT_OWNER_REVIEW=YES"
+        in c2_flash
+    and "N1I_C2_DO_NOT_REFLASH_IF_POSTBOOT_OBSERVATION_FAILS=YES"
+        in c2_flash
+    and "FACTORY_RESET_AUTHORIZED=NO" in c2_flash
+    and "USERDATA_ERASE_AUTHORIZED=NO" in c2_flash
+    and "SLOT_CHANGE_AUTHORIZED=NO" in c2_flash
+    and "AVB_MUTATION_AUTHORIZED=NO" in c2_flash
+    and "BOOT_CHAIN_MUTATION_AUTHORIZED=NO" in c2_flash
+    and "COW_DELETION_AUTHORIZED=NO" in c2_flash
+    and "TARGET_BYTES = 3_218_440_192" in c2_fastboot_qual
+    and "REVIEWED_GROUP_SAFE_SYSTEM_TARGET_CEILING_BYTES = 3_263_168_512"
+        in c2_fastboot_qual
+    and "MIN_REMAINING_SUPER_HEADROOM_BYTES = 536_870_912"
+        in c2_fastboot_qual
+    and 'baseline = "LIVE_CURRENT_SYSTEM_A"' in c2_fastboot_qual
+    and "N1I_C2_FASTBOOT_STATE=FAIL_ACTIVE_COWS=" in c2_fastboot_qual
+    and "N1I_C2_FASTBOOT_STATE=REFUSE_ALREADY_TARGET_SIZE"
+        not in c2_fastboot_qual
+    and "SAME_SIZE_NOT_TREATED_AS_CONTENT_IDENTITY" in c2_flash_test
+    and "N1I_C2_FLASH_EXECUTOR_TEST=PASS" in c2_flash_test
+    and "N1I_C2_FLASH_EXECUTOR_CONTRACT=PASS" in c2_flash_contract,
+    "c2_exact_mode_aware_fastbootd_single_write_no_retry_with_live_geometry",
 )
 
 if failures:
