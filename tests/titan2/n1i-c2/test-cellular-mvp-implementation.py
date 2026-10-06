@@ -16,6 +16,7 @@ PHH_PATCH = ROOT / "patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-
 TM_PATCH = ROOT / "patches/android-16-n1i-c1/telephony/0001-telephony-add-titan2-legacy-writeRilAnswer-overload.patch"
 DRIVER = ROOT / "build/titan2/run-n1i-c2-cellular-mvp.sh"
 PREFLIGHT = ROOT / "build/titan2/run-n1i-c2-native-install-preflight.sh"
+BASELINE_PROBE = ROOT / "build/titan2/probe-n1i-c2-c1-native-baseline.sh"
 
 EXPECTED_PHH_PATCH_BLOB = "d78f41da30514920ff2165d8fe6dea15d0bb5d76"
 EXPECTED_TMETRICS_PATCH_BLOB = "ee353caded6dd07318991eb52d66687e06034c30"
@@ -194,14 +195,30 @@ def test_native_preflight_authority() -> None:
     assert "36b53950faebc954cadb30756833ae5ec857f054" in text
     assert "audit-n1i-c2-install-collisions.py" in text
     assert "plan-n1i-c2-native-install.py" in text
-    assert "native-baseline-probe.tsv" in text
-    assert "native-composition.tsv" in text
+    assert "NATIVE_BASELINE_PROBE.tsv" in text
+    assert "NATIVE_COMPOSITION.tsv" in text
     assert "/system/lib64/android.hardware.drm-V1-ndk.so" in text
     assert "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS" in text
     assert "make systemimage" not in text
     assert "adb " not in text
     assert "fastboot " not in text
 
+
+
+def test_native_baseline_probe_authority() -> None:
+    text = BASELINE_PROBE.read_text(encoding="utf-8")
+    assert "SOURCE_MUTATION_AUTHORIZED=NO" in text
+    assert "BUILD_AUTHORIZED=NO" in text
+    assert "DEVICE_CONTACT_AUTHORIZED=NO" in text
+    assert "NETWORK_FETCH_AUTHORIZED=NO" in text
+    assert "FLASH_AUTHORIZED=NO" in text
+    assert 'EXPECTED_C1_SHA="137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160"' in text
+    assert "NATIVE_BASELINE_PROBE.tsv" in text
+    assert "N1I_C2_C1_NATIVE_BASELINE_PROBE=PASS" in text
+    assert "SableN1IC2Native$mutation_id" in text
+    assert "make systemimage" not in text
+    assert "adb " not in text
+    assert "fastboot " not in text
 
 
 def test_receipt_semantics() -> None:
@@ -224,6 +241,7 @@ def main() -> int:
     test_patch_authority()
     test_driver_authority()
     test_native_preflight_authority()
+    test_native_baseline_probe_authority()
     test_receipt_semantics()
 
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_MODULE_SET=PASS count=33")
@@ -233,6 +251,7 @@ def main() -> int:
     print("N1I_C2_IMPLEMENTATION_TEST_PATCH_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_DRIVER_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_PREFLIGHT_AUTHORITY=PASS")
+    print("N1I_C2_IMPLEMENTATION_TEST_NATIVE_BASELINE_AUTHORITY=PASS")
     print("N1I_C2_IMPLEMENTATION_TEST_RECEIPT_SEMANTICS=PASS")
     print("N1I_C2_CELLULAR_MVP_IMPLEMENTATION_TEST=PASS")
     return 0
