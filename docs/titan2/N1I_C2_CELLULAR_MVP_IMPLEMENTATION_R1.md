@@ -169,29 +169,41 @@ The canonical build driver remains:
 build/titan2/run-n1i-c2-cellular-mvp.sh
 ```
 
-At the current review state it contains
-`NATIVE_ADMISSION_INTEGRATED=NO` and fails with
-`native_admission_not_integrated` even when source/build authorization flags
-are supplied. This intentionally prevents another build until the sealed
-preflight output has been reviewed and frozen into the implementation.
+The driver starts with `NATIVE_ADMISSION_INTEGRATED=NO`. During an authorized
+candidate run it must execute the complete read-only native-install preflight
+**before app build, Android-source mutation, staging of the source delta, or
+`make systemimage`**. Only a sealed
+`PASS_CANDIDATE_ADMISSION_READY` result may transition that in-memory state to
+`YES`.
 
-Once a reviewed admission is integrated, the driver requires both:
+The generated `native-packages.mk` contains only frozen-stock targets that the
+preflight classifies as `IMPORT_FROZEN_STOCK`. Targets classified
+`REUSE_C1_IDENTICAL` remain in the 33-target compatibility authority but are
+not added as C2 install modules, so the existing platform/C1 owner supplies the
+exact same bytes without a duplicate Kati rule.
+
+The driver requires both:
 
 ```text
 --authorize-source-mutation
 --authorize-build
 ```
 
-Before mutation it requires:
+but operator retry authorization is a separate review decision. Before granting
+that retry, the canonical preflight is run standalone and its complete 33-target
+composition is reviewed.
+
+Before mutation an authorized candidate run requires:
 
 - exact SableOS source commit and clean worktree;
 - the shared build-regression contract, including the native-install ownership
   invariant and singleton-driver invariant;
-- a separately sealed, reviewed native admission derived from the exact C1
-  baseline and failed Kati graph;
-- generated/frozen `native-packages.mk` containing only admitted imports;
+- a sealed native admission derived from the exact C1 baseline and the exact
+  retained failed Kati graph;
+- generated `native-packages.mk` containing only admitted imports;
   the known M029 `android.hardware.drm-V1-ndk.so` duplicate-target failure is
-  an executable regression fixture;
+  an executable regression fixture and must classify as
+  `REUSE_C1_IDENTICAL`;
 - exact C3A managed-project authority;
 - exact materialization and mutation-manifest seals;
 - exact TelephonyMetrics, ImsPhoneCallTracker and PHH base blobs;
@@ -199,9 +211,11 @@ Before mutation it requires:
 - fresh C2 output directory;
 - implementation contract PASS.
 
-After native admission is integrated, the driver may build exactly one
-`systemimage`. Build retry remains unauthorized at this document state. The
-retained failed graph is analyzed before retry so the previous Kati error is
+The driver contains exactly one `systemimage` invocation. Build retry remains
+unauthorized at this document state until a standalone preflight result is
+reviewed. If any of the 33 targets is C1-different, has an unexpected install
+owner, or cannot be classified in one pass, the retry remains blocked and the
+full blocker set is resolved together. The previous Kati error is therefore
 converted into pre-build regression memory rather than rediscovered during
 packaging.
 
@@ -239,7 +253,7 @@ Current collision-reconciliation phase:
 ```text
 SOURCE_MUTATION_AUTHORIZED=NO
 BUILD_AUTHORIZED=NO
-N1I_C2_BUILD_RETRY_AUTHORIZED=NO_PENDING_NATIVE_PREFLIGHT_ADMISSION
+N1I_C2_BUILD_RETRY_AUTHORIZED=NO_PENDING_STANDALONE_PREFLIGHT_REVIEW
 NETWORK_FETCH_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 REBOOT_AUTHORIZED=NO
