@@ -89,7 +89,9 @@ if 'N1I_C_"/system/' in admission:
     failures.append("admission:malformed_native_marker")
 
 need(adapter, "SABLE_DEVICE_BUILD_SUPPORTED=YES", "adapter")
-need(adapter, "run-n1i-c1-cellular-isolation.sh", "adapter")
+need(adapter, "run-n1i-c2-cellular-mvp.sh", "adapter")
+need(adapter, "--authorize-source-mutation", "adapter")
+need(adapter, "--authorize-build", "adapter")
 need(adapter, "SABLE_DEVICE_FLASH_SUPPORTED=NO", "adapter")
 
 if subprocess.run(["bash", "-n", str(ROOT / "build/titan2/run-n1i-c1-cellular-isolation.sh")]).returncode:

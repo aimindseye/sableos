@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Titan 2 adapter.
-# N1I build support is Android-16 cellular-isolation only. Flash remains
+# N1I build support is the Android-16 C2 cellular MVP lane. Flash remains
 # separately fail-closed and is not enabled by the N1I build path.
 
 SABLE_DEVICE_CANONICAL=titan2
@@ -225,8 +225,10 @@ sable_device_build() {
 
   case "$release" in
     N1I|n1i)
+      echo "TITAN2_N1I_BUILD_LANE=C2_CELLULAR_MVP"
       EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
-        bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"
+        bash "$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh" \
+          "$mode" --authorize-source-mutation --authorize-build
       ;;
     *)
       echo "SABLE_DEVICE_BUILD=BLOCKED_UNQUALIFIED device=titan2 release=$release" >&2

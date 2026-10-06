@@ -59,7 +59,7 @@ It is intended to satisfy, together:
    module is an import candidate. The real sealed-C1 preflight identified five
    C1-present/different collisions that are Android 16 platform providers rather
    than MTK vendor libraries. Those five are explicitly reviewed in
-   `product/titan2/n1i-c2/platform-native-reuse.tsv` and remain supplied by
+   `product/titan2/n1i-c2/platform-native-provider.tsv` and remain supplied by
    C1/AOSP: M008 radio AIDL, M017 graphics-common AIDL, M029 DRM AIDL,
    M038 `libheif`, and M039 `libsuspend`. Every other C1-present/different,
    unexpected-owner, or ambiguous state still fails closed;
@@ -183,10 +183,11 @@ candidate run it must execute the complete read-only native-install preflight
 
 The generated `native-packages.mk` contains only frozen-stock targets that the
 preflight classifies as `IMPORT_FROZEN_STOCK`. For the current sealed
-authority that is exactly 28 modules. Targets classified `REUSE_C1_IDENTICAL`
-or `REUSE_C1_PLATFORM_DIFFERENT` are not added as C2 install modules. The
-latter disposition is legal only for the exact five reviewed entries above,
-with the exact expected Android 16 platform owner in the retained Kati graph.
+authority that is exactly 28 modules. Exactly 28 targets are classified `IMPORT_FROZEN_STOCK`. The five reviewed
+collision targets are classified `USE_ANDROID_PLATFORM_PROVIDER` and are not
+added as Sable install modules. That disposition is legal only for the exact
+five reviewed entries above with the exact Android 16 platform owner in the
+retained Kati graph. C1 native reuse is explicitly zero.
 This preserves Android 16's platform ABI providers instead of overwriting them
 with older stock-system binaries.
 
@@ -213,7 +214,7 @@ Before mutation an authorized candidate run requires:
 - generated `native-packages.mk` containing only admitted imports;
   the known M029 `android.hardware.drm-V1-ndk.so` duplicate-target failure is
   an executable regression fixture and must classify as
-  `REUSE_C1_PLATFORM_DIFFERENT`;
+  `USE_ANDROID_PLATFORM_PROVIDER`;
 - exact C3A managed-project authority;
 - exact materialization and mutation-manifest seals;
 - exact TelephonyMetrics, ImsPhoneCallTracker and PHH base blobs;
@@ -248,7 +249,7 @@ After the build it verifies:
   `me.phh.treble.overlay.mtkims_telephony`;
 - a 41-row implementation receipt records the realization of every frozen
   mutation ID, including M004/M005/M006/M040/M041; M008/M017/M029/M038/M039
-  are explicitly recorded as `IMPLEMENTED_C1_PLATFORM_PROVIDER`, while the
+  are explicitly recorded as `IMPLEMENTED_ANDROID_PLATFORM_PROVIDER`, while the
   28 imported natives are recorded against their frozen-stock authority;
 - system image remains within the reviewed logical-group ceiling
   `3263168512` bytes.
@@ -278,6 +279,15 @@ The authorization above is not unconditional: the driver must first complete
 the bound read-only native preflight and produce
 `PASS_CANDIDATE_ADMISSION_READY`. If that preflight fails, source mutation and
 the system-image build remain unexecuted.
+
+The canonical operator entrypoint is:
+
+```bash
+bash build/sable.sh titan2 N1I build --tmux
+```
+
+The Titan 2 adapter binds that command to the N1I-C2 cellular MVP driver.
+Operators do not invoke the release-specific C2 build driver directly.
 
 A successful build does **not** authorize flashing. The resulting image must
 first pass post-build linkage/content qualification and then enter the governed

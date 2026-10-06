@@ -1,4 +1,4 @@
-id	target	expected_platform_owner	rationale
+id	target	expected_android_owner	rationale
 M008	/system/lib64/android.hardware.radio-V4-ndk.so	android.hardware.radio-V4-ndk	ANDROID16_AIDL_RADIO_PROVIDER
 M017	/system/lib64/android.hardware.graphics.common-V6-ndk.so	android.hardware.graphics.common-V6-ndk	ANDROID16_AIDL_GRAPHICS_PROVIDER
 M029	/system/lib64/android.hardware.drm-V1-ndk.so	android.hardware.drm-V1-ndk	ANDROID16_AIDL_DRM_PROVIDER

@@ -27,7 +27,7 @@ PRIOR_FAILED_PRODUCT_OUT="$PRIOR_FAILED_OUT/target/product/tdgsi_arm64_ab"
 PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"
 
 A4="$ROOT/product/titan2/n1i-c1/a4-native-superset.txt"
-PLATFORM_REUSE="$ROOT/product/titan2/n1i-c2/platform-native-reuse.tsv"
+PLATFORM_PROVIDER="$ROOT/product/titan2/n1i-c2/platform-native-provider.tsv"
 AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
 BASELINE_PROBE="$ROOT/build/titan2/probe-n1i-c2-c1-native-baseline.sh"
 PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
@@ -78,7 +78,7 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 
-for file in     "$C1_CONTROL"     "$C1_CONTROL_DIR/SHA256SUMS.txt"     "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv"     "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env"     "$MATERIALIZED/SHA256SUMS.txt"     "$PRIOR_FAILED_INSTALLS"     "$A4"     "$PLATFORM_REUSE"     "$AUDIT"     "$BASELINE_PROBE"     "$PLANNER"
+for file in     "$C1_CONTROL"     "$C1_CONTROL_DIR/SHA256SUMS.txt"     "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv"     "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env"     "$MATERIALIZED/SHA256SUMS.txt"     "$PRIOR_FAILED_INSTALLS"     "$A4"     "$PLATFORM_PROVIDER"     "$AUDIT"     "$BASELINE_PROBE"     "$PLANNER"
 do
     [[ -f "$file" ]] || { fail "required_file_missing=$file" 64; exit $?; }
 done
@@ -132,6 +132,15 @@ BASELINE_RC=$?
 [[ "$BASELINE_RC" -eq 0 ]] ||
     { fail "baseline_probe_rc=$BASELINE_RC" 67; exit $?; }
 
+SEALED_C1_BASELINE_SUMMARY="$OUT/c1-baseline/NATIVE_BASELINE_SUMMARY.env"
+[[ -f "$SEALED_C1_BASELINE_SUMMARY" ]] ||
+    { fail sealed_c1_baseline_summary_missing 67; exit $?; }
+grep -Fxq 'N1I_C2_C1_NATIVE_PRESENT_COUNT=0' "$SEALED_C1_BASELINE_SUMMARY" ||
+    { fail c1_native_present_nonzero 67; exit $?; }
+grep -Fxq 'N1I_C2_C1_NATIVE_ABSENT_COUNT=33' "$SEALED_C1_BASELINE_SUMMARY" ||
+    { fail c1_native_absent_not_33 67; exit $?; }
+echo "N1I_C2_C1_NATIVE_AUTHORITY=PASS_ZERO_PRESENT present=0 absent=33"
+
 echo
 echo "===== ENUMERATE COMPLETE RETAINED KATI OWNERSHIP GRAPH ====="
 
@@ -154,7 +163,7 @@ python3 "$PLANNER" \
     --probe-tsv "$OUT/c1-baseline/NATIVE_BASELINE_PROBE.tsv" \
     --collision-tsv "$OUT/INSTALL_COLLISIONS.tsv" \
     --a4-reference "$A4" \
-    --platform-reuse-decisions "$PLATFORM_REUSE" \
+    --platform-provider-decisions "$PLATFORM_PROVIDER" \
     --composition-out "$OUT/NATIVE_COMPOSITION.tsv" \
     --packages-out "$OUT/native-packages.mk" \
     --admission-out "$OUT/native-admission.txt" \
@@ -192,37 +201,38 @@ if [[ "$PLAN_RC" -eq 0 ]]; then
         { fail composition_missing 68; exit $?; }
 
     ROWS="$(awk 'NR>1 {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
-    IDENTICAL_REUSE="$(awk -F '\t' 'NR>1 && $11=="REUSE_C1_IDENTICAL" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
-    PLATFORM_REUSE_COUNT="$(awk -F '\t' 'NR>1 && $11=="REUSE_C1_PLATFORM_DIFFERENT" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
+    C1_REUSE="$(awk -F '\t' 'NR>1 && $11 ~ /^REUSE_C1_/ {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
+    ANDROID_PLATFORM_PROVIDER_COUNT="$(awk -F '\t' 'NR>1 && $11=="USE_ANDROID_PLATFORM_PROVIDER" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
     IMPORTS="$(awk -F '\t' 'NR>1 && $11=="IMPORT_FROZEN_STOCK" {c++} END {print c+0}' "$OUT/NATIVE_COMPOSITION.tsv")"
-    REUSE=$((IDENTICAL_REUSE + PLATFORM_REUSE_COUNT))
 
-    [[ "$ROWS" -eq 33 && "$PLATFORM_REUSE_COUNT" -eq 5 && $((REUSE + IMPORTS)) -eq 33 ]] ||
-        { fail "composition_count rows=$ROWS identical=$IDENTICAL_REUSE platform=$PLATFORM_REUSE_COUNT imports=$IMPORTS" 68; exit $?; }
+    [[ "$ROWS" -eq 33 &&
+       "$C1_REUSE" -eq 0 &&
+       "$ANDROID_PLATFORM_PROVIDER_COUNT" -eq 5 &&
+       "$IMPORTS" -eq 28 &&
+       $((ANDROID_PLATFORM_PROVIDER_COUNT + IMPORTS)) -eq 33 ]] ||
+        { fail "composition_count rows=$ROWS c1_reuse=$C1_REUSE android_platform=$ANDROID_PLATFORM_PROVIDER_COUNT imports=$IMPORTS" 68; exit $?; }
 
     KNOWN_ROW="$(
-        awk -F '\t'             -v id="$KNOWN_KATI_COLLISION_ID"             -v target="$KNOWN_KATI_COLLISION_TARGET"             'NR>1 && $1==id && $2==target {print $0}'             "$OUT/NATIVE_COMPOSITION.tsv"
+        awk -F '\t' -v id="$KNOWN_KATI_COLLISION_ID" -v target="$KNOWN_KATI_COLLISION_TARGET" 'NR>1 && $1==id && $2==target {print $0}' "$OUT/NATIVE_COMPOSITION.tsv"
     )"
-    [[ -n "$KNOWN_ROW" ]] || { fail known_kati_target_missing 68; exit $?; }
+    [[ -n "$KNOWN_ROW" ]] ||
+        { fail known_kati_target_missing 68; exit $?; }
 
     echo "N1I_C2_KNOWN_KATI_COLLISION_CLASSIFICATION=$KNOWN_ROW"
-    echo "N1I_C2_NATIVE_BASELINE_REUSE_COUNT=$REUSE"
-    echo "N1I_C2_NATIVE_IDENTICAL_REUSE_COUNT=$IDENTICAL_REUSE"
-    echo "N1I_C2_NATIVE_PLATFORM_REUSE_COUNT=$PLATFORM_REUSE_COUNT"
+    echo "N1I_C2_C1_NATIVE_REUSE_COUNT=$C1_REUSE"
+    echo "N1I_C2_ANDROID_PLATFORM_PROVIDER_COUNT=$ANDROID_PLATFORM_PROVIDER_COUNT"
     echo "N1I_C2_NATIVE_IMPORT_COUNT=$IMPORTS"
 
     PLAN_STATE=PASS_CANDIDATE_ADMISSION_READY
 else
-    REUSE=BLOCKED
-    IDENTICAL_REUSE=BLOCKED
-    PLATFORM_REUSE_COUNT=BLOCKED
+    C1_REUSE=BLOCKED
+    ANDROID_PLATFORM_PROVIDER_COUNT=BLOCKED
     IMPORTS=BLOCKED
     KNOWN_ROW=UNAVAILABLE_PLAN_BLOCKED
-    PLAN_STATE=BLOCKED_EXPLICIT_DECISION_REQUIRED
+    PLAN_STATE=BLOCKED_ANDROID_PLATFORM_PROVIDER_ADMISSION
 fi
-
 cat > "$OUT/PREFLIGHT_SUMMARY.env" <<EOF
-N1I_C2_NATIVE_INSTALL_PREFLIGHT_VERSION=3
+N1I_C2_NATIVE_INSTALL_PREFLIGHT_VERSION=4
 N1I_C2_C1_SYSTEM_SHA256=$C1_SHA
 N1I_C2_MATERIALIZATION_SOURCE_COMMIT=$MATERIALIZATION_SOURCE_COMMIT
 N1I_C2_PRIOR_FAILED_SOURCE_COMMIT=$PRIOR_FAILED_SOURCE_COMMIT
@@ -230,11 +240,12 @@ N1I_C2_NATIVE_TARGET_COUNT=33
 N1I_C2_INSTALL_COLLISION_COUNT=$COLLISION_COUNT
 N1I_C2_INSTALL_SINGLE_OWNER_COUNT=$SINGLE_OWNER_COUNT
 N1I_C2_INSTALL_UNCLAIMED_COUNT=$UNCLAIMED_COUNT
-N1I_C2_NATIVE_BASELINE_REUSE_COUNT=$REUSE
-N1I_C2_NATIVE_IDENTICAL_REUSE_COUNT=$IDENTICAL_REUSE
-N1I_C2_NATIVE_PLATFORM_REUSE_COUNT=$PLATFORM_REUSE_COUNT
+N1I_C2_C1_NATIVE_PRESENT_COUNT=0
+N1I_C2_C1_NATIVE_ABSENT_COUNT=33
+N1I_C2_C1_NATIVE_REUSE_COUNT=$C1_REUSE
+N1I_C2_ANDROID_PLATFORM_PROVIDER_COUNT=$ANDROID_PLATFORM_PROVIDER_COUNT
 N1I_C2_NATIVE_IMPORT_COUNT=$IMPORTS
-N1I_C2_PLATFORM_REUSE_DECISION_FILE=product/titan2/n1i-c2/platform-native-reuse.tsv
+N1I_C2_PLATFORM_PROVIDER_DECISION_FILE=product/titan2/n1i-c2/platform-native-provider.tsv
 N1I_C2_KNOWN_KATI_COLLISION_ID=$KNOWN_KATI_COLLISION_ID
 N1I_C2_KNOWN_KATI_COLLISION_TARGET=$KNOWN_KATI_COLLISION_TARGET
 N1I_C2_NATIVE_INSTALL_PLAN_STATE=$PLAN_STATE
@@ -256,7 +267,7 @@ cat "$OUT/PREFLIGHT_SUMMARY.env"
 echo "N1I_C2_NATIVE_INSTALL_PREFLIGHT_OUT=$OUT"
 
 if [[ "$PLAN_RC" -ne 0 ]]; then
-    echo "N1I_C2_NATIVE_INSTALL_PREFLIGHT=BLOCKED_EXPLICIT_DECISION_REQUIRED"
+    echo "N1I_C2_NATIVE_INSTALL_PREFLIGHT=BLOCKED_ANDROID_PLATFORM_PROVIDER_ADMISSION"
     exit 3
 fi
 
