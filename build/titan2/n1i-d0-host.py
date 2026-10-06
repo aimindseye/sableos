@@ -12,6 +12,7 @@ import csv
 import hashlib
 import json
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -387,6 +388,204 @@ def privapp(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def parse_badging_package(text: str) -> str:
+    m = re.search(r"^package:\s+name='([^']+)'", text, re.MULTILINE)
+    return m.group(1) if m else ""
+
+
+def all_allowlists(specs: list[str]) -> dict[tuple[str, str], tuple[set[str], set[str], list[str]]]:
+    index: dict[tuple[str, str], tuple[set[str], set[str], list[str]]] = {}
+    for spec in specs:
+        partition, raw = spec.split("=", 1)
+        root = Path(raw)
+        for path in iter_xml(root):
+            try:
+                tree = ET.parse(path)
+            except ET.ParseError:
+                continue
+            for el in tree.getroot().iter("privapp-permissions"):
+                package = el.attrib.get("package", "")
+                if not package:
+                    continue
+                key = (partition, package)
+                allow, deny, files = index.setdefault(key, (set(), set(), []))
+                allow.update(
+                    child.attrib.get("name", "")
+                    for child in el.findall("permission")
+                    if child.attrib.get("name")
+                )
+                deny.update(
+                    child.attrib.get("name", "")
+                    for child in el.findall("deny-permission")
+                    if child.attrib.get("name")
+                )
+                files.append(str(path))
+    return index
+
+
+def privapp_tree(args: argparse.Namespace) -> int:
+    framework = parse_framework_privileged(args.framework_manifest)
+    if not framework:
+        raise D0Error("framework_privileged_permission_parse_empty")
+
+    roots: list[tuple[str, Path]] = []
+    specs = args.root
+    for spec in specs:
+        partition, raw = spec.split("=", 1)
+        root = Path(raw)
+        if not root.is_dir():
+            raise D0Error(f"privapp_root_missing={spec}")
+        roots.append((partition, root))
+
+    allowlists = all_allowlists(specs)
+    rows: list[dict[str, str]] = []
+    failures = 0
+    for partition, root in roots:
+        priv = root / "priv-app"
+        if not priv.is_dir():
+            continue
+        for apk in sorted(priv.rglob("*.apk")):
+            badging = subprocess.run(
+                [str(args.aapt2), "dump", "badging", str(apk)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            perms = subprocess.run(
+                [str(args.aapt2), "dump", "permissions", str(apk)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if badging.returncode or perms.returncode:
+                rows.append({
+                    "partition": partition,
+                    "package": "-",
+                    "apk": str(apk),
+                    "required_count": "-",
+                    "missing_count": "-",
+                    "missing": "AAPT2_PARSE_FAILED",
+                    "allowlist_files": "-",
+                    "status": "UNKNOWN",
+                })
+                failures += 1
+                continue
+            package = parse_badging_package(badging.stdout)
+            if not package:
+                rows.append({
+                    "partition": partition,
+                    "package": "-",
+                    "apk": str(apk),
+                    "required_count": "-",
+                    "missing_count": "-",
+                    "missing": "PACKAGE_PARSE_FAILED",
+                    "allowlist_files": "-",
+                    "status": "UNKNOWN",
+                })
+                failures += 1
+                continue
+            requested = set(USES_RE.findall(perms.stdout))
+            required = requested & set(framework)
+            allow, deny, files = allowlists.get(
+                (partition, package), (set(), set(), [])
+            )
+            missing = sorted(required - allow - deny)
+            status = "PASS" if not missing else "FAIL"
+            failures += int(status != "PASS")
+            rows.append({
+                "partition": partition,
+                "package": package,
+                "apk": str(apk),
+                "required_count": str(len(required)),
+                "missing_count": str(len(missing)),
+                "missing": ",".join(missing) or "NONE",
+                "allowlist_files": ",".join(files) or "NONE",
+                "status": status,
+            })
+
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    fields = (
+        "partition", "package", "apk", "required_count", "missing_count",
+        "missing", "allowlist_files", "status",
+    )
+    with args.out.open("w", encoding="utf-8", newline="") as fp:
+        w = csv.DictWriter(fp, fieldnames=fields, delimiter="\t")
+        w.writeheader()
+        w.writerows(rows)
+
+    print(f"N1I_D0_PRIVAPP_TREE_APP_COUNT={len(rows)}")
+    print(f"N1I_D0_PRIVAPP_TREE_NONPASS_COUNT={failures}")
+    print(
+        "N1I_D0_PRIVAPP_TREE="
+        + ("PASS" if rows and failures == 0 else "FAIL_OR_UNKNOWN")
+    )
+    return 0
+
+
+def parse_seapp_file(path: Path, partition: str) -> list[dict[str, str]]:
+    rows = []
+    for lineno, raw in enumerate(
+        path.read_text(encoding="utf-8", errors="replace").splitlines(), 1
+    ):
+        line = strip_comment(raw)
+        if not line:
+            continue
+        fields: dict[str, str] = {}
+        for token in line.split():
+            if "=" not in token:
+                continue
+            key, value = token.split("=", 1)
+            fields[key] = value
+        if not fields:
+            continue
+        fields["partition"] = partition
+        fields["file"] = str(path)
+        fields["line"] = str(lineno)
+        rows.append(fields)
+    return rows
+
+
+def seapp(args: argparse.Namespace) -> int:
+    rows = []
+    for spec in args.root:
+        partition, raw = spec.split("=", 1)
+        root = Path(raw)
+        if not root.is_dir():
+            raise D0Error(f"seapp_root_missing={spec}")
+        selinux = root / "etc/selinux"
+        if not selinux.is_dir():
+            continue
+        for path in sorted(selinux.glob("*seapp_contexts")):
+            rows.extend(parse_seapp_file(path, partition))
+
+    selected = []
+    for row in rows:
+        if args.user and row.get("user") == args.user:
+            selected.append(row)
+            continue
+        if args.name and row.get("name") == args.name:
+            selected.append(row)
+            continue
+        if args.seinfo and row.get("seinfo") == args.seinfo:
+            selected.append(row)
+
+    fields = [
+        "partition", "file", "line", "user", "seinfo", "name", "domain",
+        "type", "levelFrom", "isPrivApp", "minTargetSdkVersion",
+    ]
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    with args.out.open("w", encoding="utf-8", newline="") as fp:
+        w = csv.DictWriter(fp, fieldnames=fields, delimiter="\t",
+                           extrasaction="ignore")
+        w.writeheader()
+        for row in selected:
+            w.writerow({key: row.get(key, "-") for key in fields})
+    print(f"N1I_D0_SEAPP_MATCH_COUNT={len(selected)}")
+    print("N1I_D0_SEAPP_RESULT=" + ("FOUND" if selected else "NOT_FOUND"))
+    return 0
+
+
 def inventory(args: argparse.Namespace) -> int:
     root = args.root.resolve()
     if not root.is_dir():
@@ -534,6 +733,19 @@ def main() -> int:
     pr.add_argument("--candidate-root", action="append", required=True)
     pr.add_argument("--out", type=Path, required=True)
 
+    pt = sp.add_parser("privapp-tree")
+    pt.add_argument("--aapt2", type=Path, required=True)
+    pt.add_argument("--framework-manifest", type=Path, required=True)
+    pt.add_argument("--root", action="append", required=True)
+    pt.add_argument("--out", type=Path, required=True)
+
+    sa = sp.add_parser("seapp")
+    sa.add_argument("--root", action="append", required=True)
+    sa.add_argument("--user")
+    sa.add_argument("--seinfo")
+    sa.add_argument("--name")
+    sa.add_argument("--out", type=Path, required=True)
+
     inv = sp.add_parser("inventory")
     inv.add_argument("--root", type=Path, required=True)
     inv.add_argument("--out", type=Path, required=True)
@@ -552,6 +764,10 @@ def main() -> int:
             return contexts(args)
         if args.cmd == "privapp":
             return privapp(args)
+        if args.cmd == "privapp-tree":
+            return privapp_tree(args)
+        if args.cmd == "seapp":
+            return seapp(args)
         if args.cmd == "inventory":
             return inventory(args)
         if args.cmd == "compare-inventory":
