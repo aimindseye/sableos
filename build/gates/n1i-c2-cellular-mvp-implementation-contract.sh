@@ -6,6 +6,8 @@ DRIVER="$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh"
 TEST="$ROOT/tests/titan2/n1i-c2/test-cellular-mvp-implementation.py"
 INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
 INSTALL_COLLISION_TEST="$ROOT/tests/titan2/n1i-c2/test-install-collision-audit.py"
+NATIVE_INSTALL_PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
+NATIVE_INSTALL_PLAN_TEST="$ROOT/tests/titan2/n1i-c2/test-native-install-plan.py"
 BUILD_REGRESSION="$ROOT/build/gates/build-regression-contract.py"
 BP="$ROOT/product/titan2/n1i-c2/Android.bp"
 MK="$ROOT/product/titan2/n1i-c2/sable-titan2-n1i-c2.mk"
@@ -25,7 +27,7 @@ marker() {
     echo "N1I_C2_IMPLEMENTATION_CONTRACT_$name=PASS"
 }
 
-for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
+for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -42,7 +44,7 @@ for shell_file in "$DRIVER" "$SCRIPT"; do
 done
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
 
-PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache"     python3 -m py_compile "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST"
+PYTHONPYCACHEPREFIX="${TMPDIR:-/tmp}/sable-pycache"     python3 -m py_compile "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST"
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_PYTHON_SYNTAX=PASS"
 
 python3 - "$DRIVER" <<'PY'
@@ -109,7 +111,12 @@ marker EMERGENCY_SOURCE_RESTORE "$DRIVER" 'N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS'
 marker PLATFORM_RESIGN_ARTIFACT "$DRIVER" 'OEM_IMS_PLATFORM_RESIGNED=YES'
 marker BUILD_REGRESSION_PREFLIGHT "$DRIVER" 'N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS'
 marker INSTALL_COLLISION_AUDIT "$DRIVER" 'audit-n1i-c2-install-collisions.py'
-marker NATIVE_ADMISSION "$DRIVER" 'native-admission.txt'
+marker NATIVE_INSTALL_PLANNER "$DRIVER" 'plan-n1i-c2-native-install.py'
+marker NATIVE_BASELINE_PROBE "$DRIVER" 'native-baseline-probe.tsv'
+marker NATIVE_COMPOSITION "$DRIVER" 'native-composition.tsv'
+marker NATIVE_PACKAGES_GENERATED "$MK" 'vendor/sable/titan2/n1i-c2/native-packages.mk'
+marker SEALED_C1_BASELINE "$DRIVER" 'n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild'
+marker POSTFAIL_COLLISION_AUDIT "$DRIVER" 'install-collision-after-failure.log'
 marker SOURCE_AUTH_REQUIRED "$DRIVER" 'source_mutation_requires_authorization'
 marker BUILD_AUTH_REQUIRED "$DRIVER" 'build_requires_authorization'
 marker SOURCE_RESTORE "$DRIVER" 'N1I_C2_SOURCE_RESTORE=PASS'
@@ -182,6 +189,19 @@ fi
 grep -Fq 'N1I_C2_INSTALL_COLLISION_AUDIT_TEST=PASS' <<<"$COLLISION_TEST_OUTPUT" ||
     fail install_collision_audit_marker
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_INSTALL_COLLISION_REGRESSION=PASS"
+
+if NATIVE_PLAN_OUTPUT="$(python3 "$NATIVE_INSTALL_PLAN_TEST")"; then
+    printf '%s\n' "$NATIVE_PLAN_OUTPUT"
+else
+    fail native_install_plan_regression
+fi
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_known_kati_marker
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_different_fail_closed_marker
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_TEST=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_plan_marker
+echo "N1I_C2_IMPLEMENTATION_CONTRACT_NATIVE_INSTALL_PLAN_REGRESSION=PASS"
 
 if TEST_OUTPUT="$(python3 "$TEST")"; then
     printf '%s\n' "$TEST_OUTPUT"
