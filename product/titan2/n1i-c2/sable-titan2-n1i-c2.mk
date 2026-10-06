@@ -10,40 +10,13 @@ PRODUCT_PACKAGES += \
     SableTitan2Cellular \
     SableTitan2CellularInit \
     SableTitan2CellularConfig \
-    SableTitan2CellularMarker \
-    SableN1IC2NativeM007 \
-    SableN1IC2NativeM008 \
-    SableN1IC2NativeM009 \
-    SableN1IC2NativeM010 \
-    SableN1IC2NativeM011 \
-    SableN1IC2NativeM012 \
-    SableN1IC2NativeM013 \
-    SableN1IC2NativeM014 \
-    SableN1IC2NativeM015 \
-    SableN1IC2NativeM016 \
-    SableN1IC2NativeM017 \
-    SableN1IC2NativeM018 \
-    SableN1IC2NativeM019 \
-    SableN1IC2NativeM020 \
-    SableN1IC2NativeM021 \
-    SableN1IC2NativeM022 \
-    SableN1IC2NativeM023 \
-    SableN1IC2NativeM024 \
-    SableN1IC2NativeM025 \
-    SableN1IC2NativeM026 \
-    SableN1IC2NativeM027 \
-    SableN1IC2NativeM028 \
-    SableN1IC2NativeM029 \
-    SableN1IC2NativeM030 \
-    SableN1IC2NativeM031 \
-    SableN1IC2NativeM032 \
-    SableN1IC2NativeM033 \
-    SableN1IC2NativeM034 \
-    SableN1IC2NativeM035 \
-    SableN1IC2NativeM036 \
-    SableN1IC2NativeM037 \
-    SableN1IC2NativeM038 \
-    SableN1IC2NativeM039
+    SableTitan2CellularMarker
+
+# Generated at governed build time from the sealed C1 baseline collision
+# preflight. It lists only frozen native modules whose exact target path is
+# absent from C1. C1-identical paths are intentionally reused instead of
+# producing duplicate Kati install commands.
+$(call inherit-product, vendor/sable/titan2/n1i-c2/native-packages.mk)
 
 # Enable the already-present Restless legacy incoming-call compatibility path
 # for Titan 2 OEM IMS. No framework fork is introduced here.
