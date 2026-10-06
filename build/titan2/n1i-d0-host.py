@@ -719,11 +719,17 @@ def apex_extract(args: argparse.Namespace) -> int:
     return 0
 
 
-def map_runtime_path(system_root: Path, apex_root: Path, device: str) -> Path:
+def map_runtime_path(
+    system_root: Path,
+    system_ext_root: Path,
+    product_root: Path,
+    apex_root: Path,
+    device: str,
+) -> Path:
     if device.startswith("/system_ext/"):
-        return system_root / "system_ext" / device.removeprefix("/system_ext/")
+        return system_ext_root / device.removeprefix("/system_ext/")
     if device.startswith("/product/"):
-        return system_root / "product" / device.removeprefix("/product/")
+        return product_root / device.removeprefix("/product/")
     if device.startswith("/system/"):
         return system_root / device.removeprefix("/system/")
     if device.startswith("/apex/"):
@@ -783,7 +789,13 @@ def classpath(args: argparse.Namespace) -> int:
             duplicate_device_paths.append((device, source))
             continue
         seen_paths.add(device)
-        host = map_runtime_path(args.system_root, args.apex_root, device)
+        host = map_runtime_path(
+            args.system_root,
+            args.system_ext_root,
+            args.product_root,
+            args.apex_root,
+            device,
+        )
         bcp.append((device, source, host))
 
     systemserver: list[tuple[str, str, Path]] = []
@@ -802,7 +814,11 @@ def classpath(args: argparse.Namespace) -> int:
                 continue
             source = "SYSTEMSERVER:" + str(fragment)
             host = map_runtime_path(
-                args.system_root, args.apex_root, jar.path
+                args.system_root,
+                args.system_ext_root,
+                args.product_root,
+                args.apex_root,
+                jar.path,
             )
             systemserver.append((jar.path, source, host))
             ss_fragments.append(str(fragment))
@@ -1144,6 +1160,8 @@ def main() -> int:
     cp = sp.add_parser("classpath")
     cp.add_argument("--repo", type=Path, required=True)
     cp.add_argument("--system-root", type=Path, required=True)
+    cp.add_argument("--system-ext-root", type=Path, required=True)
+    cp.add_argument("--product-root", type=Path, required=True)
     cp.add_argument("--apex-root", type=Path, required=True)
     cp.add_argument("--static-tool", type=Path, required=True)
     cp.add_argument("--api-level", type=int, default=36)
