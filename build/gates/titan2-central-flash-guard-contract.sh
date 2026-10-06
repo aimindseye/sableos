@@ -99,6 +99,9 @@ C2_IMPLEMENTATION_MK="product/titan2/n1i-c2/sable-titan2-n1i-c2.mk"
 C2_IMPLEMENTATION_SCRIPT="product/titan2/n1i-c2/sable-titan2-cellular.sh"
 C2_IMPLEMENTATION_RC="product/titan2/n1i-c2/sable-titan2-cellular.rc"
 C2_IMPLEMENTATION_PHH_PATCH="patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-titan2-cellular-mvp.patch"
+BUILD_REGRESSION_CONTRACT="build/gates/build-regression-contract.py"
+C2_INSTALL_COLLISION_AUDIT="build/titan2/audit-n1i-c2-install-collisions.py"
+C2_INSTALL_COLLISION_TEST="tests/titan2/n1i-c2/test-install-collision-audit.py"
 C1_RUNTIME_LINKAGE_TEST="tests/titan2/n1i-c1/test-runtime-linkage-audit.sh"
 
 require_file "TITAN2_DEVICE_ADAPTER" "$DEVICE"
@@ -151,6 +154,9 @@ require_file "N1I_C2_IMPLEMENTATION_MK" "$C2_IMPLEMENTATION_MK"
 require_file "N1I_C2_IMPLEMENTATION_SCRIPT" "$C2_IMPLEMENTATION_SCRIPT"
 require_file "N1I_C2_IMPLEMENTATION_RC" "$C2_IMPLEMENTATION_RC"
 require_file "N1I_C2_IMPLEMENTATION_PHH_PATCH" "$C2_IMPLEMENTATION_PHH_PATCH"
+require_file "TITAN2_BUILD_REGRESSION_CONTRACT" "$BUILD_REGRESSION_CONTRACT"
+require_file "N1I_C2_INSTALL_COLLISION_AUDIT" "$C2_INSTALL_COLLISION_AUDIT"
+require_file "N1I_C2_INSTALL_COLLISION_TEST" "$C2_INSTALL_COLLISION_TEST"
 require_file "N1I_C1_RUNTIME_MEMBER_LINKAGE_TEST" "$C1_RUNTIME_LINKAGE_TEST"
 
 require_marker "TITAN2_FLASH_EXECUTION_BLOCKED" "$DEVICE" "SABLE_DEVICE_FLASH_SUPPORTED=NO"
@@ -633,6 +639,12 @@ if bash "$ROOT/$C2_MATERIALIZATION_CONTRACT" >/dev/null 2>&1; then
   pass "N1I_C2_CELLULAR_MVP_MATERIALIZATION_CONTRACT_REGRESSION"
 else
   fail "N1I_C2_CELLULAR_MVP_MATERIALIZATION_CONTRACT_REGRESSION"
+fi
+
+if python3 "$ROOT/$BUILD_REGRESSION_CONTRACT" >/dev/null 2>&1; then
+  pass "TITAN2_BUILD_REGRESSION_CONTRACT"
+else
+  fail "TITAN2_BUILD_REGRESSION_CONTRACT"
 fi
 
 if bash "$ROOT/$C2_IMPLEMENTATION_CONTRACT" >/dev/null 2>&1; then
