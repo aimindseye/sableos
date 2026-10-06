@@ -82,6 +82,7 @@ c2_collision_audit = read("build/titan2/audit-n1i-c2-install-collisions.py")
 c2_native_planner = read("build/titan2/plan-n1i-c2-native-install.py")
 c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
 c2_native_preflight = read("build/titan2/run-n1i-c2-native-install-preflight.sh")
+c2_native_baseline_probe = read("build/titan2/probe-n1i-c2-c1-native-baseline.sh")
 
 check(
     "BR-001",
@@ -343,8 +344,11 @@ check(
         in c2_native_preflight
     and "audit-n1i-c2-install-collisions.py" in c2_native_preflight
     and "plan-n1i-c2-native-install.py" in c2_native_preflight
-    and "native-baseline-probe.tsv" in c2_native_preflight
-    and "native-composition.tsv" in c2_native_preflight
+    and "NATIVE_BASELINE_PROBE.tsv" in c2_native_preflight
+    and "NATIVE_COMPOSITION.tsv" in c2_native_preflight
+    and "EXPECTED_C1_SHA=\"137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160\"" in c2_native_baseline_probe
+    and "N1I_C2_C1_NATIVE_BASELINE_PROBE=PASS" in c2_native_baseline_probe
+    and "NATIVE_BASELINE_PROBE.tsv" in c2_native_baseline_probe
     and "android.hardware.drm-V1-ndk.so" in c2_native_preflight
     and "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS" in c2_native_preflight
     and "android.hardware.drm-V1-ndk.so" in c2_native_plan_test
