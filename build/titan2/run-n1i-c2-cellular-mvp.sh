@@ -528,7 +528,7 @@ prepare_native_install_plan() {
     local composition="$3"
     local packages="$4"
     local c1_dir="$WORK/c1-native-probe"
-    local id kind target bundle_rel stock_sha module c1_file c1_path c1_sha
+    local id kind target bundle_rel stock_sha module c1_file c1_path c1_sha dump_rc
 
     mkdir -p "$c1_dir" || return 1
     printf 'id\ttarget\tmodule\tstock_sha256\tc1_status\tc1_sha256\tc1_image_path\n' > "$probe" ||
@@ -536,7 +536,44 @@ prepare_native_install_plan() {
 
     {
         IFS= read -r _header
-        while IFS=    local output="$1"
+        while IFS=$'\t' read -r id kind target bundle_rel stock_sha; do
+            [[ -n "$id" ]] || continue
+            [[ "$kind" == NATIVE ]] || continue
+            module="SableN1IC2Native$id"
+            c1_file="$c1_dir/$id.bin"
+            c1_path="$(dump_c1_native_target "$target" "$c1_file")"
+            dump_rc=$?
+            if [[ "$dump_rc" -eq 0 ]]; then
+                c1_sha="$(sha256sum "$c1_file" | awk '{print $1}')"
+                printf '%s\t%s\t%s\t%s\tPRESENT\t%s\t%s\n' \
+                    "$id" "$target" "$module" "$stock_sha" "$c1_sha" "$c1_path"
+            elif [[ "$dump_rc" -eq 1 ]]; then
+                printf '%s\t%s\t%s\t%s\tABSENT\t-\t-\n' \
+                    "$id" "$target" "$module" "$stock_sha"
+            else
+                return 1
+            fi
+        done
+    } < "$stock_map" || return 1
+
+    python3 "$NATIVE_INSTALL_PLANNER" \
+        --probe-tsv "$probe" \
+        --a4-reference "$C1_TEMPLATE/a4-native-superset.txt" \
+        --composition-out "$composition" \
+        --packages-out "$packages" ||
+        return $?
+
+    local rows reuse imports
+    rows="$(awk 'NR>1 {c++} END {print c+0}' "$composition")"
+    reuse="$(awk -F '\t' 'NR>1 && $8=="REUSE_C1_IDENTICAL" {c++} END {print c+0}' "$composition")"
+    imports="$(awk -F '\t' 'NR>1 && $8=="IMPORT_FROZEN_STOCK" {c++} END {print c+0}' "$composition")"
+    [[ "$rows" -eq 33 && $((reuse + imports)) -eq 33 ]] || return 1
+
+    echo "N1I_C2_NATIVE_BASELINE_CLASSIFICATION=PASS rows=$rows reuse=$reuse imports=$imports"
+}
+
+generate_implementation_receipt() {
+    local output="$1"
     python3 - \
         "$MATERIALIZED/CELLULAR_MVP_FROZEN_MUTATION_MANIFEST.tsv" \
         "$output" \
