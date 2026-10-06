@@ -1217,6 +1217,7 @@ def gate_e_member_c2(
     root: Path,
     rows: list[tuple[str, Path]],
     aapt2: Path,
+    pinned_b2: Path,
     out: Path,
 ) -> Gate:
     devices = [device for device, _host in rows]
@@ -1262,6 +1263,8 @@ def gate_e_member_c2(
             str(ims),
             "--badging",
             str(badging),
+            "--members-tool",
+            str(pinned_b2 / "n1i-b2-members.py"),
         ],
         log,
     )
@@ -1383,6 +1386,7 @@ def gate_g_c2(
     stock_odm: Path | None,
     apex_root: Path,
     aapt2: Path,
+    pinned_b2: Path,
     out: Path,
 ) -> Gate:
     ims = find_ims(root)
@@ -1404,6 +1408,8 @@ def gate_g_c2(
             str(ims_base),
             "--out",
             str(scan_out),
+            "--tool-dir",
+            str(pinned_b2),
         ],
         out / "gate-g-c2-jar-loads.log",
     )
@@ -1419,7 +1425,7 @@ def gate_g_c2(
     if jar_constant < 0 or jar_dynamic < 0:
         return Gate("G", "c2", UNKNOWN, "jar_native_load_scan_summary_missing")
 
-    tool = ROOT / "build/titan2/n1i-b2-native.py"
+    tool = pinned_b2 / "n1i-b2-native.py"
     badging = out / "gate-g-c2-badging.txt"
     rc, _ = run(
         [str(aapt2), "dump", "badging", str(ims)],
