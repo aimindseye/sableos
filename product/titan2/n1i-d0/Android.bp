@@ -1,0 +1,7 @@
+prebuilt_etc {
+    name: "SableTitan2N1ID0Marker",
+    src: "n1i-d0-image",
+    filename: "n1i-d0-image",
+    sub_dir: "sable",
+    product_specific: true,
+}
