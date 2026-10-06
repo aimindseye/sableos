@@ -154,6 +154,8 @@ FASTBOOT_VERSION="$(
     sort -V |
     head -n1
 )" == 35.0.1 ]] || fail "fastboot_version_too_old=$FASTBOOT_VERSION" 65
+echo "FASTBOOT_VERSION=$FASTBOOT_VERSION"
+echo "FASTBOOT_MIN_VERSION=35.0.1"
 
 # ----------------------------- HOST-ONLY AUTHORITY -----------------------------
 
