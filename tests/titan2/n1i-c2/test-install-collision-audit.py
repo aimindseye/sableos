@@ -34,7 +34,7 @@ def main() -> int:
         installs.write_text(
             "\n".join(
                 [
-                    f"{drm_final}: {out}/soong/.intermediates/android.hardware.drm-V1-ndk/source.so",
+                    f"{drm_final}: {out}/soong/.intermediates/hardware/interfaces/drm/aidl/android.hardware.drm-V1-ndk/android_arm64_armv8-a_shared/android.hardware.drm-V1-ndk.so",
                     "\tcp $< $@",
                     f"{drm_final}: {out}/soong/.intermediates/vendor/sable/titan2/n1i-c2/SableN1IC2NativeM029/prebuilt.so",
                     "\tcp $< $@",
@@ -52,11 +52,13 @@ def main() -> int:
         assert len(drm_rules) == 2
         assert len(mbrain_rules) == 1
         assert "SableN1IC2NativeM029" in drm_rules[1][2]
-        assert mod.owner_hints(drm_rules[1][2]) != "UNRESOLVED_FROM_RULE"
+        assert mod.owner_hints(drm_rules[0][2]) == "android.hardware.drm-V1-ndk"
+        assert mod.owner_hints(drm_rules[1][2]) == "SableN1IC2NativeM029"
 
     print("N1I_C2_INSTALL_COLLISION_TEST_DUPLICATE_TARGET=PASS")
     print("N1I_C2_INSTALL_COLLISION_TEST_SINGLE_OWNER=PASS")
     print("N1I_C2_INSTALL_COLLISION_TEST_OWNER_HINT=PASS")
+    print("N1I_C2_INSTALL_COLLISION_TEST_PLATFORM_OWNER_HINT=PASS")
     print("N1I_C2_INSTALL_COLLISION_AUDIT_TEST=PASS")
     return 0
 
