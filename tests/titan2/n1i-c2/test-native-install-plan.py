@@ -211,10 +211,7 @@ def main() -> int:
     test_platform_reuse_target_absent_fails_closed()
     test_unreviewed_c1_different_fails_closed()
 
-    print(
-        "N1I_C2_NATIVE_INSTALL_PLAN_PLATFORM_REUSE_SET=PASS "
-        "count=5 imports=28"
-    )
+    print("N1I_C2_NATIVE_INSTALL_PLAN_PLATFORM_REUSE_SET=PASS count=5 imports=28")
     print(
         "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_PLATFORM_REUSE=PASS "
         f"id={KNOWN_KATI_ID} target={KNOWN_KATI_TARGET}"

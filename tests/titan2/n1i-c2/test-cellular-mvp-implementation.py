@@ -190,6 +190,22 @@ def test_driver_authority() -> None:
     assert text.count('echo "===== APPLY EXACT C2 SOURCE DELTA ====="') == 1
     assert text.count('echo "===== BUILD ONE ANDROID 16 CELLULAR MVP SYSTEMIMAGE ====="') == 1
     assert text.count('make systemimage -j"$JOBS"') == 1
+    verify_marker = 'echo "===== VERIFY BUILT CELLULAR MVP CONTENT ====="'
+    assert text.count(verify_marker) == 1
+    post_build = text.split(verify_marker, 1)[1]
+    assert post_build.count(
+        "while IFS=$'\\t' read -r id kind target bundle_rel digest; do"
+    ) == 1
+    assert post_build.count("while IFS=$'\\t' read -r \\\n") == 1
+    assert "while IFS=\n" not in post_build
+    assert post_build.count(
+        'echo "===== FREEZE IMPLEMENTATION RECEIPT ====="'
+    ) == 1
+    assert post_build.count(
+        'echo "===== RESTORE ANDROID SOURCE ====="'
+    ) == 1
+    assert post_build.count('echo "N1I_C2_BUILD=PASS"') == 1
+    assert "BUILT_NATIVE_PLATFORM_COUNT" in post_build
     assert "DEVICE_CONTACT_AUTHORIZED=NO" in text
     assert "FLASH_AUTHORIZED=NO" in text
 
