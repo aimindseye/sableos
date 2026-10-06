@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020",
+    "T2-019", "T2-020", "T2-021",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -84,6 +84,7 @@ c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
 c2_native_preflight = read("build/titan2/run-n1i-c2-native-install-preflight.sh")
 c2_native_baseline_probe = read("build/titan2/probe-n1i-c2-c1-native-baseline.sh")
 c2_platform_reuse = read("product/titan2/n1i-c2/platform-native-reuse.tsv")
+central_guard = read("build/gates/titan2-central-flash-guard-contract.sh")
 
 check(
     "BR-001",
@@ -381,6 +382,19 @@ check(
     ) == 1
     and c2_driver.count('make systemimage -j"$JOBS"') == 1,
     "c2_build_driver_singleton_structure",
+)
+
+check(
+    "T2-021",
+    central_guard.count("#!/usr/bin/env bash") == 1
+    and central_guard.count(
+        'say "===== TITAN2 CENTRAL FLASH GUARD CONTRACT ====="'
+    ) == 1
+    and central_guard.count(
+        'say "TITAN2_CENTRAL_FLASH_GUARD_CONTRACT=PASS"'
+    ) == 1
+    and 'TITAN2_CENTRAL_GUARD_SINGLETON_STRUCTURE' in central_guard,
+    "titan2_central_guard_singleton_structure",
 )
 
 if failures:
