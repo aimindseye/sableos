@@ -89,6 +89,20 @@ fi
 [[ -z "$(git -C "$ROOT" status --porcelain=v1 --untracked-files=all)" ]] ||
     { fail sable_repo_dirty; git -C "$ROOT" status --short >&2; exit 65; }
 
+python3 "$BUILD_REGRESSION_CONTRACT"
+BUILD_REGRESSION_RC=$?
+[[ "$BUILD_REGRESSION_RC" -eq 0 ]] ||
+    { fail "build_regression_rc=$BUILD_REGRESSION_RC" 66; exit $?; }
+echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
+
+# The failed 36b53950 build proved that native install ownership must be
+# reconciled before another build. Until sealed preflight evidence is bound to
+# this driver, an authorized retry fails here before any Android-source mutation
+# or output-directory creation.
+echo "N1I_C2_RETRY_BUILD_BLOCKED_NATIVE_PREFLIGHT_UNBOUND=YES"
+fail native_install_preflight_not_bound 69
+exit $?
+
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 OUT_DIR_C2="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-n1i-c2-${SOURCE_COMMIT:0:12}"
 PRODUCT_OUT="$OUT_DIR_C2/target/product/tdgsi_arm64_ab"
@@ -126,6 +140,7 @@ TMETRICS_QUALIFIER="$ROOT/build/titan2/qualify-n1i-c1-telephonymetrics-compat.sh
 PHH_PATCH="$ROOT/patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-titan2-cellular-mvp.patch"
 GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
+BUILD_REGRESSION_CONTRACT="$ROOT/build/gates/build-regression-contract.py"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
