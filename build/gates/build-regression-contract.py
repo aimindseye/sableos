@@ -46,7 +46,8 @@ required_ids = {
     "BR-001", "BR-002",
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
-    "T2-013", "T2-014", "T2-015", "T2-016", "T2-017",
+    "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
+    "T2-019",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -74,6 +75,15 @@ property_contexts = read(
 )
 a4_ref = read("product/titan2/n1i-c1/a4-native-superset.txt")
 postbuild_qualifier = read("build/titan2/qualify-n1i-c1-postbuild.sh")
+c2_driver = read("build/titan2/run-n1i-c2-cellular-mvp.sh")
+c2_bp = read("product/titan2/n1i-c2/Android.bp")
+c2_collision_audit = read("build/titan2/audit-n1i-c2-install-collisions.py")
+c2_admission_path = ROOT / "product/titan2/n1i-c2/native-admission.txt"
+c2_admission = (
+    c2_admission_path.read_text(encoding="utf-8")
+    if c2_admission_path.is_file()
+    else ""
+)
 
 check(
     "BR-001",
@@ -292,6 +302,35 @@ check(
     and "/system_ext/framework/SableN1IC1MediatekCommon.jar" not in driver
     and "/system_ext/framework/SableN1IC1MediatekImsBase.jar" not in driver,
     "configured_jar_locations_match_installed_stems",
+)
+
+
+check(
+    "T2-018",
+    'python3 "$ROOT/build/gates/build-regression-contract.py"' in c2_driver
+    and c2_driver.find('python3 "$ROOT/build/gates/build-regression-contract.py"')
+        < c2_driver.find('mkdir -p "$C3B_STAGE/prebuilt" "$C1_STAGE" "$C2_STAGE/prebuilt"'),
+    "c2_release_driver_runs_shared_regression_before_staging",
+)
+
+c2_admission_rows = [
+    line.strip()
+    for line in c2_admission.splitlines()
+    if line.strip() and not line.lstrip().startswith("#")
+]
+check(
+    "T2-019",
+    "N1I_C2_INSTALL_OWNERSHIP_AUDIT" in c2_collision_audit
+    and c2_admission_path.is_file()
+    and bool(c2_admission_rows)
+    and len(c2_admission_rows) < 33
+    and len(c2_admission_rows) == len(set(c2_admission_rows))
+    and all(row in a4_rows for row in c2_admission_rows)
+    and "native-admission.txt" in c2_driver
+    and "audit-n1i-c2-install-collisions.py" in c2_driver
+    and "a4-native-superset.txt" not in c2_driver
+    and "android.hardware.drm-V1-ndk.so" not in c2_bp,
+    "c2_native_admission_is_collision_qualified_subset_not_a4_wholesale",
 )
 
 if failures:
