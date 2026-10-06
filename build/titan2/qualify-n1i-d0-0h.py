@@ -68,8 +68,18 @@ def read_env(path: Path) -> dict[str, str]:
     return out
 
 
-def run(cmd: list[str], out: Path | None = None) -> tuple[int, str]:
-    p = subprocess.run(cmd, capture_output=True, text=True, check=False)
+def run(
+    cmd: list[str],
+    out: Path | None = None,
+    cwd: Path | None = None,
+) -> tuple[int, str]:
+    p = subprocess.run(
+        cmd,
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=str(cwd) if cwd is not None else None,
+    )
     text = p.stdout + p.stderr
     if out is not None:
         out.write_text(text, encoding="utf-8")
@@ -1547,7 +1557,11 @@ def main() -> int:
     sums = inputs / "SHA256SUMS.txt"
     if not env_path.is_file() or not sums.is_file():
         raise D0Error("prepared_input_manifest_missing")
-    rc, _ = run(["sha256sum", "-c", str(sums)], None)
+    rc, _ = run(
+        ["sha256sum", "-c", "SHA256SUMS.txt"],
+        None,
+        cwd=inputs,
+    )
     if rc != 0:
         raise D0Error("prepared_input_manifest_seal_invalid")
     env = read_env(env_path)
@@ -1567,6 +1581,19 @@ def main() -> int:
     for k, p in roots.items():
         if not p.is_dir():
             raise D0Error(f"prepared_root_missing={k}:{p}")
+    for side, apex_root in apex_roots.items():
+        if not apex_root.is_dir():
+            raise D0Error(f"prepared_apex_root_missing={side}:{apex_root}")
+        apex_sums = apex_root / "SHA256SUMS.txt"
+        if not apex_sums.is_file():
+            raise D0Error(f"prepared_apex_seal_missing={side}")
+        arc, _ = run(
+            ["sha256sum", "-c", "SHA256SUMS.txt"],
+            None,
+            cwd=apex_root,
+        )
+        if arc != 0:
+            raise D0Error(f"prepared_apex_seal_invalid={side}")
     if not args.android_root.is_dir():
         raise D0Error("android_root_missing")
 
