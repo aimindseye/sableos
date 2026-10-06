@@ -72,8 +72,9 @@ def test_native_modules() -> None:
 def test_product_composition() -> None:
     text = MK.read_text(encoding="utf-8")
     assert "vendor/sable/titan2/n1i-c1/sable-titan2-n1i-c1.mk" in text
+    assert "vendor/sable/titan2/n1i-c2/native-packages.mk" in text
     for i in range(7, 40):
-        assert f"SableN1IC2NativeM{i:03d}" in text
+        assert f"SableN1IC2NativeM{i:03d}" not in text
     assert "SableTitan2Cellular" in text
     assert "SableTitan2CellularInit" in text
     assert "SableTitan2CellularConfig" in text
@@ -168,6 +169,15 @@ def test_driver_authority() -> None:
     assert "N1I_C2_OEM_IMS_PLATFORM_RESIGN=PASS" in text
     assert "N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS" in text
     assert "OEM_IMS_PLATFORM_RESIGNED=YES" in text
+    assert "plan-n1i-c2-native-install.py" in text
+    assert "native-baseline-probe.tsv" in text
+    assert "native-composition.tsv" in text
+    assert "native-packages.mk" in text
+    assert "PASS_NO_DUPLICATE_BASELINE_INSTALLS" in (
+        (ROOT / "build/titan2/plan-n1i-c2-native-install.py").read_text(encoding="utf-8")
+    )
+    assert "install-collision-after-failure.log" in text
+    assert "N1I_C2_INSTALL_COLLISION_POSTFAIL_AUDIT=" in text
     assert "DEVICE_CONTACT_AUTHORIZED=NO" in text
     assert "FLASH_AUTHORIZED=NO" in text
 
