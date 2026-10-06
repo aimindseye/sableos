@@ -6,8 +6,7 @@ DRIVER="$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh"
 TEST="$ROOT/tests/titan2/n1i-c2/test-cellular-mvp-implementation.py"
 INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
 INSTALL_COLLISION_TEST="$ROOT/tests/titan2/n1i-c2/test-install-collision-audit.py"
-BASELINE_PROBE="$ROOT/build/titan2/probe-n1i-c2-c1-native-baseline.sh"
-NATIVE_RECONCILIATION="$ROOT/build/titan2/run-n1i-c2-native-collision-reconciliation.sh"
+NATIVE_PREFLIGHT="$ROOT/build/titan2/run-n1i-c2-native-install-preflight.sh"
 NATIVE_INSTALL_PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
 NATIVE_INSTALL_PLAN_TEST="$ROOT/tests/titan2/n1i-c2/test-native-install-plan.py"
 BUILD_REGRESSION="$ROOT/build/gates/build-regression-contract.py"
@@ -29,7 +28,7 @@ marker() {
     echo "N1I_C2_IMPLEMENTATION_CONTRACT_$name=PASS"
 }
 
-for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$BASELINE_PROBE" "$NATIVE_RECONCILIATION" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
+for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$NATIVE_PREFLIGHT" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -40,8 +39,9 @@ echo "DEVICE_CONTACT_AUTHORIZED=NO"
 echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
+echo "N1I_C2_BUILD_RETRY_AUTHORIZED=NO_PENDING_NATIVE_PREFLIGHT_ADMISSION"
 
-for shell_file in "$DRIVER" "$SCRIPT" "$BASELINE_PROBE" "$NATIVE_RECONCILIATION"; do
+for shell_file in "$DRIVER" "$SCRIPT" "$NATIVE_PREFLIGHT"; do
     bash -n "$shell_file" || fail "shell_syntax=$shell_file"
 done
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
@@ -112,13 +112,17 @@ marker PLATFORM_RESIGN "$DRIVER" 'N1I_C2_OEM_IMS_PLATFORM_RESIGN=PASS'
 marker EMERGENCY_SOURCE_RESTORE "$DRIVER" 'N1I_C2_EMERGENCY_SOURCE_RESTORE=PASS'
 marker PLATFORM_RESIGN_ARTIFACT "$DRIVER" 'OEM_IMS_PLATFORM_RESIGNED=YES'
 marker BUILD_REGRESSION_PREFLIGHT "$DRIVER" 'N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS'
-marker INSTALL_COLLISION_AUDIT "$DRIVER" 'audit-n1i-c2-install-collisions.py'
-marker NATIVE_INSTALL_PLANNER "$DRIVER" 'plan-n1i-c2-native-install.py'
-marker NATIVE_BASELINE_PROBE "$DRIVER" 'native-baseline-probe.tsv'
-marker NATIVE_COMPOSITION "$DRIVER" 'native-composition.tsv'
+marker RETRY_BLOCKED_PENDING_ADMISSION "$DRIVER" 'NATIVE_ADMISSION_INTEGRATED=NO'
+marker RETRY_BLOCK_REASON "$DRIVER" 'native_admission_not_integrated'
+marker INSTALL_COLLISION_AUDIT "$NATIVE_PREFLIGHT" 'audit-n1i-c2-install-collisions.py'
+marker NATIVE_INSTALL_PLANNER "$NATIVE_PREFLIGHT" 'plan-n1i-c2-native-install.py'
+marker NATIVE_BASELINE_PROBE "$NATIVE_PREFLIGHT" 'native-baseline-probe.tsv'
+marker NATIVE_COMPOSITION "$NATIVE_PREFLIGHT" 'native-composition.tsv'
 marker NATIVE_PACKAGES_GENERATED "$MK" 'vendor/sable/titan2/n1i-c2/native-packages.mk'
-marker SEALED_C1_BASELINE "$DRIVER" 'n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild'
-marker POSTFAIL_COLLISION_AUDIT "$DRIVER" 'install-collision-after-failure.log'
+marker SEALED_C1_BASELINE "$NATIVE_PREFLIGHT" 'n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild'
+marker PRIOR_FAILED_GRAPH "$NATIVE_PREFLIGHT" '36b53950faebc954cadb30756833ae5ec857f054'
+marker KNOWN_KATI_TARGET "$NATIVE_PREFLIGHT" '/system/lib64/android.hardware.drm-V1-ndk.so'
+marker PREFLIGHT_PASS "$NATIVE_PREFLIGHT" 'N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS'
 marker SOURCE_AUTH_REQUIRED "$DRIVER" 'source_mutation_requires_authorization'
 marker BUILD_AUTH_REQUIRED "$DRIVER" 'build_requires_authorization'
 marker SOURCE_RESTORE "$DRIVER" 'N1I_C2_SOURCE_RESTORE=PASS'
@@ -139,12 +143,12 @@ grep -Fq 'diff --git a/phh-on-boot.sh b/phh-on-boot.sh' "$PHH_PATCH" ||
     fail phh_patch_wrong_target
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_PHH_PATCH_SCOPE=PASS"
 
-if grep -Eq -- '(^|[^A-Za-z_])(adb|fastboot)[[:space:](]' "$DRIVER" "$SCRIPT"; then
+if grep -Eq -- '(^|[^A-Za-z_])(adb|fastboot)[[:space:](]' "$DRIVER" "$SCRIPT" "$NATIVE_PREFLIGHT"; then
     fail device_command_surface
 fi
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_NO_DEVICE_COMMANDS=PASS"
 
-if grep -Eq -- 'curl|wget|requests|urllib|socket|git[[:space:]]+(fetch|pull|clone)|https?://' "$DRIVER" "$SCRIPT"; then
+if grep -Eq -- 'curl|wget|requests|urllib|socket|git[[:space:]]+(fetch|pull|clone)|https?://' "$DRIVER" "$SCRIPT" "$NATIVE_PREFLIGHT"; then
     fail network_surface
 fi
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_NO_NETWORK=PASS"
@@ -197,11 +201,11 @@ if NATIVE_PLAN_OUTPUT="$(python3 "$NATIVE_INSTALL_PLAN_TEST")"; then
 else
     fail native_install_plan_regression
 fi
-grep -Fq 'N1I_C2_NATIVE_PLAN_IDENTICAL_BASELINE_REUSE=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
-    fail native_install_identical_reuse_marker
-grep -Fq 'N1I_C2_NATIVE_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_known_kati_reuse_marker
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_graph_collision_marker
-grep -Fq 'N1I_C2_NATIVE_PLAN_DIFFERENT_BASELINE_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_different_fail_closed_marker
 grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_TEST=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_plan_marker
@@ -213,7 +217,7 @@ else
     fail implementation_regression
 fi
 
-for expected in     N1I_C2_IMPLEMENTATION_TEST_NATIVE_MODULE_SET=PASS     N1I_C2_IMPLEMENTATION_TEST_PRODUCT_COMPOSITION=PASS     N1I_C2_IMPLEMENTATION_TEST_INTEGRATION_SAFETY=PASS     N1I_C2_IMPLEMENTATION_TEST_INIT_MARKER=PASS     N1I_C2_IMPLEMENTATION_TEST_PATCH_AUTHORITY=PASS     N1I_C2_IMPLEMENTATION_TEST_DRIVER_AUTHORITY=PASS     N1I_C2_IMPLEMENTATION_TEST_RECEIPT_SEMANTICS=PASS     N1I_C2_CELLULAR_MVP_IMPLEMENTATION_TEST=PASS
+for expected in     N1I_C2_IMPLEMENTATION_TEST_NATIVE_MODULE_SET=PASS     N1I_C2_IMPLEMENTATION_TEST_PRODUCT_COMPOSITION=PASS     N1I_C2_IMPLEMENTATION_TEST_INTEGRATION_SAFETY=PASS     N1I_C2_IMPLEMENTATION_TEST_INIT_MARKER=PASS     N1I_C2_IMPLEMENTATION_TEST_PATCH_AUTHORITY=PASS     N1I_C2_IMPLEMENTATION_TEST_DRIVER_AUTHORITY=PASS     N1I_C2_IMPLEMENTATION_TEST_NATIVE_PREFLIGHT_AUTHORITY=PASS     N1I_C2_IMPLEMENTATION_TEST_RECEIPT_SEMANTICS=PASS     N1I_C2_CELLULAR_MVP_IMPLEMENTATION_TEST=PASS
 do
     grep -Fq "$expected" <<<"$TEST_OUTPUT" || fail "missing_test_marker=$expected"
 done
