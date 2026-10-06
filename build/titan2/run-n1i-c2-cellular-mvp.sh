@@ -58,8 +58,6 @@ done
     { fail source_mutation_requires_authorization 64; exit $?; }
 [[ "$BUILD_AUTHORIZED" == YES ]] ||
     { fail build_requires_authorization 64; exit $?; }
-[[ "$NATIVE_ADMISSION_INTEGRATED" == YES ]] ||
-    { fail native_admission_not_integrated 69; exit $?; }
 
 SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-$(git -C "$ROOT" rev-parse HEAD)}"
 [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] ||
@@ -88,20 +86,6 @@ fi
     { fail source_identity; exit $?; }
 [[ -z "$(git -C "$ROOT" status --porcelain=v1 --untracked-files=all)" ]] ||
     { fail sable_repo_dirty; git -C "$ROOT" status --short >&2; exit 65; }
-
-python3 "$BUILD_REGRESSION_CONTRACT"
-BUILD_REGRESSION_RC=$?
-[[ "$BUILD_REGRESSION_RC" -eq 0 ]] ||
-    { fail "build_regression_rc=$BUILD_REGRESSION_RC" 66; exit $?; }
-echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
-
-# The failed 36b53950 build proved that native install ownership must be
-# reconciled before another build. Until sealed preflight evidence is bound to
-# this driver, an authorized retry fails here before any Android-source mutation
-# or output-directory creation.
-echo "N1I_C2_RETRY_BUILD_BLOCKED_NATIVE_PREFLIGHT_UNBOUND=YES"
-fail native_install_preflight_not_bound 69
-exit $?
 
 ANDROID_ROOT="$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL"
 OUT_DIR_C2="$SABLE_BUILD_ROOT/$N1D_ANDROID_WORKSPACE_REL/out-n1i-c2-${SOURCE_COMMIT:0:12}"
@@ -141,6 +125,7 @@ PHH_PATCH="$ROOT/patches/android-16-n1i-c2/phh/0001-phh-preserve-mtk-ims-for-tit
 GSI_INFO="$ROOT/build/deploy/gsi_image_info.py"
 IMPLEMENTATION_CONTRACT="$ROOT/build/gates/n1i-c2-cellular-mvp-implementation-contract.sh"
 BUILD_REGRESSION_CONTRACT="$ROOT/build/gates/build-regression-contract.py"
+NATIVE_PREFLIGHT="$ROOT/build/titan2/run-n1i-c2-native-install-preflight.sh"
 APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
 
 TMETRICS_BASE_BLOB="27638e5be9c008101c2f9b8f1e7a9af49d94f838"
@@ -598,8 +583,9 @@ selfcheck() {
         { fail stock_system_ext; return $?; }
 
     bash -n "$0" || { fail driver_syntax; return $?; }
+    bash -n "$NATIVE_PREFLIGHT" || { fail native_preflight_syntax; return $?; }
 
-    python3 "$ROOT/build/gates/build-regression-contract.py" ||
+    python3 "$BUILD_REGRESSION_CONTRACT" ||
         { fail build_regression_contract; return $?; }
     echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
 
@@ -657,6 +643,60 @@ echo "MUTATION_COUNT=41"
 echo "FROZEN_STOCK_FILE_COUNT=36"
 echo "FROZEN_NATIVE_COUNT=33"
 echo "HEALER_DEFAULT=DISABLED"
+
+echo "===== N1I-C2 NATIVE INSTALL COLLISION PREFLIGHT ====="
+NATIVE_PREFLIGHT_OUT="$EVIDENCE/native-install-preflight"
+bash "$NATIVE_PREFLIGHT" --out "$NATIVE_PREFLIGHT_OUT"     > >(tee "$EVIDENCE/native-install-preflight.log") 2>&1
+NATIVE_PREFLIGHT_RC=$?
+[[ "$NATIVE_PREFLIGHT_RC" -eq 0 ]] ||
+    { fail "native_install_preflight_rc=$NATIVE_PREFLIGHT_RC"; exit $?; }
+
+[[ -f "$NATIVE_PREFLIGHT_OUT/SHA256SUMS.txt" ]] ||
+    { fail native_preflight_seal_missing; exit $?; }
+(
+    cd "$NATIVE_PREFLIGHT_OUT" || exit 1
+    sha256sum -c SHA256SUMS.txt >/dev/null
+)
+NATIVE_PREFLIGHT_SEAL_RC=$?
+[[ "$NATIVE_PREFLIGHT_SEAL_RC" -eq 0 ]] ||
+    { fail native_preflight_seal; exit $?; }
+
+NATIVE_PREFLIGHT_SUMMARY="$NATIVE_PREFLIGHT_OUT/PREFLIGHT_SUMMARY.env"
+NATIVE_COMPOSITION="$NATIVE_PREFLIGHT_OUT/NATIVE_COMPOSITION.tsv"
+NATIVE_PACKAGES="$NATIVE_PREFLIGHT_OUT/native-packages.mk"
+
+[[ -f "$NATIVE_PREFLIGHT_SUMMARY" && -f "$NATIVE_COMPOSITION" && -f "$NATIVE_PACKAGES" ]] ||
+    { fail native_preflight_outputs_missing; exit $?; }
+
+grep -Fxq 'N1I_C2_NATIVE_INSTALL_PLAN_STATE=PASS_CANDIDATE_ADMISSION_READY' "$NATIVE_PREFLIGHT_SUMMARY" ||
+    { fail native_preflight_plan_state; exit $?; }
+grep -Fxq 'N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_READ_ONLY_ANALYSIS' "$NATIVE_PREFLIGHT_SUMMARY" ||
+    { fail native_preflight_summary_state; exit $?; }
+
+NATIVE_REUSE_COUNT="$(
+    sed -n 's/^N1I_C2_NATIVE_BASELINE_REUSE_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
+        tail -1
+)"
+NATIVE_IMPORT_COUNT="$(
+    sed -n 's/^N1I_C2_NATIVE_IMPORT_COUNT=//p' "$NATIVE_PREFLIGHT_SUMMARY" |
+        tail -1
+)"
+[[ "$NATIVE_REUSE_COUNT" =~ ^[0-9]+$ && "$NATIVE_IMPORT_COUNT" =~ ^[0-9]+$ ]] ||
+    { fail native_preflight_count_parse; exit $?; }
+[[ $((NATIVE_REUSE_COUNT + NATIVE_IMPORT_COUNT)) -eq 33 ]] ||
+    { fail "native_preflight_count_total=reuse:$NATIVE_REUSE_COUNT,import:$NATIVE_IMPORT_COUNT"; exit $?; }
+
+KNOWN_KATI_DISPOSITION="$(
+    awk -F '	'         '$1=="M029" && $2=="/system/lib64/android.hardware.drm-V1-ndk.so" {print $11}'         "$NATIVE_COMPOSITION"
+)"
+[[ "$KNOWN_KATI_DISPOSITION" == REUSE_C1_IDENTICAL ]] ||
+    { fail "known_kati_disposition=$KNOWN_KATI_DISPOSITION"; exit $?; }
+
+NATIVE_ADMISSION_INTEGRATED=YES
+echo "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS_BOUND_TO_BUILD"
+echo "N1I_C2_NATIVE_BASELINE_REUSE_COUNT=$NATIVE_REUSE_COUNT"
+echo "N1I_C2_NATIVE_IMPORT_COUNT=$NATIVE_IMPORT_COUNT"
+echo "N1I_C2_KNOWN_KATI_COLLISION=PASS_REUSE_C1_IDENTICAL id=M029"
 
 echo "===== BUILD FIVE N1F APPS OFFLINE ====="
 bash "$APP_BUILD" --authorize-app-build --output-dir "$APP_BUNDLE"
@@ -757,6 +797,18 @@ install -m 0644 "$C2_TEMPLATE/Android.bp" "$C2_STAGE/Android.bp" ||
     { fail stage_c2_bp; exit $?; }
 install -m 0644 "$C2_TEMPLATE/sable-titan2-n1i-c2.mk" "$C2_STAGE/sable-titan2-n1i-c2.mk" ||
     { fail stage_c2_mk; exit $?; }
+
+[[ "$NATIVE_ADMISSION_INTEGRATED" == YES ]] ||
+    { fail native_admission_not_integrated; exit $?; }
+install -m 0644 "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk" ||
+    { fail stage_native_packages; exit $?; }
+cmp -s "$NATIVE_PACKAGES" "$C2_STAGE/native-packages.mk" ||
+    { fail stage_native_packages_mismatch; exit $?; }
+
+cp "$NATIVE_COMPOSITION" "$EVIDENCE/NATIVE_COMPOSITION.tsv" ||
+    { fail native_composition_evidence_copy; exit $?; }
+cp "$NATIVE_PACKAGES" "$EVIDENCE/native-packages.mk" ||
+    { fail native_packages_evidence_copy; exit $?; }
 install -m 0755 "$C2_TEMPLATE/sable-titan2-cellular.sh" "$C2_STAGE/sable-titan2-cellular.sh" ||
     { fail stage_c2_script; exit $?; }
 install -m 0644 "$C2_TEMPLATE/sable-titan2-cellular.rc" "$C2_STAGE/sable-titan2-cellular.rc" ||
@@ -887,10 +939,28 @@ mkdir -p "$OUT_DIR_C2" || { fail out_dir; exit $?; }
     do
         grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" || exit 76
     done
-    for n in $(seq -w 7 39); do
-        module="SableN1IC2NativeM0$n"
-        grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" || exit 77
-    done
+    {
+        IFS= read -r _header
+        while IFS=$'	' read -r id target module stock_sha c1_status c1_sha c1_image_path graph_state graph_count owner_hints disposition; do
+            [[ -n "$id" ]] || continue
+            case "$disposition" in
+                IMPORT_FROZEN_STOCK)
+                    grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp" ||
+                        exit 77
+                    ;;
+                REUSE_C1_IDENTICAL)
+                    if grep -Eq "(^|[[:space:]])${module}([[:space:]]|$)" <<<"$pp"; then
+                        echo "unexpected reused native package present id=$id module=$module target=$target" >&2
+                        exit 79
+                    fi
+                    ;;
+                *)
+                    echo "unexpected native disposition id=$id disposition=$disposition" >&2
+                    exit 80
+                    ;;
+            esac
+        done
+    } < "$NATIVE_COMPOSITION"
 
     props="$(get_build_var PRODUCT_SYSTEM_PROPERTIES)"
     grep -Eq '(^|[[:space:]])ro\.telephony\.block_binder_thread_on_incoming_calls=false([[:space:]]|$)' <<<"$props" ||
@@ -1067,6 +1137,9 @@ MATERIALIZATION_SOURCE_COMMIT=$MATERIALIZATION_SOURCE_COMMIT
 FROZEN_MUTATION_COUNT=41
 FROZEN_STOCK_FILE_COUNT=36
 FROZEN_NATIVE_COUNT=33
+NATIVE_BASELINE_REUSE_COUNT=$NATIVE_REUSE_COUNT
+NATIVE_IMPORT_COUNT=$NATIVE_IMPORT_COUNT
+KNOWN_KATI_M029_DISPOSITION=$KNOWN_KATI_DISPOSITION
 IMPLEMENTATION_RECEIPT_ROWS=41
 TELEPHONYMETRICS_POST_BLOB=$TMETRICS_POST_BLOB
 PHH_BASE_BLOB=$PHH_BASE_BLOB
@@ -1106,6 +1179,7 @@ echo "N1I_C2_EVIDENCE_SEAL=PASS_EXCLUDES_BUILD_LOG"
 echo "N1I_C2_BUILD=PASS"
 echo "N1I_C2_DEVICE_CONTACT=NONE"
 echo "N1I_C2_FLASH=NONE"
+echo "N1I_C2_NATIVE_INSTALL_ADMISSION=PASS_COLLISION_FILTERED reuse=$NATIVE_REUSE_COUNT imports=$NATIVE_IMPORT_COUNT"
 echo "N1I_C2_READY_FOR_POSTBUILD_LINKAGE=YES"
 echo "N1I_C2_ARTIFACT_DIR=$ARTIFACT"
 echo "N1I_C2_EVIDENCE_DIR=$EVIDENCE"
