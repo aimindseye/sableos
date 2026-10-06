@@ -580,6 +580,11 @@ selfcheck() {
         { fail stock_system_ext; return $?; }
 
     bash -n "$0" || { fail driver_syntax; return $?; }
+
+    python3 "$ROOT/build/gates/build-regression-contract.py" ||
+        { fail build_regression_contract; return $?; }
+    echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
+
     bash "$IMPLEMENTATION_CONTRACT" || { fail implementation_contract; return $?; }
     bash "$ROOT/build/host/verify-host-tools.sh" aosp-host >/dev/null ||
         { fail host_tools; return $?; }
