@@ -4,8 +4,10 @@
 Input is a read-only probe of the sealed C1 image against the 33 frozen A4
 native targets. A target already present in C1 with the exact frozen stock hash
 is satisfied by the baseline and MUST NOT be installed again. A target absent
-from C1 is imported from the frozen C2 stock bundle. A target present with a
-different hash fails closed and requires an explicit compatibility decision.
+from C1 is imported from the frozen C2 stock bundle. A C1-present target with a
+different hash is allowed only by the finite reviewed Android-16 platform reuse
+decision set and only when the retained Kati graph proves the exact platform
+module already owns the same final install path.
 """
 from __future__ import annotations
 
@@ -16,6 +18,19 @@ from pathlib import Path
 
 EXPECTED_IDS = [f"M{i:03d}" for i in range(7, 40)]
 EXPECTED_COUNT = 33
+
+EXPECTED_PLATFORM_REUSE = {
+    ("M008", "/system/lib64/android.hardware.radio-V4-ndk.so"):
+        "android.hardware.radio-V4-ndk",
+    ("M017", "/system/lib64/android.hardware.graphics.common-V6-ndk.so"):
+        "android.hardware.graphics.common-V6-ndk",
+    ("M029", "/system/lib64/android.hardware.drm-V1-ndk.so"):
+        "android.hardware.drm-V1-ndk",
+    ("M038", "/system/lib64/libheif.so"):
+        "libheif",
+    ("M039", "/system/lib64/libsuspend.so"):
+        "libsuspend",
+}
 
 
 class PlanError(RuntimeError):
@@ -43,10 +58,44 @@ def canonical_targets(path: Path) -> set[str]:
     return targets
 
 
+def platform_reuse_decisions(path: Path) -> dict[tuple[str, str], str]:
+    rows = read_tsv(path)
+    required = {"id", "target", "expected_platform_owner", "rationale"}
+    if rows and not required.issubset(rows[0]):
+        raise PlanError(
+            "platform_reuse_columns_missing="
+            + ",".join(sorted(required - set(rows[0])))
+        )
+    decisions: dict[tuple[str, str], str] = {}
+    for row in rows:
+        key = (row["id"], row["target"])
+        if key in decisions:
+            raise PlanError(f"platform_reuse_duplicate={key[0]}:{key[1]}")
+        owner = row["expected_platform_owner"]
+        if not owner or not row["rationale"]:
+            raise PlanError(f"platform_reuse_incomplete={key[0]}:{key[1]}")
+        decisions[key] = owner
+    if decisions != EXPECTED_PLATFORM_REUSE:
+        missing = sorted(set(EXPECTED_PLATFORM_REUSE) - set(decisions))
+        extra = sorted(set(decisions) - set(EXPECTED_PLATFORM_REUSE))
+        wrong = sorted(
+            key for key in set(decisions) & set(EXPECTED_PLATFORM_REUSE)
+            if decisions[key] != EXPECTED_PLATFORM_REUSE[key]
+        )
+        raise PlanError(
+            "platform_reuse_set_drift="
+            f"missing:{missing or 'NONE'};"
+            f"extra:{extra or 'NONE'};"
+            f"wrong_owner:{wrong or 'NONE'}"
+        )
+    return decisions
+
+
 def plan(
     rows: list[dict[str, str]],
     expected_targets: set[str],
     collision_rows: list[dict[str, str]],
+    platform_reuse: dict[tuple[str, str], str],
 ) -> tuple[list[dict[str, str]], list[str]]:
     required = {
         "id", "target", "module", "stock_sha256",
@@ -102,6 +151,7 @@ def plan(
     composition: list[dict[str, str]] = []
     imports: list[str] = []
     blockers: list[str] = []
+    consumed_platform_reuse: set[tuple[str, str]] = set()
 
     for row in rows:
         stock = row["stock_sha256"]
@@ -165,12 +215,27 @@ def plan(
         elif c1_status == "PRESENT":
             if len(c1_sha) != 64:
                 raise PlanError(f"bad_c1_sha256={row['id']}:{c1_sha}")
+            decision_key = (row["id"], row["target"])
             if c1_sha != stock:
-                disposition = "BLOCK_C1_DIFFERENT"
-                blockers.append(
-                    f"{row['id']}:{row['target']}:"
-                    f"c1={c1_sha}:stock={stock}"
-                )
+                expected_platform_owner = platform_reuse.get(decision_key)
+                expected_owners = {row["module"], expected_platform_owner}
+                if (
+                    expected_platform_owner
+                    and state == "COLLISION"
+                    and rule_count == 2
+                    and owner_tokens == expected_owners
+                ):
+                    disposition = "REUSE_C1_PLATFORM_DIFFERENT"
+                    consumed_platform_reuse.add(decision_key)
+                else:
+                    disposition = "BLOCK_C1_DIFFERENT"
+                    blockers.append(
+                        f"{row['id']}:{row['target']}:"
+                        f"c1={c1_sha}:stock={stock}:"
+                        f"state={state}:rules={rule_count}:"
+                        f"owners={collision['owner_hints']}:"
+                        f"expected_platform_owner={expected_platform_owner or 'NONE'}"
+                    )
             elif state == "COLLISION" and sable_owner_present:
                 disposition = "REUSE_C1_IDENTICAL"
             elif state == "COLLISION":
@@ -198,6 +263,14 @@ def plan(
             "install_graph_owner_hints": collision["owner_hints"],
             "disposition": disposition,
         })
+
+    expected_platform_keys = set(platform_reuse)
+    if consumed_platform_reuse != expected_platform_keys:
+        missing = sorted(expected_platform_keys - consumed_platform_reuse)
+        blockers.append(
+            "platform_reuse_decision_not_consumed="
+            + ",".join(f"{mid}:{target}" for mid, target in missing)
+        )
 
     if blockers:
         raise PlanError(
@@ -230,8 +303,8 @@ def write_packages(path: Path, imports: list[str]) -> None:
     with path.open("w", encoding="utf-8") as fp:
         fp.write(
             "# Generated by plan-n1i-c2-native-install.py.\n"
-            "# Only frozen natives absent from the sealed C1 baseline are "
-            "installed by C2.\n"
+            "# Only collision-qualified frozen natives are installed by C2. "
+            "Reviewed Android-16 platform providers are reused in place.\n"
         )
         if imports:
             fp.write("PRODUCT_PACKAGES += \\\n")
@@ -239,7 +312,7 @@ def write_packages(path: Path, imports: list[str]) -> None:
                 suffix = " \\\n" if index + 1 < len(imports) else "\n"
                 fp.write(f"    {module}{suffix}")
         else:
-            fp.write("# All 33 frozen native targets are already C1-identical.\n")
+            fp.write("# All 33 native targets are satisfied by baseline/platform providers.\n")
 
 
 def main() -> int:
@@ -247,6 +320,7 @@ def main() -> int:
     ap.add_argument("--probe-tsv", type=Path, required=True)
     ap.add_argument("--collision-tsv", type=Path, required=True)
     ap.add_argument("--a4-reference", type=Path, required=True)
+    ap.add_argument("--platform-reuse-decisions", type=Path, required=True)
     ap.add_argument("--composition-out", type=Path, required=True)
     ap.add_argument("--packages-out", type=Path, required=True)
     ap.add_argument("--admission-out", type=Path, required=True)
@@ -255,7 +329,8 @@ def main() -> int:
     rows = read_tsv(args.probe_tsv)
     collision_rows = read_tsv(args.collision_tsv)
     expected = canonical_targets(args.a4_reference)
-    composition, imports = plan(rows, expected, collision_rows)
+    reuse_decisions = platform_reuse_decisions(args.platform_reuse_decisions)
+    composition, imports = plan(rows, expected, collision_rows, reuse_decisions)
 
     args.composition_out.parent.mkdir(parents=True, exist_ok=True)
     args.packages_out.parent.mkdir(parents=True, exist_ok=True)
@@ -272,17 +347,26 @@ def main() -> int:
         for module in imports:
             fp.write(module_to_target[module] + "\n")
 
-    reuse_count = sum(
+    identical_reuse_count = sum(
         row["disposition"] == "REUSE_C1_IDENTICAL"
         for row in composition
     )
+    platform_reuse_count = sum(
+        row["disposition"] == "REUSE_C1_PLATFORM_DIFFERENT"
+        for row in composition
+    )
+    reuse_count = identical_reuse_count + platform_reuse_count
     import_count = len(imports)
     if reuse_count + import_count != EXPECTED_COUNT:
         raise PlanError(
-            f"composition_count=reuse:{reuse_count},import:{import_count}"
+            "composition_count="
+            f"identical_reuse:{identical_reuse_count},"
+            f"platform_reuse:{platform_reuse_count},import:{import_count}"
         )
 
     print(f"N1I_C2_NATIVE_BASELINE_REUSE_COUNT={reuse_count}")
+    print(f"N1I_C2_NATIVE_IDENTICAL_REUSE_COUNT={identical_reuse_count}")
+    print(f"N1I_C2_NATIVE_PLATFORM_REUSE_COUNT={platform_reuse_count}")
     print(f"N1I_C2_NATIVE_IMPORT_COUNT={import_count}")
     print(f"N1I_C2_NATIVE_ADMISSION_OUT={args.admission_out.resolve()}")
     print(
