@@ -128,14 +128,29 @@ def plan(
         if state not in {"COLLISION", "SINGLE_OWNER", "UNCLAIMED"}:
             raise PlanError(f"bad_collision_state={row['id']}:{state}")
 
+        owner_tokens = {
+            token
+            for part in collision["owner_hints"].split(";")
+            for token in part.split(",")
+            if token and token not in {"NONE", "UNRESOLVED_FROM_RULE"}
+        }
+        sable_owner_present = row["module"] in owner_tokens
+
         if c1_status == "ABSENT":
             if c1_sha not in {"", "-"}:
                 raise PlanError(
                     f"absent_with_c1_sha={row['id']}:{c1_sha}"
                 )
-            if state == "SINGLE_OWNER":
+            if state == "SINGLE_OWNER" and sable_owner_present:
                 disposition = "IMPORT_FROZEN_STOCK"
                 imports.append(row["module"])
+            elif state == "SINGLE_OWNER":
+                disposition = "BLOCK_SINGLE_OWNER_NOT_SABLE_MODULE"
+                blockers.append(
+                    f"{row['id']}:{row['target']}:"
+                    f"owner_hints={collision['owner_hints']}:"
+                    f"expected_module={row['module']}"
+                )
             elif state == "COLLISION":
                 disposition = "BLOCK_GRAPH_OWNER_NOT_IN_C1"
                 blockers.append(
@@ -156,8 +171,15 @@ def plan(
                     f"{row['id']}:{row['target']}:"
                     f"c1={c1_sha}:stock={stock}"
                 )
-            elif state == "COLLISION":
+            elif state == "COLLISION" and sable_owner_present:
                 disposition = "REUSE_C1_IDENTICAL"
+            elif state == "COLLISION":
+                disposition = "BLOCK_COLLISION_MISSING_SABLE_OWNER"
+                blockers.append(
+                    f"{row['id']}:{row['target']}:"
+                    f"owner_hints={collision['owner_hints']}:"
+                    f"expected_module={row['module']}"
+                )
             else:
                 disposition = "BLOCK_C1_PRESENT_WITHOUT_BASE_GRAPH_OWNER"
                 blockers.append(
