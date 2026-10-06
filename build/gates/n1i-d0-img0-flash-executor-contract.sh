@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-FLASH="$ROOT/build/titan2/flash-n1i-d0-img0-cellular-mvp.sh"
+FLASH="$ROOT/build/titan2/flash-n1i-d0-img0.sh"
 QUAL="$ROOT/build/titan2/qualify-n1i-d0-img0-fastboot-state.py"
 TEST="$ROOT/tests/titan2/n1i-d0-img0/test-flash-executor.sh"
 MODE="$ROOT/build/titan2/titan2-flash-mode.sh"
