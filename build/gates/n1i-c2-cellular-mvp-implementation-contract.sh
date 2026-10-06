@@ -7,6 +7,7 @@ TEST="$ROOT/tests/titan2/n1i-c2/test-cellular-mvp-implementation.py"
 INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
 INSTALL_COLLISION_TEST="$ROOT/tests/titan2/n1i-c2/test-install-collision-audit.py"
 NATIVE_PREFLIGHT="$ROOT/build/titan2/run-n1i-c2-native-install-preflight.sh"
+BASELINE_PROBE="$ROOT/build/titan2/probe-n1i-c2-c1-native-baseline.sh"
 NATIVE_INSTALL_PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
 NATIVE_INSTALL_PLAN_TEST="$ROOT/tests/titan2/n1i-c2/test-native-install-plan.py"
 BUILD_REGRESSION="$ROOT/build/gates/build-regression-contract.py"
@@ -28,7 +29,7 @@ marker() {
     echo "N1I_C2_IMPLEMENTATION_CONTRACT_$name=PASS"
 }
 
-for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$NATIVE_PREFLIGHT" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
+for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$NATIVE_PREFLIGHT" "$BASELINE_PROBE" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -41,7 +42,7 @@ echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 echo "N1I_C2_BUILD_RETRY_AUTHORIZED=NO_PENDING_NATIVE_PREFLIGHT_ADMISSION"
 
-for shell_file in "$DRIVER" "$SCRIPT" "$NATIVE_PREFLIGHT"; do
+for shell_file in "$DRIVER" "$SCRIPT" "$NATIVE_PREFLIGHT" "$BASELINE_PROBE"; do
     bash -n "$shell_file" || fail "shell_syntax=$shell_file"
 done
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
@@ -116,8 +117,11 @@ marker RETRY_BLOCKED_PENDING_ADMISSION "$DRIVER" 'NATIVE_ADMISSION_INTEGRATED=NO
 marker RETRY_BLOCK_REASON "$DRIVER" 'native_admission_not_integrated'
 marker INSTALL_COLLISION_AUDIT "$NATIVE_PREFLIGHT" 'audit-n1i-c2-install-collisions.py'
 marker NATIVE_INSTALL_PLANNER "$NATIVE_PREFLIGHT" 'plan-n1i-c2-native-install.py'
-marker NATIVE_BASELINE_PROBE "$NATIVE_PREFLIGHT" 'native-baseline-probe.tsv'
-marker NATIVE_COMPOSITION "$NATIVE_PREFLIGHT" 'native-composition.tsv'
+marker NATIVE_BASELINE_PROBE "$NATIVE_PREFLIGHT" 'NATIVE_BASELINE_PROBE.tsv'
+marker NATIVE_COMPOSITION "$NATIVE_PREFLIGHT" 'NATIVE_COMPOSITION.tsv'
+marker BASELINE_PROBE_C1_SHA "$BASELINE_PROBE" '137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160'
+marker BASELINE_PROBE_OUTPUT "$BASELINE_PROBE" 'NATIVE_BASELINE_PROBE.tsv'
+marker BASELINE_PROBE_PASS "$BASELINE_PROBE" 'N1I_C2_C1_NATIVE_BASELINE_PROBE=PASS'
 marker NATIVE_PACKAGES_GENERATED "$MK" 'vendor/sable/titan2/n1i-c2/native-packages.mk'
 marker SEALED_C1_BASELINE "$NATIVE_PREFLIGHT" 'n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild'
 marker PRIOR_FAILED_GRAPH "$NATIVE_PREFLIGHT" '36b53950faebc954cadb30756833ae5ec857f054'
