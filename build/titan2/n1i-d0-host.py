@@ -1056,6 +1056,55 @@ def selftest() -> int:
         assert contexts(ns) == 0
         assert "EXACT_KEY_CONFLICT" in (root / "contexts.tsv").read_text()
 
+        # Gate-D partition-scoped allowlist fixture. The package requests two
+        # privileged permissions but the system_ext allowlist covers only one.
+        sysperm = sysroot / "etc/permissions"
+        extperm = ext / "etc/permissions"
+        sysperm.mkdir(parents=True, exist_ok=True)
+        extperm.mkdir(parents=True, exist_ok=True)
+        (sysperm / "wrong.xml").write_text(
+            "<permissions><privapp-permissions package=\"com.mediatek.ims\">"
+            "<permission name=\"android.permission.P1\"/>"
+            "<permission name=\"android.permission.P2\"/>"
+            "</privapp-permissions></permissions>"
+        )
+        (extperm / "right.xml").write_text(
+            "<permissions><privapp-permissions package=\"com.mediatek.ims\">"
+            "<permission name=\"android.permission.P1\"/>"
+            "</privapp-permissions></permissions>"
+        )
+        apk_perms = root / "apk-permissions.txt"
+        apk_perms.write_text(
+            "uses-permission: name='android.permission.P1'\n"
+            "uses-permission: name='android.permission.P2'\n"
+        )
+        framework = root / "framework-manifest.txt"
+        framework.write_text(
+            "E: manifest\n"
+            "  E: permission\n"
+            "    A: android:name(0x01010003)=\"android.permission.P1\"\n"
+            "    A: android:protectionLevel(0x01010009)=0x10\n"
+            "  E: permission\n"
+            "    A: android:name(0x01010003)=\"android.permission.P2\"\n"
+            "    A: android:protectionLevel(0x01010009)=0x10\n"
+        )
+        ns = argparse.Namespace(
+            package="com.mediatek.ims",
+            candidate_partition="system_ext",
+            apk_permissions=apk_perms,
+            framework_manifest=framework,
+            stock_root=[f"system={sysroot}"],
+            candidate_root=[
+                f"system={sysroot}",
+                f"system_ext={ext}",
+                f"product={product}",
+            ],
+            out=root / "privapp.json",
+        )
+        assert privapp(ns) == 0
+        priv = json.loads((root / "privapp.json").read_text())
+        assert priv["missing_required"] == ["android.permission.P2"]
+
     print("N1I_D0_HOST_HELPER_SELFTEST=PASS")
     return 0
 
