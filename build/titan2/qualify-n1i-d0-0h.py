@@ -163,12 +163,85 @@ def git_clean() -> bool:
     return not p.stdout.strip()
 
 
+PINNED_B2_FILES = (
+    "build/titan2/n1i_static.py",
+    "build/titan2/n1i-b2-members.py",
+    "build/titan2/n1i-b2-native.py",
+)
+
+
 def verify_b2_provenance() -> bool:
     p = subprocess.run(
-        ["git", "-C", str(ROOT), "merge-base", "--is-ancestor", B2_PROVENANCE, "HEAD"],
+        [
+            "git",
+            "-C",
+            str(ROOT),
+            "merge-base",
+            "--is-ancestor",
+            B2_PROVENANCE,
+            "HEAD",
+        ],
         check=False,
     )
-    return p.returncode == 0
+    if p.returncode != 0:
+        return False
+    for rel in PINNED_B2_FILES:
+        probe = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "cat-file",
+                "-e",
+                f"{B2_PROVENANCE}:{rel}",
+            ],
+            check=False,
+        )
+        if probe.returncode != 0:
+            return False
+    return True
+
+
+def materialize_pinned_b2(out: Path) -> Path:
+    tool_dir = out / "pinned-b2"
+    tool_dir.mkdir()
+    manifest = []
+    for rel in PINNED_B2_FILES:
+        blob = subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "rev-parse",
+                f"{B2_PROVENANCE}:{rel}",
+            ],
+            text=True,
+        ).strip()
+        content = subprocess.check_output(
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "show",
+                f"{B2_PROVENANCE}:{rel}",
+            ]
+        )
+        dest = tool_dir / Path(rel).name
+        dest.write_bytes(content)
+        manifest.append(
+            [
+                rel,
+                blob,
+                hashlib.sha256(content).hexdigest(),
+                str(dest),
+            ]
+        )
+    write_tsv(
+        out / "PINNED_B2_TOOLS.tsv",
+        ["source_path", "git_blob", "sha256", "materialized_path"],
+        manifest,
+    )
+    return tool_dir
 
 
 def load_deriver():
