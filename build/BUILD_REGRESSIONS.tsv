@@ -19,4 +19,4 @@ T2-015	TITAN2	ACTIVE	Tmux build sessions use remain-on-exit so completed or fail
 T2-016	TITAN2	ACTIVE	N1I-C1 post-build qualification is read-only, requires explicit source/out binding, uses no strict shell mode, and never compiles or contacts/flashes a device	build/titan2/qualify-n1i-c1-postbuild.sh
 T2-017	TITAN2	ACTIVE	Bootclasspath module names with stock-compatible stems require PRODUCT_CONFIGURED_JAR_LOCATION_OVERRIDES so classpath metadata matches installed jar filenames	product/titan2/n1i-c1/sable-titan2-n1i-c1.mk
 T2-018	TITAN2	ACTIVE	Every active Titan release-specific build driver runs the shared build-regression contract before source mutation or build	build/titan2/run-n1i-c2-cellular-mvp.sh
-T2-019	TITAN2	ACTIVE	C2 native admission must be install-owner collision-qualified; the broad A4 reference set is never staged wholesale as product prebuilts	build/titan2/audit-n1i-c2-install-collisions.py
+T2-019	TITAN2	ACTIVE	C2 native installs must be planned against the sealed C1 baseline: C1-identical targets are reused, absent targets alone are installed, and C1-different targets fail closed before Kati	build/titan2/plan-n1i-c2-native-install.py
