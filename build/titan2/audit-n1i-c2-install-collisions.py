@@ -17,7 +17,7 @@ import pathlib
 import re
 import sys
 
-TOOL_VERSION = "1.0.0"
+TOOL_VERSION = "1.1.0"
 
 
 class AuditError(RuntimeError):
@@ -87,6 +87,11 @@ def main() -> int:
     ap.add_argument("--product-out", type=pathlib.Path, required=True)
     ap.add_argument("--target-list", type=pathlib.Path, required=True)
     ap.add_argument(
+        "--installs-file",
+        type=pathlib.Path,
+        help="audit one exact retained installs-*.mk graph instead of globbing",
+    )
+    ap.add_argument(
         "--report-only",
         action="store_true",
         help="return zero even when collisions are found",
@@ -119,9 +124,23 @@ def main() -> int:
     if not product_out.is_dir():
         raise AuditError(f"product_out_missing={product_out}")
 
-    installs_files = sorted((out_dir / "soong").glob("installs-*.mk"))
-    if not installs_files:
-        raise AuditError(f"installs_graph_missing={out_dir / 'soong'}")
+    if args.installs_file is not None:
+        exact = args.installs_file.resolve()
+        if not exact.is_file():
+            raise AuditError(f"installs_file_missing={exact}")
+        try:
+            exact.relative_to((out_dir / "soong").resolve())
+        except ValueError as exc:
+            raise AuditError(
+                f"installs_file_outside_out_dir={exact}"
+            ) from exc
+        if not exact.name.startswith("installs-") or exact.suffix != ".mk":
+            raise AuditError(f"installs_file_name_invalid={exact.name}")
+        installs_files = [exact]
+    else:
+        installs_files = sorted((out_dir / "soong").glob("installs-*.mk"))
+        if not installs_files:
+            raise AuditError(f"installs_graph_missing={out_dir / 'soong'}")
 
     targets = load_targets(target_list)
     collision_count = 0
@@ -131,6 +150,8 @@ def main() -> int:
 
     print(f"N1I_C2_INSTALL_AUDIT_TARGET_COUNT={len(targets)}")
     print(f"N1I_C2_INSTALL_AUDIT_GRAPH_FILE_COUNT={len(installs_files)}")
+    for graph in installs_files:
+        print(f"N1I_C2_INSTALL_AUDIT_GRAPH_FILE={graph}")
 
     for target in targets:
         final = installed_path(product_out, target)
