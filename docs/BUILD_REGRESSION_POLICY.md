@@ -109,8 +109,15 @@ engineering lane, including:
   flash guard passed. Active release drivers must run the shared regression
   contract before source staging/mutation or build work;
 - treating a collision-free module name as sufficient native admission. Native
-  prebuilts must be checked against the final Kati install destination graph;
-  two differently named modules that install the same path are a regression.
+  prebuilts must be checked against install destinations, not just module names.
+  The N1I-C2 failure on `/system/lib64/android.hardware.drm-V1-ndk.so` proved
+  that a unique Sable module can still collide with a platform-owned final path.
+  Before the next C2 build, every frozen native target is compared against the
+  exact sealed C1 image: byte-identical C1 targets are reused and therefore not
+  listed in C2 `PRODUCT_PACKAGES`; C1-absent targets alone are installed from
+  the frozen stock bundle; C1-present-but-different targets fail closed before
+  Kati. The Kati install-graph audit remains a second-line verifier and is also
+  captured automatically after a failed build when an install graph exists.
 
 ## Post-build reuse rule
 
