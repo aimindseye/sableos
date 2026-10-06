@@ -125,6 +125,8 @@ marker BASELINE_PROBE_PASS "$BASELINE_PROBE" 'N1I_C2_C1_NATIVE_BASELINE_PROBE=PA
 marker NATIVE_PACKAGES_GENERATED "$MK" 'vendor/sable/titan2/n1i-c2/native-packages.mk'
 marker SEALED_C1_BASELINE "$NATIVE_PREFLIGHT" 'n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild'
 marker PRIOR_FAILED_GRAPH "$NATIVE_PREFLIGHT" '36b53950faebc954cadb30756833ae5ec857f054'
+marker PRIOR_FAILED_INSTALLS_EXACT "$NATIVE_PREFLIGHT" 'installs-treble_arm64_bvN.mk'
+marker COLLISION_EXACT_GRAPH "$NATIVE_PREFLIGHT" '--installs-file "$PRIOR_FAILED_INSTALLS"'
 marker KNOWN_KATI_TARGET "$NATIVE_PREFLIGHT" '/system/lib64/android.hardware.drm-V1-ndk.so'
 marker PREFLIGHT_PASS "$NATIVE_PREFLIGHT" 'N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS'
 marker SOURCE_AUTH_REQUIRED "$DRIVER" 'source_mutation_requires_authorization'
@@ -209,7 +211,7 @@ grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS' <<<"$NATIV
     fail native_install_known_kati_reuse_marker
 grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_graph_collision_marker
-grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_BASELINE_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_different_fail_closed_marker
 grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_OWNER_IDENTITY=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_owner_identity_marker
