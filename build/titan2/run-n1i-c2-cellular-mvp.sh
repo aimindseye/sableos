@@ -585,7 +585,7 @@ selfcheck() {
     bash -n "$0" || { fail driver_syntax; return $?; }
     bash -n "$NATIVE_PREFLIGHT" || { fail native_preflight_syntax; return $?; }
 
-    python3 "$BUILD_REGRESSION_CONTRACT" ||
+    python3 "$ROOT/build/gates/build-regression-contract.py" ||
         { fail build_regression_contract; return $?; }
     echo "N1I_C2_BUILD_REGRESSION_PREFLIGHT=PASS"
 
