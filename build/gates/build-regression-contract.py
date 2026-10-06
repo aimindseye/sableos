@@ -77,6 +77,7 @@ a4_ref = read("product/titan2/n1i-c1/a4-native-superset.txt")
 postbuild_qualifier = read("build/titan2/qualify-n1i-c1-postbuild.sh")
 c2_driver = read("build/titan2/run-n1i-c2-cellular-mvp.sh")
 c2_bp = read("product/titan2/n1i-c2/Android.bp")
+c2_mk = read("product/titan2/n1i-c2/sable-titan2-n1i-c2.mk")
 c2_collision_audit = read("build/titan2/audit-n1i-c2-install-collisions.py")
 c2_admission_path = ROOT / "product/titan2/n1i-c2/native-admission.txt"
 c2_admission = (
@@ -101,7 +102,7 @@ check(
     "gitleaks_source_commit_scoped",
 )
 
-active_titan_text = "\n".join((adapter, driver, bp, mk))
+active_titan_text = "\n".join((adapter, driver, bp, mk, c2_driver, c2_bp, c2_mk))
 check(
     "T2-001",
     "N1D_AOSP_REVISION=android-16.0.0_r4" in fresh
@@ -123,7 +124,9 @@ check(
     "T2-002",
     all(token not in active_titan_text for token in forbidden)
     and "SABLE_ADB" not in driver
-    and "SABLE_FASTBOOT" not in driver,
+    and "SABLE_FASTBOOT" not in driver
+    and "SABLE_ADB" not in c2_driver
+    and "SABLE_FASTBOOT" not in c2_driver,
     "unsafe_compatibility_and_device_write_bypasses_absent",
 )
 
@@ -225,7 +228,8 @@ check(
     and len(set(a4_rows)) == 33
     and "REFERENCE ONLY" in a4_ref
     and "a4-native-superset.txt" in contract
-    and "native-paths.txt" not in driver,
+    and "native-paths.txt" not in driver
+    and "a4-native-superset.txt" not in c2_driver,
     "a4_native_superset_reference_only",
 )
 
@@ -318,6 +322,12 @@ c2_admission_rows = [
     for line in c2_admission.splitlines()
     if line.strip() and not line.lstrip().startswith("#")
 ]
+c2_prebuilt_targets = set(
+    re.findall(
+        r'srcs:\s*\["prebuilt(/(?:system|system_ext|product)/[^"]+\.so)"\]',
+        c2_bp,
+    )
+)
 check(
     "T2-019",
     "N1I_C2_INSTALL_OWNERSHIP_AUDIT" in c2_collision_audit
@@ -326,10 +336,10 @@ check(
     and len(c2_admission_rows) < 33
     and len(c2_admission_rows) == len(set(c2_admission_rows))
     and all(row in a4_rows for row in c2_admission_rows)
+    and set(c2_admission_rows) == c2_prebuilt_targets
     and "native-admission.txt" in c2_driver
     and "audit-n1i-c2-install-collisions.py" in c2_driver
-    and "a4-native-superset.txt" not in c2_driver
-    and "android.hardware.drm-V1-ndk.so" not in c2_bp,
+    and "a4-native-superset.txt" not in c2_driver,
     "c2_native_admission_is_collision_qualified_subset_not_a4_wholesale",
 )
 
