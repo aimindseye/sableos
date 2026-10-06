@@ -174,6 +174,38 @@ def test_generated_packages_exclude_known_reuse() -> None:
         assert text.count("SableN1IC2NativeM") == 32
 
 
+
+def test_single_owner_must_be_exact_sable_module() -> None:
+    rows = probe_rows(special_status="ABSENT")
+    collisions = collision_rows(special_state="SINGLE_OWNER")
+    special = row_for(collisions, KNOWN_KATI_TARGET)
+    special["owner_hints"] = "platform_owner"
+    try:
+        mod.plan(rows, set(targets()), collisions)
+    except mod.PlanError as exc:
+        text = str(exc)
+        assert "BLOCK_SINGLE_OWNER_NOT_SABLE_MODULE" not in text
+        assert "owner_hints=platform_owner" in text
+        assert mutation_id_for(KNOWN_KATI_TARGET) in text
+    else:
+        raise AssertionError("non-Sable single owner was admitted as C2 import")
+
+
+def test_collision_must_include_exact_sable_module() -> None:
+    rows = probe_rows()
+    collisions = collision_rows()
+    special = row_for(collisions, KNOWN_KATI_TARGET)
+    special["owner_hints"] = "platform_owner;other_owner"
+    try:
+        mod.plan(rows, set(targets()), collisions)
+    except mod.PlanError as exc:
+        text = str(exc)
+        assert "owner_hints=platform_owner;other_owner" in text
+        assert mutation_id_for(KNOWN_KATI_TARGET) in text
+    else:
+        raise AssertionError("collision without Sable owner was accepted for reuse")
+
+
 def main() -> int:
     test_known_kati_collision_identical_baseline_reused()
     test_graph_collision_absent_from_c1_fails_closed()
@@ -186,6 +218,7 @@ def main() -> int:
     print("N1I_C2_NATIVE_INSTALL_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS")
     print("N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_BASELINE_FAIL_CLOSED=PASS")
     print("N1I_C2_NATIVE_INSTALL_PLAN_GENERATED_PACKAGES=PASS")
+    print("N1I_C2_NATIVE_INSTALL_PLAN_OWNER_IDENTITY=PASS")
     print("N1I_C2_NATIVE_INSTALL_PLAN_TEST=PASS")
     return 0
 
