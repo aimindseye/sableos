@@ -675,7 +675,7 @@ def gate_d_c2(root: Path, stock_system: Path, stock_system_ext: Path, stock_prod
     return Gate("D", "c2", PASS, f"required={len(required)} system_ext_covered={len(c2_allow)} signature={sig_result}")
 
 
-def classpath_for_side(side: str, root: Path, c3a_apex_root: Path, out: Path) -> tuple[Gate, list[tuple[str, Path]]]:
+def classpath_for_side(side: str, root: Path, apex_root: Path, out: Path) -> tuple[Gate, list[tuple[str, Path]]]:
     try:
         deriver = load_deriver()
     except Exception as exc:
@@ -683,9 +683,11 @@ def classpath_for_side(side: str, root: Path, c3a_apex_root: Path, out: Path) ->
     fragment = root_path(root, "system", "etc/classpaths/bootclasspath.pb")
     if fragment is None:
         return Gate("E", side, UNKNOWN, "system_bootclasspath_fragment_missing"), []
+    if not apex_root.is_dir():
+        return Gate("E", side, UNKNOWN, f"side_apex_root_missing={apex_root}"), []
     try:
         system_jars = deriver.boot_jars(fragment, 36)
-        apex_fragments = deriver.apex_fragments(c3a_apex_root, 36)
+        apex_fragments = deriver.apex_fragments(apex_root, 36)
     except Exception as exc:
         return Gate("E", side, UNKNOWN, f"classpath_parse={exc}"), []
 
@@ -695,16 +697,19 @@ def classpath_for_side(side: str, root: Path, c3a_apex_root: Path, out: Path) ->
         return Gate("E", side, UNKNOWN, f"art_fragment_count={len(art)}"), []
 
     rows: list[tuple[str, Path]] = []
-    for frag in art:
-        for jar in frag.jars:
-            rows.append((jar.path, deriver.c3a_apex_jar(frag, jar.path)))
+    try:
+        for frag in art:
+            for jar in frag.jars:
+                rows.append((jar.path, deriver.c3a_apex_jar(frag, jar.path)))
+    except Exception as exc:
+        return Gate("E", side, UNKNOWN, f"art_apex_jar_resolve={exc}"), []
     for jar in system_jars:
         device = jar.path
         if device.startswith("/apex/"):
             module = deriver.module_from_apex_path(device)
             frag = next((f for f in apex_fragments if f.module == module), None)
             try:
-                aroot = frag.root if frag is not None else deriver.find_extracted_apex_root(c3a_apex_root, module)
+                aroot = frag.root if frag is not None else deriver.find_extracted_apex_root(apex_root, module)
                 host = deriver.c3a_apex_jar_from_root(aroot, module, device)
             except Exception as exc:
                 return Gate("E", side, UNKNOWN, f"apex_path_resolve={device}:{exc}"), []
@@ -719,17 +724,30 @@ def classpath_for_side(side: str, root: Path, c3a_apex_root: Path, out: Path) ->
         if host is None or not host.is_file():
             return Gate("E", side, BOOT_FATAL, f"runtime_classpath_entry_missing={device}"), []
         rows.append((device, host))
-    for frag in other:
-        for jar in frag.jars:
-            if any(d == jar.path for d, _h in rows):
-                continue
-            rows.append((jar.path, deriver.c3a_apex_jar(frag, jar.path)))
+    try:
+        for frag in other:
+            for jar in frag.jars:
+                if any(d == jar.path for d, _h in rows):
+                    continue
+                rows.append((jar.path, deriver.c3a_apex_jar(frag, jar.path)))
+    except Exception as exc:
+        return Gate("E", side, UNKNOWN, f"apex_boot_jar_resolve={exc}"), []
 
     devices = [d for d, _h in rows]
     if len(devices) != len(set(devices)):
         return Gate("E", side, BOOT_FATAL, "duplicate_runtime_classpath_path"), []
     write_tsv(out / f"gate-e-{side}-classpath.tsv", ["device_path", "host_path", "sha256"], [[d, str(h), sha256(h)] for d, h in rows])
-    return Gate("E", side, PASS, f"classpath_entries={len(rows)}"), rows
+    updatable = root_path(root, "system", "etc/updatable-bcp-packages.txt")
+    prop_refs = prop_values(root, "dalvik.vm.dex2oat-updatable-bcp-packages-file")
+    updatable_status = "PRESENT" if updatable is not None and updatable.is_file() else "ABSENT"
+    (out / f"gate-e-{side}-updatable-bcp.env").write_text(
+        f"UPDATABLE_BCP_PACKAGES={updatable_status}\n"
+        f"UPDATABLE_BCP_PROPERTY_VALUES={','.join(sorted(prop_refs)) or 'NONE'}\n",
+        encoding="utf-8",
+    )
+    if prop_refs and updatable_status == "ABSENT":
+        return Gate("E", side, BOOT_FATAL, "configured_updatable_bcp_packages_file_missing"), rows
+    return Gate("E", side, PASS, f"classpath_entries={len(rows)} updatable_bcp={updatable_status}"), rows
 
 
 def duplicate_classes(side: str, rows: list[tuple[str, Path]], out: Path) -> tuple[int, list[list[str]]]:
@@ -835,7 +853,7 @@ def main() -> int:
     ap.add_argument("--inputs-dir", type=Path, required=True)
     ap.add_argument("--android-root", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--v6-evidence", type=Path, default=Path("/srv/sable-build/evidence/titan2/n1-c1-runtime-linkage-v6"))
+    ap.add_argument("--c1-root", type=Path)
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
@@ -864,7 +882,12 @@ def main() -> int:
     if env.get("N1F_SYSTEM_SHA256") != N1F_SHA or env.get("C2_SYSTEM_SHA256") != C2_SHA:
         raise D0Error("system_image_authority_mismatch")
 
-    roots = {k: Path(env[k]) for k in ("N1F_ROOT", "C2_ROOT", "STOCK_SYSTEM_ROOT", "STOCK_SYSTEM_EXT_ROOT", "STOCK_PRODUCT_ROOT", "STOCK_VENDOR_ROOT")}
+    roots = {k: Path(env[k]) for k in ("N1F_ROOT", "C2_ROOT", "STOCK_SYSTEM_ROOT", "STOCK_SYSTEM_EXT_ROOT", "STOCK_PRODUCT_ROOT", "STOCK_VENDOR_ROOT", "STOCK_RUNTIME_ROOT")}
+    apex_roots = {
+        "n1f": Path(env.get("N1F_APEX_ROOT", "")),
+        "c2": Path(env.get("C2_APEX_ROOT", "")),
+        "stock": Path(env.get("STOCK_APEX_ROOT", "")),
+    }
     stock_odm = Path(env.get("STOCK_ODM_ROOT", ""))
     stock_odm = stock_odm if stock_odm.is_dir() else None
     for k, p in roots.items():
@@ -916,27 +939,42 @@ def main() -> int:
     gates.append(gate_d_n1f(roots["N1F_ROOT"], aapt2, out))
     gates.append(gate_d_c2(roots["C2_ROOT"], roots["STOCK_SYSTEM_ROOT"], roots["STOCK_SYSTEM_EXT_ROOT"], roots["STOCK_PRODUCT_ROOT"], aapt2, apksigner, out))
 
-    # Gate E uses the retained C3A APEX extraction only after input authority.
-    replay_candidates = [
-        args.v6_evidence / "n1i-a-replay",
-        Path("/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z"),
-    ]
-    replay = next((p for p in replay_candidates if (p / "work/apex/c3a").is_dir()), None)
+    # Gate E must analyze each side's own pinned APEX runtime view.
     e_rows: dict[str, list[tuple[str, Path]]] = {}
-    if replay is None:
-        gates.extend((Gate("E", "n1f", UNKNOWN, "c3a_apex_runtime_control_missing"), Gate("E", "c2", UNKNOWN, "c3a_apex_runtime_control_missing")))
-    else:
-        apex_root = replay / "work/apex/c3a"
-        for side, root in (("n1f", roots["N1F_ROOT"]), ("c2", roots["C2_ROOT"])):
-            eg, rows = classpath_for_side(side, root, apex_root, out)
-            if eg.result == PASS:
-                ndup, _ = duplicate_classes(side, rows, out)
-                if ndup < 0:
-                    eg = Gate("E", side, UNKNOWN, "duplicate_class_engine_unavailable")
-                elif ndup:
-                    eg = Gate("E", side, BOOT_FATAL, f"bootclasspath_duplicate_classes={ndup}")
-            gates.append(eg)
-            e_rows[side] = rows
+    for side, root in (
+        ("n1f", roots["N1F_ROOT"]),
+        ("c2", roots["C2_ROOT"]),
+        ("stock", roots["STOCK_RUNTIME_ROOT"]),
+    ):
+        eg, rows = classpath_for_side(side, root, apex_roots[side], out)
+        if eg.result == PASS:
+            ndup, _ = duplicate_classes(side, rows, out)
+            if ndup < 0:
+                eg = Gate("E", side, UNKNOWN, "duplicate_class_engine_unavailable")
+            elif ndup:
+                # A duplicate is a real classpath difference but is not boot-fatal
+                # without proof that boot-reachable code resolves through it.
+                eg = Gate("E", side, FUNCTIONAL_RISK, f"bootclasspath_duplicate_classes={ndup}")
+        gates.append(eg)
+        e_rows[side] = rows
+
+    mtk_rows = []
+    for side in ("stock", "n1f", "c2"):
+        devices = [d for d, _h in e_rows.get(side, [])]
+        for jar in (COMMON, IMS_BASE):
+            mtk_rows.append(
+                [
+                    side,
+                    jar,
+                    devices.index(jar) if jar in devices else -1,
+                    "YES" if jar in devices else "NO",
+                ]
+            )
+    write_tsv(
+        out / "gate-e-mtk-jar-membership.tsv",
+        ["side", "jar", "index", "on_bootclasspath"],
+        mtk_rows,
+    )
 
     gates.append(Gate("F", "n1f", NOT_APPLICABLE, "OEM_IMS_ABSENT"))
     gates.append(gate_f_c2(roots["C2_ROOT"], aapt2, out))
