@@ -20,6 +20,7 @@ MODE=--direct
 JOBS="${SABLE_BUILD_JOBS:-$(nproc --all)}"
 SOURCE_MUTATION_AUTHORIZED=NO
 BUILD_AUTHORIZED=NO
+NATIVE_ADMISSION_INTEGRATED=NO
 
 fail() {
     echo "N1I_C2_BUILD=FAIL reason=$1" >&2
@@ -57,6 +58,8 @@ done
     { fail source_mutation_requires_authorization 64; exit $?; }
 [[ "$BUILD_AUTHORIZED" == YES ]] ||
     { fail build_requires_authorization 64; exit $?; }
+[[ "$NATIVE_ADMISSION_INTEGRATED" == YES ]] ||
+    { fail native_admission_not_integrated 69; exit $?; }
 
 SOURCE_COMMIT="${EXPECTED_SOURCE_COMMIT:-$(git -C "$ROOT" rev-parse HEAD)}"
 [[ "$SOURCE_COMMIT" =~ ^[0-9a-f]{40}$ ]] ||
