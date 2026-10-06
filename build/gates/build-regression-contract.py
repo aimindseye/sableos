@@ -384,14 +384,15 @@ check(
     "c2_build_driver_singleton_structure",
 )
 
+central_guard_lines = central_guard.splitlines()
 check(
     "T2-021",
-    central_guard.count("#!/usr/bin/env bash") == 1
-    and central_guard.count(
+    central_guard_lines.count("#!/usr/bin/env bash") == 1
+    and central_guard_lines.count(
         'say "===== TITAN2 CENTRAL FLASH GUARD CONTRACT ====="'
     ) == 1
-    and central_guard.count(
-        'say "TITAN2_CENTRAL_FLASH_GUARD_CONTRACT=PASS"'
+    and central_guard_lines.count(
+        '  say "TITAN2_CENTRAL_FLASH_GUARD_CONTRACT=PASS"'
     ) == 1
     and 'TITAN2_CENTRAL_GUARD_SINGLETON_STRUCTURE' in central_guard,
     "titan2_central_guard_singleton_structure",
