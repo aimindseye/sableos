@@ -47,7 +47,8 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023",
+    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023", "T2-024",
+    "T2-025",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -102,6 +103,10 @@ c2_platform_provider_targets = {
     if len(row) >= 4
 }
 central_guard = read("build/gates/titan2-central-flash-guard-contract.sh")
+d0_driver = read("build/titan2/run-n1i-d0-host-closure.sh")
+d0_helper = read("build/titan2/n1i-d0-host.py")
+d0_contract = read("build/gates/n1i-d0-host-closure-contract.sh")
+d0_plan = read("docs/titan2/N1I_D0_EXECUTION_PLAN_R4.md")
 
 check(
     "BR-001",
@@ -498,6 +503,37 @@ check(
     and '--expected-system-sha "$EXPECTED_C1_SHA"'
         in c1_runtime_linkage_driver,
     "c2_postbuild_linkage_is_readonly_source_bound_with_exact_agentpremain_full_classification",
+)
+
+
+check(
+    "T2-024",
+    'B2_PIN="1697f21989b8ed6f1db90f8886952894592c7d0f"' in d0_driver
+    and 'git -C "$ROOT" archive "$B2_PIN"' in d0_driver
+    and "N1I_D0_A4_IMPORT_AUTHORITY RETIRED_REFERENCE_ONLY" in d0_driver
+    and "N1I_D0_TELEPHONYMETRICS_SCOPE C2_ONLY" in d0_driver
+    and "run_a0 N1F" in d0_driver
+    and "run_classpath N1F" in d0_driver
+    and "N1I_D0_CLOSURE_UNKNOWN_COUNT" in d0_driver
+    and "N1I_D0_C1J_COMPOSITION_READY" in d0_driver
+    and "N1I_D0_PHYSICAL_ACTIONS=NONE" in d0_driver
+    and "N1I_D0_HOST_CLOSURE_CONTRACT=PASS" in d0_contract
+    and "Every applicable gate runs the same algorithm on N1F and C2" in d0_plan
+    and "UNKNOWN_NOT_IMPLEMENTED" in d0_plan,
+    "d0_host_closure_is_control_driven_pinned_and_physical_action_free",
+)
+
+check(
+    "T2-025",
+    "def parse_framework_privileged(" in d0_helper
+    and "requested & set(framework)" in d0_helper
+    and 'candidate_partition_blocks = [' in d0_helper
+    and "def privapp_tree(" in d0_helper
+    and "def seapp(" in d0_helper
+    and "N1I_D0_PRIVAPP_MISSING_REQUIRED_COUNT=" in d0_helper
+    and "assert priv[\"missing_required\"] == [\"android.permission.P2\"]"
+        in d0_helper,
+    "d0_privapp_partition_and_n1f_control_are_exact_framework_derived",
 )
 
 if failures:
