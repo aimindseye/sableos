@@ -232,7 +232,7 @@ extract_one() {
                 host_path="$TEMP_ROOT${image_path}"
             fi
             [[ -f "$host_path" ]] || return 1
-            install -m 0600 "$host_path" "$dest"
+            cp "$host_path" "$dest" || return 1
             ;;
         *)
             return 1
