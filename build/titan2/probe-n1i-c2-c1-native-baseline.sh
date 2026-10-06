@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Read-only probe of the exact sealed C1 system image against the 33 frozen
+# N1I-C2 native compatibility targets.
 set -u
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -66,14 +68,20 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 
-[[ -n "$C1_SYSTEM" && -f "$C1_SYSTEM" ]] || { fail c1_system_missing 64; exit $?; }
-[[ -n "$MATERIALIZED" && -d "$MATERIALIZED" ]] || { fail materialized_missing 64; exit $?; }
+[[ -n "$C1_SYSTEM" && -f "$C1_SYSTEM" ]] ||
+    { fail c1_system_missing 64; exit $?; }
+[[ -n "$MATERIALIZED" && -d "$MATERIALIZED" ]] ||
+    { fail materialized_missing 64; exit $?; }
 [[ -n "$OUT" ]] || { fail out_missing 64; exit $?; }
 [[ ! -e "$OUT" ]] || { fail "out_exists=$OUT" 64; exit $?; }
 
-for f in     "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv"     "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env"     "$MATERIALIZED/SHA256SUMS.txt"
+for file in \
+    "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv" \
+    "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env" \
+    "$MATERIALIZED/SHA256SUMS.txt"
 do
-    [[ -f "$f" ]] || { fail "required_materialization_file=$f" 64; exit $?; }
+    [[ -f "$file" ]] ||
+        { fail "required_materialization_file=$file" 64; exit $?; }
 done
 
 C1_ACTUAL_SHA="$(sha256sum "$C1_SYSTEM" | awk '{print $1}')"
@@ -87,7 +95,9 @@ C1_ACTUAL_SHA="$(sha256sum "$C1_SYSTEM" | awk '{print $1}')"
 SEAL_RC=$?
 [[ "$SEAL_RC" -eq 0 ]] || { fail materialization_seal 65; exit $?; }
 
-grep -Fxq "N1I_C2_MATERIALIZATION_NATIVE_FILE_COUNT=$EXPECTED_NATIVE_COUNT"     "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env" ||
+grep -Fxq \
+    "N1I_C2_MATERIALIZATION_NATIVE_FILE_COUNT=$EXPECTED_NATIVE_COUNT" \
+    "$MATERIALIZED/CELLULAR_MVP_MATERIALIZATION_SUMMARY.env" ||
     { fail materialization_native_count 65; exit $?; }
 
 bash "$ROOT/build/host/verify-host-tools.sh" aosp-host >/dev/null
@@ -96,14 +106,11 @@ HOST_RC=$?
 
 image_type() {
     local img="$1"
-    if [[ "$(od -An -tx1 -j 0 -N 4 "$img" 2>/dev/null | tr -d ' 
-')" == 3aff26ed ]]; then
+    if [[ "$(od -An -tx1 -j 0 -N 4 "$img" 2>/dev/null | tr -d ' \n')" == 3aff26ed ]]; then
         echo sparse
-    elif [[ "$(od -An -tx1 -j 1080 -N 2 "$img" 2>/dev/null | tr -d ' 
-')" == 53ef ]]; then
+    elif [[ "$(od -An -tx1 -j 1080 -N 2 "$img" 2>/dev/null | tr -d ' \n')" == 53ef ]]; then
         echo ext4
-    elif [[ "$(od -An -tx1 -j 1024 -N 4 "$img" 2>/dev/null | tr -d ' 
-')" == e2e1f5e0 ]]; then
+    elif [[ "$(od -An -tx1 -j 1024 -N 4 "$img" 2>/dev/null | tr -d ' \n')" == e2e1f5e0 ]]; then
         echo erofs
     else
         echo unknown
@@ -111,7 +118,9 @@ image_type() {
 }
 
 extract_fs() {
-    local img="$1" dest="$2" kind raw rc
+    local img="$1"
+    local dest="$2"
+    local kind raw rc
     kind="$(image_type "$img")"
     mkdir -p "$dest" || return 1
     case "$kind" in
@@ -159,7 +168,11 @@ else
     C1_ROOT="$WORK/c1"
 fi
 
-python3 -     "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv"     "$C1_ROOT"     "$OUT/NATIVE_BASELINE_PROBE.tsv"     "$OUT/NATIVE_BASELINE_SUMMARY.env" <<'PY'
+python3 - \
+    "$MATERIALIZED/CELLULAR_MVP_STOCK_MATERIALIZATION.tsv" \
+    "$C1_ROOT" \
+    "$OUT/NATIVE_BASELINE_PROBE.tsv" \
+    "$OUT/NATIVE_BASELINE_SUMMARY.env" <<'PY'
 import csv
 import hashlib
 import pathlib
@@ -170,6 +183,7 @@ c1_root = pathlib.Path(sys.argv[2])
 out_tsv = pathlib.Path(sys.argv[3])
 out_env = pathlib.Path(sys.argv[4])
 
+
 def sha256(path: pathlib.Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as fp:
@@ -177,14 +191,19 @@ def sha256(path: pathlib.Path) -> str:
             h.update(chunk)
     return h.hexdigest()
 
+
 with materialization.open(encoding="utf-8", newline="") as fp:
     rows = [
-        row for row in csv.DictReader(fp, delimiter="	")
+        row
+        for row in csv.DictReader(fp, delimiter="\t")
         if row.get("kind") == "NATIVE"
     ]
 
 if len(rows) != 33:
-    raise SystemExit(f"N1I_C2_C1_NATIVE_BASELINE_PROBE=FAIL_NATIVE_ROWS count={len(rows)}")
+    raise SystemExit(
+        f"N1I_C2_C1_NATIVE_BASELINE_PROBE=FAIL_NATIVE_ROWS count={len(rows)}"
+    )
+
 
 def image_path(target: str) -> pathlib.Path:
     if target.startswith("/system_ext/"):
@@ -195,16 +214,17 @@ def image_path(target: str) -> pathlib.Path:
         return c1_root / target.removeprefix("/system/")
     raise ValueError(target)
 
+
 out_rows = []
 present = absent = identical = different = 0
 for row in rows:
     mid = row["mutation_id"]
     target = row["target"]
     stock_sha = row["sha256"]
-    p = image_path(target)
-    if p.is_file():
+    path = image_path(target)
+    if path.is_file():
         status = "PRESENT"
-        c1_sha = sha256(p)
+        c1_sha = sha256(path)
         present += 1
         if c1_sha == stock_sha:
             identical += 1
@@ -214,24 +234,33 @@ for row in rows:
         status = "ABSENT"
         c1_sha = "-"
         absent += 1
-    out_rows.append({
-        "id": mid,
-        "target": target,
-        "module": f"SableN1IC2Native{mid}",
-        "stock_sha256": stock_sha,
-        "c1_status": status,
-        "c1_sha256": c1_sha,
-        "c1_image_path": str(p),
-    })
+    out_rows.append(
+        {
+            "id": mid,
+            "target": target,
+            "module": f"SableN1IC2Native{mid}",
+            "stock_sha256": stock_sha,
+            "c1_status": status,
+            "c1_sha256": c1_sha,
+            "c1_image_path": str(path),
+        }
+    )
 
 fields = [
-    "id", "target", "module", "stock_sha256",
-    "c1_status", "c1_sha256", "c1_image_path",
+    "id",
+    "target",
+    "module",
+    "stock_sha256",
+    "c1_status",
+    "c1_sha256",
+    "c1_image_path",
 ]
 with out_tsv.open("w", encoding="utf-8", newline="") as fp:
     writer = csv.DictWriter(
-        fp, fieldnames=fields, delimiter="	", lineterminator="
-"
+        fp,
+        fieldnames=fields,
+        delimiter="\t",
+        lineterminator="\n",
     )
     writer.writeheader()
     writer.writerows(out_rows)
@@ -246,8 +275,7 @@ summary = {
 }
 with out_env.open("w", encoding="utf-8") as fp:
     for key, value in summary.items():
-        fp.write(f"{key}={value}
-")
+        fp.write(f"{key}={value}\n")
 
 for key, value in summary.items():
     print(f"{key}={value}")
