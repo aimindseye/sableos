@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023",
+    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023", "T2-024",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -91,6 +91,12 @@ c1_runtime_linkage_driver = read("build/titan2/run-n1i-c1-runtime-linkage-audit.
 c1_apex_runtime_parity = read("build/titan2/audit-n1i-c1-apex-runtime-parity.py")
 c1_runtime_classpath_deriver = read("build/titan2/derive-n1i-c1-runtime-classpath.py")
 c2_agentpremain_classifier = read("build/titan2/classify-n1i-c2-agentpremain-gap.py")
+d0_runner = read("build/titan2/run-n1i-d0-0h.sh")
+d0_prep = read("build/titan2/prepare-n1i-d0-0h-inputs.sh")
+d0_qual = read("build/titan2/qualify-n1i-d0-0h.py")
+d0_contract = read("build/gates/n1i-d0-0h-contract.sh")
+d0_apex = read("build/titan2/materialize-n1i-d0-apex.py")
+d0_native_scan = read("build/titan2/scan-n1i-d0-native-loads.py")
 c2_platform_provider_rows = [
     line.split("\t")
     for line in c2_platform_provider.splitlines()[1:]
@@ -498,6 +504,37 @@ check(
     and '--expected-system-sha "$EXPECTED_C1_SHA"'
         in c1_runtime_linkage_driver,
     "c2_postbuild_linkage_is_readonly_source_bound_with_exact_agentpremain_full_classification",
+)
+
+check(
+    "T2-024",
+    "BUILD_AUTHORIZED=NO" in d0_runner
+    and "NETWORK_FETCH_AUTHORIZED=NO" in d0_runner
+    and "DEVICE_CONTACT_AUTHORIZED=NO" in d0_runner
+    and "MODE_TRANSITION_AUTHORIZED=NO" in d0_runner
+    and "REBOOT_AUTHORIZED=NO" in d0_runner
+    and "FLASH_AUTHORIZED=NO" in d0_runner
+    and "N1F_APEX_ROOT=" in d0_prep
+    and "C2_APEX_ROOT=" in d0_prep
+    and "STOCK_APEX_ROOT=" in d0_prep
+    and "init_sepolicy_version(" in d0_qual
+    and '"-m", "-M", "true", "-G", "-N"' in d0_qual
+    and "effective_policy_unavailable gate_a=" in d0_qual
+    and "system_ext_privapp_missing=" in d0_qual
+    and "SEAPP_RESULT=" in d0_qual
+    and "updatable-bcp-packages.txt" in d0_qual
+    and "audit-n1i-c1-runtime-linkage.py" in d0_qual
+    and "boot_caller_not_proven" in d0_qual
+    and "scan-n1i-d0-native-loads.py" in d0_qual
+    and "UNKNOWN_NOT_IMPLEMENTED" in d0_qual
+    and "A4_RETIREMENT.tsv" in d0_qual
+    and "N1I_D0_C1J_COMPOSITION_READY=" in d0_qual
+    and "c3a_apex_root" not in d0_qual
+    and "work/apex/c3a" not in d0_qual
+    and "N1I_D0_APEX_MATERIALIZE=PASS" in d0_apex
+    and "N1I_D0_NATIVE_LOAD_SCAN=PASS" in d0_native_scan
+    and "N1I_D0_0H_CONTRACT=PASS" in d0_contract,
+    "d0_host_closure_is_control_calibrated_pinned_and_fail_closed",
 )
 
 if failures:
