@@ -30,6 +30,7 @@ titan2_mode_find_bound_adb() {
   local output rc serial state hash matches=0
 
   TITAN2_MODE_ADB_SERIAL=""
+  TITAN2_MODE_ADB_TRANSPORT_STATE=""
   if output="$(titan2_mode_capture "$TITAN2_MODE_COMMAND_TIMEOUT_SECONDS" "$adb" devices)"; then
     rc=0
   else
@@ -38,10 +39,15 @@ titan2_mode_find_bound_adb() {
   [[ "$rc" -eq 0 ]] || return "$rc"
 
   while read -r serial state; do
-    [[ -n "$serial" && "$state" == device ]] || continue
+    [[ -n "$serial" ]] || continue
+    case "$state" in
+      device|recovery) ;;
+      *) continue ;;
+    esac
     hash="$(titan2_mode_hash_serial "$serial")"
     if [[ "$hash" == "$expected_hash" ]]; then
       TITAN2_MODE_ADB_SERIAL="$serial"
+      TITAN2_MODE_ADB_TRANSPORT_STATE="$state"
       matches=$((matches + 1))
     fi
   done <<<"$output"
@@ -153,6 +159,10 @@ titan2_detect_device_mode() {
 
   TITAN2_MODE_DETECTED=UNAVAILABLE
   TITAN2_MODE_ADB_SERIAL=""
+  TITAN2_MODE_ADB_TRANSPORT_STATE=""
+  TITAN2_MODE_ADB_PRODUCT=""
+  TITAN2_MODE_ADB_BOOTMODE=""
+  TITAN2_MODE_ADB_PROPERTIES_READABLE=NO
   TITAN2_MODE_FASTBOOT_SERIAL=""
   TITAN2_MODE_FASTBOOT_PRODUCT=""
   TITAN2_MODE_FASTBOOT_USERSPACE=""
@@ -190,6 +200,15 @@ titan2_detect_device_mode() {
   fi
 
   if [[ "$adb_found" == YES ]]; then
+    # Recovery on Titan 2 may enumerate through ADB while rejecting shell/getprop.
+    # The bound ADB transport state "recovery" is therefore authoritative for
+    # recovery classification; property reads are best-effort evidence only.
+    if [[ "$TITAN2_MODE_ADB_TRANSPORT_STATE" == recovery ]]; then
+      TITAN2_MODE_DETECTED=RECOVERY_ADB
+      TITAN2_MODE_ADB_PROPERTIES_READABLE=NO
+      return 0
+    fi
+
     if adb_product="$(titan2_mode_adb_getprop "$adb" "$TITAN2_MODE_ADB_SERIAL" ro.product.device)"; then
       rc=0
     else
@@ -210,6 +229,7 @@ titan2_detect_device_mode() {
     fi
     TITAN2_MODE_ADB_PRODUCT="$adb_product"
     TITAN2_MODE_ADB_BOOTMODE="$adb_bootmode"
+    TITAN2_MODE_ADB_PROPERTIES_READABLE=YES
     if [[ "${adb_bootmode,,}" == *recovery* ]]; then
       TITAN2_MODE_DETECTED=RECOVERY_ADB
     else
