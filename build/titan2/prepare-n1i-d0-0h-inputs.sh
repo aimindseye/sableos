@@ -87,6 +87,15 @@ READELF="$(command -v readelf 2>/dev/null || true)"
 [[ -n "$DEBUGFS" && -x "$DEBUGFS" ]] || fail debugfs_missing 64
 [[ -n "$READELF" && -x "$READELF" ]] || fail readelf_missing 64
 
+AAPT2="$SABLE_ANDROID_BUILD_TOOLS/aapt2"
+APKSIGNER="$SABLE_ANDROID_BUILD_TOOLS/apksigner"
+PROPERTY_INFO_CHECKER="$SABLE_AOSP_HOST_BIN/property_info_checker"
+CHECKFC="$SABLE_AOSP_HOST_BIN/checkfc"
+DEXDUMP="$SABLE_ANDROID_BUILD_TOOLS/dexdump"
+for tool in "$AAPT2" "$APKSIGNER" "$PROPERTY_INFO_CHECKER" "$CHECKFC" "$DEXDUMP"; do
+  [[ -x "$tool" ]] || fail "canonical_tool_missing=$tool" 64
+done
+
 OUT="$(mkdir -p "$OUT" && cd "$OUT" && pwd -P)" || fail out_resolve 64
 ROOTS="$OUT/roots"
 RAW="$OUT/raw"
@@ -155,8 +164,8 @@ if [[ -f "$STOCK_ODM" ]]; then
 fi
 
 hexat() {
-  od -An -tx1 -j "$2" -N "$3" "$1" 2>/dev/null | tr -d ' 
-'
+  od -An -tx1 -j "$2" -N "$3" "$1" 2>/dev/null |
+    tr -d '[:space:]'
 }
 
 image_type() {
@@ -297,7 +306,10 @@ materialize_apex_side() {
 
 materialize_apex_side n1f "$ROOTS/n1f-system"
 materialize_apex_side c2 "$ROOTS/c2-system"
-materialize_apex_side stock   "$ROOTS/stock-system"   "$ROOTS/stock-system_ext"   "$ROOTS/stock-product"
+materialize_apex_side stock \
+  "$ROOTS/stock-system" \
+  "$ROOTS/stock-system_ext" \
+  "$ROOTS/stock-product"
 
 tool_record() {
   local label="$1" path="$2"
@@ -314,6 +326,12 @@ tool_record() {
   tool_record debugfs "$DEBUGFS"
   [[ -n "$FSCK_EROFS" ]] && tool_record fsck_erofs "$FSCK_EROFS"
   tool_record readelf "$READELF"
+  tool_record aapt2 "$AAPT2"
+  tool_record apksigner "$APKSIGNER"
+  tool_record property_info_checker "$PROPERTY_INFO_CHECKER"
+  tool_record checkfc "$CHECKFC"
+  tool_record dexdump "$DEXDUMP"
+  tool_record python "$SABLE_PYTHON"
 } > "$OUT/TOOLS.tsv"
 
 cat > "$OUT/INPUTS.env" <<EOF
@@ -350,7 +368,12 @@ EOF
 
 (
   cd "$OUT" || exit 1
-  sha256sum INPUTS.env TOOLS.tsv     apex/n1f/APEX_MANIFEST.tsv apex/n1f/SHA256SUMS.txt     apex/c2/APEX_MANIFEST.tsv apex/c2/SHA256SUMS.txt     apex/stock/APEX_MANIFEST.tsv apex/stock/SHA256SUMS.txt     > SHA256SUMS.txt
+  sha256sum \
+    INPUTS.env TOOLS.tsv \
+    apex/n1f/APEX_MANIFEST.tsv apex/n1f/SHA256SUMS.txt \
+    apex/c2/APEX_MANIFEST.tsv apex/c2/SHA256SUMS.txt \
+    apex/stock/APEX_MANIFEST.tsv apex/stock/SHA256SUMS.txt \
+    > SHA256SUMS.txt
   sha256sum -c SHA256SUMS.txt >/dev/null
 ) || fail input_manifest_seal 66
 
