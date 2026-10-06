@@ -376,6 +376,7 @@ require_marker "N1I_C2_NATIVE_COLLISION_PRIOR_HEAD" "$C2_NATIVE_INSTALL_PREFLIGH
 require_marker "N1I_C2_NATIVE_COLLISION_KNOWN_TARGET" "$C2_NATIVE_INSTALL_PREFLIGHT" '/system/lib64/android.hardware.drm-V1-ndk.so'
 require_marker "N1I_C2_NATIVE_COLLISION_PLATFORM_REUSE_FILE" "$C2_NATIVE_INSTALL_PREFLIGHT" 'platform-native-reuse.tsv'
 require_marker "N1I_C2_NATIVE_COLLISION_PLATFORM_REUSE_ARG" "$C2_NATIVE_INSTALL_PREFLIGHT" '--platform-reuse-decisions "$PLATFORM_REUSE"'
+require_marker "N1I_C2_PLATFORM_REUSE_BLOB_PIN" "$C2_NATIVE_INSTALL_PREFLIGHT_CONTRACT" '4e9e63a21582e464af507f543e40ee34222aaa56'
 require_marker "N1I_C2_PLATFORM_REUSE_M008" "$C2_PLATFORM_REUSE" $'M008\t/system/lib64/android.hardware.radio-V4-ndk.so\tandroid.hardware.radio-V4-ndk'
 require_marker "N1I_C2_PLATFORM_REUSE_M017" "$C2_PLATFORM_REUSE" $'M017\t/system/lib64/android.hardware.graphics.common-V6-ndk.so\tandroid.hardware.graphics.common-V6-ndk'
 require_marker "N1I_C2_PLATFORM_REUSE_M029" "$C2_PLATFORM_REUSE" $'M029\t/system/lib64/android.hardware.drm-V1-ndk.so\tandroid.hardware.drm-V1-ndk'
