@@ -79,12 +79,8 @@ c2_driver = read("build/titan2/run-n1i-c2-cellular-mvp.sh")
 c2_bp = read("product/titan2/n1i-c2/Android.bp")
 c2_mk = read("product/titan2/n1i-c2/sable-titan2-n1i-c2.mk")
 c2_collision_audit = read("build/titan2/audit-n1i-c2-install-collisions.py")
-c2_admission_path = ROOT / "product/titan2/n1i-c2/native-admission.txt"
-c2_admission = (
-    c2_admission_path.read_text(encoding="utf-8")
-    if c2_admission_path.is_file()
-    else ""
-)
+c2_native_planner = read("build/titan2/plan-n1i-c2-native-install.py")
+c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
 
 check(
     "BR-001",
@@ -229,8 +225,10 @@ check(
     and "REFERENCE ONLY" in a4_ref
     and "a4-native-superset.txt" in contract
     and "native-paths.txt" not in driver
-    and "a4-native-superset.txt" not in c2_driver,
-    "a4_native_superset_reference_only",
+    and '--a4-reference "$C1_TEMPLATE/a4-native-superset.txt"' in c2_driver
+    and "IMPORT_FROZEN_STOCK" in c2_native_planner
+    and "REUSE_C1_IDENTICAL" in c2_native_planner,
+    "a4_native_superset_reference_only_and_runtime_collision_filtered",
 )
 
 fragile_aapt_pipelines = (
@@ -317,30 +315,33 @@ check(
     "c2_release_driver_runs_shared_regression_before_staging",
 )
 
-c2_admission_rows = [
-    line.strip()
-    for line in c2_admission.splitlines()
-    if line.strip() and not line.lstrip().startswith("#")
-]
 c2_prebuilt_targets = set(
     re.findall(
         r'srcs:\s*\["prebuilt(/(?:system|system_ext|product)/[^"]+\.so)"\]',
         c2_bp,
     )
 )
+c2_direct_native_packages = set(
+    re.findall(r"\bSableN1IC2NativeM\d{3}\b", c2_mk)
+)
 check(
     "T2-019",
     "N1I_C2_INSTALL_OWNERSHIP_AUDIT" in c2_collision_audit
-    and c2_admission_path.is_file()
-    and bool(c2_admission_rows)
-    and len(c2_admission_rows) < 33
-    and len(c2_admission_rows) == len(set(c2_admission_rows))
-    and all(row in a4_rows for row in c2_admission_rows)
-    and set(c2_admission_rows) == c2_prebuilt_targets
-    and "native-admission.txt" in c2_driver
-    and "audit-n1i-c2-install-collisions.py" in c2_driver
-    and "a4-native-superset.txt" not in c2_driver,
-    "c2_native_admission_is_collision_qualified_subset_not_a4_wholesale",
+    and len(c2_prebuilt_targets) == 33
+    and c2_prebuilt_targets == set(a4_rows)
+    and not c2_direct_native_packages
+    and "native-packages.mk" in c2_mk
+    and "plan-n1i-c2-native-install.py" in c2_driver
+    and "native-baseline-probe.tsv" in c2_driver
+    and "native-composition.tsv" in c2_driver
+    and "install-collision-after-failure.log" in c2_driver
+    and "REUSE_C1_IDENTICAL" in c2_native_planner
+    and "IMPORT_FROZEN_STOCK" in c2_native_planner
+    and "BLOCK_C1_DIFFERENT" in c2_native_planner
+    and "android.hardware.drm-V1-ndk.so" in c2_native_plan_test
+    and "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS"
+        in c2_native_plan_test,
+    "c2_native_install_is_sealed_c1_collision_planned_not_wholesale_installed",
 )
 
 if failures:
