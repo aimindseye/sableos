@@ -28,8 +28,8 @@ Required authorization:
   FLASH_AUTHORIZED=NO
 
 This driver reads retained local artifacts and writes evidence only beneath --out.
-Missing evidence becomes UNKNOWN. It never runs adb, fastboot, repo sync, a build,
-a reboot, or a flash.
+Missing evidence becomes UNKNOWN. It never performs device transport, source synchronization,
+a build, a reboot, or a flash.
 EOF
 }
 
