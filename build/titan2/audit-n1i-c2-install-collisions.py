@@ -17,7 +17,7 @@ import pathlib
 import re
 import sys
 
-TOOL_VERSION = "1.1.0"
+TOOL_VERSION = "1.2.0"
 
 
 class AuditError(RuntimeError):
@@ -72,12 +72,25 @@ def rule_locations(
 
 def owner_hints(rule: str) -> str:
     hints: list[str] = []
-    for match in re.findall(r"(?:^|/)([^/\s:]+)\.intermediates(?:/|$)", rule):
+
+    # Soong install rules normally point at:
+    #   .../.intermediates/<source path>/<module>/<variant>/<installed file>
+    # Resolve the module immediately before the Android variant directory so
+    # platform owners are machine-readable instead of UNRESOLVED_FROM_RULE.
+    for match in re.findall(
+        r"/\.intermediates/(?:[^/\s]+/)*([^/\s]+)/"
+        r"(?:android|linux|darwin)_[^/\s]+/",
+        rule,
+    ):
         if match not in hints:
             hints.append(match)
+
+    # Preserve the explicit Sable module extractor for synthetic fixtures and
+    # any rule shape that does not include a standard Soong variant segment.
     for match in re.findall(r"/(SableN1IC2NativeM\d{3})(?:/|\.)", rule):
         if match not in hints:
             hints.append(match)
+
     return ",".join(hints) if hints else "UNRESOLVED_FROM_RULE"
 
 
