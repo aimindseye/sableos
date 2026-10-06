@@ -38,6 +38,12 @@ while [[ "$#" -gt 0 ]]; do
     --out)
       [[ "$#" -ge 2 ]] || fail missing_out_value 64
       OUT="$2"; shift 2 ;;
+    --expected-system-sha)
+      [[ "$#" -ge 2 ]] || fail missing_expected_system_sha_value 64
+      EXPECTED_C1_SHA="$2"; shift 2 ;;
+    --expected-system-bytes)
+      [[ "$#" -ge 2 ]] || fail missing_expected_system_bytes_value 64
+      EXPECTED_C1_BYTES="$2"; shift 2 ;;
     *)
       fail "unknown_argument=$1" 64 ;;
   esac
@@ -45,6 +51,10 @@ done
 
 [[ -n "$PRODUCT_OUT" ]] || fail product_out_required 64
 [[ -d "$PRODUCT_OUT" ]] || fail "product_out_missing=$PRODUCT_OUT" 64
+[[ "$EXPECTED_C1_SHA" =~ ^[0-9a-f]{64}$ ]] ||
+  fail invalid_expected_system_sha 64
+[[ "$EXPECTED_C1_BYTES" =~ ^[0-9]+$ ]] ||
+  fail invalid_expected_system_bytes 64
 PRODUCT_OUT="$(cd "$PRODUCT_OUT" && pwd -P)"
 
 for path in \
@@ -141,6 +151,8 @@ echo "N1I_C1_N1I_A_AUDIT_BLOB=$N1I_A_BLOB"
 echo "N1I_C1_C3A_HISTORY_SEAL=PASS"
 echo "N1I_C1_C3A_HISTORY_SYSTEM_SHA=PASS"
 echo "N1I_C1_C1_SYSTEM_SHA=PASS"
+echo "N1I_C1_RUNTIME_LINKAGE_EXPECTED_SYSTEM_SHA=$EXPECTED_C1_SHA"
+echo "N1I_C1_RUNTIME_LINKAGE_EXPECTED_SYSTEM_BYTES=$EXPECTED_C1_BYTES"
 echo "EVIDENCE_DIR=$OUT"
 echo "SABLE_PYTHON=$SABLE_PYTHON"
 echo "AAPT2=$AAPT2"
@@ -253,6 +265,7 @@ set +e
   --repo "$ROOT" \
   --v6-evidence "$OUT" \
   --product-out "$PRODUCT_OUT" \
+  --expected-system-sha "$EXPECTED_C1_SHA" \
   --out "$APEX_PARITY_DIR" 2>&1 | tee "$APEX_PARITY_LOG"
 APEX_PARITY_RC="${PIPESTATUS[0]}"
 set -e
@@ -292,6 +305,7 @@ set +e
   --n1i-a-evidence "$REPLAY" \
   --apex-parity-evidence "$APEX_PARITY_DIR" \
   --api-level 36 \
+  --expected-system-sha "$EXPECTED_C1_SHA" \
   --out "$MANIFEST" | tee "$DERIVE_LOG"
 DERIVE_RC="${PIPESTATUS[0]}"
 set -e
