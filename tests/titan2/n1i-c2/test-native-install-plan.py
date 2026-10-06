@@ -176,17 +176,17 @@ def test_generated_packages_exclude_known_reuse() -> None:
 
 
 def test_single_owner_must_be_exact_sable_module() -> None:
-    rows = probe_rows(special_status="ABSENT")
-    collisions = collision_rows(special_state="SINGLE_OWNER")
-    special = row_for(collisions, KNOWN_KATI_TARGET)
-    special["owner_hints"] = "platform_owner"
+    rows = probe_rows(target_status="ABSENT")
+    collisions = collision_rows(target_state="SINGLE_OWNER")
+    row = row_for_target(collisions, KNOWN_KATI_TARGET)
+    row["owner_hints"] = "platform_owner"
     try:
         mod.plan(rows, set(targets()), collisions)
     except mod.PlanError as exc:
         text = str(exc)
-        assert "BLOCK_SINGLE_OWNER_NOT_SABLE_MODULE" not in text
+        assert f"{KNOWN_KATI_ID}:{KNOWN_KATI_TARGET}" in text
         assert "owner_hints=platform_owner" in text
-        assert mutation_id_for(KNOWN_KATI_TARGET) in text
+        assert f"expected_module=SableN1IC2Native{KNOWN_KATI_ID}" in text
     else:
         raise AssertionError("non-Sable single owner was admitted as C2 import")
 
@@ -194,16 +194,17 @@ def test_single_owner_must_be_exact_sable_module() -> None:
 def test_collision_must_include_exact_sable_module() -> None:
     rows = probe_rows()
     collisions = collision_rows()
-    special = row_for(collisions, KNOWN_KATI_TARGET)
-    special["owner_hints"] = "platform_owner;other_owner"
+    row = row_for_target(collisions, KNOWN_KATI_TARGET)
+    row["owner_hints"] = "android.hardware.drm-V1-ndk;other_owner"
     try:
         mod.plan(rows, set(targets()), collisions)
     except mod.PlanError as exc:
         text = str(exc)
-        assert "owner_hints=platform_owner;other_owner" in text
-        assert mutation_id_for(KNOWN_KATI_TARGET) in text
+        assert f"{KNOWN_KATI_ID}:{KNOWN_KATI_TARGET}" in text
+        assert "owner_hints=android.hardware.drm-V1-ndk;other_owner" in text
+        assert f"expected_module=SableN1IC2Native{KNOWN_KATI_ID}" in text
     else:
-        raise AssertionError("collision without Sable owner was accepted for reuse")
+        raise AssertionError("collision without exact Sable owner was accepted for reuse")
 
 
 def main() -> int:
@@ -211,6 +212,8 @@ def main() -> int:
     test_graph_collision_absent_from_c1_fails_closed()
     test_different_baseline_fails_closed()
     test_generated_packages_exclude_known_reuse()
+    test_single_owner_must_be_exact_sable_module()
+    test_collision_must_include_exact_sable_module()
     print(
         "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS "
         f"id={KNOWN_KATI_ID} target={KNOWN_KATI_TARGET}"
