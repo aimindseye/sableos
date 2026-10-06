@@ -185,6 +185,32 @@ the fastbootd prewrite gate. The recovery gate must reject simultaneous
 ADB/fastboot visibility, preserve the post-build C2 image authority, and stop
 before any mode transition or write.
 
+### N1I-C2 exact mode-aware write exception
+
+After explicit owner authorization, N1I-C2 has one source/SHA-scoped exact
+executor:
+
+```text
+N1I_C2_EXACT_WRITE_EXECUTOR=build/titan2/flash-n1i-c2-cellular-mvp.sh
+N1I_C2_BUILD_SOURCE=27d671b004f5ae7394f147018fc4fffdf4d78498
+N1I_C2_SYSTEM_SHA256=630db78ef3f888b961640d17c5237495e673a953d67f1d52fabe056cbb76bb50
+N1I_C2_SYSTEM_BYTES=3218440192
+N1I_C2_TARGET=system_a
+N1I_C2_EXPECTED_SLOT=a
+N1I_C2_AUTOMATIC_RETRY=NO
+```
+
+This does not enable generic Titan flashing. The executor may begin from normal
+Android ADB, bootloader fastboot, or already-active userspace fastbootd. Android
+and bootloader entries use the shared Titan mode helper to reach verified
+fastbootd; existing fastbootd is reused with zero transitions. Recovery remains
+blocked. Before the write, the executor re-reads live LP/snapshot/slot/unlocked
+state, enforces the reviewed super/group headroom, computes the exact image SHA
+once at the immediate prewrite boundary, and seals a one-attempt journal.
+Exactly one `fastboot flash system_a` call exists. Factory reset, userdata
+erase, slot change, AVB/boot-chain writes, COW deletion and manual LP mutation
+remain forbidden inside the executor.
+
 ## COW, snapshot and LP rules
 
 COW logical partitions may exist even when
