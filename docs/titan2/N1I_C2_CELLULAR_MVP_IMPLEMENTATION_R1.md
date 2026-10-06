@@ -224,10 +224,10 @@ Before mutation an authorized candidate run requires:
 The driver contains exactly one `systemimage` invocation and may build exactly one
 collision-filtered C2 candidate after the complete static qualification suite
 passes. The in-driver native preflight remains a mandatory execution gate before
-source mutation and before that single build. If any of the 33 targets is
-C1-different, has an unexpected install owner, or cannot be classified in one
-pass, the run aborts before mutation/build and the full blocker set is resolved
-together. The previous Kati error is therefore converted into pre-build
+source mutation and before that single build. Any C1-different target outside
+the exact five-entry platform reuse authority, any unexpected install owner,
+or any target that cannot be classified in one pass aborts before
+mutation/build. The previous Kati error is therefore converted into pre-build
 regression memory rather than rediscovered during packaging.
 
 After the build it verifies:
