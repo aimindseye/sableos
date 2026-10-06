@@ -310,7 +310,21 @@ AAPT2="$SABLE_ANDROID_BUILD_TOOLS/aapt2"
 DEBUGFS="$(command -v debugfs || true)"
 FSCK_EROFS="$(command -v fsck.erofs || true)"
 READELF="$(command -v readelf || true)"
-CHECKFC="$(command -v checkfc || true)"
+C2_OUT_TOP=""
+if [[ -n "${C2_PRODUCT_OUT:-}" && "$C2_PRODUCT_OUT" == */target/product/* ]]; then
+  C2_OUT_TOP="${C2_PRODUCT_OUT%%/target/product/*}"
+fi
+PROPERTY_INFO_CHECKER=""
+CHECKFC=""
+if [[ -n "$C2_OUT_TOP" ]]; then
+  [[ -x "$C2_OUT_TOP/host/linux-x86/bin/property_info_checker" ]] &&
+    PROPERTY_INFO_CHECKER="$C2_OUT_TOP/host/linux-x86/bin/property_info_checker"
+  [[ -x "$C2_OUT_TOP/host/linux-x86/bin/checkfc" ]] &&
+    CHECKFC="$C2_OUT_TOP/host/linux-x86/bin/checkfc"
+fi
+[[ -n "$PROPERTY_INFO_CHECKER" ]] ||
+  PROPERTY_INFO_CHECKER="$(command -v property_info_checker || true)"
+[[ -n "$CHECKFC" ]] || CHECKFC="$(command -v checkfc || true)"
 
 [[ -x "$SABLE_PYTHON" ]] || fail python_missing
 [[ -x "$AAPT2" ]] || fail aapt2_missing
@@ -326,6 +340,11 @@ tool_record SIMG2IMG "$SABLE_SIMG2IMG" "" || true
 tool_record DEBUGFS "$DEBUGFS" "$("$DEBUGFS" -V 2>&1 | head -1)" || true
 tool_record FSCK_EROFS "$FSCK_EROFS" "$("$FSCK_EROFS" -V 2>&1 | head -1)" || true
 [[ -n "$READELF" ]] && tool_record READELF "$READELF" "$("$READELF" --version 2>&1 | head -1)" || true
+if [[ -n "$PROPERTY_INFO_CHECKER" ]]; then
+  tool_record PROPERTY_INFO_CHECKER "$PROPERTY_INFO_CHECKER" "" || true
+else
+  record TOOL_PROPERTY_INFO_CHECKER_STATUS UNKNOWN_MISSING
+fi
 if [[ -n "$CHECKFC" ]]; then
   tool_record CHECKFC "$CHECKFC" "" || true
 else
@@ -604,40 +623,99 @@ context_roots() {
     printf '%s\n' "odm=$STOCK_ODM_ROOT"
 }
 
+policy_binary_for() {
+  local label="$1" root="$2" a0
+  a0="$(sed -n "s/^N1I_D0_A0_${label}=//p" "$SUMMARY" | tail -1)"
+  if [[ "$a0" == PRECOMPILED_USED ]]; then
+    for p in       "${STOCK_ODM_ROOT:+$STOCK_ODM_ROOT/etc/selinux/precompiled_sepolicy}"       "$STOCK_VENDOR_ROOT/etc/selinux/precompiled_sepolicy"
+    do
+      [[ -n "$p" && -f "$p" ]] && {
+        printf '%s\n' "$p"
+        return 0
+      }
+    done
+    return 1
+  fi
+  if awk -F '\t' -v c="$label"       '$1=="A1" && $2==c && $3=="PASS" {ok=1} END {exit !ok}' "$GATES"; then
+    p="$WORK/${label,,}-sepolicy-1.bin"
+    [[ -f "$p" ]] || return 1
+    printf '%s\n' "$p"
+    return 0
+  fi
+  return 1
+}
+
+context_files() {
+  local root="$1" kind="$2" pattern
+  [[ "$kind" == property ]] && pattern='*property_contexts' ||
+    pattern='*service_contexts'
+  for dir in     "$root/etc/selinux"     "$root/system_ext/etc/selinux"     "$root/product/etc/selinux"     "$STOCK_VENDOR_ROOT/etc/selinux"     "${STOCK_ODM_ROOT:+$STOCK_ODM_ROOT/etc/selinux}"
+  do
+    [[ -n "$dir" && -d "$dir" ]] || continue
+    find "$dir" -maxdepth 1 -type f -name "$pattern" -print |
+      LC_ALL=C sort
+  done
+}
+
 run_context_gate() {
   local label="$1" root="$2" kind="$3" gate_name="$4"
-  if [[ -z "$root" || ! -d "$root" || -z "$STOCK_VENDOR_ROOT" ]]; then
+  if [[ -z "$root" || ! -d "$root" ||
+        -z "$STOCK_VENDOR_ROOT" || ! -d "$STOCK_VENDOR_ROOT" ]]; then
     gate "$gate_name" "$label" UNKNOWN required_root_missing
     return
   fi
   local -a args=("$SABLE_PYTHON" "$HELPER" contexts --kind "$kind")
   while IFS= read -r spec; do args+=(--root "$spec"); done < <(context_roots "$root")
   args+=(--out "$OUT/reports/${gate_name}_${label}.tsv")
-  "${args[@]}" >"$OUT/logs/${gate_name}_${label}.log" 2>&1
-  local rc=$? count
+  "${args[@]}" >"$OUT/logs/${gate_name}_${label}.static.log" 2>&1
+  local rc=$? count policy
   [[ "$rc" -eq 0 ]] || {
     gate "$gate_name" "$label" UNKNOWN "helper_rc=$rc"
     return
   }
-  count="$(sed -n 's/^N1I_D0_CONTEXT_CONFLICT_COUNT=//p' "$OUT/logs/${gate_name}_${label}.log" | tail -1)"
+  count="$(
+    sed -n 's/^N1I_D0_CONTEXT_CONFLICT_COUNT=//p'       "$OUT/logs/${gate_name}_${label}.static.log" | tail -1
+  )"
+
+  policy="$(policy_binary_for "$label" "$root" || true)"
+  if [[ -z "$policy" || ! -f "$policy" ]]; then
+    gate "$gate_name" "$label" UNKNOWN "compiled_policy_unavailable;static_conflicts=$count"
+    return
+  fi
+
+  local -a files=()
+  while IFS= read -r p; do
+    [[ -f "$p" ]] && files+=("$p")
+  done < <(context_files "$root" "$kind")
+  [[ "${#files[@]}" -gt 0 ]] || {
+    gate "$gate_name" "$label" UNKNOWN context_files_absent
+    return
+  }
+
   if [[ "$kind" == property ]]; then
-    # Full property-info type validation requires a validated A1 output and the
-    # Android checker. Static collisions remain evidence, but never become a
-    # false boot-fatal finding.
-    a1="$(awk -F '\t' -v c="$label" '$1=="A1" && $2==c {print $3}' "$GATES" | tail -1)"
-    if [[ "$a1" != PASS ]]; then
-      gate "$gate_name" "$label" UNKNOWN "A1_not_pass;static_conflicts=$count"
-    elif [[ -z "$CHECKFC" ]]; then
-      gate "$gate_name" "$label" UNKNOWN "checkfc_missing;static_conflicts=$count"
-    elif [[ "$count" == 0 ]]; then
-      gate "$gate_name" "$label" PASS STATIC_UNION_NO_CONFLICT_CHECKFC_AVAILABLE
+    [[ -n "$PROPERTY_INFO_CHECKER" && -x "$PROPERTY_INFO_CHECKER" ]] || {
+      gate "$gate_name" "$label" UNKNOWN "property_info_checker_missing;static_conflicts=$count"
+      return
+    }
+    "$PROPERTY_INFO_CHECKER" "$policy" "${files[@]}"       >"$OUT/logs/${gate_name}_${label}.checker.log" 2>&1
+    rc=$?
+    if [[ "$rc" -eq 0 ]]; then
+      gate "$gate_name" "$label" PASS "property_info_checker=PASS static_conflicts=$count"
     else
-      gate "$gate_name" "$label" FUNCTIONAL_RISK "static_conflicts=$count"
+      gate "$gate_name" "$label" BOOT_FATAL "property_info_checker_rc=$rc static_conflicts=$count"
     fi
   else
-    [[ "$count" == 0 ]] &&
-      gate "$gate_name" "$label" PASS STATIC_UNION_NO_CONFLICT ||
-      gate "$gate_name" "$label" FUNCTIONAL_RISK "static_conflicts=$count"
+    [[ -n "$CHECKFC" && -x "$CHECKFC" ]] || {
+      gate "$gate_name" "$label" UNKNOWN "checkfc_missing;static_conflicts=$count"
+      return
+    }
+    "$CHECKFC" -s "$policy" "${files[@]}"       >"$OUT/logs/${gate_name}_${label}.checker.log" 2>&1
+    rc=$?
+    if [[ "$rc" -eq 0 ]]; then
+      gate "$gate_name" "$label" PASS "checkfc_service=PASS static_conflicts=$count"
+    else
+      gate "$gate_name" "$label" FUNCTIONAL_RISK "checkfc_service_rc=$rc static_conflicts=$count"
+    fi
   fi
 }
 for spec in "N1F:$N1F_ROOT" "C2:$C2_ROOT"; do
