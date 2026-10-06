@@ -1,6 +1,6 @@
 # Titan 2 N1I-C2 Cellular MVP Implementation R1
 
-Status: **finite implementation/build lane; no device contact or flash**
+Status: **build retry blocked pending sealed native install preflight admission; no device contact or flash**
 
 ## Objective
 
@@ -46,14 +46,18 @@ rechecks that the 33 materialized native targets equal the canonical
 C2 inherits the complete C1 OEM IMS island and the existing C3A/Restless
 compatibility substrate.
 
-It satisfies, together:
+It is intended to satisfy, together:
 
 1. the exact 33 materialized A4 system/system_ext native compatibility targets.
-   Before build, each target is compared against the exact sealed C1 image.
-   A byte-identical C1 target is reused and is **not** reinstalled by a Sable
-   prebuilt; only a target absent from C1 is selected into generated
-   `native-packages.mk`. A C1-present target with a different hash blocks the
-   build before Kati;
+   The first C2 build proved that installing all 33 wholesale is invalid:
+   Kati rejected a duplicate final install destination at
+   `/system/lib64/android.hardware.drm-V1-ndk.so` (M029). Before any retry,
+   the read-only native-install preflight compares every frozen target against
+   the exact sealed C1 image and the retained failed Kati graph. A byte-identical
+   C1 target is a reuse candidate and must **not** be reinstalled by a Sable
+   prebuilt; only a C1-absent target whose single graph owner is the exact Sable
+   module is an import candidate. C1-present/different, C1-absent/colliding, or
+   owner-identity mismatch states fail closed;
 2. the reviewed two-argument TelephonyMetrics no-op overload;
 3. `ro.telephony.block_binder_thread_on_incoming_calls=false` for the Titan
    product so the already-present legacy incoming-call path is active;
@@ -147,13 +151,31 @@ SELinux fallback, property hold loop, vendor-UA force-start, or reboot.
 
 ## Build discipline
 
-The canonical driver is:
+The canonical read-only collision preflight is:
+
+```text
+build/titan2/run-n1i-c2-native-install-preflight.sh
+```
+
+It binds the sealed C1 image, the frozen C2 native materialization and the
+retained failed-build Kati install graph. Its output is sealed evidence:
+`NATIVE_BASELINE_PROBE.tsv`, `INSTALL_COLLISIONS.tsv`,
+`NATIVE_COMPOSITION.tsv`, `native-packages.mk`, and
+`native-admission.txt`.
+
+The canonical build driver remains:
 
 ```text
 build/titan2/run-n1i-c2-cellular-mvp.sh
 ```
 
-It requires both:
+At the current review state it contains
+`NATIVE_ADMISSION_INTEGRATED=NO` and fails with
+`native_admission_not_integrated` even when source/build authorization flags
+are supplied. This intentionally prevents another build until the sealed
+preflight output has been reviewed and frozen into the implementation.
+
+Once a reviewed admission is integrated, the driver requires both:
 
 ```text
 --authorize-source-mutation
@@ -163,10 +185,12 @@ It requires both:
 Before mutation it requires:
 
 - exact SableOS source commit and clean worktree;
-- the exact sealed C1 image as the baseline install-content authority;
-- a 33-row native baseline probe and collision plan;
-- generated `native-packages.mk` containing only frozen targets absent from
-  C1; the known `android.hardware.drm-V1-ndk.so` duplicate-target failure is
+- the shared build-regression contract, including the native-install ownership
+  invariant and singleton-driver invariant;
+- a separately sealed, reviewed native admission derived from the exact C1
+  baseline and failed Kati graph;
+- generated/frozen `native-packages.mk` containing only admitted imports;
+  the known M029 `android.hardware.drm-V1-ndk.so` duplicate-target failure is
   an executable regression fixture;
 - exact C3A managed-project authority;
 - exact materialization and mutation-manifest seals;
@@ -175,10 +199,11 @@ Before mutation it requires:
 - fresh C2 output directory;
 - implementation contract PASS.
 
-The driver then builds exactly one `systemimage`. If that build fails after
-an install graph was generated, the driver automatically runs the Kati
-install-ownership audit in report-only mode before source restoration so the
-next fix has complete collision evidence rather than only the first Kati error.
+After native admission is integrated, the driver may build exactly one
+`systemimage`. Build retry remains unauthorized at this document state. The
+retained failed graph is analyzed before retry so the previous Kati error is
+converted into pre-build regression memory rather than rediscovered during
+packaging.
 
 After the build it verifies:
 
@@ -209,16 +234,22 @@ flash qualification can bind to the same 41-entry authority.
 
 ## Execution boundary
 
-For the implementation/build run only:
+Current collision-reconciliation phase:
 
 ```text
-SOURCE_MUTATION_AUTHORIZED=YES_EXACT_C2_SET
-BUILD_AUTHORIZED=YES_ONE_CELLULAR_MVP_SYSTEMIMAGE
+SOURCE_MUTATION_AUTHORIZED=NO
+BUILD_AUTHORIZED=NO
+N1I_C2_BUILD_RETRY_AUTHORIZED=NO_PENDING_NATIVE_PREFLIGHT_ADMISSION
 NETWORK_FETCH_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 REBOOT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ```
+
+Only after the sealed native preflight is reviewed and its exact admission is
+committed may a later transition authorize
+`SOURCE_MUTATION_AUTHORIZED=YES_EXACT_C2_SET` and
+`BUILD_AUTHORIZED=YES_ONE_CELLULAR_MVP_SYSTEMIMAGE`.
 
 A successful build does **not** authorize flashing. The resulting image must
 first pass post-build linkage/content qualification and then enter the governed
