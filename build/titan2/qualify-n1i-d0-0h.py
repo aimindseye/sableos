@@ -257,19 +257,18 @@ def precompiled_authority(side_root: Path, stock_vendor: Path, stock_odm: Path |
     return "PRECOMPILED_MATCH", f"precompiled={pre}", pre
 
 
-def policydb_version(android_root: Path) -> int | None:
-    candidates = [
-        android_root / "external/selinux/libsepol/include/sepol/policydb/policydb.h",
-        android_root / "external/selinux/libsepol/include/sepol/policydb/policydb.h",
-    ]
-    for path in candidates:
-        if not path.is_file():
-            continue
-        text = path.read_text(encoding="utf-8", errors="replace")
-        vals = re.findall(r"#define\s+POLICYDB_VERSION_MAX\s+(\d+)", text)
-        if vals:
-            return int(vals[-1])
-    return None
+def init_sepolicy_version(android_root: Path) -> int | None:
+    bp = android_root / "system/core/init/Android.bp"
+    if not bp.is_file():
+        return None
+    text = bp.read_text(encoding="utf-8", errors="replace")
+    values = {
+        int(v)
+        for v in re.findall(r"-DSEPOLICY_VERSION=(\d+)", text)
+    }
+    if len(values) != 1:
+        return None
+    return next(iter(values))
 
 
 def compile_policy(
@@ -323,9 +322,9 @@ def compile_policy(
     sext_compat = root_path(side_root, "system_ext", f"etc/selinux/mapping/{vers}.compat.cil")
     product_map = root_path(side_root, "product", f"etc/selinux/mapping/{vers}.cil")
 
-    pv = policydb_version(android_root)
+    pv = init_sepolicy_version(android_root)
     if pv is None:
-        return Gate("A", side, UNKNOWN, "policydb_version_unknown"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
+        return Gate("A", side, UNKNOWN, "init_sepolicy_version_unknown"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
 
     genfs_version = "202404"
     genfs_source = "DEFAULT_ANDROID_FALLBACK"
@@ -353,7 +352,7 @@ def compile_policy(
     )
     (out / f"gate-a1-{side}-command.txt").write_text(" ".join(cmd) + "\n", encoding="utf-8")
     (out / f"gate-a1-{side}-meta.env").write_text(
-        f"VENDOR_MAPPING_VERSION={vers}\nPOLICYDB_VERSION={pv}\nGENFS_VERSION={genfs_version}\nGENFS_SOURCE={genfs_source}\n",
+        f"VENDOR_MAPPING_VERSION={vers}\nINIT_SEPOLICY_VERSION={pv}\nGENFS_VERSION={genfs_version}\nGENFS_SOURCE={genfs_source}\n",
         encoding="utf-8",
     )
     if rc != 0 or not compiled.is_file():
