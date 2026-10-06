@@ -357,6 +357,7 @@ def validate_apex_parity(
     n1i_a_evidence: Path,
     expected_modules: set[str],
     expected_devices: set[str],
+    expected_system_sha: str,
 ) -> dict[str, str]:
     summary = parity_evidence / "summary.env"
     module_tsv = parity_evidence / "apex-module-parity.tsv"
@@ -394,7 +395,7 @@ def validate_apex_parity(
         "N1I_C1_APEX_BOOT_JAR_PATH_MISMATCH_COUNT": "0",
         "N1I_C1_APEX_BOOT_JAR_HASH_MISMATCH_COUNT": "0",
         "N1I_C1_APEX_JAVA_BOOT_RUNTIME_PARITY": "PASS",
-        "N1I_C1_APEX_PARITY_C1_SYSTEM_SHA256": EXPECTED_C1_SHA,
+        "N1I_C1_APEX_PARITY_C1_SYSTEM_SHA256": expected_system_sha,
     }
     for key, expected in required.items():
         actual = values.get(key)
@@ -442,8 +443,12 @@ def validate_apex_parity(
     c1_system = product_out / "system.img"
     if not c1_system.is_file():
         raise DeriveError(f"c1_system_missing={c1_system}")
-    if sha256(c1_system) != EXPECTED_C1_SHA:
-        raise DeriveError("c1_system_sha_mismatch_during_apex_parity_binding")
+    actual_system_sha = sha256(c1_system)
+    if actual_system_sha != expected_system_sha:
+        raise DeriveError(
+            "c1_system_sha_mismatch_during_apex_parity_binding="
+            f"expected:{expected_system_sha}:actual:{actual_system_sha}"
+        )
 
     with module_tsv.open(newline="", encoding="utf-8") as fp:
         module_rows = list(csv.DictReader(fp, delimiter="\t"))
@@ -494,6 +499,7 @@ def derive(
     evidence: Path,
     apex_parity_evidence: Path,
     api: int,
+    expected_system_sha: str,
 ) -> tuple[list[tuple[str, Path, str]], dict[str, str]]:
     env_file = evidence / "n1i-a-v010014-oem-ims.env"
     work = evidence / "work"
@@ -570,6 +576,7 @@ def derive(
         evidence,
         runtime_apex_modules,
         runtime_apex_devices,
+        expected_system_sha,
     )
 
     rows: list[tuple[str, Path, str]] = []
@@ -668,6 +675,11 @@ def main() -> int:
     parser.add_argument("--n1i-a-evidence", type=Path, default=DEFAULT_N1I_A)
     parser.add_argument("--apex-parity-evidence", type=Path)
     parser.add_argument("--api-level", type=int, default=36)
+    parser.add_argument(
+        "--expected-system-sha",
+        default=EXPECTED_C1_SHA,
+        help="Expected SHA-256 of product_out/system.img; defaults to sealed C1.",
+    )
     parser.add_argument("--out", type=Path)
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
@@ -683,6 +695,16 @@ def main() -> int:
             parser.error(
                 "--product-out, --apex-parity-evidence and --out are required"
             )
+        if (
+            len(args.expected_system_sha) != 64
+            or any(
+                ch not in "0123456789abcdef"
+                for ch in args.expected_system_sha
+            )
+        ):
+            parser.error(
+                "--expected-system-sha must be 64 lowercase hex characters"
+            )
         product_out = args.product_out.resolve()
         evidence = args.n1i_a_evidence.resolve()
         apex_parity_evidence = args.apex_parity_evidence.resolve()
@@ -693,6 +715,7 @@ def main() -> int:
             evidence,
             apex_parity_evidence,
             args.api_level,
+            args.expected_system_sha,
         )
         write_manifest(rows, args.out)
         art_count = sum(

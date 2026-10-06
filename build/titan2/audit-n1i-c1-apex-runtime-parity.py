@@ -221,8 +221,11 @@ def run(args: argparse.Namespace) -> int:
     if not c1_system.is_file():
         raise AuditError(f"c1_system_missing={c1_system}")
     c1_system_sha = sha256(c1_system)
-    if c1_system_sha != EXPECTED_C1_SHA:
-        raise AuditError("c1_system_sha_mismatch")
+    if c1_system_sha != args.expected_system_sha:
+        raise AuditError(
+            "c1_system_sha_mismatch="
+            f"expected:{args.expected_system_sha}:actual:{c1_system_sha}"
+        )
 
     replay = evidence / "n1i-a-replay"
     replay_env = replay / "n1i-a-v010014-oem-ims.env"
@@ -625,11 +628,21 @@ def main() -> int:
     parser.add_argument("--v6-evidence", type=Path)
     parser.add_argument("--product-out", type=Path)
     parser.add_argument("--out", type=Path)
+    parser.add_argument(
+        "--expected-system-sha",
+        default=EXPECTED_C1_SHA,
+        help="Expected SHA-256 of product_out/system.img; defaults to sealed C1.",
+    )
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
 
     if args.selftest:
         return selftest()
+    if (
+        len(args.expected_system_sha) != 64
+        or any(ch not in "0123456789abcdef" for ch in args.expected_system_sha)
+    ):
+        parser.error("--expected-system-sha must be 64 lowercase hex characters")
     if args.v6_evidence is None or args.product_out is None or args.out is None:
         parser.error(
             "--v6-evidence, --product-out and --out are required"

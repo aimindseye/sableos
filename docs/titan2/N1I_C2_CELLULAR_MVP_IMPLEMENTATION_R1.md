@@ -289,5 +289,33 @@ the bound read-only native preflight and produce
 the system-image build remain unexecuted.
 
 A successful build does **not** authorize flashing. The resulting image must
-first pass post-build linkage/content qualification and then enter the governed
-Titan flashing lane separately.
+first pass the canonical read-only post-build linkage/content qualifier:
+
+```bash
+bash build/titan2/qualify-n1i-c2-postbuild-linkage.sh \
+  --source-commit <40-hex-build-source> \
+  --out-dir <source-scoped-C2-out> \
+  --artifact-dir <sealed-C2-artifact-dir> \
+  --expected-system-sha <build-reported-sha256> \
+  --expected-system-bytes <build-reported-bytes>
+```
+
+This qualifier independently verifies the sealed artifact and 41-row receipt,
+re-hashes all 33 final native targets (28 frozen-stock imports plus five Android
+platform providers), rechecks IMS identity/signature and C2 content, and reuses
+the sealed C1 Java/APEX runtime-linkage model against the exact C2
+`PRODUCT_OUT`.
+
+The fatal C1 member resolver remains unchanged. C2 accepts either
+`PASS_ALL_RESOLVED` or the already-approved MVP full-classification case:
+exactly eight unresolved IMS APK rows, all confined to
+`kotlinx.coroutines.debug.internal.AgentPremain*` references to
+`java.lang.instrument` / `sun.misc`, with zero unresolved members in the two
+imported MediaTek boot JARs, zero TelephonyMetrics residual failure, zero
+non-AgentPremain inbound DEX references, and
+`BROAD_RUNTIME_FAILURE_SUPPRESSION=NO`. Any other unresolved shape is fatal.
+
+The qualifier performs no build, network fetch, source mutation, device
+contact, reboot, or flash. Only
+`N1I_C2_POSTBUILD_LINKAGE_QUALIFICATION=PASS` advances the image to merge
+review and the separately governed Titan flash-qualification lane.

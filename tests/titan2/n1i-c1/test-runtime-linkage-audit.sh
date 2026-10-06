@@ -177,6 +177,8 @@ for marker in \
   'apex_parity_count_invalid=' \
   'apex_parity_product_out_binding_mismatch=' \
   'apex_parity_v6_binding_mismatch=' \
+  '--expected-system-sha' \
+  'default=EXPECTED_C1_SHA' \
   'apex_fragment_exports_non_apex_path=' \
   'apex_fragment_cross_module_export=' \
   'retained_n1i_a_input_missing=' \
@@ -206,7 +208,9 @@ fi
 pass SYSTEM_FRAGMENT_APEX_INDEPENDENT_AUTHORITY
 
 if ! has_fixed_marker '--apex-parity-evidence' "$DERIVER" ||
-   ! has_fixed_marker '--apex-parity-evidence "$APEX_PARITY_DIR"' "$DRIVER"; then
+   ! has_fixed_marker '--apex-parity-evidence "$APEX_PARITY_DIR"' "$DRIVER" ||
+   ! has_fixed_marker '--expected-system-sha "$EXPECTED_C1_SHA"' "$DRIVER" ||
+   ! has_fixed_marker 'default=EXPECTED_C1_SHA' "$DERIVER"; then
   fail SEALED_APEX_PARITY_BINDING
 fi
 pass SEALED_APEX_PARITY_BINDING

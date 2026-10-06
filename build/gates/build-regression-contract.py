@@ -47,7 +47,7 @@ required_ids = {
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
     "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
-    "T2-019", "T2-020", "T2-021", "T2-022",
+    "T2-019", "T2-020", "T2-021", "T2-022", "T2-023",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -85,6 +85,12 @@ c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
 c2_native_preflight = read("build/titan2/run-n1i-c2-native-install-preflight.sh")
 c2_native_baseline_probe = read("build/titan2/probe-n1i-c2-c1-native-baseline.sh")
 c2_platform_provider = read("product/titan2/n1i-c2/platform-native-provider.tsv")
+c2_postbuild_qualifier = read("build/titan2/qualify-n1i-c2-postbuild-linkage.sh")
+c2_postbuild_contract = read("build/gates/n1i-c2-postbuild-linkage-contract.sh")
+c1_runtime_linkage_driver = read("build/titan2/run-n1i-c1-runtime-linkage-audit.sh")
+c1_apex_runtime_parity = read("build/titan2/audit-n1i-c1-apex-runtime-parity.py")
+c1_runtime_classpath_deriver = read("build/titan2/derive-n1i-c1-runtime-classpath.py")
+c2_agentpremain_classifier = read("build/titan2/classify-n1i-c2-agentpremain-gap.py")
 c2_platform_provider_rows = [
     line.split("\t")
     for line in c2_platform_provider.splitlines()[1:]
@@ -446,6 +452,52 @@ check(
     and 'bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"'
         not in adapter,
     "canonical_sable_n1i_build_routes_to_c2_only",
+)
+
+check(
+    "T2-023",
+    "BUILD_AUTHORIZED=NO" in c2_postbuild_qualifier
+    and "SOURCE_MUTATION_AUTHORIZED=NO" in c2_postbuild_qualifier
+    and "NETWORK_FETCH_AUTHORIZED=NO" in c2_postbuild_qualifier
+    and "DEVICE_CONTACT_AUTHORIZED=NO" in c2_postbuild_qualifier
+    and "REBOOT_AUTHORIZED=NO" in c2_postbuild_qualifier
+    and "FLASH_AUTHORIZED=NO" in c2_postbuild_qualifier
+    and 'EXPECTED_OUT_BASENAME="out-n1i-c2-${SOURCE_COMMIT:0:12}"'
+        in c2_postbuild_qualifier
+    and "N1I_C2_POSTBUILD_RECEIPT=PASS rows=41" in c2_postbuild_qualifier
+    and "count=33 frozen_stock=28 android_platform=5" in c2_postbuild_qualifier
+    and '--expected-system-sha "$EXPECTED_SYSTEM_SHA"' in c2_postbuild_qualifier
+    and '--expected-system-bytes "$EXPECTED_SYSTEM_BYTES"' in c2_postbuild_qualifier
+    and "N1I_C2_POSTBUILD_LINKAGE_QUALIFICATION=PASS" in c2_postbuild_qualifier
+    and "N1I_C2_READY_FOR_MERGE_REVIEW=YES" in c2_postbuild_qualifier
+    and "PASS_FULL_CLASSIFICATION_AGENTPREMAIN_8" in c2_postbuild_qualifier
+    and "AGENTPREMAIN_BROAD_RUNTIME_FAILURE_SUPPRESSION=NO"
+        in c2_postbuild_qualifier
+    and "EXPECTED_AGENT_FAILURES = 8" in c2_agentpremain_classifier
+    and "PASS_EXACT_DORMANT_NON_ANDROID_DEBUG_AGENT"
+        in c2_agentpremain_classifier
+    and "N1I_C2_AGENTPREMAIN_BROAD_RUNTIME_FAILURE_SUPPRESSION=NO"
+        in c2_agentpremain_classifier
+    and '"N1I_C1_LINKAGE_COMMON_UNRESOLVED": "0"'
+        in c2_agentpremain_classifier
+    and '"N1I_C1_LINKAGE_IMS_BASE_UNRESOLVED": "0"'
+        in c2_agentpremain_classifier
+    and '"N1I_C1_LINKAGE_IMS_APK_CLASS_MISSING":'
+        in c2_agentpremain_classifier
+    and "sha256(system_img)" not in c2_agentpremain_classifier
+    and "N1I_C2_POSTBUILD_LINKAGE_CONTRACT=PASS" in c2_postbuild_contract
+    and '--expected-system-sha)' in c1_runtime_linkage_driver
+    and '--expected-system-bytes)' in c1_runtime_linkage_driver
+    and 'EXPECTED_C1_SHA="137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160"'
+        in c1_runtime_linkage_driver
+    and 'EXPECTED_C1_BYTES="3210661888"' in c1_runtime_linkage_driver
+    and '"--expected-system-sha"' in c1_apex_runtime_parity
+    and "default=EXPECTED_C1_SHA" in c1_apex_runtime_parity
+    and '"--expected-system-sha"' in c1_runtime_classpath_deriver
+    and "default=EXPECTED_C1_SHA" in c1_runtime_classpath_deriver
+    and '--expected-system-sha "$EXPECTED_C1_SHA"'
+        in c1_runtime_linkage_driver,
+    "c2_postbuild_linkage_is_readonly_source_bound_with_exact_agentpremain_full_classification",
 )
 
 if failures:
