@@ -6,9 +6,9 @@ Date: 2026-10-06
 
 ## Canonical branch
 
-`n1i-d0-image-consolidated-20261006`
+`n1i-d0-0h-host-closure-20261006`
 
-This branch consolidates the three N1I-D0 implementation branches. The latest
+This is the sole active N1I-D0 implementation branch. PR #335 merged the three N1I-D0 histories into this branch. The latest
 D0-0H implementation remains the source authority; non-overlapping host-audit
 assets from the two older branches are retained for evidence/review rather than
 replacing newer shared build or flash logic.
@@ -48,9 +48,9 @@ artifact, then restores the Android source staging.
 ```bash
 cd /srv/sable-build/sableos/repo
 
-git fetch origin n1i-d0-image-consolidated-20261006
-git checkout n1i-d0-image-consolidated-20261006
-git reset --hard origin/n1i-d0-image-consolidated-20261006
+git fetch origin n1i-d0-0h-host-closure-20261006
+git checkout n1i-d0-0h-host-closure-20261006
+git reset --hard origin/n1i-d0-0h-host-closure-20261006
 
 bash build/gates/n1i-d0-image-build-contract.sh
 python3 build/gates/build-regression-contract.py
