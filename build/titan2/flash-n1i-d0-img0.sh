@@ -69,7 +69,7 @@ Usage:
   bash build/titan2/flash-n1i-d0-img0.sh flash \
     --authorize-device-contact YES_D0_IMG0_MODE_AWARE_FASTBOOTD_AND_FLASH_SYSTEM_A_ONCE \
     --authorize-flash YES_D0_IMG0_SYSTEM_A_ONCE \
-    --artifact-dir <sealed D0 IMG0 artifact directory> \
+    --artifact-dir <sealed D0 IMG0 artifact directory>
 EOF
 }
 
