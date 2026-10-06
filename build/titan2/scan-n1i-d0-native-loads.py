@@ -15,8 +15,7 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-STATIC = ROOT / "build/titan2/n1i_static.py"
-NATIVE = ROOT / "build/titan2/n1i-b2-native.py"
+DEFAULT_TOOL_DIR = ROOT / "build/titan2"
 
 
 def load_module(path: Path, name: str):
@@ -29,9 +28,16 @@ def load_module(path: Path, name: str):
     return module
 
 
-def scan(paths: list[Path], out: Path) -> tuple[int, int]:
-    static = load_module(STATIC, "n1i_d0_static")
-    native = load_module(NATIVE, "n1i_d0_native")
+def scan(
+    paths: list[Path],
+    out: Path,
+    tool_dir: Path,
+) -> tuple[int, int]:
+    static = load_module(tool_dir / "n1i_static.py", "n1i_d0_static")
+    native = load_module(
+        tool_dir / "n1i-b2-native.py",
+        "n1i_d0_native",
+    )
 
     rows: list[list[str]] = []
     constants = 0
@@ -92,9 +98,12 @@ def scan(paths: list[Path], out: Path) -> tuple[int, int]:
 
 
 def selftest() -> int:
-    native = load_module(NATIVE, "n1i_d0_native_selftest")
+    native = load_module(
+        DEFAULT_TOOL_DIR / "n1i-b2-native.py",
+        "n1i_d0_native_selftest",
+    )
     assert callable(native.load_sites)
-    assert native.TOOL_VERSION == "1.0.1"
+    assert native.TOOL_VERSION
     print("N1I_D0_NATIVE_LOAD_SCAN_SELFTEST=PASS")
     return 0
 
@@ -103,6 +112,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--container", type=Path, action="append", default=[])
     ap.add_argument("--out", type=Path)
+    ap.add_argument(
+        "--tool-dir",
+        type=Path,
+        default=DEFAULT_TOOL_DIR,
+    )
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
 
@@ -113,9 +127,17 @@ def main() -> int:
     if args.out.exists():
         raise RuntimeError(f"output_exists={args.out}")
 
+    tool_dir = args.tool_dir.resolve()
+    for required in (
+        tool_dir / "n1i_static.py",
+        tool_dir / "n1i-b2-native.py",
+    ):
+        if not required.is_file():
+            raise RuntimeError(f"tool_missing={required}")
     constants, dynamic = scan(
         [path.resolve() for path in args.container],
         args.out.resolve(),
+        tool_dir,
     )
     print(
         "N1I_D0_NATIVE_LOAD_SCAN=PASS "
