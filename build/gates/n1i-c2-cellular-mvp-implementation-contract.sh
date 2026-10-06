@@ -6,6 +6,8 @@ DRIVER="$ROOT/build/titan2/run-n1i-c2-cellular-mvp.sh"
 TEST="$ROOT/tests/titan2/n1i-c2/test-cellular-mvp-implementation.py"
 INSTALL_COLLISION_AUDIT="$ROOT/build/titan2/audit-n1i-c2-install-collisions.py"
 INSTALL_COLLISION_TEST="$ROOT/tests/titan2/n1i-c2/test-install-collision-audit.py"
+BASELINE_PROBE="$ROOT/build/titan2/probe-n1i-c2-c1-native-baseline.sh"
+NATIVE_RECONCILIATION="$ROOT/build/titan2/run-n1i-c2-native-collision-reconciliation.sh"
 NATIVE_INSTALL_PLANNER="$ROOT/build/titan2/plan-n1i-c2-native-install.py"
 NATIVE_INSTALL_PLAN_TEST="$ROOT/tests/titan2/n1i-c2/test-native-install-plan.py"
 BUILD_REGRESSION="$ROOT/build/gates/build-regression-contract.py"
@@ -27,7 +29,7 @@ marker() {
     echo "N1I_C2_IMPLEMENTATION_CONTRACT_$name=PASS"
 }
 
-for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
+for f in "$DRIVER" "$TEST" "$INSTALL_COLLISION_AUDIT" "$INSTALL_COLLISION_TEST" "$BASELINE_PROBE" "$NATIVE_RECONCILIATION" "$NATIVE_INSTALL_PLANNER" "$NATIVE_INSTALL_PLAN_TEST" "$BUILD_REGRESSION" "$BP" "$MK" "$SCRIPT" "$RC" "$MARKER" "$PHH_PATCH"; do
     [[ -f "$f" ]] || fail "missing_file=$f"
 done
 
@@ -39,7 +41,7 @@ echo "NETWORK_FETCH_AUTHORIZED=NO"
 echo "REBOOT_AUTHORIZED=NO"
 echo "FLASH_AUTHORIZED=NO"
 
-for shell_file in "$DRIVER" "$SCRIPT"; do
+for shell_file in "$DRIVER" "$SCRIPT" "$BASELINE_PROBE" "$NATIVE_RECONCILIATION"; do
     bash -n "$shell_file" || fail "shell_syntax=$shell_file"
 done
 echo "N1I_C2_IMPLEMENTATION_CONTRACT_SHELL_SYNTAX=PASS"
