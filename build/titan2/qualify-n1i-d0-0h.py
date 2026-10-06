@@ -196,6 +196,120 @@ def source_composition(out: Path) -> dict[str, str]:
     return values
 
 
+
+def relevant_inventory(root: Path) -> dict[str, tuple[int, str, str]]:
+    rows: dict[str, tuple[int, str, str]] = {}
+    categories = (
+        ("system", "etc/selinux"),
+        ("system", "etc/permissions"),
+        ("system", "etc/sysconfig"),
+        ("system", "etc/init"),
+        ("system", "framework"),
+        ("system", "lib64"),
+        ("system", "apex"),
+        ("system_ext", "etc/selinux"),
+        ("system_ext", "etc/permissions"),
+        ("system_ext", "etc/sysconfig"),
+        ("system_ext", "etc/init"),
+        ("system_ext", "framework"),
+        ("system_ext", "lib64"),
+        ("system_ext", "priv-app/ImsService"),
+        ("product", "etc/selinux"),
+        ("product", "etc/permissions"),
+        ("product", "etc/sysconfig"),
+        ("product", "etc/init"),
+        ("product", "framework"),
+        ("product", "lib64"),
+    )
+    for part, rel in categories:
+        base = root_path(root, part, rel)
+        if base is None:
+            continue
+        files = [base] if base.is_file() else sorted(base.rglob("*"))
+        for path in files:
+            if not path.is_file():
+                continue
+            part_root = root_path(root, part, "")
+            if part_root is None:
+                continue
+            relpath = path.relative_to(part_root)
+            runtime = (
+                "/" + str(relpath)
+                if part == "system"
+                else f"/{part}/" + str(relpath)
+            )
+            try:
+                size = path.stat().st_size
+                digest = sha256(path)
+            except OSError:
+                continue
+            rows[runtime] = (size, digest, part)
+    return rows
+
+
+def composition_delta(
+    n1f: Path,
+    c2: Path,
+    c1: Path | None,
+    out: Path,
+) -> None:
+    inventories = {
+        "N1F": relevant_inventory(n1f),
+        "C2": relevant_inventory(c2),
+    }
+    if c1 is not None and c1.is_dir():
+        inventories["C1"] = relevant_inventory(c1)
+
+    for left, right in (
+        ("N1F", "C2"),
+        ("N1F", "C1"),
+        ("C1", "C2"),
+    ):
+        dest = out / f"composition-{left.lower()}-to-{right.lower()}.tsv"
+        if left not in inventories or right not in inventories:
+            write_tsv(
+                dest,
+                ["status", "reason"],
+                [["UNKNOWN", "binary_control_not_retained"]],
+            )
+            continue
+        a = inventories[left]
+        b = inventories[right]
+        rows = []
+        for runtime_path in sorted(set(a) | set(b)):
+            av = a.get(runtime_path)
+            bv = b.get(runtime_path)
+            if av == bv:
+                continue
+            if av is None:
+                status = "ADDED"
+            elif bv is None:
+                status = "REMOVED"
+            else:
+                status = "CHANGED"
+            rows.append(
+                [
+                    runtime_path,
+                    status,
+                    av[0] if av else "-",
+                    av[1] if av else "-",
+                    bv[0] if bv else "-",
+                    bv[1] if bv else "-",
+                ]
+            )
+        write_tsv(
+            dest,
+            [
+                "runtime_path",
+                "status",
+                f"{left}_bytes",
+                f"{left}_sha256",
+                f"{right}_bytes",
+                f"{right}_sha256",
+            ],
+            rows,
+        )
+
 def policy_files(side_root: Path, stock_vendor: Path, stock_odm: Path | None) -> dict[str, Path | None]:
     files = {
         "plat": root_path(side_root, "system", "etc/selinux/plat_sepolicy.cil"),
@@ -279,18 +393,28 @@ def compile_policy(
     android_root: Path,
     secilc: Path,
     out: Path,
-) -> tuple[Gate, Gate, Path | None]:
-    mode, why, pre = precompiled_authority(side_root, stock_vendor, stock_odm)
+) -> tuple[Gate, Gate, Gate, Path | None]:
+    mode, why, pre = precompiled_authority(
+        side_root,
+        stock_vendor,
+        stock_odm,
+    )
     (out / f"gate-a0-{side}.env").write_text(
         f"MODE={mode}\nDETAIL={why}\n",
         encoding="utf-8",
     )
+    a0 = Gate("A0", side, PASS, f"mode={mode}:{why}")
     if mode == "PRECOMPILED_MATCH":
-        return Gate("A", side, PASS, why), Gate("A2", side, NOT_APPLICABLE, "precompiled_used"), pre
+        return (
+            a0,
+            Gate("A", side, PASS, why),
+            Gate("A2", side, NOT_APPLICABLE, "precompiled_used"),
+            pre,
+        )
 
     init_src = android_root / "system/core/init/selinux.cpp"
     if not init_src.is_file():
-        return Gate("A", side, UNKNOWN, "android_init_selinux_source_missing"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
+        return a0, Gate("A", side, UNKNOWN, "android_init_selinux_source_missing"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
     init_text = init_src.read_text(encoding="utf-8", errors="replace")
     required_source_markers = [
         "FindPrecompiledSplitPolicy",
@@ -305,18 +429,18 @@ def compile_policy(
     ]
     missing_markers = [m for m in required_source_markers if m not in init_text]
     if missing_markers:
-        return Gate("A", side, UNKNOWN, "init_semantics_unrecognized:" + ",".join(missing_markers)), Gate("A2", side, UNKNOWN, "a1_not_run"), None
+        return a0, Gate("A", side, UNKNOWN, "init_semantics_unrecognized:" + ",".join(missing_markers)), Gate("A2", side, UNKNOWN, "a1_not_run"), None
 
     f = policy_files(side_root, stock_vendor, stock_odm)
     required = ("plat", "vendor", "plat_pub", "vendor_vers")
     missing = [k for k in required if f[k] is None or not f[k].is_file()]
     if missing:
-        return Gate("A", side, UNKNOWN, "policy_inputs_missing:" + ",".join(missing)), Gate("A2", side, UNKNOWN, "a1_not_run"), None
+        return a0, Gate("A", side, UNKNOWN, "policy_inputs_missing:" + ",".join(missing)), Gate("A2", side, UNKNOWN, "a1_not_run"), None
 
     vers = f["vendor_vers"].read_text().splitlines()[0].strip()
     mapping = root_path(side_root, "system", f"etc/selinux/mapping/{vers}.cil")
     if mapping is None:
-        return Gate("A", side, UNKNOWN, f"platform_mapping_missing={vers}"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
+        return a0, Gate("A", side, UNKNOWN, f"platform_mapping_missing={vers}"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
     plat_compat = root_path(side_root, "system", f"etc/selinux/mapping/{vers}.compat.cil")
     sext_map = root_path(side_root, "system_ext", f"etc/selinux/mapping/{vers}.cil")
     sext_compat = root_path(side_root, "system_ext", f"etc/selinux/mapping/{vers}.compat.cil")
@@ -324,7 +448,7 @@ def compile_policy(
 
     pv = init_sepolicy_version(android_root)
     if pv is None:
-        return Gate("A", side, UNKNOWN, "init_sepolicy_version_unknown"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
+        return a0, Gate("A", side, UNKNOWN, "init_sepolicy_version_unknown"), Gate("A2", side, UNKNOWN, "a1_not_run"), None
 
     genfs_version = "202404"
     genfs_source = "DEFAULT_ANDROID_FALLBACK"
@@ -356,7 +480,7 @@ def compile_policy(
         encoding="utf-8",
     )
     if rc != 0 or not compiled.is_file():
-        return Gate("A", side, BOOT_FATAL, f"init_equivalent_secilc_rc={rc}"), Gate("A2", side, UNKNOWN, "a1_failed"), None
+        return a0, Gate("A", side, BOOT_FATAL, f"init_equivalent_secilc_rc={rc}"), Gate("A2", side, UNKNOWN, "a1_failed"), None
 
     compliance = out / f"gate-a2-{side}.policy"
     compliance_fc = out / f"gate-a2-{side}.file_contexts"
@@ -365,7 +489,7 @@ def compile_policy(
     ccmd[ccmd.index(str(fc))] = str(compliance_fc)
     crc, _ = run(ccmd, out / f"gate-a2-{side}.log")
     cgate = Gate("A2", side, PASS if crc == 0 else COMPLIANCE_ONLY, f"neverallow_secilc_rc={crc}")
-    return Gate("A", side, PASS, f"split_compile_pass genfs={genfs_version}"), cgate, compiled
+    return a0, Gate("A", side, PASS, f"split_compile_pass genfs={genfs_version}"), cgate, compiled
 
 
 def collect_context_files(side_root: Path, stock_vendor: Path, stock_odm: Path | None, kind: str) -> list[Path]:
@@ -1462,7 +1586,26 @@ def main() -> int:
     print(f"B2_ANALYZER_PROVENANCE_COMMIT={B2_PROVENANCE}")
 
     composition = source_composition(out)
+    c1_root = (
+        args.c1_root.resolve()
+        if args.c1_root is not None and args.c1_root.is_dir()
+        else None
+    )
+    composition_delta(
+        roots["N1F_ROOT"],
+        roots["C2_ROOT"],
+        c1_root,
+        out,
+    )
     print("N1I_D0_B0_COMPOSITION=PASS")
+    print(
+        "N1I_D0_B0_C1_BINARY_CONTROL="
+        + (
+            "PRESENT"
+            if c1_root is not None
+            else "UNKNOWN_NOT_RETAINED"
+        )
+    )
     print(f"N1I_D0_B0_TELEPHONYMETRICS_C1={composition['C1_TELEPHONYMETRICS']}")
     print(f"N1I_D0_B0_TELEPHONYMETRICS_C2={composition['C2_TELEPHONYMETRICS']}")
 
@@ -1480,8 +1623,16 @@ def main() -> int:
     gates: list[Gate] = []
     policies: dict[str, Path | None] = {}
     for side, root in (("n1f", roots["N1F_ROOT"]), ("c2", roots["C2_ROOT"])):
-        ag, a2, policy = compile_policy(side, root, roots["STOCK_VENDOR_ROOT"], stock_odm, args.android_root.resolve(), secilc, out)
-        gates.extend((ag, a2))
+        a0, ag, a2, policy = compile_policy(
+            side,
+            root,
+            roots["STOCK_VENDOR_ROOT"],
+            stock_odm,
+            args.android_root.resolve(),
+            secilc,
+            out,
+        )
+        gates.extend((a0, ag, a2))
         policies[side] = policy
         gates.append(gate_b(side, root, roots["STOCK_VENDOR_ROOT"], stock_odm, policy, property_checker, out, ag.result))
         gates.append(gate_c(side, root, roots["STOCK_VENDOR_ROOT"], stock_odm, policy, checkfc, out))
