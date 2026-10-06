@@ -197,9 +197,11 @@ if NATIVE_PLAN_OUTPUT="$(python3 "$NATIVE_INSTALL_PLAN_TEST")"; then
 else
     fail native_install_plan_regression
 fi
-grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_REUSE=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
-    fail native_install_known_kati_marker
-grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_DIFFERENT_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+grep -Fq 'N1I_C2_NATIVE_PLAN_IDENTICAL_BASELINE_REUSE=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_identical_reuse_marker
+grep -Fq 'N1I_C2_NATIVE_PLAN_GRAPH_COLLISION_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
+    fail native_install_graph_collision_marker
+grep -Fq 'N1I_C2_NATIVE_PLAN_DIFFERENT_BASELINE_FAIL_CLOSED=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_different_fail_closed_marker
 grep -Fq 'N1I_C2_NATIVE_INSTALL_PLAN_TEST=PASS' <<<"$NATIVE_PLAN_OUTPUT" ||
     fail native_install_plan_marker
