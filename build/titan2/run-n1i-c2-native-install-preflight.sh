@@ -116,14 +116,12 @@ mkdir -p "$OUT" || { fail out_create 66; exit $?; }
 echo
 echo "===== HASH RETAINED FAILED INSTALL GRAPH ====="
 
-find "$PRIOR_FAILED_OUT/soong"     -maxdepth 1     -type f     -name 'installs-*.mk'     -print0 |
-    LC_ALL=C sort -z |
-    xargs -0 sha256sum > "$OUT/prior-failed-install-graph.sha256"
+sha256sum "$PRIOR_FAILED_INSTALLS" > "$OUT/prior-failed-install-graph.sha256"
 GRAPH_HASH_RC=$?
 [[ "$GRAPH_HASH_RC" -eq 0 && -s "$OUT/prior-failed-install-graph.sha256" ]] ||
     { fail prior_graph_hash 66; exit $?; }
 
-echo "N1I_C2_PRIOR_FAILED_GRAPH=PASS_HASHED"
+echo "N1I_C2_PRIOR_FAILED_GRAPH=PASS_HASHED_EXACT file=$PRIOR_FAILED_INSTALLS"
 
 echo
 echo "===== PROBE EXACT SEALED C1 BASELINE ====="
@@ -136,7 +134,14 @@ BASELINE_RC=$?
 echo
 echo "===== ENUMERATE COMPLETE RETAINED KATI OWNERSHIP GRAPH ====="
 
-python3 "$AUDIT"     --out-dir "$PRIOR_FAILED_OUT"     --product-out "$PRIOR_FAILED_PRODUCT_OUT"     --target-list "$A4"     --tsv-out "$OUT/INSTALL_COLLISIONS.tsv"     --report-only     > >(tee "$OUT/install-collision-audit.log") 2>&1
+python3 "$AUDIT" \
+    --out-dir "$PRIOR_FAILED_OUT" \
+    --product-out "$PRIOR_FAILED_PRODUCT_OUT" \
+    --target-list "$A4" \
+    --installs-file "$PRIOR_FAILED_INSTALLS" \
+    --tsv-out "$OUT/INSTALL_COLLISIONS.tsv" \
+    --report-only \
+    > >(tee "$OUT/install-collision-audit.log") 2>&1
 AUDIT_RC=$?
 [[ "$AUDIT_RC" -eq 0 ]] ||
     { fail "collision_audit_rc=$AUDIT_RC" 67; exit $?; }
