@@ -10,11 +10,15 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import importlib.util
 import json
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -586,6 +590,355 @@ def seapp(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def load_module(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise D0Error(f"cannot_load_python_module={path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def detect_payload_fs(path: Path) -> str:
+    with path.open("rb") as fp:
+        header = fp.read(1084)
+    if len(header) >= 1082 and header[1080:1082] == b"\x53\xef":
+        return "ext4"
+    if len(header) >= 1028 and header[1024:1028] == b"\xe2\xe1\xf5\xe0":
+        return "erofs"
+    raise D0Error(f"unsupported_apex_payload_fs={path}")
+
+
+def extract_zip_member(zf: zipfile.ZipFile, member: str, dest: Path) -> None:
+    with zf.open(member) as src, dest.open("wb") as dst:
+        shutil.copyfileobj(src, dst, 1024 * 1024)
+
+
+def apex_extract(args: argparse.Namespace) -> int:
+    archive_root = args.system_root / "apex"
+    if not archive_root.is_dir():
+        raise D0Error(f"apex_archive_root_missing={archive_root}")
+    if args.out.exists() and any(args.out.iterdir()):
+        raise D0Error(f"apex_output_not_empty={args.out}")
+    args.out.mkdir(parents=True, exist_ok=True)
+
+    archives = sorted(
+        p for p in archive_root.iterdir()
+        if p.is_file() and p.suffix in (".apex", ".capex")
+    )
+    if not archives:
+        raise D0Error(f"apex_archives_absent={archive_root}")
+
+    rows = []
+    seen_modules: set[str] = set()
+    work = args.out.parent / (args.out.name + ".work")
+    if work.exists():
+        shutil.rmtree(work)
+    work.mkdir(parents=True)
+    try:
+        for archive in archives:
+            module_name = re.sub(r"\.(?:c?apex)$", "", archive.name)
+            if module_name in seen_modules:
+                raise D0Error(f"duplicate_apex_module_archive={module_name}")
+            seen_modules.add(module_name)
+
+            safe = re.sub(r"[^A-Za-z0-9_.-]", "_", module_name)
+            inner = work / f"{safe}.inner.apex"
+            payload = work / f"{safe}.payload.img"
+            outer_sha = sha256(archive)
+            inner_path = archive
+
+            with zipfile.ZipFile(archive) as outer:
+                if "original_apex" in outer.namelist():
+                    extract_zip_member(outer, "original_apex", inner)
+                    inner_path = inner
+
+            inner_sha = sha256(inner_path)
+            with zipfile.ZipFile(inner_path) as zf:
+                if "apex_payload.img" not in zf.namelist():
+                    raise D0Error(f"apex_payload_missing={archive}")
+                extract_zip_member(zf, "apex_payload.img", payload)
+
+            payload_sha = sha256(payload)
+            fs_type = detect_payload_fs(payload)
+            dest = args.out / f"{module_name}.apex"
+            dest.mkdir()
+
+            if fs_type == "ext4":
+                cmd = [
+                    str(args.debugfs),
+                    "-R",
+                    f"rdump / {dest}",
+                    str(payload),
+                ]
+            else:
+                cmd = [
+                    str(args.fsck_erofs),
+                    f"--extract={dest}",
+                    str(payload),
+                ]
+            cp = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, check=False,
+            )
+            (work / f"{safe}.extract.log").write_text(
+                cp.stdout, encoding="utf-8", errors="replace"
+            )
+            if cp.returncode != 0 or not any(dest.iterdir()):
+                raise D0Error(
+                    f"apex_extract_failed={module_name}:rc={cp.returncode}"
+                )
+
+            rows.append({
+                "module": module_name,
+                "archive": str(archive),
+                "outer_sha256": outer_sha,
+                "inner_sha256": inner_sha,
+                "payload_sha256": payload_sha,
+                "payload_fs": fs_type,
+                "extracted_root": str(dest),
+            })
+            inner.unlink(missing_ok=True)
+            payload.unlink(missing_ok=True)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+    manifest = args.out / "N1I_D0_APEX_MANIFEST.tsv"
+    with manifest.open("w", encoding="utf-8", newline="") as fp:
+        fields = (
+            "module", "archive", "outer_sha256", "inner_sha256",
+            "payload_sha256", "payload_fs", "extracted_root",
+        )
+        w = csv.DictWriter(fp, fieldnames=fields, delimiter="\t")
+        w.writeheader()
+        w.writerows(rows)
+    print(f"N1I_D0_APEX_MODULE_COUNT={len(rows)}")
+    print("N1I_D0_APEX_EXTRACTION=PASS")
+    return 0
+
+
+def map_runtime_path(system_root: Path, apex_root: Path, device: str) -> Path:
+    if device.startswith("/system_ext/"):
+        return system_root / "system_ext" / device.removeprefix("/system_ext/")
+    if device.startswith("/product/"):
+        return system_root / "product" / device.removeprefix("/product/")
+    if device.startswith("/system/"):
+        return system_root / device.removeprefix("/system/")
+    if device.startswith("/apex/"):
+        parts = device.split("/", 3)
+        if len(parts) != 4:
+            raise D0Error(f"invalid_apex_runtime_path={device}")
+        module = parts[2]
+        exact = apex_root / f"{module}.apex"
+        if not exact.is_dir():
+            hits = sorted(
+                p for p in apex_root.glob(f"{module}*")
+                if p.is_dir() and
+                re.sub(r"\.(?:c?apex)$", "", p.name) == module
+            )
+            if len(hits) != 1:
+                raise D0Error(
+                    f"apex_runtime_module_count={module}:{len(hits)}"
+                )
+            exact = hits[0]
+        return exact / parts[3]
+    raise D0Error(f"unsupported_runtime_path={device}")
+
+
+def classpath(args: argparse.Namespace) -> int:
+    deriver = load_module(
+        args.repo / "build/titan2/derive-n1i-c1-runtime-classpath.py",
+        "n1i_d0_deriver",
+    )
+    static = load_module(args.static_tool, "n1i_d0_static")
+    system_fragment = args.system_root / "etc/classpaths/bootclasspath.pb"
+    if not system_fragment.is_file():
+        raise D0Error(f"system_bootclasspath_missing={system_fragment}")
+    if not args.apex_root.is_dir():
+        raise D0Error(f"apex_root_missing={args.apex_root}")
+
+    system_jars = list(deriver.boot_jars(system_fragment, args.api_level))
+    fragments = list(deriver.apex_fragments(args.apex_root, args.api_level))
+    by_module = {x.module: x for x in fragments}
+
+    ordered: list[tuple[str, str]] = []
+    art = by_module.get("com.android.art")
+    if art:
+        ordered.extend((j.path, "APEX:com.android.art") for j in art.jars)
+    ordered.extend((j.path, "SYSTEM_FRAGMENT") for j in system_jars)
+    for module in sorted(by_module):
+        if module == "com.android.art":
+            continue
+        ordered.extend(
+            (j.path, f"APEX:{module}") for j in by_module[module].jars
+        )
+
+    seen_paths: set[str] = set()
+    bcp: list[tuple[str, str, Path]] = []
+    duplicate_device_paths = []
+    for device, source in ordered:
+        if device in seen_paths:
+            duplicate_device_paths.append((device, source))
+            continue
+        seen_paths.add(device)
+        host = map_runtime_path(args.system_root, args.apex_root, device)
+        bcp.append((device, source, host))
+
+    systemserver: list[tuple[str, str, Path]] = []
+    ss_fragments = []
+    candidates = [
+        args.system_root / "etc/classpaths/systemserverclasspath.pb",
+        *sorted(args.apex_root.glob(
+            "*/etc/classpaths/systemserverclasspath.pb"
+        )),
+    ]
+    for fragment in candidates:
+        if not fragment.is_file():
+            continue
+        for jar in deriver.parse_fragment(fragment):
+            if not deriver.enabled(jar, args.api_level):
+                continue
+            source = "SYSTEMSERVER:" + str(fragment)
+            host = map_runtime_path(
+                args.system_root, args.apex_root, jar.path
+            )
+            systemserver.append((jar.path, source, host))
+            ss_fragments.append(str(fragment))
+
+    all_rows = []
+    missing = 0
+    for order, (device, source, host) in enumerate(bcp):
+        exists = host.is_file()
+        missing += int(not exists)
+        all_rows.append({
+            "classpath": "BOOT",
+            "order": str(order),
+            "device": device,
+            "source": source,
+            "host": str(host),
+            "exists": "YES" if exists else "NO",
+            "sha256": sha256(host) if exists else "-",
+        })
+    for order, (device, source, host) in enumerate(systemserver):
+        exists = host.is_file()
+        missing += int(not exists)
+        all_rows.append({
+            "classpath": "SYSTEMSERVER",
+            "order": str(order),
+            "device": device,
+            "source": source,
+            "host": str(host),
+            "exists": "YES" if exists else "NO",
+            "sha256": sha256(host) if exists else "-",
+        })
+
+    args.out.mkdir(parents=True, exist_ok=True)
+    with (args.out / "CLASSPATH.tsv").open(
+        "w", encoding="utf-8", newline=""
+    ) as fp:
+        fields = (
+            "classpath", "order", "device", "source", "host", "exists",
+            "sha256",
+        )
+        w = csv.DictWriter(fp, fieldnames=fields, delimiter="\t")
+        w.writeheader()
+        w.writerows(all_rows)
+
+    owners: dict[str, tuple[str, str]] = {}
+    duplicate_classes = []
+    shadow_count = 0
+    for row in all_rows:
+        host = Path(row["host"])
+        if not host.is_file():
+            continue
+        try:
+            container = static.load_container(host)
+        except Exception as exc:
+            raise D0Error(
+                f"classpath_dex_parse_failed={host}:{type(exc).__name__}:{exc}"
+            ) from exc
+        for entry, dex in container.dexes:
+            for cd in dex.classes:
+                owner = (row["classpath"], row["device"])
+                first = owners.get(cd.descriptor)
+                if first is None:
+                    owners[cd.descriptor] = owner
+                    continue
+                duplicate_classes.append((
+                    cd.descriptor,
+                    first[0],
+                    first[1],
+                    owner[0],
+                    owner[1],
+                ))
+                if first != owner:
+                    shadow_count += 1
+
+    with (args.out / "DUPLICATE_CLASSES.tsv").open(
+        "w", encoding="utf-8", newline=""
+    ) as fp:
+        w = csv.writer(fp, delimiter="\t")
+        w.writerow((
+            "class", "winner_classpath", "winner_device",
+            "shadow_classpath", "shadow_device",
+        ))
+        w.writerows(duplicate_classes)
+
+    updatable_files = sorted(
+        args.system_root.rglob("updatable-bcp-packages.txt")
+    )
+    updatable_rows = []
+    for path in updatable_files:
+        for raw in path.read_text(
+            encoding="utf-8", errors="replace"
+        ).splitlines():
+            line = strip_comment(raw)
+            if line:
+                updatable_rows.append((str(path), line))
+    with (args.out / "UPDATABLE_BCP_PACKAGES.tsv").open(
+        "w", encoding="utf-8", newline=""
+    ) as fp:
+        w = csv.writer(fp, delimiter="\t")
+        w.writerow(("source", "package"))
+        w.writerows(updatable_rows)
+
+    with (args.out / "SUMMARY.env").open("w", encoding="utf-8") as fp:
+        fp.write(f"N1I_D0_BCP_ENTRY_COUNT={len(bcp)}\n")
+        fp.write(
+            f"N1I_D0_SYSTEMSERVER_ENTRY_COUNT={len(systemserver)}\n"
+        )
+        fp.write(f"N1I_D0_CLASSPATH_MISSING_COUNT={missing}\n")
+        fp.write(
+            f"N1I_D0_DUPLICATE_DEVICE_PATH_COUNT="
+            f"{len(duplicate_device_paths)}\n"
+        )
+        fp.write(
+            f"N1I_D0_DUPLICATE_CLASS_COUNT={len(duplicate_classes)}\n"
+        )
+        fp.write(f"N1I_D0_DUPLICATE_SHADOW_COUNT={shadow_count}\n")
+        fp.write(
+            f"N1I_D0_UPDATABLE_BCP_PACKAGE_COUNT="
+            f"{len(updatable_rows)}\n"
+        )
+        fp.write(
+            "N1I_D0_CLASSPATH_PATH_RESOLUTION="
+            + ("PASS" if missing == 0 else "FAIL")
+            + "\n"
+        )
+
+    print(f"N1I_D0_BCP_ENTRY_COUNT={len(bcp)}")
+    print(f"N1I_D0_SYSTEMSERVER_ENTRY_COUNT={len(systemserver)}")
+    print(f"N1I_D0_CLASSPATH_MISSING_COUNT={missing}")
+    print(f"N1I_D0_DUPLICATE_CLASS_COUNT={len(duplicate_classes)}")
+    print(
+        "N1I_D0_CLASSPATH_PATH_RESOLUTION="
+        + ("PASS" if missing == 0 else "FAIL")
+    )
+    return 0
+
+
 def inventory(args: argparse.Namespace) -> int:
     root = args.root.resolve()
     if not root.is_dir():
@@ -733,6 +1086,20 @@ def main() -> int:
     pr.add_argument("--candidate-root", action="append", required=True)
     pr.add_argument("--out", type=Path, required=True)
 
+    ax = sp.add_parser("apex-extract")
+    ax.add_argument("--system-root", type=Path, required=True)
+    ax.add_argument("--debugfs", type=Path, required=True)
+    ax.add_argument("--fsck-erofs", type=Path, required=True)
+    ax.add_argument("--out", type=Path, required=True)
+
+    cp = sp.add_parser("classpath")
+    cp.add_argument("--repo", type=Path, required=True)
+    cp.add_argument("--system-root", type=Path, required=True)
+    cp.add_argument("--apex-root", type=Path, required=True)
+    cp.add_argument("--static-tool", type=Path, required=True)
+    cp.add_argument("--api-level", type=int, default=36)
+    cp.add_argument("--out", type=Path, required=True)
+
     pt = sp.add_parser("privapp-tree")
     pt.add_argument("--aapt2", type=Path, required=True)
     pt.add_argument("--framework-manifest", type=Path, required=True)
@@ -764,6 +1131,10 @@ def main() -> int:
             return contexts(args)
         if args.cmd == "privapp":
             return privapp(args)
+        if args.cmd == "apex-extract":
+            return apex_extract(args)
+        if args.cmd == "classpath":
+            return classpath(args)
         if args.cmd == "privapp-tree":
             return privapp_tree(args)
         if args.cmd == "seapp":
