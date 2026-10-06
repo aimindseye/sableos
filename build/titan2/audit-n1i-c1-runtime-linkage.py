@@ -42,8 +42,11 @@ class AuditError(Exception):
     pass
 
 
-def load_members_tool():
-    global MEMBERS
+def load_members_tool(tool: Path | None = None):
+    global MEMBERS, MEMBERS_TOOL
+    if tool is not None:
+        MEMBERS_TOOL = tool
+        MEMBERS = None
     if MEMBERS is not None:
         return MEMBERS
     spec = importlib.util.spec_from_file_location("n1i_c1_members_base", MEMBERS_TOOL)
@@ -430,6 +433,7 @@ def main() -> int:
     parser.add_argument("--bootclasspath-manifest", type=Path)
     parser.add_argument("--ims-apk", type=Path)
     parser.add_argument("--badging", type=Path)
+    parser.add_argument("--members-tool", type=Path)
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
 
@@ -444,6 +448,8 @@ def main() -> int:
             parser.error(
                 "--bootclasspath-manifest, --ims-apk and --badging are required"
             )
+        if args.members_tool is not None:
+            load_members_tool(args.members_tool.resolve())
         return run(
             args.bootclasspath_manifest,
             args.ims_apk,
