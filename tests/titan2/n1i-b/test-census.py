@@ -48,6 +48,27 @@ def st(edges: dict, eid: str) -> str:
     return edges.get(eid, {}).get("status", "NOT_PRESENT")
 
 
+
+def load_tool_module(path: Path, name: str):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def lf_only_text_case() -> None:
+    """Regression: init/prop/capture text splits on LF/CRLF only, never at U+2028/U+0085/VT/FF."""
+    mod = load_tool_module(TOOL, "n1i_b2_census_under_test")
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "sep.rc"
+        inj = f"    # note{chr(0x2028)}service injected /system/bin/injected{chr(0x85)}x{chr(0x0b)}y"
+        p.write_bytes(("service vendor.ok /vendor/bin/ok\n    class main\r\n" + inj + "\n").encode())
+        got = mod.text(p)
+    case("text_lf_only_keeps_separators_inside_line",
+         got == ["service vendor.ok /vendor/bin/ok", "    class main", inj], repr(got)[:300])
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -140,6 +161,7 @@ def main() -> int:
         case("missing_partitions_refused", r.returncode == 2 and not (td / "o3").exists(), f"rc={r.returncode}")
         r, _, _ = run(td / "full")
         case("nonempty_output_refused", r.returncode == 2, f"rc={r.returncode}")
+    lf_only_text_case()
     return 1 if FAILS else 0
 
 

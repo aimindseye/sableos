@@ -69,7 +69,16 @@ def read_text(path: Path) -> list[str]:
     data = path.read_bytes()
     if b"\x00" in data[:65536]:
         raise InputError(f"binary input refused: {path}")
-    return data.decode("utf-8", errors="replace").splitlines()
+    return lf_lines(data.decode("utf-8", errors="replace"))
+
+
+def lf_lines(s: str) -> list[str]:
+    """Like str.splitlines() for LF/CRLF text, but never splits at \\v \\f \\x1c-\\x1e U+0085 U+2028 U+2029
+    (logcat prints those raw inside messages; splitting there would cut one record into fragments)."""
+    lines = s.split("\n")
+    if lines and lines[-1] == "":
+        lines.pop()
+    return [line[:-1] if line.endswith("\r") else line for line in lines]
 
 
 def env_value(v: str) -> str:

@@ -145,6 +145,28 @@ def resolve(f: dict, td: Path, name: str, side: str = "stock", core: str = "core
     return r, rows, env
 
 
+
+def load_tool_module(path: Path, name: str):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def lf_only_badging_case() -> None:
+    """Regression: aapt2 prints labels raw; a label holding U+2028/U+0085 must not split into fake lines."""
+    mod = load_tool_module(TOOL, "n1i_b2_members_under_test")
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "badging.txt"
+        p.write_text("package: name='p.app'\n"
+                     f"application-label:'Phone{chr(0x2028)}uses-library:'injected.lib''\n"
+                     f"application-label-xx:'Tel{chr(0x85)}uses-library-not-required:'injected2.lib''\n"
+                     "uses-library:'real.lib'\nuses-library-not-required:'opt.lib'\n", encoding="utf-8")
+        got = mod.parse_badging(p)
+    case("badging_label_separators_do_not_inject_libraries", got == [("real.lib", True), ("opt.lib", False)], str(got))
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -261,6 +283,7 @@ def main() -> int:
         (td / "fake/MEMBERS.tsv").write_text("caller\n")
         r = sh([sys.executable, TOOL, "compare", "--stock", td / "stock", "--c3a", td / "fake", "--out", td / "cmpbad"])
         case("compare_refuses_different_app", r.returncode == 2 and not (td / "cmpbad").exists(), f"rc={r.returncode}")
+    lf_only_badging_case()
     return 1 if FAILS else 0
 
 

@@ -147,6 +147,29 @@ def site(rows: list, method: str, nth: int = 0) -> dict:
     return hits[nth] if len(hits) > nth else {}
 
 
+
+def load_tool_module(path: Path, name: str):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def lf_only_badging_case() -> None:
+    """Regression: aapt2 prints labels raw; a label holding U+2028/U+0085 must not split into fake lines."""
+    mod = load_tool_module(TOOL, "n1i_b2_native_under_test")
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "badging.txt"
+        p.write_text("package: name='p.app'\n"
+                     f"application-label:'Phone{chr(0x2029)}uses-native-library:'libinjected.so''\n"
+                     "uses-native-library:'libreal.so'\nuses-native-library-not-required:'libopt.so'\n",
+                     encoding="utf-8")
+        got = mod.parse_badging_native(p)
+    case("badging_label_separators_do_not_inject_native_libraries",
+         got == [("libreal.so", True), ("libopt.so", False)], str(got))
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -258,6 +281,7 @@ def main() -> int:
         case("malformed_elf_fails_closed", r.returncode == 2 and not (td / "badelf").exists(), r.stderr[-160:])
         r, _ = run(f, td, "main")
         case("nonempty_output_refused", r.returncode == 2, f"rc={r.returncode}")
+    lf_only_badging_case()
     return 1 if FAILS else 0
 
 

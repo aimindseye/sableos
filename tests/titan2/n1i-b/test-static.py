@@ -293,6 +293,45 @@ def dex_cases(td: Path) -> None:
     case("crafted_stream_fits", len(stream) < m.code.insns_units, f"stream={len(stream)} bulk={m.code.insns_units}")
 
 
+SEPARATORS = {"U+0085": chr(0x85), "U+2028": chr(0x2028), "U+2029": chr(0x2029)}
+
+
+def separator_cases(td: Path) -> None:
+    """Regression: const-string literals containing splitlines()-only boundaries (FindAddress-style)."""
+    dx = find_dx()
+    if not (shutil.which("javac") and dx and shutil.which("dexdump")):
+        case("dex_separator_fixture_build", False, "javac, dx and dexdump are required")
+        return
+    cls = td / "cls"
+    r = sh(["javac", "-nowarn", "--release", "8", "-encoding", "US-ASCII", "-d", str(cls),
+            str(FX / "dex/sep/p/Sep.java")])
+    r2 = sh([dx, "--dex", "--min-sdk-version=26", f"--output={td / 'sep.dex'}", str(cls)]) if not r.returncode else r
+    case("dex_separator_fixture_build", not (r.returncode or r2.returncode),
+         "" if not (r.returncode or r2.returncode) else (r.stderr + r2.stderr)[-200:])
+    if r.returncode or r2.returncode:
+        return
+    dex = S.DexFile((td / "sep.dex").read_bytes(), "sep.dex")
+    strings = set(dex.strings)
+    for label, ch in SEPARATORS.items():
+        case(f"dex_separator_fixture_has_{label}", any(ch in s for s in strings), "")
+    text = S.run_dexdump(dex.data)
+    raw = [label for label, ch in SEPARATORS.items() if ch in text]
+    # Non-vacuity: the oracle text itself must carry boundaries that splitlines() honours and split("\n") does not.
+    case("dex_separator_dexdump_prints_raw_boundaries", len(raw) == len(SEPARATORS)
+         and len(text.splitlines()) > len(text.split("\n")) - 1, f"raw={raw}")
+    oracle = S.parse_dexdump(text)
+    consts = [i for sec in ("direct", "virtual") for m in oracle.get("Lp/Sep;", {}).get(sec, [])
+              for i in m.get("insns", []) if i[1].startswith("const-string")]
+    case("dex_separator_oracle_keeps_every_string_ref", len(consts) == 6
+         and all(len(i[2]) == 1 and i[2][0][0] == "string" for i in consts), f"const-strings={len(consts)} {consts}")
+    ok, detail = True, ""
+    try:
+        detail = str(S.oracle_check_dex(dex)["instructions"]) + " instructions"
+    except S.DexError as e:
+        ok, detail = False, str(e)
+    case("dex_separator_decoder_matches_dexdump", ok, detail)
+
+
 def elf_cases(td: Path) -> None:
     need = {"gcc": shutil.which("gcc"), "clang": shutil.which("clang"), "ld.lld": shutil.which("ld.lld"),
             "llvm-objcopy": shutil.which("llvm-objcopy"), "readelf": shutil.which("readelf")}
@@ -371,7 +410,9 @@ def main() -> int:
         td = Path(td)
         (td / "dex").mkdir()
         (td / "elf").mkdir()
+        (td / "sep").mkdir()
         dex_cases(td / "dex")
+        separator_cases(td / "sep")
         elf_cases(td / "elf")
     return 1 if FAILS else 0
 

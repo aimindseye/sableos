@@ -150,9 +150,22 @@ APN_LINE = re.compile(r"(?i)\bapn\s*=|ApnSetting|\bRow:\s*\d+|content://telephon
 APN_CRED = re.compile(r"(?i)(\b(?:user|password|mUser|mPassword)\s*[:=]\s*)(?!<REDACTED|NULL(?=[,\s}]|$))([^,\s}][^,}]*)")
 
 
+def lf_lines(text: str, keepends: bool = False) -> list[str]:
+    """str.splitlines() restricted to LF/CRLF boundaries. Captured logcat/dumpsys text carries
+    \\v \\f \\x1c-\\x1e U+0085 U+2028 U+2029 as data; splitting there would let a line-scoped drop
+    (AUTH/CONTENT) remove only part of the real line."""
+    parts = text.split("\n")
+    lines = [p + "\n" for p in parts[:-1]] if keepends else parts[:-1]
+    if parts[-1]:
+        lines.append(parts[-1])
+    if not keepends:
+        lines = [line[:-1] if line.endswith("\r") else line for line in lines]
+    return lines
+
+
 def sanitize_strict(text: str, serials: tuple[str, ...] = ()) -> str:
     out = []
-    for line in text.splitlines(keepends=True):
+    for line in lf_lines(text, keepends=True):
         body = line.rstrip("\r\n")
         nl = line[len(body):]
         if AUTH_LINE.search(body):
@@ -214,7 +227,7 @@ VERIFY_CLASS_NAMES = tuple(n for n, _ in VERIFY_CLASSES) + ("literal_ipv6", "apn
 def verify_text(text: str, serials: tuple[str, ...] = ()) -> dict[str, list[int]]:
     """Return {class: [line numbers]} for every class hit in text."""
     hits: dict[str, list[int]] = {n: [] for n in VERIFY_CLASS_NAMES}
-    for no, line in enumerate(text.splitlines(), 1):
+    for no, line in enumerate(lf_lines(text), 1):
         if line.startswith(("<DROPPED_AUTH_LINE>", "<DROPPED_CONTENT_LINE>")):
             continue
         for name, rx in VERIFY_CLASSES:

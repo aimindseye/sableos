@@ -338,7 +338,8 @@ def attribute(natives: list[tuple[str, str, str]], libs: dict[str, Lib], runtime
 # =============================================================================
 def parse_badging_native(path: Path) -> list[tuple[str, bool]]:
     out = []
-    for line in path.read_text(errors="replace").splitlines():
+    # LF only: aapt2 prints labels raw, and splitlines() would split one at U+2028/U+0085 etc.
+    for line in path.read_text(errors="replace").split("\n"):
         m = re.match(r"^uses-native-library(-not-required)?:'([^']+)'", line)
         if m:
             out.append((m.group(2), m.group(1) is None))

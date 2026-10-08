@@ -47,6 +47,27 @@ def expect(cid: str, e: dict, want: dict) -> None:
     case(cid, not bad, f"mismatch={bad}" if bad else "")
 
 
+
+def load_tool_module(path: Path, name: str):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def lf_only_read_case() -> None:
+    """Regression: logcat records keep raw U+2028/U+0085 in the message; one record must stay one line."""
+    mod = load_tool_module(TOOL, "n1i_b1_timeline_under_test")
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "sep.logcat.txt"
+        rec = f"10-08 11:00:00.000  1000  1000 I Tag: part one{chr(0x2028)}part two{chr(0x2029)}{chr(0x85)}end"
+        p.write_bytes((rec + "\r\n10-08 11:00:01.000  1000  1000 I Tag: next\n").encode())
+        got = mod.read_text(p)
+    case("read_text_lf_only_one_record_per_line",
+         got == [rec, "10-08 11:00:01.000  1000  1000 I Tag: next"], repr(got)[:300])
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)
@@ -245,6 +266,7 @@ def main() -> int:
         case("b0_records_evidence_path_and_line", "n1f-boot-getprop.txt:1" in ident and "n1d-preflash-getprop.txt:1" in ident, "")
         r = run("b0", "--candidate", B0 / "missing.txt", "--reference", B0 / "n1d-preflash-getprop.txt", "--out", td / "mis")
         case("b0_missing_input_refused", r.returncode == 2 and not (td / "mis").exists(), f"rc={r.returncode}")
+    lf_only_read_case()
     return 1 if FAILS else 0
 
 

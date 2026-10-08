@@ -861,7 +861,9 @@ def parse_dexdump(text: str) -> dict:
             classes[cls][section].append(member)
         member = None
 
-    for line in text.splitlines():
+    # Split on LF only. str.splitlines() also breaks at \v \f \x1c-\x1e U+0085 U+2028 U+2029, which
+    # dexdump prints unescaped inside const-string literals; that cut the "// string@" reference tail.
+    for line in text.split("\n"):
         m = _DD_INSN.match(line)
         if m:
             if member is None or "insns" not in member:
@@ -1307,7 +1309,7 @@ def readelf_oracle(path: Path, readelf: str | None = None) -> dict:
     needed = tuple(re.findall(r"\(NEEDED\)\s+Shared library: \[([^\]]+)\]", d.stdout))
     so = re.findall(r"\(SONAME\)\s+Library soname: \[([^\]]+)\]", d.stdout)
     syms = []
-    for line in s.stdout.splitlines():
+    for line in s.stdout.split("\n"):  # LF only; see parse_dexdump()
         m = re.match(r"\s*\d+:\s+[0-9a-f]+\s+\S+\s+(\w+)\s+(\w+)\s+(\w+)\s+(\S+)\s*(\S*)", line)
         if m:
             typ, bind, vis, ndx, name = m.groups()

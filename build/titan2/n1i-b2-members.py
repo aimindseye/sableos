@@ -477,7 +477,8 @@ def class_checks(w: World, k: Klass) -> list[tuple[str, str, Outcome]]:
 
 def parse_badging(path: Path) -> list[tuple[str, bool]]:
     libs = []
-    for line in path.read_text(errors="replace").splitlines():
+    # LF only: aapt2 prints labels raw, and splitlines() would split one at U+2028/U+0085 etc.
+    for line in path.read_text(errors="replace").split("\n"):
         m = re.match(r"^uses-library(-not-required)?:'([^']+)'", line)
         if m:
             libs.append((m.group(2), m.group(1) is None))

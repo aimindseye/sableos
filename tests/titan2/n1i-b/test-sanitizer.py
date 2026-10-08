@@ -56,6 +56,18 @@ def all_text(root: Path) -> str:
     return "\n".join(p.read_text(errors="replace") for p in sorted(root.rglob("*")) if p.is_file())
 
 
+
+def lf_only_strict_cases(san) -> None:
+    """Regression: strict mode treats LF/CRLF as the only line boundaries (U+2028/U+2029/U+0085 are data)."""
+    ls = chr(0x2028)
+    t = f"Authorization: Bearer abc{ls}tok_SYNTH_SECRET_9f8e\nkeep me\r\n"
+    out = san.sanitize_strict(t)
+    case("strict_auth_drop_covers_whole_line_across_separator",
+         "tok_SYNTH_SECRET_9f8e" not in out and out == "<DROPPED_AUTH_LINE>\nkeep me\r\n", repr(out))
+    hits = san.verify_text(f"first{chr(0x2029)}still first\nmsisdn:{ls}5551234\n")
+    case("verify_label_match_across_separator_and_lf_line_numbers", hits.get("phone_number_label") == [2],
+         str({k: v for k, v in hits.items() if v}))
+
 def main() -> int:
     san = load()
     rows = planted()
@@ -156,6 +168,7 @@ def main() -> int:
             case("legacy_mode_outputs_byte_identical", bool(same), f"files={len(names_b)}")
             case("legacy_mode_stdout_marker_unchanged", "TITAN2_STOCK_CAPTURE_SANITIZATION=PASS" in rn.stdout, "")
 
+    lf_only_strict_cases(san)
     return 1 if FAILS else 0
 
 
