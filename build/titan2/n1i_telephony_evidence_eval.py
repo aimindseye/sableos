@@ -457,7 +457,7 @@ def attribute(events: list) -> dict:
             continue
 
         if et == "DEFAULT_DATA":
-            defaults.append((t, sub))
+            defaults.append((t, sub, sub is not None and sub in sub_map))
             if sub is not None and sub in sub_map:
                 add(sub, e)
             continue
@@ -775,6 +775,7 @@ def evaluate(bundle: dict, contract: dict) -> dict:
 
     # Overall verdict: only the explicitly evidenced default-data subscription.
     default = ident["defaults"][-1][1] if ident["defaults"] else None
+    default_was_mapped = ident["defaults"][-1][2] if ident["defaults"] else False
     result["default_data_subscription"] = default
     if default is None:
         result.update(outcome=QUALIFICATION_OUTCOMES["no_default_data_evidence"],
@@ -782,7 +783,7 @@ def evaluate(bundle: dict, contract: dict) -> dict:
         for k in SUMMARY_KEYS:
             result[k] = None
         first_loss = None
-    elif default not in ident["mapped_at_end"]:
+    elif not default_was_mapped or default not in ident["mapped_at_end"]:
         result.update(outcome="INCONCLUSIVE", inconclusive_reason="DEFAULT_DATA_UNMAPPED")
         for k in SUMMARY_KEYS:
             result[k] = None
@@ -797,14 +798,14 @@ def evaluate(bundle: dict, contract: dict) -> dict:
         if result["outcome"] == "VALIDATED_STABLE" and ident["unattached"]:
             result.update(outcome="INCONCLUSIVE", inconclusive_reason="UNATTRIBUTED_EVIDENCE")
 
-    # Temporal causality: only actions before the first loss can be prior candidates.
+    # Temporal ordering only: prior operator actions are NOT demonstrated causes.
     ops = [(parse_ts(e["timestamp_utc"]), e["payload"].get("action")) for e in events
            if e["event_type"] == "OPERATOR_ACTION"]
     if first_loss is None:
-        result["prior_cause_candidates"] = sorted({a for _, a in ops})
+        result["prior_cause_candidates"] = sorted({a for _, a in ops})  # Legacy key: temporal only
         result["post_failure_actions"] = []
     else:
-        result["prior_cause_candidates"] = sorted({a for t, a in ops if t < first_loss})
+        result["prior_cause_candidates"] = sorted({a for t, a in ops if t < first_loss})  # Temporal only
         result["post_failure_actions"] = sorted({a for t, a in ops if t >= first_loss})
     result["proposal"] = propose(result["outcome"])
     return result
