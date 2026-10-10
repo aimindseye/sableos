@@ -214,6 +214,10 @@ BUNDLE_MUTATIONS = [
     ("no_mapping_unknown", STABLE, drop_sub_ref, is_("UNKNOWN")),
     ("no_default_data_inconclusive", STABLE, drop(lambda e: e["event_type"] == "DEFAULT_DATA"),
      is_("INCONCLUSIVE", "NO_DEFAULT_DATA_EVIDENCE")),
+    ("default_before_mapping_cannot_qualify", STABLE,
+     lambda ev: [e.__setitem__("timestamp_utc", M.ts(0)) for e in ev
+                 if e["event_type"] == "DEFAULT_DATA"],
+     is_("INCONCLUSIVE", "DEFAULT_DATA_UNMAPPED")),
     ("dsds_default_s1_follows_evidence", "F10_DSDS_DEFAULT_S2_LOST", default_to("S1"), is_("VALIDATED_STABLE")),
     ("dsds_default_s2_on_wrong_phone_aborts", "F10_DSDS_DEFAULT_S2_LOST",
      add_event(phone_id=0, subscription_ref="S2"), aborts("IDENTITY_CONFLICT")),
