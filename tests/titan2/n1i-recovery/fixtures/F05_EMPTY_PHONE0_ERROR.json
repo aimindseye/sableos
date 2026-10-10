@@ -1,0 +1,519 @@
+{
+ "action_requests": [],
+ "bundle_version": 1,
+ "capture": {
+  "end_utc": "2026-10-09T21:01:40.000Z",
+  "start_utc": "2026-10-09T21:00:00.000Z"
+ },
+ "events": [
+  {
+   "cid": null,
+   "event_type": "SIM_STATE",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:radio:0",
+   "payload": {
+    "state": "ABSENT"
+   },
+   "phone_id": 0,
+   "schema_version": 1,
+   "sequence": 0,
+   "slot_id": 0,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "radio",
+   "subscription_ref": null,
+   "timestamp_utc": "2026-10-09T21:00:00.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "SIM_STATE",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:radio:1",
+   "payload": {
+    "state": "LOADED"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 1,
+   "slot_id": 1,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "radio",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:00.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "RADIO_STATE",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:radio:2",
+   "payload": {
+    "kind": "STATE",
+    "state": "ON"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 2,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "radio",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:01.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:radio:3",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 3,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "radio",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:02.000Z"
+  },
+  {
+   "cid": 101,
+   "event_type": "BEARER",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:radio:4",
+   "payload": {
+    "active": 2,
+    "apn": "pwg",
+    "fail_cause": null
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 4,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "radio",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:03.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:radio:5",
+   "payload": {
+    "domain": "PS",
+    "rat": null,
+    "reject_cause": null,
+    "ril_error": "OPERATION_NOT_ALLOWED",
+    "state": "NOT_REG"
+   },
+   "phone_id": 0,
+   "schema_version": 1,
+   "sequence": 5,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "radio",
+   "subscription_ref": null,
+   "timestamp_utc": "2026-10-09T21:00:02.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "VALIDATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:connectivity:0",
+   "payload": {
+    "verdict": "VALID"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 0,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "connectivity",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:10.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:0",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 0,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:05.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:1",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 1,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:10.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:2",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 2,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:15.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:3",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 3,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:20.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:4",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 4,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:25.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:5",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 5,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:30.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:6",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 6,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:35.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:7",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 7,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:40.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:8",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 8,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:45.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:9",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 9,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:50.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:10",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 10,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:00:55.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:11",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 11,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:00.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:12",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 12,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:05.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:13",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 13,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:10.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:14",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 14,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:15.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:15",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 15,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:20.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:16",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 16,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:25.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:17",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 17,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:30.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:18",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 18,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:35.000Z"
+  },
+  {
+   "cid": null,
+   "event_type": "REGISTRATION",
+   "evidence_ref": "synthetic:F05_EMPTY_PHONE0_ERROR:sampler:19",
+   "payload": {
+    "domain": "PS",
+    "rat": "LTE",
+    "reject_cause": null,
+    "state": "HOME"
+   },
+   "phone_id": 1,
+   "schema_version": 1,
+   "sequence": 19,
+   "slot_id": null,
+   "source_clock_kind": "UTC_ALIGNED",
+   "source_id": "sampler",
+   "subscription_ref": "S1",
+   "timestamp_utc": "2026-10-09T21:01:40.000Z"
+  }
+ ],
+ "events_sha256": "fbb3d6122ab6688e6bf1462ade79b0f0c77ca0b5a39dbcf500a12d07ebc0f44d",
+ "fixture_id": "F05_EMPTY_PHONE0_ERROR",
+ "provenance": {
+  "basis": "tray-2 capture: phone 0 empty reports an error, phone 1 active",
+  "kind": "SYNTHETIC_ABSTRACTION"
+ },
+ "validation_mode": "PASSIVE_LOG"
+}
