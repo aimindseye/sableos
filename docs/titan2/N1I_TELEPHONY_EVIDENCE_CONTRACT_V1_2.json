@@ -1,0 +1,768 @@
+{
+  "contract_id": "N1I_TELEPHONY_EVIDENCE_NORMALIZER",
+  "version": "1.2",
+  "status": "DESIGN_ONLY_NOT_PRODUCTION_AUTHORIZED",
+  "title": "N1I Telephony Evidence Normalizer and Qualification Contract v1.2",
+  "scope": "EVIDENCE_NORMALIZATION_AND_QUALIFICATION_ONLY",
+  "recovery_execution": "OUT_OF_SCOPE_PENDING_ROOT_CAUSE",
+  "scope_exclusions": [
+    "IMS_REGISTRATION",
+    "IMS_BEARER",
+    "VOICE",
+    "SMS_MMS"
+  ],
+  "execution_enabled": false,
+  "authority": {
+    "device_contact": false,
+    "adb": false,
+    "fastboot": false,
+    "sim_movement": false,
+    "settings_mutation": false,
+    "source_mutation": false,
+    "build": false,
+    "flash": false,
+    "reboot": false,
+    "network_fetch": false
+  },
+  "evidence_requirements": [
+    "validation_mode",
+    "private_dns_mode",
+    "dns_servers",
+    "connectivity_check_urls",
+    "connectivity_check_source",
+    "apn_name",
+    "apn_protocol",
+    "apn_roaming_protocol"
+  ],
+  "unknown_evidence_rule": "explicit_UNKNOWN_never_inferred",
+  "event_schema": {
+    "required_fields": [
+      "schema_version",
+      "source_id",
+      "sequence",
+      "timestamp_utc",
+      "source_clock_kind",
+      "event_type",
+      "phone_id",
+      "slot_id",
+      "subscription_ref",
+      "cid",
+      "payload",
+      "evidence_ref"
+    ],
+    "allowed_event_types": [
+      "SIM_STATE",
+      "RADIO_STATE",
+      "REGISTRATION",
+      "BEARER",
+      "VALIDATION",
+      "DNS_PROBE",
+      "VENDOR_DEACT",
+      "DSRM_ACTION",
+      "OPERATOR_ACTION",
+      "ACTION_RESULT",
+      "CAPTURE_GAP",
+      "DEFAULT_DATA"
+    ],
+    "source_clock_kinds": [
+      "UTC_ALIGNED",
+      "DEVICE_REALTIME_ALIGNED",
+      "UNKNOWN"
+    ],
+    "validation_bases": [
+      "CAPABILITY_SNAPSHOT",
+      "PROBE",
+      "TRANSITION"
+    ],
+    "unknown_identity": null,
+    "identity_rule": "time_scoped_explicit_mapping_no_inference_no_retroactive_application",
+    "identity_conflict": "ABORT",
+    "deduplication_key": [
+      "source_id",
+      "sequence"
+    ],
+    "duplicate_conflict": "ABORT",
+    "extra_fields": "REJECT",
+    "vendor_code": "opaque_single_canonical_form_no_decode",
+    "vendor_code_form_conflict": "ABORT"
+  },
+  "qualification": {
+    "required": [
+      "explicit_time_scoped_subscription_mapping",
+      "explicit_default_data_subscription",
+      "sim_ready",
+      "radio_on",
+      "ps_registered",
+      "bearer_active",
+      "continuous_registration_samples",
+      "continuous_bearer_samples",
+      "continuous_validation_samples",
+      "no_invalid_or_unknown_in_window",
+      "stable_window"
+    ],
+    "thresholds": {
+      "stable_window_seconds": 900,
+      "max_sample_gap_seconds": 15,
+      "active_probe_max_validation_age_seconds": 10
+    },
+    "thresholds_binding": true,
+    "outcomes": {
+      "connected_without_VALID": "INCONCLUSIVE",
+      "connected_with_INVALID": "FAIL_INTERNET_VALIDATION",
+      "observed_cycle_and_connected_without_VALID": "NOT_QUALIFIED",
+      "capture_gap_or_clock_conflict": "INCONCLUSIVE",
+      "no_default_data_evidence": "INCONCLUSIVE"
+    },
+    "validation_modes": [
+      "PASSIVE_LOG",
+      "ACTIVE_PROBE"
+    ],
+    "validation_mode_rules": {
+      "PASSIVE_LOG": "CAPABILITY_SNAPSHOT_VALID_samples_continuous_TRANSITION_changes_state_only",
+      "ACTIVE_PROBE": "PROBE_VALID_samples_bound_to_active_default_cid_continuous_last_within_max_age"
+    },
+    "window_restart_events": [
+      "IDENTITY",
+      "SIM",
+      "RADIO",
+      "REGISTRATION",
+      "BEARER",
+      "DEFAULT_DATA",
+      "OPERATOR_ACTION",
+      "CAPTURE_GAP",
+      "VALIDATION_TRANSITION"
+    ],
+    "overall_verdict_rule": "default_data_subscription_only_never_inferred"
+  },
+  "gates": [
+    "G00_PROVENANCE",
+    "G01_SCHEMA",
+    "G02_MAPPING",
+    "G03_ORDERING",
+    "G04_BEARER_VS_INTERNET",
+    "G05_VENDOR_CAUSE",
+    "G06_DSRM_ATTRIBUTION",
+    "G07_RECOVERY_CYCLE",
+    "G08_TEMPORAL_CAUSALITY",
+    "G09_STOCK_PARITY",
+    "G10_SAFETY",
+    "G11_NEGATIVE_CASES",
+    "G12_DUAL_SIM"
+  ],
+  "fixtures": [
+    {
+      "id": "F01_OCT03_HISTORICAL_POLLING_ONLY",
+      "scenario": "oct3_registration_and_bearer_polling_one_VALID_transition_no_continuous_validation",
+      "expected": "INCONCLUSIVE_POLLING_IS_NOT_VALIDATION",
+      "gates": [
+        "G04_BEARER_VS_INTERNET"
+      ],
+      "bundle": "F01_OCT03_HISTORICAL_POLLING_ONLY.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "VALIDATION_NOT_CONTINUOUS",
+        "default_data_subscription": "S1"
+      }
+    },
+    {
+      "id": "F02_OCT09_LOSS",
+      "scenario": "tray2_phone1_dns_invalid_dsrm_selection_vendor_deact_0x140F7C_rejects_15_13_11",
+      "expected": "LOST_UNKNOWN_ROOT_CAUSE",
+      "gates": [
+        "G02_MAPPING",
+        "G03_ORDERING",
+        "G05_VENDOR_CAUSE",
+        "G06_DSRM_ATTRIBUTION"
+      ],
+      "bundle": "F02_OCT09_LOSS.json",
+      "assert": {
+        "outcome": "LOST",
+        "root_cause": "UNKNOWN",
+        "subscriptions": [
+          "S1"
+        ],
+        "ignored_phones": [
+          0
+        ],
+        "loss_sequence": [
+          "DNS_TIMEOUT",
+          "VALIDATION_INVALID",
+          "VENDOR_DEACT",
+          "BEARER_INACTIVE",
+          "PS_DEREGISTERED"
+        ],
+        "vendor_codes": [
+          "0x140F7C"
+        ],
+        "reject_sequence": [
+          15,
+          13,
+          11
+        ],
+        "dsrm_executed": [],
+        "dsrm_selected_not_executed": [
+          "GET_DATA_CALL_LIST:SELECTED",
+          "GET_DATA_CALL_LIST:SKIPPED"
+        ]
+      }
+    },
+    {
+      "id": "F03_POST_CYCLE_INVALID",
+      "scenario": "loss_operator_radio_cycle_fresh_bearer_validation_INVALID",
+      "expected": "FAIL_INTERNET_VALIDATION",
+      "gates": [
+        "G04_BEARER_VS_INTERNET",
+        "G07_RECOVERY_CYCLE"
+      ],
+      "bundle": "F03_POST_CYCLE_INVALID.json",
+      "assert": {
+        "outcome": "FAIL_INTERNET_VALIDATION",
+        "bearer_recovered": true,
+        "post_failure_actions": [
+          "RADIO_CYCLE"
+        ]
+      }
+    },
+    {
+      "id": "F04_STOCK_DIFFERENT_CAUSE",
+      "scenario": "stock_tray2_res_1317585_reject_27_recovered_short_window",
+      "expected": "DIFFERENT_INITIAL_CAUSE_WINDOW_INCOMPLETE",
+      "gates": [
+        "G05_VENDOR_CAUSE",
+        "G09_STOCK_PARITY"
+      ],
+      "bundle": "F04_STOCK_DIFFERENT_CAUSE.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "WINDOW_INCOMPLETE",
+        "bearer_recovered": true,
+        "vendor_codes": [
+          "0x141AD1"
+        ],
+        "reject_sequence": [
+          27
+        ]
+      }
+    },
+    {
+      "id": "F05_EMPTY_PHONE0_ERROR",
+      "scenario": "phone0_empty_reports_error_phone1_active",
+      "expected": "EMPTY_PHONE_IGNORED",
+      "gates": [
+        "G02_MAPPING"
+      ],
+      "bundle": "F05_EMPTY_PHONE0_ERROR.json",
+      "assert": {
+        "subscriptions": [
+          "S1"
+        ],
+        "ignored_phones": [
+          0
+        ],
+        "unattached_events": 0
+      }
+    },
+    {
+      "id": "F06_NO_VALIDATION",
+      "scenario": "connected_bearer_validation_never_logged",
+      "expected": "INCONCLUSIVE_VALIDATION_PENDING",
+      "gates": [
+        "G04_BEARER_VS_INTERNET"
+      ],
+      "bundle": "F06_NO_VALIDATION.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "VALIDATION_PENDING"
+      }
+    },
+    {
+      "id": "F07_LATE_APN_TRIAL",
+      "scenario": "apn_trial_after_original_failure",
+      "expected": "POST_FAILURE_ACTION_NOT_CAUSE",
+      "gates": [
+        "G08_TEMPORAL_CAUSALITY"
+      ],
+      "bundle": "F07_LATE_APN_TRIAL.json",
+      "assert": {
+        "prior_cause_candidates": [
+          "SIM_TOGGLE_BEFORE"
+        ],
+        "post_failure_actions": [
+          "APN_TRIAL"
+        ]
+      }
+    },
+    {
+      "id": "F08_UNAUTHORIZED_ACTION",
+      "scenario": "replay_requests_device_actions",
+      "expected": "ALL_ACTIONS_DENIED",
+      "gates": [
+        "G10_SAFETY"
+      ],
+      "bundle": "F08_UNAUTHORIZED_ACTION.json",
+      "assert": {
+        "action_decisions": {
+          "ADB_SHELL": "DENY",
+          "RADIO_CYCLE": "DENY",
+          "FLASH_SYSTEM": "DENY",
+          "SET_SIMSWITCH_PROPERTY": "DENY"
+        }
+      }
+    },
+    {
+      "id": "F09_CORRUPT_EVIDENCE",
+      "scenario": "events_sha256_mismatch",
+      "expected": "ABORT_BEFORE_PARSE",
+      "gates": [
+        "G00_PROVENANCE",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F09_CORRUPT_EVIDENCE.json",
+      "assert": {
+        "abort": "SHA256_MISMATCH"
+      }
+    },
+    {
+      "id": "F10_DSDS_DEFAULT_S2_LOST",
+      "scenario": "two_sims_S1_stable_default_data_S2_lost",
+      "expected": "OVERALL_FROM_DEFAULT_DATA_ONLY",
+      "gates": [
+        "G12_DUAL_SIM"
+      ],
+      "bundle": "F10_DSDS_DEFAULT_S2_LOST.json",
+      "assert": {
+        "outcome": "LOST",
+        "default_data_subscription": "S2",
+        "per_subscription": {
+          "S1": "VALIDATED_STABLE",
+          "S2": "LOST"
+        },
+        "dsds": "NOT_QUALIFIED_OFFLINE_REQUIRES_PHYSICAL"
+      }
+    },
+    {
+      "id": "F11_STOCK_TRANSIENT_RECOVERED",
+      "scenario": "stock_transient_loss_then_full_continuous_window",
+      "expected": "TRANSIENT_THEN_VALIDATED_STABLE",
+      "gates": [
+        "G09_STOCK_PARITY"
+      ],
+      "bundle": "F11_STOCK_TRANSIENT_RECOVERED.json",
+      "assert": {
+        "outcome": "VALIDATED_STABLE",
+        "transient_losses": 1,
+        "bearer_recovered": true,
+        "reject_sequence": [
+          27
+        ]
+      }
+    },
+    {
+      "id": "F12_UNKNOWN_CLOCK",
+      "scenario": "one_source_unknown_clock",
+      "expected": "INCONCLUSIVE_CLOCK_UNKNOWN",
+      "gates": [
+        "G00_PROVENANCE",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F12_UNKNOWN_CLOCK.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "CLOCK_UNKNOWN"
+      }
+    },
+    {
+      "id": "F13_NO_SUB_MAPPING",
+      "scenario": "sim_loaded_without_subscription_ref",
+      "expected": "UNKNOWN_NO_MAPPING",
+      "gates": [
+        "G02_MAPPING",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F13_NO_SUB_MAPPING.json",
+      "assert": {
+        "outcome": "UNKNOWN",
+        "inconclusive_reason": "NO_SUBSCRIPTION_MAPPING",
+        "subscriptions": []
+      }
+    },
+    {
+      "id": "F14_STALE_VALIDATION",
+      "scenario": "active_probes_stop_after_100s",
+      "expected": "INCONCLUSIVE_VALIDATION_STALE",
+      "gates": [
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F14_STALE_VALIDATION.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "VALIDATION_STALE"
+      }
+    },
+    {
+      "id": "F15_CAPTURE_GAP_IN_WINDOW",
+      "scenario": "60s_capture_gap_inside_window",
+      "expected": "WINDOW_RESTART_AFTER_GAP",
+      "gates": [
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F15_CAPTURE_GAP_IN_WINDOW.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "WINDOW_INCOMPLETE",
+        "window_restart_cause": "CAPTURE_GAP"
+      }
+    },
+    {
+      "id": "F16_DUPLICATE_CONFLICT",
+      "scenario": "conflicting_duplicate_source_sequence",
+      "expected": "ABORT_DUPLICATE_CONFLICT",
+      "gates": [
+        "G03_ORDERING",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F16_DUPLICATE_CONFLICT.json",
+      "assert": {
+        "abort": "DUPLICATE_CONFLICT"
+      }
+    },
+    {
+      "id": "F17_SCHEMA_EXTRA_FIELD",
+      "scenario": "event_with_extra_execute_field",
+      "expected": "ABORT_SCHEMA",
+      "gates": [
+        "G01_SCHEMA"
+      ],
+      "bundle": "F17_SCHEMA_EXTRA_FIELD.json",
+      "assert": {
+        "abort": "SCHEMA"
+      }
+    },
+    {
+      "id": "F18_INVALID_EVENT_TYPE",
+      "scenario": "unknown_event_type",
+      "expected": "ABORT_SCHEMA",
+      "gates": [
+        "G01_SCHEMA"
+      ],
+      "bundle": "F18_INVALID_EVENT_TYPE.json",
+      "assert": {
+        "abort": "SCHEMA"
+      }
+    },
+    {
+      "id": "F19_DSRM_EXECUTED",
+      "scenario": "dsrm_executed_radio_restart",
+      "expected": "DSRM_EXECUTION_ATTRIBUTED",
+      "gates": [
+        "G06_DSRM_ATTRIBUTION"
+      ],
+      "bundle": "F19_DSRM_EXECUTED.json",
+      "assert": {
+        "dsrm_executed": [
+          "RADIO_RESTART:EXECUTED"
+        ],
+        "dsrm_selected_not_executed": [
+          "RADIO_RESTART:SELECTED"
+        ]
+      }
+    },
+    {
+      "id": "F20_CYCLE_NO_VALID",
+      "scenario": "radio_cycle_then_connected_without_VALID",
+      "expected": "NOT_QUALIFIED",
+      "gates": [
+        "G07_RECOVERY_CYCLE"
+      ],
+      "bundle": "F20_CYCLE_NO_VALID.json",
+      "assert": {
+        "outcome": "NOT_QUALIFIED"
+      }
+    },
+    {
+      "id": "F21_CONTINUOUS_VALIDATED",
+      "scenario": "registration_bearer_validation_snapshots_every_5s_full_window",
+      "expected": "VALIDATED_STABLE",
+      "gates": [
+        "G04_BEARER_VS_INTERNET"
+      ],
+      "bundle": "F21_CONTINUOUS_VALIDATED.json",
+      "assert": {
+        "outcome": "VALIDATED_STABLE",
+        "default_data_subscription": "S1",
+        "unattached_events": 0
+      }
+    },
+    {
+      "id": "F22_IDENTITY_SUB_PHONE_CONFLICT",
+      "scenario": "event_names_S1_on_phone0_while_S1_mapped_to_phone1",
+      "expected": "ABORT_IDENTITY_CONFLICT",
+      "gates": [
+        "G02_MAPPING",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F22_IDENTITY_SUB_PHONE_CONFLICT.json",
+      "assert": {
+        "abort": "IDENTITY_CONFLICT"
+      }
+    },
+    {
+      "id": "F23_IDENTITY_SLOT_CONFLICT",
+      "scenario": "phone1_event_claims_slot0_while_mapped_to_slot1",
+      "expected": "ABORT_IDENTITY_CONFLICT",
+      "gates": [
+        "G02_MAPPING",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F23_IDENTITY_SLOT_CONFLICT.json",
+      "assert": {
+        "abort": "IDENTITY_CONFLICT"
+      }
+    },
+    {
+      "id": "F24_LATE_MAPPING_NOT_RETROACTIVE",
+      "scenario": "sim_mapping_first_seen_at_950s_earlier_evidence_unattached",
+      "expected": "NO_RETROACTIVE_MAPPING",
+      "gates": [
+        "G02_MAPPING",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F24_LATE_MAPPING_NOT_RETROACTIVE.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "WINDOW_INCOMPLETE",
+        "unattached_events": 568
+      }
+    },
+    {
+      "id": "F25_DSDS_NO_DEFAULT_DATA",
+      "scenario": "two_sims_both_stable_no_default_data_evidence",
+      "expected": "INCONCLUSIVE_NO_DEFAULT_DATA",
+      "gates": [
+        "G11_NEGATIVE_CASES",
+        "G12_DUAL_SIM"
+      ],
+      "bundle": "F25_DSDS_NO_DEFAULT_DATA.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "NO_DEFAULT_DATA_EVIDENCE",
+        "default_data_subscription": null,
+        "per_subscription": {
+          "S1": "VALIDATED_STABLE",
+          "S2": "VALIDATED_STABLE"
+        }
+      }
+    },
+    {
+      "id": "F26_DEFAULT_DATA_UNMAPPED",
+      "scenario": "default_data_names_unmapped_subscription",
+      "expected": "INCONCLUSIVE_DEFAULT_DATA_UNMAPPED",
+      "gates": [
+        "G11_NEGATIVE_CASES",
+        "G12_DUAL_SIM"
+      ],
+      "bundle": "F26_DEFAULT_DATA_UNMAPPED.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "DEFAULT_DATA_UNMAPPED",
+        "default_data_subscription": "S9"
+      }
+    },
+    {
+      "id": "F27_GAP_EARLY_THEN_FULL_WINDOW",
+      "scenario": "30s_gap_at_50s_then_1000s_continuous",
+      "expected": "GAP_RESETS_NOT_POISONS",
+      "gates": [
+        "G03_ORDERING"
+      ],
+      "bundle": "F27_GAP_EARLY_THEN_FULL_WINDOW.json",
+      "assert": {
+        "outcome": "VALIDATED_STABLE",
+        "window_restart_cause": "CAPTURE_GAP"
+      }
+    },
+    {
+      "id": "F28_VALIDATION_TRANSITION_RESETS",
+      "scenario": "VALID_INVALID_VALID_transition_at_300s",
+      "expected": "WINDOW_RESTART_AT_TRANSITION",
+      "gates": [
+        "G04_BEARER_VS_INTERNET",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F28_VALIDATION_TRANSITION_RESETS.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "WINDOW_INCOMPLETE",
+        "window_restart_cause": "VALIDATION_TRANSITION"
+      }
+    },
+    {
+      "id": "F29_RECOVERY_WINDOW_RESET",
+      "scenario": "bearer_loss_600s_reconnect_620s",
+      "expected": "WINDOW_RESTART_AT_RECOVERY",
+      "gates": [
+        "G07_RECOVERY_CYCLE",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F29_RECOVERY_WINDOW_RESET.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "WINDOW_INCOMPLETE",
+        "bearer_recovered": true,
+        "window_restart_cause": "BEARER"
+      }
+    },
+    {
+      "id": "F30_ACTIVE_PROBE_UNBOUND",
+      "scenario": "valid_probes_bound_to_cid_999_not_default_bearer",
+      "expected": "INCONCLUSIVE_PROBE_NOT_BOUND",
+      "gates": [
+        "G04_BEARER_VS_INTERNET",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F30_ACTIVE_PROBE_UNBOUND.json",
+      "assert": {
+        "outcome": "INCONCLUSIVE",
+        "inconclusive_reason": "PROBE_NOT_BOUND"
+      }
+    },
+    {
+      "id": "F31_ACTIVE_PROBE_BOUND_STABLE",
+      "scenario": "probes_bound_to_cid_101_every_5s",
+      "expected": "VALIDATED_STABLE",
+      "gates": [
+        "G04_BEARER_VS_INTERNET"
+      ],
+      "bundle": "F31_ACTIVE_PROBE_BOUND_STABLE.json",
+      "assert": {
+        "outcome": "VALIDATED_STABLE"
+      }
+    },
+    {
+      "id": "F32_N1IB_9AA_TRAY1_REJECT_ORDER",
+      "scenario": "n1b_9aa_tray1_rejects_13_15_11_then_11_13_15_no_vendor_code_recorded",
+      "expected": "RUN_SPECIFIC_REJECT_ORDER",
+      "gates": [
+        "G05_VENDOR_CAUSE"
+      ],
+      "bundle": "F32_N1IB_9AA_TRAY1_REJECT_ORDER.json",
+      "assert": {
+        "outcome": "LOST",
+        "vendor_codes": [],
+        "reject_sequence": [
+          13,
+          15,
+          11,
+          11,
+          13,
+          15
+        ],
+        "loss_sequence": [
+          "BEARER_INACTIVE",
+          "PS_DEREGISTERED"
+        ]
+      }
+    },
+    {
+      "id": "F33_IMS_BEARER_OUT_OF_SCOPE",
+      "scenario": "ims_bearer_up_down_inside_qualified_window",
+      "expected": "IMS_IGNORED",
+      "gates": [
+        "G04_BEARER_VS_INTERNET"
+      ],
+      "bundle": "F33_IMS_BEARER_OUT_OF_SCOPE.json",
+      "assert": {
+        "outcome": "VALIDATED_STABLE",
+        "out_of_scope_events": 3
+      }
+    },
+    {
+      "id": "F34_IMS_BEARER_ONLY",
+      "scenario": "only_ims_bearer_active",
+      "expected": "IMS_DOES_NOT_SATISFY_INTERNET_BEARER",
+      "gates": [
+        "G04_BEARER_VS_INTERNET"
+      ],
+      "bundle": "F34_IMS_BEARER_ONLY.json",
+      "assert": {
+        "outcome": "LOST",
+        "out_of_scope_events": 1
+      }
+    },
+    {
+      "id": "F35_VENDOR_CODE_FORM_CONFLICT",
+      "scenario": "raw_0x141AD1_with_res_1314684",
+      "expected": "ABORT_VENDOR_CODE_CONFLICT",
+      "gates": [
+        "G05_VENDOR_CAUSE",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F35_VENDOR_CODE_FORM_CONFLICT.json",
+      "assert": {
+        "abort": "VENDOR_CODE_CONFLICT"
+      }
+    },
+    {
+      "id": "F36_PROVENANCE_MISSING_FIELD",
+      "scenario": "network_config_without_private_dns_mode",
+      "expected": "ABORT_PROVENANCE",
+      "gates": [
+        "G00_PROVENANCE",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F36_PROVENANCE_MISSING_FIELD.json",
+      "assert": {
+        "abort": "PROVENANCE"
+      }
+    },
+    {
+      "id": "F37_PROVENANCE_INFERRED_VALUE",
+      "scenario": "connectivity_check_urls_observed_without_evidence_ref",
+      "expected": "ABORT_PROVENANCE",
+      "gates": [
+        "G00_PROVENANCE",
+        "G11_NEGATIVE_CASES"
+      ],
+      "bundle": "F37_PROVENANCE_INFERRED_VALUE.json",
+      "assert": {
+        "abort": "PROVENANCE"
+      }
+    },
+    {
+      "id": "F38_PROVENANCE_ALL_UNKNOWN",
+      "scenario": "no_network_configuration_evidence",
+      "expected": "UNKNOWNS_REPORTED_VERBATIM",
+      "gates": [
+        "G00_PROVENANCE"
+      ],
+      "bundle": "F38_PROVENANCE_ALL_UNKNOWN.json",
+      "assert": {
+        "provenance_unknown": [
+          "private_dns_mode",
+          "dns_servers",
+          "connectivity_check_urls",
+          "connectivity_check_source",
+          "apn_name",
+          "apn_protocol",
+          "apn_roaming_protocol"
+        ],
+        "outcome": "VALIDATED_STABLE"
+      }
+    },
+    {
+      "id": "F39_RECOVERY_THEN_FULL_WINDOW",
+      "scenario": "bearer_loss_100s_silent_reconnect_200s_then_905s_continuous",
+      "expected": "WINDOW_STARTS_AT_RECOVERY",
+      "gates": [
+        "G07_RECOVERY_CYCLE"
+      ],
+      "bundle": "F39_RECOVERY_THEN_FULL_WINDOW.json",
+      "assert": {
+        "outcome": "VALIDATED_STABLE",
+        "bearer_recovered": true,
+        "transient_losses": 1,
+        "window_restart_cause": "BEARER"
+      }
+    }
+  ]
+}

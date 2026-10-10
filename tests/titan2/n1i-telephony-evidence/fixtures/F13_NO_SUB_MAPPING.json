@@ -1,0 +1,14 @@
+{
+ "action_requests": [],
+ "bundle_version": 1,
+ "capture": {"end_utc":"2026-10-09T21:01:40.000Z","start_utc":"2026-10-09T21:00:00.000Z"},
+ "events_sha256": "903741d717371cb5e5b9c9dcdb56e801064dc25801e94aeb86dfb9504dc217ac",
+ "fixture_id": "F13_NO_SUB_MAPPING",
+ "provenance": {"basis":"synthetic: SIM loaded but subscription not identified","kind":"SYNTHETIC_ABSTRACTION","network_config":{"apn_name":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":"pwg"},"apn_protocol":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":"IPV4V6"},"apn_roaming_protocol":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":"IPV4V6"},"connectivity_check_source":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":"synthetic"},"connectivity_check_urls":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":["https://connectivity-check.invalid/generate_204"]},"dns_servers":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":["carrier-supplied"]},"private_dns_mode":{"evidence_ref":"synthetic:F13_NO_SUB_MAPPING:config","status":"OBSERVED","value":"opportunistic"}}},
+ "validation_mode": "PASSIVE_LOG",
+ "events": [
+  {"cid":null,"event_type":"SIM_STATE","evidence_ref":"synthetic:F13_NO_SUB_MAPPING:radio:0","payload":{"state":"LOADED"},"phone_id":0,"schema_version":1,"sequence":0,"slot_id":0,"source_clock_kind":"UTC_ALIGNED","source_id":"radio","subscription_ref":null,"timestamp_utc":"2026-10-09T21:00:00.000Z"},
+  {"cid":null,"event_type":"RADIO_STATE","evidence_ref":"synthetic:F13_NO_SUB_MAPPING:radio:1","payload":{"kind":"STATE","state":"ON"},"phone_id":0,"schema_version":1,"sequence":1,"slot_id":null,"source_clock_kind":"UTC_ALIGNED","source_id":"radio","subscription_ref":null,"timestamp_utc":"2026-10-09T21:00:01.000Z"},
+  {"cid":101,"event_type":"BEARER","evidence_ref":"synthetic:F13_NO_SUB_MAPPING:radio:2","payload":{"active":2,"apn":"pwg","apn_type":"default","fail_cause":null},"phone_id":0,"schema_version":1,"sequence":2,"slot_id":null,"source_clock_kind":"UTC_ALIGNED","source_id":"radio","subscription_ref":null,"timestamp_utc":"2026-10-09T21:00:03.000Z"}
+ ]
+}
