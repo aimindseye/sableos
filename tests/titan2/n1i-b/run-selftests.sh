@@ -33,6 +33,7 @@ COMPONENTS=(
   "native|NATIVE_DATAFLOW_TESTS|python3 $HERE/test-native.py"
   "census|REVERSE_CENSUS_TESTS|python3 $HERE/test-census.py"
   "ledger|EVIDENCE_LEDGER_TESTS|python3 $HERE/test-ledger.py"
+  "telephony_evidence|N1I_TELEPHONY_EVIDENCE_CONTRACT_TESTS|python3 $HERE/../n1i-telephony-evidence/test-telephony-evidence-contract.py"
 )
 
 declare -A MARK_STATE=()
