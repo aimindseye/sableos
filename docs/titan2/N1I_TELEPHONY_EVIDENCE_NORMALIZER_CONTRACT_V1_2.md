@@ -201,3 +201,9 @@ DEVICE_CONTACT_AUTHORIZED=NO
 BUILD_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ```
+
+## Final-review clarifications (v1.2)
+
+- **Time-valid default data:** A `DEFAULT_DATA` record is usable for overall qualification only if its named subscription was explicitly mapped when that record was observed and remains mapped at capture end. A later mapping cannot retroactively validate an earlier declaration. An unbound default-data record yields `INCONCLUSIVE / DEFAULT_DATA_UNMAPPED`, even if the same subscription becomes mapped later.
+- **Temporal evidence, not causality:** The legacy evaluator output key `prior_cause_candidates` contains only operator action labels observed *before the first detected loss in that evidence window*. These are **prior operator actions, not established cause candidates**. The key remains for v1.2 fixture compatibility; consumers must not promote it into root-cause attribution. The root cause remains `UNKNOWN`. If observation predates or misses a prior loss, the report must not imply causality.
+- No device operations, recovery executor, APN changes, radio commands, or production permissions are granted by these clarifications.
