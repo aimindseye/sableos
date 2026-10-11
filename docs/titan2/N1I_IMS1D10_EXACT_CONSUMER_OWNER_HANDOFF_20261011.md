@@ -1,0 +1,9 @@
+# IMS1-D10 exact consumer-to-three-provider class linkage (2026-10-11)
+
+D9.8: 6 STOCK_ONLY classpath entries = 3 providers absent from retained D1R2 fragment: `OPCommonTelephony.jar`, `agui-framework.jar`, `mediatek-framework.jar`, each under BOOTCLASSPATH and DEX2OATBOOTCLASSPATH. D9.9 validated the three frozen stock hashes and found no D1R2 tree-manifest filename references; **not proof of absent bytes or ABI failure**.
+
+D10 is a targeted read-only linkage pass. Bundle `N1I_IMS1D10_EXACT_CONSUMER_LINKS_V1.zip` SHA-256 `ddb7caad85ac7f11d183e6ca268dca3750c15b4389a2072c71a6c95a86dfe4b5`. Local Python syntax, synthetic negative regression tests and ZIP integrity passed; **ai-g732 execution pending**. It checks exact 40-row D9.8 delta and six stock-only rows, frozen D7 hashes, IMS1-C sealed 7,078 callsite table and 3,059 triage keys, then decodes DEX class definitions only for these three stock provider JARs and emits exact callsite owner-class matches. No broad inventories or new workspaces. Outputs `THREE_PROVIDER_CALLSITES.tsv` and `SUMMARY.json` under `/srv/data/sable-build/evidence/titan2/n1i-ims1d10-exact-consumer-links-v1/`.
+
+Crucial confidence boundary: a matching DEX class owner is NOT proof of target method definition, inherited-method resolution, D1R2 file availability or APK classloader visibility. Do not add proprietary JARs to classpath or modify AOSP merely on owner matching. Follow up by using the existing `build/titan2/n1i-b2-members.py` against verified app-specific classpath evidence and precise consuming methods; source/config remediation decisions must cite exact failures.
+
+Protected: PR #339 branch `n1i-d1r4-cw1-compiled-checkpoint-20261011`, existing `/srv/data/sable-build/workspaces/n1i-d1r4-cw1-isolated/android` plus `out_cw1`. No source mutation, new checkout, repo sync, download, build, extraction, device contact or flash. PR remains draft.
