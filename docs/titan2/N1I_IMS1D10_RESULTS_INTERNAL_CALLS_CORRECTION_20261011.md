@@ -1,0 +1,9 @@
+# IMS1-D10 operator results — critical interpretation correction (2026-10-11)
+
+Operator D10 run: `PASS_EXACT_OWNER_CLASS_LINKAGE_NOT_METHOD_OR_RUNTIME_QUALIFIED`, 7,078 IMS1-C callsites examined, 50 matched DEX target-owner classes, 7,028 unattributed. Exact result evidence: `/srv/data/sable-build/evidence/titan2/n1i-ims1d10-exact-consumer-links-v1/20261011T154034Z-2516446`. Supplied `THREE_PROVIDER_CALLSITES.tsv` and `SUMMARY.json` reviewed.
+
+**Critical qualification:** All **50/50** matches have **both** `consumer_jar=OPCommonTelephony.jar` and `stock_provider=OPCommonTelephony.jar`. They are internal owner-class calls among the provider's own `vendor/mediatek/hardware/radio_op/V3_0` HIDL stub/proxy/interface classes, not verified incoming calls from `ImsService.apk`, `MtkTeleService.apk`, MediaTek telephony-common, or AOSP. `agui-framework.jar` and `mediatek-framework.jar` have **0 matched callsites in this selected IMS1-C set**. No ambiguous providers.
+
+The stock provider inventory has 31 DEX classes in `OPCommonTelephony.jar`, 39 in `agui-framework.jar`, and 395 in `mediatek-framework.jar`. A class-owner match does not show method resolution or classloader visibility. D10's internal matches **must not** be described as 50 external dependencies or 50 ABI errors. Absence of matches in this bounded dataset does not prove the provider is unused elsewhere.
+
+**Remediation gate:** Before modifying AOSP or restoring classpath entries, identify actual **external consumers** of the three providers from the frozen DEX corpus and run exact method-resolution using the existing `build/titan2/n1i-b2-members.py` only where classloader visibility and provider identities are bound. Do not create a new source workspace, download source, re-extract D1R2 image, build, contact device or flash. Retain PR #339 as draft and existing CW1 compiled evidence intact.
