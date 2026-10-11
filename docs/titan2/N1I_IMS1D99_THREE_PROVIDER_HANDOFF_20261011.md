@@ -1,0 +1,9 @@
+# IMS1-D9.9 — exact three-provider remediation evidence handoff
+
+D9.8 established six **STOCK_ONLY** classpath-fragment records, corresponding to three distinct `/system_ext/framework/` provider JARs in both BOOTCLASSPATH and DEX2OATBOOTCLASSPATH: `OPCommonTelephony.jar`, `agui-framework.jar`, `mediatek-framework.jar`. No D1R2-only records. **Six configuration rows are not six ABI faults.** Exact retained evidence: `/srv/data/sable-build/evidence/titan2/n1i-ims1d98-stock-d1r2-schema-delta-v1/20261011T150939Z-2516005`.
+
+IMS1-D9.9 local bundle `N1I_IMS1D99_THREE_PROVIDER_V1.zip` SHA-256 `63a6c8204947ad1851046e5f662c6cc00d53d9822a9cf70eb2a75666b6c1dfba`. Script syntax, exact-delta positive/negative regression and archive integrity passed locally; **ai-g732 execution pending**. The script consumes frozen D9.8 40-row schema delta, D7 SHA-256 stock identities and exactly four retained D1R2 evidence reports under `/srv/data/sable-build/evidence/titan2/n1i-c2r2-d1r2-image-exact-delta-v6-2/20261008T131657Z`: `D1R2/tree-manifest.tsv`, `D1R2/classpath-and-libraries.txt`, `b2-input-pack-v1-1-20261008T141244Z/d1r2-mtk-bootclasspath-resolved.txt`, `b2-input-pack-v1-1-20261008T141244Z/d1r2-mtk-bootclasspath-symbolic.txt`.
+
+Outputs are exact bounded literal-reference correlation plus stock pin verification, **not file-presence proof for D1R2** or APK-specific classloader ABI resolution. Next engineering stage must interpret precise D1R2 filesystem manifest rows, bind concrete IMS1-C consumer methods to these providers, and identify source/configuration fixes with evidence; not automatically add OEM JARs or authorize a build.
+
+Maintain PR #339 draft; reuse existing 119 GB CW1 Android workspace and warm `out_cw1` unmodified. No new workspace, network download, source mutation, build, image extraction, device contact or flash.
