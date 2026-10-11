@@ -1,0 +1,59 @@
+{
+  "artifacts": [
+    {
+      "bytes": 2693,
+      "name": "patch",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-d1r4-callwaiting-preview-v2/D1R4_CALLWAITING_SOURCE_PREVIEW.patch",
+      "sha256": "4d2ad6b567ca725e8cc45c0362cdd788e3425c668592241aa4da007aa019635d"
+    },
+    {
+      "bytes": 4950565,
+      "name": "built_dex_jar",
+      "path": "/srv/data/sable-build/workspaces/n1i-d1r4-cw1-isolated/android/out_cw1/soong/.intermediates/frameworks/opt/telephony/telephony-common/android_common/dex/telephony-common.jar",
+      "sha256": "76b335c3114c55f166edeef392889e4c908aceab9a9e92dec64f5f90c690af9f"
+    },
+    {
+      "bytes": 2587765,
+      "name": "build_log",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-d1r4-cw1-compile-v2/BUILD.log",
+      "sha256": "1aaa6ff8fef047448631895c7145b03dc69cc68d4670269e55ff4fad9cb54bd8"
+    },
+    {
+      "bytes": 157,
+      "name": "build_result",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-d1r4-cw1-compile-v2/BUILD_RESULT.json",
+      "sha256": "ffc5d5a59c5cda4f4fc51616f2bf6391a709086406ac0061a849cd0cee4ff069"
+    },
+    {
+      "bytes": 479,
+      "name": "dex_summary",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-d1r4-cw1-compile-v2/dex-verify/SUMMARY.json",
+      "sha256": "8829e6df8feb1e88a60c13775685b9588c42d97b56b5c1bce8403463a95411b2"
+    },
+    {
+      "bytes": 1027,
+      "name": "dex_contract",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-d1r4-cw1-compile-v2/dex-verify/CW1_DEX_CONTRACT.tsv",
+      "sha256": "e6dc89ff293d81704d24a2077af8718e60a4e02ffb76ba5ea4f9abd73a30de5b"
+    },
+    {
+      "bytes": 404,
+      "name": "prepared_summary",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-d1r4-cw1-compile-v2/PREPARED.json",
+      "sha256": "85cbf000bc0b71cd6d596ea666b52ae2d113078054f9ede5fe691e8ae6c0dcd0"
+    }
+  ],
+  "consumer_invoke_super_linkage": "NOT_VERIFIED",
+  "date": "2026-10-11",
+  "dex_files": [
+    "classes.dex"
+  ],
+  "flash": "NOT_EXECUTED",
+  "lunch": "sable_titan2-bp4a-userdebug",
+  "milestone": "N1I-D1R4-CW1",
+  "module": "telephony-common",
+  "origin": "ai-g732",
+  "qualification": "PASS_COMPILED_AND_EXACT_DEX_DEFINITIONS_SEMANTICS_UNPROVEN",
+  "runtime": "NOT_TESTED",
+  "source": "operator-local artifact verification"
+}
