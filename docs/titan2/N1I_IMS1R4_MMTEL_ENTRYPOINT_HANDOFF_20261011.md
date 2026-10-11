@@ -1,0 +1,9 @@
+# IMS1-R4 MMTEL Entrypoint DEX Audit handoff (2026-10-11)
+
+Following IMS1-R3.3, Apache HTTP permission XML contents are not available in selected existing paths; R3.2 D1R2 tree manifest has the XML + JAR hash entry, and two WindowManager optional libraries have stock XML byte-identical to D1R2. Do not conflate missing content with missing library. Prior R1.1 confirmed stock vs D1R2 IMS manifest parity and `MtkDynamicImsService` declared exported with `BIND_IMS_SERVICE` and MMTEL/RCS/emergency feature metadata.
+
+Next artifact `N1I_IMS1R4_MMTEL_ENTRYPOINT_V1.zip` SHA256 `26671f259ff477656f248e8cf7f327370730307f21ee4c4818c47b77ba606924`. Read-only Python script with frozen D7 registry. Verified local Python syntax, pin-negative and method-diff positive regression selftest, and ZIP integrity. Host operator run pending.
+
+Scope: hash-check two pinned stock/D1R2 `ImsService.apk` files and existing `build/titan2/n1i_static.py` parser SHA256 `c5012e4c50c6ee8080e43c08386305c3983693025756557becc059bb01541b81`. Locate exactly one DEX class definition of `Lcom/mediatek/ims/MtkDynamicImsService;` per APK; emit declared entrypoint method prototypes and instructions referencing methods from that exact class only, stock/D1R2 method delta, superclass names and counts. Reports `SUMMARY.json`, `ENTRYPOINT_METHODS.tsv`, `ENTRYPOINT_INVOKES.tsv`, `ENTRYPOINT_DELTA.tsv`. Class not defined in APK fails closed, not a runtime error claim.
+
+**Limitations:** Inherited `onBind` and MMTEL feature methods are not resolved. No target ABI/classloader/runtime registration inference, nor AOSP patch recommendation from static census alone. P0 CW1 compiled/static linkage passed; incoming call callback sequencing not qualified. P1 SIM identities and property authorities unqualified. Preserve isolated 119 GB CW1 Android workspace, warm output and PR #339 branch; no source changes, build, image extraction, network/device/flash.
