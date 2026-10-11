@@ -1,0 +1,20 @@
+{
+  "qualification": "PASS_EXACT_DEX_CALLSITES_PARTIAL_CLASSPATH_ONLY",
+  "input_dex_containers": 13,
+  "relevant_callsites": 7078,
+  "method_instructions": 72158,
+  "counts": {
+    "stock_present_cw1_absent": 2287,
+    "unresolved_outside_selected": 2279,
+    "present_both_selected": 2512
+  },
+  "source": "operator-provided ai-g732 ZIP; SHA256 checked against operator output",
+  "evidence_dir": "/srv/data/sable-build/evidence/titan2/n1i-ims1b-bundled-binding-v1",
+  "evidence_shas": {
+    "SUMMARY.json": "53fd241f7cbad12497bbe06f3a02829cfc7335a1199c9dccfc05e015c1e173c8",
+    "IMS1_EXACT_CALLSITES.tsv": "b3e8cba9cf52cf2a21cc17c5947aecafe7f67ad5d841f21076fcb73af1eae901",
+    "D1R2_RELATED_CALLSITES.tsv": "eaa0da458758ada3c210b3e2848aaad77a1218d62f7937dc9b962a13759ca95c",
+    "DEX_INPUT_MANIFEST.tsv": "1a0d1614e0c69ea7770537547bebe9c5db3a941a57f011a51138c1380727f913",
+    "ATLASOS_SOURCE_ANCHORS.json": "c69c8f95dcbae06c324566e8b5339ed72f54433db0e4fca55e8a5162650bcf4c"
+  }
+}
