@@ -30,3 +30,22 @@ BUILD_AUTHORIZED=NO
 REBOOT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ```
+
+## R1 execution result — operator confirmed on ai-g732
+
+The isolated `frameworks/base` Git worktree was created at `/srv/data/sable-build/workspaces/n1f-m4-ims01/android/frameworks/base` from the preserved N1F project commit `dfb660a1fd590efed475f388870032d2d416403b` (detached). **This is a single-project source worktree, not a standalone Android build root.**
+
+Operator output proves:
+
+```text
+R1_EXACT_PATCH=PASS
+R1_POST_SHA256=2e3ffb1d771cb6977670a800f0a27ffd24a9cf252ff0890e92ac98f9f90e37ca
+ORIGINAL_N1F_SOURCE=UNCHANGED
+R1_ISOLATED_SOURCE=PASS
+ M core/res/AndroidManifest.xml
+N1F_M4_R1_RESULT=PASS_SOURCE_ONLY
+BUILD_EXECUTED=NO
+FLASH_EXECUTED=NO
+```
+
+The only changed line adds the `com.mediatek.common.carrierexpress.operator_config_changed` protected broadcast after `android.telephony.action.STK_SETUP_EVENT_LIST` in `core/res/AndroidManifest.xml`. `git diff --check` passed. **Do not commit or cherry-pick into the canonical Android parent yet.** Before compiling, explicitly establish a full build source namespace that consumes this isolated `frameworks/base` tree without mutating the retained source or CW1 workspace; preserve exact parent SHA and `skip_mount.cfg`. R2 namespace still blocks five native libs, and P0 LTE service stability remains open.
