@@ -62,3 +62,23 @@ FLASH_AUTHORIZED=NO
 ```
 
 Next work product must be **a minimal patch preview** plus a **delta-only** R2 linkage decision. No third baseline census or repeated five-ELF inventory. Preserve historical evidence and original PR #339 draft status.
+
+## 2026-10-12 R1 exact-parent preview result
+
+Operator executed the standalone read-only `n1f_m3_r1_ims01_patch_preview_v1.py` against the selected platform source. Results:
+
+```text
+R1_PARENT_SHA256=PASS
+R1_PATCH_PREVIEW_POST_SHA256=2e3ffb1d771cb6977670a800f0a27ffd24a9cf252ff0890e92ac98f9f90e37ca
+R1_PREVIEW=PASS_NO_WRITE
+IMS01=REUSE_EXISTING_C1_MODULES_ONLY_NOT_STAGED
+R2=FIVE_PINNED_ELFS_CONDITIONAL_NOT_STAGED
+```
+
+One and only one line is proposed immediately after `android.telephony.action.STK_SETUP_EVENT_LIST` near line 861 of `frameworks/base/core/res/AndroidManifest.xml`:
+
+```xml
+<protected-broadcast android:name="com.mediatek.common.carrierexpress.operator_config_changed" />
+```
+
+This is an **exact-parent, deterministic patch preview**, not source mutation or effective `framework-res.apk` qualification. Preserve the source SHA `2fe068aa663608ef5e21108d97ba95e9b3bfa0dfaaa7add982d3eb86b8af0e7c`, expected post SHA above, and Git blob `a7675341e1575039845d09c64fa22006612cca4a`. Before any later source edit, confirm exact source tree and mutation authorization; after build, validate the compiled manifest. Reuse the existing C1 modules and native analysis rather than running a third provider inventory.
