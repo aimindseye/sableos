@@ -72,3 +72,7 @@ BUILD_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ```
+
+## 2026-10-12 IMS-01 architecture clarification (approved review feedback)
+
+**Do not repeat the OEM APK location investigation.** Previously identified `/system/etc/init/config/skip_mount.cfg` suppresses physical stock `system_ext_a` and `product_a`; running `/system_ext` and `/product` refer to embedded `/system/system_ext` and `/system/product`. This explains the absence of stock OEM IMS from the October 11 N1F-based runtime. The proposed **IMS-01** inclusion path is embedded `/system/system_ext` within the derived **system.img**, not standalone stock `system_ext.img`. Re-enabling Android 14 stock partition mounts is not an approved solution. Read [IMS-01 embedded island contract](N1F_OCT11_IMS01_EMBEDDED_ISLAND_CONTRACT_20261012.md). The contract limits additions to the prior C1 minimal IMS island plus R1 one-action broadcast and five R2 pins; D1R2 broad stack and MtkTeleService remain excluded. The precise prior C1 bytes and native namespace still require gate closure; no build or flash authority.
