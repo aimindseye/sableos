@@ -49,3 +49,11 @@ FLASH_EXECUTED=NO
 ```
 
 The only changed line adds the `com.mediatek.common.carrierexpress.operator_config_changed` protected broadcast after `android.telephony.action.STK_SETUP_EVENT_LIST` in `core/res/AndroidManifest.xml`. `git diff --check` passed. **Do not commit or cherry-pick into the canonical Android parent yet.** Before compiling, explicitly establish a full build source namespace that consumes this isolated `frameworks/base` tree without mutating the retained source or CW1 workspace; preserve exact parent SHA and `skip_mount.cfg`. R2 namespace still blocks five native libs, and P0 LTE service stability remains open.
+
+## N1F known-build output reuse gate v1 — operator results (2026-10-12)
+
+Read-only gate `PASS_READ_ONLY_KNOWN_PATH_STATE`. Exact N1F build driver `build/titan2/run-n1f-c3a-derived-c3b5-r2.sh`, source `/srv/data/sable-build/workspaces/titan2-n1d/android`, output `/srv/data/sable-build/workspaces/titan2-n1d/out-c3a-td`, product `tdgsi_arm64_ab`, lunch `treble_arm64_bvN-bp4a-user`, build ID `BP4A.251205.006`, goal `systemimage`. Output and product directories and workspace `system.img` exist.
+
+**Crucial image identity split:** workspace system image SHA256 `ea10fc487a1d13be4440ef3b01321f9c5f05fd0933b94774b996d8fefa046468`, while the preserved Oct03 N1F artifact `/srv/data/sable-build/artifacts/titan2/n1f-c3a-derived-c3b5/20261003T221350Z/system.img` independently passed its sealed hash `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`. The current workspace image is **not** the sealed N1F image; its provenance cannot be inferred from path or Android version. Do not replace the sealed control or reuse this output for a build without exact current build-graph provenance.
+
+The R1 isolated exact one-line Git worktree remains PASS, original Android source clean, complete isolated build namespace NOT_ESTABLISHED, `BUILD_OUTPUT_REUSE=UNDECIDED_DO_NOT_WRITE`, original combined driver forbidden (requires flash authorization and modifies/restores original checkout), no build run. Recommended design: preserve `out-c3a-td` as potentially contaminated historical output; use a distinct M4 OUT_DIR only when a complete isolated source namespace and explicit build authorization exist. No further broad filesystem discovery.
