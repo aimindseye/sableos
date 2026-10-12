@@ -4,7 +4,7 @@
 
 ## Active experiment
 
-The operator reports that an Atlas-inspired hybrid-super image was successfully flashed on **2026-10-11** and then examined using ADB, including scripts to enable cellular functionality. The **specific write journal, actual flashed super SHA-256 and command sequence have not yet been supplied or tied cryptographically to that runtime session**. Do not call the October 11 physical outcome `NOT_PERFORMED`; equally, do not mark the local offline R3 artifact `PASS_PHYSICAL_BOOT` on this evidence alone.
+The operator reports that an Atlas-inspired hybrid-super image was successfully flashed on **2026-10-11** and then examined using ADB, including diagnostic ADB scripts that temporarily enabled cellular, followed by renewed cellular disablement / loss of registration. This was an investigation, NOT a successful or durable cellular-enablement procedure. The **specific write journal, actual flashed super SHA-256 and command sequence have not yet been supplied or tied cryptographically to that runtime session**. Do not call the October 11 physical outcome `NOT_PERFORMED`; equally, do not mark the local offline R3 artifact `PASS_PHYSICAL_BOOT` on this evidence alone.
 
 The retained **offline R3 control** is `/srv/data/sable-build/evidence/titan2/n1f-atlas-hybrid-control-r3-virtual-ab-20261011/`. Its `authority.env` says `PHYSICAL_BOOT=NOT_QUALIFIED`, `CURRENT_DEVICE_MATCHED_FIRMWARE=NOT_QUALIFIED`, `LP_METADATA_INDEPENDENTLY_PARSED=NO`, and `FLASH_AUTHORIZED=NO`. These are the controls' **original offline authority**, not a retrospective verdict on all October 11 device activity.
 
@@ -29,7 +29,7 @@ Host-retained evidence indexed in [the evidence index](EVIDENCE_INDEX.md):
 - R8Q3/R8R: `/system_ext/priv-app/ImsService/ImsService.apk` and its system alias `NOT_LISTED` / `NOT_ACCESSIBLE_OR_ABSENT` in observed paths. Stock reference contains the OEM APK. Absence from this listing is not absolute proof of package or feature absence elsewhere.
 - SIM slot 1 reached READY and LOADED; voice/data briefly `IN_SERVICE` around 19:59:32 and 20:01:02, then `OUT_OF_SERVICE` at 20:01:02 on October 11. LTE/RIL root cause **not established**; separate from IMS native loading.
 - Captured RIL `mtkNetworkIndication == NULL` diagnostic is a lead, not proof of cause.
-- Operator reports ADB scripts were required to turn on cellular: **retain exact script revision, commands, order, settings, and before/after observations before reusing or automating**. Do not invent the command sequence from logs.
+- Operator clarifies ADB scripts were used **only to temporarily enable cellular for diagnosis**; cellular subsequently became disabled again. **This is a failed stability experiment, not a successful workaround.** Retain exact commands, timestamps and before/after evidence for root-cause analysis, not production reuse. Do not invent the command sequence from logs.
 - The bridge report's `FLASH_EXECUTED=NO` means **the diagnostic script** did not perform a flash; it does not negate a prior device flash.
 
 ## Active proposed IMS delta (P0-AU design accepted; NOT implemented)
