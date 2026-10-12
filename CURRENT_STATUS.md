@@ -1,5 +1,7 @@
 # SableOS current status
 
+> **CURRENT TITAN 2 EXECUTION OVERRIDE — 2026-10-12 (DRAFT PR #339; documentation, not flash/build authority):** The October 5 C1-first instructions below are retained as *dated history*, not today's default next action. For the active October 11 Atlas-inspired hybrid-super runtime investigation and approved static P0-AU IMS remediation, read [docs/titan2/CURRENT_ENGINEERING_STATE.md](docs/titan2/CURRENT_ENGINEERING_STATE.md), [docs/titan2/MILESTONES.md](docs/titan2/MILESTONES.md), and [docs/titan2/EVIDENCE_INDEX.md](docs/titan2/EVIDENCE_INDEX.md) first. Android boot/ADB and temporary cellular registration were observed; radio later lost service. The operator reports a successful hybrid image flash and cellular enablement via ADB, but the exact October 11 flash image hash/journal and ADB command procedure remain unbound. This checkpoint supersedes historical C1/C2 *priority*, not their underlying facts or prior evidence. No source edit/build/device/flash authorized.
+
 Last updated: 2026-10-05 ET
 
 This file is the private integration repository's current execution authority.
