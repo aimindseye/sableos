@@ -63,3 +63,16 @@ BUILD_AUTHORIZED=NO
 DEVICE_CONTACT_AUTHORIZED=NO
 FLASH_AUTHORIZED=NO
 ```
+
+## 2026-10-12 N1F M3 host gate — exact observed results
+
+The operator ran `n1f_m3_r1r2_targeted_gate_v1.py` on ai-g732 with no source mutation, build, network, device, mount or flash.
+
+- Repository `HEAD=7120a783ed418f2bb60651ff70793c602b419f25`.
+- R1 platform manifest source: `/srv/data/sable-build/workspaces/titan2-n1d/android/frameworks/base/core/res/AndroidManifest.xml`; filesystem SHA256 `2fe068aa663608ef5e21108d97ba95e9b3bfa0dfaaa7add982d3eb86b8af0e7c`, Git blob `a7675341e1575039845d09c64fa22006612cca4a`, protected action occurrence count 0; decision `CANDIDATE_ADD_ONE_ACTION`. Pin this baseline before editing; the script did not apply the edit.
+- Five pinned R2 ELF files: all `PASS_IDENTITY_AND_DIRECT_NEEDED`. Bytes/direct NEEDED: `libmtk_vt_wrapper.so=101920/20`, `libvcodec_cap.so=103008/15`, `libvcodec_capenc.so=35432/6`, `vendor.mediatek.hardware.videotelephony@1.0.so=102424/8`, `vendor.mediatek.hardware.videotelephony-V1-ndk.so=68936/7`. Total 56 direct edges.
+- Focused dependency watchpoints explicitly seen in direct edges: `libhidltransport.so`, `libion.so`, `libstagefright_omx_utils.so`, `android.hardware.graphics.bufferqueue@2.0.so`, `libbinder_ndk.so`, `android.hardware.common-V2-ndk.so`, `android.hardware.common.fmq-V1-ndk.so`. Each provider and its namespace is still `UNRESOLVED`; no absence, incompatibility or resolution claim yet.
+- `R2_RECURSIVE_CLOSURE=NOT_QUALIFIED`, `R2_GNU_SYMBOL_VERSIONS=NOT_QUALIFIED`, `R2_IMS_CLASSLOADER_NAMESPACE=NOT_QUALIFIED`.
+- Gate conclusion: `M3_RESULT=TARGETED_SOURCE_AND_ELF_INVENTORY_NOT_IMPLEMENTATION_ADMISSION`.
+
+**Next constrained work:** resolve the 56 already captured DT_NEEDED edges against the *selected N1F image's* system/system_ext/APEX/vendor providers, then inspect strong undefined symbols and required symbol versions under the IMS app classloader namespace. Do not repeat the hash/ELF inventory. Record a six-column TSV (`dependency,provider,namespace,symbol_version,decision,evidence`) with no invented provider paths. R1 one-line change may be prepared as a separate reversible patch preview, but actual source mutation, build and flash remain unauthorized.
