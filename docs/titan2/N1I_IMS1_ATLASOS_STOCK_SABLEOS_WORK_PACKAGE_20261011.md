@@ -55,3 +55,9 @@ Classify `action` as `KEEP_STOCK`, `SOURCE_PORT_CANDIDATE`, `CONFIG_ONLY`, `RUNT
 - CW1 stock consumer static invoke-super linkage PASS (operator output 2026-10-11), report remains on ai-g732; report checksum **not provided yet**.
 - IMS1 static matrix NOT YET EXECUTED.
 - Protected source and device mutation NO.
+
+## 2026-10-12 current-state supersession
+
+The original 2026-10-11 follow-up statuses above are preserved as **historical checkpoint text**, not today's task list. IMS1-A through IMS1-D and related PR #339 documents subsequently recorded further static results. Do not rerun a prior stage based solely on the earlier `IMS1 static matrix NOT YET EXECUTED` marker.
+
+**Active task:** use [CURRENT_ENGINEERING_STATE.md](CURRENT_ENGINEERING_STATE.md) and [EVIDENCE_INDEX.md](EVIDENCE_INDEX.md) to bind the October 11 booted hybrid experiment, actual OEM IMS presence, and the operator's already-used ADB cellular enablement procedure. R1 single-action protected broadcast candidate is statically established; the five R2 native library imports are SHA/ELF verified but complete recursive linker-namespace/symbol resolution and target placement are pending. Preserve the draft CW1 research independently. Do not adopt AtlasOS healing scripts or source patches without separate targeted review and authorization.
