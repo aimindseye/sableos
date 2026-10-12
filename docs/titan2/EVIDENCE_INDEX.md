@@ -43,4 +43,4 @@ R3/source-sha256.tsv 034ceb5e0c3f8825276720c1070c374125536a4abd5a68dc3f8aa008b7c
 
 ## Immediate engineering handoff
 
-**Do not run P0-AZ or another broad discovery loop.** Read retained R8Q3/R8R and operator's October 11 flash/ADB-cellular script logs to identify the actual mounted composition and reproduction procedure. Then scope only the static R1 policy plus five-library R2 transitive/symbol/namespace checks for that parent. The next source change requires a distinct approval; this index does not authorize it.
+**Do not run P0-AZ or another broad discovery loop.** Read retained R8Q3/R8R and operator's October 11 flash/ADB diagnostic cellular-toggle script logs (temporary activation followed by renewed disablement; not a working workaround) to identify the actual mounted composition and reproduction procedure. Then scope only the static R1 policy plus five-library R2 transitive/symbol/namespace checks for that parent. The next source change requires a distinct approval; this index does not authorize it.
