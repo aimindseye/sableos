@@ -57,3 +57,14 @@ Read-only gate `PASS_READ_ONLY_KNOWN_PATH_STATE`. Exact N1F build driver `build/
 **Crucial image identity split:** workspace system image SHA256 `ea10fc487a1d13be4440ef3b01321f9c5f05fd0933b94774b996d8fefa046468`, while the preserved Oct03 N1F artifact `/srv/data/sable-build/artifacts/titan2/n1f-c3a-derived-c3b5/20261003T221350Z/system.img` independently passed its sealed hash `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`. The current workspace image is **not** the sealed N1F image; its provenance cannot be inferred from path or Android version. Do not replace the sealed control or reuse this output for a build without exact current build-graph provenance.
 
 The R1 isolated exact one-line Git worktree remains PASS, original Android source clean, complete isolated build namespace NOT_ESTABLISHED, `BUILD_OUTPUT_REUSE=UNDECIDED_DO_NOT_WRITE`, original combined driver forbidden (requires flash authorization and modifies/restores original checkout), no build run. Recommended design: preserve `out-c3a-td` as potentially contaminated historical output; use a distinct M4 OUT_DIR only when a complete isolated source namespace and explicit build authorization exist. No further broad filesystem discovery.
+
+## Offline local-object source reconstruction pilot PASS (2026-10-12)
+
+Operator ran `n1f_m4_offline_reconstruction_pilot_v1_1.py` preflight (`PILOT_PREFLIGHT=PASS_NO_WRITE`) and `--create-pilot`; exact four local-object project reconstructions passed:
+
+- `frameworks/base` HEAD `dfb660a1fd590efed475f388870032d2d416403b`, isolated R1 manifest replay qualified.
+- `build/soong` HEAD `6725416b1cce7fe6080a863cee69ebc615701ca2`, retained C3A diff replay qualified.
+- `device/phh/treble` HEAD `bbaf0c2ba33c15c574d9be4ad3b10895b702880f`, exact untracked `rom.mk` with SHA-256 `ab0ec737342d41d562816fce73e8694e35ce32e09db74c12ea115efa3619d592` replay qualified.
+- `treble_app` HEAD `15b30c1a9cac951236db59e66a3ef8222872dfe8`, tracked `sdk/.knownPackages` diff replay qualified.
+
+`PILOT_REPLAY=PASS_4_PROJECTS`, `ORIGINAL_SOURCE_CHANGED=NO`, `BUILD=NO`, `NETWORK=NO`, `DEVICE=NO`, `FLASH=NO`. Pilot source is `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android`. There is **no `.repo` metadata yet and 987 remaining projects are not materialized**. Git alternates rely on retained local objects; this is not an independently archived object database. The next safe operation is a guarded **resume-only** reconstruction for the remaining pinned project paths using the already sealed 991-row C3A project ledger, without deleting or re-cloning the four qualified pilots. Validate project paths, independent Git metadata, object availability and pinned HEADs before any repo metadata integration. No build or flash authorization is implied.
