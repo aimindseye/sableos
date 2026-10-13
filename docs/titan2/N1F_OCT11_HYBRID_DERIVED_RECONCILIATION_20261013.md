@@ -208,6 +208,26 @@ B2_LP=NOT_AUTHORIZED B3_AVB=NOT_AUTHORIZED B4_RESTORE=NOT_AUTHORIZED
 SOURCE_MUTATION=NO BUILD=NO REPACK=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
 
+### B1-PARENT actual ai-g732 full hash PASS — historical parent artifact bound
+
+The operator provided the complete **actually authorized B1-PARENT** verifier JSON after package ZIP and **all three** internal SHA256SUMS checks passed. On the **one exact canonical** `/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img`, the program streamed **3,200,540,672 bytes** and returned `status=HASH_MATCH_HISTORICAL_REFERENCE_ONLY`, with identical `actual_sha256` and `expected_sha256` **`dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`**. Explicit mode `EXPLICIT_B1_PARENT_IMAGE_HASH`; no output write, subprocess, network, build, device or flash. This consumes the granted one-pass B1 parent-hash permission; prior authorization-pending and no-result claims remain only *historical* and are superseded for the **host parent artifact** by this PASS.
+
+**Do not promote this to physical Oct03 flashed `system_a` cryptographic identity**: actual device readback remains unbound; the tool reported `physically_flashed_oct03_image_proven=false` and `authority_to_rebind_parent=false`. Same-session seven companion bytes, post-N1F LP/VAB, actual Oct11 written super, matched AVB/restore, G1/G2/G3 and Oct13 M4 recovery cause remain unresolved. No extra image hash, stock-root scan/extraction, LP/AVB, build/repack/phone/flash was or is authorized. [Exact outcome and next proposed constrained provenance decision](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md).
+
+```text
+OCT03_N1F_PARENT_HOST_SHA256=PASS_HISTORICAL_REFERENCE_ONLY
+OCT03_N1F_PARENT_HOST_BYTES=3200540672
+OCT03_N1F_PARENT_HOST_SHA256=dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a
+OCT03_PHYSICAL_SYSTEM_A_BYTE_READBACK=UNBOUND
+OCT03_PARENT_REBIND_AUTHORITY=NO
+B1_PARENT_ONE_PASS=COMPLETE
+B1_COMPANION_HASHES=NOT_AUTHORIZED
+OCT03_COMPANION_CONTENT_SHA256=UNBOUND_7_OF_7
+B2_LP_B3_AVB_B4_RESTORE=NOT_AUTHORIZED
+G1_G2_G3=OPEN
+BUILD_REPACK_NETWORK_DEVICE_FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
