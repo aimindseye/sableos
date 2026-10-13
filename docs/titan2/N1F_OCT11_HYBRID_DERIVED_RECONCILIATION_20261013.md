@@ -8,6 +8,23 @@ Date: 2026-10-13. Status: **DRAFT ENGINEERING AUTHORITY — HOST READ-ONLY RECON
 - Build engineer final response: `ACCEPT_WITH_EXACT_CHANGES`, explicitly **retaining a complete hybrid `super.img` as an offline LP metadata/partition-byte control** while placing the OEM IMS island exclusively inside embedded `/system/system_ext` of the derived `system.img`. The engineer's initial suggestion to abandon hybrid super was retracted.
 - PR #340 D7: exact artifact identities only, *not* runtime classloader/ABI or Oct 11 flash lineage. Historical C1/C2/D1R2 PRs are evidence, not blanket installation authority.
 
+## Current operator-selected parent — 2026-10-13 (supersedes earlier pending-selection text)
+
+**APPROVED_FOR_OFFLINE_PLANNING_ONLY:** the operator has explicitly selected the **October 3 physically boot-qualified N1F C3A-derived C3B5 `system.img`**, exact SHA256 `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`, 3,200,540,672 bytes, as a **new distinct offline engineering parent**. This does *not* bind or relabel the actually flashed October 11 experimental hybrid; its exact SHA/journal remains `UNBOUND`. It also does not bind the matching physical/stock whole-super LP input set, source checkout to the selected artifact, AVB/Virtual A/B rules or restore plan. Those are the next **host-evidence planning matrix** questions. See [operator parent-selection decision](N1F_OCT03_PARENT_SELECTION_DECISION_20261013.md) for exact scope and NO BUILD/FLASH controls.
+
+```text
+CURRENT_SELECTED_PARENT=OCT03_N1F_SYSTEM_IMG_OFFLINE_PLANNING_ONLY
+PARENT_SELECTION=OPERATOR_APPROVED_2026-10-13
+OCT03_N1F_SYSTEM_SHA256=dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a
+OCT11_ACTUAL_FLASH_PARENT=UNBOUND_NOT_INHERITED
+MATCHED_SUPER_LP_PARTITIONS=NOT_BOUND
+SOURCE_MUTATION_AUTHORIZED=NO
+IMAGE_BUILD_AUTHORIZED=NO
+SUPER_REPACK_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+```
+
 ## Verified physical evidence (keep claims separated)
 
 | Event | Accepted evidence | Limit |
@@ -78,7 +95,7 @@ Operator confirmed `RECEIPT_FILE_SET=PASS_EXACT_SIX` and SHA256 of all six files
 
 The receipts report: parent journal/SHA NOT_SUPPLIED; Oct03 sealed alternate awaiting explicit selection; M4 *staging* ImsService and two JARs PRESENT but five R2 native libraries ABSENT at proposed paths; `system/etc/init/config/skip_mount.cfg` absence **requires GSI primary installed-path check** (compatibility location may be symlink), bootclasspath protobuf PRESENT but effective JARs/unified SELinux/privapp still unqualified, and no complete R2 recursive provider/IMS classloader namespace evidence. M4 Recovery log unavailable. User showed the exact six texts; no image was read by V1.
 
-## Parent-evidence V2 operator result (2026-10-13)
+## Historical V2 journal-search outcome before parent selection (2026-10-13)
 
 PR #339's **V17** already searched the R3 control directory and its parent without identifying a physical write journal. PR #342 V2 has now run on ai-g732: ZIP and checksum manifest PASS; 16/16 operator unittest cases PASS; nonrecursive filename-only inspection of **367 immediate entries under `~/Downloads`** returned `names=[]`, `truncated=false`, `oct11_binding=UNBOUND_NOT_A_JOURNAL_PROOF`. No content read, output write, subprocess, network, device or flash. Negative evidence is specific to the directory searched, **not a claim of global absence**. Do not prolong journal searches without a newly supplied exact candidate. The governing handoff and operator output interpretation are in [N1F_OCT11_PARENT_CANDIDATE_HANDOFF_V2_20261013.md](N1F_OCT11_PARENT_CANDIDATE_HANDOFF_V2_20261013.md).
 
@@ -92,7 +109,7 @@ OCT03_N1F_FALLBACK=AVAILABLE_NOT_SELECTED
 NEXT=REQUIRE_OPERATOR_PARENT_DECISION
 ```
 
-The preferred next decision for forward progress is **explicitly selecting Oct03 N1F as a different offline parent**, not relabeling it Oct11; doing so by itself authorizes no build, image extraction or packaging. A complete hybrid `super.img` would still need a separately proven LP/AVB/restore composition, with exact source/unchanged partitions and effective embedded `system_ext` and `product` qualified. G1 final-image, G2 and G3 remain open.
+The V2-stage recommendation, now **approved for planning only**, was **explicitly selecting Oct03 N1F as a different offline parent**, not relabeling it Oct11; doing so by itself authorizes no build, image extraction or packaging. A complete hybrid `super.img` would still need a separately proven LP/AVB/restore composition, with exact source/unchanged partitions and effective embedded `system_ext` and `product` qualified. G1 final-image, G2 and G3 remain open.
 
 ## Decision gates / physical stop
 
@@ -113,7 +130,7 @@ This PR replaces draft PR #339 as the engineering queue, preserving #339 closed 
 BE_REVIEW=ACCEPT_WITH_EXACT_CHANGES
 RESEARCH_PR_339=HISTORICAL_CLOSE_UNMERGED
 OCT11_PARENT=UNBOUND
-OCT03_PARENT=SEALED_BOOTED_ALTERNATE
+OCT03_PARENT=SELECTED_OFFLINE_PLANNING_ONLY
 M4_FASTBOOT_WRITE=PASS
 M4_ANDROID_BOOT=FAIL_RECOVERY
 RECOVERY_FACTORY_RESET=ATTEMPT_FAILED
