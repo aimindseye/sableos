@@ -396,6 +396,26 @@ R0C_256_ENTRY_TEE14_INSPECT=NOT_AUTHORIZED
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### Operator-authorized R1/B1 source read: prior V38 and M4 work already qualified, new checkout not bound
+
+Operator actual R1/B1 package ZIP/in-manifest **PASS**, 34/34 synthetic regression **PASS 0.021s**, default plan **`PLAN_ONLY_NO_HOST_FILESYSTEM_ACCESS`**. The operator explicitly authorized read-only inspection of **two** exact files `frameworks/base/core/res/AndroidManifest.xml`, `frameworks/opt/telephony/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java` in **the selected** Android16 workspace (<=2 MiB each). This authority is **not generic project/checkout enumeration or permission to inspect multiple candidate roots**, and not source-mutation/build authority. Actual new selected-workspace bytes **NOT_READ**.
+
+Crucial prior GitHub history recovered while selecting scope: [PR339 executed V38 original checkout](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497214527) `/srv/data/sable-build/workspaces/titan2-n1d/android` R1 exact PRE, B1 Git PRE **PASS**; separate reconstructed M4 `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android` had R1 exact POST and later official B1 exact PRE→POST **PASS** [PR339 B1 integration](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497674970). The isolated partial R1 tree `/srv/data/sable-build/workspaces/n1f-m4-ims01/android/frameworks/base` had R1 POST (not a complete new Android root). **Do not rerun these already qualified source states or promote failed-recovery M4 to next boot-qualified parent.** The specifically selected *new Oct03-derived* source-root and full source lineage are not yet bound by the user-provided evidence. Only once a distinct exact already-existing new isolated checkout is selected should the one approved source pair be inspected; fail closed on absence/symlink/unknown PRE/POST. No worktree creation, git/repo recensus or image read authorized. [Source selection/no-repeat decision](N1F_P342_R1B1_PRIOR_WORKSPACE_DECISION_V1_20261013.md).
+
+Same frozen V1 script checksum `d5d51bf25b725c6254cef39038caed60c486a0901893a33a7440a77e899dfa1b` and tests were locally reverified ZIP SHA, inner 4/4, Python AST PASS and 34/34 local repeat PASS (0.032s). Original synthetic 589824-byte two-file inspect median 0.635ms/p95 0.846ms, not host evidence execution. **Do not invent additional R1/B1 implementation tools.**
+
+```text
+R1B1_TESTS_OPERATOR=PASS_34_OF_34_AND_PLAN
+R1B1_AUTHORITY=READ_TWO_FIXED_FILES_IN_ONE_SELECTED_NEW_ANDROID16_ROOT
+R1B1_NEXT_IMAGE_SOURCE_ROOT=UNBOUND
+R1B1_NEW_ROOT_INSPECT=NOT_EXECUTED
+V38_ORIGINAL_R1_B1=PRE_PRE_QUALIFIED_PRIOR
+M4_FAILED_IMAGE_SOURCE_R1_B1=POST_POST_QUALIFIED_PRIOR
+OCT03_HOST_PARENT_SHA256=PASS_HISTORICAL_REFERENCE_ONLY
+G1_G2_G3_NEW_IMAGE=NOT_ADMITTED
+SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
