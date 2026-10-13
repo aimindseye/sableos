@@ -38,3 +38,37 @@ If `locate` returns no relevant new evidence, **STOP**. Do not re-run the V17 jo
 If genuine retained transcript and SHA receipt are found, use the exact paths in `adjudicate` and return the JSON candidate classification for independent review. Even a promising candidate remains `PARENT_UNBOUND` until independent artifact bytes/flash-session/R8 runtime correlation.
 
 **Gates left open:** G1 final flashed image composition, G2 effective APK/classpath/SELinux, G3 recursive native loader/IMS namespace, parent-matched LP/AVB and matched restore. No source mutation, Android build, extraction, mount, reboot, factory reset, device contact, fastboot or flash authority.
+
+## Operator V2 execution result — 2026-10-13
+
+Operator ran the distributed V2 bundle on **ai-g732**. Archive ZIP passed its expected SHA-256 check, and all four file checksums in the bundle's `SHA256SUMS` manifest passed. Python unittest `PASS_16_OF_16` (reported `Ran 16 tests in 0.006s`); this is host run evidence, distinct from prior local synthetic benchmarks.
+
+Actual bounded `locate --directory "$HOME/Downloads"` result:
+
+```text
+content_read=NO
+examined=367
+mode=locate_names_only
+names=[]
+oct11_binding=UNBOUND_NOT_A_JOURNAL_PROOF
+truncated=false
+NO_OUT_WRITE=YES NO_IMAGE_READ=YES NO_SUBPROCESS=YES
+NO_NETWORK=YES NO_DEVICE=YES NO_FLASH=YES
+```
+
+**Meaning:** exactly zero candidate *filenames* among 367 immediate entries in the selected `~/Downloads` directory. The script did not inspect their contents. This does **not** prove that a journal never existed or that a candidate could not live outside this directory. Combined with the earlier V17 negative bounded R3/parent scan, it meets the planned **STOP FURTHER SEARCH** criterion. No additional generic directory search, new evidence discovery tool, image hashing, partition extraction or device contact should be initiated merely to find an Oct11 journal.
+
+```text
+V2_OPERATOR_RESULT=PASS_BOUNDED_NO_CANDIDATES_IN_DOWNLOADS
+V2_OPERATOR_TESTS=PASS_16_OF_16
+V2_OCT11_PARENT_BINDING=UNBOUND
+OCT11_PARENT_SEARCH=HOLD_NO_FURTHER_UNBOUNDED_DISCOVERY
+OCT03_FALLBACK=AVAILABLE_NOT_SELECTED
+NEXT_DECISION=EXPLICIT_OPERATOR_PARENT_SELECTION
+SOURCE_MUTATION_AUTHORIZED=NO
+BUILD_AUTHORIZED=NO
+DEVICE_CONTACT_AUTHORIZED=NO
+FLASH_AUTHORIZED=NO
+```
+
+**Operator decision requested:** either (A) stop pending a newly supplied independent Oct11 artifact/journal, or (B) select the physically boot-qualified **Oct03 N1F** `system.img` SHA256 `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a` as a distinct **offline engineering parent**, with explicit acknowledgment it is **not the Oct11 flashed hybrid-super**. Option B is authorization to **plan against this baseline only**; it does not authorize source modification, image read/extraction, rebuild, super repack, physical deployment, flash, or assumption that R3 LP metadata is exact parent geometry. The next engineering step if B is selected is a *separate*, bounded parent-source/LP selection review followed by G1/G2/G3 closure requirements, all under distinct approval.
