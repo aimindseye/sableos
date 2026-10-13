@@ -327,6 +327,12 @@ OCT03_PHYSICAL_COMPANIONS=UNBOUND_7_OF_7
 BUILD=NO SOURCE_MUTATION=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### Five-R2 native qualification: direct and version subsets PASSED, effective namespace status sourced
+
+Following the operator's R2 challenge, a second review of original archived PR #339 V19–V36, the C2 integration closure **requirements** (B4/B5), PR #334 Gate G/G2, current main B2 code and PR #342 confirmed **all five R2 SHA/ELF, 56 direct DT_NEEDED, 19 Bionic test subset, six Android16 provider export-name parity and V28 four direct unversioned symbol/version edges are ALREADY PASS**. Do **not** repeat or call these unknown. However the C2 closure document lists `B4_JNI_NATIVE_DT_NEEDED_CLOSURE=PASS`, `B5_NATIVE_SEARCH_PATH_AND_NAMESPACE=PASS` as *required evidence* under its planning checklist; it does not contain a corresponding actual operator PASS of the **specific Oct03-derived five-library privileged IMS process namespace**. Existing B2 labels vendor-only candidates `FILE_PRESENT_NAMESPACE_UNPROVEN`, and PR #334 itself documents GNU version and complete namespace limitations. PR #339 V33 mapped original Oct03 `linker.config.pb` as **build-time** schema and explicitly retained `GENERATED_RUNTIME_LINKERCONFIG=NOT_PROVEN`, `IMS_APP_NAMESPACE=UNQUALIFIED`, `R2_RECURSIVE_ABI=UNQUALIFIED`; V34 did not find the generated config in its bounded paths, V36 five-file bytes were exact, not runtime closure, and later build engineer retained this precise delta.
+
+**Precise status:** `R2_STATIC_DIRECT_DEPENDENCIES_AND_BOUNDED_SYMBOL_CHECKS=PASS_PRIOR_SCOPE`; `G3_COMPLETE_TARGET_IMS_NAMESPACE=NOT_PROVEN_BY_CURRENT_REVIEWED_RECEIPTS`, **not a demonstrated incompatibility**. An already-existing *fully qualified* transcript may supersede this if it is exact-five-library, selected-image and process namespace bound; link its SHA/path/actual outcome instead of re-running large checks. Detailed [receipt-by-receipt reconciliation](N1F_OCT03_NEXT_IMAGE_BUILD_DECISION_V1_20261013.md). No source/image build, phone contact or flash authority is added.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
