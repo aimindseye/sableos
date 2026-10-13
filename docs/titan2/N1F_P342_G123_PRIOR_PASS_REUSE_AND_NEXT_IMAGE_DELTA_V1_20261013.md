@@ -22,6 +22,27 @@ Operator ZIP **`N1F_P342_G123_REUSE_V1.zip`** outer SHA256 **`ad7ffeea5d5fbd00d2
 
 This is a read-only **report-only historical reuse classifier** over a SHA-pinned bundled JSON ledger. It **does not** revalidate on-host source/image bytes and cannot confer a newly passed G1/G2/G3 final gate. It has no inspection or mutating mode and refuses unrecognized arguments. Output label `PASS_CATALOG_INTEGRITY_ONLY_NO_NEW_ENGINEERING_ADMISSION` is deliberately limited.
 
+## Actual ai-g732 G123 reuse-catalog execution — PASS, no new final admission
+
+Operator's supplied 2026-10-13 transcript: `N1F_P342_G123_REUSE_V1.zip` pinned outer ZIP checksum **PASS**; five internal payloads `n1f_p342_g123_reuse_v1.py`, `test_n1f_p342_g123_reuse_v1.py`, `G123_PRIOR_EVIDENCE.json`, `N1F_P342_G123_REUSE_PLAN_V1.md`, `N1F_P342_G123_REUSE_README_V1.md` internal SHA256SUMS **5/5 PASS**. ai-g732 `python3 -B -m unittest -v test_n1f_p342_g123_reuse_v1` **20/20 PASS (0.031s)**. The `usage: ... invalid choice 'inspect'` printed during `test_12_extra_args_fail` is the expected negative test and **not a failing test**. Actual `python3 -B n1f_p342_g123_reuse_v1.py report` returned:
+
+```text
+status=PASS_CATALOG_INTEGRITY_ONLY_NO_NEW_ENGINEERING_ADMISSION
+scope=PR339_ARCHIVED_RESULTS_REUSED_FOR_PR342_PLANNING
+input_evidence_revalidated=false
+image_bytes_read=0
+G1_HISTORICAL=M4_RESOLVED_PRODUCT_VARIABLES+M4_SOURCE_INTEGRATION+M4_SKIP_MOUNT_STAGING+M4_EMBEDDED_CONTENT
+G2_HISTORICAL=M11_APK_PLATFORM_CERT+M11_APK_MANIFEST+M4_API36_BOOTCLASSPATH+M4_EMBEDDED_SECURITY_FILES
+G3_HISTORICAL=R2_FIVE_ELF_IDENTITIES+R2_DIRECT_56_NEEDED+R2_BIONIC_19_CASES+R2_FOUR_GNU_BINDINGS+M4_SIX_ELF_METADATA
+G1_G2_G3_FINAL=OPEN_TARGET_DELTA_NOT_A_BLANKET_FAILURE
+OCT03_PARENT_HOST_SHA256=PASS_HISTORICAL_REFERENCE_ONLY
+OCT03_PHYSICAL_COMPANIONS=UNBOUND_7_OF_7
+R0C_256_INSPECTION=NOT_AUTHORIZED
+NO_BUILD=YES NO_DEVICE=YES NO_FLASH=YES NO_NETWORK=YES NO_OUT_WRITE=YES
+```
+
+**Decision:** `G123_CATALOG_AI_G732=PASS_COMPLETE`, **not** `G1/G2/G3_NEXT_IMAGE_PASS`. The already verified historical M4 facts and previously approved B1 Oct03 SHA should not be replayed. The next deliverable is **[an exact Oct03-derived two-milestone build decision contract](N1F_OCT03_NEXT_IMAGE_BUILD_DECISION_V1_20261013.md)** reusing the previously authored archival PR #339 M4 exact source mutation plan, without introducing another classifier or invoking a combined build/flash driver. Option A R1+B1+C1 **host-only** candidate and Option B R1+B1+C1+R2 after G3 namespace closure are **proposed only**; neither authorizes source mutation, a build, super packing or flash.
+
 ## Targeted path to next image without repetitive work
 
 1. Reuse G1 source/capture, G2 signer/BCP, G3 identities/direct symbols, M11, frozen M4 content and existing TF flash regression results **at their exact source/image scope**; no broad recensus or rehash.
