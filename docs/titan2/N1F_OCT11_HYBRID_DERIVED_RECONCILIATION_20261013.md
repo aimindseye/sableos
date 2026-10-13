@@ -59,6 +59,21 @@ Required separate receipts and refusal classification:
 
 Each receipt must cite exact input evidence path and outcome. **No invented PASS** where an actual effective image/classpath/policy or October 11 journal is absent. The engineer's 15-minute/<1 GiB estimate is for bounded evidence-only review, NOT full compile or LP repack. Source edits, compilation, image extraction/mounts, new images, any device action each need separate authorization.
 
+## Operator SHA-256 seals — 2026-10-13
+
+Operator confirmed `RECEIPT_FILE_SET=PASS_EXACT_SIX` and SHA256 of all six files, from `/srv/data/sable-build/evidence/titan2/n1f-p342-reconcile-20261013-v1` on ai-g732. These hashes identify V1 **read-only classification receipts**, not pass status for parent identity, G1/G2/G3 or physical image.
+
+```text
+003f5879694ca52a4d7e955c0d0c2f372b20b76b2c7c1efbf61e643d91130e33  OCT11_PARENT_BINDING.env
+305ed94f18f149cf42e9d91822661a2e349a0c90870d16533d669ff842e2e567  M4_BOOT_FAILURE_TRIAGE.tsv
+3e7e6fbad8a0858df4468a8ff03ec1dd27df178645504eb5fe9a39fd46d1cda3  G1_EMBEDDED_TARGET.txt
+69845f7ae39a3145c38f97d86f6d2a85d41f967ac96d53c056fa5309d0b48821  G2_COMPILED_AUTHORITY.env
+89112df1aa424ab3dfe739ad4370af6a953a137c2ac9149cf9a7215a7ef62fca  G3_NAMESPACE_CLOSURE.tsv
+7c16f18f13d9ce55720f5986b436b78e368ffdf2e15a6c472530d5ba704a75da  HYBRID_SUPER_REPACK_PLAN.env
+```
+
+The receipts report: parent journal/SHA NOT_SUPPLIED; Oct03 sealed alternate awaiting explicit selection; M4 *staging* ImsService and two JARs PRESENT but five R2 native libraries ABSENT at proposed paths; `system/etc/init/config/skip_mount.cfg` absence **requires GSI primary installed-path check** (compatibility location may be symlink), bootclasspath protobuf PRESENT but effective JARs/unified SELinux/privapp still unqualified, and no complete R2 recursive provider/IMS classloader namespace evidence. M4 Recovery log unavailable. User showed the exact six texts; no image was read by V1.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
