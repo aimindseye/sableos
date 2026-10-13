@@ -59,3 +59,27 @@ R2_PRIOR_NATIVE_STATIC=COMPLETE
 NEXT_IMAGE_G1_G2_G3=TARGET_SPECIFIC_GATES
 SOURCE_MUTATION=NO BUILD=NO LP_AVB_IMAGE_READ=NO DEVICE=NO FLASH=NO
 ```
+
+## 2026-10-13 follow-up — rooted in actual original N1F driver and the 991-project reconstruction
+
+Operator lacked `$SELECTED_ANDROID_ROOT` and explicitly directed us to recover it from previous project chats, GitHub and PRs rather than ask the operator to guess. **Two Android16 source roots are already documented and their roles must be separated.**
+
+1. **Original October 3 N1F source build root (historical baseline):** `/srv/data/sable-build/workspaces/titan2-n1d/android`. Operator's Oct12 [four workstreams / R1 execution record](https://github.com/aimindseye/sableos/blob/n1i-d1r4-cw1-compiled-checkpoint-20261011/docs/titan2/N1F_OCT12_FOUR_WORKSTREAM_STATUS_AND_R1_EXECUTION.md) confirms this literal root, `out-c3a-td`, `tdgsi_arm64_ab`, and original `build/titan2/run-n1f-c3a-derived-c3b5-r2.sh` selected build entrypoint; PR339 V38 already verified **R1 PRE + B1 PRE**. The actual driver builds `ANDROID_ROOT=$SABLE_BUILD_ROOT/$N1D_ANDROID_ROOT_REL` with `N1D_ANDROID_ROOT_REL=workspaces/titan2-n1d/android`; the operator report recorded the **/srv/data/sable-build** form. `build/config/storage.env` defaults to `/srv/sable-build` unless overridden; the relationship between the two prefixes **must not be guessed or silently resolved via symlink**. The `out-c3a-td` image digest `ea10fc...` did NOT match Oct03 sealed N1F system image digest `dc1f917...`; same source pathname does not imply the current output matches historical image bytes. Original canonical source is **not** an acceptable unreviewed mutation target.
+
+2. **Isolated 991-project M4 Android16 source root (best existing source-side integration candidate):** `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android`. The same original Oct12 document records a four-project pilot plus 987 local-object project materializations from the exact sealed C3A 991-row ledger, **`M4_991_PROJECT_HEADS=PASS`, `M4_OFFLINE_987=PASS_SOURCE_ONLY`**; historical PR339 reports R1 POST in selected M4 and the later official B1 PRE→POST patch PASS, and targeted 14,094-action M11/full M4 builds at separate `out-m4-ims03` / `out-m4-g2-fullimage-01` outputs. This is a **source checkout**, not the failed M4 image itself, but source-to-Oct03 booting artifact **complete lineage is not proven** and a physical M4 system_a boot later **FAIL_RECOVERY**. It is therefore the best-supported **existing isolated root for source-state assessment**, but **not a certified boot-qualified parent or permission to rebuild**.
+
+3. **Partial R1 worktree — exclude for two-file probe:** `/srv/data/sable-build/workspaces/n1f-m4-ims01/android/frameworks/base` contains only the R1 `frameworks/base` project; cannot supply B1 under `frameworks/opt/telephony` as one Android root.
+
+**Operational resolution:** Set `SELECTED_ANDROID_ROOT=/srv/data/sable-build/workspaces/n1f-m4-localrepo/android` **only if the purpose is a current read-only confirmation of the isolated existing M4 integration checkout**. This revalidates current on-disk R1/B1 source identities after the historic PR339 PASS; it is **not** the selection of a newly proven Oct03-derived clean build parent, and should not trigger R1/B1 patch replay. If the objective instead is to inspect the original **Oct03 baseline** source, the literal root is `/srv/data/sable-build/workspaces/titan2-n1d/android`, but its historical PRE/PRE has already passed V38. Do not run both merely to populate a form. The single authorized two-file inspection can be spent once on the isolated M4 root when current source-state re-attestation is desired; still no build/source mutation/flash authority. If a nofollow path or leaf check fails, report failure and **stop**, do not switch to another root/alias.
+
+Verified unchanged user package in assistant container: outer ZIP sha256 `d5d51bf25b725c6254cef39038caed60c486a0901893a33a7440a77e899dfa1b` PASS; inner SHA256SUMS four members PASS; both Python AST PASS; **34/34 repeat synthetic tests PASS (0.027s core)** and `inspect` CLI still requires `--android-root` plus `--authorize-exact-r1-b1-source-bytes`. No host root byte read occurred. Actual ai-g732 current root existence/no-symlink and byte states still unverified by this assistant.
+
+```text
+ORIGINAL_OCT03_N1F_ANDROID16_ROOT=/srv/data/sable-build/workspaces/titan2-n1d/android
+ISOLATED_M4_ANDROID16_ROOT=/srv/data/sable-build/workspaces/n1f-m4-localrepo/android
+RECOMMENDED_CURRENT_INTEGRATED_SOURCE_ATTESTATION_ROOT=ISOLATED_M4_ONLY
+EXACT_NEXT_OCT03_BOOT_PARENT_SOURCE_TO_NEW_ARTIFACT=UNBOUND
+OPERATOR_ONE_TWO_SOURCE_READ_AUTHORITY=YES_SELECTED_ONE_ROOT_ONLY
+CURRENT_M4_R1B1_CONTENT_READ_THIS_TURN=NOT_EXECUTED
+SOURCE_MUTATION=NO BUILD=NO IMAGE_READ=NO DEVICE=NO FLASH=NO
+```
