@@ -450,6 +450,26 @@ G1_G2_G3_NEW_SELECTED_IMAGE=NOT_ADMITTED
 SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### Existing M4 postbuild receipt reviewed; hybrid-super M4 boot remains unproven
+
+Operator explicitly authorized the **narrow review of an identified existing build receipt** and continued interpretation of previously documented source differences. [M4 operator final postbuild receipt PR339 review #5502246106](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5502246106) is the **identified and now reviewed** source: two complete `out-m4-g2-fullimage-01`/intermediate system images each 3194466304 bytes, identical SHA256 `261ee714db92c188eec7effc1afb6edd26627aaa1741e5f887915e078e1000ce`, Ninja `build completed successfully`; old V1.1 wrapper `SYSTEMIMAGE=FAIL_MISSING` is **contradicted on image-existence**, with cause of wrapper observation unknown (do not invent a race). Prior [11/11 embedded content and API36 bootclasspath](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5502638731) PASS scoped; M4 physical `system_a` write then Android **FAIL_RECOVERY** root cause unbound; there is no boot/early-init/AVB crash receipt bound to this failure. No exact actual M4 final project-head manifest/exec log file is identified in reviewed repository/PR discussions; **no new ai-g732 host file content was accessed**, do not infer lack of such a file.
+
+**Counterfactual:** Would the identical M4 `system.img` packaged into an entire hybrid `super.img` have booted? **UNKNOWN_NOT_TESTED**, not PASS. If effective companion bytes, AVB, LP/snapshot state and first-stage mapping were identical to M4 failed system_a trial, repacking alone cannot repair intrinsic M4 init/framework/SELinux/boot defects. A **different explicitly matched** hybrid partition set could potentially change boot behavior if the failure came from partition composition/snapshot/AVB, but actual Oct11 flashed super SHA/journal and Oct03 seven same-session companions are UNBOUND; Oct11 Android boot with its N1F-based system does not certify M4 system boot. More detail: [narrow reviewed receipt and hybrid-super counterfactual analysis](N1F_P342_M4_SUPER_COUNTERFACTUAL_AND_RECEIPT_REVIEW_V1_20261013.md).
+
+**Source differences considered without rerun:** Exact current R1/B1 POST/POST are closed; M4 C3B legacy TrebleApp removal, PHH marker/mtkmal gate, generated root folders, retained `skip_mount.cfg`, embedded C1 IMS payload, JAR API36 classpath and still unqualified effective policy/native runtime require boot-critical delta interpretation. Five R2 native inputs absent from M4 image is **not** a demonstrated cause of Recovery. Do not replace known-good Oct03 with failed M4 as default derived parent or propose unsanctioned whole-super flashing. No new script, A4/native census, source scan, build or image hash is justified by this textual receipt review.
+
+```text
+M4_BUILD_RECEIPT_PR339_5502246106=REVIEWED
+M4_COMPLETE_IMAGE_PRODUCED_HASHED=PASS_HISTORICAL
+M4_WRAPPER_FAIL_MISSING=UNEXPLAINED_OBSERVATION_CONFLICT
+M4_PHYSICAL_ANDROID_BOOT=FAIL_RECOVERY
+M4_AS_HYBRID_SUPER_BOOT=UNKNOWN_NOT_TESTED
+M4_FATAL_CAUSE_IMAGE_VS_COMPANIONS=UNBOUND
+OCT11_ACTUAL_FLASHED_HYBRID_SHA=UNBOUND
+OCT03_SEVEN_COMPANIONS_LP_AVB_ROLLBACK=UNBOUND
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
