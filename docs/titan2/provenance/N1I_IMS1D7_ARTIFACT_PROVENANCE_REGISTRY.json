@@ -1,0 +1,240 @@
+{
+  "schema": "sableos.n1i.ims1d7.provenance.v1",
+  "policy": "static-analytical-only",
+  "stock_reference": "N1B2 stock-2026041315-root, EEA analytical cohort, container link unresolved",
+  "sable_reference": "D1R2 extracted comparison, CW1 separate build",
+  "records": [
+    {
+      "id": "n1b2-stock-ims",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/priv-app/ImsService/ImsService.apk",
+      "sha256": "30db90de9e21d153f93deff2cf3d6c1a73f9c3fd7090533055267ee64cc66539",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "UNVERIFIED_CONTAINER_LINK"
+    },
+    {
+      "id": "n1b2-stock-mtktele",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system/system/priv-app/MtkTeleService/MtkTeleService.apk",
+      "sha256": "4bd27630ff03c3632416545d2a765469a7c3d26ef8ccb304f42b6f6e4b4b967b",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "UNVERIFIED_CONTAINER_LINK"
+    },
+    {
+      "id": "historical-n1i-a-mtktele",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-a-oem-ims/20261004T000059Z/work/stock/system_img/system/priv-app/MtkTeleService/MtkTeleService.apk",
+      "sha256": "1aaf8a672a6fa9c3f6eaf63076a013f2316771dedb8fca7c4d69c6c2c7d38887",
+      "role": "historical-stock-analysis",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "UNVERIFIED_CONTAINER_LINK"
+    },
+    {
+      "id": "d1r2-ims",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-c2r2-d1r2-image-exact-delta-v6-1/20261008T130601Z/extract/D1R2/system/system_ext/priv-app/ImsService/ImsService.apk",
+      "sha256": "8e0fa67c0acae1f4e8b7ebaf664151b73bb30deaf7a8b4885242a571bab8cd5a",
+      "role": "sable-d1r2",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "D1R2_EXTRACT_LABEL_ONLY"
+    },
+    {
+      "id": "d1r2-mtktele",
+      "path": "/srv/data/sable-build/evidence/titan2/n1i-c2r2-d1r2-image-exact-delta-v6-1/20261008T130601Z/extract/D1R2/system/priv-app/SableN1ID1R2MtkTeleService/MtkTeleService.apk",
+      "sha256": "79714f11dcdcabc36d0e318db3f17f4288dee775f8d6a56c09adb015768813f4",
+      "role": "sable-d1r2",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "D1R2_EXTRACT_LABEL_ONLY"
+    },
+    {
+      "id": "n1b2-stock-telephony-common",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system/system/framework/telephony-common.jar",
+      "sha256": "6f0f9b1963d2562c5ff87810e7545407d5a1abe8c9230516321050265a1259be",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "UNVERIFIED_CONTAINER_LINK"
+    },
+    {
+      "id": "cw1-telephony-common",
+      "path": "/srv/data/sable-build/workspaces/n1i-d1r4-cw1-isolated/android/out_cw1/soong/.intermediates/frameworks/opt/telephony/telephony-common/android_common/dex/telephony-common.jar",
+      "sha256": "76b335c3114c55f166edeef392889e4c908aceab9a9e92dec64f5f90c690af9f",
+      "role": "cw1-standalone",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "UNVERIFIED_CONTAINER_LINK"
+    },
+    {
+      "id": "n1b2-jar-CapCtrlInterface.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/CapCtrlInterface.jar",
+      "sha256": "e4dd064a84a000936324b4d0b3a2cdcc5c67aa10128edfcaf3ab79eaa40992d3",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-CustomPropInterface.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/CustomPropInterface.jar",
+      "sha256": "f8932cb24ec6c369eac5cc3b26b6dbfce758ad415e1196ff38fa121b4b177458",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-DataChannelApi.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/DataChannelApi.jar",
+      "sha256": "5ce8b737d37662a2e590669eed8bcd62e080cd0da5fe77ef4186b98e24472055",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-OPCommonTelephony.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/OPCommonTelephony.jar",
+      "sha256": "7a382784633f737893f5fe6e75a6545fb75765b3c57da26de250b214a0788dba",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-SatelliteClient.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/SatelliteClient.jar",
+      "sha256": "ea85fe160d0c7afbd0cc3c9573416023ac8947e373059d206b6f34e1adef2a83",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-agui-framework.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/agui-framework.jar",
+      "sha256": "e6b2f9f2182e8f41e2fa2a9b488aac45dc7da28232285403283adb1da339efa6",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-agui-services.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/agui-services.jar",
+      "sha256": "9f070d743e0fb1619db2232c557475cb02427293667c504eb4d0437eb81c2627",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-androidx.window.extensions.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/androidx.window.extensions.jar",
+      "sha256": "f9e0b6ff7c1b6ff50d151a39df9a54c7728436ade65ae2fab3ee9215f947fbd4",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-androidx.window.sidecar.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/androidx.window.sidecar.jar",
+      "sha256": "e1c30a577b8cd08dfd7c1bdd6fe1cbfd517c2754d3f0b98118b2cfd755c3cd28",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-com.android.extensions.appfunctions.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/com.android.extensions.appfunctions.jar",
+      "sha256": "579a37b0c61f4ccca4a5228cff089127fe9473790fbfa22d817c64f56754d85a",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-log-handler.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/log-handler.jar",
+      "sha256": "14b86308df98a46b94fb45e448399cbe2dcae6158706122df6b1f4ced09fd971",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-carrier-config-manager.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-carrier-config-manager.jar",
+      "sha256": "6d92680eb17552e0beb055bd2a49573ff07fdffdb88c98de55153e97346a35b8",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-common.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-common.jar",
+      "sha256": "511b674b91dd29e84e06c8e46c718e35650745c0359edd665d5fb3e88e6ed549",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-framework.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-framework.jar",
+      "sha256": "b185277fc8f7d191b3889af74695b705492238f16a76307e6e88d93c70537ebe",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-ims-base.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-ims-base.jar",
+      "sha256": "bb5769a098b59f9d299495981e87500da32e0667cf6a22931de2894d324a82ab",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-ims-common.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-ims-common.jar",
+      "sha256": "81943c661238325d21ae4465c2f166f2d7f3f287ccb806b99efecb61eadada12",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-ims-extension-plugin.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-ims-extension-plugin.jar",
+      "sha256": "7e916ed39640c72c7ef617caafd145af9f9d3d82048f94e47ec795e2008d02e1",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-services.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-services.jar",
+      "sha256": "0a7d2f8bb25b75dd37f0651df5037fb2f4070b9b3251eb9f19fa371173d99e55",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-telecom-common.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-telecom-common.jar",
+      "sha256": "178e76cfd9ffc300a255e508951a6eef3c6ff21bdf96ddf26ec3777847ef9168",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-telephony-base.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-telephony-base.jar",
+      "sha256": "f230ddfc9e1b61fe1ad0233f7e1d56503986a89df52b57577fa458b21983bcda",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-mediatek-telephony-common.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/mediatek-telephony-common.jar",
+      "sha256": "834326543f831276754c7e5efbd76d8dd28526e9f6d9559cc7c2d18770141855",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    },
+    {
+      "id": "n1b2-jar-verizon.net.sip.jar",
+      "path": "/srv/data/sable-build/evidence/titan2/n1b2-cellular-static/20260929T131259Z/stock-2026041315-root/system_ext/framework/verizon.net.sip.jar",
+      "sha256": "f28704c6424b23845ecd6b8b1baf1d23ccd002ceae2a5259f6001dfe475283ff",
+      "role": "stock-analytical",
+      "identity_evidence": "IMS1-D7 host verify PASS",
+      "container_provenance": "STOCK_ROOT_LABEL_2026041315_NOT_CRYPTOGRAPHICALLY_LINKED"
+    }
+  ]
+}
