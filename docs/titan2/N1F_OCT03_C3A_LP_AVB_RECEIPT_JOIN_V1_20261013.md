@@ -59,3 +59,44 @@ SUPER_BUILD_AUTHORIZED=NO DEVICE_CONTACT_AUTHORIZED=NO FLASH_AUTHORIZED=NO
 ```
 
 If the V1 join passes, **stop**: this closes *historical pre-C3A geometric receipt chain* only, **not** parent-matched super. To progress toward actual super assembly, ask for **separate, explicit, bounded authority** to inspect known pre-existing stock/Oct03 image LP and AVB metadata with a reviewed matched-restore policy; no device contact, build or flash implied. An Oct03 post-N1F device snapshot cannot be retroactively collected at present, so distinguish reconstructed offline compatibility from proven historic physical bytes. No more generic evidence discovery loops.
+
+## Actual ai-g732 operator outcome — 2026-10-13
+
+The operator verified ZIP and all six internal file SHA-256 manifest entries **PASS**; Python unittest **23/23 PASS** (reported 0.007 s). Bounded `inspect` returned `receipt_integrity`: both the historical C3A manifest pin and exact preflight JSON member hash match, as does the E5B package's independent historical SHA-256 pin. This is an **actual ai-g732 host execution**, not merely the synthetic local benchmarks documented above.
+
+```text
+V1_AI_G732=PASS_23_OF_23
+C3A_PREFLIGHT_JSON_MEMBER=EXACT_MEMBER_FOUND
+C3A_PREFLIGHT_MANIFEST_SHA256_MATCH=YES
+C3A_PREFLIGHT_JSON_MEMBER_SHA256_MATCH=YES
+E5B_BASELINE_SHA256_MATCH=YES
+C3A_PRE_CONTROL_GEOMETRY=PASS_PINNED_HISTORICAL_TEXT_RECEIPT
+ACTIVE_GROUP=main_a
+ACTIVE_GROUP_MAXIMUM_BYTES=9661579264
+SUPER_BYTES=9663676416
+SNAPSHOT=none
+ACTIVE_COW_COUNT=0
+BASELINE=PASS_PINNED_E5B_REFERENCE
+GROUP_MAXIMUM_CONSISTENCY=PASS_HISTORICAL_GROUP_MAXIMUM
+C3A_PREFLIGHT_TIMESTAMP_LABEL=20261003T203047Z
+E5B_BASELINE_TIMESTAMP_LABEL=20261003T053441Z
+N1F_RUN_TIMESTAMP_LABEL=20261003T221350Z
+HISTORICAL_ORDER=PASS_LABEL_ORDER_ONLY
+RECORDED_COMPANION_PRE_C3A_SIZES=6_OF_7
+ODM_A_PRE_C3A_SIZE=NOT_BOUND_OR_NOT_RECORDED
+OCT03_BOOT_SESSION_COMPANION_SHA256=UNBOUND_7_OF_7
+OCT03_N1F_POSTBOOT_LP_SNAPSHOT=UNBOUND
+OCT03_MATCHED_AVB_DESCRIPTORS=NOT_QUALIFIED
+OCT03_MATCHED_RESTORE=NOT_QUALIFIED
+OCT03_MATCHED_WHOLE_SUPER=NOT_QUALIFIED
+G1=OPEN_FINAL_IMAGE
+G2=OPEN_SIGNING_CLASSPATH_SELINUX
+G3=OPEN_IMS_LINKER_NAMESPACE
+NO_OUT_WRITE=YES NO_IMAGE_READ=YES NO_IMAGE_HASH=YES
+NO_SUBPROCESS=YES NO_NETWORK=YES NO_DEVICE=YES NO_FLASH=YES
+```
+
+**Six companion pre-C3A sizes are recorded** for `product_a`, `system_ext_a`, `vendor_a`, `system_dlkm_a`, `vendor_dlkm_a` and `odm_dlkm_a`; `odm_a` returned `NOT_BOUND_OR_NOT_RECORDED`. This is not evidence that `odm_a` is absent, and none of the seven had a byte/hash binding to the October 3 *N1F boot session*. The 05:34Z/20:30Z/22:13Z chronology is based on evidence labels, not a cryptographically complete device-session lineage. Historical pre-C3A `main_a` geometry and COW/snapshot states are now **closed at the pinned receipt level**; this is **not** the post-N1F `super.img` geometry or AVB/restore certification.
+
+**Stop / next decision:** do not rerun V1 or perform another broad census. Before proposing a complete offline `super.img`, identify a separately approved, image-specific and restore-matched method for the **seven companion partition byte identities**, effective LP metadata/Virtual A/B snapshot state and AVB footer/descriptors, without retroactively assuming the physical Oct03 postboot snapshot exists. Any subsequent host image-byte reads/hashes/extractions, compilation, repack or device action require distinct operator authorization. This document grants none.
+
