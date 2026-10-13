@@ -78,6 +78,22 @@ Operator confirmed `RECEIPT_FILE_SET=PASS_EXACT_SIX` and SHA256 of all six files
 
 The receipts report: parent journal/SHA NOT_SUPPLIED; Oct03 sealed alternate awaiting explicit selection; M4 *staging* ImsService and two JARs PRESENT but five R2 native libraries ABSENT at proposed paths; `system/etc/init/config/skip_mount.cfg` absence **requires GSI primary installed-path check** (compatibility location may be symlink), bootclasspath protobuf PRESENT but effective JARs/unified SELinux/privapp still unqualified, and no complete R2 recursive provider/IMS classloader namespace evidence. M4 Recovery log unavailable. User showed the exact six texts; no image was read by V1.
 
+## Parent-evidence V2 operator result (2026-10-13)
+
+PR #339's **V17** already searched the R3 control directory and its parent without identifying a physical write journal. PR #342 V2 has now run on ai-g732: ZIP and checksum manifest PASS; 16/16 operator unittest cases PASS; nonrecursive filename-only inspection of **367 immediate entries under `~/Downloads`** returned `names=[]`, `truncated=false`, `oct11_binding=UNBOUND_NOT_A_JOURNAL_PROOF`. No content read, output write, subprocess, network, device or flash. Negative evidence is specific to the directory searched, **not a claim of global absence**. Do not prolong journal searches without a newly supplied exact candidate. The governing handoff and operator output interpretation are in [N1F_OCT11_PARENT_CANDIDATE_HANDOFF_V2_20261013.md](N1F_OCT11_PARENT_CANDIDATE_HANDOFF_V2_20261013.md).
+
+```text
+PARENT_CANDIDATE_V2_AI_G732=PASS_NO_DOWNLOADS_CANDIDATES
+V2_TESTS=PASS_16_OF_16
+V2_NAMES_EXAMINED=367
+OCT11_FLASH_ARTIFACT_SHA_JOURNAL=UNBOUND
+JOURNAL_SEARCH=STOP_PENDING_NEW_EXPLICIT_CANDIDATE
+OCT03_N1F_FALLBACK=AVAILABLE_NOT_SELECTED
+NEXT=REQUIRE_OPERATOR_PARENT_DECISION
+```
+
+The preferred next decision for forward progress is **explicitly selecting Oct03 N1F as a different offline parent**, not relabeling it Oct11; doing so by itself authorizes no build, image extraction or packaging. A complete hybrid `super.img` would still need a separately proven LP/AVB/restore composition, with exact source/unchanged partitions and effective embedded `system_ext` and `product` qualified. G1 final-image, G2 and G3 remain open.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
