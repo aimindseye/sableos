@@ -266,6 +266,27 @@ G1_G2_G3=OPEN
 B1_OTHER_IMAGES_B2_B3_B4_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
 ```
 
+### Actual R0B seven direct leaves absent; proposed R0C strictly gated
+
+The operator's actual checksum-pinned R0B package run: SHA manifests PASS; **20/20 tests PASS (0.005s)**; default plan PASS, explicit exact-seven-name metadata inspection PASS. The TEE14 restoration evidence root `/srv/data/sable-build/evidence/titan2/n1c-restore-tee14-boot-avb-direct-20260930_204335` had **no direct** `boot.img`, `init_boot.img`, `vendor_boot.img`, `dtbo.img`, `vbmeta.img`, `vbmeta_system.img`, `vbmeta_vendor.img`; all seven returned `NOT_PRESENT_AT_THIS_EXACT_ROOT`, not a global absence. The old R0 TEE14 directory refused a **64-entry** limit; its `entries=[]` was suppressed output, not empty. Earlier historic N1C restore PASS remains historic and does not certify same-session Oct03 companion bytes.
+
+Do **not** run the old merged C0/E4 discovery drivers (#218/#250/#251) here: those use recursive search, image SHA and file writes; nor rerun Oct03 B1 SHA, older C3A geometry, 991 census or R2 linkage investigations. First root already supplied N1C stock-super artifact **regular file size 4,189,766,872 bytes**, content unqualified, plus small exact receipt basenames. `R1_RECEIPT_CONTENT=NOT_AUTHORIZED`.
+
+The [new R0C proposal and build-roadmap matrix](N1F_P342_N1C_R0C_TEE14_PROVENANCE_AND_NEXT_IMAGE_GATES_V1_20261013.md) prepares a single exact-root one-level **filtered** metadata inventory capped at **256 total immediate names / 96 matched entries**, not recursive and not a receipt reader. This **increases the old cap** and therefore `R0C_CAP_EXPANSION=NOT_AUTHORIZED` until separate explicit operator permission. The packaged `N1F_P342_R0C_TEE14_INVENTORY_V1.zip` is SHA256 `3989e5b1aeabe140e95c9b3ea15b5ac8b706a90458c7610e89b80b0ae2df6e68`; Python source/test syntax PASS, synthetic **22/22 PASS**, 1000 synthetic 150-leaf checks median 0.1884ms/p95 0.2096ms; `R0C_AI_G732=NOT_EXECUTED`. Default `plan` does not access the host filesystem; inspect requires a new exact-purpose flag **and operator approval**. Only stdlib Python3.10+, unzip and sha256sum; no LP/AVB/AOSP tools or installation.
+
+**Next-image engineering status:** Oct03 N1F retained host SHA **PASS** (physical Oct03 readback unbound); Oct03 7/7 physical companion byte identities, postflash LP/VAB and matched AVB/restore **UNBOUND**; final G1 embedded IMS composition, G2 effective signing/classpath/SELinux, G3 recursive IMS-native namespace **OPEN**. No new IMS-enabled system image, qualified hybrid super, build, repack, device, reboot or flash permission. The proposed workstreams can be prepared in parallel, but gates cannot be declared passed by plan-only metadata.
+
+```text
+R0B_OPERATOR_AI_G732=PASS_20_TESTS_AND_SEVEN_ABSENT_DIRECT_LEAVES
+R0C_CAP_256=PROPOSED_NOT_AUTHORIZED
+R0C_AI_G732=NOT_EXECUTED
+OCT03_PARENT_HOST_SHA256=PASS_HISTORICAL_REFERENCE_ONLY
+OCT03_SAME_SESSION_COMPANION_SHA256=UNBOUND_7_OF_7
+OCT03_POSTFLASH_LP_AVB_RESTORE=NOT_QUALIFIED
+G1=OPEN G2=OPEN G3=OPEN
+SOURCE_MUTATION=NO BUILD=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
