@@ -48,3 +48,21 @@ R0C_256_TEE14_INSPECTION=NOT_AUTHORIZED
 OCT03_PHYSICAL_7_AND_LP_AVB_RESTORE=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
+
+## Actual ai-g732 34/34 PLAN PASS and later two-file read authorization — pre-existing source result found
+
+User supplied actual checksum-pinned `N1F_P342_R1B1_SOURCE_V1.zip`: ZIP outer and four internal members `PASS`, 34/34 Python tests `PASS (0.021s)`, and `PLAN_ONLY_NO_HOST_FILESYSTEM_ACCESS`. Operator then explicitly approved **read-only inspection of exactly these two source files in the selected Android16 workspace**. This authorizes one such two-file read **once the selected exact new source-root is bound**, but not workspace discovery, a different/historical root guess, source mutation, build or phone actions. No actual ai-g732 new source-byte inspection has been performed.
+
+A retrospective archived [PR #339 V38](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497214527) review reveals historical `/srv/data/sable-build/workspaces/titan2-n1d/android` **already tested R1=PRE and B1=PRE**, and the separately built [M4 isolated Android source](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497674970) finished R1=POST and B1=POST on its own lineage. Do **not** repeat either original-root check just to emit the same hash-state labels. M4 resulted in Recovery and is not itself the approved Oct03 next parent. A separate *new* Oct03-derived source checkout is **not yet selected** by exact path/source-head; operator's permission is preserved, not consumed. See [controlling no-repeat source-root decision](N1F_P342_R1B1_PRIOR_WORKSPACE_DECISION_V1_20261013.md).
+
+Assistant repeated ZIP integrity and inner checksums, AST/test syntax and 34/34 regressions in 0.032s core unittest (new local repeat); no actual ai-g732 source files read. Original fixture benchmark 400 synthetic two-file read/hash cycles median 0.635ms/p95 0.846ms is assistant-host-only. Python3.10+ standard library suffices; checksum/unzip only for archive handling. **No additional script or provider inventory** is necessary. New-image source lineage, G1/G2/G3, LP/AVB/restoration and flash gates unaffected.
+
+```text
+R1B1_SOURCE_TESTS_AI_G732=PASS_34_OF_34
+R1B1_TWO_EXACT_SOURCE_READ_OPERATOR_PERMISSION=YES_ONE_SELECTED_ROOT
+R1B1_NEXT_BUILD_SOURCE_ROOT=UNBOUND
+R1B1_NEW_SOURCE_CONTENT_INSPECTION=NOT_RUN
+ORIGINAL_V38_SOURCE_STATES=R1_PRE_B1_PRE_PASS_PRIOR
+M4_ISOLATED_SOURCE_STATES=R1_POST_B1_POST_PASS_PRIOR
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
