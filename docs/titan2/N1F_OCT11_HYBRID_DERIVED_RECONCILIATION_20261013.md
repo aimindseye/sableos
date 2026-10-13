@@ -164,6 +164,10 @@ The operator supplied complete stdout from `N1F_P342_OCT03_MATCHED_IMAGE_V1.zip`
 
 **Important:** selected Oct03 parent `system.img` returned `REFUSED_SYMLINK_COMPONENT`, therefore no fresh leaf metadata or SHA. Six N1C TEE14 reference companion file paths returned `PRESENT_REGULAR_FILE`, `odm.img` not present at checked path. Stock-root `super.img` and seven boot/AVB names not present **at those exact paths**; both historical restore evidence directories exist, but directory presence is not restore qualification. All seven Oct03 companion image identities and matched post-N1F LP/AVB/restore remain unbound. The narrow next handoff is *parent path-component symlink target metadata only*, not bypassing the guard; B1–B4/C remain unauthorized. See [actual operator Stage A findings and six sizes](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md).
 
+### Stage A source-path symlink identity, host-only operator result
+
+Original selected Oct03 `/srv/sable-build/artifacts/titan2/...` fails the strict no-symlink guard because **`/srv/sable-build/artifacts/titan2` is a symlink** with readlink *literal* `/srv/data/sable-build/titan2/artifacts`. Operator's exact parent-path probe returned `STOP_SYMLINK_COMPONENT` and `authority_to_rebind_parent=false`; it did not follow the link or read any image. Only the explicit resulting candidate path `/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img` may receive **separate fixed-path metadata verification** next. Do not assert this target exists, has the Oct03 3,200,540,672 size, or hashes to the historical `dc1f917d...` merely from readlink. The [matched-image Stage A plan](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md) binds this exact observed status, the bounded syntax/test-validated helper and held B1–B4 authorities. No source/build/device/flash escalation.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
