@@ -62,3 +62,17 @@ OCT03_N1F_PHYSICAL_COMPANIONS=UNBOUND_7_OF_7
 G1_G2_G3=OPEN
 NETWORK=NO BUILD=NO IMAGE_CONTENT_READ=NO DEVICE=NO FLASH=NO
 ```
+
+## Actual ai-g732 R0B execution — PASS, seven direct leaves absent
+
+The operator checked outer ZIP and all four package-manifest entries (**PASS**), ran 20/20 regression tests (**PASS**, 0.005s), and executed the fixed-root metadata-only command. Its actual JSON reported `mode=EXPLICIT_ONE_ROOT_SEVEN_EXACT_LEAF_METADATA`, `status=PASS_EXACT_LEAF_METADATA_ONLY`, `names_checked=7`, `directory_enumeration=false`, `receipt_bytes_read=0`, `image_bytes_read=0`, no symlink follow or subdirectory entry. Each of `boot.img`, `init_boot.img`, `vendor_boot.img`, `dtbo.img`, `vbmeta.img`, `vbmeta_system.img`, and `vbmeta_vendor.img` was **`NOT_PRESENT_AT_THIS_EXACT_ROOT`**. This supersedes earlier R0B NOT_YET_EXECUTED text, but **does not** prove those assets absent elsewhere or revoke N1C's historic V01.00.14 recovery. The earlier R0 TEE14 64-entry cap refusal remains valid.
+
+The next proposal is a **separately authorized R0C one-level filtered 256-name census** (no content reads), not an automatic escalation: [R0C plan and next-image gate status](N1F_P342_N1C_R0C_TEE14_PROVENANCE_AND_NEXT_IMAGE_GATES_V1_20261013.md). R1 exact receipt-content reads, AVB/LP inspection, any image hashing/extraction or device work remain unauthorized.
+
+```text
+R0B_AI_G732=PASS_EXACT_LEAF_METADATA_ONLY
+R0B_SEVEN_DIRECT_LEAVES=NOT_PRESENT_AT_EXACT_ROOT_7_OF_7
+R0C_CAP_INCREASE=NOT_AUTHORIZED
+R0C_AI_G732=NOT_EXECUTED
+R1_RECEIPT_CONTENT=NOT_AUTHORIZED
+```
