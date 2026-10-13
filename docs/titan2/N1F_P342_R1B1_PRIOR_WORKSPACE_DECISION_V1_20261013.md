@@ -83,3 +83,17 @@ OPERATOR_ONE_TWO_SOURCE_READ_AUTHORITY=YES_SELECTED_ONE_ROOT_ONLY
 CURRENT_M4_R1B1_CONTENT_READ_THIS_TURN=NOT_EXECUTED
 SOURCE_MUTATION=NO BUILD=NO IMAGE_READ=NO DEVICE=NO FLASH=NO
 ```
+
+## Final operator execution — actual selected M4 source pair POST/POST (supersedes not-run state)
+
+Operator executed the single approved read-only `N1F_P342_R1B1_SOURCE_V1.zip` two-file check on `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android`: R1 **POST_EXACT**, 541779 bytes SHA256 `2e3ffb1d771cb6977670a800f0a27ffd24a9cf252ff0890e92ac98f9f90e37ca`; B1 **POST_EXACT**, 2547 bytes Git blob SHA1 `9d5108e0ddb8d4960d21cda021813b53dbbf4da8` and raw SHA256 `2bc30b0df7c12eed9157aad57682562a4a0b928794ac55a8b650fa927d2fce1e`. Total exact source bytes **544326**, two fixed files; no enumeration/image/network/host writes/build/device/flash. Status **`PASS_TWO_SOURCE_STATES_IDENTIFIED_NOT_SOURCE_LINEAGE`**. `R1_REAPPLY=NO` and `B1_REAPPLY=NO`; two-file permission **CONSUMED**. The earlier original V38 PRE/PRE and historical M4 POST/POST now have actual latest M4 byte-state confirmation without global source lineage promotion.
+
+**Do not repeat** any R1/B1 scan, patch or 991 project reconstruction. Oct03 physically booted original image and M4 failed Recovery image are separate; the post-mutation M4 source is a **donor**, not an approved boot parent. Next task is to locate, from existing prior receipts only, an exact final M4 source-build manifest/execution receipt that can bind boot-critical changes to the sealed failed M4 artifact and contrast them against the known-good Oct03 source/image. Read only under a *separate future exact-file authorization*; no root scanning or image rehash. [New controlling PASS/hold decision](N1F_P342_M4_R1B1_OPERATOR_PASS_SOURCE_PARENT_HOLD_V1_20261013.md).
+
+```text
+OPERATOR_AI_G732_M4_R1=POST_EXACT_PASS
+OPERATOR_AI_G732_M4_B1=POST_EXACT_PASS
+R1B1_SOURCE_CONTENT_PERMISSION=CONSUMED
+SOURCE_MUTATION_AND_BUILD=NOT_AUTHORIZED
+SOURCE_TO_BOOT_PARENT_FULL_LINEAGE=UNBOUND
+```
