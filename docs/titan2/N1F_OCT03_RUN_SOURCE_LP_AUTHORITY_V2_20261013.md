@@ -48,3 +48,51 @@ OCT03_LP_AVB_RESTORE=UNBOUND
 G1_FINAL_IMAGE=OPEN G2_EFFECTIVE_POLICY=OPEN G3_IMS_NAMESPACE=OPEN
 SOURCE_MUTATION=NO BUILD=NO IMAGE_READ=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
 ```
+
+## Actual ai-g732 operator execution — 2026-10-13 (supersedes local-only pending state)
+
+**BUNDLE_INTEGRITY=PASS**: `N1F_P342_OCT03_RUN_AUTHORITY_V2.zip` exact expected SHA-256 checked; all five package SHA256SUMS entries verified. **V2_TESTS=PASS_27_OF_27** (unittest reported 27 cases, 0.010 s). This is the **actual operator execution**, distinct from the local synthetic test/benchmark figures above.
+
+The bounded read-only `inspect` returned:
+
+```text
+RUN_LOG=PRESENT_REGULAR_FILE
+RUN_LOG_BYTES=90361
+RUN_LOG_READ_POLICY=WHOLE_SMALL_LOG_AT_MOST_192K
+RUN_LOG_SEQUENCE=ORDERED_STATUS_MARKERS
+RUN_LOG_FLASH_SCOPE=HISTORICAL_RUN_SCRIPT_SYSTEM_A_ONLY_STATUS_NOT_LP_BYTES
+N1F_R2_PREFLASH=PASS           OBSERVED_EXACT_STATUS_LINE
+N1F_R2_SYSTEM_A_FLASH=PASS    OBSERVED_EXACT_STATUS_LINE
+N1F_R2_REBOOT=PASS_ONCE       OBSERVED_EXACT_STATUS_LINE
+FACTORY_RESET=NOT_PERFORMED   OBSERVED_EXACT_STATUS_LINE
+N1F_R2_BOOT_RESULT=PASS_ANDROID_BOOT_COMPLETED  OBSERVED_EXACT_STATUS_LINE
+N1F_R2=PASS                  OBSERVED_EXACT_STATUS_LINE
+ARCHIVED_C3A_HEADS=991_VALID_BOUNDED_TSV
+C3A_FASTBOOT_ENTRY_PREFLIGHT_DIR=PRESENT_DIRECTORY
+C3A_OFFLINE_PLAN_DIR=PRESENT_DIRECTORY
+C3A_RUNTIME_RESULT_ENV=PRESENT_REGULAR_FILE
+M4_EXACT_SOURCE_HEADS_COMPARISON=NOT_SUPPLIED
+OCT03_LP_SNAPSHOT_CANDIDATE=NOT_SUPPLIED
+OCT03_MATCHED_COMPANION_LP_PARTITIONS=UNBOUND_7_OF_7
+OCT03_EXACT_MATCHED_LP_METADATA=NOT_BOUND
+OCT03_MATCHED_AVB_RESTORE=NOT_BOUND
+OCT11_ACTUALLY_FLASHED_SUPER_SHA=UNBOUND
+G1=OPEN_FINAL_IMAGE
+G2=OPEN_FINAL_POLICY_AND_CLASSPATH
+G3=OPEN_NATIVE_AND_IMS_NAMESPACE
+NO_OUT_WRITE=YES
+NO_IMAGE_READ=YES
+NO_IMAGE_HASH=YES
+NO_BUILD=YES
+NO_SUPER_REPACK=YES
+NO_SUBPROCESS=YES
+NO_NETWORK=YES
+NO_DEVICE=YES
+NO_FLASH=YES
+```
+
+**What this settles:** The exact six success-status lines exist and are ordered in the archived Oct03 run log. In combination with the previously examined original runner and Oct03 physical boot evidence, this **closes the repeated host run-marker question** at `PASS_HISTORICAL_SYSTEM_A_RUN_STATUS`. The recorded `FACTORY_RESET=NOT_PERFORMED` describes that runner's operation only; it is not a universal userdata-state guarantee. The check did not independently capture raw fastboot writes, prove original disk bytes by a new hash, or prove companion partition identities.
+
+**What it does not settle:** 991 **archived C3A** project-head rows are not the exact resulting N1F-derived/M4 head relationship. Without `--m4-project-heads`, no M4 comparison was run. Without `--oct03-lp-text`, no independently dated Oct03 LP evidence was reviewed. The *presence* of C3A preflight folders is not proof those directories contain matched Oct03 LP/AVB descriptors. Seven unchanged slot-A partition byte identities, LP group/Virtual A/B/snapshot metadata, AVB descriptor/footer boundary and matched stock recovery remain `NOT_BOUND`. Do not substitute Sept30 N1C stock controls or Oct11 R3 `lpmake-command.txt` as Oct03 authority.
+
+**Next decision / stop rule:** **Do not create V3 to repeat log-marker checks, directory scans, 991-project enumeration, image geometry or native-provider inventories.** Restrict any further optional existing-text comparison to an *operator-supplied exact path* and explicit review. In the absence of a positively matched Oct03 LP/AVB snapshot, **HOLD complete hybrid-super assembly and all physical deployment**. If progressing toward a matched super becomes necessary, seek a separately authorized, bounded LP/AVB evidence approach (with specific known inputs and restore-matching constraints); do not treat this planning-only selection as permission to read/hash images, run `lpdump`, contact the device or flash. Source lineage and G1/G2/G3 retain their own gates.
