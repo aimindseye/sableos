@@ -168,6 +168,21 @@ The operator supplied complete stdout from `N1F_P342_OCT03_MATCHED_IMAGE_V1.zip`
 
 Original selected Oct03 `/srv/sable-build/artifacts/titan2/...` fails the strict no-symlink guard because **`/srv/sable-build/artifacts/titan2` is a symlink** with readlink *literal* `/srv/data/sable-build/titan2/artifacts`. Operator's exact parent-path probe returned `STOP_SYMLINK_COMPONENT` and `authority_to_rebind_parent=false`; it did not follow the link or read any image. Only the explicit resulting candidate path `/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img` may receive **separate fixed-path metadata verification** next. Do not assert this target exists, has the Oct03 3,200,540,672 size, or hashes to the historical `dc1f917d...` merely from readlink. The [matched-image Stage A plan](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md) binds this exact observed status, the bounded syntax/test-validated helper and held B1–B4 authorities. No source/build/device/flash escalation.
 
+### Actual canonical-parent metadata PASS; B1-PARENT authorization pending
+
+The operator ran the checksum-pinned canonical parent helper on **ai-g732**: source/test hashes PASS, **11/11 regression tests PASS**, `status=CANDIDATE_REGULAR_FILE_SIZE_MATCH_METADATA_ONLY`. Exact no-extra-symlink regular-file canonical candidate `/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img` is **3,200,540,672 bytes**—equal to historical N1F parent size. This supersedes the preceding paragraph's *pre-run uncertainty*, **but not** the historical SHA qualification: `candidate_sha256_verified=false`, `authority_to_rebind_parent=false`. The original `/srv/sable-build/artifacts/titan2` symlink refusal is still correct.
+
+**B1-PARENT is proposed, NOT AUTHORIZED**: precisely one full SHA256 hash of that 3,200,540,672-byte canonical image, comparing only to historical `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`. A separate optional review-only distribution ZIP `N1F_P342_OCT03_PARENT_B1_V1.zip` (SHA256 `48a2b08bd53cd2e8d4cfd393e9ac21e1b558245ed27e1a38e4721ec68626b91c`) has a safe default metadata-only mode and a separate explicit parent-hash option; local AST PASS and 16/16 synthetic tests PASS, actual ai-g732 B1 image-byte run NOT EXECUTED. [Details, exact scope and remaining evidence limitations](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md). No companion hash/LP/AVB/restore/build/device authority. Oct03 seven companion byte identities, postflash LP/VAB/AVB/restore, G1/G2/G3 remain UNBOUND/OPEN.
+
+```text
+OCT03_CANONICAL_PARENT_METADATA=PASS_REGULAR_FILE_3200540672_BYTES
+OCT03_CANONICAL_PARENT_SHA256=UNVERIFIED_REFERENCE_ONLY
+STAGE_B1_PARENT_ONLY_HASH=PROPOSED_NOT_AUTHORIZED
+STAGE_B1_STOCK_COMPANION_HASHES=NOT_AUTHORIZED
+STAGE_B2_B3_B4=NOT_AUTHORIZED
+BUILD_REPACK_DEVICE_FLASH=NOT_AUTHORIZED
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
