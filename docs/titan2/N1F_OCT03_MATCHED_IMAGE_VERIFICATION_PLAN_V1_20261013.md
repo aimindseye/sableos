@@ -118,6 +118,22 @@ OCT03_POSTFLASH_LP_AVB_RESTORE=NOT_QUALIFIED
 B2_B3_B4_AND_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
 ```
 
+## N1C restoration-receipt provenance R0 plan prepared (host only; not yet run)
+
+The operator authorized **preparing** a next host-only read-only restoration-evidence verification **plan** after the actual B1-parent host SHA PASS; this is not authority to hash stock companions, inspect LP/AVB images, produce a matched restore, build, or flash. Review of project history and GitHub showed merged **PR #218**, **PR #250**, **PR #251** already implemented N1D C0/E4 stock-super and six boot/AVB evidence resolution; do **not** rerun their recursive `find/grep`, image hashes or evidence-writing drivers. The older `aimindseye/unihertz-titan2` Tier 2 E0 restore verification used **V01.00.13/TEE13**, not N1C V01.00.14/TEE14; avoid mismatched version substitution.
+
+New [exact two-root, nonrecursive metadata-only plan](N1F_P342_N1C_RESTORE_RECEIPT_PROVENANCE_PLAN_V1_20261013.md) names **only** `/srv/data/sable-build/evidence/titan2/n1c-stock-super-restore-artifact-r1c-20260930_200124` and `/srv/data/sable-build/evidence/titan2/n1c-restore-tee14-boot-avb-direct-20260930_204335`. `N1F_P342_N1C_RESTORE_RECEIPTS_V1.zip` SHA256 `1995f01afd5e362d36eb7a307efcd45fc0a2bb30a42a05562f9448ea89e847dd` contains Python3 stdlib script, synthetic tests, plan and README. Script SHA256 `f799e1f8193d432bfabe75dd4ce8910f16ce3c0dd576d8addf90935660a9dbb1`, test SHA256 `59899a46204d64282706bb8ab0aab0908888965f9ab2c4d201f3ab08e71f6a1b`. Package/internal 4 SHA checks PASS; both AST PASS; **22/22 local synthetic regression PASS**, standalone test process 0.69s / peak 98,308 KiB; synthetic 1,000 one-level 12-leaf checks median 0.0245ms/p95 0.0506ms; Bash README snippet syntax PASS. **Actual ai-g732 R0=NOT_EXECUTED.**
+
+Default `plan` mode accesses no host filesystem. Explicit `inspect --authorize-two-root-metadata` reads **only immediate entry names and lstat sizes** for up to 64 entries in each of the two fixed directory roots; refuses symlink path components; does not follow leaf symlinks, descend, or open **any** file bytes. No output writes, subprocess, network, ADB/fastboot, image read/hash, LP or AVB tool, firmware, build or flash. Python >=3.10 stdlib; only `sha256sum` and `unzip` required for ZIP verification; do not install host tools. Any R1 bounded text-receipt read needs a **separately pinned exact file list and stage approval** from R0 names. An observed N1C historical restore is not proof of Oct03 N1F same-session physical partition identity.
+
+```text
+B1_OCT03_PARENT_HOST_HASH=PASS_HISTORICAL_REFERENCE_ONLY
+N1C_RESTORE_RECEIPT_R0=PLAN_PREPARED_AI_G732_NOT_EXECUTED
+N1C_RESTORE_RECEIPT_R1=NOT_AUTHORIZED
+OCT03_COMPANION_BYTES=UNBOUND_7_OF_7
+B1_OTHER_IMAGES_B2_B3_B4_C=NOT_AUTHORIZED
+```
+
 ## Next stage gates (B1–B4 still require separate approval)
 
 **A. Current authorization (run now after ZIP verification):** exact-path `lstat` of selected system, seven stock companion **candidate images**, stock super and seven boot/AVB files; inspect two historical recovery evidence roots as directories; read only the named bounded JSON to label pre-control geometry. Refuse symlink path components and non-regular image leaves. Do not scan directories, produce evidence files, open/hash images or claim size=matching content. The Python script's output classifies presence, not Oct03 match; all seven Oct03 content hashes stay **UNBOUND** by construction.
