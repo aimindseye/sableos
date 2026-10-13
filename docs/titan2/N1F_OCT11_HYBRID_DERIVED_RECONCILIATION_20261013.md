@@ -183,6 +183,18 @@ STAGE_B2_B3_B4=NOT_AUTHORIZED
 BUILD_REPACK_DEVICE_FLASH=NOT_AUTHORIZED
 ```
 
+### Actual B1 review-package metadata-only ai-g732 result — HASH NOT EXECUTED
+
+The operator ran the checksum-pinned `N1F_P342_OCT03_PARENT_B1_V1.zip` **without** the image-hash authorization flag: outer ZIP and all three internal hashes PASS, 16/16 regression tests PASS (0.005s), and the default Python probe reported `status=METADATA_PASS_ONLY`, `mode=METADATA_ONLY_DEFAULT`, `observed_bytes=3200540672`. The literal original alias symlink matched the pinned canonical target; the JSON reports `no_image_read=true`, `no_image_hash=true`, and `authority_to_rebind_parent=false`. This supersedes the previous review package's `ai-g732 NOT EXECUTED` note **for review-only mode only**. The full B1 3,200,540,672-byte image SHA-256 **remains NOT EXECUTED and NOT AUTHORIZED**. A matching canonical file size and safe program test do not prove image content. No changes to G1/G2/G3, Oct03 7/7 companion matching, post-N1F LP/AVB, matched restore or physical permissions. See [matched-image verification plan](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md).
+
+```text
+B1_REVIEW_PACKAGE_AI_G732=PASS_16_OF_16
+B1_DEFAULT_METADATA_PROBE_AI_G732=PASS
+B1_PARENT_3200540672_BYTE_HASH=NOT_EXECUTED_NOT_AUTHORIZED
+B1_COMPANION_IMAGE_HASH=NOT_AUTHORIZED
+B2_B3_B4_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
