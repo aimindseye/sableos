@@ -51,6 +51,10 @@ V1_AI_G732_INSPECT=COMPLETE_HOST_ONLY
 
 **Next bounded evidence step:** inspect only the *already-preserved Oct03 run/preflight receipts* that establish `system_a`-only mutation and identify an independently dated, Oct03-matched slot-A LP/AVB snapshot **if one already exists**. Independently compare the existing C3A manifest/head snapshot against a separately pinned M4 source snapshot **only if its exact path is known**; do not re-run 991 `repo forall`, resync source, recursively enumerate host workspaces, execute `lpdump`/`lpmake`, hash the 3.2 GB image, read/extract partitions or contact the phone. If no exact dated LP snapshot exists, report `NOT_BOUND` and ask for a distinct authorization/evidence strategy before hybrid packaging.
 
+## Next distinct host-only receipt — V2 bounded run/source authority
+
+The V1 result above is retained as the **actual ai-g732 operator result**. A different, separately distributed V2 script now examines only first/last 96 KiB of the *existing* Oct03 `run.log`, checks fixed C3A preflight directory metadata, and counts the archived C3A project heads. It may compare an independently supplied exact M4 heads TSV or exact Oct03 LP text receipt, but neither can certify N1F-derived build equivalence or the seven companion LP identities. The 2026-10-03 runner's existing preflash fastbootd/current-slot/COW/snapshot and one-shot `system_a` logic is already source-reviewed; no device replay is requested. See [V2 handoff, SHA pins and 27/27 local tests](N1F_OCT03_RUN_SOURCE_LP_AUTHORITY_V2_20261013.md). **V2_AI_G732=NOT_EXECUTED**, while V1_AI_G732=PASS_23_OF_23. No image bytes, flash or build authorized.
+
 ## Planning matrix — open exact assertions
 
 | Area | Reusable evidence | Open specific gap |
