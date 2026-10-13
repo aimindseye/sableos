@@ -339,6 +339,26 @@ A second project-history/GitHub check recovered **additional genuinely executed 
 
 Thus the historical native work is **even more complete than earlier wording suggested**: `N1I_A_A4_NATIVE_DEPENDENCY_CLOSURE=PASS_ACTUAL_HOST`, `N1I_C2_A4_FINITE_NATIVE_SET=PASS_MANIFEST`, `R2_FIVE_STATIC_IDENTITY_DIRECT_SYM=PASS_PRIOR_SCOPE`. However no reviewed chat-indexed attachment/repo PR discussion supplied a distinct exact-Oct03 N1F five-R2 **full recursive symbol/version + effective IMS app runtime namespace** PASS receipt. Classify this final specific claim **NOT_EVIDENCED_IN_AVAILABLE_SOURCES** (not demonstrated incompatible or universally unresolved). Its possible preexisting report should be *reused rather than rerun* if later found. Details: [build-decision recovered A4 evidence](N1F_OCT03_NEXT_IMAGE_BUILD_DECISION_V1_20261013.md). No R0C, new host file reads, image checks, mutation, build or device activities.
 
+### Exact archived N1I-A A4 two-receipt validation plan — prepared, not run
+
+Historical N1I-A corrected host A4 native dependency audit `PASS` is already established by the main [source audit](https://github.com/aimindseye/sableos/blob/main/docs/titan2/N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE.md), merged PR #319 and PR #326 accepted A4 finite manifest. The **only** next narrow scope is to pin/review the two known existing **text receipt leaves**, not rerun its image/APK/ELF-probing audit; see [N1F P342 exact two-receipt plan](N1F_P342_A4_TWO_RECEIPT_VERIFICATION_PLAN_V1_20261013.md).
+
+Retained root `/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z`. Exact `N1I_A_V010014_OEM_IMS_REPORT.md` SHA256 `08e6dbec6586352589e65f38c5e1e4394c6d0cfc58c762646a8ea9d5d5e6b68c` cap 131072 bytes, and `n1i-a-v010014-oem-ims.env` SHA256 `a7135f5802db40835b8b4563f43ea57d4ddee1da1b37c2b58c0ad77ff47b4de8` cap 32768 bytes. The actual operator **has not authorized or executed** these new text content reads. A correct checksum plus two old `PASS` markers would certify historical A4 receipt provenance only; `G3_FULL_SELECTED_N1F_IMS_RUNTIME_NAMESPACE` remains **NOT_EVIDENCED** (not ABI failure or proof impossible).
+
+Distribution-only ZIP `N1F_P342_A4_TWO_RECEIPT_V1.zip` SHA256 `abbc406742f34d670fbf8ab806e93213773679ea598b3b36f544aa43f8ecdaf7`; Python source SHA `97d4f39ba863f3db7b6090777f20b0477a07debddb29648d0009cbe1b9c45027`, test SHA `25dd31504e56d3ac427684f5c0137404eefd799b5fed141f3f342cc0fb25e03d`; ZIP + 4/4 internal checks PASS, AST both PASS, **30/30 synthetic tests PASS**, README shell syntax PASS. Synthetic two-file 1500-run median/p95 `0.025799ms/0.033191ms`, 110KiB 300-run `0.561032ms/0.691213ms`; max RSS 99092 KiB, not host runtime. Default `plan` no evidence access; actual inspect needs separate opt-in and permission, read-only nofollow exact-two-text, SHA-before-output, no directory listing/file echoes/ELF/images/writes/subprocess/device/build/flash. Python3.10+ stdlib, unzip/sha256sum only. Do not run B2/A4/C0/E4 or repeated parent/R2 scans.
+
+```text
+A4_HOST_NATIVE_PASS=REUSED_PRIOR_EXECUTED
+A4_TWO_RECEIPT_PLAN_PACKAGE=VALIDATED_30_OF_30
+A4_TWO_RECEIPT_AI_G732=NOT_EXECUTED
+A4_TWO_RECEIPT_CONTENT_READ=NOT_AUTHORIZED
+R2_DIRECT_SHA_NEEDED_BIONIC_SYMBOLS=PASS_PRIOR_SCOPE
+R2_FULL_N1F_RUNTIME_NAMESPACE=NOT_EVIDENCED
+OCT03_PARENT_HOST_B1=PASS_HISTORICAL_REFERENCE_ONLY
+R0C_256_INSPECT=NOT_AUTHORIZED
+NEW_IMAGE_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
