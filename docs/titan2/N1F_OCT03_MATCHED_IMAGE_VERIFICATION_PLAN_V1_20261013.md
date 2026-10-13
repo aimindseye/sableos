@@ -96,6 +96,28 @@ B4_RESTORE_QUALIFICATION=NOT_AUTHORIZED
 SOURCE_MUTATION=NO OUTPUT_IMAGE_WRITE=NO NETWORK=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+## B1-PARENT ACTUAL ai-g732 HASH MATCH — completed within one-image authorization
+
+**Actual operator transcript received 2026-10-13:** approved `N1F_P342_OCT03_PARENT_B1_V1.zip` passed outer ZIP SHA and all three internal script/test/README SHA256SUMS checks before invoking `python3 -B n1f_p342_oct03_parent_b1_hash_v1.py --authorize-parent-image-hash`. Its JSON reports `mode=EXPLICIT_B1_PARENT_IMAGE_HASH`, `status=HASH_MATCH_HISTORICAL_REFERENCE_ONLY`, exact canonical image `/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img`, `bytes_read=3200540672`, `input_bytes_expected=3200540672`, and **both actual and expected SHA256 `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`**. Guard flags: `no_image_hash=false`, `no_image_read=false` as expected for the **sole authorized source**; `no_output_write=true`, `no_subprocess=true`, `no_network=true`, `no_device=true`, `no_build=true`, `no_flash=true`. Tool continues to return `authority_to_rebind_parent=false`, `oct03_companion_bytes_proven=false`, `physically_flashed_oct03_image_proven=false`, `post_n1f_lp_and_avb_qualified=false`.
+
+**Accepted narrow result:** `B1_PARENT_HASH=PASS_HISTORICAL_REFERENCE_ONLY`. The exact retained parent host artifact is now independently equal in **content** to its historical SHA-256 receipt, not merely equal in file size. The separately granted authorization for this **one hash pass has been consumed**. Do not rerun it or promote its result to a production parent rebind or a same-session postflash-device-byte certificate. Earlier B1 statuses `AUTHORIZED_NOT_YET_EXECUTED`, `NOT_EXECUTED` and `UNVERIFIED` were correct at their historical step but are **superseded by this actual operator outcome**.
+
+**Still not qualified:** actual physical Oct03 `system_a` readback SHA proof; **all seven** same-session Oct03 companion partition byte identities; Oct03 post-N1F LP/Virtual A/B/snapshot state; stock super and boot/AVB files missing at earlier *specific* TEE14 reference paths; matched AVB descriptors; same-build restorable stock set; Oct11 physical super SHA/journal; G1 installed final image, G2 effective signing/classpath/SELinux, G3 recursive native/IMS namespace. Oct13 M4 `FAIL_RECOVERY` cause remains unproven. No B1 stock companion hash, B2 LP, B3 AVB, B4 restore, build, scratch extraction, repack, network, phone or flash authorized.
+
+**Recommended next decision (NOT AUTHORIZED):** recover **exact host-file provenance** for stock-super and boot/AVB inputs from previously documented N1C restore receipts before undertaking broad companion hashing or LP/AVB binary analysis. Old exact TEE14 directory leaves were absent, while the two known restore evidence directories existed. First define an explicit, bounded read-only manifest/receipt inventory of these **two known paths only**, with no directory-wide searches, image-byte reads, new extraction, or device operations, and obtain separate scope approval before running it. This step cannot on its own establish Oct03 physically matched companions or authorize a super repack.
+
+```text
+B1_PARENT_HASH=PASS_HISTORICAL_REFERENCE_ONLY
+B1_PARENT_BYTES_READ=3200540672
+B1_PARENT_SHA256=dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a
+B1_PARENT_PHYSICAL_OCT03_SYSTEM_A_READBACK=UNBOUND
+B1_PARENT_REBIND_AUTHORIZED=NO
+B1_STOCK_COMPANION_HASHES=NOT_AUTHORIZED
+OCT03_COMPANION_PARTITION_SHA256=UNBOUND_7_OF_7
+OCT03_POSTFLASH_LP_AVB_RESTORE=NOT_QUALIFIED
+B2_B3_B4_AND_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
+```
+
 ## Next stage gates (B1–B4 still require separate approval)
 
 **A. Current authorization (run now after ZIP verification):** exact-path `lstat` of selected system, seven stock companion **candidate images**, stock super and seven boot/AVB files; inspect two historical recovery evidence roots as directories; read only the named bounded JSON to label pre-control geometry. Refuse symlink path components and non-regular image leaves. Do not scan directories, produce evidence files, open/hash images or claim size=matching content. The Python script's output classifies presence, not Oct03 match; all seven Oct03 content hashes stay **UNBOUND** by construction.
