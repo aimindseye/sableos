@@ -416,6 +416,21 @@ G1_G2_G3_NEW_IMAGE=NOT_ADMITTED
 SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### Recovered exact Android16 source-root paths and scope
+
+Operator had no `SELECTED_ANDROID_ROOT`; historic N1F Oct12 workstreams, PR #339 and main `build/titan2/run-n1f-c3a-derived-c3b5-r2.sh`/source env confirm **original N1F Oct03 build source root** `/srv/data/sable-build/workspaces/titan2-n1d/android` and **separate isolated 991/991 C3A-derived M4 source reconstruction root** `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android`. The one-project R1 tree `/srv/data/sable-build/workspaces/n1f-m4-ims01/android/frameworks/base` is not a complete Android root. V38 original PRE/PRE and later M4 POST/POST are **PASS_PRIOR_SCOPE**, not to be repeated for history alone. Source-root identity is now **KNOWN_FOR_THOSE_TWO_HISTORICAL_TREES**; **the source-to-new-Oct03 boot-qualified image lineage remains UNBOUND**. The M4 checkout is the best existing isolated *integration source candidate* for an optional current byte-state recheck under the user's previously authorized exactly-one-root two-file read, **not a certified bootable image parent or a new build approval**. Distinct `/srv/sable-build` and `/srv/data/sable-build` mount/alias relationship remains unverified; no auto-canonicalization or follow-symlink workaround. The existing frozen R1/B1 script ZIP hash/inner 4/4, AST, 34/34 synthetic tests **re-PASS** in assistant container; **no ai-g732 real file bytes read this turn**.
+
+[Exact original-versus-isolated root decision](N1F_P342_R1B1_PRIOR_WORKSPACE_DECISION_V1_20261013.md). No new scanner, no AOSP tool installation, image/ELF reads, G1/G2/G3 promotion, source mutation, build, device or flash. The already-verified October 3 `system.img` SHA is a distinct historical host-image reference. Never repoint an `--android-root` to the **partial** R1-only tree or use M4 Recovery image as an approved parent.
+
+```text
+OCT03_ORIGINAL_SOURCE_ROOT=HISTORIC_PATH_KNOWN
+ISOLATED_M4_RECONSTRUCTION_ROOT=HISTORIC_PATH_KNOWN_991_OF_991
+CURRENT_SOURCE_ROOT_METADATA_AND_R1B1_BYTES=NOT_RECHECKED
+SELECTED_NEW_BOOTING_PARENT_SOURCE_LINEAGE=UNBOUND
+READ_ONLY_EXACT_R1_B1=AUTHORIZED_ON_ONE_SELECTED_ROOT
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
