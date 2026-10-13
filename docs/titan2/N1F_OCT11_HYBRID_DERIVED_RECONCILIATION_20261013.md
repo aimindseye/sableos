@@ -117,6 +117,22 @@ The matched-super LP/AVB authority question was **partly addressed already** by 
 
 This can close **pre-C3A historical geometry provenance** at best. It cannot recover October 3 N1F **postflash** LP/snapshot state, seven companion partition *byte* identities or exact matched AVB descriptors. These remain **NOT_BOUND**; complete hybrid-super assembly/flash remains BLOCKED. No repeated 991-project census, old R2/native/IMS static work, journal search, Oct03 run-log scan, `lpdump` or device probes.
 
+## Actual C3A/E5B LP receipt join PASS (ai-g732, 2026-10-13)
+
+The operator validated V1 ZIP+manifest and completed **23/23 Python tests** (0.007 s reported). The original pre-C3A preflight manifest, its exact JSON member and earlier E5B JSON all satisfy the historical SHA-256 pins. Reused **pre-C3A** LP group `main_a` max **9,661,579,264** bytes, `super` **9,663,676,416** bytes, snapshot `none` and zero active COWs; six of seven companion partition **sizes** appear in the preflight, while `odm_a` is `NOT_BOUND_OR_NOT_RECORDED` (not `ABSENT`). **All seven companion content hashes are UNBOUND to the Oct03 N1F boot session**, and N1F postflash LP/snapshot state, AVB chain and matched restore are NOT_QUALIFIED. See [V1 actual operator outcome](N1F_OCT03_C3A_LP_AVB_RECEIPT_JOIN_V1_20261013.md).
+
+```text
+PRE_C3A_LP_GEOMETRY_HISTORICAL_SEALED=PASS_RECEIPT_LEVEL
+PRE_C3A_COMPANION_RECORDED_SIZES=6_OF_7
+OCT03_N1F_COMPANION_PARTITION_HASHES=UNBOUND_7_OF_7
+OCT03_N1F_POSTBOOT_LP_STATE=UNBOUND
+MATCHED_AVB_CHAIN=NOT_QUALIFIED
+MATCHED_RESTORE=NOT_QUALIFIED
+COMPLETE_HYBRID_SUPER=HOLD_MATCHED_INPUTS
+```
+
+Do **not** repeat the old C3A/E5B metadata join or substitute the Oct11 R3 offline LP recipe for an Oct03-matched whole-super provenance. Progress needs a distinct narrowly scoped authorization for actual matched LP/partition/AVB **image evidence**, followed by separate approval for any build/repack or device action; no such authority is granted here.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
