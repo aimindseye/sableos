@@ -55,6 +55,14 @@ V1_AI_G732_INSPECT=COMPLETE_HOST_ONLY
 
 The V1 result above is retained as the **actual ai-g732 operator result**. A different, separately distributed V2 script now examines only first/last 96 KiB of the *existing* Oct03 `run.log`, checks fixed C3A preflight directory metadata, and counts the archived C3A project heads. It may compare an independently supplied exact M4 heads TSV or exact Oct03 LP text receipt, but neither can certify N1F-derived build equivalence or the seven companion LP identities. The 2026-10-03 runner's existing preflash fastbootd/current-slot/COW/snapshot and one-shot `system_a` logic is already source-reviewed; no device replay is requested. See [V2 handoff, SHA pins and 27/27 local tests](N1F_OCT03_RUN_SOURCE_LP_AUTHORITY_V2_20261013.md). **V2_AI_G732=NOT_EXECUTED**, while V1_AI_G732=PASS_23_OF_23. No image bytes, flash or build authorized.
 
+## V2 operator follow-up received — no further Oct03 run-marker check needed
+
+On ai-g732, the separately linked Oct03 V2 tool completed **27/27 regression tests** (0.010 s reported) and verified the **90,361-byte** original run log's six exact ordered success markers, including the reported one-shot `N1F_R2_SYSTEM_A_FLASH=PASS` and Android boot completion. The already-archived **991 C3A project heads** parsed, and exact C3A preflight directories are present. This closes **historical system_a run-marker evidence only**, not current physical LP metadata, flash image bytes or companion partitions.
+
+Neither an exact M4 heads TSV nor an Oct03-dated LP text receipt was supplied to V2. Thus seven companion LP images, LP/snapshot groups, AVB and matched recovery stay **UNBOUND**, while the C3A-to-M4 exact derived source relationship remains unproven. G1 final composition, G2 effective authority and G3 recursive native/IMS namespace remain open. The current V2 result supersedes the V2 `NOT_EXECUTED` field in the earlier handoff plan; see [actual V2 operator outcome](N1F_OCT03_RUN_SOURCE_LP_AUTHORITY_V2_20261013.md).
+
+**Current direction:** stop repeating bounded host census/log work; complete hybrid super planning is **HOLD_FOR_MATCHED_LP_AVB_AUTHORITY** and requires a separately agreed exact evidence method. No source/image/build/device/flash authorization is implied.
+
 ## Planning matrix — open exact assertions
 
 | Area | Reusable evidence | Open specific gap |
