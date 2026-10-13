@@ -42,3 +42,19 @@ BUILD=NO SOURCE_MUTATION=NO IMAGE_ELF_READ=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
 
 After future user approval, operator can run checksum validation, 30 synthetic tests, plan and the exact two-receipt content inspection; use the script output to decide whether any *remaining, not previously qualified* work exists. Do not rehash the Oct03 3.2GB parent or five R2 ELFs to recreate previous PASS.
+
+## Later operator grant — exact A4 pair content inspection (2026-10-13)
+
+**Superseding, explicit and exact scope:** After receiving ZIP+4-member SHA PASS, 30/30 Python synthetic tests PASS (0.007s) and `PLAN_ONLY_NO_EVIDENCE_FILESYSTEM_ACCESS`, the operator explicitly authorized **one bounded read-only inspection of those exact two historical text receipts**, not generic receipt discovery. Accordingly `A4_TWO_RECEIPT_CONTENT_READ=AUTHORIZED_ONE_ATTEMPT_EXACT_PAIR`; `A4_TWO_RECEIPT_AI_G732=NOT_YET_EXECUTED` until the operator provides the inspect JSON. Earlier sections dated PLAN PREPARED ONLY / NOT AUTHORIZED describe the state *before this later grant*; they do not override it.
+
+**No new implementation tool was needed.** The already frozen `N1F_P342_A4_TWO_RECEIPT_V1.zip` and pinned script contain the exact allowed `inspect --authorize-two-pinned-a4-text-receipts` mode. Current assistant-container audit rechecked ZIP SHA `abbc406742f34d670fbf8ab806e93213773679ea598b3b36f544aa43f8ecdaf7`, `unzip -tqq`, internal manifest 4/4, AST both Python files PASS and local regression **30/30 PASS** (0.012s in repeat check). Repeat classifier 1500 in-memory samples median **0.0035ms**, p95 **0.0041ms** on assistant host, not real evidence file/hardware measurements. Prior two-file synthetic ~110KiB performance and safety tests retained. Existing historical source generator `build/titan2/audit-n1i-a-v010014-oem-ims.sh` confirms the two literal output filenames; do NOT rerun it because it hashes/reads entire stock/APK/ELF/APEX and writes new evidence. Main documentation/merged #319 accepted prior PASS. No tool installation needed beyond host `python3>=3.10`, `unzip`, `sha256sum`.
+
+**Authorized existing exact host procedure:** run the checksum-pinned existing package with its original README steps, then the exact inspect mode below.
+
+Actual release-safe verification and inspect command is in the handoff README; use outer sha256 `abbc406742f34d670fbf8ab806e93213773679ea598b3b36f544aa43f8ecdaf7`, `sha256sum -c`, `unzip -tqq`, fresh `mktemp` extraction in /tmp, `sha256sum -c N1F_P342_A4_TWO_RECEIPT_V1_SHA256SUMS.txt`, and finally:
+```bash
+python3 -B n1f_p342_a4_two_receipt_v1.py inspect --authorize-two-pinned-a4-text-receipts
+```
+The `mktemp`/unzip operations write only disposable *distribution* files in /tmp; the **evidence inspection itself** does not write. It opens two exact regular text files under `/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z` (SHA report `08e6dbec6586352589e65f38c5e1e4394c6d0cfc58c762646a8ea9d5d5e6b68c`, SHA env `a7135f5802db40835b8b4563f43ea57d4ddee1da1b37c2b58c0ad77ff47b4de8`) with size caps 131072 and 32768 bytes; no symlinks/descents/lists, no raw receipt echoes and no Python subprocess or network. A root-symlink refusal must not be bypassed or replaced with a guessed alias.
+
+**Operator result remains pending**. On `PASS_HISTORICAL_A4_RECEIPTS_NOT_RUNTIME_NAMESPACE`, bind old A4 receipt hashes and markers as PASS; retain `G3_SELECTED_N1F_FULL_FIVE_R2_NAMESPACE=NOT_ESTABLISHED_BY_TWO_A4_RECEIPTS`. No R0C cap approval, LP/AVB, image hash, source/build, device, flash, PR merge or native re-analysis is implied.
