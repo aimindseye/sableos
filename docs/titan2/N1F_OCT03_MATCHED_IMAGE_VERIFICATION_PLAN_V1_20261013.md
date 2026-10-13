@@ -42,6 +42,20 @@ The operator supplied the complete stdout from the **actual ai-g732 execution** 
 
 **Decision:** `STAGE_A_AI_G732=PASS_EXECUTION_WITH_INPUT_PATH_GAPS`; `OCT03_PARENT_METADATA=REFUSED_SYMLINK_COMPONENT`; `N1C_SIX_REFERENCE_IMAGE_PATHS=PRESENT_NOT_HASHED`; `OCT03_COMPANION_BYTES=UNBOUND_7_OF_7`; `N1F_POSTFLASH_LP=UNBOUND`; `AVB_AND_RESTORE=NOT_QUALIFIED`. No final-image G1/G2/G3 gate closes. Stage B1/B2/B3/B4 and assembly/device/flash remain **NOT AUTHORIZED**. Do not repeat Stage A 30 tests, previous E5B/C3A metadata joins, 991 source census, N1F run history, M4 skip-mount probe or broad searches.
 
+## Exact Oct03 parent symlink component — actual ai-g732 readlink result
+
+Operator executed the previously checksum-pinned **metadata-only** `n1f_p342_oct03_parent_path_probe_v1.py`. The received result: `status=STOP_SYMLINK_COMPONENT`, `component=/srv/sable-build/artifacts/titan2`, `symlink_target_literal=/srv/data/sable-build/titan2/artifacts`, unresolved suffix `n1f-c3a-derived-c3b5/20261003T221350Z/system.img`. Script emitted `no_image_read=true`, `no_image_hash=true`, `no_symlink_follow=true`, `no_output_write=true`, `no_subprocess=true`, `no_device_contact=true`, `authority_to_rebind_parent=false`. **This establishes only an exact literal symlink explanation for the Stage A refusal**; the target's existence/leaf size/hash is not established. V1's refuse-by-design rule is correct and must not be disabled.
+
+The **single explicit candidate** formed from that literal, *not yet bound*, is:
+
+```text
+/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img
+```
+
+Next **metadata-only** helper `n1f_p342_oct03_canonical_parent_metadata_v1.py` (conversation bundle, **not committed to Android repo**) pins both path strings, requires the original symlink still match the literal exactly, sequentially `lstat`s each component of the explicit candidate, refuses any additional symlink, requires a final regular file, and compares its `st_size` to historical 3,200,540,672 bytes. It reports **`candidate_sha256_verified=false` and `authority_to_rebind_parent=false` even on size match**. Script SHA256 `ba923fbcfbc4d6cba8a95f38ed18980b131d51d07de0b46038877fff593535d5`, test companion SHA256 `963289e2275838fd2a426d1072b90f6a242692bdebe51543d2211f44a14764d1`; both Python AST PASS, local synthetic **11/11 PASS** (0.001 s test runtime); 1000-repeat synthetic median 0.0049 ms/p95 0.0064 ms. **ai-g732 canonical-target check NOT EXECUTED**; these performance measurements are synthetic, not actual host file metadata timing. The probe has no image-open, hashing, scan, subprocess, network, device or output-write code.
+
+No B1/B2/B3/B4 image-byte, LP/AVB/restore authority, no build/repack or device/flash approval. Historical C3A/N1F boot PASS unchanged; 7/7 Oct03 companion byte identities, postflash LP/VAB, matched AVB/restore, G1/G2/G3 remain OPEN/UNBOUND.
+
 ## Next stage gates (B1–B4 still require separate approval)
 
 **A. Current authorization (run now after ZIP verification):** exact-path `lstat` of selected system, seven stock companion **candidate images**, stock super and seven boot/AVB files; inspect two historical recovery evidence roots as directories; read only the named bounded JSON to label pre-control geometry. Refuse symlink path components and non-regular image leaves. Do not scan directories, produce evidence files, open/hash images or claim size=matching content. The Python script's output classifies presence, not Oct03 match; all seven Oct03 content hashes stay **UNBOUND** by construction.
