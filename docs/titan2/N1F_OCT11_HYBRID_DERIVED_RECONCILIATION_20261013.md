@@ -111,6 +111,12 @@ NEXT=REQUIRE_OPERATOR_PARENT_DECISION
 
 The V2-stage recommendation, now **approved for planning only**, was **explicitly selecting Oct03 N1F as a different offline parent**, not relabeling it Oct11; doing so by itself authorizes no build, image extraction or packaging. A complete hybrid `super.img` would still need a separately proven LP/AVB/restore composition, with exact source/unchanged partitions and effective embedded `system_ext` and `product` qualified. G1 final-image, G2 and G3 remain open.
 
+## Sealed historical C3A LP evidence reuse (2026-10-13, V1 pending operator execution)
+
+The matched-super LP/AVB authority question was **partly addressed already** by sealed C3A fastboot-entry preflight evidence from 2026-10-03 20:30:47Z (`SHA256SUMS.txt` pin `47f28c371f13974d3a7303dc550014502401fae55a76bb365139f29e4c2da893`) and the earlier E5B `main_a` group baseline JSON from 05:34:41Z (SHA256 `74531923a9ea6c755a9f8ea52db511c4a4a19a5d9dba3cb51da342c04b768926`). The original preflight checked slot A, fastbootd, snapshot `none`, no active COW and capacity; N1F's historical 22:13:50Z `system_a` flash/Android boot markers are already verified separately. A new bounded Python 3 **receipt join V1** inspects only these exact small textual artifacts, their hash seals, LP group maximum and any recorded companion partition **sizes**, without reading an image or contacting the Titan 2. [Scope, 23/23 local tests, checksum-sealed downloadable tool and run instructions](N1F_OCT03_C3A_LP_AVB_RECEIPT_JOIN_V1_20261013.md). **Operator ai-g732 run pending.**
+
+This can close **pre-C3A historical geometry provenance** at best. It cannot recover October 3 N1F **postflash** LP/snapshot state, seven companion partition *byte* identities or exact matched AVB descriptors. These remain **NOT_BOUND**; complete hybrid-super assembly/flash remains BLOCKED. No repeated 991-project census, old R2/native/IMS static work, journal search, Oct03 run-log scan, `lpdump` or device probes.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
