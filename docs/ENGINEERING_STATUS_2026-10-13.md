@@ -52,3 +52,17 @@ R0C_256_TEE14_DIRECTORY_METADATA_AUTHORIZATION=NO
 G3_FIVE_R2_EFFECTIVE_NEW_IMAGE_NAMESPACE=NOT_EVIDENCED
 BUILD=NO FLASH=NO DEVICE=NO
 ```
+
+## Late October 13 R1/B1 source qualification no-repeat decision
+
+Operator R1/B1 V1 outer/inner package SHA PASS, **34/34** tests (0.021s ai-g732), `PLAN_ONLY_NO_HOST_FILESYSTEM_ACCESS` PASS; user subsequently granted one read-only 2MiB/file exact R1+B1 source check in **the selected** Android16 workspace. Before executing, archived PR #339 V38 actual result already seals original `/srv/data/sable-build/workspaces/titan2-n1d/android` R1 PRE/B1 PRE; later isolated M4 source `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android` R1 POST/B1 POST after official TelephonyMetrics patch integration. Those are **different lineages** and neither is automatically the selected clean Oct03-derived *next* checkout. M4 source resulted in M4 Recovery physical boot. Do not rerun V38 or M4 checks as if new; do not spend the authorization on a guessed root. New exact source root and source→Oct03 system image lineage `UNBOUND`, actual new source bytes `NOT_READ`. Existing V1 no-write tool ZIP SHA `d5d51bf25b725c6254cef39038caed60c486a0901893a33a7440a77e899dfa1b`; assistant repeat AST/inner manifest/34 local synthetic regressions PASS. Details: [source-root selection reconciliation](titan2/N1F_P342_R1B1_PRIOR_WORKSPACE_DECISION_V1_20261013.md). No source mutation, image/build/repack, host A4/R2 redo, new LP/AVB, R0C 256 TEE14, device or flash authority.
+
+```text
+R1B1_OPERATOR_PACKAGE_TEST_PLAN=PASS
+R1B1_ORIGINAL_V38=PRE_PRE_PRIOR_PASS
+R1B1_M4_ISOLATED=POST_POST_PRIOR_PASS
+R1B1_SINGLE_NEW_SELECTED_ROOT_READ=AUTHORIZED_CONDITIONAL_ROOT_BINDING
+R1B1_NEW_OCT03_DERIVED_ROOT=UNBOUND
+R1B1_NEW_FILE_READ=NOT_EXECUTED
+BUILD=NO SOURCE_MUTATION=NO DEVICE=NO FLASH=NO
+```
