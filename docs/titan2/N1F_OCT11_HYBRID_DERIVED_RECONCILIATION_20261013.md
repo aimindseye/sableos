@@ -287,6 +287,26 @@ G1=OPEN G2=OPEN G3=OPEN
 SOURCE_MUTATION=NO BUILD=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### Corrected G1/G2/G3 status — completed scoped PASS, new-image admission delta only
+
+The operator flagged that the previous simplistic table marked **all three gates “open” as if earlier work had not been completed**. Review of archived PR #339 operator results confirms this framing was misleading. **New [scope-qualified G1/G2/G3 reuse and next-image delta audit](N1F_P342_G123_PRIOR_PASS_REUSE_AND_NEXT_IMAGE_DELTA_V1_20261013.md)** is controlling for inherited evidence: G1 M4 selected product graph/source/capture and embedded 11/11 image-member hashes **PASS_PRIOR_SCOPE**, with `skip_mount.cfg` byte matching; G2 M11 cryptographic SableOS platform cert, APK manifest sharedUID declaration and M4 API36 two semantic bootclasspath records **PASS_PRIOR_SCOPE**, with XML/policy-file hashes; G3 five R2 inputs/56 direct NEEDED/19 Bionic/four unversioned symbol bindings and six M4 provider ELFs **PASS_PRIOR_SCOPE**. Do **not** rerun M11 14,094 targeted build, M4 full system image SHA, classpath, prior ELF/symbol static work or flashing regressions to re-establish these receipts.
+
+**Open is exact *new Oct03-derived target admission***, not an absence of M4 engineering: G1 selected new-source-to-final effective embedded image (M4 physically FAIL_RECOVERY); G2 effective merged SELinux/privapp/UID/classloader/mount precedence in that new final image; G3 full recursive versions and actually available IMS process linker namespace/installed R2 path. These cannot transfer by assertion. PR #339 build engineer reviewed same boundaries; no source/build/image/device permission implied by a catalog PASS. Seven Oct03 physical companion bytes, postflash LP/VAB/AVB, matched restore and Oct11 physical super remain unbound.
+
+New checksum-sealed **report-only** `N1F_P342_G123_REUSE_V1.zip` SHA256 `ad7ffeea5d5fbd00d256946d3b86136d326227c632a4aba7aaf4a391a4486850` contains historical operator-source ledger and Python validator; two AST PASS, **20/20 synthetic tests PASS**, 1.38s full test process / 98,696 KiB peak, 1000 in-memory classification median 0.00199ms/p95 0.00215ms; ZIP/internal checksum PASS. It reads no ai-g732 host evidence or image and performs no build/source/device/network operations; output `PASS_CATALOG_INTEGRITY_ONLY_NO_NEW_ENGINEERING_ADMISSION` must not be mistaken for G1/G2/G3 PASS_NEW_TARGET.
+
+Actual operator R0C so far: archive integrity and **22/22 tests PASS**, `PLAN_ONLY_NO_FILESYSTEM_ACCESS` only; `R0C_256_INSPECT=NOT_AUTHORIZED`. Do not raise R0=64 entry cap or enumerate the TEE14 evidence root without separate user approval.
+
+```text
+G1_M4_GRAPH_CONTENT_SKIP_MOUNT=PASS_PRIOR_SCOPE
+G2_M11_SIGNER_MANIFEST_M4_API36_BCP=PASS_PRIOR_SCOPE
+G3_R2_5_ELF_56_NEEDED_19_BIONIC_4_GNU_M4_6_ELF=PASS_PRIOR_SCOPE
+G1_G2_G3_NEW_IMAGE_ADMISSION=OPEN_EXACT_DELTA
+R0C_OPERATOR=PLAN_AND_22_TESTS_ONLY
+R0C_256_IMMEDIATE_NAMES_INSPECT=NOT_AUTHORIZED
+BUILD_REPACK_NETWORK_DEVICE_FLASH=NOT_AUTHORIZED
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
