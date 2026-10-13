@@ -307,6 +307,26 @@ R0C_256_IMMEDIATE_NAMES_INSPECT=NOT_AUTHORIZED
 BUILD_REPACK_NETWORK_DEVICE_FLASH=NOT_AUTHORIZED
 ```
 
+### Actual G123 catalog on ai-g732 complete; next image has two build choices
+
+The operator's **actual** `N1F_P342_G123_REUSE_V1.zip` SHA and internal five-file SHA manifest PASS, **20/20 tests PASS (0.031s)**, and report `PASS_CATALOG_INTEGRITY_ONLY_NO_NEW_ENGINEERING_ADMISSION` (zero image reads, no host evidence revalidation, build, network or device). Negative argparse `inspect` output inside test 12 was **expected**. The prior reviewed **G1 M4 product/embedded + skip_mount**, **G2 M11 platform APK signer/manifest + M4 two API36 boot jars**, **G3 five R2 inputs / 56 DT_NEEDED / 19 Bionic / four direct symbols / six M4 ELF** checks remain **PASS_PRIOR_SCOPE**. This is NOT a new full-image G1/G2/G3 PASS and does not repair failed M4 boot.
+
+The [new Oct03-derived next-image decision](N1F_OCT03_NEXT_IMAGE_BUILD_DECISION_V1_20261013.md) reuses the existing [archived PR #339 exact source mutation plan](https://github.com/aimindseye/sableos/blob/n1i-d1r4-cw1-compiled-checkpoint-20261011/docs/titan2/N1F_M4_EXACT_MUTATION_AND_BUILD_AUTHORIZATION_PLAN_20261012.md) and existing C1 product modules. **No new implementation script was written because existing owner modules, exact source patch plans and built-in host tools already cover the work.** New proposals distinguish **A** — R1+B1+C1 **host-only build to inspect image G1/G2**, with R2 excluded and **no physical flash** due historically observed VT risk — from **B** — full IMS R1+B1+C1+R2 **after G3 runtime namespace closure**. Both require separate exact source/revision binding and new source/build permission. Complete super repack/LP/AVB/matched restore and physical flash still distinct, unapproved gates. Existing old combined N1F/C1 build-flash drivers must NOT run.
+
+Current R0C on ai-g732 is **checksum/tests/PLAN ONLY** (22/22) with no directory inspection; new 256-entry cap remains **NOT_AUTHORIZED**. Seven Oct03 physical companion hashes and LP/AVB/restore remain unbound. Avoid repeating the already-passed large-image hash, 991 census, M11 build, M4 file/BCP checks, 56-edge crawl, seven-directory restore searches or G123 catalog.
+
+```text
+G123_AI_G732=PASS_CATALOG_ONLY_20_OF_20
+G1_G2_G3_HISTORICAL_M4_COMPONENTS=PASS_PRIOR_SCOPE
+G1_G2_G3_SELECTED_NEXT_IMAGE=OPEN_TARGET_DELTA
+OCT03_PARENT_HOST_SHA256=PASS_HISTORICAL_REFERENCE_ONLY
+NEXT_IMAGE_OPTION_A_HOST_BUILD=PLAN_ONLY_NOT_AUTHORIZED
+NEXT_IMAGE_OPTION_B_R2_INTEGRATION=BLOCKED_PENDING_G3
+R0C_256_IMMEDIATE_NAME_INSPECTION=NOT_AUTHORIZED
+OCT03_PHYSICAL_COMPANIONS=UNBOUND_7_OF_7
+BUILD=NO SOURCE_MUTATION=NO REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
