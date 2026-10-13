@@ -431,6 +431,25 @@ READ_ONLY_EXACT_R1_B1=AUTHORIZED_ON_ONE_SELECTED_ROOT
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### R1/B1 final selected M4 source PASS — consumed exact two-file authority
+
+**Actual ai-g732 operator execution:** SHA-verified frozen R1/B1 source inspector read exactly two fixed files under `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android`, **544326 total bytes**, no enumeration/images/writes/build/network/device/flash. `frameworks/base/core/res/AndroidManifest.xml` 541779 bytes SHA256 `2e3ffb1d771cb6977670a800f0a27ffd24a9cf252ff0890e92ac98f9f90e37ca` = **R1 POST_EXACT**; `frameworks/opt/telephony/src/java/com/android/internal/telephony/metrics/TelephonyMetrics.java` 2547 bytes proper Git blob `9d5108e0ddb8d4960d21cda021813b53dbbf4da8`, raw SHA256 `2bc30b0df7c12eed9157aad57682562a4a0b928794ac55a8b650fa927d2fce1e` = **B1 POST_EXACT**. `PASS_TWO_SOURCE_STATES_IDENTIFIED_NOT_SOURCE_LINEAGE`; patch reapplications **NO/NO**, one-time source-file read permission **CONSUMED**. Supersedes earlier R1/B1 source INSPECT_NOT_EXECUTED. This is **PASS_M4_SOURCE_TWO_FILES**, not complete 991 source-to-Oct03-image provenance or final G1/G2/G3 image admission. [Detailed PASS and next source/parent hold](N1F_P342_M4_R1B1_OPERATOR_PASS_SOURCE_PARENT_HOLD_V1_20261013.md).
+
+**Next nonduplicative engineering handoff:** Review exact *already retained* M4 final build source-manifest/exec-receipt linkage and boot-critical differences from separate physically booted Oct03 image. No named final `repo manifest -r` / source-build receipt cryptographically linked to M4 image is established by available PR records; do not infer absent on host or rerun 991 source census, M11, full image hash, 11/11 members, API36 BCP, historic A4/C2 or R2 static analysis. Known source deltas include C3B TrebleApp removal, PHH guard/marker, root-folder packaging, R1/B1; compiled `skip_mount` and embedded classpath tests passed prior bounded scope, but M4 Android still **FAIL_RECOVERY** with unknown root cause. The Oct03 `dc1f917d...` booted parent and M4 `261ee714...` failed image remain separate. Any next host-only R1+B1+C1 build, additional exact small-host-receipt read, image work, source edit, full super or device flash requires separate new authorization and explicit artifact/input binding. Seven Oct03 physical companions/LP/AVB/restore and G3 selected IMS runtime namespaces remain unbound; R0C 256 one-level TEE14 inventory unapproved.
+
+Review-only distribution ZIP `N1F_P342_SOURCE_TO_PARENT_DECISION_V1.zip` outer SHA256 `cedada92caab92b130268b477bac2aed31a95b17011948a824a795dc4997cf5d`, inner checks 3/3 PASS, decision JSON invariants 8 PASS. **No new script**: original R1/B1 verifier outer+inner checksum AST syntax and 34/34 local tests PASS (0.034s core, 0.81s wall, 100488 KiB max RSS), synthetic 400 × 589866-byte classifier median **0.5179ms**, p95 **0.7166ms** (assistant host), not ai-g732 actual source-read latency.
+
+```text
+R1B1_SELECTED_M4_AI_G732=PASS_POST_POST_EXACT
+R1B1_REAPPLY=NO
+R1B1_READ_AUTHORITY=CONSUMED
+SOURCE_TO_OCT03_BOOT_PARENT_LINEAGE=NOT_YET_BOUND_FULL
+M4_PHYSICAL_ANDROID_BOOT=FAIL_RECOVERY_CAUSE_UNPROVEN
+R2_PRIOR_STATIC_AND_A4_NATIVE_AUDIT=PASS_PRIOR_SCOPE
+G1_G2_G3_NEW_SELECTED_IMAGE=NOT_ADMITTED
+SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
