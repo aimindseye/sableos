@@ -37,3 +37,18 @@ OCT03_PARENT_HOST_SHA=PASS_HISTORICAL_REFERENCE_ONLY
 R0C_256_INSPECT=NOT_AUTHORIZED
 SOURCE_MUTATION=NO NEW_BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 late checkpoint — actual A4 two receipts SHA PASS; R1/B1 preflight sealed
+
+Operator's explicit once-authorized ai-g732 exact two **historical N1I-A A4 text** inspection: `PASS_HISTORICAL_A4_RECEIPTS_NOT_RUNTIME_NAMESPACE`; `N1I_A_V010014_OEM_IMS_REPORT.md` SHA PASS (25,683 bytes), `n1i-a-v010014-oem-ims.env` SHA PASS (6,678 bytes); both `N1I_A_NATIVE_DEPENDENCY_CLOSURE=PASS` and `N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE=PASS` confirmed from markers. No image/ELF read, extraction, build or phone. `A4_TWO_RECEIPT_CONTENT_READ_PERMISSION=CONSUMED` and **historical A4 provenance now verified**. This does not prove selected next-image `R2_FULL_IMS_APP_NAMESPACE`; keyword-only report presence flags cannot refute possible semantic G3 evidence elsewhere.
+
+The next [source-state V1 plan](titan2/N1F_P342_R1B1_EXACT_SOURCE_STATE_PLAN_V1_20261013.md) uses **already previewed and Git-pinned** R1 Manifest SHA PRE/POST and B1 TelephonyMetrics Git-blob PRE/POST, avoids duplicating PR339 R1 preview or R2/IMS qualified code. External ZIP `N1F_P342_R1B1_SOURCE_V1.zip` SHA `d5d51bf25b725c6254cef39038caed60c486a0901893a33a7440a77e899dfa1b`. Local source/test Python AST PASS, 34/34 synthetic regression PASS, ZIP and inner manifest PASS, 400 synthetic two-file samples median 0.635ms/p95 0.846ms, **real ai-g732 R1/B1 source reads NOT AUTHORIZED / NOT RUN**. Script defaults to no-host-access `plan`; future exact two-source read (<=4MiB total) requires identified selected Android16 checkout and separate approval. Source mutation, Android build, LP/AVB/super, device and flash still held. G1/G2/G3 new image admission must be based on new target artifact, not inherited M4 audit.
+
+```text
+A4_OPERATOR_TWO_RECEIPT_HASH_AND_MARKERS=PASS
+R1_B1_SOURCE_STATE_PREFLIGHT=PREPARED_TESTED_PLAN_ONLY
+R1_B1_TWO_SOURCE_READ_AUTHORIZATION=NO
+R0C_256_TEE14_DIRECTORY_METADATA_AUTHORIZATION=NO
+G3_FIVE_R2_EFFECTIVE_NEW_IMAGE_NAMESPACE=NOT_EVIDENCED
+BUILD=NO FLASH=NO DEVICE=NO
+```
