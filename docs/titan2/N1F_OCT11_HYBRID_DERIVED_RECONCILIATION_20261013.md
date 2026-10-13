@@ -375,6 +375,27 @@ R0C_256_ENTRY_INSPECT=NOT_AUTHORIZED
 BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual October 5 A4 receipts rebound PASS; new R1/B1 source-state next step
+
+The operator's **actual** previously authorized ai-g732 two-text inspector returned `PASS_HISTORICAL_A4_RECEIPTS_NOT_RUNTIME_NAMESPACE`: exact historical report 25,683 bytes SHA MATCH and env 6,678 bytes SHA MATCH; **32,361 bytes** total, both `N1I_A_NATIVE_DEPENDENCY_CLOSURE` and `N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE` true, `native_unresolved_none=true`. Neither report mentions verified GNU version/VERNEED/linker namespace labels; the script reports only word-presence, **not semantic proof of their absence**. Directory enumeration=false, file contents echoed=false, image/ELF bytes read=0, filesystem mutation/network/build/device/flash=false. The one-time A4 exact-two-receipt scope **was consumed**; historical A4 native dependency host PASS provenance now VERIFIED, **no rerun** of A4/B2/R2 required. [Sealed executed A4 result](N1F_P342_A4_TWO_RECEIPT_VERIFICATION_PLAN_V1_20261013.md).
+
+To progress toward the next *distinct* Oct03-derived host-only image without repeating A4, M11, R2 five identity/56 direct/19 Bionic/V28 four direct GNU probes, the Oct03 image SHA, 991 heads or R1 already-PASS patch preview, a **new report-only exact two-file source-state preflight** is prepared: [N1F P342 R1/B1 exact source-state plan](N1F_P342_R1B1_EXACT_SOURCE_STATE_PLAN_V1_20261013.md). It reuses the archived PR339 **R1 Manifest PRE and POST SHA256** and **B1 TelephonyMetrics PRE and POST Git blobs**, compares only two source files in a future separately selected approved Android16 checkout, and outputs exact PRE/POST or BLOCK. ZIP `N1F_P342_R1B1_SOURCE_V1.zip` SHA256 `d5d51bf25b725c6254cef39038caed60c486a0901893a33a7440a77e899dfa1b`, script SHA `14f03c679a9483aa5f306b5420028ade34edbd391c398699f3d9a358986c8e56`, test SHA `bc337e61085574e80b3f6099d85f587524cc8c77054644104066d0b07fa09ad0`. Python AST both PASS, 34/34 synthetic unit tests PASS (0.030s; whole process 0.72s/100,364KiB max RSS), synthetic 589,824-byte two-file check 400 iterations median **0.635ms**/p95 **0.846ms**, all local assistant host. ZIP/in-manifest PASS. Default `plan` no host file reads; **ai-g732 R1/B1 source content not authorized or executed**. Explicit selected actual workspace root still UNBOUND; no symlink or guessed path substitutions permitted.
+
+This does not imply full `G1/G2/G3` admission, approve any R1/B1 mutation, C1 native integration, isolated Android build, super repack, seven Oct03 companion evidence, R0C 256-entry TEE14 scan or device operation. Full selected privileged IMS process namespace/recursive GNU-version R2 closure remains **NOT_EVIDENCED**, not FAIL_ABI. The previously executed PR339 R1 no-write preview and actual M4 C1 content remain PASSED at original scope.
+
+```text
+A4_AI_G732_TWO_RECEIPTS=PASS_PINNED_SHA_2_OF_2
+A4_HISTORIC_NATIVE_CLOSURE=PASS_OPERATOR_VERIFIED_PROVENANCE
+A4_ONE_TIME_CONTENT_SCOPE=CONSUMED
+R1_B1_NEXT_SOURCE_STATE_PREFLIGHT=READY_PLAN_ONLY_34_TESTS
+R1_B1_REAL_SELECTED_SOURCE=UNBOUND
+R1_B1_CONTENT_READ_AUTHORIZED=NO
+G1_G2_G3_NEW_SELECTED_IMAGE=NOT_YET_ADMITTED
+R2_FULL_EFFECTIVE_IMS_NAMESPACE=NOT_EVIDENCED
+R0C_256_ENTRY_TEE14_INSPECT=NOT_AUTHORIZED
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
