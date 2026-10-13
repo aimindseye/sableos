@@ -359,6 +359,22 @@ R0C_256_INSPECT=NOT_AUTHORIZED
 NEW_IMAGE_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
 ```
 
+### Explicit operator grant to read exactly two N1I-A A4 text receipts
+
+The operator's actual host run of `N1F_P342_A4_TWO_RECEIPT_V1.zip` **PASSED ZIP outer/inner hashes, 30/30 synthetic tests (0.007s), and PLAN_ONLY**. Operator then **explicitly authorized one bounded read-only inspection** of exactly the previously-pinned `N1I_A_V010014_OEM_IMS_REPORT.md` (cap 128KiB, SHA `08e6dbec6586352589e65f38c5e1e4394c6d0cfc58c762646a8ea9d5d5e6b68c`) and `n1i-a-v010014-oem-ims.env` (cap 32KiB, SHA `a7135f5802db40835b8b4563f43ea57d4ddee1da1b37c2b58c0ad77ff47b4de8`) under `/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z`. Existing tool's `inspect --authorize-two-pinned-a4-text-receipts` is the **only approved evidence-content read**. **Actual ai-g732 inspect not yet executed**; neither files' contents have been delivered in this checkpoint. Fail-closed on nofollow/root/leaf errors or SHA/size mismatch without changing paths or elevating authority.
+
+No redundant new script: exact two-leaf verifier already tested, syntactically checked and frozen (outer ZIP `abbc406742f34d670fbf8ab806e93213773679ea598b3b36f544aa43f8ecdaf7`, assistant reran local 30/30 tests in 0.012s, and classifier microbenchmark median/p95 0.0035/0.0041ms in 1500 in-memory samples). Historical executed A4 + C2 compatibility-manifest + five R2 static direct/name/limited GNU checks remain **PASS_PRIOR_SCOPE** regardless of this verification. If two-receipt hash/marker results PASS, classify only **`PASS_HISTORICAL_A4_RECEIPTS_NOT_RUNTIME_NAMESPACE`**, *not* recursive complete ABI or selected N1F effective IMS runtime G3 PASS. Full three-gate next-image admission, 7 Oct03 companions, LP/AVB/restore, R0C 256-name TEE14 enumeration, source/build, device and flash still separately held.
+
+```text
+A4_EXACT_TWO_RECEIPT_OPERATOR_AUTHORIZATION=YES_ONE_TIME
+A4_EXACT_TWO_RECEIPT_AI_G732_INSPECTION=NOT_YET_RUN
+A4_PRIOR_NATIVE_AUDIT=PASS_ACTUAL_HISTORICAL_SCOPE
+R2_FIVE_PREVIOUS_STATIC_DEPENDENCIES=PASS_PRIOR_SCOPE
+G3_SELECTED_N1F_FULL_RUNTIME_NAMESPACE=NOT_EVIDENCED
+R0C_256_ENTRY_INSPECT=NOT_AUTHORIZED
+BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
