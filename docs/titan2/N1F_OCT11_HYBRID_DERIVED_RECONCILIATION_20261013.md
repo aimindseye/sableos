@@ -139,12 +139,12 @@ The operator explicitly authorized preparing the **host-only matched-image verif
 
 **New [exact-input Stage A preflight and B1–B4 stage plan](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md)** uses the operator-approved physically booted **Oct03 N1F** `system.img` identity and the existing **TEE14 large-reference** stock candidate root from the N1C checkpoint. The N1C reference includes six recorded stock partition SHA-256 pins, **none** proving those partitions' bytes were present in the Oct03 N1F boot session. `odm_a` has no historical pin; do not classify it ABSENT merely because the reference or preflight did not record it. Pre-C3A main_a group geometry and V1 receipt-chain integrity already passed and should not be repeated.
 
-Current Stage A executable: **fixed-path `lstat` metadata** for one Oct03 system image, seven stock companion image candidates, stock `super.img`, seven boot/AVB files and two known restore evidence directories; reads at most one **128 KiB** already-qualified C3A JSON. No image bytes, no new checksum claims, no directory scans, output writes, external tools or device. Python AST syntax PASS, local **30/30 regression tests PASS**, synthetic median 0.341ms/p95 0.508ms; ZIP checksum-pinned in linked plan. **AI_G732_V1=NOT_EXECUTED**.
+Current Stage A executable: **fixed-path `lstat` metadata** for one Oct03 system image, seven stock companion image candidates, stock `super.img`, seven boot/AVB files and two known restore evidence directories; reads at most one **128 KiB** already-qualified C3A JSON. No image bytes, no new checksum claims, no directory scans, output writes, external tools or device. Python AST syntax PASS, local **30/30 regression tests PASS**, synthetic median 0.341ms/p95 0.508ms; ZIP checksum-pinned in linked plan. **AI_G732_V1=EXECUTED — 30/30 tests PASS; input-path exceptions still open**.
 
 ```text
 OCT03_SELECTED_PARENT=OFFLINE_PLANNING_ONLY
 STAGE_A_EXACT_INPUT_METADATA_PREFLIGHT=AUTHORIZED_HOST_ONLY
-STAGE_A_RUN_AI_G732=NOT_EXECUTED
+STAGE_A_RUN_AI_G732=PASS_EXECUTION_WITH_INPUT_PATH_GAPS
 STAGE_B1_CANDIDATE_IMAGE_HASHES=NOT_AUTHORIZED
 STAGE_B2_LP_METADATA_BINARY_INSPECTION=NOT_AUTHORIZED
 STAGE_B3_AVB_BINARY_INSPECTION=NOT_AUTHORIZED
@@ -157,6 +157,12 @@ G1_FINAL_IMAGE=OPEN G2_EFFECTIVE_AUTHORITY=OPEN G3_IMS_NATIVE_NAMESPACE=OPEN
 ```
 
 Existing C0 LP/AVB tools and `build/config/host-tools.env` will be reused **only if B stages are separately approved**; no unreviewed `lpdump`, `simg2img`, `lpunpack`, `avbtool`, massive hashing, or generic host tool discovery is introduced by Stage A.
+
+### Stage A actual ai-g732 execution, 2026-10-13 (supersedes pre-run text)
+
+The operator supplied complete stdout from `N1F_P342_OCT03_MATCHED_IMAGE_V1.zip`: outer ZIP and six internal checksums PASS; script/test exact hashes PASS; AST PASS both files; 30/30 Python regression tests PASS (0.017 s), 0.029 s inspect wall time. This only verifies the preflight code and bounded metadata checks; it **does not** perform or qualify image-byte hashing.
+
+**Important:** selected Oct03 parent `system.img` returned `REFUSED_SYMLINK_COMPONENT`, therefore no fresh leaf metadata or SHA. Six N1C TEE14 reference companion file paths returned `PRESENT_REGULAR_FILE`, `odm.img` not present at checked path. Stock-root `super.img` and seven boot/AVB names not present **at those exact paths**; both historical restore evidence directories exist, but directory presence is not restore qualification. All seven Oct03 companion image identities and matched post-N1F LP/AVB/restore remain unbound. The narrow next handoff is *parent path-component symlink target metadata only*, not bypassing the guard; B1–B4/C remain unauthorized. See [actual operator Stage A findings and six sizes](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md).
 
 ## Decision gates / physical stop
 
