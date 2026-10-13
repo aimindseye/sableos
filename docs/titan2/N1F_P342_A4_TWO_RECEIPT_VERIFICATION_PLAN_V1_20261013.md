@@ -58,3 +58,50 @@ python3 -B n1f_p342_a4_two_receipt_v1.py inspect --authorize-two-pinned-a4-text-
 The `mktemp`/unzip operations write only disposable *distribution* files in /tmp; the **evidence inspection itself** does not write. It opens two exact regular text files under `/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z` (SHA report `08e6dbec6586352589e65f38c5e1e4394c6d0cfc58c762646a8ea9d5d5e6b68c`, SHA env `a7135f5802db40835b8b4563f43ea57d4ddee1da1b37c2b58c0ad77ff47b4de8`) with size caps 131072 and 32768 bytes; no symlinks/descents/lists, no raw receipt echoes and no Python subprocess or network. A root-symlink refusal must not be bypassed or replaced with a guessed alias.
 
 **Operator result remains pending**. On `PASS_HISTORICAL_A4_RECEIPTS_NOT_RUNTIME_NAMESPACE`, bind old A4 receipt hashes and markers as PASS; retain `G3_SELECTED_N1F_FULL_FIVE_R2_NAMESPACE=NOT_ESTABLISHED_BY_TWO_A4_RECEIPTS`. No R0C cap approval, LP/AVB, image hash, source/build, device, flash, PR merge or native re-analysis is implied.
+
+## Actual ai-g732 authorized two-receipt inspection — PASS (supersedes pending state)
+
+Operator's 2026-10-13 provided run: outer ZIP pinned SHA PASS; four internal checksums PASS; exact authorized `python3 -B n1f_p342_a4_two_receipt_v1.py inspect --authorize-two-pinned-a4-text-receipts` returned **`status=PASS_HISTORICAL_A4_RECEIPTS_NOT_RUNTIME_NAMESPACE`**. This closes the one-time exact-two-content-read authority by successful execution, not merely by the earlier 30 synthetic tests.
+
+```text
+mode=EXPLICIT_EXACT_TWO_A4_TEXT_RECEIPTS
+root=/srv/sable-build/evidence/titan2/n1i-a-oem-ims/20261005T002256Z
+file_count=2
+N1I_A_V010014_OEM_IMS_REPORT.md bytes_read=25683 sha256_match=true
+n1i-a-v010014-oem-ims.env bytes_read=6678 sha256_match=true
+TOTAL_RECEIPT_BYTES_READ=32361
+exact_two_receipt_sha256=PASS
+historical_a4_markers_pass=true
+N1I_A_NATIVE_DEPENDENCY_CLOSURE=true
+N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE=true
+native_unresolved_none=true
+report_mentions_native_dependency=true
+report_scope_terms_present_only.dt_needed=true
+report_scope_terms_present_only.native_dependency=true
+report_scope_terms_present_only.gnu.version=false
+report_scope_terms_present_only.symbol_version=false
+report_scope_terms_present_only.verneed=false
+report_scope_terms_present_only.linker_namespace=false
+report_scope_terms_present_only.linker.config=false
+full_five_r2_recursive_abi_namespace_admitted=false
+full_namespace_classification=NOT_ESTABLISHED_BY_TWO_A4_RECEIPTS
+directory_enumeration=false
+image_bytes_read=0
+elf_bytes_read=0
+file_contents_echoed=false
+filesystem_mutation=false
+subprocess=false network=false build=false device=false flash=false
+```
+
+These keyword flags are **presence-only**, not a complete semantic inventory of file contents; the two exact SHA matches and A4 PASS markers are the controlling evidence for *historical static* provenance. The historical R2 five-library identities, 56 direct edges, 19 Bionic bounded version cases, V28 four direct symbols and C2 finite A4 manifest also remain PASS_PRIOR_SCOPE. Do **not** rerun N1I-A A4, B2, the two-receipt checker, the five R2 hashes or the 3.2GB October 3 parent.
+
+**Only still unbound G3 portion** is full transitive GNU symbol/version plus *effective selected N1F-derived image* privileged `com.mediatek.ims` process linker namespace/provider reachability. The A4 result does not prove that, nor an ABI failure. The next different-scope handoff (R1/B1 source-state planning) is separate and does **not** inherit this consumed two-receipt read permission.
+
+```text
+A4_TWO_RECEIPTS_AI_G732=PASS_SHA256_2_OF_2
+A4_TWO_RECEIPTS_CONTENT_READ_AUTHORITY=CONSUMED_ONE_COMPLETED_INSPECTION
+A4_NATIVE_HISTORICAL=PASS_ACTUAL_RECEIPTS_REBOUND
+R2_PRIOR_SCOPE=PASS_REUSE
+G3_FULL_SELECTED_N1F_RUNTIME_NAMESPACE=NOT_ESTABLISHED_BY_THIS_EVIDENCE
+A4_REINSPECTION_AUTHORIZED=NO
+```
