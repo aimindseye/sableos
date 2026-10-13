@@ -133,6 +133,31 @@ COMPLETE_HYBRID_SUPER=HOLD_MATCHED_INPUTS
 
 Do **not** repeat the old C3A/E5B metadata join or substitute the Oct11 R3 offline LP recipe for an Oct03-matched whole-super provenance. Progress needs a distinct narrowly scoped authorization for actual matched LP/partition/AVB **image evidence**, followed by separate approval for any build/repack or device action; no such authority is granted here.
 
+## Matched-image verification plan approved (host-only Stage A, 2026-10-13)
+
+The operator explicitly authorized preparing the **host-only matched-image verification plan from explicitly identified inputs**. This is **not blanket authority** to read/hash image bytes, extract partitions, run LP/AVB binary tools, construct a hybrid super, build, contact the device or flash.
+
+**New [exact-input Stage A preflight and B1–B4 stage plan](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md)** uses the operator-approved physically booted **Oct03 N1F** `system.img` identity and the existing **TEE14 large-reference** stock candidate root from the N1C checkpoint. The N1C reference includes six recorded stock partition SHA-256 pins, **none** proving those partitions' bytes were present in the Oct03 N1F boot session. `odm_a` has no historical pin; do not classify it ABSENT merely because the reference or preflight did not record it. Pre-C3A main_a group geometry and V1 receipt-chain integrity already passed and should not be repeated.
+
+Current Stage A executable: **fixed-path `lstat` metadata** for one Oct03 system image, seven stock companion image candidates, stock `super.img`, seven boot/AVB files and two known restore evidence directories; reads at most one **128 KiB** already-qualified C3A JSON. No image bytes, no new checksum claims, no directory scans, output writes, external tools or device. Python AST syntax PASS, local **30/30 regression tests PASS**, synthetic median 0.341ms/p95 0.508ms; ZIP checksum-pinned in linked plan. **AI_G732_V1=NOT_EXECUTED**.
+
+```text
+OCT03_SELECTED_PARENT=OFFLINE_PLANNING_ONLY
+STAGE_A_EXACT_INPUT_METADATA_PREFLIGHT=AUTHORIZED_HOST_ONLY
+STAGE_A_RUN_AI_G732=NOT_EXECUTED
+STAGE_B1_CANDIDATE_IMAGE_HASHES=NOT_AUTHORIZED
+STAGE_B2_LP_METADATA_BINARY_INSPECTION=NOT_AUTHORIZED
+STAGE_B3_AVB_BINARY_INSPECTION=NOT_AUTHORIZED
+STAGE_B4_MATCHED_RESTORE_REVIEW=NOT_AUTHORIZED
+STAGE_C_BUILD_REPACK_DEVICE_FLASH=NOT_AUTHORIZED
+OCT03_MATCHED_SEVEN_COMPANION_PARTITION_BYTES=UNBOUND_7_OF_7
+OCT03_N1F_POSTFLASH_LP_METADATA=UNBOUND
+AVB_AND_RESTORE=NOT_QUALIFIED
+G1_FINAL_IMAGE=OPEN G2_EFFECTIVE_AUTHORITY=OPEN G3_IMS_NATIVE_NAMESPACE=OPEN
+```
+
+Existing C0 LP/AVB tools and `build/config/host-tools.env` will be reused **only if B stages are separately approved**; no unreviewed `lpdump`, `simg2img`, `lpunpack`, `avbtool`, massive hashing, or generic host tool discovery is introduced by Stage A.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
