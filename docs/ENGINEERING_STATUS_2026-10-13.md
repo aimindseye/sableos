@@ -66,3 +66,18 @@ R1B1_NEW_OCT03_DERIVED_ROOT=UNBOUND
 R1B1_NEW_FILE_READ=NOT_EXECUTED
 BUILD=NO SOURCE_MUTATION=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 source-state admission completion — R1/B1 POST/POST actual ai-g732
+
+Operator's exact authorized two-file source inspector on `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android` **PASS**: R1 `AndroidManifest.xml` 541779 bytes SHA256 `2e3ffb1d771cb6977670a800f0a27ffd24a9cf252ff0890e92ac98f9f90e37ca` POST_EXACT; B1 `TelephonyMetrics.java` 2547 bytes Git blob `9d5108e0ddb8d4960d21cda021813b53dbbf4da8`, SHA256 `2bc30b0df7c12eed9157aad57682562a4a0b928794ac55a8b650fa927d2fce1e` POST_EXACT; 544326 bytes read total and no enumeration/writes/other tools/images/device. Status `PASS_TWO_SOURCE_STATES_IDENTIFIED_NOT_SOURCE_LINEAGE`. `R1_B1_PATCH_REAPPLY=NO_NO`; the one-time two-file source read **was consumed**. Independent R1/B1 source-slice closure is now concrete; it is not final G1/G2/G3 admission or proof selected build state produced Oct03 known booting image.
+
+Review-only next deliverable [source-to-parent/boot-critical decision](titan2/N1F_P342_M4_R1B1_OPERATOR_PASS_SOURCE_PARENT_HOLD_V1_20261013.md); distribution ZIP `N1F_P342_SOURCE_TO_PARENT_DECISION_V1.zip` SHA `cedada92caab92b130268b477bac2aed31a95b17011948a824a795dc4997cf5d`, internal 3/3 SHA/JSON 8 invariants PASS. Existing Python R1/B1 checker revalidated ZIP+4 inner, AST both, 34/34 local unittest (0.034s; 0.81s process/100488KiB RSS) and 400 synthetic 589866-byte in-memory classifications median 0.5179ms/p95 0.7166ms (not host timing). No additional script needed. Earlier Oct03 booting image SHA `dc1f917d...` and M4 failed-to-Recovery image SHA `261ee714...` are separate; M4 exact full build source-to-final-image manifest and boot-critical delta *not fully bound*. Prior M4 11/11 embedded hash and API36 bootclasspath, five R2 bounded native and A4 two-receipt PASS preserved. Seven Oct03 companion/LP/AVB/rollback, process-effective G3 and fresh build/device permissions stay held.
+
+```text
+R1_B1_SELECTED_M4_SOURCE=PASS_POST_EXACT_POST_EXACT
+R1_B1_PATCH_NEEDED=NO_NO
+R1_B1_TWO_FILE_AUTHORITY=CONSUMED
+NEXT_DELIVERABLE=SOURCE_PARENT_BOOT_CRITICAL_RECONCILIATION_NO_BUILD
+NEXT_BUILD=NO
+SOURCE_MUTATION=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
