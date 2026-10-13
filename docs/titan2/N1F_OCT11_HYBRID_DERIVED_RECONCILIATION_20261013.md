@@ -228,6 +228,23 @@ G1_G2_G3=OPEN
 BUILD_REPACK_NETWORK_DEVICE_FLASH=NO
 ```
 
+### N1C stock-restoration receipt provenance R0 — prepared, operator run pending
+
+As requested by the operator, the next bounded **host-only read-only restoration-evidence verification plan** is documented in [N1F_P342_N1C_RESTORE_RECEIPT_PROVENANCE_PLAN_V1_20261013.md](N1F_P342_N1C_RESTORE_RECEIPT_PROVENANCE_PLAN_V1_20261013.md). Prior project chats and GitHub audit show N1C stock super + TEE14 boot/AVB restore already succeeded historically, and **merged PR #218/#250/#251** already fixed C0/E4 stock image discovery; repeating these full drivers would redundantly read/hash images, recursively search and write reports. The older Titan 2 Tier2 stock E0 restorer hashes **V01.00.13/TEE13** and cannot substitute for N1C **V01.00.14/TEE14** provenance.
+
+The new R0 package N1F_P342_N1C_RESTORE_RECEIPTS_V1.zip has SHA256 `1995f01afd5e362d36eb7a307efcd45fc0a2bb30a42a05562f9448ea89e847dd`; script AST PASS, synthetic **22/22 tests PASS**, 1,000 synthetic bounded checks median 0.0245 ms / p95 0.0506 ms. It inventories only **immediate names and file metadata** for at most **64 children each** under the **two already-known** N1C super-restore and TEE14 boot/AVB evidence directories, and only after explicit `inspect --authorize-two-root-metadata`. Default `plan` mode does not inspect directories. No receipt contents, image byte/hash, recursion, symlink following, subprocess, output write, network or phone. `R0_AI_G732=NOT_EXECUTED`; do not claim exact manifest leaf names or stock firmware same-session association yet. An R1 exact bounded text-receipt review is a **future separate scope**, not authorized by the operator's plan-preparation request.
+
+```text
+OCT03_N1F_PARENT_HOST_B1_HASH=PASS_HISTORICAL_REFERENCE_ONLY
+N1C_HISTORICAL_SUPER_BOOT_AVB_RESTORE=PASS_PREVIOUS_N1C_SCOPE_ONLY
+N1C_RESTORE_RECEIPT_R0=PLAN_PREPARED_AI_G732_NOT_EXECUTED
+N1C_RESTORE_RECEIPT_R1=NOT_AUTHORIZED
+OCT03_COMPANION_SHA256=UNBOUND_7_OF_7
+OCT03_POSTFLASH_LP_AVB_RESTORE=NOT_QUALIFIED
+B1_OTHER_IMAGES_B2_B3_B4=NOT_AUTHORIZED
+BUILD_REPACK_NETWORK_DEVICE_FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
