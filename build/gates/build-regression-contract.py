@@ -46,7 +46,8 @@ required_ids = {
     "BR-001", "BR-002",
     "T2-001", "T2-002", "T2-003", "T2-004", "T2-005", "T2-006",
     "T2-007", "T2-008", "T2-009", "T2-010", "T2-011", "T2-012",
-    "T2-013", "T2-014", "T2-015", "T2-016", "T2-017",
+    "T2-013", "T2-014", "T2-015", "T2-016", "T2-017", "T2-018",
+    "T2-019", "T2-020", "T2-021",
 }
 if len(ids) != len(set(ids)):
     failures.append("ledger_duplicate_ids")
@@ -74,6 +75,16 @@ property_contexts = read(
 )
 a4_ref = read("product/titan2/n1i-c1/a4-native-superset.txt")
 postbuild_qualifier = read("build/titan2/qualify-n1i-c1-postbuild.sh")
+c2_driver = read("build/titan2/run-n1i-c2-cellular-mvp.sh")
+c2_bp = read("product/titan2/n1i-c2/Android.bp")
+c2_mk = read("product/titan2/n1i-c2/sable-titan2-n1i-c2.mk")
+c2_collision_audit = read("build/titan2/audit-n1i-c2-install-collisions.py")
+c2_native_planner = read("build/titan2/plan-n1i-c2-native-install.py")
+c2_native_plan_test = read("tests/titan2/n1i-c2/test-native-install-plan.py")
+c2_native_preflight = read("build/titan2/run-n1i-c2-native-install-preflight.sh")
+c2_native_baseline_probe = read("build/titan2/probe-n1i-c2-c1-native-baseline.sh")
+c2_platform_reuse = read("product/titan2/n1i-c2/platform-native-reuse.tsv")
+central_guard = read("build/gates/titan2-central-flash-guard-contract.sh")
 
 check(
     "BR-001",
@@ -91,7 +102,7 @@ check(
     "gitleaks_source_commit_scoped",
 )
 
-active_titan_text = "\n".join((adapter, driver, bp, mk))
+active_titan_text = "\n".join((adapter, driver, bp, mk, c2_driver, c2_bp, c2_mk))
 check(
     "T2-001",
     "N1D_AOSP_REVISION=android-16.0.0_r4" in fresh
@@ -113,7 +124,9 @@ check(
     "T2-002",
     all(token not in active_titan_text for token in forbidden)
     and "SABLE_ADB" not in driver
-    and "SABLE_FASTBOOT" not in driver,
+    and "SABLE_FASTBOOT" not in driver
+    and "SABLE_ADB" not in c2_driver
+    and "SABLE_FASTBOOT" not in c2_driver,
     "unsafe_compatibility_and_device_write_bypasses_absent",
 )
 
@@ -215,8 +228,11 @@ check(
     and len(set(a4_rows)) == 33
     and "REFERENCE ONLY" in a4_ref
     and "a4-native-superset.txt" in contract
-    and "native-paths.txt" not in driver,
-    "a4_native_superset_reference_only",
+    and "native-paths.txt" not in driver
+    and '--a4-reference "$A4"' in c2_native_preflight
+    and "IMPORT_FROZEN_STOCK" in c2_native_planner
+    and "REUSE_C1_IDENTICAL" in c2_native_planner,
+    "a4_native_superset_reference_only_and_runtime_collision_filtered",
 )
 
 fragile_aapt_pipelines = (
@@ -292,6 +308,94 @@ check(
     and "/system_ext/framework/SableN1IC1MediatekCommon.jar" not in driver
     and "/system_ext/framework/SableN1IC1MediatekImsBase.jar" not in driver,
     "configured_jar_locations_match_installed_stems",
+)
+
+
+check(
+    "T2-018",
+    'python3 "$ROOT/build/gates/build-regression-contract.py"' in c2_driver
+    and c2_driver.find('python3 "$ROOT/build/gates/build-regression-contract.py"')
+        < c2_driver.find('mkdir -p "$C3B_STAGE/prebuilt" "$C1_STAGE" "$C2_STAGE/prebuilt"'),
+    "c2_release_driver_runs_shared_regression_before_staging",
+)
+
+c2_prebuilt_targets = set(
+    re.findall(
+        r'srcs:\s*\["prebuilt(/(?:system|system_ext|product)/[^"]+\.so)"\]',
+        c2_bp,
+    )
+)
+c2_direct_native_packages = set(
+    re.findall(r"\bSableN1IC2NativeM\d{3}\b", c2_mk)
+)
+check(
+    "T2-019",
+    "N1I_C2_INSTALL_OWNERSHIP_AUDIT" in c2_collision_audit
+    and len(c2_prebuilt_targets) == 33
+    and c2_prebuilt_targets == set(a4_rows)
+    and not c2_direct_native_packages
+    and "native-packages.mk" in c2_mk
+    and "REUSE_C1_IDENTICAL" in c2_native_planner
+    and "REUSE_C1_PLATFORM_DIFFERENT" in c2_native_planner
+    and "IMPORT_FROZEN_STOCK" in c2_native_planner
+    and "BLOCK_C1_DIFFERENT" in c2_native_planner
+    and "EXPECTED_PLATFORM_REUSE" in c2_native_planner
+    and c2_platform_reuse.count("\nM") == 5
+    and "M008\t/system/lib64/android.hardware.radio-V4-ndk.so\tandroid.hardware.radio-V4-ndk" in c2_platform_reuse
+    and "M017\t/system/lib64/android.hardware.graphics.common-V6-ndk.so\tandroid.hardware.graphics.common-V6-ndk" in c2_platform_reuse
+    and "M029\t/system/lib64/android.hardware.drm-V1-ndk.so\tandroid.hardware.drm-V1-ndk" in c2_platform_reuse
+    and "M038\t/system/lib64/libheif.so\tlibheif" in c2_platform_reuse
+    and "M039\t/system/lib64/libsuspend.so\tlibsuspend" in c2_platform_reuse
+    and "BLOCK_GRAPH_OWNER_NOT_IN_C1" in c2_native_planner
+    and "--collision-tsv" in c2_native_planner
+    and "n1i-c1-cellular-isolation/20261005T133622Z-a745c7daa082-postbuild"
+        in c2_native_preflight
+    and "36b53950faebc954cadb30756833ae5ec857f054"
+        in c2_native_preflight
+    and "audit-n1i-c2-install-collisions.py" in c2_native_preflight
+    and 'PRIOR_FAILED_INSTALLS="$PRIOR_FAILED_OUT/soong/installs-treble_arm64_bvN.mk"' in c2_native_preflight
+    and '--installs-file "$PRIOR_FAILED_INSTALLS"' in c2_native_preflight
+    and "plan-n1i-c2-native-install.py" in c2_native_preflight
+    and "--platform-reuse-decisions" in c2_native_preflight
+    and "NATIVE_BASELINE_PROBE.tsv" in c2_native_preflight
+    and "NATIVE_COMPOSITION.tsv" in c2_native_preflight
+    and "EXPECTED_C1_SHA=\"137bc8771c817c0afb3122d9f03e7a94575e03bcccc643b56235edd1075f2160\"" in c2_native_baseline_probe
+    and "N1I_C2_C1_NATIVE_BASELINE_PROBE=PASS" in c2_native_baseline_probe
+    and "NATIVE_BASELINE_PROBE.tsv" in c2_native_baseline_probe
+    and "android.hardware.drm-V1-ndk.so" in c2_native_preflight
+    and "N1I_C2_NATIVE_INSTALL_PREFLIGHT=PASS" in c2_native_preflight
+    and "android.hardware.drm-V1-ndk.so" in c2_native_plan_test
+    and "N1I_C2_NATIVE_INSTALL_PLAN_KNOWN_KATI_COLLISION_PLATFORM_REUSE=PASS"
+        in c2_native_plan_test
+    and "N1I_C2_NATIVE_INSTALL_PLAN_PLATFORM_REUSE_SET=PASS"
+        in c2_native_plan_test,
+    "c2_native_install_is_collision_qualified_with_finite_platform_reuse_set",
+)
+
+check(
+    "T2-020",
+    c2_driver.count("#!/usr/bin/env bash") == 1
+    and c2_driver.count("selfcheck() {") == 1
+    and c2_driver.count('echo "===== APPLY EXACT C2 SOURCE DELTA ====="') == 1
+    and c2_driver.count(
+        'echo "===== BUILD ONE ANDROID 16 CELLULAR MVP SYSTEMIMAGE ====="'
+    ) == 1
+    and c2_driver.count('make systemimage -j"$JOBS"') == 1,
+    "c2_build_driver_singleton_structure",
+)
+
+central_guard_lines = central_guard.splitlines()
+check(
+    "T2-021",
+    central_guard_lines.count("#!/usr/bin/env bash") == 1
+    and central_guard_lines.count(
+        'say "===== TITAN2 CENTRAL FLASH GUARD CONTRACT ====="'
+    ) == 1
+    and central_guard_lines.count(
+        '  say "TITAN2_CENTRAL_FLASH_GUARD_CONTRACT=PASS"'
+    ) == 1
+    and 'TITAN2_CENTRAL_GUARD_SINGLETON_STRUCTURE' in central_guard,
+    "titan2_central_guard_singleton_structure",
 )
 
 if failures:

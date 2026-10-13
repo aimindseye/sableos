@@ -104,6 +104,25 @@ engineering lane, including:
 - allowing configured boot-jar module names to diverge from installed JAR stems
   without `PRODUCT_CONFIGURED_JAR_LOCATION_OVERRIDES`, which can produce
   classpath metadata pointing at non-existent on-device filenames.
+- allowing a release-specific Titan build path to bypass the shared build
+  regression contract merely because a release-local contract or the central
+  flash guard passed. Active release drivers must run the shared regression
+  contract before source staging/mutation or build work;
+- treating a collision-free module name as sufficient native admission. Native
+  prebuilts must be checked against install destinations, not just module names.
+  The N1I-C2 failure on `/system/lib64/android.hardware.drm-V1-ndk.so` proved
+  that a unique Sable module can still collide with a platform-owned final path.
+  Before the next C2 build, every frozen native target is compared against the
+  exact sealed C1 image: byte-identical C1 targets are reused and therefore not
+  listed in C2 `PRODUCT_PACKAGES`; C1-absent targets alone are installed from
+  the frozen stock bundle; C1-present-but-different targets fail closed before
+  Kati. The Kati install-graph audit remains a second-line verifier and is also
+  captured automatically after a failed build when an install graph exists.
+- allowing iterative remediation edits to concatenate an active build driver.
+  Release-specific drivers are structural singletons: one script header, one
+  self-check, one reviewed source-delta phase, and one authorized build call.
+  The shared regression contract rejects duplicated/concatenated driver bodies
+  before source mutation or build authorization.
 
 ## Post-build reuse rule
 

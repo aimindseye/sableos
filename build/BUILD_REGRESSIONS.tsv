@@ -12,9 +12,13 @@ T2-008	TITAN2	ACTIVE	N1I-B2 supersedes A4 keyword native import; first C1 import
 T2-009	TITAN2	ACTIVE	System_ext output verification follows TARGET_COPY_OUT_SYSTEM_EXT rather than assumed host layout	build/titan2/run-n1i-c1-cellular-isolation.sh
 T2-010	TITAN2	ACTIVE	C1 preserves C3A/N1F registration-data behavior; OEM IMS is the only new functional delta	build/titan2/run-n1i-c1-cellular-isolation.sh
 T2-011	TITAN2	ACTIVE	Canonical shared AOSP host tools are verified; per-build host-tool discovery is not reintroduced	build/titan2/run-n1i-c1-cellular-isolation.sh
-T2-012	TITAN2	ACTIVE	A4 33-file native set is retained as reference evidence only, never as a product input	product/titan2/n1i-c1/a4-native-superset.txt
+T2-012	TITAN2	ACTIVE	A4 33-file native set remains reference candidate evidence and is never wholesale-installed; any C2 subset must be baseline/install-owner collision-qualified before product admission	product/titan2/n1i-c1/a4-native-superset.txt
 T2-013	TITAN2	ACTIVE	APK identity verification captures complete aapt2 output before matching and never depends on early-closing grep pipelines	build/titan2/run-n1i-c1-cellular-isolation.sh
 T2-014	TITAN2	ACTIVE	Active Titan build drivers do not enable errexit or pipefail; critical command return codes are checked explicitly	build/titan2/run-n1i-c1-cellular-isolation.sh
 T2-015	TITAN2	ACTIVE	Tmux build sessions use remain-on-exit so completed or failed sessions stay attachable for inspection	build/titan2/run-n1i-c1-cellular-isolation.sh
 T2-016	TITAN2	ACTIVE	N1I-C1 post-build qualification is read-only, requires explicit source/out binding, uses no strict shell mode, and never compiles or contacts/flashes a device	build/titan2/qualify-n1i-c1-postbuild.sh
 T2-017	TITAN2	ACTIVE	Bootclasspath module names with stock-compatible stems require PRODUCT_CONFIGURED_JAR_LOCATION_OVERRIDES so classpath metadata matches installed jar filenames	product/titan2/n1i-c1/sable-titan2-n1i-c1.mk
+T2-018	TITAN2	ACTIVE	Every active Titan release-specific build driver runs the shared build-regression contract before source mutation or build	build/titan2/run-n1i-c2-cellular-mvp.sh
+T2-019	TITAN2	ACTIVE	C2 native installs are collision-qualified against sealed C1 and the retained Kati graph: 28 frozen imports plus exactly five reviewed Android 16 platform providers; all other C1-different or owner-drift states fail closed before mutation/build	build/titan2/plan-n1i-c2-native-install.py
+T2-020	TITAN2	ACTIVE	N1I-C2 build driver is structurally singleton: one selfcheck, one source-delta phase and one systemimage build; accidental concatenation is rejected	build/titan2/run-n1i-c2-cellular-mvp.sh
+T2-021	TITAN2	ACTIVE	Titan central flash guard is structurally singleton: one shebang, one guard header and one PASS terminator; accidental concatenation is rejected	build/gates/titan2-central-flash-guard-contract.sh
