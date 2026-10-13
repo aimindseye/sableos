@@ -12,6 +12,45 @@ Operator explicitly selected the physically boot-qualified **October 3 N1F C3A-d
 - Existing N1C postmortem, N1D C0/ E5B Virtual A/B and LP assessments, stock TEE14 recovery evidence and PR #339 R3 LP metadata are **historical references only**. A physically booted Oct03 `system_a` does not prove all `vendor_a/product_a/system_ext_a/odm_a/*_dlkm_a` byte identities and LP group sizes match archived stock or R3.
 - PR #339 V17 journal search already negative in its two scoped directories; PR #342 V2 negative filename-only scan in Downloads already sealed. Do not repeat source 991-head audits, targeted M11 compile, five ELF SHA / 56 DT_NEEDED, R3/R8 provenance, V1 receipts or M4 `skip_mount.cfg` source/staging check. The latter is **PASS**, SHA `0a30008c167d46e3177e9189fcb14e482325c4f08da4f47c9d708a6700f2483e`, but not flashed-image proof.
 
+## Actual ai-g732 V1 outcome — operator 2026-10-13
+
+The operator checked the distributed ZIP checksum and the four individual package SHA-256 manifest entries (**PASS**). Python regression tests **23/23 PASS** (unittest reported 0.044 s test time). Read-only `inspect` reported no output writes, no image byte read or hash, no build, subprocess, network, device or flash.
+
+```text
+OCT03_PARENT_ROLE=C3A_DERIVED_C3B5_BOOT_ISOLATION
+OCT03_PARENT_SYSTEM_SHA256_HISTORICAL=dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a
+OCT03_SYSTEM_BYTES_HISTORICAL=3200540672
+OCT03_IMAGE_HOST_STATE=PRESENT_REGULAR_FILE
+OCT03_IMAGE_STAT_SIZE_MATCH=YES
+OCT03_ARTIFACT_ENV=PRESENT_BOUNDED_TEXT
+OCT03_ARTIFACT_ENV_SHA_SIZE_ROLE=PASS_HISTORICAL_RECORDS
+OCT03_SHA256SUMS=PRESENT_BOUNDED_TEXT
+OCT03_TWO_RECORDED_DIGESTS_MATCH=YES
+OCT03_CURRENT_IMAGE_BYTE_HASH=NOT_PERFORMED
+C3A_REPO_MANIFEST=PRESENT_REGULAR_FILE
+C3A_ALL_PROJECT_HEADS=PRESENT_REGULAR_FILE
+C3A_DIRTY_STATE=PRESENT_REGULAR_FILE
+C3A_SABLEOS_INTEGRATION_HEAD=55ab471aa556839c2ff9033cc2aca5471d116778
+C3A_MANIFEST_TO_M4_SOURCE_EQUIVALENCE=NOT_PROVEN
+OCT03_RUN_EVIDENCE=RUN_LOG_MODULES_AND_SYSTEMIMAGE_LOG_PRESENT
+STOCK_RESTORE_REFERENCE=PRESENT_REGULAR_FILE_REFERENCE_ONLY
+OCT11_R3_OFFLINE_INPUTS=THREE_FILES_PRESENT_NOT_OCT03_MATCHED
+OCT03_MATCHED_COMPANION_LOGICAL_PARTITIONS=UNBOUND_7_OF_7
+OCT03_MATCHED_LP_VIRTUAL_AB=UNBOUND
+OCT03_MATCHED_AVB_CHAIN=UNBOUND
+OCT03_FINAL_IMAGE_G1=OPEN
+OCT03_FINAL_AUTHORITY_G2=OPEN
+OCT03_NATIVE_NAMESPACE_G3=OPEN
+V1_AI_G732_TESTS=PASS_23_OF_23
+V1_AI_G732_INSPECT=COMPLETE_HOST_ONLY
+```
+
+**Exact physical host observations**: the archived N1F image path is `/srv/sable-build/artifacts/titan2/n1f-c3a-derived-c3b5/20261003T221350Z/system.img`, stat 3,200,540,672 bytes. `artifact.env` has expected SHA/role/target and agrees with the existing `SHA256SUMS.txt` entry. C3A archive has `repo-manifest-r.xml`, `all-project-heads.tsv`, `dirty-project-state.txt` and `sableos-integration-head.txt`; the head reads `55ab471aa556839c2ff9033cc2aca5471d116778`. The Oct03 run evidence directory contains `run.log`, `modules.tsv`, `systemimage.log`. The offline Oct11 R3 `authority.env`, `source-sha256.tsv` and `lpmake-command.txt` are present **only as a reference**. Stock restore super reference exists but is not cryptographically tied to Oct03 runtime state.
+
+**Important limits:** archived manifest presence is not same as exact derived N1F-to-M4 worktree equivalence. Matching recorded SHA values and `stat` size are not the same as a fresh hash over image bytes. The *seven companion partitions* are unbound to Oct03 even though historical Virtual A/B partition names are known. No LP/AVB/restore, IMS G1/G2/G3 or physical deployment gate is closed.
+
+**Next bounded evidence step:** inspect only the *already-preserved Oct03 run/preflight receipts* that establish `system_a`-only mutation and identify an independently dated, Oct03-matched slot-A LP/AVB snapshot **if one already exists**. Independently compare the existing C3A manifest/head snapshot against a separately pinned M4 source snapshot **only if its exact path is known**; do not re-run 991 `repo forall`, resync source, recursively enumerate host workspaces, execute `lpdump`/`lpmake`, hash the 3.2 GB image, read/extract partitions or contact the phone. If no exact dated LP snapshot exists, report `NOT_BOUND` and ask for a distinct authorization/evidence strategy before hybrid packaging.
+
 ## Planning matrix — open exact assertions
 
 | Area | Reusable evidence | Open specific gap |
