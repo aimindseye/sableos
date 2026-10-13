@@ -81,3 +81,19 @@ NEXT_DELIVERABLE=SOURCE_PARENT_BOOT_CRITICAL_RECONCILIATION_NO_BUILD
 NEXT_BUILD=NO
 SOURCE_MUTATION=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
+
+## M4 archived build receipt and derived hybrid-super counterfactual — review completed
+
+Under the new operator authorization, reviewed the exact **existing archived PR #339 M4 operator [postbuild receipt](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5502246106)** plus prior [frozen image 11/11/BCP receipt](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5502638731), [actual Recovery result](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5505341540) and [build-engineer revised hybrid decision](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5508562816). This is **GitHub textual receipt review**, not an additional unnamed ai-g732 log file read. Original complete M4 system.img 3,194,466,304 bytes SHA `261ee714db92c188eec7effc1afb6edd26627aaa1741e5f887915e078e1000ce` both output locations PASS existing operator hash; Ninja completed, but V1.1 driver `SYSTEMIMAGE=FAIL_MISSING` is contradicted by postbuild artifacts and its underlying observation reason unproven. Physical M4 transport 12/12 OKAY / 79.351s, Android **FAIL_RECOVERY** with generic “Can't load Android system. Your data may be corrupt”; **recovery logs unavailable; cannot prove userdata, AVB, Rescue Party, SELinux or missing ViLTE cause**.
+
+**Would M4 as hybrid super boot? `UNKNOWN_NOT_TESTED`, not PASS or expected rescue.** If system and all effective companion partition bytes, LP metadata/snapshots, AVB, bootchain, mount state remain equivalent to the failed system_a run, repackaging changes no M4-internal software. A separately pinned *different* matched hybrid partition composition might address a cross-partition mismatch, but no Oct11 as-flashed super journal/digest or Oct03 same-session seven companion hashes is bound. Build engineer had explicitly **approved a complete hybrid super as an OFFLINE byte/LP control**, not a physical flash authorization; embedded IMS remains in derived system/system_ext and skip_mount.cfg must be preserved. See [full existing receipt and counterfactual](titan2/N1F_P342_M4_SUPER_COUNTERFACTUAL_AND_RECEIPT_REVIEW_V1_20261013.md). No new source/image/host byte reads, compilation, LP pack, network, device or flash. **No new script needed** for review of existing public receipt.
+
+```text
+M4_EXISTING_BUILD_RECEIPT_REVIEW=COMPLETE_GITHUB_ONLY
+M4_SYSTEMIMAGE_PRODUCED_HASH=PASS_PRIOR_OPERATOR
+M4_BOOT=FAIL_RECOVERY_CAUSE_UNBOUND
+M4_HYBRID_AS_SUPER_SUCCESS=UNKNOWN_NOT_TESTED
+OFFLINE_HYBRID_SUPER_DESIGN=PERMITTED_AS_PLAN_ONLY_NOT_EXECUTE
+COMPLETE_M4_MANIFEST_EXACT_HOST_FILE=NOT_IDENTIFIED
+BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
+```
