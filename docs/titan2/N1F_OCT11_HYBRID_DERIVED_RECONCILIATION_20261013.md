@@ -245,6 +245,27 @@ B1_OTHER_IMAGES_B2_B3_B4=NOT_AUTHORIZED
 BUILD_REPACK_NETWORK_DEVICE_FLASH=NO
 ```
 
+### Actual N1C R0 operator result, R0B exact-leaf handoff
+
+Operator actually ran `N1F_P342_N1C_RESTORE_RECEIPTS_V1.zip`: outer ZIP + four manifest entries PASS, synthetic **22/22 tests PASS** (0.004s), plan no FS access. Explicit R0 inspect correctly returned overall `INCOMPLETE_OR_REFUSED`: first stock-super restore root qualified **18 immediate metadata entries**; second TEE14 boot/AVB evidence root returned `REFUSED_ENTRY_CAP` at 64. Its `entries=[]` is **suppressed due to cap**, not proof of an empty directory. The first root includes a **4,189,766,872-byte regular-file candidate** `titan2-stock-v010014-super-restore-r1c.sparse.img`, without image-byte hash, sparse format parse, LP/AVB check or qualified restore. Existing N1C historical device recovery remains a separate prior receipt, not proof of Oct03 N1F matched companion bytes.
+
+Known **small** historical stock-super text leaves (content NOT read) include `N1C_STOCK_SUPER_RESTORE_ARTIFACT_LEDGER.md` (1267 B), `source-partition-hashes.sha256` (542 B), `source-partition-map.txt` (1105 B), `source-partition-sizes.tsv` (1625 B), `partition-compare.txt` (1328 B). R1 leaf-text analysis requires separate authority; do not publish raw log files or sensitive identifiers.
+
+**New R0B** [exact seven TEE14 boot/AVB basename metadata plan](N1F_P342_N1C_RESTORE_R0B_EXACT_LEAVES_PLAN_V1_20261013.md): avoid the 64-entry directory entirely. Only seven named immediate leaves are checked with no-follow metadata stats in the same fixed TEE14 root (`boot.img`, `init_boot.img`, `vendor_boot.img`, `dtbo.img`, `vbmeta.img`, `vbmeta_system.img`, `vbmeta_vendor.img`), based on merged #251 E4 six names + N1C postmortem `dtbo`. No directory enumeration, wildcard find, nested paths, image or receipt bytes, writes, LP/AVB tool, network, device or flash. Prepared checksum-pinned ZIP `N1F_P342_N1C_R0B_EXACT_LEAVES_V1.zip` SHA256 `d9ceb7ce62ce76d2296c8944f31fd7f874064037615f3db41f225eeb834d7564`. Python AST PASS both scripts, local **20/20 synthetic tests PASS** (0.007s), 1000 seven-leaf metadata sample median **0.0135ms**/p95 **0.0190ms**. **Actual R0B ai-g732 not yet run**. This does not change the R0 cap, and is within prior metadata-only scope. Existing main C0/E4 tools and their image hashes should not be repeated. Missing direct leaves do not imply absence from all N1C evidence.
+
+```text
+R0_SUPER_ROOT=PASS_18_IMMEDIATE_METADATA_ROWS
+R0_SUPER_SPARSE_CANDIDATE=PRESENT_REGULAR_4189766872_BYTES_ONLY
+R0_TEE14_ROOT=REFUSED_ENTRY_CAP_64
+R0_OVERALL=INCOMPLETE_OR_REFUSED
+R0B_EXACT_SEVEN_NAMES=PREPARED_NOT_RUN
+R1_TEXT_RECEIPT_READ=NOT_AUTHORIZED
+OCT03_PARENT_HOST_B1_SHA256=PASS_HISTORICAL_REFERENCE_ONLY
+OCT03_PHYSICAL_COMPANION_SHA256=UNBOUND_7_OF_7
+G1_G2_G3=OPEN
+B1_OTHER_IMAGES_B2_B3_B4_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
