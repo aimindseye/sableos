@@ -195,6 +195,19 @@ B1_COMPANION_IMAGE_HASH=NOT_AUTHORIZED
 B2_B3_B4_BUILD_DEVICE_FLASH=NOT_AUTHORIZED
 ```
 
+### B1-PARENT explicit authorization received — actual full hash pending
+
+The operator responded **“i authorize”** directly to the explicit B1-PARENT ONLY request after actual ai-g732 16/16 review-only tests and the canonical 3,200,540,672-byte metadata check passed. This authorizes **one read-only streaming SHA256 pass** on the single fixed canonical `/srv/data/sable-build/titan2/artifacts/n1f-c3a-derived-c3b5/20261003T221350Z/system.img` using the already independently reviewed `N1F_P342_OCT03_PARENT_B1_V1.zip` verifier with `--authorize-parent-image-hash`, comparing the result to historical `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`. ZIP and internal manifest hash pins must PASS before invocation; stop on any failure. The operator has NOT yet supplied the actual B1 hash result, so image-byte identity stays `UNVERIFIED`. See the [precise new authority and exact command](N1F_OCT03_MATCHED_IMAGE_VERIFICATION_PLAN_V1_20261013.md).
+
+Earlier statements that B1-PARENT had **not** been authorized reflect the state at the time of the review-only execution, and are superseded **for this one exact parent hash only** by this section. No other image hash, LP/AVB, restore, source mutation, build, repack, network, device or flash authority. G1/G2/G3, Oct03 physical companion 7/7 SHA, postflash LP/VAB, AVB and matched restore remain UNBOUND/OPEN.
+
+```text
+B1_PARENT_3200540672_BYTE_HASH=AUTHORIZED_NOT_YET_EXECUTED
+B1_OTHER_IMAGE_HASHES=NOT_AUTHORIZED
+B2_LP=NOT_AUTHORIZED B3_AVB=NOT_AUTHORIZED B4_RESTORE=NOT_AUTHORIZED
+SOURCE_MUTATION=NO BUILD=NO REPACK=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
