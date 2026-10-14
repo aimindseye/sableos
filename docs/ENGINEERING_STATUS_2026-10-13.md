@@ -231,3 +231,21 @@ OCT03_SOURCE_TO_NEW_IMAGE=PLANNED_NOT_BUILT
 OCT11_SUPER_AS_FLASHED_SHA=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 — A0 protected source custody deliverable prepared, host run pending
+
+Operator requests next deliverable, historical duplication review, validated scripts/performance and PR342 status. Existing archived Oct03 original C3A Android16 source `/srv/data/sable-build/workspaces/titan2-n1d/android`, M4 isolated reconstructed source `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android`, and isolated CW1 source `/srv/data/sable-build/workspaces/n1i-d1r4-cw1-isolated/android` and warm outputs already documented. Original 991-project control, actual M4 R1/B1 POST/POST, PR342 real PHH V1.1, CW1 four DEX methods + stock static invoke-super, merged PR327 36 stock materialization, PR328 28-native + five AOSP16 owner collision resolution, PR331 C2 built image and PR334 C1/C2 physical boot failure remain at their original scope; **no repeat audits or builds**. **No selected new isolated clean Oct03-derived A1/A2 source tree or fresh OUT exists as an approved identity yet.**
+
+Prepared independent `N1F_P342_A0_CUSTODY_V1.zip` SHA256 `33cf05666b1d51992fd1a1bd7c4f127695a881062e304fb2e5f0c08c47537732` (9712 bytes). Read-only Python3.10+ stdlib: seven exact metadata-only known directory path checks and one 2693-byte SHA-bound archived CW1 source patch; dirfd `O_NOFOLLOW` for every ancestor and leaf, no alias fallback; default `plan` no host I/O, explicit `inspect --authorize-readonly-a0`; final status always `A0_CUSTODY_METADATA_ONLY_NEW_PARENT_AND_OUT_NOT_BOUND` even on intact evidence. Existing protected outputs must not be cleaned or reused. **Assistant-only** ZIP integrity PASS, inner 4/4 SHA PASS, AST 2/2 PASS, README `bash -n` PASS, **30/30 synthetic regression PASS**; 1200 local eight-role metadata+patch fixtures median 0.1159ms / p95 0.1486ms; NOT actual ai-g732 or compile performance. No Android source/JAR/image or C2 native file reads. This is a custody checkpoint, **not build readiness certification**. [Detailed plan/QA and next exact source selection gate](titan2/N1F_P342_A0_PROTECTED_SOURCE_CUSTODY_PREFLIGHT_V1_20261013.md).
+
+```text
+A0_TOOL_ZIP_AST_BASH_TESTS=PASS_ASSISTANT_30_OF_30
+A0_AI_G732_INSPECT=NOT_EXECUTED
+HISTORICAL_OCT03_M4_CW1_ROOTS=KNOWN_ROLES_PROTECTED
+NEW_OCT03_DERIVED_A1_ANDROID16_ROOT=UNBOUND
+NEW_A1_A2_OUTPUT_ROOT=UNBOUND
+CW1_PATCH_SHA=HISTORICAL_PIN_ONLY
+CW1_RUNTIME=NOT_TESTED
+A2_NATIVE_G3=UNBOUND
+SOURCE_MUTATION=NO BUILD=NO NETWORK_FETCH=NO DEVICE=NO FLASH=NO
+```
