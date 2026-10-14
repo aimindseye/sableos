@@ -299,3 +299,25 @@ A1_NEW_CHECKOUT=NOT_CREATED
 A1_OUT=NOT_CREATED
 SOURCE_MUTATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
 ```
+
+## Later October 13 — user authorizes A1 isolated source creation; tool sealed
+
+User **explicitly authorized creation of one new isolated Oct03-derived source tree**, with request for prior-project/PR342/GitHub duplicate review, syntax/performance validation and PR update. Bound exact allowed write container `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated`, future `android` only; **out-a1 NOT CREATED**. Protected original Oct03, M4 and CW1 trees/outputs cannot be mutated. No source app/telephony/native integration/build/network/super/AVB/device/flash authority granted.
+
+Previously qualified A0 (7 directories + CW1 SHA), A0B (vacant at check time), A0C (991 heads stage/Oct03/Repo manifest same revision map SHA `10658753bbb947a848369b0c248fca824def491e03287012ef031910542908f4`) reused. Archived PR339 M4 four-pilot+987 local-object reconstruction PASS but original distributed `n1f_m4_offline_reconstruction_pilot_v1_1.py` and `n1f_m4_remaining_987_offline_v1.py` **exact executable content not accessible** in GitHub/Project searches; do not claim code review/reuse. New independent conservative local-only creator prepared instead.
+
+`N1F_P342_A1_LOCAL_SOURCE_CREATOR_V1.zip` SHA256 `1819469e2945859d13e15a379216383ce53733346f8abfbf25f5e82c43d7142d` (16848 bytes); main script `n1f_p342_a1_creator_v1.py` SHA256 `25963adf7360696fb255d4cafbc422a223e4b288ee625ea58cd3b9d3c0ce2b71`. ZIP CRC PASS, inner 6/6 SHA PASS, Python AST+compile 2/2 PASS, README Bash `-n` PASS, **36/36 synthetic + real 3-tiny-repo local Git regression PASS (0.368s)**. Assistant-local 300x 991-head parser median/p95 **0.82348/0.97672 ms**, 15x full 3-tiny-repo offline clone/preflight/postcheck median/p95 **56.716/61.965 ms**, peak RSS 99340KiB; NOT real 991-project host build/clone timing. Dependencies Python3.10+ stdlib and Git2.x local clone, package validation unzip/sha256sum; system `ninja` not required.
+
+Script modes `plan` zero evidence I/O, `preflight --authorize-readonly-source-preflight` fresh **live donor** full exact 991 heads+archive-three-dirty-project path/status check and small SHA-bounded donor dirty contents; `create --authorize-create-isolated-source` repeats gates and atomically creates only absent new root, serially local Git `--shared --local --no-checkout` + detached exact pinned commit, copies **only** exact dirty filenames from current protected donor, verifies new head/status+current donor content SHA. No network sync, no `repo`, no auto-delete or resume. Shared alternates depend on protected donor object stores. **Oct03 archived dirty paths/status do not independently SHA-bind each dirty file byte**, so resulting source is explicitly `PASS_PROVISIONAL_LOCAL_CLONE_NOT_OCT03_DIRTY_BYTE_PROVENANCE_NOT_BUILD_READY` with permanent `.A1_INCOMPLETE_DO_NOT_BUILD` and JSON receipt even if all 991 clone; `out-a1` uncreated. Need separate C3A dirty-byte/proper build scaffold and new A1 source integration/build approval.
+
+[Exact A1 authority, script QA, and conditional host handoff](titan2/N1F_P342_A1_AUTHORIZED_ISOLATED_SOURCE_CREATOR_V1_20261013.md). **No ai-g732 execution yet**. No remote host source checkout or build claimed.
+
+```text
+A1_USER_SOURCE_CREATION_AUTHORIZED=YES_ONLY_EXACT_NEW_CONTAINER
+A1_DISTRIBUTED_SOURCE_CREATOR_QA=PASS_36_REGRESSIONS
+A1_HOST_PREFLIGHT=NOT_EXECUTED
+A1_HOST_CREATE=NOT_EXECUTED
+A1_IF_CREATED=PROVISIONAL_NOT_BUILD_READY
+A1_OUT=NOT_CREATED
+BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
