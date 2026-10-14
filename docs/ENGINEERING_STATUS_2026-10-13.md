@@ -358,3 +358,19 @@ A1B_V11_ASSISTANT_QA=PASS_46_PLUS_46_SYMLINKED_TMP_EMULATION
 A1B_V11_UBUNTU_REAL_INSPECT=NOT_EXECUTED
 BUILD=NO SOURCE_MUTATION=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 latest — Ubuntu A1B scaffold-only refusal, six-path metadata next
+
+User supplied actual **Ubuntu ai-g732** A1B V1 run (distinct from earlier Mac `/var`): outer and inner SHA PASS, **44/44 regression tests PASS (0.048s)**, plan lists fixed physical Ubuntu source; read-only inspect `REFUSED_NO_BUILD_ADMISSION` with `build_scaffold_expected_regular_missing_or_unsafe`. **Not** a failed A1 clone, Soong source hash, PHH archive or Android build. Original immutable A1B control flow reaches scaffold requirement only after provisional A1 receipt/guard/4 SHA file checks, original two Soong C3A POST Git blob pins and original Oct03 PHH rom+manifest; those earlier checks raised no error, but **no positive A1B receipt exists**. It does not identify WHICH of 6 fixed scaffold leaf paths is missing, symlink or nonregular. Ubuntu A1 991/991 original clone remains PROVISIONAL source only; no rerun of source creation and no removal of guard.
+
+Prepared only exact fixed metadata probe `N1F_P342_A1B_SCAFFOLD_DIAGNOSIS_V1.zip` SHA256 **`30e1ba581cfd26d4658bb0e95a4e0f0393b6d56a158e623c358a3763a671b86c`** (9,526 bytes): compare six **A1 and protected old donor** literal scaffold paths, plus no-build marker and non-created `out-a1` as metadata. Per-ancestor fd-anchored nofollow checks; leaf lstat nofollow; symlink literal targets only, not traversed. No content reads, git/repo, source scanning, network, source writes, build, image, device, flash. Local Python AST/compile PASS, README Bash syntax PASS, ZIP CRC PASS, 5/5 inner hashes PASS, **46/46 synthetic tests PASS (0.088s)**; 400 synthetic checks median/p95 **0.3624/0.5311 ms** (assistant fixture only). Actual host diagnosis **NOT EXECUTED**. If A1 and original donor both differ from strict regular-file assumption, review verifier contract rather than invent a source repair. [Full decision and source handoff](titan2/N1F_P342_A1B_UBUNTU_SCAFFOLD_REFUSAL_METADATA_V1_20261013.md). Previous Mac portable V1.1 remains a separate locally qualified fixture correction; no reason to rerun it as a resolution for this Ubuntu scaffold rule.
+
+```text
+A1_UBUNTU_NEW_SOURCE=PASS_991_PROVISIONAL_NOT_BUILD_READY
+A1B_UBUNTU_V1_PACKAGE_REGRESSIONS=PASS_44_OF_44
+A1B_UBUNTU_V1_INSPECT=REFUSED_SCAFFOLD_TYPE_UNSPECIFIED
+SIX_SCAFFOLD_MEMBERS_DIAGNOSIS=PREPARED_NOT_RUN_HOST
+NEW_DIAGNOSTIC_LOCAL_QA=PASS_46_OF_46
+A1_INCOMPLETE_DO_NOT_BUILD=PRESERVE
+SOURCE_MUTATION=NO BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
