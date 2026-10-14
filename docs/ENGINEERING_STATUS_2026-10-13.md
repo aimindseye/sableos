@@ -265,3 +265,21 @@ A1_OUT=NOT_CREATED
 NATIVE_G3_AND_CALL_WAITING_RUNTIME=NOT_QUALIFIED
 SOURCE_MUTATION=NO BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 — actual A0B PASS and A0C fixed frozen-source ledger join queued
+
+Operator actual SHA-pinned `N1F_P342_A0B_ISOLATION_V1.zip`: all outer/inner checksum PASS, **30/30 regression PASS (0.005s)**, plan zero host evidence IO, real `PASS_A0B_VACANT_CANDIDATE_METADATA_ONLY_NO_SOURCE_LINEAGE`. Physical parent ancestors PASS, proposed `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated` ABSENT at moment of check, **not reserved/created**; 957711626240 bytes and 217743852 inodes then available; python3/bash/git/repo/java/sha256sum/unzip PATH present advisory, **ninja not in PATH advisory only**. No source/image/network/device/flash or process execution. Earlier status `A0B_NOT_EXECUTED` is historical and **superseded** by this real PASS.
+
+GitHub [Oct03 N1F actual runner](https://github.com/aimindseye/sableos/blob/main/build/titan2/run-n1f-c3a-derived-c3b5-r2.sh) archived before N1F seven-file/one-rom integration the **991-source HEAD ledger** and revision-pinned `repo-manifest-r.xml`, both in SHA256SUMS. Separate previously successful M4 four-project local-object pilot plus 987 remaining project reconstruction reused an exact **C3A postpatch-project-heads.tsv** stage receipt. These exact existing text records are the next source lineage bridge; there is no reason to rerun repo forall, 991 git hashes, source reconstruction or original R1/B1, CW1 compilation, C2 native/multi-GB audits.
+
+Prepared read-only **A0C** `N1F_P342_A0C_LINEAGE_V1.zip` SHA256 `1603f95a2587474189d0a674f6d2c003d2cc986e4a7581e8a5bfeb66df2feded`, 11095 bytes. Five literal evidence text leaves: stage SHA256SUMS and 991 postpatch heads, Oct03 archived SHA256SUMS, 991 all-project-heads.tsv and repo-manifest-r.xml. No source checkout paths, no Git/Repo, no object scan. SHA-bind each read text file against frozen local checksum manifest, compare exact 991 path/40-hex HEAD revision maps from stage, Oct03 ledger and XML; forbid unresolved XML includes/extends and symbolic revisions; nofollow and 256KiB–4MiB caps. If an exact path is a symlink or manifest format differs, STOP with no fallback and report refusal. **Pass = frozen text-revision JOIN only, not local Git object availability, dirty C3A patch replay, new checkout source fidelity or Android build authorization.** Local ZIP CRC + inner 4/4 SHA PASS, Python AST/compile both PASS, README Bash syntax PASS, **44/44 synthetic tests PASS**, full 991-row triple parse median/p95 4.7861/6.3353 ms (300 local synthetic runs; not ai-g732). A0C actual host **NOT_EXECUTED**. [Exact A0B admission and A0C source-join plan](titan2/N1F_P342_A0B_OPERATOR_PASS_A0C_C3A_LEDGER_JOIN_V1_20261013.md).
+
+```text
+A0B_REAL_HOST=PASS_METADATA_VACANT_AT_CHECK_TIME
+A0C_LOCAL_QA=PASS_ZIP_AST_BASH_44_TESTS
+A0C_AI_G732_EXACT_RECEIPT_JOIN=NOT_EXECUTED
+C3A_STAGE_TO_OCT03_HEAD_MANIFEST_EQUIVALENCE=UNBOUND_PENDING_JOIN
+A1_NEW_SOURCE_AND_OUT=NOT_CREATED_OR_RESERVED
+G3_CW1_RUNTIME_HYBRID_LP_AVB=STILL_HOLD
+SOURCE_MUTATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
+```
