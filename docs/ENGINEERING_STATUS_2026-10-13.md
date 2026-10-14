@@ -249,3 +249,19 @@ CW1_RUNTIME=NOT_TESTED
 A2_NATIVE_G3=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO NETWORK_FETCH=NO DEVICE=NO FLASH=NO
 ```
+
+## Later Oct13 — actual A0 host PASS, A0B isolated candidate-name preflight prepared
+
+Operator completed the distributed A0 on ai-g732 with ZIP/inner SHA PASS, 30/30 tests PASS (0.040s), real `A0_CUSTODY_METADATA_ONLY_NEW_PARENT_AND_OUT_NOT_BOUND`. Historical Oct03 source and OUT, M4 donor and failed image OUT, CW1 source and warm OUT, and C2 frozen stock bundle: **all seven exact historical directory paths PRESENT**. Original archived CW1 patch 2693 bytes, SHA256 `4d2ad6b567ca725e8cc45c0362cdd788e3425c668592241aa4da007aa019635d` **PASS real read**. A0 is **COMPLETE** at its explicitly bounded custody scope; no repeated source/image/jar/native investigations. Fresh isolated Oct03-derived source root and OUT still **UNBOUND**.
+
+Prepared targeted A0B metadata-only new destination check: `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated` as **PROPOSED NOT RESERVED** parent, with future `android` and `out-a1` siblings. Do not create, copy, mutate or reuse original/CW1/M4 outputs. A0B reads no Android source/patch/image bytes and invokes no tools; per-component `lstat` and exact candidate leaf absent gate, `statvfs` capacity hints and advisory PATH presence for Python, Bash, Git, repo, Java, Ninja, unzip, sha256sum. Not a source provenance or toolchain validation. A0B `N1F_P342_A0B_ISOLATION_V1.zip` SHA256 `eb6caa17b36e0288f240c2897a19f5e1266f337364543ece835409fcddb12938` (8323 bytes), ZIP/inner 4/4 PASS, Python AST both PASS, README `bash -n` PASS, 30/30 synthetic tests PASS; 1200 local simulated no-write inspections median/p95 0.00547/0.00579 ms, unittest process 0.68 s / 98704KiB peak RSS, not actual ai-g732. Full [operator A0 admission and exact A0B scope](titan2/N1F_P342_A0_OPERATOR_PASS_A0B_ISOLATED_DESTINATION_V1_20261013.md).
+
+```text
+A0_ACTUAL_HOST_CUSTODY=PASS_SEVEN_HISTORICAL_DIRS_ONE_CW1_PATCH_SHA
+A0B_LOCAL_SCRIPT_SYNTAX_TESTS=PASS_30_OF_30
+A0B_ACTUAL_HOST_CHECK=NOT_EXECUTED
+A1_ISOLATED_OCT03_SOURCE=NOT_CREATED_OR_SEALED
+A1_OUT=NOT_CREATED
+NATIVE_G3_AND_CALL_WAITING_RUNTIME=NOT_QUALIFIED
+SOURCE_MUTATION=NO BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
