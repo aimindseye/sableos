@@ -97,3 +97,22 @@ OFFLINE_HYBRID_SUPER_DESIGN=PERMITTED_AS_PLAN_ONLY_NOT_EXECUTE
 COMPLETE_M4_MANIFEST_EXACT_HOST_FILE=NOT_IDENTIFIED
 BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 offline boot-critical delta review — approved and completed from retained evidence
+
+Operator approved offline Oct03↔M4 comparison of prior first-stage mounting, PHH guard, effective SELinux and partition-set evidence. The review now compares **ten exact claim-scoped areas** without opening host/image/source/SELinux bytes. Distribution `N1F_P342_OFFLINE_BOOT_DELTA_V1.zip` SHA256 `278a9c56da39ad4e07c601f1409e62c4195db0f75c06f50fe17c1017a2691059`; full report/TSV/JSON and SHA manifest, ZIP integrity PASS, inner 4/4 SHA PASS, 10-row/9-field matrix completeness PASS, JSON/negative-operation safety invariants PASS, deterministic archive bytes PASS. No new executable code or direct system image diff was produced. [Detailed analysis](titan2/N1F_P342_OFFLINE_BOOT_CRITICAL_DELTA_V1_20261013.md).
+
+**Findings:** Oct03 system_a boot PASS; Oct11 distinct hybrid Android boot observed with exact flashed super still UNBOUND; M4 successful 12/12 system_a writes and **FAIL_RECOVERY**. M4 source/staging/frozen-member `skip_mount.cfg` preservation PASS; earlier missing-path report is false due to absolute compatibility symlink, so no missing skip-mount inference. **Effective first-stage mount/import/fstab and M4 failed-boot policy load unknown.** M4 compiled policy and contexts are hashed selected image members but vendor-interoperable **merged effective SELinux NOT PROVEN**; there is no recorded M4 AVC/boot-panic/pstore or Rescue Party causal chain. PHH `mtkmal` source marker/guard and C3B overlay/root cleanup PASS bounded source/staging, not proof of runtime. Prior R1/B1 selected source POST/POST, IMS boot JAR API36 semantic and M11 signer, five R2 direct/Bionic/GNU/A4 studies all PASS at original scope and are not rerun. The seven Oct03 matched physical companions and actual Oct11 written hybrid journal/LP/AVB remain UNBOUND.
+
+**Question:** would M4 have booted as hybrid `super.img`? **UNKNOWN_NOT_TESTED**. Identical M4 system bytes and equivalent companions cannot by mere repackaging repair an intrinsic image defect; a genuinely different matched set might remedy a cross-partition mismatch, if that is what happened, but **no evidence proves that premise**. Engineer previously accepted full hybrid as **OFFLINE LP/byte metadata CONTROL ONLY**, not an automatic physical restore/flash or a boot-certification. No new image/host/device experiments authorized.
+
+```text
+BOOT_DELTA_RETAINED_EVIDENCE_REVIEW=COMPLETE
+FIRST_STAGE_SKIPMOUNT_STATIC=PASS_PRIOR
+FIRST_STAGE_EFFECTIVE_M4=NOT_EVIDENCED
+M4_COMPILED_SELINUX_MEMBERS=PASS_PRIOR
+M4_EFFECTIVE_MERGED_SELINUX=NOT_EVIDENCED
+M4_BOOT_CAUSE=UNBOUND
+M4_SUPER_BOOT_COUNTERFACTUAL=UNKNOWN_NOT_TESTED
+SUPER_REPACK=NO SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
