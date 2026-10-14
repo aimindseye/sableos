@@ -642,6 +642,23 @@ NEW_C3A_SOURCE_LINEAGE=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
 ```
 
+### A0B actual operator PASS; A0C C3A/Oct03 revision-ledger join prepared
+
+Operator's actual ai-g732 A0B: frozen package and four inner SHA PASS, **30/30 tests PASS 0.005s**, `PASS_A0B_VACANT_CANDIDATE_METADATA_ONLY_NO_SOURCE_LINEAGE`. Physical parent ancestors PASS and candidate `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated` **ABSENT AT CHECK TIME ONLY** (not created/reserved); parent filesystem reported 957711626240 available bytes and 217743852 inodes. Python3/Bash/Git/Repo/Java/unzip/sha256sum PATH hints present, `ninja=NOT_IN_PATH_ADVISORY_ONLY` (NOT Soong/Android toolchain FAIL). No content access or subprocess/build/device action. This **supersedes older A0B_NOT_EXECUTED entries**; A0 protection checks remain PASS and need no repeat.
+
+Identified exact **small source-provenance authority join** from original N1F Oct03 driver and prior M4 4+987 offline reconstruction: historical stage `postpatch-project-heads.tsv` and Oct03 archive `all-project-heads.tsv` plus Oct03 `repo-manifest-r.xml`, each bound to its own `SHA256SUMS.txt`. [New A0C SHA-bound five-small-text-input script, README, tests, scope and host handoff](N1F_P342_A0B_OPERATOR_PASS_A0C_C3A_LEDGER_JOIN_V1_20261013.md). Frozen `N1F_P342_A0C_LINEAGE_V1.zip` SHA256 `1603f95a2587474189d0a674f6d2c003d2cc986e4a7581e8a5bfeb66df2feded`; ZIP CRC/internal 4/4 SHA, both Python syntax, README Bash syntax PASS, **44/44 synthetic tests PASS**. 300 synthetic 991-project triple joins median/p95 **4.7861/6.3353 ms**, assistant-local mocked IO only. **Actual A0C ai-g732 check NOT RUN**. It does not traverse any 991 Git trees, run Git/Repo, enumerate source objects, repeat M4 reconstruction, or inspect image/device. No checksum success can independently attest manifest files against a second external signer.
+
+A0C **only** tests equality of **991 path/revision pairs** among three sealed-text records: a pass is `PASS_SEALED_C3A_STAGE_OCT03_LEDGER_AND_MANIFEST_JOIN_NOT_REPLAYABILITY`, not evidence Git object closure, original 369 patch replay/dirty worktree state, build toolchain, or a new checkout. Actual source creation/fresh OUT, one systemimage compile, CW1 patch/C2 28+5 G3, hybrid LP and physical flash remain separately gated; no writes authorized by A0C.
+
+```text
+A0B_AI_G732=PASS_ABSENT_AT_CHECK_TIME_NOT_RESERVED
+A0C_SCRIPT_PACKAGE_AND_44_SYNTHETIC=PASS
+A0C_HOST_REVISION_JOIN=NOT_EXECUTED
+OCT03_C3A_FROZEN_SOURCE_HEAD_EQUIVALENCE=UNBOUND_A0C
+FRESH_ISOLATED_SOURCE_AND_OUT=NOT_CREATED
+SOURCE_MUTATION=NO BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
