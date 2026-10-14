@@ -339,3 +339,22 @@ A1_HISTORIC_THREE_OF_FOUR_DIRTY_BYTE_AUTHORITIES=AWAIT_A1B
 A1_TREBLE_APP_ORIGINAL_POST_SHA=UNBOUND
 SOURCE_INTEGRATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 — A1B Mac test fixture error; Ubuntu A1 remains PASS; V1.1 prepared
+
+User confirms **actual Android build host is Ubuntu ai-g732**. Successful A1 host source creation remains **991/991 detached local clones PASS, PROVISIONAL_NOT_BUILD_READY**, and must never be rerun on the same target. A1 sources are at `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated/android`, `out-a1` not created, `.A1_INCOMPLETE_DO_NOT_BUILD` preserved by requirement.
+
+A separate **Mac** A1B V1 test transcript (outer and inner SHA PASS) reported **27 errors in 44 regression tests** from `NotADirectoryError 'var'`. The synthetic tempfile fixture path was under Mac `/var/folders/...`, where `/var` is a symlink to `/private/var`; the production `dirfd` safely rejects symlinked ancestors. The Mac `inspect` then returned `REFUSED_NO_BUILD_ADMISSION` for missing `srv`; this is not an error on Ubuntu (Mac does not host `/srv/data/sable-build/...`). **No actual Ubuntu A1B source/archive audit has run**. Do not infer A1 content/provenance failure or source corruption.
+
+New `N1F_P342_A1B_SOURCE_AUDIT_V1_1.zip` SHA256 **`a2c714016856a3ef28a4fcf77f463224f818c15d218e8825a5098713dd62e634`**. Production program diff from V1 is **only** version `1.0 → 1.1`; absolutely no relaxation of nofollow on real source/archive. Synthetic tests now select physical `os.path.realpath(tempfile.gettempdir())` base (only for ephemeral test fixture) after nofollow verification; two new alias/physical-path tests. ZIP integrity PASS, internal 5/5 SHA PASS, Python AST/compile both PASS, README Bash `-n` PASS, **46/46 tests PASS (0.081s)**; simulated Mac-style symlinked TMPDIR alias also **46/46 PASS (0.079s)** on assistant Linux; 600 fixture probes median/p95 **0.42678/0.67645 ms**. These are not real Mac execution, Ubuntu ai-g732 inspection, or Android build throughput. Run A1B `inspect --authorize-a1b-readonly` **only on Ubuntu** after package verification. Even a successful 3-of-4 file historical proof retains TrebleApp post SHA unbound, no-build marker and product graph G2/G3 holds.
+
+[Complete operator log diagnosis and V1.1 engineering contract](titan2/N1F_P342_A1B_MAC_FIXTURE_PORTABLE_V11_20261013.md). No sources, images, checkouts, local Git object stores, network, device or flash modified by this correction.
+
+```text
+A1_UBUNTU=PASS_991_PROVISIONAL_SOURCE_ONLY
+A1B_V1_MAC_TESTS=ERROR_27_FIXTURE_VAR_ALIAS
+A1B_V1_MAC_INSPECT=REFUSED_MISSING_SRV_EXPECTED
+A1B_V11_ASSISTANT_QA=PASS_46_PLUS_46_SYMLINKED_TMP_EMULATION
+A1B_V11_UBUNTU_REAL_INSPECT=NOT_EXECUTED
+BUILD=NO SOURCE_MUTATION=NO NETWORK=NO DEVICE=NO FLASH=NO
+```
