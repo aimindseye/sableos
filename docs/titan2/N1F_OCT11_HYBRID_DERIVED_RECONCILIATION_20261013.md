@@ -674,6 +674,25 @@ A1_NEW_ISOLATED_SOURCE_AND_OUT=NOT_CREATED
 SOURCE_MUTATION=NO BUILD=NO SUPER=NO DEVICE=NO FLASH=NO
 ```
 
+### User authorizes A1 isolated source-tree creation; new fail-closed Git creator sealed
+
+**Exact new user authority:** create **one** isolated Oct03 C3A-derived Android source tree only at `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated/android`. Do **not** authorize modification of historic Oct03 source/output, M4 or CW1 workspaces, any host Android build, network, super/AVB, device or flash. A0/A0B/A0C previously real PASS, Oct03 991-head equality and CW1 patch confirmed; no repeat historical scans or rebuilds.
+
+[New A1 creation tool and design QA](N1F_P342_A1_AUTHORIZED_ISOLATED_SOURCE_CREATOR_V1_20261013.md): `N1F_P342_A1_LOCAL_SOURCE_CREATOR_V1.zip` SHA256 **`1819469e2945859d13e15a379216383ce53733346f8abfbf25f5e82c43d7142d`**; main Python SHA `25963adf7360696fb255d4cafbc422a223e4b288ee625ea58cd3b9d3c0ce2b71`. Fixed Python3/Git local tool with `plan`, explicit read-only `preflight`, and explicit user-authorized `create`; the latter repeats preflight just before atomically claiming **only** absent destination. Reads original SHA-sealed Oct03 991-head and full three dirty-project path/status archive. Revalidates **CURRENT protected donor** 991 HEADs/statuses (new source input drift check, not repeated historical A0C) and individual donor dirty-file SHA; uses serial local-only `git clone --local --shared --no-checkout` + exact detached checkout and copies only previously archived dirty file **paths**, then verifies newly cloned 991 HEAD/statuses/dirty-content hashes. All originals and historic OUT unchanged, no git worktree links to donor, no network fetch, no device/flash. On failure it leaves incomplete new root for operator, no cleanup or auto retry.
+
+**Critical limit:** archived Oct03 dirty-project-state.txt does **not** SHA-pin every original modified file's bytes. Matching current donor HEAD/status only proves matching paths and historical commit revisions, not that dirty file bytes equal Oct03. Even if new cloned source completes, output is **`PASS_PROVISIONAL_LOCAL_CLONE_NOT_OCT03_DIRTY_BYTE_PROVENANCE_NOT_BUILD_READY`** with preserved `.A1_INCOMPLETE_DO_NOT_BUILD`, `source_dirty_bytes_matched_to_original_oct03_archive=false`, `local_git_alternates_depend_on_preserved_donors=true`. Fresh OUT NOT CREATED. Independent C3A byte and product scaffold proof, then new approval for R1+B1+C1/PHH/MTK RRO/C2 work, then host-only build, then optional A2 native/CW1 G3, and separately hybrid LP/AVB/restore/device needed. Do not promote Git object alternates to self-contained backup. Historical M4 offline pilot/987-rest script NAMES found but their actual bytes are not available to review, so this tool is a separately authored conservative implementation, **not claimed to reuse uninspected Python sources**.
+
+**Validation on assistant machine:** ZIP CRC+6/6 inner SHA PASS, Python AST+py_compile 2/2 PASS, Bash README `-n` PASS, **36/36 tests including real temporary three-repo local Git clone PASS**; synthetic 991-head parse 300 loops median/p95 0.82348/0.97672 ms; 15 toy 3-repo full clone fixtures median/p95 56.716/61.965 ms; real 991-project host clone **NOT EXECUTED** and performance unknown.
+
+```text
+A1_SOURCE_CREATION_OPERATOR_AUTHORIZED=YES_EXACT_NEW_ROOT
+A1_TOOL_QA=PASS_36_OF_36
+A1_AI_G732_CREATE=NOT_YET_EXECUTED
+A1_STATUS_IF_CREATED=PROVISIONAL_NOT_BUILD_READY
+A1_NEW_OUT=NOT_CREATED
+BUILD=NO NETWORK_FETCH=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
