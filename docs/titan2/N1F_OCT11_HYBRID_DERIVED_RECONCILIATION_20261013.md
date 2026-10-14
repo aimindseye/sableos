@@ -626,6 +626,22 @@ CW1_PATCH_SHA=HISTORICAL_PIN_NO_NEW_HOST_HASH
 SOURCE_MUTATION=NO BUILD=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual A0 custody PASS; A0B distinct checkout destination metadata only
+
+**Operator's actual ai-g732** `N1F_P342_A0_CUSTODY_V1.zip` outer/inner 4/4 SHA PASS, **30/30 tests PASS in 0.040s**, inspect `A0_CUSTODY_METADATA_ONLY_NEW_PARENT_AND_OUT_NOT_BOUND`: all **seven fixed historic directories** present and protected (Oct03 Android/OUT, M4 Android/OUT, CW1 Android/warm OUT, C2 sealed 36-input bundle); exact old CW1 2,693-byte patch SHA256 `4d2ad6b567ca725e8cc45c0362cdd788e3425c668592241aa4da007aa019635d` PASS. No source writes, image read, device or flash. Original tool's `NEW_PARENT_AND_OUT_NOT_BOUND` is **intentional honest output**, not failed custody. No reason to repeat A0, CW1 JAR compilation, 991 source or 33 C2 native hashes.
+
+**New A0B proposal (not an actual checkout):** [operator A0 PASS and exact isolated destination / host-tool metadata preflight](N1F_P342_A0_OPERATOR_PASS_A0B_ISOLATED_DESTINATION_V1_20261013.md). Prospective absent container `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated`, future `android` and sibling `out-a1`, separate from protected Oct03/M4/CW1 roots. Host A0B checks only ancestor and candidate-leaf `lstat` metadata, point-in-time `statvfs` space/inode hints, and advisory PATH presence for Python3/Bash/Git/repo/Java/Ninja/unzip/sha256sum; no subprocess executes and no checkout/file writes, 991 census, content reads or network. **Present tool names do not attest actual Android Soong/JDK build usability**. All existing names are protected. Passing A0B means *vacant at check time*, not reserved, source SHA-bound, Android build-ready, or permission to make it.
+
+Frozen distribution `N1F_P342_A0B_ISOLATION_V1.zip` outer SHA256 `eb6caa17b36e0288f240c2897a19f5e1266f337364543ece835409fcddb12938`; Python AST 2/2 PASS, Bash README syntax PASS, ZIP CRC+inner 4/4 SHA PASS, **30/30 synthetic regressions PASS**, 1200 synthetic full metadata runs median/p95 **0.00547/0.00579 ms** local fixture only. **Host A0B not yet run**. Next independent authorization would have to specify offline 991-project C3A checkout creation, exact manifest pin, fresh OUT and explicitly permitted writes; a one-time source build requires separate approval. A1 C1/R1/B1/PHH/overlay/readiness, A2 conditional CW1/28+5 native G3, all NON_FLASHABLE. No host build, super assembly, device, reset, AVB or flash.
+
+```text
+A0_AI_G732=PASS_7_DIRECTORIES_CW1_PATCH_SHA
+A0_RECHECK=NOT_NEEDED
+A0B_EXACT_CANDIDATE_VACANCY=NOT_EXECUTED
+NEW_C3A_SOURCE_LINEAGE=UNBOUND
+SOURCE_MUTATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
