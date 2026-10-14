@@ -283,3 +283,19 @@ A1_NEW_SOURCE_AND_OUT=NOT_CREATED_OR_RESERVED
 G3_CW1_RUNTIME_HYBRID_LP_AVB=STILL_HOLD
 SOURCE_MUTATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 later — actual sealed A0C 991-project mapping PASS
+
+Operator actually executed `N1F_P342_A0C_LINEAGE_V1.zip` on ai-g732: package/inner 4/4 checksum PASS, 44/44 regression tests PASS (0.042s), plan zero-I/O PASS, `PASS_SEALED_C3A_STAGE_OCT03_LEDGER_AND_MANIFEST_JOIN_NOT_REPLAYABILITY`. `stage/postpatch-project-heads.tsv` and archived Oct03 `all-project-heads.tsv` 991 project rows each and exact **same SHA256 `10658753bbb947a848369b0c248fca824def491e03287012ef031910542908f4`**. Oct03 `repo-manifest-r.xml` 991 revision-pinned projects SHA256 `ccac2b30e8433bd5b0ec20e3d9ca4a31b90c918a7d8d7608dc619af5fa071fe8`. Both full project/revision map comparisons: missing 0, extra 0, revisions differing 0. Existing stage/Oct03 SHA256SUMS entries matched exact read bytes, without an independently certified external checksum of the manifest text. **This closes textual C3A stage/Oct03/manifest parity.** No Git worktree/cat-file, source/object enumeration, dirty-patch replay, new checkout, OUT creation, build or physical operation.
+
+Prior Oct12 M4 original local-object pilot 4 + 987 remainder source creation `M4_991_PROJECT_HEADS=PASS` is already documented; repeating a 991-project census is unnecessary. To actually reconstruct a **clean Oct03 C3A-derived checkout**, first retrieve the original two previously run distributed script **bytes and SHA** (`n1f_m4_offline_reconstruction_pilot_v1_1.py` and `n1f_m4_remaining_987_offline_v1.py`, not present as committed tool files) and SHA-bind exact original C3A three-dirty-project replay inputs. Their names and historic PASS are known but executable bytes are not available in this GitHub-only review. M4 existing mutated source is **not** clean Oct03. A0B's future container was absent at check time, NOT reserved. No new executable authored/benchmarked; existing A0C test results apply. [Full result and A1 source-materialization authorization boundary](titan2/N1F_P342_A0C_ACTUAL_PASS_A1_OFFLINE_SOURCE_HANDOFF_V1_20261013.md).
+
+```text
+A0C_AI_G732=PASS_FULL_991_REVISION_EQUIVALENCE
+A0C_CHECK_REPEAT=NOT_NEEDED
+A1_OFFLINE_SOURCE_CREATION_SCRIPT_BYTES=NOT_PINNED
+A1_C3A_DIRTY_INPUTS=NOT_FULLY_REBOUND
+A1_NEW_CHECKOUT=NOT_CREATED
+A1_OUT=NOT_CREATED
+SOURCE_MUTATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
+```
