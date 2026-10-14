@@ -37,3 +37,33 @@ M4_RECOVERY_CAUSE=UNKNOWN
 EXACT_HOST_CHECK=PREPARED_AST_30_TESTS_ZIP_PASS
 SOURCE_MUTATION=NO BUILD=NO IMAGE_BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## Actual operator run: exact archive path refused before any receipt content (2026-10-13)
+
+**Operator-provided ai-g732 result**, not synthetic: original `N1F_P342_PHH_POLICY_EXACT_V1.zip` outer SHA PASS; four internal manifest entries PASS; regression **30/30 PASS (0.002s)**; default plan `PLAN_ONLY_NO_EVIDENCE_IO` correctly lists exact Oct03 archive and two system images. Authorized `inspect --authorize-exact-oct03-m4-readonly` returned:
+
+```json
+{"status":"REFUSED_NO_PARTIAL_EVIDENCE","reason":"[Errno 20] Not a directory: 'titan2'","source_mutation":false,"image_mutation":false,"build":false,"device":false,"flash":false}
+```
+
+**Cause localized to code path order:** Existing frozen `inspect()` calls `exact_bytes(MANIFEST,...)` first, which calls `open_exact` walking each absolute ancestor with `O_DIRECTORY | O_NOFOLLOW`. The first `titan2` component along the fixed archive manifest path is **`/srv/sable-build/artifacts/titan2`**. On Linux, `ENOTDIR` from that `os.open` can mean symlink-with-O_NOFOLLOW or non-directory component. The transcript does **not** reveal which. It is not an artifact, image, compiled policy, PHH hook, hash or device failure. Since refusal happens before the manifest open, **archived dirty-state bytes read=0, Oct03/M4 image bytes read=0, real debugfs calls=0**. The terminal SSH session closed after nonzero return while shell `set -e` was active; no inference of host crash.
+
+**Safety disposition:** Preserve fail-closed original script and its existing pins. Do **not** strip `O_NOFOLLOW`, call `realpath` and substitute its output, change the pinned root to a guessed `/srv/data` alias, read the images anyway, or re-run 30 tests for this same package. Before any newly bound path content reads, run the following **metadata-only lstat check** that stops at the **first** symlink/non-directory/error. It never follows a symlink, enumerates a directory or opens a file's contents:
+
+```bash
+export PYTHONDONTWRITEBYTECODE=1
+python3 -B "$HOME/Downloads/N1F_P342_OCT03_PATH_METADATA_V1.py"
+```
+
+Distribution single Python file checksum `bff8cb5f26c25a49a9f409eb36ce3ed387a62799d6c8bcd2ce88f0d45fc9c8a4`. It has the literal first Oct03 manifest path only; reports ancestor metadata and, for a symlink, `os.readlink` text **without following the link**. Program prints `STOP component=...` on the first unsafe component, returning to shell for inspection (no source/image/evidence content read). Assistant-local Python compilation PASS, **4/4 synthetic tests** of regular path, symlink, non-directory and missing path PASS; **1000 mocked temporary symlink inspections** median 0.0099ms/p95 0.0109ms (assistant container only, no ai-g732 benchmark). This file is strictly diagnostic; it is **not** a patched content inspector or license to access a symlink target. After metadata is supplied, rebind new exact path only with separate explicit acceptance of physical canonical root and appropriate content SHA evidence. The original broad archived paths are source-history literals, not proof of mount topology today.
+
+```text
+PHH_V1_PACKAGE_AND_REGRESSIONS_AI_G732=PASS_30_OF_30
+PHH_V1_REAL_INSPECT=REFUSED_ENOTDIR_AT_LITERAL_TITAN2_COMPONENT
+FAIL_CLOSED=PASS_NO_PARTIAL_CONTENT
+ARCHIVED_OCT03_DIRTY_STATE=NOT_READ
+OCT03_VS_M4_INSTALLED_BOOT_HOOK=NOT_READ
+OCT03_VS_M4_STATIC_POLICY=NOT_READ
+NEXT=METADATA_ONLY_LSTAT_NOFOLLOW_LITERAL_ARCHIVE_PATH
+SOURCE_MUTATION=NO IMAGE_READ=NO BUILD=NO DEVICE=NO FLASH=NO
+```
