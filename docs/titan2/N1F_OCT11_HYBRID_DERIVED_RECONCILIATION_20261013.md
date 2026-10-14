@@ -659,6 +659,21 @@ FRESH_ISOLATED_SOURCE_AND_OUT=NOT_CREATED
 SOURCE_MUTATION=NO BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual A0C 991-row source-head and pinned Repo manifest join PASS
+
+Operator's **actual ai-g732** A0C frozen package SHA and inner four SHA PASS, **44/44 regression tests PASS (0.042s)**, default plan zero evidence I/O, `PASS_SEALED_C3A_STAGE_OCT03_LEDGER_AND_MANIFEST_JOIN_NOT_REPLAYABILITY`. Stage `postpatch-project-heads.tsv` and Oct03 `all-project-heads.tsv` both exactly **991 unique paths/revisions and byte-identical SHA256 `10658753bbb947a848369b0c248fca824def491e03287012ef031910542908f4`**; Oct03 revision-pinned `repo-manifest-r.xml` exactly **991**, SHA256 `ccac2b30e8433bd5b0ec20e3d9ca4a31b90c918a7d8d7608dc619af5fa071fe8`. Both full path-to-revision comparisons `MISSING=0 EXTRA=0 DIFFERENT=0`. Five small source receipts verified against their own SHA256SUMS manifests; A0C did NOT cryptographically rebind the manifest files against a separate external signing authority. No source tree traversal, new checkout, git/repo commands, object reads, patch replay or build. This **closes frozen textual revision equivalence**. **Supersedes preceding A0C_HOST_NOT_EXECUTED and REVISION_JOIN_UNBOUND entries**.
+
+[Controlling A0C operator PASS and future A1 offline source-materialization authority](N1F_P342_A0C_ACTUAL_PASS_A1_OFFLINE_SOURCE_HANDOFF_V1_20261013.md). Old PR339 M4 local-object 4-pilot + 987-rest 991/991 PASS is prior engineering evidence and not to be rerun as a census; but M4 was subsequently modified (R1/B1/PHH/partial C3B) and failed physical boot, so `cp`/blind cloning its mutable source files is **not** a clean Oct03 reproduction. Remaining explicit source blockers: exact prior M4 pilot/rest script **bytes and SHA** not yet found in GitHub, local Git object/alternate closure for a *fresh* checkout, and exact C3A three-dirty-project file replay rather than just HEAD equality. Next useful step is to retrieve those **two specific local scripts** from the operator environment with exact paths/hash and review them before independently authorizing a new no-network 991-project isolated checkout. A0B's candidate was vacant **at inspection time only**, not created/reserved. No new executable or benchmark produced this turn, so prior 44 A0C operator tests remain the relevant script qualification.
+
+```text
+A0C_ACTUAL_AI_G732=PASS_991_HEADS_AND_PINNED_MANIFEST_EQUAL
+A0C_REVISION_CENSUS_REPEAT=NOT_REQUIRED
+A1_EXACT_OFFLINE_REPLAY_SCRIPT_SOURCE_AND_SHA=NOT_BOUND
+A1_THREE_DIRTY_PROJECT_REPLAY=NOT_FULLY_BOUND
+A1_NEW_ISOLATED_SOURCE_AND_OUT=NOT_CREATED
+SOURCE_MUTATION=NO BUILD=NO SUPER=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
