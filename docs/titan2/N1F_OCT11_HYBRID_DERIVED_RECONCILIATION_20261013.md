@@ -693,6 +693,24 @@ A1_NEW_OUT=NOT_CREATED
 BUILD=NO NETWORK_FETCH=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual A1 991-source creation passed provisional; A1B original dirty-byte/scaffold audit pending
+
+**Operator actual ai-g732** frozen A1 package outer+6 inner checks PASS, **36/36 host tests PASS in 0.187s**, donor PRE check 991/991 HEADs and exact three dirty projects PASS, authorized local-only **991/991 source clone plus new HEAD/status verification PASS** at `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated/android`. Four current donor dirty-file SHA recorded and exact replay verified: Soong ci file `66ac23858a2c619ca87bd991fdf163af10882f40923c9d5183824c17c12759e3`, Soong dexpreopt `6ec897e575940956701a862274e3cfe08a7fe9dc71578543b70529d483d7b6e2`, PHH rom.mk `ab0ec737342d41d562816fce73e8694e35ce32e09db74c12ea115efa3619d592`, `treble_app/sdk/.knownPackages` `8382e417241589dbc171d32954cc77c98a96d2ec7609bdcdf09594398d8b5966`. Real result **`PASS_PROVISIONAL_LOCAL_CLONE_NOT_OCT03_DIRTY_BYTE_PROVENANCE_NOT_BUILD_READY`**; permanent `.A1_INCOMPLETE_DO_NOT_BUILD` must remain. `out-a1` NOT CREATED, `product_scaffold_complete=false`, Git shared-object alternates depend on protected donor. **Do not run A1 creation again, clean or overwrite**.
+
+Recovered preexisting original **C3A exact Soong post-patch Git blobs** from `build/titan2/n1d-c3-trebledroid.env`: `b9bc7009d822dd811c0338c5595d14f0617d1392` and `7024841edac715a9bd3a81af92c42da0b302e1f0`. Original Oct03 runner separately archives **original** `device-phh-treble-rom.mk` with archived SHA manifest **before** N1F app changes; SHA historically `ab0ec737...`. Existing C3A profile pins `treble_app/sdk/.knownPackages` **HEAD base Git blob**, not original Oct03 modified post bytes, so A1's new fourth SHA remains historical byte-provenance **UNBOUND**.
+
+[NEW A1 real host PASS + frozen A1B source audit script and byte/scaffold boundary](N1F_P342_A1_ACTUAL_PROVISIONAL_PASS_A1B_SOURCE_AUDIT_V1_20261013.md). `N1F_P342_A1B_SOURCE_AUDIT_V1.zip` SHA256 **`987a51c7b20d4d16775ac03142cc47992558b09caaddd4db5dfb81d3b5cf5b85`**, 44/44 synthetic tests PASS, AST+README Bash+ZIP/5 inner checks PASS; 600 fixture exact small-file read median/p95 0.34670/0.56264ms assistant local only. No 991-git rescan or Android build; A1B reads exactly four new dirty files, Oct03 archived rom+manifest, and A1 receipt+marker, and checks six exact build entrypoint path types and `.repo`/`out-a1` absence. Maximum status `PASS_A1B_THREE_OF_FOUR_DIRTY_FILE_AUTHORITIES_FOURTH_UNBOUND_NOT_BUILD_READY` (not yet host executed). **Source/Android build/LP/AVB/device/flash remain held**; no removal of marker or new integration authorization inferred.
+
+```text
+A1_REAL_AI_G732=PASS_991_PROVISIONAL_SOURCE_ONLY
+A1B_LOCAL_QA=PASS_44_SYNTHETIC
+A1B_AI_G732=NOT_EXECUTED
+A1_ORIGINAL_SOONG_POST_GIT_BLOB_CHECK=PENDING_A1B
+A1_ORIGINAL_ROM_MK_ARCHIVE_BYTE_CHECK=PENDING_A1B
+A1_ORIGINAL_TREBLE_APP_POST_SHA=UNBOUND
+A1_OUT=NOT_CREATED BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
