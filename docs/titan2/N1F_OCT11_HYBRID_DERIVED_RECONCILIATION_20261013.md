@@ -516,6 +516,24 @@ The existing C3A preparation [`prepare-n1d-c3-trebledroid.sh`](https://github.co
 
 M4 source partial C3B private-policy removal remains a concrete build-time delta; `/bt_firmware` label error and exact scaffold cleanup are already historically evidenced and need no rerun. M4 merged SELinux execution and PHH guard activation in failed boot remain UNPROVEN. Any separate exact one-file text read should be confined to that archived C3A dirty-state leaf, symlink/size-safe, and never expanded into a 991-project rescan, full Android source diff, image extraction, policy build, device or flash.
 
+### Oct03 archived PHH status and final M4 installed hook/platform policy comparison prepared
+
+Operator explicitly requested to confirm original Oct03 PHH source state and determine whether M4 final build changed installed PHH boot-hook or static SELinux members. GitHub history pins Oct03 C3A PHH HEAD 39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed and HEAD:base.mk blob a29e402009d449150f1216e5d517ec0c9b36bfbd. Original Oct03 archive has SHA256SUMS-sealed dirty-project-state.txt and captures original source BEFORE product's seven-file+one-rom inheritance. Contents of that one existing text leaf still **NOT READ**; a clean result is needed to bind HEAD:base.mk to the final archived source state.
+
+Prepared [exact no-write host verifier plan](N1F_P342_OCT03_M4_PHH_POLICY_EXACT_HOST_CHECK_V1_20261013.md), separate distribution ZIP N1F_P342_PHH_POLICY_EXACT_V1.zip SHA256 c923fe6b92fedafd0a302590dea28f052390988d4aa316b2ad3170c56330f358. Default plan zero file I/O; authorized inspect opens exactly archival SHA256SUMS.txt and dirty-project-state.txt, plus the Oct03/M4 previously pinned raw ext4 image paths with exact byte-size guard. Via prior qualified ai-g732 /usr/sbin/debugfs, read-only and fd-bound, probes only three member names in each: /system/bin/phh-on-boot.sh, /system/etc/selinux/plat_sepolicy.cil and /system/etc/selinux/plat_file_contexts; fixed 512KiB/8MiB/512KiB limits, outputs only SHA/membership, and enforces prior M4 CIL/context SHA pins. Whole-image multi-gigabyte SHA NOT repeated, no mount, no source edit, build, network, device or flash.
+
+QA assistant-local: ZIP/in-manifest 4/4 PASS, Python AST PASS, README Bash syntax PASS, **30/30 synthetic tests PASS**, fixture parser 4000 runs median/p95 0.00442/0.00463 ms (not debugfs real-file performance). The assistant environment does NOT have /usr/sbin/debugfs, so **actual on-host image member reads NOT executed yet** and host integration requires an operator receipt. Relative /srv path aliases/symlink fallbacks forbidden.
+
+**Scope of eventual result:** show archived PHH base.mk dirty state, actual installed script presence/static byte hashes and whether platform CIL/file_contexts differ. This can **never** by itself establish whether PHH script executed at boot, vendor/odm merged SELinux succeeded or an AVC caused M4 Recovery. Frozen R1/B1, A4/R2 and historic whole-image hashes are prior PASS and must not be rerun.
+
+```text
+OCT03_DIRTY_SOURCE_RECEIPT=NOT_EXECUTED_NEW_TOOL
+M4_INSTALLED_PHH_HOOK_AND_POLICY=NOT_EXECUTED_NEW_TOOL
+EXACT_READONLY_TOOL_QA=PASS_30_TESTS
+M4_RUNTIME_FIRST_STAGE_AND_MERGED_SELINUX=NOT_PROVEN
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
