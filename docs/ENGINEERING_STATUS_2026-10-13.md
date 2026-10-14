@@ -133,3 +133,19 @@ OCT03_FROZEN_PHH_BASE_MK_SHA=UNBOUND
 M4_RUNTIME_POLICY_BOOT_CAUSE=NOT_EVIDENCED
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## Later October 13 source-forensics update — C3A pinned PHH base and partial M4 policy peel
+
+**Recovered true Oct03 source line:** Original `run-n1f-c3a-derived-c3b5-r2.sh` uses exact C3A 991-project/369-patch base and adds seven app files + one `rom.mk` inheritance, explicitly `COMPATIBILITY_PATCH_DELTA=0`. That is not the separate Oct02 C3B E1 fully hardened image. M4 later applied **only two** C3B source blocks (PHH private sepolicy/external overlay + TrebleApp privilege XML removal), not full PHH boot-hook removals. M4's preceding `e2fsdroid` root `/bt_firmware` missing SELinux label failure and later targeted PHH root repair are real build-stage facts, not proven runtime policy cause of M4 Recovery.
+
+**Additional source pin found without host reading:** `build/titan2/n1d-c3-trebledroid.env` fixes `device/phh/treble` HEAD to `39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed`; full C3B hardener fixes that HEAD's `base.mk` Git blob to `a29e402009d449150f1216e5d517ec0c9b36bfbd`. C3A generated dirty-file allowlist permits only AndroidProducts.mk/rom.mk/treble_*.mk, not `base.mk`; however the Oct03 N1F final runner checks only project-level dirtiness and the current reviewed archive did not include **contents** of `dirty-project-state.txt`. Archived Oct03 exact path `/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z/dirty-project-state.txt` is known present; a single bounded historical text review would close the last final on-disk `base.mk` dirty-file question without scanning images or 991 heads. No new ai-g732 file content was opened this turn. See [new three-lane code-level comparison](titan2/N1F_P342_C3A_C3B_M4_PHH_SEPOLICY_PROVENANCE_V1_20261013.md).
+
+```text
+OCT03_N1F_SOURCE_FLAVOR=PASS_C3A_PLUS_7_FILES_AND_ONE_ROM_INHERIT
+C3A_PHH_UPSTREAM_GIT_HEAD=39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
+C3A_PHH_HEAD_BASE_MK_GIT_BLOB=a29e402009d449150f1216e5d517ec0c9b36bfbd
+OCT03_ARCHIVED_DIRTY_STATE_CONTENT=NOT_REVIEWED
+M4_PARTIAL_C3B_PHH_POLICY_REMOVAL=PASS_HISTORICAL_SOURCE
+M4_MERGED_SELINUX_RUNTIME_CAUSALITY=NOT_PROVEN
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
