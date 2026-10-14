@@ -162,3 +162,18 @@ OCT03_VS_M4_INSTALLED_SCRIPT_AND_PLATFORM_POLICY=WAIT_OPERATOR_BOUNDED_IMAGE_MEM
 RUNTIME_MERGED_SELINUX_AND_INIT_INVOCATION=NOT_PROVEN_BY_STATIC_PROBE
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## Oct13 actual PHH probe refuses historical archive ancestor — metadata handoff
+
+Actual operator `N1F_P342_PHH_POLICY_EXACT_V1.zip` package SHA PASS, inner 4/4 PASS, tests 30/30 PASS (0.002s), plan zero evidence I/O PASS. Explicit inspect returned `REFUSED_NO_PARTIAL_EVIDENCE`, `[Errno 20] Not a directory: 'titan2'`. Frozen verifier opens archived Oct03 SHA256SUMS.txt FIRST; its `/srv/sable-build/artifacts/titan2` component refused `O_DIRECTORY|O_NOFOLLOW`. Symlink or non-directory **unresolved**. No manifest/dirty file bytes, no Oct03/M4 images, no debugfs read occurred. No runtime PHH hook / platform CIL comparison; not a negative Selinux diagnosis.
+
+No script rerun or symlink bypass authorized. New one-purpose literal archive-ancestor `os.lstat`/possibly `os.readlink` **metadata-only** helper `N1F_P342_OCT03_PATH_METADATA_V1.py` SHA256 `bff8cb5f26c25a49a9f409eb36ce3ed387a62799d6c8bcd2ce88f0d45fc9c8a4`, source Python compile PASS, 4 synthetic refusal cases PASS and 1000 synthetic local fixture runs median 0.0099ms/p95 0.0109ms; no whole-root discovery, target resolution, directory listing, evidence content or output writes. See [controlling PHH operator refusal and diagnosis](titan2/N1F_P342_OCT03_M4_PHH_POLICY_EXACT_HOST_CHECK_V1_20261013.md). Await exact real host lstat result before any rebind; project main historic root strings do not establish safe literal contemporary physical paths.
+
+```text
+PHH_V1_AI_G732_PACKAGE_TESTS=PASS_30_OF_30
+PHH_V1_AI_G732_INSPECT=REFUSED_ENOTDIR_NO_PARTIAL_EVIDENCE
+OCT03_ARCHIVE_EVIDENCE_BYTES_READ=0
+OCT03_M4_IMAGE_BYTES_READ=0
+OCT03_ANCESTOR_METADATA_DIAGNOSIS=PREPARED_NOT_EXECUTED
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
