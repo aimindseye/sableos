@@ -321,3 +321,21 @@ A1_IF_CREATED=PROVISIONAL_NOT_BUILD_READY
 A1_OUT=NOT_CREATED
 BUILD=NO NETWORK=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 late — A1 actual 991-project local checkout PASS provisional; A1B audit prepared
+
+Operator successfully executed authorized A1 `N1F_P342_A1_LOCAL_SOURCE_CREATOR_V1.zip` on ai-g732: ZIP/inner six SHA PASS; **36/36 host regressions PASS 0.187s**. Live protected source donor PRE exact Oct03 991 head/three-dirty-project status check PASS. **991/991 offline local Git clones and postcheck PASS** at `/srv/data/sable-build/workspaces/n1f-p342-oct03-a1-isolated/android`. Historical ledger SHA `10658753bbb947a848369b0c248fca824def491e03287012ef031910542908f4`. Four dirty SHA: `ci_tests/ci_test_package_zip.go=66ac23858a2c619ca87bd991fdf163af10882f40923c9d5183824c17c12759e3`; `dexpreopt/dexpreopt_gen/dexpreopt_gen.go=6ec897e575940956701a862274e3cfe08a7fe9dc71578543b70529d483d7b6e2`; PHH `rom.mk=ab0ec737342d41d562816fce73e8694e35ce32e09db74c12ea115efa3619d592`; `treble_app/sdk/.knownPackages=8382e417241589dbc171d32954cc77c98a96d2ec7609bdcdf09594398d8b5966`. **`PASS_PROVISIONAL_LOCAL_CLONE_NOT_OCT03_DIRTY_BYTE_PROVENANCE_NOT_BUILD_READY`**; local alternates depend on protected donor; `.A1_INCOMPLETE_DO_NOT_BUILD` intentionally retained, `out-a1` NOT created, build/Soong scaffolding not validated. This supersedes old `A1_NOT_EXECUTED` statuses. No source integration, build, super, AVB, network, device or flash.
+
+**New evidence from prior GitHub:** canonical C3A `n1d-c3-trebledroid.env` pins original Soong host-layout post Git blob `b9bc7009d822dd811c0338c5595d14f0617d1392` and original dexpreopt post Git blob `7024841edac715a9bd3a81af92c42da0b302e1f0`; original Oct03 runner archived pre-N1F `device-phh-treble-rom.mk` in `SHA256SUMS.txt`. Exact original modified `treble_app/sdk/.knownPackages` POST bytes remain UNKNOWN because previous controlled build only pins HEAD BASE blob and dirty paths. No 991 recheck needed.
+
+Prepared bounded, read-only **A1B** `N1F_P342_A1B_SOURCE_AUDIT_V1.zip` SHA256 `987a51c7b20d4d16775ac03142cc47992558b09caaddd4db5dfb81d3b5cf5b85` (11,860 bytes). Python syntax both PASS; `bash -n` PASS; ZIP integrity, internal 5/5 SHA PASS; **44/44 synthetic tests PASS (0.072s)**, 600 tiny four-file simulated host checks median/p95 **0.34670/0.56264ms** assistant fixture only, peak RSS 99,336KiB. Fixed four dirty-file SHA and two Soong Git post blob checks, exact archived original rom.mk and local manifest SHA, A1 receipt/no-build marker, six Android build entrypoint types metadata only, `.repo` and `out-a1` absent. All nofollow, bounded read; no git/repo/Soong/Ninja/process, source mutation, writes, build, device, flash. **Actual ai-g732 A1B NOT_EXECUTED**. Highest PASS remains **three of four original byte authorities, fourth UNBOUND, no build readiness**. [Full A1 host admission + A1B engineering plan](titan2/N1F_P342_A1_ACTUAL_PROVISIONAL_PASS_A1B_SOURCE_AUDIT_V1_20261013.md).
+
+```text
+A1_AI_G732_CLONE=PASS_991_PROVISIONAL_NOT_BUILD_READY
+A1_NEW_OUT=NOT_CREATED
+A1B_SCRIPT_SYNTAX_AND_TESTS=PASS_44_SYNTHETIC
+A1B_HOST_INSPECTION=NOT_RUN
+A1_HISTORIC_THREE_OF_FOUR_DIRTY_BYTE_AUTHORITIES=AWAIT_A1B
+A1_TREBLE_APP_ORIGINAL_POST_SHA=UNBOUND
+SOURCE_INTEGRATION=NO BUILD=NO NETWORK=NO SUPER=NO DEVICE=NO FLASH=NO
+```
