@@ -470,6 +470,28 @@ OCT03_SEVEN_COMPANIONS_LP_AVB_ROLLBACK=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### Oct03 versus M4 offline first-stage / PHH / SELinux / LP delta — completed evidence review
+
+**User approved** an offline boot-critical-delta comparison of retained Oct03 N1F and M4 evidence only, explicitly including first-stage mounts, PHH source, effective SELinux and partition assumptions. Review **COMPLETE at existing evidence scope**; see [new detailed ten-row differential/decision](N1F_P342_OFFLINE_BOOT_CRITICAL_DELTA_V1_20261013.md). Distribution-only `N1F_P342_OFFLINE_BOOT_DELTA_V1.zip` outer SHA256 `278a9c56da39ad4e07c601f1409e62c4195db0f75c06f50fe17c1017a2691059`; four internal SHA members PASS, deterministic ZIP validation 2/2 byte-identical, JSON negative permission invariant PASS, 10 x 9 populated source-bounded comparison matrix rows PASS. **No new executable script, image, source or host file reads**; no build/device/flash.
+
+**Delta findings:** original Oct03 system image physically booted, Oct11 separately observed N1F-based hybrid runtime booted with embedded symlinks but flashed super SHA/journal **UNBOUND**, M4 different source/image SHA built and flashed `system_a` **12/12 OKAY but FAIL_RECOVERY**. Distinct dates and partition environments are not a controlled same-byte/same-AVB A/B. The earlier alleged M4 missing `skip_mount.cfg` was **refuted** by source + embedded staged file same SHA `0a30008c167d46e3177e9189fcb14e482325c4f08da4f47c9d708a6700f2483e`, expected absolute compatibility symlink and frozen-image member hash; **effective failed-boot first-stage mount/init execution still UNKNOWN**. Prior M4 PHH `mtkmal` source guard/marker and C3B TrebleApp/obsolete root cleanup source states PASS at original scope; no actual M4 init/property crash/reboot log. M4 final `plat_sepolicy.cil` and `plat_file_contexts` content hashes PASS as bounded members, but **vendor policy interoperability, merged effective SELinux, AVC and first-stage policy load not established**. IMS signer, exact API36 two boot JARs, R1/B1 current POST/POST, and R2 bounded native/A4 PASS all preserved; no causal inference of Rescue Party or missing ViLTE library from static membership.
+
+**Hybrid-super counterfactual remains** `M4_HYBRID_SUPER_ANDROID_BOOT=UNKNOWN_NOT_TESTED`. Same M4 bytes and genuinely equivalent companions/LP/AVB would not repair proven image-intrinsic changes; a *different specifically matched* hybrid composition could in principle change an otherwise cross-partition failure but is not evidenced and is a distinct experiment. Full hybrid super as **offline byte/LP control only** remains accepted by archived build-engineer, not approved for assembly or physical writing. Seven Oct03 physical companion exact SHA/LP/AVB and Oct11 actual written super SHA/journal remain UNBOUND. Need already-recorded M4 Recovery/first-stage logs to identify mechanism; archived recovery logs reportedly unavailable; do not request device under this authorization. No repeated 991/M11/M4 image/skip_mount/A4/R2 tests.
+
+```text
+OFFLINE_BOOT_CRITICAL_DELTA_REVIEW=COMPLETE_RETAINED_EVIDENCE
+COMPARISON_MATRIX=PASS_10_ROWS_CLAIM_SCOPED
+M4_SKIPMOUNT_MISSING=REJECTED_BY_PRIOR_STATIC_BYTES
+M4_FIRST_STAGE_MOUNT_EFFECTIVE=NOT_EVIDENCED
+M4_COMPILED_POLICY_FILES=PASS_EXISTING_M4_MEMBER_CHECK
+M4_EFFECTIVE_SELINUX=NOT_EVIDENCED
+M4_PHYSICAL_BOOT=FAIL_RECOVERY_NO_ROOT_CAUSE
+M4_AS_HYBRID_SUPER_BOOT=UNKNOWN_NOT_TESTED
+OCT11_ACTUAL_SUPER_JOURNAL=UNBOUND
+OCT03_MATCHED_COMPANIONS_LP_AVB=UNBOUND
+SOURCE_MUTATION=NO BUILD=NO LPDUMP=NO LPMAKE=NO IMAGE_READ=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
