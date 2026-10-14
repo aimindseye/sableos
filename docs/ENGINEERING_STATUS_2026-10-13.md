@@ -149,3 +149,16 @@ M4_PARTIAL_C3B_PHH_POLICY_REMOVAL=PASS_HISTORICAL_SOURCE
 M4_MERGED_SELINUX_RUNTIME_CAUSALITY=NOT_PROVEN
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 — exact archived PHH source and static installed image policy handoff
+
+Operator asks actual confirmation of original Oct03 PHH file status and M4 installed hook/policy differences. GitHub code/PR review confirmed archived Oct03 source dirty-state receipt plus SHA256SUMS exists; C3A PHH project HEAD 39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed, HEAD:base.mk Git blob a29e402009d449150f1216e5d517ec0c9b36bfbd. **Actual archive dirty file contents remain unread**; pinned source Git blob is not substituted for verified Oct03 on-disk bytes. M4 source exact two-block C3B private-policy peel and historical e2fsdroid packaging fix PASS, final M4 installed /system/bin/phh-on-boot.sh content not yet qualified by prior 11/11 member set.
+
+Prepared external ZIP **N1F_P342_PHH_POLICY_EXACT_V1.zip**, SHA256 c923fe6b92fedafd0a302590dea28f052390988d4aa316b2ad3170c56330f358; [controlling plan](titan2/N1F_P342_OCT03_M4_PHH_POLICY_EXACT_HOST_CHECK_V1_20261013.md). Only two exact small Oct03 archived text reads with manifest SHA; and exact three fixed ext4 members of two historical images, with byte caps and prior M4 CIL/context hashes. Whole-image SHA is not replayed, no writes/mount/build/device. Python AST PASS, archive 4/4 SHA PASS, synthetic **30/30** PASS in 0.003s, parser fixture 4000 cycles median/p95 0.00442/0.00463 ms (not real image I/O). **Assistant container has no debugfs**, actual ai-g732 inspection NOT YET EXECUTED, no runtime merged policy admission inferred.
+
+```text
+OCT03_ARCHIVED_BASE_MK_STATUS=WAIT_OPERATOR_EXACT_TEXT_READ
+OCT03_VS_M4_INSTALLED_SCRIPT_AND_PLATFORM_POLICY=WAIT_OPERATOR_BOUNDED_IMAGE_MEMBER_READ
+RUNTIME_MERGED_SELINUX_AND_INIT_INVOCATION=NOT_PROVEN_BY_STATIC_PROBE
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
