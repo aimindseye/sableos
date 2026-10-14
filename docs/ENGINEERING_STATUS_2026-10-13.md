@@ -212,3 +212,22 @@ OCT11_ACTUAL_AS_FLASHED_SUPER=UNBOUND
 NEXT_HOST_ONLY_SOURCE_INTEGRATION=PROPOSED_NO_BUILD
 SOURCE_MUTATION=NO BUILD=NO LPMAKE=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 — Expanded cellular / native / CW1 hybrid-source planning
+
+User agrees earlier Oct03-derived host build sequence, asks to add *additional cellular APKs and libraries and completed call-waiting work* to future hybrid layout. Project+GitHub research finds merged PR #327 36-file stock bundle with **ImsService.apk + two MediaTek boot JARs + 33 native A4 references**; PR #328 first wholesale 33 install Kati duplicate-target failure, corrected **28 frozen stock imports + 5 preexisting AOSP16 platform providers**, exact reviewed M008/M017/M029/M038/M039; PR #331 corrected C2 build SHA256 `630db78ef3f888b961640d17c5237495e673a953d67f1d52fabe056cbb76bb50`, 3218440192 bytes, with postbuild linkage plan; PR #334 records **C1/C2 unsuccessful physical boots**. Do not reuse entire C2 image as parent, transplant stock AOSP providers, or label all 33 native inputs image-ready G3.
+
+Archived CW1 PR #339 **four method definitions + isolated `telephony-common` build PASS** and stock MTK consumer `invoke-super` **PASS_STATIC_ONLY**, original SHA-pinned 45-line patch against `GsmCdmaCallTracker.java`/`GsmCdmaConnection.java`; runtime call waiting still NOT_TESTED. Also reuses *separate* Restless incoming-call binder `ro.telephony.block_binder_thread_on_incoming_calls=false` C2 product property. Do not copy compiled CW1 JAR as a binary into new system image; selected original source/patch ABI gate required. C2 `SableTitan2Cellular*` readiness packages may be included with healer **DISABLED**; MTK IMS telephony RRO must be present and selected for `com.mediatek.ims`. Extra `MtkTeleService`/TelephonyProvider/MmsService/Telecom APK and other MediaTek JARs are **NOT** auto-admitted; need per-file package/service/signing+ABI/classloader proof. **Effective embedded `/system/system_ext` within new derived Android16 system image** remains only admitted target, not standalone Android14 stock `system_ext_a` in LP super.
+
+Updated decision: **A1** isolated minimal Oct03 derived source+R1+B1+C1+guard+MMTEL RRO+incoming-call property and observe-only readiness package, then **A2 CONDITIONAL** CW1 source patch + 28 collision-filtered stock natives, five platform providers reused, **only after** selected effective IMS app linker/recursive strong symbol-version G3 PASS and exact code/manifest source pins. Both are HOST-ONLY and NON_FLASHABLE, need independent source-mutation/build approval, final G1/G2/G3, LP/AVB/VAB/restore. Oct11 actually flashed hybrid artifact still UNBOUND and radio transient-to-out-of-service separate issue. [New full 21-component/33-native evidence matrix and design](titan2/N1F_P342_CELLULAR_CW1_EXPANDED_HYBRID_BUILD_DECISION_V1_20261013.md). Review ZIP `N1F_P342_CELLULAR_CW1_EXPANSION_DECISION_V1.zip` SHA `609353b552b007e7273ed8f08329ce19c0fc33c4bb169dbc9af03c85793210ee`; CRC/inner 4/4 PASS; 21 unique component rows and 33 frozen-target statuses (28/5) schema PASS. No executable written; no source/image/network/device operations.
+
+```text
+CALL_WAITING_CW1_COMPILED_AND_STOCK_STATIC_SUPER=PASS_HISTORICAL
+CALL_WAITING_CW1_NEW_IMAGE_AND_RUNTIME=NOT_PROVEN
+C2_COLLISION_FILTER_28_NATIVE_5_PLATFORM=PASS_HISTORICAL_BUILD_ONLY
+C2_PHYSICAL_BOOT=FAIL_PRIOR
+EXTRA_MEDIA_TEK_JARS_OEM_TELESERVICE_APKS=HELD_NOT_ADMITTED
+OCT03_SOURCE_TO_NEW_IMAGE=PLANNED_NOT_BUILT
+OCT11_SUPER_AS_FLASHED_SHA=UNBOUND
+SOURCE_MUTATION=NO BUILD=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
+```
