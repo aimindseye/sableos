@@ -534,6 +534,21 @@ M4_RUNTIME_FIRST_STAGE_AND_MERGED_SELINUX=NOT_PROVEN
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual Oct03/M4 PHH exact-image probe refused on host ancestor, prior 30 tests PASS
+
+Operator ai-g732 actual frozen V1: outer checksum PASS, four inner checks PASS, **30/30 synthetic regression PASS (0.002s)**, plan mode PASS; actual inspect returned `REFUSED_NO_PARTIAL_EVIDENCE`, `[Errno 20] Not a directory: 'titan2'`. The code first opens the **exact Oct03 historical archive manifest** `/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z/SHA256SUMS.txt` through per-component `O_DIRECTORY|O_NOFOLLOW`; at its `titan2` ancestor it encounters a non-directory or a symlink (Linux `ENOTDIR` for symlink/no-follow). **It did not reach manifest/dirty file content, Oct03 or M4 system.img, or /usr/sbin/debugfs**. Source read=0, image read=0, no proof about PHH or SELinux members. SSH exit followed `set -e` on intentional refusal, no host failure evidence.
+
+Fail closed: do not weaken symlink/dir restrictions or auto-promote `/srv/data/sable-build` alias. [Detailed result and metadata-only next check](N1F_P342_OCT03_M4_PHH_POLICY_EXACT_HOST_CHECK_V1_20261013.md). Prepared non-content metadata helper `N1F_P342_OCT03_PATH_METADATA_V1.py` SHA256 `bff8cb5f26c25a49a9f409eb36ce3ed387a62799d6c8bcd2ce88f0d45fc9c8a4` walks **only literal ancestor components of the already-pinned Oct03 manifest** using os.lstat, stops at first symlink/non-directory and reports link text with os.readlink (does **not** resolve or follow). Assistant Python syntax PASS; 4/4 synthetic path conditions PASS, 1000 synthetic symlink fixture iterations median 0.0099ms/p95 0.0109ms (not ai-g732). **No new evidence bytes have been read** and no exact canonical replacement root has yet been approved.
+
+```text
+PHH_STATIC_COMPARISON_PACKAGE_AND_TESTS=PASS_OPERATOR_30_OF_30
+PHH_REAL_IMAGE_AND_ARCHIVE_INSPECTION=REFUSED_ON_ANCESTOR_ENOTDIR
+PHH_HOST_PATH_CANONICAL_AUTHORITY=UNBOUND
+OCT03_ARCHIVED_BASE_MK_DIRTY_STATE=NOT_READ
+M4_INSTALLED_PHH_AND_SELINUX_POLICY_DELTA=NOT_READ
+BUILD=NO SOURCE_MUTATION=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
