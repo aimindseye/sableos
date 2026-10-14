@@ -62,3 +62,25 @@ EFFECTIVE_SELINUX_RUNTIME=NOT_EVIDENCED
 HISTORICAL_OCT03_PHH_BASE_LEAF=UNBOUND_BYTES_IN_REVIEWED_RECORD
 SOURCE_MUTATION=NO BUILD=NO HOST_CONTENT_READ=NO DEVICE=NO FLASH=NO
 ```
+
+## Additional exact C3A PHH baseline commit/blob pin — newly recovered
+
+The prior paragraph saying the frozen **October 3 actual `base.mk` leaf** remains unbound is still correct; however the **original C3A baseline blob/commit is now identified** more strongly than a generic unknown:
+
+- Main `build/titan2/n1d-c3-trebledroid.env` pins `N1D_C3_TD_DEVICE_PHH_COMMIT=39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed`.
+- Main [C3A source preparation](https://github.com/aimindseye/sableos/blob/main/build/titan2/prepare-n1d-c3-trebledroid.sh) requires that same exact scaffold commit, and `verify_td_generated_dirty_scope` permits PHH project dirty paths **only** `AndroidProducts.mk`, `rom.mk` and `treble_*.mk`. A modified `base.mk` at the end of that particular qualified preparation would fail its gate.
+- The separate [full C3B hardening tool](https://github.com/aimindseye/sableos/blob/main/build/titan2/apply-n1d-c3b-phh-base-hardening.py) explicitly pins **the same commit** as `EXPECTED_HEAD=39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed` and its Git `HEAD:base.mk` to **`EXPECTED_BASE_BLOB=a29e402009d449150f1216e5d517ec0c9b36bfbd`**, a Git blob identity (not raw-file SHA256). It describes the exact original PHH private-policy/overlay block to remove, and separately the PHH boot-hook copy rules.
+- Oct03 N1F runner itself checks the archived 991-project C3A heads and dirty-project **names**, but it **does not re-check every dirty *filename*** or the `base.mk` content hash during the final Oct03 N1F build. Thus the pinned C3A `HEAD:base.mk` **strongly identifies the source baseline** but is **not independent final Oct03 working-file byte proof**.
+- The existing named archive is `/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z/dirty-project-state.txt`, whose presence was previously verified (not read in this follow-up). Reviewing this **one exact, size-capped historical text receipt** would distinguish whether `device/phh/treble/base.mk` was dirty at archive time; a clean status plus pinned project HEAD would support an original source-file identity. Dirty-state absence is a file-state claim, **not evidence of effective merged SELinux runtime behavior**. Its contents are **NOT YET EXAMINED**; no new host read is performed or implied.
+
+**Updated precise classifications**:
+
+```text
+C3A_DEVICE_PHH_PINNED_PROJECT_HEAD=39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed
+C3A_HEAD_BASE_MK_GIT_BLOB=a29e402009d449150f1216e5d517ec0c9b36bfbd
+C3A_STAGE_GENERATED_DIRTY_ALLOWLIST=EXCLUDES_BASE_MK
+OCT03_FINAL_BASE_MK_FILE_BYTES=NOT_REBOUND_FROM_ARCHIVED_DIRTY_RECEIPT
+M4_SELECTED_BASE_MK_POST_SHA256=9e197a490a61a5721b8bb881e93acbc451104957a9599895bc724cfb5768820b
+M4_PHYSICAL_BOOT_RECOVERY_CAUSE=STILL_UNBOUND
+NEW_HOST_FILE_READ=NO
+```
