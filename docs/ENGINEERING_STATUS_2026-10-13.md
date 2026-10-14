@@ -116,3 +116,20 @@ M4_BOOT_CAUSE=UNBOUND
 M4_SUPER_BOOT_COUNTERFACTUAL=UNKNOWN_NOT_TESTED
 SUPER_REPACK=NO SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## Continued investigation — Oct03 C3A-derived source versus M4 partial PHH policy peel
+
+Reviewed exact current `build/titan2/run-n1f-c3a-derived-c3b5-r2.sh`, the separate 2026-10-02 C3B full hardening transform, existing [M4 TrebleApp source repair operator record](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497900692), and [M4 `/bt_firmware` SELinux packaging failure](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5502058005). **Newly isolated source-level divergence:** Oct03 N1F *C3B5* was built from a C3A 369-patch, 991-row source root with only seven app files plus one `rom.mk` product inheritance and `N1F_R2_COMPATIBILITY_PATCH_DELTA=0`; **do not conflate C3B5 app bundle with different Oct02 fully hardened C3B engineering source**. M4 991-source reconstruction later removed **only two** C3B PHH blocks, including `SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/phh/treble/sepolicy`/external overlay inheritance and TrebleApp privilege XML. Other full hardening transforms, including removal of PHH on-boot script copy rules, were *explicitly NOT replayed* in the M4 exact repair; current installed M4 PHH boot-hook selection unproven.
+
+M4 hit **real build-stage `e2fsdroid` missing-label for `/bt_firmware`**, same failure class as earlier C3B E1; targeted PHH board-root change plus removal of two stale generated empty dirs resolved build packaging, retained `efs`/`persist`, and yielded hashed M4 image. This demonstrates a **material build-policy/source delta**, not a demonstrated *runtime* SELinux or init failure. Historical Oct03 frozen effective `device/phh/treble/base.mk` member SHA **NOT IDENTIFIED** from existing C3A manifest/head+`rom.mk` archives, so an exact Oct03-vs-M4 PHH private-policy byte comparison must not be assumed. No new host bytes read or scripts run. The original M4 Recovery mechanism is still unknown; static skip_mount and policy image members remain prior PASS.
+
+[Controlling forensic three-lane source comparison](titan2/N1F_P342_C3A_C3B_M4_PHH_SEPOLICY_PROVENANCE_V1_20261013.md). No image build, new policy compiles, device use or flash authorized.
+
+```text
+OCT03_C3A_PLUS_FIVE_APP_SOURCE_DELTA=CONFIRMED_7_FILES_1_INHERIT
+M4_PRIVATE_PHH_SEPOLICY_BUILD_INPUT_REMOVAL=CONFIRMED_TWO_BLOCK_REPAIR
+M4_BT_FIRMWARE_SOURCE_POLICY_BUILD_FAILURE=HISTORICAL_CONFIRMED_RESOLVED
+OCT03_FROZEN_PHH_BASE_MK_SHA=UNBOUND
+M4_RUNTIME_POLICY_BOOT_CAUSE=NOT_EVIDENCED
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
