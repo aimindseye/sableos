@@ -711,6 +711,21 @@ A1_ORIGINAL_TREBLE_APP_POST_SHA=UNBOUND
 A1_OUT=NOT_CREATED BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### A1B Mac symlinked temporary fixture failure; strict V1.1 repaired, Ubuntu audit pending
+
+User confirmed build host **Ubuntu ai-g732**, not Mac. Actual prior A1 991-project Ubuntu checkout **PASS_PROVISIONAL_NOT_BUILD_READY**, **not repeated**. Separately a **Mac** run of `N1F_P342_A1B_SOURCE_AUDIT_V1.zip` reported **27 errors of 44 tests**, all `NotADirectoryError 'var'` because Mac `/var/folders` is symlinked to `/private/var/folders` and the fixed nofollow dirfd refused a symlink **in temporary synthetic test paths**. Mac real inspect then refused missing literal `/srv` (expected: new Android checkout resides only on Ubuntu). This is **not an Ubuntu A1 checkout or source provenance failure**. Neither source/archive byte was inspected by Mac real run.
+
+[Detailed V1.1 corrected Mac-only test-fixture design, package hashes, and QA](N1F_P342_A1B_MAC_FIXTURE_PORTABLE_V11_20261013.md): `N1F_P342_A1B_SOURCE_AUDIT_V1_1.zip` SHA256 `a2c714016856a3ef28a4fcf77f463224f818c15d218e8825a5098713dd62e634`. Production verifier **unchanged except version=1.1**; all actual source/archive `O_DIRECTORY|O_NOFOLLOW` guards, bounded regular reads, A1 marker, receipts, original SHA/Git blob expectations and build refusal preserved. Only **synthetic test setup** uses `os.path.realpath(tempfile.gettempdir())` for a physical ephemeral test parent (and validates with the same strict nofollow checker). Added two tests: physical fixture and deliberate symlinked fixture alias refused. ZIP CRC+inner 5/5 sha PASS, both Python AST+compile PASS, README `bash -n` PASS, **46/46 synthetic tests PASS**; separate symlinked `TMPDIR` emulation also **46/46 PASS** on assistant Linux fixture (not a direct Mac rerun). 600 fixture inspections median/p95 `0.42678/0.67645 ms`, NOT host performance. **Ubuntu ai-g732 A1B inspect still NOT_EXECUTED**. Next run only this V1.1, checksum pinned, on Ubuntu; use exact `inspect --authorize-a1b-readonly` after tests/plan. Never weaken nofollow, fake /srv on Mac, rebuild A1, create out-a1, remove `.A1_INCOMPLETE_DO_NOT_BUILD`, or treat a final three-of-four source byte match as build-ready.
+
+```text
+A1_HOST_UBUNTU_991_CHECKOUT=PASS_PROVISIONAL_NOT_BUILD_READY
+A1B_V1_MAC_TESTS=ERROR_27_OF_44_AT_SYMLINKED_VAR
+A1B_V1_MAC_REAL_INSPECT=REFUSED_EXPECTED_NO_SRV
+A1B_V11_LOCAL_QA=PASS_46_OF_46
+A1B_V11_HOST_UBUNTU_INSPECT=NOT_EXECUTED
+BUILD_READY=NO SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
