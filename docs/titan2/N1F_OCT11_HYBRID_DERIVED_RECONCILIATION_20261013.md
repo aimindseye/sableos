@@ -549,6 +549,23 @@ M4_INSTALLED_PHH_AND_SELINUX_POLICY_DELTA=NOT_READ
 BUILD=NO SOURCE_MUTATION=NO DEVICE=NO FLASH=NO
 ```
 
+### Operator confirms legacy Oct03 artifact symlink; exact physical-path PHH V1.1 prepared
+
+**Actual checksum-pinned operator metadata** identifies the first V1 ENOTDIR component as **SYMLINK** `/srv/sable-build/artifacts/titan2 -> /srv/data/sable-build/titan2/artifacts`. Its three ancestors `/srv`, `/srv/sable-build`, `/srv/sable-build/artifacts` are regular directories at the observation. This **explains V1's fail-closed refusal**, not a missing archive or SELinux failure; no evidence bytes were read. Do not use alternate similar `/srv/data/sable-build/artifacts/titan2` root or `realpath` to silently change source identity.
+
+**New frozen V1.1** reuses V1's three ext4 member paths, image byte-size pins, archived SHA-bound dirty receipt parser, historical M4 platform CIL/context hashes and nofollow read-only behavior. It first rechecks exact operator-observed legacy symlink text through nofollow dirfds, then changes ONLY the Oct03 archive and Oct03 image paths to **literal physical** `/srv/data/sable-build/titan2/artifacts/{c3a-boot-qualified,n1f-c3a-derived-c3b5}/...`, still rejecting all symlinks along actual physical paths. M4 path unchanged. [Exact V1.1 archive alias contract and tested handoff](N1F_P342_OCT03_PHH_ALIAS_PHYSICAL_V11_20261013.md). Outer ZIP `N1F_P342_PHH_POLICY_ALIAS_V1_1.zip` SHA256 `ae2763fe15895a0ed2d29b691d5cd845b7d4fe8020de3dcbf8677c019cf78a7f`; ZIP/inner 4/4 SHA PASS, source/test AST PASS, README `bash -n` PASS, **44/44 synthetic tests PASS** including full synthetic two-image comparison and negative SHA gate, default plan no evidence I/O. 1500 synthetic symlink metadata probes median 0.00593ms/p95 0.00672ms assistant-host only. **Real ai-g732 V1.1 archive/image/debugfs not yet executed**, no PHH or SELinux result admitted. Read-only exact scope unchanged, no build/device/flash.
+
+```text
+OCT03_LEGACY_ARTIFACT_ALIAS=CONFIRMED_LITERAL_SYMLINK
+OCT03_LEGACY_ARTIFACT_TARGET=/srv/data/sable-build/titan2/artifacts
+PHH_V1_REAL_INSPECT=REFUSED_EXPECTED_NOFOLLOW
+PHH_V11_PACKAGE_QA=PASS_44_OF_44
+PHH_V11_HOST_READ=NOT_YET_EXECUTED
+OCT03_ARCHIVED_BASE_MK=NOT_CLASSIFIED
+OCT03_M4_INSTALLED_PHH_POLICY=NOT_COMPARED
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
