@@ -586,6 +586,30 @@ NEXT_HOST_ONLY_OCT03_DERIVED_IMAGE=PLANNED_NOT_BUILT
 SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### Expanded cellular + CW1 prior-work reuse (A1 baseline / A2 conditional 28-native)
+
+User agrees prior Oct03-derived source build sequence, and asks to add **more APKs/libraries and earlier call-waiting** while preserving cellular goals. [NEW fully sourced decision and component admissions](N1F_P342_CELLULAR_CW1_EXPANDED_HYBRID_BUILD_DECISION_V1_20261013.md) reconciles merged [PR327](https://github.com/aimindseye/sableos/pull/327) 36 stock-file/41-mutation seal, C1 [six-module owner](https://github.com/aimindseye/sableos/blob/main/product/titan2/n1i-c1/sable-titan2-n1i-c1.mk), drafted [PR328](https://github.com/aimindseye/sableos/pull/328) C2 native collision fix, built/postbuild [PR331](https://github.com/aimindseye/sableos/pull/331), physical boot-failure [PR334](https://github.com/aimindseye/sableos/pull/334), and CW1 [PR339](https://github.com/aimindseye/sableos/pull/339). **No rerun** of 991 projects, 33 native file hashes, C2 build, four CW1 DEX tests or PR342 V1.1. The original 33 A4 target list is **REFERENCE ONLY**: C2 failed Kati duplicate install path when naively importing 33, then historically built with **28 frozen-stock natives imported + five exact Android16 graph providers REUSED**, M008/M017/M029/M038/M039. Successful C2 SHA `630db78ef3f888b961640d17c5237495e673a953d67f1d52fabe056cbb76bb50` **did not physically boot stably** and does not imply G3 target admission.
+
+**New decision:** A1 is isolated **Oct03 booting C3A-derived Android16 source** with R1/B1/C1, PHH exact guard/marker, original MTK MMTEL telephony RRO, C2 incoming-call property and optional observation-only readiness package, maintaining embedded `/system/system_ext` and `skip_mount.cfg`. **A2 expanded** preserves A1 and conditionally adds separately source-bound **CW1 45-line `GsmCdmaCallTracker`/`GsmCdmaConnection` patch** and 28 frozen native inputs **only on complete selected-image recursive GNU symbol/version/provider/IMS-app linker G3 and Kati-owner preflight**; five platform providers remain existing AOSP16 outputs, never overwritten by stock. CW1 isolated `telephony-common` compiled four exact DEX definitions, prior stock consumer `invoke-super` PASS_STATIC_ONLY; **call waiting semantics/unified future image DEX not proven**, and the original CW1 JAR is NOT a transferable binary image patch. The separate `ro.telephony.block_binder_thread_on_incoming_calls=false` C2 product setting activates Restless existing legacy IMS incoming-call behavior, **NOT** the four-method CW1 source patch.
+
+**APKs/JARs**: C1 imports OEM platform-resigned `ImsService.apk`, exactly `mediatek-common.jar`/`mediatek-ims-base.jar` plus three configs and two bootpath overrides; confirm already-sourced `treble-overlay-telephony-mtk-ims.apk` installed and selected for `com.mediatek.ims`. Optional C2 `SableTitan2Cellular` readiness modules **healer disabled**. Other stock `mediatek-ims-common/extension-plugin/telephony-base/telephony-common/medIATEK-framework` JARs and `MtkTeleService/TelephonyProvider/MmsService/MtkTelecom.apk` **NOT ADMITTED** without exact package/UID/ABI/uses-library/BCP/privapp/service ownership evidence. No wholesale stock `system_ext` or `product`, no separate standalone LP copyout, no default R2 native import without G3. Separate LTE registration collapse persists independent of IMS and call waiting.
+
+**Layout:** no physical super write or assembly now. Oct11 runtime boot observed but **actual flashed super SHA/journal UNBOUND**; Oct03 physically booted system image remains the distinct **offline-planning** parent. A1 or A2 host built `system.img` requires newly selected exact isolated Oct03 source root and fresh OUT, separately reviewed mutation and build authority. All candidates **NON_FLASHABLE** pending G1/G2/G3, first-stage/AVB/LP/VAB, companion hashes and matched restore. Host image build is not IMS/cellular runtime PASS. Physical acceptance eventually includes reliable LTE 30-minute test, IMS/MMTEL, MO/MT voice, SMS/MMS, CW1 waiting/hold/swap with carrier provisioning and repeated reboot, with separate device approval.
+
+**Artifact/QA**: `N1F_P342_CELLULAR_CW1_EXPANSION_DECISION_V1.zip` outer SHA `609353b552b007e7273ed8f08329ce19c0fc33c4bb169dbc9af03c85793210ee`; ZIP CRC PASS, inner 4/4 SHA PASS, **21 unique component rows / 7 columns**, **33 native rows / 6 columns (28 stock / 5 platform)** with grounded source URLs and explicit gates PASS. No executable included; no script syntax/performance or host build claimed.
+
+```text
+EXPANDED_CELLULAR_COMPONENTS=PLANNED_21_BOUND_SCOPES
+C2_33_HISTORICAL_NATIVE_DISPOSITION=PASS_28_STOCK_5_ANDROID16_PLATFORM
+CW1_4_METHOD_DEX_AND_STATIC_SUPER=PASS_PRIOR_NOT_RUNTIME
+CW1_IN_NEW_DERIVED_IMAGE=NOT_BUILT
+ADD_EXTRA_OEM_APKS_OR_JARS=NOT_AUTHORIZED
+A1_OCT03_DERIVED_HOST_IMAGE=DESIGN_ONLY
+A2_C2_28_NATIVE_PLUS_CW1=HELD_UNTIL_G3_SOURCE_AND_BUILD_GATES
+OCT11_AS_FLASHED_SUPER=UNBOUND
+SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
