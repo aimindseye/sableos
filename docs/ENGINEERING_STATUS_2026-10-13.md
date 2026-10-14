@@ -193,3 +193,22 @@ OCT03_PHH_BASE_MK_DIRTY=UNBOUND_PENDING_ARCHIVE
 OCT03_VS_M4_STATIC_PHH_AND_SELINUX=UNBOUND_PENDING_DEBUGFS
 SOURCE_MUTATION=NO IMAGE_REPACK=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 — PHH V1.1 actually qualified and selective hybrid-derived host build decision
+
+User executed V1.1 with frozen ZIP and inner SHA PASS, 44/44 tests (0.005s), and real exact read-only `PASS_STATIC_OCT03_M4_EXACT_MEMBERS_NOT_RUNTIME_POLICY`. Archived Oct03 C3A PHH `base.mk_dirty=false` from manifest-SHA-verified dirty-project-state.txt; original Git HEAD and base.mk blob prepin corroborate clean original file. Exact installed `phh-on-boot.sh` Oct03 8326 bytes SHA256 `18f4425e38510690fb06fbe9a95cfdc2239541c4f997297880026335402fc63f`, M4 8387 bytes SHA256 `ab3369f6b06b751ecd59d43368daef0057470674cc233c0d468a84b7d465386e`. These match prior PR339 Titan marker guard PRE/POST source SHA exactly. Oct03 vs M4 platform `plat_sepolicy.cil` both 3148067 bytes SHA `a7805083d63a0fda11ce7943c0c4ee90954c44971d7b85897504d64421eab758`; `plat_file_contexts` both 48918 bytes SHA `ac2ba2392c7bcdb9e75f6add88841b4d216159c6ede0e673f881aaf6b4737ff9`; **SAME_CONTENT** each. Scope: platform members only, **NOT** effective merged policy/vendor/odm, init guard execution or M4 recovery cause.
+
+Operator asks whether M4 changes could be incorporated into Oct11 booting hybrid and built. Answer: **minimal source-integrated new Oct03-derived Android16 host-only system.img candidate IS FEASIBLE IN PRINCIPLE**, but **not** direct copy of failed M4 system.img to an unbound Oct11 as-flashed `super.img`. Actual Oct11 flashed super SHA/journal remains UNBOUND; Oct03 N1F SHA `dc1f917d...` remains separate approved **planning-only** parent. Proposed narrow changes: exact R1 protected broadcast, exact B1 TelephonyMetrics overload, six existing C1 IMS packages/two BCP JARs and overrides, exact PHH Titan guard with marker; preserve C3A default PHH base, `skip_mount.cfg` embedded system_ext/product and existing root folder policy. Do **not** automatically import M4 C3B overlay/private-policy removal, absent R2 ViLTE binaries, broad imports or risky super/boot/AVB tweaks. Candidate is **NON_FLASHABLE** pending G1/G2/G3 and physical companion/LP/AVB/restore. Need independently selected isolated Android16 checkout and OUT plus exact mutation and host build authorization; no compile tool invocation or developer source edits this turn.
+
+[Reviewed selective host-only integration plan and V1.1 actual evidence](titan2/N1F_P342_V11_STATIC_PASS_MINIMAL_HYBRID_DERIVED_BUILD_DECISION_V1_20261013.md). No new executable, so no new source-syntax or runtime benchmark claims. All prior original/archived 44 V1.1 cases, R1/B1, M4 build, C1 BCP, A4/R2 and Oct03 seal are reused without repeat.
+
+```text
+PHH_V11_AI_G732_ACTUAL=PASS_STATIC_MEMBERS
+C3A_ARCHIVED_BASE_MK_DIRTY=FALSE
+M4_PHH_GUARD_INSTALLED=PASS_BOUND_SOURCE_POST
+PLATFORM_CIL_AND_CONTEXTS_OCT03_M4=SAME_CONTENT
+IMPLIED_FULL_SELINUX_POLICY_EQUAL=NO
+OCT11_ACTUAL_AS_FLASHED_SUPER=UNBOUND
+NEXT_HOST_ONLY_SOURCE_INTEGRATION=PROPOSED_NO_BUILD
+SOURCE_MUTATION=NO BUILD=NO LPMAKE=NO DEVICE=NO FLASH=NO
+```
