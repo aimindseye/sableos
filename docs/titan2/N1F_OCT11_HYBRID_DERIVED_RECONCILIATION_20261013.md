@@ -566,6 +566,26 @@ OCT03_M4_INSTALLED_PHH_POLICY=NOT_COMPARED
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual PHH V1.1 archive and selected Oct03/M4 ext4 PASS; minimal build decision
+
+The operator's **actual ai-g732** V1.1 outer and four internal SHA PASS, **44/44 regressions PASS (0.005s)**, and real bounded inspect returned **PASS_STATIC_OCT03_M4_EXACT_MEMBERS_NOT_RUNTIME_POLICY**. Oct03 archived C3A PHH base.mk **NOT DIRTY** in SHA-verified historical receipt (the single PHH dirty-state entry was not base.mk), supporting previously pinned Oct03 PHH Git HEAD and base.mk blob. Oct03 **installed** /system/bin/phh-on-boot.sh 8326 bytes SHA256 18f4425e38510690fb06fbe9a95cfdc2239541c4f997297880026335402fc63f; M4 installed same path 8387 bytes SHA256 ab3369f6b06b751ecd59d43368daef0057470674cc233c0d468a84b7d465386e. This precisely equals archived [PR339 PHH Titan guard PRE/POST source hashes](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497568321), so the bounded source-to-installed guard delta is now tied to actual separate frozen Oct03/M4 image members. Both **platform SELinux plat_sepolicy.cil** (3148067 bytes SHA256 a7805083d63a0fda11ce7943c0c4ee90954c44971d7b85897504d64421eab758) and **platform file_contexts** (48918 bytes SHA256 ac2ba2392c7bcdb9e75f6add88841b4d216159c6ede0e673f881aaf6b4737ff9) are **exactly SAME_CONTENT** in both images. This means M4 PHH private-policy source change did not change **these two selected final platform members**, but says nothing definitive about system_ext/vendor/odm policy parts or effective merged runtime SELinux. Marker presence/installed guard cannot prove PHH init invocation, first-stage visibility, Android successful boot, or M4 Recovery cause. Neither multi-GB full image SHA was recomputed; prior image digests remain sealed history.
+
+**Operator asks whether to add M4 modifications to the booting Oct11 hybrid and build**. [Exact source-derived minimal host-only candidate decision](N1F_P342_V11_STATIC_PASS_MINIMAL_HYBRID_DERIVED_BUILD_DECISION_V1_20261013.md): **YES IN PRINCIPLE** as a fresh isolated, source-built **Oct03-derived Android16 system.img candidate**, **NOT** as binary-copy of failed M4 system.img into an **UNBOUND Oct11 as-flashed super**. Select original C3A N1F base and only exact R1/B1 POST edits, six C1 modules/two BCP jars and overrides, exact PHH marker/guard POST, preserve GSI skip_mount and embedded system_ext. **Do not blanket copy** partial M4 C3B private-policy/legacy-overlay removal or stale root folder workaround; observed Oct03 boot and current platform policy member parity provide no reason to import these as default. First host candidate keeps five R2 ViLTE native libraries **HELD** until effective G3 namespace/recursive ABI, and it is **NON_FLASHABLE** because IMS load/VT runtime risk is not closed. Do not use Oct11 hybrid as cryptographic parent because actual flashed super SHA/journal unbound (prior exact journal searches exhausted); Oct03 physical boot and selected system SHA are the distinct approved **offline planning** parent.
+
+Implementation order **A0 identify isolated source/OUT, A1 exact R1/B1/PHH guard source delta under separate mutation permission, A2 selected C1 host-only systemimage under separate build permission, A3 final G1/G2/G3 evaluation, then optional separately authorized offline matched hybrid super LP planning**. Historical Oct03 runner includes flash and cannot be run unchanged; older M4 build shell is a design reference only. **No build, source edit, image copy/repack, network sync or physical action executed here.**
+
+```text
+PHH_V11_AI_G732_INSPECT=PASS_STATIC_OCT03_M4_EXACT_MEMBERS
+OCT03_ARCHIVED_PHH_BASE_MK_DIRTY=FALSE_SHA_SEALED
+PHH_M4_INSTALLED_TITAN_GUARD=PASS_EXACT_PRE_POST_SOURCE_SHA
+OCT03_M4_PLATFORM_CIL=PASS_EQUAL
+OCT03_M4_PLATFORM_CONTEXTS=PASS_EQUAL
+RUNTIME_MERGED_POLICY_AND_PHH_EXECUTION=UNKNOWN
+OCT11_ACTUAL_HYBRID_IMAGE_PARENT=UNBOUND
+NEXT_HOST_ONLY_OCT03_DERIVED_IMAGE=PLANNED_NOT_BUILT
+SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
