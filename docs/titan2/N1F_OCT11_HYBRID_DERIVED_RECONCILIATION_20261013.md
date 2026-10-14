@@ -510,6 +510,12 @@ M4_ANDROID_RECOVERY_ROOT_CAUSE=NOT_PROVEN
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### Recovered C3A exact PHH base Git blob: next one-file provenance gate
+
+The existing C3A preparation [`prepare-n1d-c3-trebledroid.sh`](https://github.com/aimindseye/sableos/blob/main/build/titan2/prepare-n1d-c3-trebledroid.sh) verifies generated PHH project dirty scope permits **`AndroidProducts.mk`, `rom.mk`, `treble_*.mk` only** — not `base.mk`. Main `n1d-c3-trebledroid.env` pins the PHH project to `39ba82ef89ff5bf6b22ca8f147dbf317bffa20ed`; full C3B hardener separately asserts **that commit's `HEAD:base.mk` Git blob `a29e402009d449150f1216e5d517ec0c9b36bfbd`**. Original Oct03 N1F runner archives **`/srv/sable-build/artifacts/titan2/c3a-boot-qualified/20261003T221350Z/dirty-project-state.txt` before its seven-file + one-rom delta**, but its final gate checks only dirty project names (not every changed filename). This existing small exact archived text is the smallest remaining necessary provenance evidence to verify no later PHH `base.mk` mutation at Oct03 archive time, before confidently equating the Git HEAD `base.mk` with the Oct03 actual build-source leaf. The file is **PRESENT_PRIOR_METADATA**, its **contents NOT_READ** under this GitHub-only comparison. No file-byte hash or SELinux policy parity inferred. [Three-lane C3A/C3B/M4 PHH comparison and baseline pins](N1F_P342_C3A_C3B_M4_PHH_SEPOLICY_PROVENANCE_V1_20261013.md).
+
+M4 source partial C3B private-policy removal remains a concrete build-time delta; `/bt_firmware` label error and exact scaffold cleanup are already historically evidenced and need no rerun. M4 merged SELinux execution and PHH guard activation in failed boot remain UNPROVEN. Any separate exact one-file text read should be confined to that archived C3A dirty-state leaf, symlink/size-safe, and never expanded into a 991-project rescan, full Android source diff, image extraction, policy build, device or flash.
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
