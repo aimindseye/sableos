@@ -610,6 +610,22 @@ OCT11_AS_FLASHED_SUPER=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO REPACK=NO DEVICE=NO FLASH=NO
 ```
 
+### A0 exact protected source custody, CW1 patch pin and no-build path
+
+At operator request for the next expanded cellular/CW1 build-readiness deliverable, PR342 GitHub docs, PR339 CW1 path registry, merged PR327 C2 stock bundle, PR328 native collision fix, PR331 successful host build, and PR334 failed physical C1/C2 evidence were compared; no rehash/991 census/new source inspection was necessary. Three existing Android16 source roots have **distinct protected roles**: `/srv/data/sable-build/workspaces/titan2-n1d/android` original Oct03 parent source (not a protected new scratch mutation target); `/srv/data/sable-build/workspaces/n1f-m4-localrepo/android` isolated donor R1/B1 POST/POST but associated M4 boot Recovery and partial C3B source changes; `/srv/data/sable-build/workspaces/n1i-d1r4-cw1-isolated/android` independent call-waiting source with **protected warm `out_cw1`**. The actual fresh isolated Oct03-derived **A1 source root and new OUT are still UNBOUND**, not selected by choosing one of these.
+
+[New A0 exact role/tool contract, prior-work analysis and host handoff](N1F_P342_A0_PROTECTED_SOURCE_CUSTODY_PREFLIGHT_V1_20261013.md) is a separate distribution ZIP `N1F_P342_A0_CUSTODY_V1.zip` SHA256 `33cf05666b1d51992fd1a1bd7c4f127695a881062e304fb2e5f0c08c47537732`. Python 3.10+ stdlib, default plan zero evidence I/O. Authorized no-write inspect checks only **seven fixed known directory metadata paths** and **one** exact 2693-byte CW1 source patch SHA256 `4d2ad6b567ca725e8cc45c0362cdd788e3425c668592241aa4da007aa019635d`. Per-component nofollow dirfds reject symlink aliases; no `realpath` fallback, directory enumeration, `git`/`repo`, huge source scans, CW1 JAR rehash, C2 36-file rehash, Android build, image, device or flash. Tool returns **`A0_CUSTODY_METADATA_ONLY_NEW_PARENT_AND_OUT_NOT_BOUND`** even on successful custody metadata. Local validation: Python AST PASS 2/2, README bash -n PASS, ZIP CRC + four inner SHA PASS, **30/30 synthetic tests PASS**. 1200 synthetic full eight-path fixture scans median/p95 0.1159/0.1486 ms, assistant container only, not host/build throughput; ai-g732 run **NOT YET EXECUTED**.
+
+Do not interpret metadata as ready to build. The next independent selection is a clean isolated Oct03-derived Android16 checkout and unique non-existing OUT with bound C3A head/manifest; only afterwards authorize a new narrowly gated mutation/build driver for A1 R1/B1/C1/PHH/overlay/readiness, then A2 CW1 and 28 frozen stock natives only when exact target G3 and ownership pass. Preserve original/CW1/M4 workspaces and no device/flash.
+
+```text
+A0_PACKAGE_QA=PASS_30_SYNTHETIC
+A0_HOST_CUSTODY_RESULT=PENDING_OPERATOR_RUN
+NEW_A1_SOURCE_AND_OUT=UNBOUND
+CW1_PATCH_SHA=HISTORICAL_PIN_NO_NEW_HOST_HASH
+SOURCE_MUTATION=NO BUILD=NO SUPER_REPACK=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
