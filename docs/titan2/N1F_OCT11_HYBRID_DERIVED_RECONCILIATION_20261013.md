@@ -492,6 +492,24 @@ OCT03_MATCHED_COMPANIONS_LP_AVB=UNBOUND
 SOURCE_MUTATION=NO BUILD=NO LPDUMP=NO LPMAKE=NO IMAGE_READ=NO DEVICE=NO FLASH=NO
 ```
 
+### Further source-lineage forensic finding: Oct03 C3A apps overlay versus partial M4 C3B policy peel
+
+A post-comparison review of the **actual original N1F build driver** and archived [M4 C3B two-block repair operator receipt](https://github.com/aimindseye/sableos/pull/339#pullrequestreview-5497900692) reveals a specific nonduplicate boot-critical source delta. [Oct03 N1F source runner](https://github.com/aimindseye/sableos/blob/main/build/titan2/run-n1f-c3a-derived-c3b5-r2.sh) explicitly verifies exact **C3A 369-patch/991-project source**, then applies only **7 staged app files and one `rom.mk` inheritance**, reporting `N1F_R2_COMPATIBILITY_PATCH_DELTA=0`. **C3B5 means five Sable apps here, not automatic application of the separate Oct02 C3B hardening source**.
+
+Isolated M4 source was reconstructed from C3A but an additional exact two-block TrebleApp/C3B repair removed **`SYSTEM_EXT_PRIVATE_SEPOLICY_DIRS += device/phh/treble/sepolicy`** and the old external overlay inheritance plus TrebleApp privilege XMLs. M4 operator **explicitly states remaining full C3B PHH transformations were not replayed**. The separate Oct02 C3B hardener removes additional PHH on-boot/data hooks, neverallow bypass and permissions, and **was not the source provenance of the Oct03 booted N1F just from its date/name**. Crucially M4 full-image build itself encountered `e2fsdroid` **unlabeled `/bt_firmware`** after policy removal; earlier Oct02 C3B had the same build-class failure and exact repair. M4 removed only two generated empty `bt_firmware`/`sec_storage` dirs, preserved `efs`/`persist`, and built/hashed a final image. This **build-time root-folder label-owner incompatibility is observed**; a runtime M4 AVC/SELinux cause of Recovery **is NOT observed**. No evidence the M4 `phh-on-boot.sh` installed runtime hook matched the fully hardened C3B omission; the partial two-block repair does not establish either hook execution or removal. The original October 3 archived C3A manifest/head ledger and saved `rom.mk` do not independently pin the contemporaneous `device/phh/treble/base.mk` byte hash, so the exact Oct03-vs-M4 **merged** policy diff remains unbound. [Detailed three-lane PHH policy source lineage](N1F_P342_C3A_C3B_M4_PHH_SEPOLICY_PROVENANCE_V1_20261013.md).
+
+**Prioritize a single exact retained PHH policy-owner/boot-hook source comparison if and only if a genuinely frozen Oct03 base.mk leaf and its SHA are identified.** Do not use present mutable original checkout as a purported Oct03 frozen copy; do not rerun C3B hardening, 991-head census, M4 build or root-folder correction. Existing boot-critical delta report and no-build/no-flash hold remain unchanged; this is sharper source-differential evidence, not a diagnosis or authority to inspect a new file.
+
+```text
+OCT03_N1F_SOURCE=EXACT_C3A_PLUS_7_FILES_AND_ONE_INHERIT
+M4_PHH_POLICY_REMOVAL=PASS_PRIOR_TWO_BLOCK_MUTATION
+M4_POST_POLICY_E2FSDROID_BT_FIRMWARE_FAILURE=CONFIRMED_BUILD_ONLY_THEN_FIXED
+OCT03_EFFECTIVE_PHH_POLICY_LEAF_SHA=UNBOUND
+M4_EFFECTIVE_MERGED_POLICY_AND_PHH_BOOT_HOOK=NOT_EVIDENCED
+M4_ANDROID_RECOVERY_ROOT_CAUSE=NOT_PROVEN
+SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
