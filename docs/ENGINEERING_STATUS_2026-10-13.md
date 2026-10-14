@@ -177,3 +177,19 @@ OCT03_M4_IMAGE_BYTES_READ=0
 OCT03_ANCESTOR_METADATA_DIAGNOSIS=PREPARED_NOT_EXECUTED
 SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
+
+## October 13 final alias diagnosis — exact physical PHH V1.1 handoff
+
+Operator completed SHA-verified metadata-only probe: `/srv`, `/srv/sable-build`, `/srv/sable-build/artifacts` are directories; `/srv/sable-build/artifacts/titan2` **is a symlink** with literal target **`/srv/data/sable-build/titan2/artifacts`**. This confirms the cause of V1's `ENOTDIR` under `O_DIRECTORY|O_NOFOLLOW` and exonerates the unread archive/image bytes from any failure classification; no content was read during V1. Frozen V1 unchanged; no `realpath` bypass or alternate guessed symlink allowed.
+
+Prepared **V1.1** `N1F_P342_PHH_POLICY_ALIAS_V1_1.zip` SHA256 **`ae2763fe15895a0ed2d29b691d5cd845b7d4fe8020de3dcbf8677c019cf78a7f`**, 12,304 bytes. V1.1 first validates exact symlink type/target via nofollow descriptor traversal, then accesses two exact Oct03 archived receipts and one Oct03 system.img by witnessed **physical** root, while M4 image remains pinned. No physical-target symlink tolerated; size, member names/caps, M4 policy SHA pins unchanged. Python AST and README shell syntax PASS, ZIP CRC/inner 4/4 SHA PASS, **44/44 synthetic regression tests PASS** (including full synthetic source-to-member result and deliberately mismatched policy negative), default plan no FS PASS. Synthetic 1500 literal alias lstat/readlink checks median 0.00593ms/p95 0.00672ms (not ai-g732 or debugfs throughput). **Actual ai-g732 V1.1 image and archive content reads NOT_EXECUTED**. Details: [operator alias rebinding contract](titan2/N1F_P342_OCT03_PHH_ALIAS_PHYSICAL_V11_20261013.md).
+
+```text
+ORIGINAL_METADATA_TARGET=CONFIRMED_EXACT_SYMLINK
+V1_REFUSAL=PASS_FAIL_CLOSED
+V1_1_FROZEN_LOCAL_QA=PASS_44_SYNTHETIC_TESTS
+V1_1_OPERATOR_EXACT_HOST_INSPECT=NOT_EXECUTED
+OCT03_PHH_BASE_MK_DIRTY=UNBOUND_PENDING_ARCHIVE
+OCT03_VS_M4_STATIC_PHH_AND_SELINUX=UNBOUND_PENDING_DEBUGFS
+SOURCE_MUTATION=NO IMAGE_REPACK=NO BUILD=NO DEVICE=NO FLASH=NO
+```
