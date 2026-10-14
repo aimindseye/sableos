@@ -726,6 +726,23 @@ A1B_V11_HOST_UBUNTU_INSPECT=NOT_EXECUTED
 BUILD_READY=NO SOURCE_MUTATION=NO BUILD=NO DEVICE=NO FLASH=NO
 ```
 
+### Actual Ubuntu A1B V1 regression PASS; scaffold metadata refusal requires exact leaf diagnosis
+
+Operator separately ran **A1B V1 on Ubuntu ai-g732** (NOT the earlier Mac test): outer and inner ZIP checksums PASS, **44/44 regression tests PASS (0.048s)**, fixed physical `/srv/data` plan PASS, explicit read-only inspect **`REFUSED_NO_BUILD_ADMISSION` with reason `build_scaffold_expected_regular_missing_or_unsafe`**. The immutable original A1B `compare` verifies original Oct03 ROM archive and manifest, provisional A1 receipt/no-build marker, all four new dirty-file SHA matches against receipt/donor, and both original C3A Soong POST Git blobs **before** its generic six-slice scaffold `any(v!='REGULAR')` refusal. Thus earlier checks did not raise in this run, but **no positive partial receipt was emitted** and none should be claimed; the specific scaffold leaf/type is UNKNOWN. This has nothing to do with the Mac `/var` test-fixture symlink failure, which was separately fixed in V1.1 without changing production checks. **Do not repeat A1 create**, change checkout, remove guard or build.
+
+[NEW Ubuntu A1B actual refusal and metadata-only six-path comparison plan](N1F_P342_A1B_UBUNTU_SCAFFOLD_REFUSAL_METADATA_V1_20261013.md): standalone `N1F_P342_A1B_SCAFFOLD_DIAGNOSIS_V1.zip` SHA256 `30e1ba581cfd26d4658bb0e95a4e0f0393b6d56a158e623c358a3763a671b86c`, 9,526 bytes. Script inspects **only literal metadata** of the six A1B fixed scaffold leaf names in **new A1 and protected original Oct03 donor** (12 leaves total), plus the new A1 no-build marker and `out-a1` metadata; fd-anchored ancestor `O_DIRECTORY|O_NOFOLLOW`, leaf stat `follow_symlinks=False`, permitted link text `readlink` **without following**, no content opens/Git/source scanning/build/host output writes. Records regular/missing/symlink/unsafe-ancestor and whether the two trees have the same classification; no workaround auto-applied. ZIP CRC, 5/5 inner SHA, AST and README bash syntax PASS; **46/46 synthetic tests PASS**, 400 synthetic exact small metadata checks median/p95 **0.3624/0.5311ms** (assistant machine). **Host metadata diagnosis NOT YET RUN**. A1 remains PROVISIONAL_NOT_BUILD_READY even if the diagnostic records all paths. If both donor/new lack a leaf, reconsider original A1B required-regular contract; if only new lacks it, separately review local source materialization. No build/LP/AVB/device authority.
+
+```text
+A1B_V1_UBUNTU_TESTS=PASS_44_OF_44
+A1B_V1_UBUNTU_INSPECT=REFUSED_SCAFFOLD_GENERIC
+A1B_SPECIFIC_SCAFFOLD_MEMBERS=NOT_IDENTIFIED
+NEW_SCAFFOLD_METADATA_DIAGNOSIS_QA=PASS_46_TESTS
+NEW_METADATA_INSPECTION_HOST=NOT_EXECUTED
+A1_NEW_SOURCE=PROVISIONAL_991
+A1_NO_BUILD_MARKER=PRESERVE
+SOURCE_MUTATION=NO BUILD=NO SUPER=NO DEVICE=NO FLASH=NO
+```
+
 ## Decision gates / physical stop
 
 - `PARENT=BOUND_OCT11` or `FALLBACK_EXPLICIT_OCT03`; never silently switch.
