@@ -1,0 +1,37 @@
+# PR342 — actual A1N V1.1 artifact/CIL results and A1O bounded stock stream handoff
+
+Date 2026-10-14. **A1N V1.1 actually executed on ai-g732 and completed read-only**. A1F–A1L source stages are closed and protected; A1M 13 gates/11 open retained. User requires every PRE-build technical admission gate to close before *any* host-only image build. No user device/super/flash permission.
+
+## Actual A1N V1.1 operator data
+
+- ZIP checksum verified, 11/11 inner SHA checks PASS, 149/149 combined A1D+A1M+A1N host-independent regression tests PASS (0.055s). A1N zero host evidence I/O plan PASS.
+- Actual inspection status `HOLD_A1N_PREBUILD_ORIGIN_BINDING_INCOMPLETE`, source `PASS_A1F_TO_A1L_POST_SOURCE_PINS_ONLY`, `sealed_audit=PASS_FIVE_AUDIT_RECEIPTS_CONTENT_SEALED_NOT_INPUT_EXTRACT_PROOF`, build_ready=false, writes=false, network=false, build/device/super/flash all false.
+- Exact obstructing component `/srv/sable-build/artifacts/titan2` was a **symlink literal** `/srv/data/sable-build/titan2/artifacts`; A1N V1.1 recorded `alias_accepted_no_symlink_follow=true` and independently reopened nofollow physical `/srv/data/sable-build/titan2/artifacts/n1i-c1-five-app-bundle`. A different producer root under `n1d-c3b-e2-product-apps/aafb...` was `ROOT_ABSENT`. The earlier V1 failure was caused by strict path-walking of this registered artifact redirect; not by A1 source drift.
+- Historical five-app run `20261005T020228Z` had missing manifest; **four run IDs** `20261005T020625Z`, `20261005T021340Z`, `20261005T023602Z`, `20261005T111516Z` have `PASS_CONTENT_MANIFEST_M4_MATCH_NOT_INDEPENDENT_BUILD_CERT`. All five APK SHA256+byte sizes match retained M4 exactly and all four runs declare source import Git commit `aafb543565c9d59ed5e0d9cda876aabb4967f8aa`. These are **four content-equivalent retained candidate bundles**, not one unique sealed build receipt: `app_bundle.status=HOLD_NO_UNIQUE_RETAINED_APP_BUNDLE`, `unique_matching_count=4`, `signature_independently_verified=false`, `snapshot_rebuilt=false`. Do NOT arbitrarily promote one.
+- Three CIL exact retained paths in original N1I-C1 old historical run evidence at `20261005T020625Z`, `20261005T021340Z`, `20261005T023602Z`, each SHA256 `7a11c43133cae9fb1588cc53b4fb750ca89453228a0df44af1aa5d6a01f33c51`, deterministically reproduced retained M4 `property.te` SHA256 `d33ee56221c83108e814dcb0052092f9e40d0b72e8a81fba6b030d784327f89e`. Other old runs and N1I-A audit work CIL candidate absent. This is **policy content derivation**, not independent pinned stock-image attribution. `selinux_cil.stock_origin_verified=false`.
+- Retained stock `system_ext.img` size 704,434,176 bytes classified as EROFS header; expected image SHA256 `1d9d25921def9b7e4e767c00a1f34d19ef5e7320138e3522545f2a2f2047d170` was **NOT read/verified by A1N**, and no bytes were imported. Hence `admitted_stock_blob_provenance=false`.
+
+## Reused historical repo contracts
+
+Main SableOS `build/titan2/run-n1i-c1-cellular-isolation.sh` already declares exact `system.img` SHA256 `b2074e20afb6b1dccb87f804ec93b2b8cc64ac6f2366b8d3e6d52522f7f431bd` and `system_ext.img` SHA256 `1d9d25921def9b7e4e767c00a1f34d19ef5e7320138e3522545f2a2f2047d170`; imports only exact six C1 APK/JAR/XML bytes into new isolated C1 source. It uses `stock_system_root()` for two allowed system.xml prefix cases. The old combined driver and old M4 image MUST NOT be executed as the selected A1 build executor. A1M holds exact SHA pins for three original C1 binaries and three observed XMLs. Reuse these, no new duplicated product definitions, no automatic provenance promotion.
+
+## New A1O exact stock image to six-file stream (external ZIP)
+
+ZIP `N1F_P342_A1O_STOCK_STREAM_PROVENANCE_V1.zip`, SHA256 **`9182c20ad1013b61a66f46b809d03b8b0b8514e8ab8473d270fcd6c0f7d319e6`**, **33,421 bytes**, 12 ZIP entries (11 internal SHA pinned + `SHA256SUMS.txt`). Main A1O Python SHA256 **`9dfead587ac7124b3eac68729d35e936c3fab2120692a3be84b451f9c0a9f0ef`**. Reuses **unchanged** A1D source SHA `6b91d290e165acced0048a76a1d85de7e37044ce4cb1f3e718923a3739099777` and A1M source SHA `00fd3edd2b5b842bbb24a8fab9838063846e962464f14c69ba4bf591186da544`.
+
+A1O revalidates the selected 11-source A1 post condition; opens only the two historical exact pinned stock partition images via nofollow dirfds, detects EROFS/ext4 magic, checks actual full image SHA256 with 1MiB bounded reads, then streams exact five system_ext targets and exactly one system permissions XML (two **explicit literal paths** `/etc/...` or `/system/etc/...` recognized from historical `stock_system_root`). Uses `/usr/bin/dump.erofs --cat --path=...` for EROFS only if installed `--help` supports `--cat`; `/usr/bin/debugfs -R 'cat ...'` for ext4; fd-passed `/proc/self/fd/N` source prevents swapped path/TOCTOU. No shell, block mount, image extraction to scratch, giant file in memory, stock import, Git/repo, Gradle/Android build, network, device or flash. Fixed max stdout 64MiB/file, 45s/file child timeout, capped stderr, unknown/sparse image and unsigned/unproven conditions HOLD. If `/usr/bin/dump.erofs` is absent or lacks `--cat`, **HOLD**; do not auto-install or extract.
+
+Actual ai-g732 A1O still **NOT EXECUTED**; a fully matching six-file stream would produce `PASS_A1O_SIX_STOCK_PARTITION_FILE_CONTENT_MATCH_NOT_BUILD_READY`. That means six C1 bytes originate in **the two pinned partition images**, but does NOT yet certify original signed stock ZIP lineage, historical SHA receipt identity, five app APK independent unsigned/source-snapshot origin, SELinux compiled policy, independent 991 Git/.repo, Oct03 369 patch fidelity, evaluated Soong product graph or finished image G1/G2/G3. A hold/refusal never authorizes A1 file staging or Android build.
+
+## Validation performed on generated exact archive
+
+- ZIP CRC PASS and all **11/11 inner SHA256 PASS**; Python AST/compile **6/6**; Bash `bash -n` PASS.
+- In local assistant container **130/130 combined A1D+A1M+A1O regressions PASS** under both `umask 077` (14.086s) and `022` (14.195s). Fresh ZIP extracted under both umasks, independently checked inner SHA11, tests130, AST6, Bash syntax and zero-I/O plan PASS.
+- Synthetic 32MiB in-memory streaming SHA test, seven iterations: median 0.02749s (~1164MiB/s), worst 0.02913s. **Not a real host multi-GB stock hash benchmark and excludes tool execution**.
+- Tests use synthetic fd-held erofs/ext4 files and controlled fake external stream tools, verify exact 6-file success and negative: wrong image pin, wrong payload pin, missing/too-old EROFS cat, symlink/nonregular image, missing image, sparse kind, file-output cap, timeout/nonzero tool, held source, bad paths, exact system /system prefix alternative. No real ai-g732 image touched by assistant.
+
+## Next exact operator action
+
+Verify outer ZIP SHA, extract fresh `/tmp/n1f-p342-a1o.XXXXXXXX`, run `bash ./n1f_p342_a1o_verify_then_inspect_v1.sh`. Wrapper first checks internal 11 SHA, 130 tests, no-I/O plan then bounded read-only exact partition SHA+stream inspect. Return full JSON, including file statuses and `tool_capability`. Do NOT substitute installed tool versions, use extraction fallbacks, import payloads or clear A1 no-build marker on mere candidate match.
+
+All original completed A1 source states preserved. `BUILD_AUTHORIZED_HOST_ONLY=YES`, `BUILD_TECHNICAL_READY=NO`, `OUT_A1=ABSENT`, `NO_BUILD_MARKER=PRESERVE`, `IMAGE_BUILD=NO`, `SUPER=NO`, `DEVICE=NO`, `FLASH=NO`. PR remains OPEN/DRAFT/UNMERGED.

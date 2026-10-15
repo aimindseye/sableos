@@ -1,0 +1,29 @@
+# Actual A2I stock-chain PASS and A2J exact system AVB/LP design admission
+
+Date: 2026-10-14, SableOS Titan 2 N1F engineering lane. PR #342 remains open/draft/unmerged. No Android build, image assembly, source patch, AVB modification, network, device contact, fastboot, reset or flash is authorized.
+
+## Operator's actual A2I result — PASS beyond preflight
+
+Outer ZIP and seven internal file SHA PASS, Python AST2/Bash syntax PASS, 44/44 hermetic tests in 2.000s. Real bounded inspection final `PASS_A2I_HISTORICAL_STOCK_SELF_SIGNATURES_AND_TWO_CHAIN_KEYS_NOT_OEM_TRUST_READY`; all three historical TEE14 stock vbmeta images' live host bytes hashed to existing E4 receipts, 8192+4096+4096=16,384 B total; their SHA256_RSA2048 self-signatures verified with their embedded public keys. Root `vbmeta.img` has THREE chain descriptors: `boot` (key hash 75521791cbf8e91b4ab790ea29c551776092e9ed76d9b5722d590fb493d3db1d, rollback location 3), `vbmeta_system` (8ed2308034351c3d1f527e5d099f3f779cbb96d930d379a795aacb5a694347a2, location 2) and `vbmeta_vendor` (2e3ed2168550331b634a7546c4a8b2bfff8c5902bbf72864553fb46fd617c0af, location 4). The system/vendor chain keys match their two child embedded keys; both child self-signatures PASS. Root embedded pubkey SHA256 c3387c40f5c90c882d025b1661b5a315ddf0a789bcc8cb903469ad6286f11245. `boot` was inventoried only, not checked against its actual child image. Bootloader root trust, rollback fuse/policy and Oct03 same-session image matching NOT ESTABLISHED.
+
+Stock `vbmeta_system.img` contains one signed hashtree descriptor for system and three property descriptors. New A1X image embedded system vbmeta key SHA256 22de3994532196f61c039e90260d78a93a4c57362c7e789be928036e80b77c8c, which differs from the stock chained `vbmeta_system` child pubkey SHA256 8ed2308034351c3d1f527e5d099f3f779cbb96d930d379a795aacb5a694347a2. This is a stock-to-new system AVB compatibility WARNING, not proof of bootloader lock state or device failure; the source image's embedded hashtree metadata and stock standalone descriptor may differ. Do not silently treat stock vbmeta_system as authenticating A1X. A1X file length 3210473472 B is exactly divisible by 4096; hypothetical 1MiB round-up 3210739712 B displaces existing footer by 266240 B. Exact 4KiB length is a proposed LP candidate that requires independent real liblp/lpmake verification (alignment/extent packing may matter); NOT a final partition-size claim.
+
+Historical A2B N1C LP `main_a` max 9,661,579,264 B, six verified stock source images total 3,446,366,208 B, exact A1X + six images sum 6,656,839,680 B (nominal arithmetic headroom 3,004,739,584 B); seven 1MiB-rounded payload sum 6,660,554,752 B (nominal headroom 3,001,024,512 B). No current device COW/snapshot, LP metadata, effective group free extents or runtime mount state established. Existing C0/E5B research warns that N1C offline full super built then physical boot FAILED and Titan 2 is Virtual A/B, active slot/COW aware, no assumed inactive `system_b` target.
+
+## A2J V1 sealed host-only next deliverable
+
+Archive `N1F_P342_A2J_STOCK_SYSTEM_AVB_LP_ADMISSION_V1.zip`, **29,733 B**, outer SHA256 **fc16473284c43904b8637e3e8b8e51ea1e4802ef2041b69de0964c45884d1ef5**, 12 ZIP members including SHA256SUMS; **11/11** internal hashes and ZIP CRC PASS, Python AST6 / Bash `-n` PASS, **79/79** hermetic tests (35 new A2J + 44 frozen A2I) PASS. Fresh independent ZIP extraction under umask077 and 022 PASS both 79 tests and manifest/syntax, negative missing-permission refusal. A2I code frozen SHA a4e491d3cb7ac09f7cb048af256373bd0d1f15f17ac93f5705955d08ecee3b5c; A2F source SHA 4fb8136a5c02e8b2991a2e5dc11731c92e86e019f84e6c2df91d593d105553c4 and A2E source SHA d94affc025ab5cdb94b7d2951d86e54e1c0e14fc5bd1e085356cd2710ea8934e. No new required tools beyond Python stdlib, Bash and sha256sum.
+
+Default zero production-image I/O preflight after outer hash and fresh unzip: `bash ./n1f_p342_a2j_one_command_v1.sh --preflight`; expected `A2J_PREFLIGHT_PASS_ZERO_PRODUCTION_IMAGE_IO`. Optional **separately authorized** exact readonly command `bash ./n1f_p342_a2j_one_command_v1.sh --inspect --authorize-a2j-system-avb-5888b-readonly` reads only one 4096B historical E4-pinned `TEE14-reference/vbmeta_system.img` and A1X source `system.img` final 64B footer + 1728B pinned embedded vbmeta, MAX **5888 image bytes**. Verifies stock E4 file SHA, previously A2I self-signature and stock pubkey pin, hashtree content, plus A1X A2E/A2F existing footer and vbmeta pins. Reports stock-to-new root hash/key/image size differences and exact-vs-1MiB hypothetical LP payload arithmetic. No stock full image rehash, old N1C sparse-super contents, lpdump/lpmake, any filesystem output write, build, AVB signing, network, ADB/fastboot, device or flash. Synthetic arithmetic benchmark median 0.001903ms / p95 0.002033ms over 1100 iterations, assistant-container only, NOT ai-g732 disk performance.
+
+Expected successful *structural difference* classification `PASS_A2J_STOCK_VS_A1X_AVB_DIFFERENCE_RECORDED_OFFLINE_SUPER_BUILD_HOLD`. The PASS means diagnostics ran, but **OFFLINE_SUPER_BUILD_HOLD** remains. This check will not authorize construction. Later candidate assembly needs explicit approval, exact LP 4KiB payload extent/AVB position proof with host lpmake/lpdump/lpunpack, verified stock recovery set including dtbo, device/readiness E5A and independent device write authorization. A2J real ai-g732 NOT RUN.
+
+```text
+A2I_ACTUAL_STOCK_THREE_IMAGE_SHA_SELF_SIGNATURES_AND_TWO_CHAIN_KEYS=PASS
+STOCK_ROOT_BOOT_CHAIN_VERIFIED=NO
+STOCK_OEM_BOOTLOADER_ROOT_TRUST=NO
+A2J_SEALED_LOCAL_TESTS=PASS_79_BOTH_UMASKS
+A2J_REAL_HOST=NOT_EXECUTED
+A1X_OFFLINE_HYBRID_SUPER=NOT_BUILT
+DEVICE=NO FLASH=NO
+```
