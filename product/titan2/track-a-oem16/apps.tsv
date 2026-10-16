@@ -1,0 +1,21 @@
+# Track A Android16 OEM-Titan2 product; source: Q25 main e9bed8cec9da387301dc6a0124b22b28615f5f31
+# module|package|selection|source authority; include != packaged until product image built.
+module	package	selection	origin
+SableKeyboard	org.sableos.titan2.keyboard	include	canonical:apps/titan2/platform/keyboard
+SableCamera	org.sableos.titan2.camera	include	canonical:apps/titan2/platform/camera
+SableDisplayCompat	org.sableos.titan2.displaycompat	include	canonical:apps/titan2/platform/displaycompat
+SableSetup	org.sableos.titan2.setup	include	canonical:apps/titan2/platform/setup
+SableTools	org.sableos.tools	include	Q25:apps/titan2/platform/tools
+SableCalculator	org.sableos.calculator	include	canonical:apps/r8/android/calculator
+SableMedia	org.sableos.media	include	canonical:apps/r8/android/media
+SableHub	org.sableos.hub	include	canonical:apps/r8/android/hub+Q25_updates
+SableWeather	org.sableos.weather	include	canonical:apps/r8/android/weather
+SableCalendar	org.sableos.calendar	include	canonical:apps/r8/android/calendar
+SableReader	org.sableos.reader	include	Q25:apps/common/reader
+SableMail	org.sableos.mail	include	canonical:apps/r8/mail
+SableTextReader	org.sableos.textreader	include	canonical:apps/r8/textreader
+SableSudoku	org.sableos.sudoku	optional	canonical:apps/r8/android/games
+SableMinesweeper	org.sableos.minesweeper	optional	canonical:apps/r8/android/games
+Sable2048	org.sableos.game2048	optional	canonical:apps/r8/android/games
+SableRadioDiag	org.sableos.titan2.radiodiag	exclude	replaced_by_SableTools
+SableMessages	org.sableos.messages	exclude	demo_only_not_SMS_role
