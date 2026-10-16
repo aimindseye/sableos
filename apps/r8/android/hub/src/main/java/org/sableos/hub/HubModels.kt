@@ -33,6 +33,11 @@ data class HubConversation(
     val sourceNotificationKey: String? = null,
     val sourceLabel: String? = null,
     val canQuickReply: Boolean = false,
+    val profileBadge: String? = null,
+    /** Hub priority: ordering only, never a Do Not Disturb exception. */
+    val hubPriority: Boolean = false,
+    /** Connected apps: the source notification's category (e.g. "email"), when known. */
+    val category: String? = null,
 )
 
 data class HubPerson(
@@ -54,6 +59,55 @@ data class HubCapabilities(
     val canSendSms: Boolean,
     val canReadContacts: Boolean,
     val isDefaultSmsRoleHolder: Boolean,
+    val canReadCallLog: Boolean = false,
+)
+
+/** What a call-log row records; the Phone app owns the log, Hub only reads it. */
+enum class HubCallKind {
+    Incoming,
+    Outgoing,
+    Missed,
+    Voicemail,
+    Rejected,
+    Blocked,
+    Other,
+    ;
+
+    /** Calls the user did not take: shown with the unread accent. */
+    val needsAttention: Boolean
+        get() = this == Missed || this == Voicemail
+
+    companion object {
+        /** Maps `CallLog.Calls.TYPE`; unknown values stay [Other], never a guess. */
+        fun fromCallLogType(type: Int): HubCallKind =
+            when (type) {
+                CALL_LOG_INCOMING -> Incoming
+                CALL_LOG_OUTGOING -> Outgoing
+                CALL_LOG_MISSED -> Missed
+                CALL_LOG_VOICEMAIL -> Voicemail
+                CALL_LOG_REJECTED -> Rejected
+                CALL_LOG_BLOCKED -> Blocked
+                else -> Other
+            }
+
+        // android.provider.CallLog.Calls.*_TYPE (stable public API values).
+        private const val CALL_LOG_INCOMING = 1
+        private const val CALL_LOG_OUTGOING = 2
+        private const val CALL_LOG_MISSED = 3
+        private const val CALL_LOG_VOICEMAIL = 4
+        private const val CALL_LOG_REJECTED = 5
+        private const val CALL_LOG_BLOCKED = 6
+    }
+}
+
+data class HubCall(
+    val id: Long,
+    /** Dialable number; empty when withheld or redacted (then callback is not offered). */
+    val number: String,
+    val displayName: String,
+    val dateMillis: Long,
+    val kind: HubCallKind,
+    val durationSeconds: Long = 0L,
 )
 
 data class HubSnapshot(
@@ -62,6 +116,13 @@ data class HubSnapshot(
     val messages: List<HubMessage>,
     val people: List<HubPerson>,
     val mail: HubMailSnapshot,
+    val calls: List<HubCall> = emptyList(),
+)
+
+/** A search handed to Hub at launch; [sequence] makes a repeated identical search re-apply. */
+data class HubLaunchQuery(
+    val query: String,
+    val sequence: Int,
 )
 
 data class HubSendResult(
@@ -77,6 +138,7 @@ data class ConnectedConversationReduction(
 object HubConnectedConversationReducer {
     fun reduce(
         records: List<ConnectedNotificationRecord>,
+        isActive: (ConnectedAppKey, String) -> Boolean = { _, _ -> false },
         canReply: (String) -> Boolean = { false },
     ): ConnectedConversationReduction {
         val reductions =
@@ -87,6 +149,7 @@ object HubConnectedConversationReducer {
                         key = key,
                         records = group,
                         canReply = canReply,
+                        active = isActive(key.key, key.conversationId),
                     )
                 }
 
@@ -106,6 +169,7 @@ object HubConnectedConversationReducer {
         key: ConnectedConversationKey,
         records: List<ConnectedNotificationRecord>,
         canReply: (String) -> Boolean,
+        active: Boolean,
     ): ConnectedConversationSlice {
         val ordered = deduplicateRecords(records)
         val latest = ordered.last()
@@ -129,10 +193,22 @@ object HubConnectedConversationReducer {
                     threadId = threadId,
                     replyNotificationKey = replyNotificationKey,
                     identity = identity,
+                    category = ordered.asReversed().firstNotNullOfOrNull(ConnectedNotificationRecord::category),
+                    unreadCount = if (active) unreadSinceLastReply(ordered) else 0,
                 ),
             messages = ordered.map { record -> record.toHubMessage(threadId) },
         )
     }
+
+    /**
+     * Hub keeps no read state for connected apps: a conversation whose notification is still
+     * posted is unread, counting the incoming messages since the user's last reply (at least one).
+     */
+    private fun unreadSinceLastReply(ordered: NotificationRecords): Int =
+        ordered
+            .takeLastWhile(ConnectedNotificationRecord::incoming)
+            .size
+            .coerceAtLeast(1)
 
     private fun deduplicateRecords(records: NotificationRecords): NotificationRecords {
         val deduplicated = mutableListOf<ConnectedNotificationRecord>()
@@ -268,6 +344,8 @@ object HubConnectedConversationReducer {
         threadId: Long,
         replyNotificationKey: String?,
         identity: ConnectedNotificationRecord,
+        category: String?,
+        unreadCount: Int,
     ): HubConversation =
         HubConversation(
             threadId = threadId,
@@ -275,13 +353,14 @@ object HubConnectedConversationReducer {
             displayName = identity.conversationTitle,
             lastBody = body.orEmpty(),
             lastDateMillis = timestampMillis,
-            unreadCount = 0,
+            unreadCount = unreadCount,
             source = HubConversationSource.ConnectedApp,
             sourcePackage = key.packageName,
             sourceUserSerial = key.userSerial,
             sourceNotificationKey = replyNotificationKey ?: notificationKey,
             sourceLabel = identity.sourceLabel,
             canQuickReply = replyNotificationKey != null,
+            category = category,
         )
 
     private fun stableNegativeId(value: String): Long {
