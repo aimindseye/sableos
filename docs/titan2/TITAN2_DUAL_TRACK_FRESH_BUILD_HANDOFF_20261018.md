@@ -61,6 +61,9 @@ Each track owns its own source checkout, Android `out`, app outputs, Gradle home
 
 ## PR and ownership ledger
 
+- Shared public-platform coordination PR: [sableos-project/platform_sable #54](https://github.com/sableos-project/platform_sable/pull/54), documentation-only; no cross-repository source or BSP inheritance.
+
+
 - [PR #343](https://github.com/aimindseye/sableos/pull/343): Track A historical source work; **CLOSED UNMERGED**. Reference only, not active source authority.
 - [PR #342](https://github.com/aimindseye/sableos/pull/342): Oct 11/13 N1F-M4 IMS evidence and recovery diagnosis; **OPEN DRAFT**, not a new Track B build or flash authorization.
 - `sableos-project/platform_sable`: shared design/portability/interaction contracts, not owner of Titan 2 OEM partition source, vendor IMS or flash tooling.
