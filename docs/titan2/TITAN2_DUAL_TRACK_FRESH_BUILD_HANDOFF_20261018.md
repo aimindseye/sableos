@@ -33,7 +33,7 @@ Each track owns its own source checkout, Android `out`, app outputs, Gradle home
 
 ## Track A V2 — OEM-preserving integrated product
 
-**Baseline:** exact Unihertz Titan 2 V01.00.14 TEE14 stock reference partition images described in [Track A source integration contract](../../docs/titan2/N1D_ANDROID16_SOURCE_LOCK_R1.md) and the [closed, unmerged PR #343](https://github.com/aimindseye/sableos/pull/343). For the OEM partition hashes and app matrix, read `docs/titan2/TRACK_A_OEM16_Q25_INTEGRATION_V1.md` *on PR #343's historical branch*, not as if it were merged.
+**Baseline:** exact Unihertz Titan 2 V01.00.14 TEE14 stock reference partition images described in [Track A source integration contract](https://github.com/aimindseye/sableos/blob/track-a-oem16-q25-full-product-20261016/docs/titan2/TRACK_A_OEM16_Q25_INTEGRATION_V1.md) and the [closed, unmerged PR #343](https://github.com/aimindseye/sableos/pull/343). For the OEM partition hashes and app matrix, read `docs/titan2/TRACK_A_OEM16_Q25_INTEGRATION_V1.md` *on PR #343's historical branch*, not as if it were merged.
 
 - Fresh source authority: remote canonical SableOS `main`, after explicitly pinning the intended commit and importing/reviewing required PR #343 changes; no silent branch replacement. The 13 required apps, three optional games, OEM-compatible Sable Start/HOME + Recents, Setup, keyboard and other system surfaces form one integrated build target, not a loose APK bundle.
 - Preserve OEM Phone, SMS/MMS, CarrierConfig, `com.mediatek.ims`, framework/vendor/modem, proprietary camera and firmware; retain stock HOME/IME fallbacks until replacement is proven. Do **not** transplant LineageOS Q25 framework/Quickstep patches, keys, kernel or partition geometry.
