@@ -44,6 +44,9 @@ Each track owns its own source checkout, Android `out`, app outputs, Gradle home
 
 ## Track B — N1F-derived compatibility reference, fresh Android 16 source
 
+**Upstream release/patch authority verified 2026-10-18:** [RestlessOS Android 16 exact 369-patch tree audit](TRACK_B_RESTLESSOS_A16_PATCH_AUTHORITY_20261018.md). The June 23 `16.0.0-202606230923` tag is the final official published A16 release; the three following `android-16.2` commits add only debug-build audio diagnostics, with all five production patch Git trees unchanged. Track B must pin the release tag and its five production-tier tree hashes, not float to the branch tip. The official mirror could not be independently byte-checked here.
+
+
 - Anchor GrapheneOS `2026061600` manifest SHA `5d82aa9610855bc0b43b9eb7ca4470d30455cfeb`; AOSP `android-16.0.0_r4`, SDK 36, `bp4a`; exact RestlessOS 16 release `16.0.0-202606230923` commit `4adc5766f457849ca37e0b318bced65aef5a2233`.
 - Reproduce the C3A/N1F known-booting Treble source/product compatibility control **from freshly pinned public projects** and the sealed source/patch evidence. Historical C3A has 991 projects and 369 Restless patches across five tiers. Those 369 control patches are **not** a blanket production-security allowlist. Apply any release/runtime subset only via reviewed, atomic, security-qualified allowlist.
 - Preserve N1F exact `system.img` as a boot-tested, five-app comparison baseline, not as a mutable build output. It does not prove present cellular data/IMS readiness. PHH Treble settings showing provider or connectivity UI does not demonstrate attached mobile data.
