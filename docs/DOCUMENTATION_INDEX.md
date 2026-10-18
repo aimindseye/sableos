@@ -1,5 +1,9 @@
 # SableOS Documentation Index
 
+## Titan 2 current engineering handoff (2026-10-18)
+
+- [Track A V2 / Track B fresh-build handoff](titan2/TITAN2_DUAL_TRACK_FRESH_BUILD_HANDOFF_20261018.md) — operator-verified 2 TB free after legacy cleanup; C3A/N1F hashes unchanged; clean dual-track host bootstrap passed; Android sync/build/flash not yet performed. New local SableOS checkouts are behind remote main and must be explicitly reconciled before source builds.
+
 ## Current authority
 
 For the current project state and active product direction, start here:
