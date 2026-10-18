@@ -1,6 +1,6 @@
 # Titan 2 dual-track clean-build handoff — 2026-10-18
 
-**Status: HOST BOOTSTRAP PASS; BOTH FIRMWARE BUILDS NOT STARTED; FLASH NOT AUTHORIZED.**
+**Status: HOST BOOTSTRAP PASS; TRACK A OEM-DERIVED ENGINEERING PRODUCT EROFS BUILT WITH 13 VERIFIED APK SIGNATURES; COMPLETE OEM FIRMWARE, NATIVE QUICKSTEP AND TRACK B IMAGE NOT BUILT; FLASH NOT AUTHORIZED.**
 **Scope:** Titan 2 Android 16 only. This is the current operator-provided state, not a SableOS release or a qualification of firmware.
 
 ## Evidence and source-of-truth precedence
@@ -15,7 +15,8 @@ Operator logs on ai-g732, 2026-10-18:
 | N1F control image | `/srv/sable-build/artifacts/titan2/n1f-c3a-derived-c3b5/20261003T221350Z/system.img`; SHA-256 `dc1f917d5892afc04c479907913eb27a436d5abd881377d3e24fd1d7eb46299a`; operator `sha256sum -c` PASS |
 | Dual-track bootstrap V1 | SHA-256 package check PASS; 16 hermetic tests PASS; `prepare` PASS; local `checkout-sable` PASS in both workspaces |
 | Bootstrap checkouts | Both local SableOS checkouts HEAD `177ef4fb76d661725165c5224f6a8495b2b420ec`; **not** current GitHub `main` at review (`12e9793627babd0294a0022d8644360bc7727f6c`). Do not build until source authority is refreshed and pinned. |
-| Android source sync / compile / firmware / physical device | NOT EXECUTED by bootstrap; no fresh Track A or Track B image; no flash |
+| Android source sync / compile / firmware / physical device | NOT EXECUTED by bootstrap. Later, a genuine Track A engineering product-only EROFS was rebuilt on-host from verified historical image/PAX; no native stock Android source/Launcher3 build, whole firmware, device contact or flash |
+| Track A V1.3 engineering image, operator 2026-10-18 | **PASS_HOST_BUILD_NONFLASH** — `NOT_FLASH_READY_SIGNED_13_APPS_PRODUCT.erofs.img`; SHA-256 `fcd1bd62f4259222084fc9651186925cc42b59eb530f9cee66dfcbb4fa36dc45`; 13/13 APK signatures (10 newly engineering-signed + three retained), PAX stock 462/462 members copied, `mkfs.erofs` and `fsck.erofs` build+extract completed; report `ENGINEERING_RESULT.json`. Full post-build independent inode/xattr comparison and AVB/LP/live-device boot NOT claimed. |
 | Q25 | Not accessed or mutated by bootstrap or retirement. Keep untouched. |
 
 The bootstrap's `verify` was invoked with output redirected to `~/titan2-dual-track-verify-v1.json`, but that JSON was not supplied. No claim is made about its individual toolchain checks.
@@ -40,7 +41,7 @@ Each track owns its own source checkout, Android `out`, app outputs, Gradle home
 - Read stock partition source and filesystem metadata (including EROFS/SELinux/xattrs, labels, privileges, dynamic LP sizes, signing/AVB) from exact matched inputs. The original Titan 2 is reported unlocked/ORANGE: proprietary OEM production-signing keys are **not required merely to run a separately authorized engineering experiment**. APK package signing and a demonstrably compatible engineering AVB/hashtree/product verification strategy remain open host/flash GO/NO-GO requirements; production OEM keys/release acceptance are a separate boundary. Never disable verification by assumption or flash an unqualified image.
 - Deliver **one** complete host build/qualification set: exact source and toolchain pins, signed APK package identities, executable product image and composition, metadata preservation, LP/AVB/rollback/restore report, tests and failure reasons. Avoid multiple partial release claims.
 
-**Track A state:** source imports on PR #343 started; PR closed unmerged, stock-compatible Launcher3/Quickstep and image signing still unresolved; **no new OEM system/product image compiled or sealed**.
+**Track A state (2026-10-18):** The real ai-g732 `TITAN2_TRACK_A_ENGINEERING_IMAGE_V1_3` host run **BUILT** an OEM-derived *product-only* signed-app engineering EROFS at `/srv/sable-build/workspaces/titan2-track-a-v2/dist/track-a-oem16-signed-app-product-20261018T155147318439Z/NOT_FLASH_READY_SIGNED_13_APPS_PRODUCT.erofs.img` (SHA-256 `fcd1bd62f4259222084fc9651186925cc42b59eb530f9cee66dfcbb4fa36dc45`). `APK_VERIFIED=13/13` including 10 locally engineering-signed APKs and three previously signed APKs; metadata-source PAX stock members 462/462 retained; PAX-content consistency, EROFS `mkfs`, fsck and extraction succeeded. The original 13-app P10 image and quarantine evidence remain immutable. **Independent post-build inode/xattr inspection, new-app enforcing policy, product AVB hashtree/LP/COW/restore and physical boot remain unqualified.** This does not implement native OEM Launcher3QuickStep Sable Start or a complete OEM firmware/OTA. PR #343 stays closed unmerged and its source imports are not automatically adopted. OEM production keys were **not required** to create this host engineering image.
 
 ## Track B — N1F-derived compatibility reference, fresh Android 16 source
 
@@ -59,7 +60,7 @@ Each track owns its own source checkout, Android `out`, app outputs, Gradle home
 
 1. Reconcile local/remote canonical source HEAD, target branch and retained PR #343 diff before any new build. Pin exact Git objects and the tools available on ai-g732. Resolve open source authority and no-private-repo dependencies.
 2. Establish Track A OEM and Track B public-only Android 16 source graphs independently and seal their manifests. Build from the new roots; do not resurrect retired `titan2-n1d*` directories.
-3. Produce a real full-image artifact **for each track** with one consolidated host-side qualification record, including Python/Bash syntax/regressions, resource/performance checks, package/partition/AVB/runtime constraints, security differences and precise blocker classification.
+3. **Reuse, do not rebuild** the Track A signed-app engineering product EROFS identified above. In a single consolidated OEM Android16 image/host-to-device admission workstream, close post-build independent metadata/SELinux review, stock `product` AVB hashtree trust, dynamic LP/Virtual A/B COW and matched restore; separately integrate stock-compatible Launcher3QuickStep-hosted Sable Start before representing the full OEM product as complete. For Track B, produce the first real full-image artifact from pinned A16 public sources, with one consolidated qualification record.
 4. Require **separate explicit owner authorization** for device inspection and any one-shot mode-aware Titan 2 flash/restore procedure. No `fastboot flashall`, implicit slot/mode assumptions, OEM signature bypass or automatic retry. Keep C3A and N1F independently boot-qualified as rollback/reference images.
 
 ## PR and ownership ledger
