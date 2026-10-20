@@ -2,6 +2,7 @@ package org.sableos.titan2.setup.android
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.provider.Telephony
 import android.telecom.TelecomManager
@@ -10,7 +11,7 @@ import org.sableos.titan2.setup.core.Snapshot
 
 /** Reads the current defaults through public APIs only. A failed read is [Observed.Failed], never "none". */
 class SetupReader(private val context: Context) {
-    fun snapshot(): Snapshot = Snapshot(home(), keyboard(), dialer(), sms())
+    fun snapshot(): Snapshot = Snapshot(home(), keyboard(), dialer(), sms(), messagesSmsRead())
 
     private fun home(): Observed = observe {
         context.packageManager.resolveActivity(
@@ -29,6 +30,23 @@ class SetupReader(private val context: Context) {
     }
 
     private fun sms(): Observed = observe { Telephony.Sms.getDefaultSmsPackage(context) }
+
+    /** Explicit package-permission observation; uninstalled/denied never produces a success. */
+    private fun messagesSmsRead(): Observed = try {
+        val result = context.packageManager.checkPermission(
+            android.Manifest.permission.READ_SMS,
+            "org.sableos.messages",
+        )
+        if (result == PackageManager.PERMISSION_GRANTED) {
+            Observed.Value("granted")
+        } else {
+            Observed.Value("denied")
+        }
+    } catch (_: SecurityException) {
+        Observed.Failed
+    } catch (_: RuntimeException) {
+        Observed.Failed
+    }
 
     private fun observe(read: () -> String?): Observed = try {
         val v = read()
