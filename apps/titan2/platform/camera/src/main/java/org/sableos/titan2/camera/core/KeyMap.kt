@@ -27,6 +27,7 @@ enum class CameraAction {
     PauseToggle,
     NextCaptureMode,
     QualityNext,
+    RawToggle,
 
     /** Show/hide the control legend (a dedicated help action, not a mode). */
     ToggleLegend
@@ -51,6 +52,8 @@ object CameraKeyMap {
         Binding("v") to CameraAction.VideoToggle,
         Binding("up") to CameraAction.StepUp, Binding("down") to CameraAction.StepDown,
         Binding("plus") to CameraAction.ZoomIn, Binding("minus") to CameraAction.ZoomOut,
+        Binding("z") to CameraAction.ZoomIn, Binding("z", alt = true) to CameraAction.ZoomOut,
+        Binding("r") to CameraAction.RawToggle,
         Binding("c") to CameraAction.SwitchCamera, Binding("tab") to CameraAction.SwitchCamera,
         Binding("e") to CameraAction.ExposureUp,
         Binding("e", alt = true) to CameraAction.ExposureDown,
