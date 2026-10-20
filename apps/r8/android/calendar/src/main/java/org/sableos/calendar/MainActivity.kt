@@ -57,11 +57,13 @@ import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.sableos.design.SableActionButton
@@ -122,6 +124,7 @@ class MainActivity : ComponentActivity() {
 
 private enum class CalendarMode {
     Agenda,
+    Week,
     Month,
     NewEvent,
     Detail,
@@ -144,10 +147,14 @@ private fun defaultEventStart(date: LocalDate): Long =
 
 /** Screen state for [CalendarApp]: every field is Compose state, so readers recompose on change. */
 private class CalendarAppState {
-    var mode by mutableStateOf(CalendarMode.Agenda)
+    var mode by mutableStateOf(CalendarMode.Week)
     var selectedDate by mutableStateOf(LocalDate.now())
+    var weekStart by mutableStateOf(LocalDate.now())
+    var workEvents by mutableStateOf<List<CalendarEvent>>(emptyList())
+    var nowMillis by mutableStateOf(System.currentTimeMillis())
     var events by mutableStateOf<List<CalendarEvent>>(emptyList())
     var refreshing by mutableStateOf(false)
+    var workRefreshing by mutableStateOf(false)
 
     // Unsaved new event kept while the user backs out to the agenda, restored on re-entry this session.
     var eventDraft by mutableStateOf<EventDraft?>(null)
@@ -163,7 +170,7 @@ private class CalendarAppState {
             if (mode == CalendarMode.Edit && detail != null) {
                 CalendarMode.Detail
             } else {
-                CalendarMode.Agenda
+                CalendarMode.Week
             }
         editDraft = null
     }
@@ -269,7 +276,7 @@ private fun CalendarApp(
     val state = remember { CalendarAppState() }
     val scope = rememberCoroutineScope()
 
-    BackHandler(enabled = state.mode != CalendarMode.Agenda) { state.goBack() }
+    BackHandler(enabled = state.mode != CalendarMode.Week) { state.goBack() }
 
     LaunchedEffect(refreshGeneration, state.selectedDate) {
         state.refreshing = true
@@ -280,6 +287,23 @@ private fun CalendarApp(
                 }
         } finally {
             state.refreshing = false
+        }
+    }
+
+    LaunchedEffect(refreshGeneration, state.weekStart, state.mode) {
+        if (state.mode != CalendarMode.Week) return@LaunchedEffect
+        state.workRefreshing = true
+        try {
+            state.workEvents = withContext(Dispatchers.IO) { repository.workWindow(state.weekStart) }
+        } finally {
+            state.workRefreshing = false
+        }
+    }
+
+    LaunchedEffect(state.mode) {
+        while (state.mode == CalendarMode.Week) {
+            state.nowMillis = System.currentTimeMillis()
+            delay(60_000)
         }
     }
 
@@ -309,13 +333,55 @@ private fun CalendarApp(
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
         SableRefreshableSurface(
-            isRefreshing = state.refreshing,
+            isRefreshing = state.refreshing || state.workRefreshing,
             onRefresh = onRefresh,
         ) {
             Column(
                 modifier =
                     Modifier
                         .fillMaxSize()
+                        .onPreviewKeyEvent { event ->
+                            if (state.mode !in setOf(CalendarMode.Week, CalendarMode.Agenda, CalendarMode.Month) ||
+                                event.type != KeyEventType.KeyDown
+                            ) {
+                                false
+                            } else {
+                                val action = CalendarBrowseKeys.action(
+                                    keyCode = event.nativeKeyEvent.keyCode,
+                                    modified = event.isAltPressed || event.isCtrlPressed ||
+                                        event.isMetaPressed || event.nativeKeyEvent.isShiftPressed,
+                                    repeating = event.nativeKeyEvent.repeatCount != 0,
+                                )
+                                when (action) {
+                                    CalendarBrowseAction.Create -> { state.startNewEvent(); true }
+                                    CalendarBrowseAction.Today -> {
+                                        state.selectedDate = LocalDate.now()
+                                        state.weekStart = state.selectedDate
+                                        state.nowMillis = System.currentTimeMillis()
+                                        true
+                                    }
+                                    CalendarBrowseAction.View -> {
+                                        state.mode = when (state.mode) {
+                                            CalendarMode.Week -> CalendarMode.Agenda
+                                            CalendarMode.Agenda -> CalendarMode.Month
+                                            else -> CalendarMode.Week
+                                        }
+                                        true
+                                    }
+                                    CalendarBrowseAction.Next, CalendarBrowseAction.Previous -> {
+                                        state.selectedDate = state.selectedDate.plusDays(
+                                            if (action == CalendarBrowseAction.Next) 1 else -1
+                                        )
+                                        val last = state.weekStart.plusDays((CalendarWorkWindowPolicy.DAYS - 1).toLong())
+                                        if (state.selectedDate < state.weekStart || state.selectedDate > last) {
+                                            state.weekStart = state.selectedDate
+                                        }
+                                        true
+                                    }
+                                    null -> false
+                                }
+                            }
+                        }
                         .verticalScroll(rememberScrollState())
                         .padding(
                             horizontal = SableSpacing.ScreenHorizontal,
@@ -368,12 +434,102 @@ private fun CalendarModeContent(
     onRequestPermissions: () -> Unit,
 ) {
     when (state.mode) {
+        CalendarMode.Week -> WorkWindowPane(state)
         CalendarMode.Agenda -> AgendaPane(state)
         CalendarMode.Month -> MonthPane(state)
         CalendarMode.NewEvent -> NewEventPane(state, repository, onRefresh, onRequestPermissions)
         CalendarMode.Detail -> DetailPane(state)
         CalendarMode.Edit -> EditPane(state, repository, onRefresh)
     }
+}
+
+/** Five-day/current-time view. CalendarProvider still owns events, accounts and RSVP. */
+@Composable
+private fun WorkWindowPane(state: CalendarAppState) {
+    val context = LocalContext.current
+    val days = remember(state.weekStart) { CalendarWorkWindowPolicy.dates(state.weekStart) }
+    val today = LocalDate.now()
+    Text(
+        text = "WORK WINDOW · ${days.first()} – ${days.last()}",
+        style = MaterialTheme.typography.titleMedium,
+    )
+    Spacer(Modifier.height(SableSpacing.Sm))
+    SableActionButton(
+        text = "TODAY · NOW  (T)",
+        primary = false,
+        onClick = {
+            state.selectedDate = LocalDate.now()
+            state.weekStart = state.selectedDate
+            state.nowMillis = System.currentTimeMillis()
+        },
+    )
+    Spacer(Modifier.height(SableSpacing.Md))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        days.forEach { date ->
+            val count = CalendarWorkWindowPolicy.onDay(state.workEvents, date).size
+            val selected = date == state.selectedDate
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .border(
+                        1.dp,
+                        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        RoundedCornerShape(6.dp),
+                    )
+                    .clickable { state.selectedDate = date }
+                    .padding(vertical = 10.dp, horizontal = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(date.dayOfWeek.name.take(3), style = MaterialTheme.typography.labelSmall)
+                Text(date.dayOfMonth.toString(), style = MaterialTheme.typography.titleMedium)
+                Text("$count events", style = MaterialTheme.typography.labelSmall)
+            }
+        }
+    }
+    Spacer(Modifier.height(SableSpacing.Md))
+    if (today in days) {
+        Text(
+            text = "NOW · " + android.text.format.DateFormat.getTimeFormat(context)
+                .format(Date(state.nowMillis)),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    } else {
+        Text("Current time outside displayed dates · T returns to today.")
+    }
+    Spacer(Modifier.height(SableSpacing.Md))
+    val next = CalendarWorkWindowPolicy.nextEvent(state.workEvents, state.nowMillis)
+    Text("NEXT EVENT", style = MaterialTheme.typography.labelLarge)
+    if (next == null) {
+        Text("No further event in this five-day window.")
+    } else {
+        AgendaEventRow(
+            event = next,
+            onOpen = { state.openDetail(next) },
+            onEdit = { state.openEditor(next) },
+            onDelete = { state.askDelete(next.id, next.title, next.recurring, next.canModify) },
+        )
+    }
+    Spacer(Modifier.height(SableSpacing.Md))
+    Text("SELECTED · ${state.selectedDate}", style = MaterialTheme.typography.labelLarge)
+    val selected = CalendarWorkWindowPolicy.onDay(state.workEvents, state.selectedDate)
+    if (selected.isEmpty()) Text("nothing scheduled")
+    selected.take(3).forEach { event ->
+        AgendaEventRow(
+            event = event,
+            onOpen = { state.openDetail(event) },
+            onEdit = { state.openEditor(event) },
+            onDelete = { state.askDelete(event.id, event.title, event.recurring, event.canModify) },
+        )
+    }
+    if (selected.size > 3) Text("${selected.size - 3} more events · open Agenda")
+    Spacer(Modifier.height(SableSpacing.Sm))
+    SableActionButton(text = "Agenda  (V)", primary = false, onClick = { state.mode = CalendarMode.Agenda })
+    Spacer(Modifier.height(SableSpacing.Sm))
+    SableActionButton(text = "+  new event  (C)", primary = false, onClick = state::startNewEvent)
 }
 
 @Composable
