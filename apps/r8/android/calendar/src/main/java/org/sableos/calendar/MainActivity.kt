@@ -76,6 +76,7 @@ import org.sableos.design.SableRefreshableSurface
 import org.sableos.design.SableSpacing
 import org.sableos.design.sableFocusRing
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
 import java.util.Calendar
@@ -157,7 +158,7 @@ private class CalendarAppState {
     var workEvents by mutableStateOf<List<CalendarEvent>>(emptyList())
     var searchQuery by mutableStateOf("")
     var searchFocused by mutableStateOf(false)
-    var blockStartHour by mutableIntStateOf(8)
+    var blockStartHour by mutableIntStateOf((LocalTime.now().hour / 4) * 4)
     var nowMillis by mutableStateOf(System.currentTimeMillis())
     var events by mutableStateOf<List<CalendarEvent>>(emptyList())
     var refreshing by mutableStateOf(false)
@@ -366,6 +367,7 @@ private fun CalendarApp(
                                         state.selectedDate = LocalDate.now()
                                         state.weekStart = state.selectedDate
                                         state.nowMillis = System.currentTimeMillis()
+                                        state.blockStartHour = (LocalTime.now().hour / 4) * 4
                                         true
                                     }
                                     CalendarBrowseAction.View -> {
@@ -469,6 +471,7 @@ private fun WorkWindowPane(state: CalendarAppState) {
             state.selectedDate = LocalDate.now()
             state.weekStart = state.selectedDate
             state.nowMillis = System.currentTimeMillis()
+            state.blockStartHour = (LocalTime.now().hour / 4) * 4
         },
     )
     Spacer(Modifier.height(SableSpacing.Md))
@@ -536,7 +539,7 @@ private fun WorkWindowPane(state: CalendarAppState) {
     }
     Spacer(Modifier.height(SableSpacing.Md))
     val visible = CalendarWorkWindowPolicy.search(state.workEvents, state.searchQuery)
-    val next = CalendarWorkWindowPolicy.nextEvent(visible, state.nowMillis)
+    val next = CalendarWorkWindowPolicy.nextEvent(state.workEvents, state.nowMillis)
     Text("NEXT EVENT", style = MaterialTheme.typography.labelLarge)
     if (next == null) {
         Text("No further event in this five-day window.")
