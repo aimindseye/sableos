@@ -28,6 +28,30 @@ object CalendarWorkWindowPolicy {
         }
     }
 
+    /** Text search is confined to the loaded five-day provider result, never an unbounded account query. */
+    fun search(events: List<CalendarEvent>, query: String): List<CalendarEvent> {
+        val term = query.trim().take(80)
+        if (term.isEmpty()) return events
+        return events.filter {
+            it.title.contains(term, ignoreCase = true) ||
+                it.calendarName.contains(term, ignoreCase = true)
+        }
+    }
+
+    /** Explicit four-hour pages; events spanning the page or all-day events remain visible. */
+    fun inTimeBlock(
+        event: CalendarEvent,
+        date: LocalDate,
+        startHour: Int,
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): Boolean {
+        require(startHour in 0..20 && startHour % 4 == 0)
+        if (event.allDay) return true
+        val lower = date.atTime(startHour, 0).atZone(zone).toInstant().toEpochMilli()
+        val upper = date.atTime(startHour + 4, 0).atZone(zone).toInstant().toEpochMilli()
+        return event.startMillis < upper && event.endMillis > lower
+    }
+
     fun nextEvent(events: List<CalendarEvent>, nowMillis: Long): CalendarEvent? =
         events.asSequence()
             .filter { it.endMillis > nowMillis }
