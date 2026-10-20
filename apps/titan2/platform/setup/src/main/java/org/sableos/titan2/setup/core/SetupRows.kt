@@ -6,7 +6,9 @@ data class Snapshot(
     val keyboard: Observed,
     val dialer: Observed,
     val sms: Observed,
-    val messagesReadPermission: Observed = Observed.Failed
+    val messagesReadPermission: Observed = Observed.Failed,
+    val browserHandler: Observed = Observed.Failed,
+    val provisioningState: Observed = Observed.Failed
 )
 
 object SetupRows {
@@ -49,6 +51,19 @@ object SetupRows {
             Action.PrivacySettings
         ),
         Item(
+            "browser-handler",
+            "Web browser handler",
+            browserDetail(snapshot.browserHandler),
+            Readiness.Informational,
+            Action.DefaultApps
+        ),
+        Item(
+            "first-boot-status",
+            "Android first-boot provisioning",
+            provisioningDetail(snapshot.provisioningState),
+            Readiness.Informational
+        ),
+        Item(
             "messages-sms",
             "Messages SMS access",
             smsPermissionDetail(snapshot.messagesReadPermission),
@@ -56,6 +71,24 @@ object SetupRows {
             Action.DefaultApps
         )
     ).map { applyTarget(it, targets(it.action)) }
+
+    /** An Android-resolved VIEW handler is stronger than a WebView engine or APK filename. */
+    fun browserDetail(value: Observed): String = when (value) {
+        is Observed.Value -> "Android resolves web links to: ${value.text}; default role and launch acceptance not verified."
+        Observed.Absent -> "No user-facing HTTPS browser handler resolved; WebView alone is not a browser."
+        Observed.Failed -> "Unable to query an HTTPS browser handler on this user/profile."
+    }
+
+    /** Flags report Android's provisioning state, NOT the identity of the privileged wizard. */
+    fun provisioningDetail(value: Observed): String = when (value) {
+        is Observed.Value -> when (value.text) {
+            "complete" -> "Android reports device provisioned and this user setup complete; wizard owner unknown."
+            "pending" -> "Android first-boot provisioning is not yet complete; wizard owner unknown."
+            else -> "Android provisioning flags are not conclusive; wizard owner unknown."
+        }
+        Observed.Absent -> "Android did not report usable provisioning flags; wizard owner unknown."
+        Observed.Failed -> "Provisioning flags unavailable; privileged SetupWizard owner unverified."
+    }
 
     /** The Android package manager reports the actual grant, not a guessed installer allowlist. */
     fun smsPermissionDetail(value: Observed): String = when (value) {
