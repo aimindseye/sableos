@@ -55,6 +55,28 @@ class CalendarWorkWindowPolicyTest {
         assertNull(CalendarBrowseKeys.action(KeyEvent.KEYCODE_ENTER, false, false))
     }
 
+    @Test fun searchIsBoundedToLoadedProviderResults() {
+        val evs = listOf(
+            event(1, 0, 100).copy(title = "Clinic appointment"),
+            event(2, 0, 100).copy(title = "Team planning", calendarName = "Personal"),
+        )
+        assertEquals(2, CalendarWorkWindowPolicy.search(evs, "").size)
+        assertEquals(listOf(evs[0]), CalendarWorkWindowPolicy.search(evs, "  clinic  "))
+        assertEquals(listOf(evs[1]), CalendarWorkWindowPolicy.search(evs, "personal"))
+        assertTrue(CalendarWorkWindowPolicy.search(evs, "does not exist").isEmpty())
+    }
+
+    @Test fun timeBlocksHandleBoundariesAndAllDay() {
+        val zone = ZoneId.of("America/New_York")
+        val day = LocalDate.of(2026, 10, 20)
+        val t = day.atTime(11, 30).atZone(zone).toInstant().toEpochMilli()
+        val timed = event(1, t, t + 60 * 60 * 1000L)
+        assertTrue(CalendarWorkWindowPolicy.inTimeBlock(timed, day, 8, zone))
+        assertTrue(CalendarWorkWindowPolicy.inTimeBlock(timed, day, 12, zone))
+        assertFalse(CalendarWorkWindowPolicy.inTimeBlock(timed, day, 16, zone))
+        assertTrue(CalendarWorkWindowPolicy.inTimeBlock(event(2, t, t + 60_000L, true), day, 20, zone))
+    }
+
     @Test fun performance10kEventsBoundedToFiveColumns() {
         val day = LocalDate.of(2026, 10, 20)
         val first = day.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
