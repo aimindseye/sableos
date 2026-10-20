@@ -8,7 +8,8 @@ data class Snapshot(
     val sms: Observed,
     val messagesReadPermission: Observed = Observed.Failed,
     val browserHandler: Observed = Observed.Failed,
-    val provisioningState: Observed = Observed.Failed
+    val provisioningState: Observed = Observed.Failed,
+    val wizardHandler: Observed = Observed.Failed
 )
 
 object SetupRows {
