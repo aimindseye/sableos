@@ -19,12 +19,15 @@ class HomeModelTest {
         assertEquals(listOf("Utilities", "Diagnostics", "Reports"), g.map { it.title })
     }
 
-    @Test fun q25NormalModeShowsNoUnprovenUtilities() {
+    @Test fun q25NormalModeShowsOnlySoftwareUtilitiesWithoutHardwareGate() {
         val g = HomeModel.build(
             HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = false)
         )
-        assertTrue(tools(g, Section.UTILITIES).isEmpty())
-        assertEquals(listOf("Diagnostics", "Reports"), g.map { it.title })
+        assertEquals(
+            listOf(Tool.NOTES, Tool.VOICE_RECORDER, Tool.CLOCK_STOPWATCH),
+            tools(g, Section.UTILITIES)
+        )
+        assertEquals(listOf("Utilities", "Diagnostics", "Reports"), g.map { it.title })
         assertFalse(Tool.CAPABILITIES in tools(g, Section.DIAGNOSTICS))
         assertFalse(Tool.BUGREPORT in tools(g, Section.REPORTS))
     }
@@ -42,7 +45,9 @@ class HomeModelTest {
         assertFalse(Tool.FACTORY_BRIDGE in tools(g, Section.DIAGNOSTICS))
         g.first {
             it.section == Section.UTILITIES
-        }.items.forEach { assertEquals(Badge.DEVELOPER_ONLY, it.badge) }
+        }.items.filter { it.tool.capability != null }.forEach {
+            assertEquals(Badge.DEVELOPER_ONLY, it.badge)
+        }
     }
 
     @Test fun titan2ListsIrRemoteWithoutPermissionPrompt() {
@@ -117,7 +122,7 @@ class HomeModelTest {
     @Test fun profileSummaryNamesTheProfile() {
         val i = HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = false)
         assertEquals(
-            "Zinwa Q25 · zinwa-q25 · 0 utilities",
+            "Zinwa Q25 · zinwa-q25 · 3 utilities",
             HomeModel.profileSummary(i, HomeModel.build(i))
         )
     }
