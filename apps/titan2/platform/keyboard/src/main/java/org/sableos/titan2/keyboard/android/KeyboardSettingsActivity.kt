@@ -40,12 +40,13 @@ class KeyboardSettingsActivity : Activity() {
                 textSize = NOTE_SP
             }
         )
-        hardwareStatus = TextView(this).apply {
+        val statusView = TextView(this).apply {
             text = HardwareKeyboardStatus.display()
             textSize = NOTE_SP
             contentDescription = "Hardware keyboard status"
         }
-        col.addView(hardwareStatus)
+        hardwareStatus = statusView
+        col.addView(statusView)
 
         fun sw(label: String, key: String, def: Boolean) = col.addView(
             Switch(this).apply {
