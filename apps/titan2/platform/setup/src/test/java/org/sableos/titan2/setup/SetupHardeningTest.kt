@@ -74,6 +74,32 @@ class SetupHardeningTest {
         assertTrue(privacy.detail.contains("does not change grants"))
     }
 
+    @Test fun browserAndProvisioningNeverClaimPrivilegedOwnership() {
+        val configured = snap().copy(
+            browserHandler = Observed.Value("org.example.browser/.Activity"),
+            provisioningState = Observed.Value("complete")
+        )
+        val browser = row("browser-handler", rows(configured))
+        val setup = row("first-boot-status", rows(configured))
+        assertEquals(Readiness.Informational, browser.state)
+        assertEquals(Readiness.Informational, setup.state)
+        assertTrue(browser.detail.contains("org.example.browser/.Activity"))
+        assertTrue(setup.detail.contains("wizard owner unknown"))
+        assertTrue(SetupModel.isReady(rows(configured)))
+    }
+
+    @Test fun browserAbsentNeverTurnsWebViewIntoAnInstalledBrowser() {
+        val row = row("browser-handler", rows(snap().copy(browserHandler = Observed.Absent)))
+        assertTrue(row.detail.contains("WebView alone is not a browser"))
+        assertEquals(Readiness.Informational, row.state)
+    }
+
+    @Test fun provisioningFailureRemainsUnknownOwnershipNotDone() {
+        val state = rows(snap().copy(provisioningState = Observed.Failed))
+        assertTrue(row("first-boot-status", state).detail.contains("unverified"))
+        assertEquals(Readiness.Informational, row("first-boot-status", state).state)
+    }
+
     // --- readiness states, summary, completion ---
 
     @Test fun allFiveStatesExistAndAreDistinct() {
