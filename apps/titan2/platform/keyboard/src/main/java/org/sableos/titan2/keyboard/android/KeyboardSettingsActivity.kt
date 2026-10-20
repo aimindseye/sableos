@@ -13,6 +13,7 @@ import android.widget.TextView
 
 /** Plain-View settings so it works with the hardware keyboard (Tab/arrows/Enter) with no extra dependencies. */
 class KeyboardSettingsActivity : Activity() {
+    private var hardwareStatus: TextView? = null
     private companion object {
         const val PAD_PX = 24
         const val TITLE_SP = 20f
@@ -39,6 +40,13 @@ class KeyboardSettingsActivity : Activity() {
                 textSize = NOTE_SP
             }
         )
+        hardwareStatus = TextView(this).apply {
+            text = HardwareKeyboardStatus.display()
+            textSize = NOTE_SP
+            contentDescription = "Hardware keyboard status"
+        }
+        col.addView(hardwareStatus)
+
         fun sw(label: String, key: String, def: Boolean) = col.addView(
             Switch(this).apply {
                 text = label
@@ -70,5 +78,10 @@ class KeyboardSettingsActivity : Activity() {
                 )
             }
         )
+    }
+
+    override fun onResume() {
+        super.onResume()
+        hardwareStatus?.text = HardwareKeyboardStatus.display()
     }
 }
