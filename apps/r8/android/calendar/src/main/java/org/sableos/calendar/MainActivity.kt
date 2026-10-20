@@ -164,7 +164,7 @@ private class CalendarAppState {
     var pendingDelete by mutableStateOf<PendingDelete?>(null)
     var status by mutableStateOf<String?>(null)
 
-    /** Hardware Back/Esc goes up one level: edit → detail → agenda; only the agenda leaves Calendar. */
+    /** Hardware Back/Esc climbs out of editor/detail/agenda to the current-work-window home. */
     fun goBack() {
         mode =
             if (mode == CalendarMode.Edit && detail != null) {
@@ -479,6 +479,7 @@ private fun WorkWindowPane(state: CalendarAppState) {
                         if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                         RoundedCornerShape(6.dp),
                     )
+                    .sableFocusRing()
                     .clickable { state.selectedDate = date }
                     .padding(vertical = 10.dp, horizontal = 2.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
