@@ -38,8 +38,36 @@ object SetupRows {
             "Opens Android Settings",
             Readiness.Informational,
             Action.NetworkSettings
+        ),
+        Item(
+            "privacy",
+            "Privacy and permissions",
+            "Android owns the microphone, camera, location, and app permission switches. " +
+                "Review them in system Privacy settings; this checklist does not change grants.",
+            Readiness.Informational,
+            Action.PrivacySettings
+        ),
+        Item(
+            "messages-sms",
+            "Messages SMS access",
+            smsPermissionDetail(snapshot.messagesReadPermission),
+            Readiness.Informational,
+            Action.DefaultApps
         )
     ).map { applyTarget(it, targets(it.action)) }
+
+    /** The Android package manager reports the actual grant, not a guessed installer allowlist. */
+    fun smsPermissionDetail(value: Observed): String = when (value) {
+        is Observed.Value -> if (value.text == "granted") {
+            "READ_SMS currently granted to Sable Messages. Android's default SMS app still " +
+                "owns SMS provider writes; legacy WRITE_SMS cannot be granted on Android 16."
+        } else {
+            "READ_SMS is not granted to Sable Messages. Installer/role policy and user " +
+                "authorization must be checked; no permission was changed here."
+        }
+        Observed.Absent -> "Sable Messages is not installed or its permission state is unavailable."
+        Observed.Failed -> "Could not verify READ_SMS on this device; no access is assumed."
+    }
 
     /** HOME is owned by the canonical lane (IR-003); this row never judges it. */
     private fun home(o: Observed): Item = when (o) {
