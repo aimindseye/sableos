@@ -11,6 +11,9 @@ object Controllers {
         { h -> InfoController(h) { h.collectors.collect(category) } }
 
     private val FACTORIES: Map<Tool, (ToolHost) -> ToolController> = mapOf(
+        Tool.NOTES to ::NotesController,
+        Tool.VOICE_RECORDER to ::VoiceRecorderController,
+        Tool.CLOCK_STOPWATCH to ::ClockStopwatchController,
         Tool.COMPASS to ::CompassController,
         Tool.BUBBLE_LEVEL to { h -> TiltController(h, Capability.BUBBLE_LEVEL) },
         Tool.PLUMB_BOB to { h -> TiltController(h, Capability.PLUMB_BOB) },
