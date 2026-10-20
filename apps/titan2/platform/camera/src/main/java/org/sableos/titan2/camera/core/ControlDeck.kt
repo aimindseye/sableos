@@ -73,6 +73,12 @@ object ControlGate {
             "Only one photo path"
         )
 
+        CameraAction.RawToggle -> need(
+            c.ui == UiMode.Photo && !c.recording &&
+                c.cam.modes[CaptureMode.Raw]?.ok == true,
+            "RAW is not supported on this camera"
+        )
+
         CameraAction.CompareToggle -> need(c.ui == UiMode.Photo, "Photo only")
 
         else -> null
