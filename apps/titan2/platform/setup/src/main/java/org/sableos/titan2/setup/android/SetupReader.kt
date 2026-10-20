@@ -47,6 +47,15 @@ class SetupReader(private val context: Context) {
         ) null else info.packageName + "/" + info.name
     }
 
+    /** Visibility-bounded enabled SETUP_WIZARD intent handler, if unique. This does not check privileges. */
+    private fun wizardHandler(): Observed = observe {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory("android.intent.category.SETUP_WIZARD")
+        val candidates = context.packageManager.queryIntentActivities(intent, 0)
+            .mapNotNull { it.activityInfo }
+            .map { "${it.packageName}/${it.name}" }.distinct()
+        candidates.singleOrNull()
+    }
+
     /** Read-only Android setup flags; does not guess the owner of first-boot SetupWizard. */
     private fun provisioningState(): Observed = try {
         val device = Settings.Global.getInt(
