@@ -456,6 +456,7 @@ class MainActivity : ComponentActivity() {
             CameraAction.PauseToggle,
             CameraAction.QualityNext,
             CameraAction.NextCaptureMode,
+            CameraAction.RawToggle,
             CameraAction.CompareToggle -> doCaptureAction(a, cam)
 
             CameraAction.Autofocus,
@@ -508,6 +509,13 @@ class MainActivity : ComponentActivity() {
                         it.key in listOf(CaptureMode.Auto, CaptureMode.HighRes, CaptureMode.Raw)
                 }.keys.toList()
                 mode = avail[(avail.indexOf(mode).coerceAtLeast(0) + 1) % avail.size]
+                restart()
+            }
+
+            CameraAction.RawToggle -> {
+                // ControlDeck has already verified the HAL advertises a working RAW path.
+                mode = if (mode == CaptureMode.Raw) CaptureMode.Auto else CaptureMode.Raw
+                status = if (mode == CaptureMode.Raw) "RAW DNG capture selected" else "Auto photo capture selected"
                 restart()
             }
 
