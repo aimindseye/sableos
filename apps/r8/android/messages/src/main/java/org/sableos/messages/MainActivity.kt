@@ -9,6 +9,7 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
+import android.provider.ContactsContract
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -116,6 +117,8 @@ class MainActivity : ComponentActivity() {
                 if (MessagesExposureGate.showConversations(androidLocked) && smsPermissionGranted) {
                     MessagesApp(
                         onProviderHandoff = ::openProviderConversation,
+                        onPhoneHandoff = ::openPhoneDialer,
+                        onContactHandoff = ::openContactEditor,
                         refreshGeneration = smsGeneration,
                     )
                 } else if (!androidLocked) {
@@ -167,6 +170,19 @@ class MainActivity : ComponentActivity() {
         bindSmsObserver()
     }
 
+    private fun openPhoneDialer(recipient: String): Boolean =
+        recipient.isNotBlank() && runCatching {
+            startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${Uri.encode(recipient)}")))
+        }.isSuccess
+
+    private fun openContactEditor(recipient: String): Boolean =
+        recipient.isNotBlank() && runCatching {
+            startActivity(
+                Intent(Intent.ACTION_INSERT, ContactsContract.Contacts.CONTENT_URI)
+                    .putExtra(ContactsContract.Intents.Insert.PHONE, recipient),
+            )
+        }.isSuccess
+
     private fun openProviderConversation(
         recipient: String,
         draft: String,
@@ -184,6 +200,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun MessagesApp(
     onProviderHandoff: (String, String) -> Boolean,
+    onPhoneHandoff: (String) -> Boolean,
+    onContactHandoff: (String) -> Boolean,
     refreshGeneration: Int,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -272,6 +290,14 @@ private fun MessagesApp(
             state = state,
             providerStatus = providerStatus,
             onAction = ::apply,
+            onContact = {
+                val route = sortedThreads.getOrNull(safeSelection)?.route.orEmpty()
+                providerStatus = if (onContactHandoff(route)) "Contacts editor opened." else "Contacts provider unavailable."
+            },
+            onPhone = {
+                val route = sortedThreads.getOrNull(safeSelection)?.route.orEmpty()
+                providerStatus = if (onPhoneHandoff(route)) "Dialer opened; call not placed." else "Dialer unavailable."
+            },
         )
         Spacer(Modifier.height(SableSpacing.Xl))
         KeyboardModel()
@@ -738,6 +764,8 @@ private fun HandoffPanel(
     state: MessagesUiState,
     providerStatus: String,
     onAction: (MessagesAction) -> Unit,
+    onContact: () -> Unit,
+    onPhone: () -> Unit,
 ) {
     ContractPanel(title = "Provider-safe handoffs and privacy") {
         ContractRow("CONTACTS_HANDOFF", "PASS")
@@ -782,7 +810,13 @@ private fun HandoffPanel(
         actions.chunked(ACTION_GRID_COLUMNS).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
                 row.forEach { (label, action) ->
-                    Button(onClick = { onAction(action) }) {
+                    Button(onClick = {
+                        when (action) {
+                            MessagesAction.ContactsHandoff -> onContact()
+                            MessagesAction.PhoneHandoff -> onPhone()
+                            else -> onAction(action)
+                        }
+                    }) {
                         Text(label)
                     }
                 }
