@@ -14,7 +14,7 @@ import org.sableos.titan2.setup.core.Snapshot
 class SetupReader(private val context: Context) {
     fun snapshot(): Snapshot = Snapshot(
         home(), keyboard(), dialer(), sms(), messagesSmsRead(),
-        browserHandler(), provisioningState()
+        browserHandler(), provisioningState(), wizardHandler()
     )
 
     private fun home(): Observed = observe {
