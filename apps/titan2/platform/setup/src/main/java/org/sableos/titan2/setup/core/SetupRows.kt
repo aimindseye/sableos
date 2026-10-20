@@ -59,6 +59,12 @@ object SetupRows {
             Action.DefaultApps
         ),
         Item(
+            "first-boot-handler",
+            "Advertised first-boot wizard",
+            wizardDetail(snapshot.wizardHandler),
+            Readiness.Informational
+        ),
+        Item(
             "first-boot-status",
             "Android first-boot provisioning",
             provisioningDetail(snapshot.provisioningState),
