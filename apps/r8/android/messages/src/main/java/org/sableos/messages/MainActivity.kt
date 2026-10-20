@@ -13,6 +13,7 @@ import android.provider.ContactsContract
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -102,6 +103,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // App-owned screenshot/recents protection; Android still owns profile and lockscreen policy.
+        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         refreshLockState()
         refreshSmsAccess()
 
@@ -163,6 +166,12 @@ class MainActivity : ComponentActivity() {
         refreshSmsAccess()
         smsGeneration += 1
         bindSmsObserver()
+    }
+
+    override fun onPause() {
+        // Invalidate rendered private content before handing focus to the system SMS app or keyguard.
+        androidLocked = true
+        super.onPause()
     }
 
     override fun onStop() {
