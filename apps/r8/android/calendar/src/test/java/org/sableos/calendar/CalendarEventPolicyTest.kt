@@ -71,6 +71,7 @@ class CalendarEventPolicyTest {
         assertEquals(CalendarKeyAction.Edit, CalendarKeys.action(KeyEvent.KEYCODE_E, modified = false))
         assertEquals(CalendarKeyAction.Delete, CalendarKeys.action(KeyEvent.KEYCODE_DEL, modified = false))
         assertEquals(CalendarKeyAction.Delete, CalendarKeys.action(KeyEvent.KEYCODE_FORWARD_DEL, modified = false))
+        assertEquals(CalendarKeyAction.Respond, CalendarKeys.action(KeyEvent.KEYCODE_R, modified = false))
         assertEquals(CalendarKeyAction.Back, CalendarKeys.action(KeyEvent.KEYCODE_ESCAPE, modified = false))
         assertNull(CalendarKeys.action(KeyEvent.KEYCODE_E, modified = true))
         assertNull(CalendarKeys.action(KeyEvent.KEYCODE_D, modified = false))
