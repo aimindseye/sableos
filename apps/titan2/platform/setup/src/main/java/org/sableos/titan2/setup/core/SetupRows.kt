@@ -5,7 +5,8 @@ data class Snapshot(
     val home: Observed,
     val keyboard: Observed,
     val dialer: Observed,
-    val sms: Observed
+    val sms: Observed,
+    val messagesReadPermission: Observed = Observed.Failed
 )
 
 object SetupRows {
