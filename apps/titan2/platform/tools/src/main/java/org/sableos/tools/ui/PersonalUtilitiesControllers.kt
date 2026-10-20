@@ -94,7 +94,7 @@ class NotesController(private val host: ToolHost) : ToolController {
 
     private companion object {
         const val TITLE_LIMIT = 60
-        const val MAX_VISIBLE = 200
+        const val MAX_VISIBLE = 40
     }
 }
 
@@ -149,7 +149,11 @@ class VoiceRecorderController(private val host: ToolHost) : ToolController {
             host.toast("Cannot create recording")
             return
         }
-        val fresh = MediaRecorder(ctx)
+        val fresh = try { MediaRecorder(ctx) } catch (_: RuntimeException) {
+            clip.delete()
+            host.toast("Microphone unavailable")
+            return
+        }
         try {
             stopPlayback()
             fresh.setAudioSource(MediaRecorder.AudioSource.MIC)
