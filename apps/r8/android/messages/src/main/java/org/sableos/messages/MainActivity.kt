@@ -2,12 +2,20 @@
 
 package org.sableos.messages
 
+import android.Manifest
 import android.app.KeyguardManager
+import android.content.pm.PackageManager
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
+import android.provider.Telephony
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -32,10 +40,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -51,21 +62,76 @@ private const val ACTION_GRID_COLUMNS = 3
 
 class MainActivity : ComponentActivity() {
     private var androidLocked by mutableStateOf(true)
+    private var smsPermissionGranted by mutableStateOf(false)
+    private var smsGeneration by androidx.compose.runtime.mutableIntStateOf(0)
+    private var smsObserverRegistered = false
+    private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) {
+            smsGeneration += 1
+        }
+    }
+
+    private fun refreshSmsAccess() {
+        smsPermissionGranted =
+            checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun bindSmsObserver() {
+        if (smsObserverRegistered || !smsPermissionGranted || androidLocked) return
+        smsObserverRegistered = runCatching {
+            contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, smsObserver)
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun unbindSmsObserver() {
+        if (!smsObserverRegistered) return
+        runCatching { contentResolver.unregisterContentObserver(smsObserver) }
+        smsObserverRegistered = false
+    }
 
     private fun refreshLockState() {
         // Fail closed until Android confirms that this user is unlocked.
         androidLocked = getSystemService(KeyguardManager::class.java)?.isDeviceLocked != false
+        if (androidLocked) unbindSmsObserver()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         refreshLockState()
+        refreshSmsAccess()
 
         setContent {
+            val permissionLauncher = rememberLauncherForActivityResult(
+                ActivityResultContracts.RequestPermission(),
+            ) {
+                refreshSmsAccess()
+                if (smsPermissionGranted) {
+                    smsGeneration += 1
+                    bindSmsObserver()
+                }
+            }
             SableGlobalTheme(window = window) {
-                if (MessagesExposureGate.showConversations(androidLocked)) {
-                    MessagesApp(onProviderHandoff = ::openProviderConversation)
+                if (MessagesExposureGate.showConversations(androidLocked) && smsPermissionGranted) {
+                    MessagesApp(
+                        onProviderHandoff = ::openProviderConversation,
+                        refreshGeneration = smsGeneration,
+                    )
+                } else if (!androidLocked) {
+                    Surface {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(SableSpacing.Xl),
+                            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+                        ) {
+                            Text("SMS provider access", style = MaterialTheme.typography.headlineLarge)
+                            Text("Sable Messages reads Android's SMS provider only with authorized READ_SMS access. This hard-restricted permission may require ROM installer or role allowlisting.")
+                            Button(onClick = { permissionLauncher.launch(Manifest.permission.READ_SMS) }) {
+                                Text("Review SMS read access")
+                            }
+                            Text("No conversations are shown without permission; demonstration messages are disabled.")
+                        }
+                    }
                 } else {
                     Surface {
                         Column(
@@ -84,11 +150,21 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         refreshLockState()
+        refreshSmsAccess()
+        smsGeneration += 1
+        bindSmsObserver()
+    }
+
+    override fun onStop() {
+        unbindSmsObserver()
+        super.onStop()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         refreshLockState()
+        refreshSmsAccess()
+        bindSmsObserver()
     }
 
     private fun openProviderConversation(
@@ -106,19 +182,61 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
+private fun MessagesApp(
+    onProviderHandoff: (String, String) -> Boolean,
+    refreshGeneration: Int,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var state by remember { mutableStateOf(MessagesInteractionModel.initialState()) }
-    var providerStatus by remember { mutableStateOf("Provider ownership retained · custom SMS/RCS/MMS stack: no") }
-    val sortedThreads = remember { MessagesInteractionModel.latestFirstThreads(sampleThreads) }
+    var providerStatus by remember { mutableStateOf("Read-only Android SMS provider · send via installed SMS app") }
+    var feed by remember { mutableStateOf<LiveSmsLoad?>(null) }
+    LaunchedEffect(refreshGeneration) {
+        feed = null
+        feed = withContext(Dispatchers.IO) { LiveSmsProvider(context).read() }
+    }
+    val sortedThreads = (feed as? LiveSmsLoad.Ready)?.threads.orEmpty()
+    val safeSelection = state.selectedThreadIndex.coerceIn(0, (sortedThreads.size - 1).coerceAtLeast(0))
 
     fun apply(action: MessagesAction) {
         state = MessagesInteractionModel.reduce(state, action, sortedThreads.size)
     }
 
     fun sendToProvider() {
-        val thread = sortedThreads[state.selectedThreadIndex]
-        providerStatus = providerHandoffStatus(thread, state.draft, onProviderHandoff)
-        apply(MessagesAction.SendMessage)
+        val thread = sortedThreads.getOrNull(safeSelection) ?: return
+        val opened = onProviderHandoff(thread.route, state.draft)
+        providerStatus = if (opened) {
+            "SMS provider opened for ${thread.person}; delivery remains provider-owned."
+        } else {
+            "No installed SMS provider accepted this conversation."
+        }
+        if (opened) apply(MessagesAction.SendMessage)
+    }
+
+    if (feed !is LiveSmsLoad.Ready) {
+        Surface {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(SableSpacing.Xl),
+                verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+            ) {
+                Text("SMS conversations", style = MaterialTheme.typography.headlineLarge)
+                Text(when (feed) {
+                    null -> "Loading from Android's SMS provider…"
+                    LiveSmsLoad.AccessDenied -> "READ_SMS access denied or restricted by the installer."
+                    LiveSmsLoad.Unavailable -> "Android SMS provider is unavailable. No sample data will be shown."
+                    is LiveSmsLoad.Ready -> ""
+                })
+            }
+        }
+        return
+    }
+    if (sortedThreads.isEmpty()) {
+        Surface {
+            Column(modifier = Modifier.fillMaxSize().padding(SableSpacing.Xl)) {
+                Text("No SMS conversations in Android's provider.", style = MaterialTheme.typography.titleLarge)
+                Text("No demonstration threads are shown. MMS and RCS stay in the owning app.")
+            }
+        }
+        return
     }
 
     Column(
@@ -130,7 +248,7 @@ private fun MessagesApp(onProviderHandoff: (String, String) -> Boolean) {
         Spacer(Modifier.height(SableSpacing.Xl))
         LatestAnchoredThread(
             state = state,
-            thread = sortedThreads[state.selectedThreadIndex],
+            thread = sortedThreads[safeSelection],
             onDraftChanged = { draft -> state = state.copy(draft = draft) },
             onAction = ::apply,
             onProviderHandoff = ::sendToProvider,
@@ -545,7 +663,7 @@ private fun ConversationList(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        text = thread.messages.last().body,
+                        text = thread.messages.lastOrNull()?.body.orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
