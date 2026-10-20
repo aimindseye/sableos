@@ -79,30 +79,14 @@ object SetupRows {
         )
     ).map { applyTarget(it, targets(it.action)) }
 
-    /** An Android-resolved VIEW handler is stronger than a WebView engine or APK filename. */
-    fun browserDetail(value: Observed): String = when (value) {
-        is Observed.Value -> "Android resolves web links to: ${value.text}; default role and launch acceptance not verified."
-        Observed.Absent -> "No user-facing HTTPS browser handler resolved; WebView alone is not a browser."
-        Observed.Failed -> "Unable to query an HTTPS browser handler on this user/profile."
-    }
+    /** Browser detection reads an actual Android intent handler. */
+    fun browserDetail(value: Observed): String = OwnerEvidence.browser(value)
 
-    /** Advertised handler identity alone does not verify package signatures or first-boot eligibility. */
-    fun wizardDetail(value: Observed): String = when (value) {
-        is Observed.Value -> "Android advertises setup handler: ${value.text}; privileged ownership not verified."
-        Observed.Absent -> "No enabled setup-wizard handler visible; it may be disabled after provisioning."
-        Observed.Failed -> "Cannot identify an installed setup-wizard handler for this Android user."
-    }
+    /** SETUP_WIZARD handling can be disabled after provisioning; never infer signer/privilege. */
+    fun wizardDetail(value: Observed): String = OwnerEvidence.wizard(value)
 
-    /** Flags report Android's provisioning state, NOT the identity of the privileged wizard. */
-    fun provisioningDetail(value: Observed): String = when (value) {
-        is Observed.Value -> when (value.text) {
-            "complete" -> "Android reports device provisioned and this user setup complete; wizard owner unknown."
-            "pending" -> "Android first-boot provisioning is not yet complete; wizard owner unknown."
-            else -> "Android provisioning flags are not conclusive; wizard owner unknown."
-        }
-        Observed.Absent -> "Android did not report usable provisioning flags; wizard owner unknown."
-        Observed.Failed -> "Provisioning flags unavailable; privileged SetupWizard owner unverified."
-    }
+    /** Setup flags describe progress, not the installed owner. */
+    fun provisioningDetail(value: Observed): String = OwnerEvidence.provisioning(value)
 
     /** The Android package manager reports the actual grant, not a guessed installer allowlist. */
     fun smsPermissionDetail(value: Observed): String = when (value) {
