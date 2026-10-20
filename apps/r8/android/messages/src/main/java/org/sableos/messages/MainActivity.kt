@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.font.FontWeight
@@ -212,7 +213,8 @@ private fun MessagesApp(
     refreshGeneration: Int,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var state by remember { mutableStateOf(MessagesInteractionModel.initialState()) }
+    var state by remember { mutableStateOf(MessagesInteractionModel.initialState().copy(draft = "")) }
+    var composerFocused by remember { mutableStateOf(false) }
     var providerStatus by remember { mutableStateOf("Read-only Android SMS provider · send via installed SMS app") }
     var feed by remember { mutableStateOf<LiveSmsLoad?>(null) }
     LaunchedEffect(refreshGeneration) {
@@ -228,6 +230,10 @@ private fun MessagesApp(
 
     fun sendToProvider() {
         val thread = sortedThreads.getOrNull(safeSelection) ?: return
+        if (state.draft.isBlank()) {
+            providerStatus = "Write a message before opening the SMS provider."
+            return
+        }
         val opened = onProviderHandoff(thread.route, state.draft)
         providerStatus = if (opened) {
             "SMS provider opened for ${thread.person}; delivery remains provider-owned."
@@ -268,7 +274,7 @@ private fun MessagesApp(
     }
 
     Column(
-        modifier = messagesAppModifier(state, ::apply, ::sendToProvider),
+        modifier = messagesAppModifier(state, ::apply, ::sendToProvider, composerFocused),
     ) {
         Header()
         Spacer(Modifier.height(SableSpacing.Xl))
@@ -278,6 +284,7 @@ private fun MessagesApp(
             state = state,
             thread = sortedThreads[safeSelection],
             onDraftChanged = { draft -> state = state.copy(draft = draft) },
+            onComposerFocus = { composerFocused = it },
             onAction = ::apply,
             onProviderHandoff = ::sendToProvider,
         )
@@ -319,11 +326,13 @@ private fun messagesAppModifier(
     state: MessagesUiState,
     apply: (MessagesAction) -> Unit,
     sendToProvider: () -> Unit,
+    composerFocused: Boolean,
 ): Modifier =
     Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
         .onPreviewKeyEvent { event ->
+            if (composerFocused) return@onPreviewKeyEvent false
             handleMessagesKey(
                 event = event.nativeKeyEvent,
                 state = state,
@@ -503,6 +512,7 @@ private fun LatestAnchoredThread(
     state: MessagesUiState,
     thread: SableThread,
     onDraftChanged: (String) -> Unit,
+    onComposerFocus: (Boolean) -> Unit,
     onAction: (MessagesAction) -> Unit,
     onProviderHandoff: () -> Unit,
 ) {
@@ -533,7 +543,7 @@ private fun LatestAnchoredThread(
             value = state.draft,
             onValueChange = onDraftChanged,
             label = { Text("Composer · shared physical/onscreen draft") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().onFocusChanged { onComposerFocus(it.isFocused) },
         )
         Text(
             text = "Onscreen keyboard fallback keeps draft and latest visible · ALT/SYM/FN entry supported",
