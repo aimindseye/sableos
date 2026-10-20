@@ -51,6 +51,22 @@ enum class Tool(
     val keywords: List<String> = emptyList()
 ) {
     // Utilities
+    // Personal software utilities (independent of hardware capability); existing Sable Tools owns them.
+    NOTES(Section.UTILITIES, "Notes", ToolKind.ACTION, keywords = listOf("writing", "memo", "text")),
+    VOICE_RECORDER(
+        Section.UTILITIES,
+        "Voice Recorder",
+        ToolKind.ACTION,
+        permissions = listOf(Perm.RECORD_AUDIO),
+        keywords = listOf("record", "mic", "voice", "audio")
+    ),
+    CLOCK_STOPWATCH(
+        Section.UTILITIES,
+        "Clock and stopwatch",
+        ToolKind.ACTION,
+        keywords = listOf("time", "timer", "alarm")
+    ),
+
     COMPASS(
         Section.UTILITIES,
         "Compass",
