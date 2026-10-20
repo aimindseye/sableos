@@ -2,6 +2,7 @@
 
 package org.sableos.messages
 
+import android.app.KeyguardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -29,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,17 +50,45 @@ private const val VISIBLE_MESSAGE_COUNT = 3
 private const val ACTION_GRID_COLUMNS = 3
 
 class MainActivity : ComponentActivity() {
+    private var androidLocked by mutableStateOf(true)
+
+    private fun refreshLockState() {
+        // Fail closed until Android confirms that this user is unlocked.
+        androidLocked = getSystemService(KeyguardManager::class.java)?.isDeviceLocked != false
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        refreshLockState()
 
         setContent {
             SableGlobalTheme(window = window) {
-                MessagesApp(
-                    onProviderHandoff = ::openProviderConversation,
-                )
+                if (MessagesExposureGate.showConversations(androidLocked)) {
+                    MessagesApp(onProviderHandoff = ::openProviderConversation)
+                } else {
+                    Surface {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(SableSpacing.Xl),
+                            verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
+                        ) {
+                            Text("Messages locked", style = MaterialTheme.typography.headlineLarge)
+                            Text("Unlock this Android user to display conversations and drafts.")
+                        }
+                    }
+                }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshLockState()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        refreshLockState()
     }
 
     private fun openProviderConversation(
