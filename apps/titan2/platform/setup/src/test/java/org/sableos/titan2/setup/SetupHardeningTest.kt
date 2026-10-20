@@ -49,6 +49,31 @@ class SetupHardeningTest {
                 LaunchOutcome.values().mapNotNull { LaunchReport.message("x", it) }
         }
 
+    @Test fun setupSmsGrantIsInformationalAndNeverClaimsWriteSms() {
+        val granted = rows(snap().copy(messagesReadPermission = Observed.Value("granted")))
+        val row = row("messages-sms", granted)
+        assertEquals(Readiness.Informational, row.state)
+        assertTrue(row.detail.contains("READ_SMS currently granted"))
+        assertTrue(row.detail.contains("default SMS app"))
+        assertTrue(row.detail.contains("WRITE_SMS cannot be granted"))
+        assertTrue(SetupModel.isReady(granted))
+    }
+
+    @Test fun setupSmsReadDeniedOrUnknownCannotBePresentedAsGranted() {
+        val denied = rows(snap().copy(messagesReadPermission = Observed.Value("denied")))
+        val failed = rows(snap().copy(messagesReadPermission = Observed.Failed))
+        assertTrue(row("messages-sms", denied).detail.contains("not granted"))
+        assertTrue(row("messages-sms", failed).detail.contains("Could not verify"))
+        assertEquals(Readiness.Informational, row("messages-sms", failed).state)
+    }
+
+    @Test fun privacyRowDelegatesToSystemSettingsWithoutEnforcementClaim() {
+        val privacy = row("privacy", rows())
+        assertEquals(Readiness.Informational, privacy.state)
+        assertEquals(Action.PrivacySettings, privacy.action)
+        assertTrue(privacy.detail.contains("does not change grants"))
+    }
+
     // --- readiness states, summary, completion ---
 
     @Test fun allFiveStatesExistAndAreDistinct() {
