@@ -2,6 +2,7 @@ package org.sableos.titan2.setup.android
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.provider.Settings
 import android.provider.Telephony
@@ -11,7 +12,10 @@ import org.sableos.titan2.setup.core.Snapshot
 
 /** Reads the current defaults through public APIs only. A failed read is [Observed.Failed], never "none". */
 class SetupReader(private val context: Context) {
-    fun snapshot(): Snapshot = Snapshot(home(), keyboard(), dialer(), sms(), messagesSmsRead())
+    fun snapshot(): Snapshot = Snapshot(
+        home(), keyboard(), dialer(), sms(), messagesSmsRead(),
+        browserHandler(), provisioningState()
+    )
 
     private fun home(): Observed = observe {
         context.packageManager.resolveActivity(
@@ -30,6 +34,35 @@ class SetupReader(private val context: Context) {
     }
 
     private fun sms(): Observed = observe { Telephony.Sms.getDefaultSmsPackage(context) }
+
+    /** Resolves a real browser activity for the current profile, never a WebView library APK. */
+    private fun browserHandler(): Observed = observe {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com"))
+            .addCategory(Intent.CATEGORY_BROWSABLE)
+        val resolved = context.packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+        val info = resolved?.activityInfo
+        if (info == null || info.packageName == "android" ||
+            info.name?.contains("ResolverActivity") == true ||
+            info.name?.contains("ChooserActivity") == true
+        ) null else info.packageName + "/" + info.name
+    }
+
+    /** Read-only Android setup flags; does not guess the owner of first-boot SetupWizard. */
+    private fun provisioningState(): Observed = try {
+        val device = Settings.Global.getInt(
+            context.contentResolver, Settings.Global.DEVICE_PROVISIONED, -1)
+        val user = Settings.Secure.getInt(
+            context.contentResolver, Settings.Secure.USER_SETUP_COMPLETE, -1)
+        when {
+            device == 1 && user == 1 -> Observed.Value("complete")
+            device == 0 || user == 0 -> Observed.Value("pending")
+            else -> Observed.Failed
+        }
+    } catch (_: SecurityException) {
+        Observed.Failed
+    } catch (_: RuntimeException) {
+        Observed.Failed
+    }
 
     /** Explicit package-permission observation; uninstalled/denied never produces a success. */
     private fun messagesSmsRead(): Observed = try {
