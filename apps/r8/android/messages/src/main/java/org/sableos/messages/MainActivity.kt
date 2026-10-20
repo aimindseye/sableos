@@ -66,6 +66,7 @@ class MainActivity : ComponentActivity() {
     private var smsPermissionGranted by mutableStateOf(false)
     private var smsGeneration by androidx.compose.runtime.mutableIntStateOf(0)
     private var smsObserverRegistered = false
+    private var smsObserverAllowed = false
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
             smsGeneration += 1
@@ -78,7 +79,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun bindSmsObserver() {
-        if (smsObserverRegistered || !smsPermissionGranted || androidLocked) return
+        if (!smsObserverAllowed || smsObserverRegistered || !smsPermissionGranted || androidLocked) return
         smsObserverRegistered = runCatching {
             contentResolver.registerContentObserver(Telephony.Sms.CONTENT_URI, true, smsObserver)
             true
@@ -150,6 +151,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        smsObserverAllowed = true
+    }
+
     override fun onResume() {
         super.onResume()
         refreshLockState()
@@ -159,6 +165,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
+        smsObserverAllowed = false
         unbindSmsObserver()
         super.onStop()
     }
@@ -167,7 +174,7 @@ class MainActivity : ComponentActivity() {
         super.onWindowFocusChanged(hasFocus)
         refreshLockState()
         refreshSmsAccess()
-        bindSmsObserver()
+        if (hasFocus) bindSmsObserver()
     }
 
     private fun openPhoneDialer(recipient: String): Boolean =
@@ -227,7 +234,10 @@ private fun MessagesApp(
         } else {
             "No installed SMS provider accepted this conversation."
         }
-        if (opened) apply(MessagesAction.SendMessage)
+        if (opened) {
+            // ACTION_SENDTO opens the owner; it does not prove delivery, so retain the draft.
+            state = state.copy(lastEvent = "PROVIDER_HANDOFF_OPENED")
+        }
     }
 
     if (feed !is LiveSmsLoad.Ready) {
@@ -303,17 +313,6 @@ private fun MessagesApp(
         KeyboardModel()
     }
 }
-
-private fun providerHandoffStatus(
-    thread: SableThread,
-    draft: String,
-    onProviderHandoff: (String, String) -> Boolean,
-): String =
-    if (onProviderHandoff(thread.route, draft)) {
-        "Provider-safe smsto: handoff opened for ${thread.person}."
-    } else {
-        "No provider accepted smsto: handoff on this build."
-    }
 
 @Composable
 private fun messagesAppModifier(
