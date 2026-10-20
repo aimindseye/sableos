@@ -77,14 +77,19 @@ class CalendarRepository(
         context.checkSelfPermission(Manifest.permission.WRITE_CALENDAR) ==
             PackageManager.PERMISSION_GRANTED
 
-    fun agenda(date: LocalDate): List<CalendarEvent> {
+    /** One CalendarProvider Instances query for a bounded five-day display; same permission gate as agenda. */
+    fun workWindow(start: LocalDate): List<CalendarEvent> = agendaRange(start, CalendarWorkWindowPolicy.DAYS)
+
+    fun agenda(date: LocalDate): List<CalendarEvent> = agendaRange(date, 1)
+
+    private fun agendaRange(date: LocalDate, days: Int): List<CalendarEvent> {
         if (!canRead()) return emptyList()
 
         val zone = ZoneId.systemDefault()
         val begin = date.atStartOfDay(zone).toInstant().toEpochMilli()
         val end =
             date
-                .plusDays(1)
+                .plusDays(days.toLong())
                 .atStartOfDay(zone)
                 .toInstant()
                 .toEpochMilli()
