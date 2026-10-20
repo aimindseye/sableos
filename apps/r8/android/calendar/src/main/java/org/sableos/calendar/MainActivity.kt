@@ -1,6 +1,9 @@
 package org.sableos.calendar
 
 import android.Manifest
+import android.content.ContentUris
+import android.content.Intent
+import android.provider.CalendarContract
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
@@ -625,6 +628,7 @@ private fun NewEventPane(
 
 @Composable
 private fun DetailPane(state: CalendarAppState) {
+    val context = LocalContext.current
     val loaded = state.detail
     BackToAgenda { state.mode = CalendarMode.Agenda }
     if (loaded == null) {
@@ -635,6 +639,15 @@ private fun DetailPane(state: CalendarAppState) {
         detail = loaded,
         onEdit = { state.editFromDetail(loaded) },
         onDelete = { state.askDelete(loaded.id, loaded.title, loaded.recurring, loaded.canModify) },
+        onRespond = {
+            val providerEvent = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, loaded.id)
+            val handoff = Intent(Intent.ACTION_VIEW, providerEvent)
+            state.status = if (runCatching { context.startActivity(handoff) }.isSuccess) {
+                "Calendar provider opened for RSVP."
+            } else {
+                "No calendar provider is available to respond to this event."
+            }
+        },
         onBack = { state.mode = CalendarMode.Agenda },
     )
 }
@@ -922,6 +935,7 @@ private fun AgendaEventRow(
 private fun Modifier.calendarKeys(
     onEdit: (() -> Unit)? = null,
     onDelete: (() -> Unit)? = null,
+    onRespond: (() -> Unit)? = null,
     onBack: (() -> Unit)? = null,
 ): Modifier =
     onKeyEvent { event ->
@@ -931,6 +945,7 @@ private fun Modifier.calendarKeys(
             when (CalendarKeys.action(event.nativeKeyEvent.keyCode, modified)) {
                 CalendarKeyAction.Edit -> onEdit
                 CalendarKeyAction.Delete -> onDelete
+                CalendarKeyAction.Respond -> onRespond
                 CalendarKeyAction.Back -> onBack
                 null -> null
             }
@@ -943,6 +958,7 @@ private fun EventDetailView(
     detail: CalendarEventDetail,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onRespond: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -954,7 +970,9 @@ private fun EventDetailView(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth().calendarKeys(onEdit = onEdit, onDelete = onDelete, onBack = onBack),
+        modifier = Modifier.fillMaxWidth().calendarKeys(
+            onEdit = onEdit, onDelete = onDelete, onRespond = onRespond, onBack = onBack
+        ),
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Sm),
     ) {
         Text(
@@ -981,6 +999,11 @@ private fun EventDetailView(
         }
         if (detail.description.isNotEmpty()) DetailLine("Notes", detail.description)
 
+        SableActionButton(
+            text = "Respond in calendar provider  (R)",
+            primary = false,
+            onClick = onRespond,
+        )
         Spacer(Modifier.height(SableSpacing.Sm))
         if (detail.canModify) {
             Row(
