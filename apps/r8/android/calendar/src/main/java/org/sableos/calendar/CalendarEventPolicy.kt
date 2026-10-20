@@ -89,12 +89,13 @@ object EventEditPolicy {
 enum class CalendarKeyAction {
     Edit,
     Delete,
+    Respond,
     Back,
 }
 
 object CalendarKeys {
     /**
-     * E edits, Del (Backspace on the Q25) or Forward-Delete asks to delete, Esc goes back. Enter
+     * E edits, R hands off RSVP to the calendar owner, Del asks to delete, Esc goes back. Enter
      * opens a focused row through its click handler. Keys with Alt/Ctrl held are left alone.
      */
     fun action(
@@ -104,6 +105,7 @@ object CalendarKeys {
         when {
             modified -> null
             keyCode == KeyEvent.KEYCODE_E -> CalendarKeyAction.Edit
+            keyCode == KeyEvent.KEYCODE_R -> CalendarKeyAction.Respond
             keyCode == KeyEvent.KEYCODE_DEL || keyCode == KeyEvent.KEYCODE_FORWARD_DEL -> CalendarKeyAction.Delete
             keyCode == KeyEvent.KEYCODE_ESCAPE -> CalendarKeyAction.Back
             else -> null
