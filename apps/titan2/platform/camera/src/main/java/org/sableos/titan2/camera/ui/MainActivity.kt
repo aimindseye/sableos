@@ -515,6 +515,8 @@ class MainActivity : ComponentActivity() {
             CameraAction.RawToggle -> {
                 // ControlDeck has already verified the HAL advertises a working RAW path.
                 mode = if (mode == CaptureMode.Raw) CaptureMode.Auto else CaptureMode.Raw
+                // RAW shortcut selects a single capture path, not an earlier comparison bracket.
+                compare = false
                 status = if (mode == CaptureMode.Raw) "RAW DNG capture selected" else "Auto photo capture selected"
                 restart()
             }
