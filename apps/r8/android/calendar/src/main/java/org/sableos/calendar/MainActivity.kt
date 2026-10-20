@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.input.key.KeyEventType
@@ -151,6 +152,9 @@ private class CalendarAppState {
     var selectedDate by mutableStateOf(LocalDate.now())
     var weekStart by mutableStateOf(LocalDate.now())
     var workEvents by mutableStateOf<List<CalendarEvent>>(emptyList())
+    var searchQuery by mutableStateOf("")
+    var searchFocused by mutableStateOf(false)
+    var blockStartHour by mutableIntStateOf(8)
     var nowMillis by mutableStateOf(System.currentTimeMillis())
     var events by mutableStateOf<List<CalendarEvent>>(emptyList())
     var refreshing by mutableStateOf(false)
@@ -342,6 +346,7 @@ private fun CalendarApp(
                         .fillMaxSize()
                         .onPreviewKeyEvent { event ->
                             if (state.mode !in setOf(CalendarMode.Week, CalendarMode.Agenda, CalendarMode.Month) ||
+                                state.searchFocused ||
                                 event.type != KeyEventType.KeyDown
                             ) {
                                 false
@@ -491,6 +496,31 @@ private fun WorkWindowPane(state: CalendarAppState) {
         }
     }
     Spacer(Modifier.height(SableSpacing.Md))
+    OutlinedTextField(
+        value = state.searchQuery,
+        onValueChange = { state.searchQuery = it.take(80) },
+        modifier = Modifier.fillMaxWidth()
+            .onFocusChanged { state.searchFocused = it.isFocused },
+        singleLine = true,
+        label = { Text("Search displayed events · text input overrides shortcuts") },
+    )
+    Spacer(Modifier.height(SableSpacing.Sm))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        SableActionButton(
+            text = "‹  4h",
+            primary = false,
+            onClick = { state.blockStartHour = (state.blockStartHour - 4).coerceAtLeast(0) },
+        )
+        Spacer(Modifier.weight(1f))
+        Text("${state.blockStartHour}:00–${state.blockStartHour + 4}:00")
+        Spacer(Modifier.weight(1f))
+        SableActionButton(
+            text = "4h  ›",
+            primary = false,
+            onClick = { state.blockStartHour = (state.blockStartHour + 4).coerceAtMost(20) },
+        )
+    }
+    Spacer(Modifier.height(SableSpacing.Md))
     if (today in days) {
         Text(
             text = "NOW · " + android.text.format.DateFormat.getTimeFormat(context)
@@ -502,7 +532,8 @@ private fun WorkWindowPane(state: CalendarAppState) {
         Text("Current time outside displayed dates · T returns to today.")
     }
     Spacer(Modifier.height(SableSpacing.Md))
-    val next = CalendarWorkWindowPolicy.nextEvent(state.workEvents, state.nowMillis)
+    val visible = CalendarWorkWindowPolicy.search(state.workEvents, state.searchQuery)
+    val next = CalendarWorkWindowPolicy.nextEvent(visible, state.nowMillis)
     Text("NEXT EVENT", style = MaterialTheme.typography.labelLarge)
     if (next == null) {
         Text("No further event in this five-day window.")
@@ -516,7 +547,8 @@ private fun WorkWindowPane(state: CalendarAppState) {
     }
     Spacer(Modifier.height(SableSpacing.Md))
     Text("SELECTED · ${state.selectedDate}", style = MaterialTheme.typography.labelLarge)
-    val selected = CalendarWorkWindowPolicy.onDay(state.workEvents, state.selectedDate)
+    val selected = CalendarWorkWindowPolicy.onDay(visible, state.selectedDate)
+        .filter { CalendarWorkWindowPolicy.inTimeBlock(it, state.selectedDate, state.blockStartHour) }
     if (selected.isEmpty()) Text("nothing scheduled")
     selected.take(3).forEach { event ->
         AgendaEventRow(
