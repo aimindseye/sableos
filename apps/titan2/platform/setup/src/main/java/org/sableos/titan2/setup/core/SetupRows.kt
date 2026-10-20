@@ -86,6 +86,13 @@ object SetupRows {
         Observed.Failed -> "Unable to query an HTTPS browser handler on this user/profile."
     }
 
+    /** Advertised handler identity alone does not verify package signatures or first-boot eligibility. */
+    fun wizardDetail(value: Observed): String = when (value) {
+        is Observed.Value -> "Android advertises setup handler: ${value.text}; privileged ownership not verified."
+        Observed.Absent -> "No enabled setup-wizard handler visible; it may be disabled after provisioning."
+        Observed.Failed -> "Cannot identify an installed setup-wizard handler for this Android user."
+    }
+
     /** Flags report Android's provisioning state, NOT the identity of the privileged wizard. */
     fun provisioningDetail(value: Observed): String = when (value) {
         is Observed.Value -> when (value.text) {
