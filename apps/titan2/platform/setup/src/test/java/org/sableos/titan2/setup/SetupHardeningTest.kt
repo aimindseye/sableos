@@ -88,6 +88,16 @@ class SetupHardeningTest {
         assertTrue(SetupModel.isReady(rows(configured)))
     }
 
+    @Test fun advertisedWizardDoesNotClaimPrivilegeOrOwnership() {
+        val one = rows(snap().copy(wizardHandler = Observed.Value("app.grapheneos.setupwizard/.WelcomeActivity")))
+        assertEquals(Readiness.Informational, row("first-boot-handler", one).state)
+        assertTrue(row("first-boot-handler", one).detail.contains("privileged ownership not verified"))
+        val absent = rows(snap().copy(wizardHandler = Observed.Absent))
+        assertTrue(row("first-boot-handler", absent).detail.contains("may be disabled after provisioning"))
+        val denied = rows(snap().copy(wizardHandler = Observed.Failed))
+        assertTrue(row("first-boot-handler", denied).detail.contains("Cannot identify"))
+    }
+
     @Test fun browserAbsentNeverTurnsWebViewIntoAnInstalledBrowser() {
         val row = row("browser-handler", rows(snap().copy(browserHandler = Observed.Absent)))
         assertTrue(row.detail.contains("WebView alone is not a browser"))
