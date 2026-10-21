@@ -5,7 +5,7 @@ set -euo pipefail
 ANDROID="${SABLE_TB2_ANDROID_ROOT:-/srv/sable-build/workspaces/titan2-track-b/android}"
 MODE="${1:---plan}"
 ACK="${2:-}"
-[[ "$MODE" == --plan || "$MODE" == --commit ]] || { echo 'TB2_COMMIT=HOLD_MODE'; exit 64; }
+[[ "$MODE" == --plan || "$MODE" == --commit || "$MODE" == --preflight ]] || { echo 'TB2_COMMIT=HOLD_MODE'; exit 64; }
 if [[ "$MODE" == --commit && "$ACK" != COMMIT_EXACT_TB2_A16_SOURCE_ONLY ]]; then
   echo 'TB2_COMMIT=HOLD_EXPLICIT_ACK'; exit 78
 fi
@@ -41,6 +41,7 @@ sha=(
   a5b2f39741018eb7094a68812ce0b03fa080c07f1b2c036ca06c0ab286be1522
 )
 for i in "${!paths[@]}"; do
+  if [[ "$MODE" == --preflight && "$i" -ge 7 ]]; then continue; fi
   p="$ANDROID/${paths[$i]}"
   [[ -f "$p" && ! -L "$p" ]] || { echo "TB2_COMMIT=HOLD_SOURCE_MISSING path=${paths[$i]}"; exit 78; }
   got="$(sha256sum "$p")"; got="${got%% *}"
@@ -58,6 +59,10 @@ for i in "${!projects[@]}"; do
     echo "TB2_COMMIT=HOLD_BRANCH_EXISTS project=${projects[$i]}"; exit 78
   fi
 done
+if [[ "$MODE" == --preflight ]]; then
+  echo 'TB2_COMMIT=PREFLIGHT_NATIVE7_AND_FOUR_BASE_HEADS_PASS_NO_WRITES'
+  exit 0
+fi
 if [[ "$MODE" == --plan ]]; then
   echo 'TB2_COMMIT=PASS_FOUR_PROJECT_EXACT_SOURCE_PREFLIGHT_NO_WRITES'
   exit 0
