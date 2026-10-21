@@ -67,3 +67,31 @@ Local `bash -n` PASS for all three. Six hermetic regression cases passed using o
 - No production signing/AVB/restore/flash authorized.
 
 **Disposition:** source and four-project commit implementation delivered **on PR346**, actual ai-g732 AOSP commit identities **pending** the source-only host invocation; not `FULL_Q25_PRODUCT_COMPLETE`.
+
+
+## ai-g732 actual execution: four local AOSP commits completed
+
+The owner ran this branch's **read-only source preflight** followed by the **one authorized source-only convergence** on ai-g732. Observed results, supplied verbatim in owner stdout:
+
+```text
+TB2_CONVERGENCE=PASS_EXACT_SOURCE_PREFLIGHT_NO_WRITES
+TB2_PRODUCT=REUSE_EXISTING_13_TB2Sable_AND_FLOSS_PHHiMS
+TB2_COMMIT=PREFLIGHT_NATIVE7_AND_FOUR_BASE_HEADS_PASS_NO_WRITES
+TB2_CONVERGENCE=SOURCE_STAGED_REUSE_13_AND_FLOSS_HOME_SOURCE_NO_BUILD
+TB2_COMMIT=PASS_FOUR_PROJECT_EXACT_SOURCE_PREFLIGHT_NO_WRITES
+TB2_COMMIT=PASS_4_LOCAL_AOSP_PROJECT_COMMITS_9_EXACT_FILES_NO_BUILD
+TB2_CONVERGE=SOURCE_ONLY_4_AOSP_PROJECT_COMMITS_COMPLETE_NO_IMAGE
+```
+
+| AOSP project | New local branch | Actual owner-reported commit | Commit diff evidence |
+|---|---|---|---|
+| `frameworks/base` | `tb2-20261021-native-systemui` | `5c3b1776d53432f27f79dae356ef37340f268674` | 3 files, 52 insertions; `SableTitanPinKeys.java` created |
+| `packages/apps/Dialer` | `tb2-20261021-native-dialer` | `b3f1545af6a150db43fdbbab774869cbfa2a8440` | 4 files, 97 insertions; strings and in-call helper created |
+| `packages/apps/Launcher3` | `tb2-20261021-launcher-recents` | `807e4aaa29f62a0234e8d9ef6e1cf3c37f1eeacf` | 1 `AndroidManifest.xml` line deleted: Launcher3 HOME category |
+| `device/phh/treble` | `tb2-20261021-product-graph` | `f2e4af4caa5dc586b8f3eb393432acd8f6cd7381` | 1 `rom.mk` file committed, 20 lines, includes existing 13-app/FLOSS composition and `SableLauncher` |
+
+**Source status advanced** from `AOSP_HOST_COMMITS=PENDING` to **`AOSP_HOST_COMMITS=PASS_FOUR_LOCAL_UNPUSHED_COMMITS`** for the nine pinned files. This is supported by operator stdout supplied by the owner, not an independent fetch of ai-g732's local Git object database. The staged `packages/apps/SableStart` and `packages/apps/SableDesign` sources are tracked in the separate PR346 SableOS Git repository; the host's AOSP project-commit log only lists the four projects above, and does **not** establish separate AOSP Git commits for these copied app source directories. Preserve the new app source as part of the release source manifest/workspace; don't claim Git project commit custody for those directories without additional evidence.
+
+The original user-provided stdout explicitly ended **`NO_IMAGE`**. Do not treat the four Git commits as a passed unified CI, successful AOSP system image, installed HOME role, IMS runtime, or privileged Q25 implementation. The prior Phase12 `SystemUI Dialer` compilation still applies to the exact seven native source files. No need to rerun source promotion.
+
+**Canonical next operation:** one `bash build/sable.sh titan2 TB2 build --direct` from the existing PR346 checkout (the repo at `/srv/sable-build/workspaces/titan2-track-b/tb2-pr346-converged-source`) with `SABLE_TB2_ANDROID_ROOT=/srv/sable-build/workspaces/titan2-track-b/android`. It invokes existing full CI once and then an AOSP image build only if preconverged source preflight passes; preserves failures in one timestamped evidence directory. Do **not** reexecute `converge-track-b-source.sh --commit` or run standalone module gates. A successful build, if obtained, remains engineering-only until selected-image IMS, privileges, roles and runtime are qualified.
