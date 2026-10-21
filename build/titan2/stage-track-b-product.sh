@@ -12,6 +12,17 @@ IMS="${SABLE_TB2_IMS_PROVIDER:-UNSELECTED}"
 [[ -f "$ANDROID/build/envsetup.sh" && -f "$ANDROID/device/phh/treble/rom.mk" ]] || {
   echo "TB2_PRODUCT=HOLD_SELECTED_ANDROID16_ROOT_MISSING"; exit 66;
 }
+# The ai-g732 source handoff (20261021T132915Z) proves the active ROM is already
+# inheriting these TWO legacy branches. Appending new imports would double-install
+# the same package IDs and could select incompatible OEM/FLOSS services.
+# Preserve both retained graphs until their concrete product makefiles are exported.
+ROM="$ANDROID/device/phh/treble/rom.mk"
+if grep -Fq 'vendor/sable/trackb13ims/track-b.mk' "$ROM" ||
+   grep -Fq 'vendor/sable/tb2-rebuilt/tb2-product.mk' "$ROM"; then
+  echo 'TB2_PRODUCT=HOLD_LEGACY_TRACKB_GRAPH_CONFLICT'
+  echo 'TB2_PRODUCT=REQUIRE_EXISTING_TRACK_B_MAKEFILES_AND_INSTALL_OWNERS'
+  exit 78
+fi
 [[ "$IMS" == OEM || "$IMS" == FLOSS ]] || {
   echo "TB2_PRODUCT=HOLD_EXPLICIT_SINGLE_IMS_PROVIDER_REQUIRED"; exit 78;
 }
