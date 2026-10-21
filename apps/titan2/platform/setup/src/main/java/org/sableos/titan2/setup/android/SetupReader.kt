@@ -10,6 +10,10 @@ import android.telecom.TelecomManager
 import org.sableos.titan2.setup.core.Observed
 import org.sableos.titan2.setup.core.Snapshot
 
+// The AOSP setting exists on Android 16, but USER_SETUP_COMPLETE is not in the public SDK.
+// Keep this an observation only; never write the setup-completion flag.
+private const val USER_SETUP_COMPLETE_KEY = "user_setup_complete"
+
 /** Reads the current defaults through public APIs only. A failed read is [Observed.Failed], never "none". */
 class SetupReader(private val context: Context) {
     fun snapshot(): Snapshot = Snapshot(
@@ -61,7 +65,7 @@ class SetupReader(private val context: Context) {
         val device = Settings.Global.getInt(
             context.contentResolver, Settings.Global.DEVICE_PROVISIONED, -1)
         val user = Settings.Secure.getInt(
-            context.contentResolver, Settings.Secure.USER_SETUP_COMPLETE, -1)
+            context.contentResolver, USER_SETUP_COMPLETE_KEY, -1)
         when {
             device == 1 && user == 1 -> Observed.Value("complete")
             device == 0 || user == 0 -> Observed.Value("pending")
