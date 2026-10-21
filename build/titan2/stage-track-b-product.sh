@@ -12,15 +12,17 @@ IMS="${SABLE_TB2_IMS_PROVIDER:-UNSELECTED}"
 [[ -f "$ANDROID/build/envsetup.sh" && -f "$ANDROID/device/phh/treble/rom.mk" ]] || {
   echo "TB2_PRODUCT=HOLD_SELECTED_ANDROID16_ROOT_MISSING"; exit 66;
 }
-# The ai-g732 source handoff (20261021T132915Z) proves the active ROM is already
-# inheriting these TWO legacy branches. Appending new imports would double-install
-# the same package IDs and could select incompatible OEM/FLOSS services.
-# Preserve both retained graphs until their concrete product makefiles are exported.
+# The 20261021 ai-g732 supplement identifies complementary existing graphs:
+# - trackb13ims/track-b.mk selects PhhIms + Iwlan (not its 13 orphan app imports).
+# - tb2-rebuilt/tb2-product.mk INCLUDES tb2-apps.mk (not yet supplied).
+# Until the exact existing installed modules are known, a second 13-app stage
+# might duplicate package IDs. This is a reconciliation HOLD, not proof of a
+# present duplicate package or two running IMS providers.
 ROM="$ANDROID/device/phh/treble/rom.mk"
 if grep -Fq 'vendor/sable/trackb13ims/track-b.mk' "$ROM" ||
    grep -Fq 'vendor/sable/tb2-rebuilt/tb2-product.mk' "$ROM"; then
-  echo 'TB2_PRODUCT=HOLD_LEGACY_TRACKB_GRAPH_CONFLICT'
-  echo 'TB2_PRODUCT=REQUIRE_EXISTING_TRACK_B_MAKEFILES_AND_INSTALL_OWNERS'
+  echo 'TB2_PRODUCT=HOLD_EXISTING_GRAPH_RECONCILIATION'
+  echo 'TB2_PRODUCT=NEED_TB2_REBUILT_APPS_MK_AND_SELECTED_PROVIDER_DECISION'
   exit 78
 fi
 [[ "$IMS" == OEM || "$IMS" == FLOSS ]] || {
