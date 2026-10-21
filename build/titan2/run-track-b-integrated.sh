@@ -27,10 +27,18 @@ printf 'CANONICAL_GRADLE_HOME=%s\n' "$GRADLE_USER_HOME"
 printf 'EVIDENCE_DIR=%s\n' "$OUT"
 printf 'IMS_PROVIDER=UNQUALIFIED_SELECTED_PRODUCT_PENDING\n'
 printf 'APP_INSTALL_GRAPH=UNQUALIFIED_SELECTED_PRODUCT_PENDING\n'
-rc_ci=0; rc_aosp=0
+rc_ci=0; rc_stage=78; rc_aosp=78
 # Full canonical CI includes all R8 app builds, lint, Detekt, ktlint, and TB2 Titan modules.
 SABLEOS_DEVICE=titan2 SABLEOS_RELEASE_VERSION=TB2 bash "$ROOT/build/local-ci/run.sh" full > "$OUT/ci.log" 2>&1 || rc_ci=$?
 echo "TB2_CI_EXIT=$rc_ci"
+if ((rc_ci == 0)); then
+  rc_stage=0
+  bash "$ROOT/build/titan2/stage-track-b-product.sh" > "$OUT/product-stage.log" 2>&1 || rc_stage=$?
+else
+  printf 'TB2_PRODUCT=SKIP_CANONICAL_CI_FAILED\n' > "$OUT/product-stage.log"
+fi
+echo "TB2_PRODUCT_STAGE_EXIT=$rc_stage"
+if ((rc_stage == 0)); then
 (
   cd "$ANDROID" || exit 66
   set +u # AOSP envsetup/lunch refer to optionally unset shell variables.
@@ -38,13 +46,16 @@ echo "TB2_CI_EXIT=$rc_ci"
   lunch treble_arm64_bvN-bp4a-userdebug || exit $?
   m -j"$JOBS" systemimage target-files-package otatools
 ) > "$OUT/aosp-image.log" 2>&1 || rc_aosp=$?
+else
+  printf 'TB2_AOSP_IMAGE=SKIP_UNQUALIFIED_PRODUCT_STAGE\n' > "$OUT/aosp-image.log"
+fi
 echo "TB2_AOSP_IMAGE_EXIT=$rc_aosp"
-for name in ci aosp-image; do
+for name in ci product-stage aosp-image; do
   [[ -f "$OUT/$name.log" ]] && sha256sum "$OUT/$name.log"
 done
-printf 'ci\t%s\naosp_image\t%s\n' "$rc_ci" "$rc_aosp" > "$OUT/EXIT_CODES.tsv"
+printf 'ci\t%s\nproduct_stage\t%s\naosp_image\t%s\n' "$rc_ci" "$rc_stage" "$rc_aosp" > "$OUT/EXIT_CODES.tsv"
 sha256sum "$OUT/EXIT_CODES.tsv"
-if ((rc_ci || rc_aosp)); then
+if ((rc_ci || rc_stage || rc_aosp)); then
   echo 'TB2_BUILD=FAIL_INTEGRATED_BUILD_REVIEW_ALL_LOGS'
   exit 1
 fi
