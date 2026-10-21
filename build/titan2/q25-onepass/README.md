@@ -11,7 +11,7 @@ This directory holds **16 byte-identical original framework implementation patch
 | `packages/apps/SetupWizard` | 2 | source-context review, **verify this Lineage owner actually exists in Android16** |
 | `packages/apps/Dialer` | 1 | source-context review, preserve Telecom/IMS ownership |
 
-**Critical Launcher3 exclusion:** Q25 Launcher3 `0002` removed the HOME role from Quickstep for a different Q25 app layout. Titan 2 must keep **Launcher3QuickStep as HOME/Recents**; this patch is NOT here and must NOT be used.
+**Selected design ownership for Track B source convergence:** the platform_sable three-page contract requires **SableLauncher as HOME** and **Launcher3QuickStep retained for Recents only**. This supersedes the older Track B source-staging assumption that Launcher3QuickStep stays HOME. The historical Q25 Launcher3 `0002` patch is **not applied** to Titan2 Android16 merely by declaring this contract. The selected Android16 Quickstep HOME intent, SableLauncher Soong module, product installation, and role/default-state must all be integrated together and checked during the canonical `sable.sh titan2 TB2 build`. Until then the checkout is not a completed Track B product.
 
 **Important security restriction:** The two Settings Mobile Manager patches preserve already authored Q25 source, including UI for App Lock. They are **not enabled** merely by being in this tree: an actual privileged launch gate, user/profile enforcement, Freezer, Vault, and Dual/Private policy must be implemented and qualified first. Do not mark them DONE from a Settings toggle.
 
