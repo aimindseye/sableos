@@ -24,3 +24,13 @@ apps/r8/rust/target/
 
 # Locally rendered source-bound R8 build-driver bundles
 /r8-driver-*/
+
+# Titan2 TB2 generated Gradle and Kotlin outputs (not product/source files)
+/apps/titan2/platform/.gradle/
+/apps/titan2/platform/.kotlin/
+/apps/titan2/platform/build/
+/apps/titan2/platform/camera/build/
+/apps/titan2/platform/displaycompat/build/
+/apps/titan2/platform/keyboard/build/
+/apps/titan2/platform/setup/build/
+/apps/titan2/platform/tools/build/
