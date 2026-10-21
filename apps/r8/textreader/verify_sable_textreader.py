@@ -55,6 +55,7 @@ def main() -> None:
     text_util = root / "app/src/main/java/org/vaachak/textreader/TextReaderUtil.kt"
     tts_settings = root / "app/src/main/java/org/vaachak/textreader/TtsSettingsView.kt"
     design = root / "app/src/main/java/org/sableos/design/SableGlobalAppearance.kt"
+    corner = root / "app/src/main/java/org/sableos/design/SableCornerStyle.kt"
 
     require(build, 'applicationId = "org.sableos.textreader"', "SABLE_TEXT_READER_APPLICATION_ID")
     require(build, "minSdk = 30", "SABLE_TEXT_READER_MIN_SDK")
@@ -94,6 +95,8 @@ def main() -> None:
     )
     require(tts_settings, "fun selectLocalVoice(", "SABLE_TEXT_READER_LOCAL_TTS_SELECTOR")
     require(design, 'AUTHORITY = "org.sableos.appearance"', "SABLE_TEXT_READER_APPEARANCE_AUTHORITY")
+    require(corner, "enum class SableCornerStyle(", "SABLE_TEXT_READER_CORNER_STYLE")
+    require(corner, "object SableShapeTable", "SABLE_TEXT_READER_SHAPE_TABLE")
 
     manifest_text = manifest_path.read_text(encoding="utf-8")
     for token in (
