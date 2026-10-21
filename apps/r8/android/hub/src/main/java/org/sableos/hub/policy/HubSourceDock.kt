@@ -79,7 +79,11 @@ object HubSourceDock {
         expanded: Boolean,
         selected: HubDockSource? = null,
     ): List<HubDockEntry> =
-        if (expanded) entries else entries.filter { entry -> entry.count > 0 || entry.source == selected }
+        if (expanded) {
+            entries
+        } else {
+            entries.filter { entry -> entry.count > 0 || entry.source == selected }
+        }
 
     /** Inbox rows narrowed to [source]; null keeps every row. */
     fun narrow(

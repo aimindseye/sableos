@@ -114,8 +114,10 @@ object HubRedaction {
             -> null
         }
 
-    private fun HubConversation.sourceFallbackLabel(): String =
-        if (source == HubConversationSource.Sms) SMS_LABEL else displayName
+    private fun HubConversation.sourceFallbackLabel(): String {
+        val label = if (source == HubConversationSource.Sms) SMS_LABEL else displayName
+        return label
+    }
 
     private fun HubConversation.connectedKey(): ConnectedAppKey? {
         val packageName = sourcePackage

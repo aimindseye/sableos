@@ -7,18 +7,22 @@ import org.junit.Test
 
 class ProviderSmsConversationMapperTest {
     private fun row(
-        id: Long, thread: Long, date: Long, address: String = "+15550001111",
-        body: String = "Hello", incoming: Boolean = true, read: Boolean = false,
-    ) = ProviderSmsRow(id, thread, address, body, date, incoming, read)
+        id: Long,
+        thread: Long,
+        date: Long,
+        address: String = "+15550001111",
+        body: String = "Hello",
+    ) = ProviderSmsRow(id, thread, address, body, date, incoming = true, read = false)
 
     @Test fun producesLiveLatestFirstConversationAndChronologicalMessages() {
-        val threads = ProviderSmsConversationMapper.map(
-            listOf(
-                row(1, 101, 100, body = "Old"),
-                row(2, 101, 300, body = "New", incoming = false, read = true),
-                row(3, 202, 200, address = "+15550002222", body = "Second"),
-            ),
-        )
+        val threads =
+            ProviderSmsConversationMapper.map(
+                listOf(
+                    row(1, 101, 100, body = "Old"),
+                    row(2, 101, 300, body = "New").copy(incoming = false, read = true),
+                    row(3, 202, 200, address = "+15550002222", body = "Second"),
+                ),
+            )
         assertEquals(listOf("101", "202"), threads.map { it.id })
         assertEquals(listOf("Old", "New"), threads[0].messages.map { it.body })
         assertEquals(1, threads[0].unreadCount)
@@ -33,9 +37,10 @@ class ProviderSmsConversationMapperTest {
     }
 
     @Test fun capsMessagesPerThreadThreadCountAndBody() {
-        val rows = (1L..550L).map { i ->
-            row(i, (i % 110) + 1, i, body = "x".repeat(10_000))
-        }
+        val rows =
+            (1L..550L).map { i ->
+                row(i, (i % 110) + 1, i, body = "x".repeat(10_000))
+            }
         val threads = ProviderSmsConversationMapper.map(rows)
         assertTrue(threads.size <= ProviderSmsConversationMapper.MAX_THREADS)
         assertTrue(threads.sumOf { it.messages.size } <= ProviderSmsConversationMapper.MAX_MESSAGES)

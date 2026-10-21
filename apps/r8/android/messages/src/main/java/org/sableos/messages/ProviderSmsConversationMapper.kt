@@ -24,11 +24,13 @@ object ProviderSmsConversationMapper {
     private val clock = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
 
     fun map(rows: List<ProviderSmsRow>): List<SableThread> {
-        val newest = rows.asSequence()
-            .filter { it.threadId > 0 && it.id >= 0 && it.dateMillis >= 0 }
-            .sortedWith(compareByDescending<ProviderSmsRow> { it.dateMillis }.thenByDescending { it.id })
-            .take(MAX_MESSAGES)
-            .toList()
+        val newest =
+            rows
+                .asSequence()
+                .filter { it.threadId > 0 && it.id >= 0 && it.dateMillis >= 0 }
+                .sortedWith(compareByDescending<ProviderSmsRow> { it.dateMillis }.thenByDescending { it.id })
+                .take(MAX_MESSAGES)
+                .toList()
         val grouped = LinkedHashMap<Long, MutableList<ProviderSmsRow>>()
         for (row in newest) {
             if (!grouped.containsKey(row.threadId) && grouped.size >= MAX_THREADS) continue
@@ -37,7 +39,12 @@ object ProviderSmsConversationMapper {
         }
         val count = grouped.size
         return grouped.values.mapIndexedNotNull { index, items ->
-            val route = items.firstOrNull { it.address.isNotBlank() }?.address?.trim().orEmpty()
+            val route =
+                items
+                    .firstOrNull { it.address.isNotBlank() }
+                    ?.address
+                    ?.trim()
+                    .orEmpty()
             // Do not generate fake recipients or attempt a provider send when routing is missing.
             if (route.isBlank()) return@mapIndexedNotNull null
             val chronological = items.asReversed()
@@ -48,16 +55,17 @@ object ProviderSmsConversationMapper {
                 source = "Android SMS provider · read-only",
                 priority = count - index,
                 unreadCount = items.count { it.incoming && !it.read },
-                messages = chronological.map { row ->
-                    SableMessage(
-                        id = row.id.toString(),
-                        sender = if (row.incoming) row.address.ifBlank { route } else "You",
-                        body = row.body.take(MAX_BODY_CHARS),
-                        time = Instant.ofEpochMilli(row.dateMillis).atZone(ZoneId.systemDefault()).format(clock),
-                        incoming = row.incoming,
-                        unread = row.incoming && !row.read,
-                    )
-                },
+                messages =
+                    chronological.map { row ->
+                        SableMessage(
+                            id = row.id.toString(),
+                            sender = if (row.incoming) row.address.ifBlank { route } else "You",
+                            body = row.body.take(MAX_BODY_CHARS),
+                            time = Instant.ofEpochMilli(row.dateMillis).atZone(ZoneId.systemDefault()).format(clock),
+                            incoming = row.incoming,
+                            unread = row.incoming && !row.read,
+                        )
+                    },
             )
         }
     }

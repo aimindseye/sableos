@@ -261,8 +261,10 @@ private fun HubUiState.selectDockSource(source: HubDockSource) {
     statusMessage = null
 }
 
-private fun mmsHandoffStatus(opened: Boolean): String =
-    if (opened) "Opened the system MMS composer." else "MMS composer is unavailable."
+private fun mmsHandoffStatus(opened: Boolean): String {
+    val status = if (opened) "Opened the system MMS composer." else "MMS composer is unavailable."
+    return status
+}
 
 /** The activity's callbacks and persisted thread drafts, handed down to every route. */
 private class HubActions(
@@ -1751,8 +1753,10 @@ private fun conversationPreview(conversation: HubConversation): String {
     }
 }
 
-private fun conversationKey(conversation: HubConversation): String =
-    conversation.threadId.toString() + ":" + conversation.address
+private fun conversationKey(conversation: HubConversation): String {
+    val threadId = conversation.threadId.toString()
+    return threadId + ":" + conversation.address
+}
 
 private const val FOCUS_SURFACE_INBOX = "hub-inbox"
 

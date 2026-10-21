@@ -33,6 +33,9 @@ import org.sableos.hub.policy.ProfileKind
 import org.sableos.hub.policy.SettingsTarget
 import java.util.Locale
 
+/** Bound, in-memory policies keyed by connected app and Android user. */
+private typealias SourcePrivacyPolicyMap = Map<ConnectedAppKey, ConnectedAppPolicy>
+
 class HubRepository(
     private val context: Context,
 ) {
@@ -157,9 +160,7 @@ class HubRepository(
      * device, Hub private mode, locked work profile / private space, and the per-app preview
      * preference (DESIGN-KF-A "Privacy states").
      */
-    private fun sourcePrivacy(
-        policies: Map<ConnectedAppKey, ConnectedAppPolicy>,
-    ): (ConnectedAppKey) -> HubSourcePrivacy {
+    private fun sourcePrivacy(policies: SourcePrivacyPolicyMap): (ConnectedAppKey) -> HubSourcePrivacy {
         val profileStates = profiles.profiles().associateBy { it.serial }
         val deviceLocked = privacyReader.deviceLocked()
         val privateMode = HubPreferences(context).privateMode()
