@@ -269,7 +269,8 @@ PY
   }
 
   run_static_contract sable-pipeline \
-    bash "$ROOT/build/gates/sable-pipeline-contract.sh"
+    env SABLEOS_DEVICE="$SABLEOS_DEVICE" SABLEOS_RELEASE_VERSION="$SABLEOS_RELEASE_VERSION" \
+      bash "$ROOT/build/gates/sable-pipeline-contract.sh"
   run_static_contract n1d-local-ci-scope \
     bash "$ROOT/build/gates/n1d-local-ci-scope-contract.sh"
 
@@ -307,14 +308,24 @@ PY
     python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
     python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
-  run_static_contract r9-first-party-app-icon \
-    python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+    echo "SABLE_LOCAL_CI_R9_FIRST_PARTY_MESSAGES_ICON=SKIP_NONSELECTED_R9_HUB_CONTRACT"
+  else
+    run_static_contract r9-first-party-app-icon \
+      python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  fi
   run_static_contract r9-media-flow \
     python3 "$ROOT/build/gates/r9-media-flow-contract.py"
-  run_static_contract r9-messages-native-first \
-    python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
-  run_static_contract r9-messages-local-conversation \
-    python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+    # R9 requires Hub to *be* the Messages app. TB2 selects an independent
+    # Hub APK and has no admitted Sable Messages SMS-role package.
+    echo "SABLE_LOCAL_CI_R9_HUB_AS_MESSAGES=SKIP_NONSELECTED_R9_PRODUCT"
+  else
+    run_static_contract r9-messages-native-first \
+      python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+    run_static_contract r9-messages-local-conversation \
+      python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  fi
   run_static_contract r9-standalone-messages-quality \
     python3 "$ROOT/build/gates/r9-standalone-messages-quality-contract.py"
   run_static_contract r9-messages-source-style \
