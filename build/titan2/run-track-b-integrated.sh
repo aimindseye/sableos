@@ -25,8 +25,8 @@ printf 'SABLE_SOURCE_COMMIT=%s\n' "$(git -C "$ROOT" rev-parse HEAD)"
 printf 'ANDROID_ROOT=%s\n' "$ANDROID"
 printf 'CANONICAL_GRADLE_HOME=%s\n' "$GRADLE_USER_HOME"
 printf 'EVIDENCE_DIR=%s\n' "$OUT"
-printf 'IMS_PROVIDER=UNQUALIFIED_SELECTED_PRODUCT_PENDING\n'
-printf 'APP_INSTALL_GRAPH=UNQUALIFIED_SELECTED_PRODUCT_PENDING\n'
+printf 'IMS_SOURCE_SELECTION=PhhIms_Iwlan_FLOSS_SELECTED_RUNTIME_UNQUALIFIED\n'
+printf 'APP_SOURCE_SELECTION=13_TB2Sable_MODULES_IMAGE_UNQUALIFIED\n'
 rc_ci=0; rc_stage=78; rc_aosp=78
 # Full canonical CI includes all R8 app builds, lint, Detekt, ktlint, and TB2 Titan modules.
 SABLEOS_DEVICE=titan2 SABLEOS_RELEASE_VERSION=TB2 bash "$ROOT/build/local-ci/run.sh" full > "$OUT/ci.log" 2>&1 || rc_ci=$?
