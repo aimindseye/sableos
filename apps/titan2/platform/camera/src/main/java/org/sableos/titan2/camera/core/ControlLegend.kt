@@ -29,6 +29,7 @@ object ControlLegend {
         CameraAction.StepUp, CameraAction.StepDown, CameraAction.ProAuto,
         CameraAction.ZoomIn, CameraAction.ZoomOut, CameraAction.PrevMode,
         CameraAction.NextMode, CameraAction.SwitchCamera, CameraAction.NextCaptureMode,
+        CameraAction.RawToggle,
         CameraAction.QualityNext, CameraAction.CompareToggle, CameraAction.OpenLast,
         CameraAction.ToggleLegend, CameraAction.Back
     )
@@ -52,6 +53,7 @@ object ControlLegend {
         CameraAction.NextMode to "Next mode",
         CameraAction.SwitchCamera to "Switch camera",
         CameraAction.NextCaptureMode to "Photo size",
+        CameraAction.RawToggle to "RAW photo (R)",
         CameraAction.QualityNext to "Video quality",
         CameraAction.CompareToggle to "Compare bracket",
         CameraAction.OpenLast to "Last capture",
@@ -128,6 +130,7 @@ object TouchFallback {
         CameraAction.NextMode to "▶",
         CameraAction.SwitchCamera to "Flip",
         CameraAction.NextCaptureMode to "Size",
+        CameraAction.RawToggle to "RAW",
         CameraAction.QualityNext to "Quality",
         CameraAction.CompareToggle to "Compare",
         CameraAction.OpenLast to "Last",

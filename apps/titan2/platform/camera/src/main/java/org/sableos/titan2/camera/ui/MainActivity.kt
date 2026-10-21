@@ -6,8 +6,6 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.graphics.Matrix
-import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.net.Uri
 import android.os.Bundle
@@ -26,11 +24,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -46,7 +42,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
 import org.sableos.titan2.camera.android.CameraController
 import org.sableos.titan2.camera.android.CameraInfoReader
@@ -69,7 +64,6 @@ import org.sableos.titan2.camera.core.ControlGate
 import org.sableos.titan2.camera.core.ControlLegend
 import org.sableos.titan2.camera.core.DeckContext
 import org.sableos.titan2.camera.core.DeckOrientation
-import org.sableos.titan2.camera.core.DeckPresentation
 import org.sableos.titan2.camera.core.DeckState
 import org.sableos.titan2.camera.core.Gate
 import org.sableos.titan2.camera.core.LegendEntry
@@ -85,7 +79,6 @@ import org.sableos.titan2.camera.core.RecState
 import org.sableos.titan2.camera.core.RecStateMachine
 import org.sableos.titan2.camera.core.StripContext
 import org.sableos.titan2.camera.core.TouchControl
-import org.sableos.titan2.camera.core.TouchFallback
 import org.sableos.titan2.camera.core.UiMode
 import org.sableos.titan2.camera.core.VideoOption
 import org.sableos.titan2.camera.core.VideoPlanner
@@ -93,12 +86,7 @@ import org.sableos.titan2.camera.core.VideoPlanner
 private const val QUARTER_TURN = 90
 private const val HALF_TURN = 180
 private const val THREE_QUARTER_TURN = 270
-private const val QUARTER_TURN_DEGREES = 90f
-private const val HALF_TURN_DEGREES = 180f
 private const val RECORDING_POLL_MS = 250L
-
-private val accentBlue = Color(0xFF55B9FF)
-private val mutedText = Color(0xFF8BA6B8)
 
 /**
  * Keyboard-first camera with three modes: Video, Photo, Pro (stock order, minus Timelapse/More
@@ -302,30 +290,7 @@ class MainActivity : ComponentActivity() {
     private fun applyTransform() {
         val tv = textureView
         val ps = controller.previewSize
-        if (tv != null && ps != null) transformPreview(tv, ps)
-    }
-
-    private fun transformPreview(tv: TextureView, ps: org.sableos.titan2.camera.core.Size) {
-        val vw = tv.width.toFloat()
-        val vh = tv.height.toFloat()
-        if (vw == 0f || vh == 0f) return
-        val m = Matrix()
-        val view = RectF(0f, 0f, vw, vh)
-        val buf = RectF(0f, 0f, ps.h.toFloat(), ps.w.toFloat())
-        val cx = view.centerX()
-        val cy = view.centerY()
-        when (rotation) {
-            Surface.ROTATION_90, Surface.ROTATION_270 -> {
-                buf.offset(cx - buf.centerX(), cy - buf.centerY())
-                m.setRectToRect(view, buf, Matrix.ScaleToFit.FILL)
-                val s = maxOf(vh / ps.h, vw / ps.w)
-                m.postScale(s, s, cx, cy)
-                m.postRotate(QUARTER_TURN_DEGREES * (rotation - 2), cx, cy)
-            }
-
-            Surface.ROTATION_180 -> m.postRotate(HALF_TURN_DEGREES, cx, cy)
-        }
-        tv.setTransform(m)
+        if (tv != null && ps != null) transformCameraPreview(tv, ps, rotation)
     }
 
     private fun refreshHud() {
@@ -456,6 +421,7 @@ class MainActivity : ComponentActivity() {
             CameraAction.PauseToggle,
             CameraAction.QualityNext,
             CameraAction.NextCaptureMode,
+            CameraAction.RawToggle,
             CameraAction.CompareToggle -> doCaptureAction(a, cam)
 
             CameraAction.Autofocus,
@@ -482,46 +448,66 @@ class MainActivity : ComponentActivity() {
 
     private fun doCaptureAction(a: CameraAction, cam: org.sableos.titan2.camera.core.CameraReport) {
         when (a) {
-            CameraAction.Shutter -> if (!busy) {
-                busy = true
-                if (compare) {
-                    runBracket()
-                } else {
-                    status = "Capturing…"
-                    controller.takePicture(degrees())
-                }
-            }
-
+            CameraAction.Shutter -> takeStillPhoto()
             CameraAction.VideoToggle -> toggleRecording()
-
             CameraAction.PauseToggle -> if (recState != RecState.Idle) togglePause()
-
-            CameraAction.QualityNext -> if (recState == RecState.Idle) {
-                videoOption =
-                    VideoPlanner.next(VideoPlanner.options(cam.camera.videoSizes), videoOption, +1)
-                restart()
-            }
-
-            CameraAction.NextCaptureMode -> {
-                val avail = cam.modes.filter {
-                    it.value.ok &&
-                        it.key in listOf(CaptureMode.Auto, CaptureMode.HighRes, CaptureMode.Raw)
-                }.keys.toList()
-                mode = avail[(avail.indexOf(mode).coerceAtLeast(0) + 1) % avail.size]
-                restart()
-            }
-
-            CameraAction.CompareToggle -> {
-                compare = !compare
-                refreshHud()
-                status = if (compare) {
-                    "Compare: Space saves JPEG, high-res and RAW of the same scene"
-                } else {
-                    "Compare off"
-                }
-            }
-
+            CameraAction.QualityNext -> nextVideoQuality(cam)
+            CameraAction.NextCaptureMode -> nextPhotoCaptureMode(cam)
+            CameraAction.RawToggle -> toggleRawMode()
+            CameraAction.CompareToggle -> toggleCompare()
             else -> Unit
+        }
+    }
+
+    private fun takeStillPhoto() {
+        if (busy) return
+        busy = true
+        if (compare) {
+            runBracket()
+        } else {
+            status = "Capturing…"
+            controller.takePicture(degrees())
+        }
+    }
+
+    private fun nextVideoQuality(cam: org.sableos.titan2.camera.core.CameraReport) {
+        if (recState != RecState.Idle) return
+        videoOption = VideoPlanner.next(
+            VideoPlanner.options(cam.camera.videoSizes),
+            videoOption,
+            +1
+        )
+        restart()
+    }
+
+    private fun nextPhotoCaptureMode(cam: org.sableos.titan2.camera.core.CameraReport) {
+        val avail = cam.modes.filter {
+            it.value.ok &&
+                it.key in listOf(CaptureMode.Auto, CaptureMode.HighRes, CaptureMode.Raw)
+        }.keys.toList()
+        mode = avail[(avail.indexOf(mode).coerceAtLeast(0) + 1) % avail.size]
+        restart()
+    }
+
+    private fun toggleRawMode() {
+        // ControlDeck already verified HAL RAW capability; choose a single capture path.
+        mode = if (mode == CaptureMode.Raw) CaptureMode.Auto else CaptureMode.Raw
+        compare = false
+        status = if (mode == CaptureMode.Raw) {
+            "RAW DNG capture selected"
+        } else {
+            "Auto photo capture selected"
+        }
+        restart()
+    }
+
+    private fun toggleCompare() {
+        compare = !compare
+        refreshHud()
+        status = if (compare) {
+            "Compare: Space saves JPEG, high-res and RAW of the same scene"
+        } else {
+            "Compare off"
         }
     }
 
@@ -699,105 +685,57 @@ class MainActivity : ComponentActivity() {
         }
         StripExpiry(deck) { deck = ControlDeck.tick(deck, SystemClock.elapsedRealtime()) }
         val cfg = LocalConfiguration.current
-        val presentation = DeckOrientation.presentation(cfg.screenWidthDp, cfg.screenHeightDp)
         val dc = deckContext()
-        Box(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding()) {
-            // A tap on the viewfinder reveals touch controls in the landscape deck. Portrait
-            // always shows them, so this is a no-op there.
-            PreviewSurface(
-                Modifier.align(Alignment.Center).fillMaxWidth().aspectRatio(previewAspect)
-                    .clickable(enabled = presentation == DeckPresentation.LandscapeDeck) {
-                        deck = ControlDeck.toggleTouchChrome(deck)
-                    }
-            )
-            StatusOverlay(
-                hud,
-                status,
-                report?.mismatches?.firstOrNull {
-                    it.kind != org.sableos.titan2.camera.core.MismatchKind.Note
-                }?.message,
-                Modifier.align(Alignment.TopStart).padding(8.dp)
-            )
-            if (recState != RecState.Idle) {
-                RecordingBadge(recState, recMs, Modifier.align(Alignment.TopEnd).padding(8.dp))
-            }
-            val avail = report?.camera(camId)?.let { ActionRouter.available(it) }.orEmpty()
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) {
-                if (DeckOrientation.touchChromeVisible(presentation, deck.touchChromeRevealed)) {
-                    ModeSelector(
-                        avail,
-                        Modifier.align(Alignment.CenterHorizontally).padding(vertical = 2.dp)
-                    )
-                    if (dc != null) {
-                        TouchControlBar(TouchFallback.controls(dc), ::act, Modifier)
-                    }
-                }
-                Text(
-                    "H or ? shows the controls",
-                    color = mutedText,
-                    fontSize = 11.sp,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+        CameraScreenContent(
+            frame = CameraScreenFrame(
+                deck = deck,
+                context = dc,
+                profile = profile,
+                previewAspect = previewAspect,
+                presentation = DeckOrientation.presentation(cfg.screenWidthDp, cfg.screenHeightDp),
+                info = CameraScreenInfo(
+                    hud,
+                    status,
+                    report?.mismatches?.firstOrNull {
+                        it.kind != org.sableos.titan2.camera.core.MismatchKind.Note
+                    }?.message,
+                    recState,
+                    recMs
                 )
-            }
-            DeckOverlays(
-                deck,
-                dc,
-                profile,
-                { deck = ControlDeck.dismissStrip(deck) },
-                { deck = ControlDeck.dismissLegend(deck) }
+            ),
+            actions = CameraScreenActions(
+                preview = { modifier ->
+                    CameraPreviewSurface(modifier, { textureView = it }, previewSurfaceListener())
+                },
+                modeSelector = { modifier ->
+                    val avail = report?.camera(camId)?.let { ActionRouter.available(it) }.orEmpty()
+                    CameraModeSelector(
+                        avail,
+                        uiMode,
+                        recState == RecState.Idle,
+                        { selected -> report?.let { switchUi(selected, it) } },
+                        modifier
+                    )
+                },
+                revealTouch = { deck = ControlDeck.toggleTouchChrome(deck) },
+                action = ::act,
+                dismissStrip = { deck = ControlDeck.dismissStrip(deck) },
+                dismissLegend = { deck = ControlDeck.dismissLegend(deck) }
             )
-        }
-    }
-
-    @androidx.compose.runtime.Composable
-    private fun PreviewSurface(modifier: Modifier) {
-        AndroidView(
-            modifier = modifier,
-            factory = { ctx ->
-                TextureView(ctx).apply {
-                    textureView = this
-                    surfaceTextureListener = previewSurfaceListener()
-                }
-            }
         )
     }
 
-    private fun previewSurfaceListener() = object : TextureView.SurfaceTextureListener {
-        override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
+    private fun previewSurfaceListener() = cameraSurfaceListener(
+        onAvailable = { st ->
             texture = st
             if (report != null) restart()
-        }
-
-        override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {
-            applyTransform()
-        }
-
-        override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+        },
+        onChanged = { applyTransform() },
+        onDestroyed = {
             texture = null
             controller.closeSession()
-            return true
         }
-
-        override fun onSurfaceTextureUpdated(st: SurfaceTexture) {
-            // Nothing to do per frame: the preview is drawn by the TextureView itself.
-        }
-    }
-
-    @androidx.compose.runtime.Composable
-    private fun ModeSelector(avail: List<UiMode>, modifier: Modifier) {
-        Row(modifier) {
-            avail.forEach { m ->
-                Text(
-                    m.label,
-                    fontSize = 14.sp,
-                    color = if (m == uiMode) accentBlue else Color.White,
-                    modifier = Modifier.clickable(enabled = recState == RecState.Idle) {
-                        report?.let { switchUi(m, it) }
-                    }.padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
-        }
-    }
+    )
 }
 
 private val deckAccent = Color(0xFF55B9FF)

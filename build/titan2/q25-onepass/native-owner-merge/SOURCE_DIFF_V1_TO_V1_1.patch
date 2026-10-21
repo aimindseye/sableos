@@ -1,0 +1,92 @@
+--- a/native_merge.py
++++ b/native_merge.py
+@@ -14,6 +14,7 @@
+ import sys
+ import tempfile
+ import time
++import xml.etree.ElementTree as ET
+ 
+ HERE = Path(__file__).resolve().parent
+ ROOT = Path('')
+@@ -180,18 +181,69 @@
+     return text
+ 
+ def port_sound_xml(text):
+-    if 'sable_space_answers' in text: raise Hold('Dialer sound settings already exposes Space answer')
+-    # Standard Dialer PreferenceCategory used by original Q25 0704; no blind line-number graft.
+-    category = one_regex(r'<PreferenceCategory\b[^>]*\bandroid:title="@string/incall_category_title"[^>]*>',
+-                         text, 'INCALL_PREFERENCE_CATEGORY', flags=re.S)
+-    pref = '''
+-        <!-- SableOS Titan2: Space answers only a single ringing call, and can be disabled. -->
+-        <SwitchPreferenceCompat
+-            android:defaultValue="true"
+-            android:key="sable_space_answers"
+-            android:summary="@string/sable_space_answers_summary"
+-            android:title="@string/sable_space_answers_title" />'''
+-    return text[:category.end()] + pref + text[category.end():]
++    """Add the opt-in switch under an existing in-call group or the validated screen root.
++
++    Android16 Dialer branches differ in how sound_settings.xml groups preferences.
++    A missing @string/incall_category_title is not evidence of an incompatible root.
++    Do not fabricate a PreferenceCategory or rewrite existing resources.
++    """
++    if 'sable_space_answers' in text:
++        raise Hold('Dialer sound settings already exposes Space answer')
++    try:
++        screen = ET.fromstring(text)
++    except ET.ParseError as exc:
++        raise Hold(f'DIALER_SOUND_XML_INVALID: {exc}') from exc
++    # A PreferenceScreen (unqualified or package-qualified) is the only accepted parent.
++    local_name = screen.tag.rsplit('}', 1)[-1].rsplit('.', 1)[-1]
++    if local_name != 'PreferenceScreen':
++        raise Hold(f'DIALER_SOUND_XML_ROOT_UNSUPPORTED: {local_name}')
++
++    # Match a category only when it is an existing non-self-closing element.
++    category_pattern = (r'<PreferenceCategory\b[^>]*'
++                        r"\bandroid:title\s*=\s*[\"']@string/incall_category_title[\"'][^>]*>")
++    # Explicit inline pattern avoids depending on formatting/order of unrelated settings.
++    candidates = list(re.finditer(category_pattern, text, flags=re.S))
++    if len(candidates) > 1:
++        raise Hold('INCALL_PREFERENCE_CATEGORY: ambiguous multiple candidates')
++    category = candidates[0] if candidates else None
++
++    # Copy the widget class already used by the owner if available; otherwise keep
++    # the Q25 SwitchPreferenceCompat choice, whose availability needs real Gradle validation.
++    widget = 'SwitchPreferenceCompat'
++    for variant in ('androidx.preference.SwitchPreferenceCompat',
++                    'SwitchPreferenceCompat',
++                    'androidx.preference.SwitchPreference',
++                    'SwitchPreference'):
++        if re.search(r'<' + re.escape(variant) + r'(?:\s|/?>)', text):
++            widget = variant
++            break
++    pref = (f'\n        <!-- SableOS Titan2: Space answers only a single ringing call. -->\n'
++            f'        <{widget}\n'
++            '            android:defaultValue="true"\n'
++            '            android:key="sable_space_answers"\n'
++            '            android:summary="@string/sable_space_answers_summary"\n'
++            '            android:title="@string/sable_space_answers_title" />\n')
++    if category and not category.group().rstrip().endswith('/>'):
++        result = text[:category.end()] + pref + text[category.end():]
++    else:
++        # Safe fallback: direct child of the actual PreferenceScreen, not a
++        # newly invented category or a blind line-number insertion.
++        root_tag = screen.tag
++        close = f'</{root_tag}>'
++        endings = [m.start() for m in re.finditer(re.escape(close), text)]
++        if len(endings) != 1:
++            raise Hold('DIALER_SOUND_XML_ROOT_CLOSE_AMBIGUOUS')
++        result = text[:endings[0]] + pref + text[endings[0]:]
++    try:
++        check = ET.fromstring(result)
++        ns = '{http://schemas.android.com/apk/res/android}'
++        inserted = [el for el in check.iter()
++                    if el.attrib.get(ns + 'key') == 'sable_space_answers']
++        if len(inserted) != 1:
++            raise Hold(f'SPACE_ANSWER_INSERTION_COUNT: {len(inserted)}')
++    except ET.ParseError as exc:
++        raise Hold(f'DIALER_SOUND_XML_AFTER_INSERT_INVALID: {exc}') from exc
++    return result
+ 
+ SABLE_STRINGS = '''<?xml version="1.0" encoding="utf-8"?>
+ <resources>

@@ -5,7 +5,11 @@ data class Snapshot(
     val home: Observed,
     val keyboard: Observed,
     val dialer: Observed,
-    val sms: Observed
+    val sms: Observed,
+    val messagesReadPermission: Observed = Observed.Failed,
+    val browserHandler: Observed = Observed.Failed,
+    val provisioningState: Observed = Observed.Failed,
+    val wizardHandler: Observed = Observed.Failed
 )
 
 object SetupRows {
@@ -38,8 +42,68 @@ object SetupRows {
             "Opens Android Settings",
             Readiness.Informational,
             Action.NetworkSettings
-        )
+        ),
+        Item(
+            "privacy",
+            "Privacy and permissions",
+            "Android owns the microphone, camera, location, and app permission switches. " +
+                "Review them in system Privacy settings; this checklist does not change grants.",
+            Readiness.Informational,
+            Action.PrivacySettings
+        ),
+        Item(
+            "browser-handler",
+            "Web browser handler",
+            browserDetail(snapshot.browserHandler),
+            Readiness.Informational,
+            Action.DefaultApps
+        ),
+        Item(
+            "first-boot-handler",
+            "Advertised first-boot wizard",
+            wizardDetail(snapshot.wizardHandler),
+            Readiness.Informational
+        ),
+        Item(
+            "first-boot-status",
+            "Android first-boot provisioning",
+            provisioningDetail(snapshot.provisioningState),
+            Readiness.Informational
+        ),
+        messagesPermission(snapshot.messagesReadPermission)
     ).map { applyTarget(it, targets(it.action)) }
+
+    private fun messagesPermission(value: Observed): Item = Item(
+        "messages-sms",
+        "Messages SMS access",
+        smsPermissionDetail(value),
+        Readiness.Informational,
+        Action.DefaultApps
+    )
+
+    /** Browser detection reads an actual Android intent handler. */
+    fun browserDetail(value: Observed): String = OwnerEvidence.browser(value)
+
+    /** SETUP_WIZARD handling can be disabled after provisioning; never infer signer/privilege. */
+    fun wizardDetail(value: Observed): String = OwnerEvidence.wizard(value)
+
+    /** Setup flags describe progress, not the installed owner. */
+    fun provisioningDetail(value: Observed): String = OwnerEvidence.provisioning(value)
+
+    /** The Android package manager reports the actual grant, not a guessed installer allowlist. */
+    fun smsPermissionDetail(value: Observed): String = when (value) {
+        is Observed.Value -> if (value.text == "granted") {
+            "READ_SMS currently granted to Sable Messages. Android's default SMS app still " +
+                "owns SMS provider writes; legacy WRITE_SMS cannot be granted on Android 16."
+        } else {
+            "READ_SMS is not granted to Sable Messages. Installer/role policy and user " +
+                "authorization must be checked; no permission was changed here."
+        }
+
+        Observed.Absent -> "Sable Messages is not installed or its permission state is unavailable."
+
+        Observed.Failed -> "Could not verify READ_SMS on this device; no access is assumed."
+    }
 
     /** HOME is owned by the canonical lane (IR-003); this row never judges it. */
     private fun home(o: Observed): Item = when (o) {

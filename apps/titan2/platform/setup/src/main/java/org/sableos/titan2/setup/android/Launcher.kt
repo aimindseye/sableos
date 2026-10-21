@@ -23,6 +23,8 @@ class Launcher(private val activity: Activity) {
 
         Action.NetworkSettings -> Intent(Settings.ACTION_WIRELESS_SETTINGS)
 
+        Action.PrivacySettings -> Intent(Settings.ACTION_PRIVACY_SETTINGS)
+
         Action.DisplayCompat -> activity.packageManager.getLaunchIntentForPackage(
             DISPLAY_PACKAGE
         )

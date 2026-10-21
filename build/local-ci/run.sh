@@ -269,7 +269,8 @@ PY
   }
 
   run_static_contract sable-pipeline \
-    bash "$ROOT/build/gates/sable-pipeline-contract.sh"
+    env SABLEOS_DEVICE="$SABLEOS_DEVICE" SABLEOS_RELEASE_VERSION="$SABLEOS_RELEASE_VERSION" \
+      bash "$ROOT/build/gates/sable-pipeline-contract.sh"
   run_static_contract n1d-local-ci-scope \
     bash "$ROOT/build/gates/n1d-local-ci-scope-contract.sh"
 
@@ -307,14 +308,24 @@ PY
     python3 "$ROOT/build/gates/r9-textreader-standalone-contract.py"
   run_static_contract r9-sms-mms-blocking \
     python3 "$ROOT/build/gates/r9-sms-mms-blocking-contract.py"
-  run_static_contract r9-first-party-app-icon \
-    python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+    echo "SABLE_LOCAL_CI_R9_FIRST_PARTY_MESSAGES_ICON=SKIP_NONSELECTED_R9_HUB_CONTRACT"
+  else
+    run_static_contract r9-first-party-app-icon \
+      python3 "$ROOT/build/gates/r9-first-party-app-icon-contract.py"
+  fi
   run_static_contract r9-media-flow \
     python3 "$ROOT/build/gates/r9-media-flow-contract.py"
-  run_static_contract r9-messages-native-first \
-    python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
-  run_static_contract r9-messages-local-conversation \
-    python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+    # R9 requires Hub to *be* the Messages app. TB2 selects an independent
+    # Hub APK and has no admitted Sable Messages SMS-role package.
+    echo "SABLE_LOCAL_CI_R9_HUB_AS_MESSAGES=SKIP_NONSELECTED_R9_PRODUCT"
+  else
+    run_static_contract r9-messages-native-first \
+      python3 "$ROOT/build/gates/r9-messages-native-first-contract.py"
+    run_static_contract r9-messages-local-conversation \
+      python3 "$ROOT/build/gates/r9-messages-local-conversation-contract.py"
+  fi
   run_static_contract r9-standalone-messages-quality \
     python3 "$ROOT/build/gates/r9-standalone-messages-quality-contract.py"
   run_static_contract r9-messages-source-style \
@@ -833,6 +844,34 @@ write_attestation() {
   fi
 }
 
+# TB2 modules are verified once inside canonical full CI, not by a detached Gradle operator.
+run_titan2_tb2_apps() {
+  source "$ROOT/build/config/host-tools.env"
+  export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"
+  export JAVA_HOME="$SABLE_JDK17"
+  export ANDROID_HOME="$SABLE_ANDROID_SDK"
+  export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
+  local -a candidates tasks
+  shopt -s nullglob
+  candidates=("$SABLE_GRADLE_USER_HOME"/wrapper/dists/gradle-8.14.3-bin/*/gradle-8.14.3/bin/gradle)
+  shopt -u nullglob
+  [[ ${#candidates[@]} -eq 1 && -x "${candidates[0]}" ]] || {
+    echo "TB2_CI=HOLD_CANONICAL_GRADLE_8_14_3"
+    return 78
+  }
+  local mod task
+  tasks=()
+  for mod in displaycompat keyboard camera setup tools; do
+    for task in assembleDebug testDebugUnitTest lint detekt ktlintCheck; do
+      tasks+=(":$mod:$task")
+    done
+  done
+  (
+    cd "$ROOT/apps/titan2/platform" || return 66
+    "${candidates[0]}" "${GRADLE_NETWORK_ARGS[@]}" --no-daemon --console=plain --continue --max-workers=4 "${tasks[@]}"
+  )
+}
+
 stage POLICY run_policy
 stage STATIC run_static
 
@@ -846,6 +885,10 @@ stage RUST run_rust
 stage ANDROID run_android
 stage APK_SEAL run_apk_seal
 stage QUALITY run_quality
+
+if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+  stage TITAN2_TB2_APPS run_titan2_tb2_apps
+fi
 stage SUPPLY_CHAIN run_supply_chain
 
 if [[ "$PROFILE" == full || "$PROFILE" == release ]]; then

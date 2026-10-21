@@ -1,0 +1,16 @@
+# product_module\tapk_relative_to_sable_repo_or_ci-cache\texpected_package\tsigning
+# Nonprivileged userdebug prebuilt applications. Does NOT grant restricted SMS,
+# default HOME/SMS, profile management, or OEM telephony permissions.
+SableTB2Keyboard	apps/titan2/platform/keyboard/build/outputs/apk/debug/keyboard-debug.apk	org.sableos.titan2.keyboard	presigned
+SableTB2Camera	apps/titan2/platform/camera/build/outputs/apk/debug/camera-debug.apk	org.sableos.titan2.camera	presigned
+SableTB2DisplayCompat	apps/titan2/platform/displaycompat/build/outputs/apk/debug/displaycompat-debug.apk	org.sableos.titan2.displaycompat	presigned
+SableTB2Setup	apps/titan2/platform/setup/build/outputs/apk/debug/setup-debug.apk	org.sableos.titan2.setup	presigned
+SableTB2Tools	apps/titan2/platform/tools/build/outputs/apk/debug/tools-debug.apk	org.sableos.tools	presigned
+SableTB2Calculator	apps/r8/android/calculator/build/outputs/apk/debug/calculator-debug.apk	org.sableos.calculator	presigned
+SableTB2Media	apps/r8/android/media/build/outputs/apk/debug/media-debug.apk	org.sableos.media	presigned
+SableTB2Hub	apps/r8/android/hub/build/outputs/apk/debug/hub-debug.apk	org.sableos.hub	presigned
+SableTB2Weather	apps/r8/android/weather/build/outputs/apk/debug/weather-debug.apk	org.sableos.weather	presigned
+SableTB2Calendar	apps/r8/android/calendar/build/outputs/apk/debug/calendar-debug.apk	org.sableos.calendar	presigned
+SableTB2Reader	ci-cache/vaachak-reader/leisure/build/outputs/apk/sable/debug/*.apk	org.sableos.reader	presigned
+SableTB2Mail	ci-cache/sable-mail/app-thunderbird/build/outputs/apk/foss/release/*.apk	org.sableos.mail	unsigned
+SableTB2TextReader	ci-cache/vaachak-textreader/app/build/outputs/apk/debug/SableTextReader-*.apk	org.sableos.textreader	presigned

@@ -68,9 +68,19 @@ object ControlGate {
             "Only one video size"
         )
 
+        else -> captureModeGate(a, c)
+    }
+
+    private fun captureModeGate(a: CameraAction, c: DeckContext): Gate? = when (a) {
         CameraAction.NextCaptureMode -> need(
             c.ui == UiMode.Photo && photoPaths(c.cam) > 1,
             "Only one photo path"
+        )
+
+        CameraAction.RawToggle -> need(
+            c.ui == UiMode.Photo && !c.recording &&
+                c.cam.modes[CaptureMode.Raw]?.ok == true,
+            "RAW is not supported on this camera"
         )
 
         CameraAction.CompareToggle -> need(c.ui == UiMode.Photo, "Photo only")

@@ -485,6 +485,7 @@ object TextReaderUtil {
         "SableTheme.kt",
         "SableGlobalAppearance.kt",
         "SableSystemBars.kt",
+        "SableCornerStyle.kt",
     ):
         source = design_source / name
         if not source.is_file():

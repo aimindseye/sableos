@@ -49,6 +49,76 @@ class SetupHardeningTest {
                 LaunchOutcome.values().mapNotNull { LaunchReport.message("x", it) }
         }
 
+    @Test fun setupSmsGrantIsInformationalAndNeverClaimsWriteSms() {
+        val granted = rows(snap().copy(messagesReadPermission = Observed.Value("granted")))
+        val row = row("messages-sms", granted)
+        assertEquals(Readiness.Informational, row.state)
+        assertTrue(row.detail.contains("READ_SMS currently granted"))
+        assertTrue(row.detail.contains("default SMS app"))
+        assertTrue(row.detail.contains("WRITE_SMS cannot be granted"))
+        assertTrue(SetupModel.isReady(granted))
+    }
+
+    @Test fun setupSmsReadDeniedOrUnknownCannotBePresentedAsGranted() {
+        val denied = rows(snap().copy(messagesReadPermission = Observed.Value("denied")))
+        val failed = rows(snap().copy(messagesReadPermission = Observed.Failed))
+        assertTrue(row("messages-sms", denied).detail.contains("not granted"))
+        assertTrue(row("messages-sms", failed).detail.contains("Could not verify"))
+        assertEquals(Readiness.Informational, row("messages-sms", failed).state)
+    }
+
+    @Test fun privacyRowDelegatesToSystemSettingsWithoutEnforcementClaim() {
+        val privacy = row("privacy", rows())
+        assertEquals(Readiness.Informational, privacy.state)
+        assertEquals(Action.PrivacySettings, privacy.action)
+        assertTrue(privacy.detail.contains("does not change grants"))
+    }
+
+    @Test fun browserAndProvisioningNeverClaimPrivilegedOwnership() {
+        val configured = snap().copy(
+            browserHandler = Observed.Value("org.example.browser/.Activity"),
+            provisioningState = Observed.Value("complete")
+        )
+        val browser = row("browser-handler", rows(configured))
+        val setup = row("first-boot-status", rows(configured))
+        assertEquals(Readiness.Informational, browser.state)
+        assertEquals(Readiness.Informational, setup.state)
+        assertTrue(browser.detail.contains("org.example.browser/.Activity"))
+        assertTrue(setup.detail.contains("wizard owner unknown"))
+        assertTrue(SetupModel.isReady(rows(configured)))
+    }
+
+    @Test fun advertisedWizardDoesNotClaimPrivilegeOrOwnership() {
+        val one =
+            rows(
+                snap().copy(
+                    wizardHandler = Observed.Value("app.grapheneos.setupwizard/.WelcomeActivity")
+                )
+            )
+        assertEquals(Readiness.Informational, row("first-boot-handler", one).state)
+        assertTrue(
+            row("first-boot-handler", one).detail.contains("privileged ownership not verified")
+        )
+        val absent = rows(snap().copy(wizardHandler = Observed.Absent))
+        assertTrue(
+            row("first-boot-handler", absent).detail.contains("may be disabled after provisioning")
+        )
+        val denied = rows(snap().copy(wizardHandler = Observed.Failed))
+        assertTrue(row("first-boot-handler", denied).detail.contains("Cannot identify"))
+    }
+
+    @Test fun browserAbsentNeverTurnsWebViewIntoAnInstalledBrowser() {
+        val row = row("browser-handler", rows(snap().copy(browserHandler = Observed.Absent)))
+        assertTrue(row.detail.contains("WebView alone is not a browser"))
+        assertEquals(Readiness.Informational, row.state)
+    }
+
+    @Test fun provisioningFailureRemainsUnknownOwnershipNotDone() {
+        val state = rows(snap().copy(provisioningState = Observed.Failed))
+        assertTrue(row("first-boot-status", state).detail.contains("unverified"))
+        assertEquals(Readiness.Informational, row("first-boot-status", state).state)
+    }
+
     // --- readiness states, summary, completion ---
 
     @Test fun allFiveStatesExistAndAreDistinct() {
@@ -198,7 +268,7 @@ class SetupHardeningTest {
     }
 
     @Test fun everyDestinationIsCoveredByARow() {
-        val used = rows().map { it.action }.toSet()
+        val used = rows().map { it.action }.toSet() - Action.None
         assertEquals(Action.values().toSet() - Action.None, used)
     }
 
@@ -275,16 +345,21 @@ class SetupHardeningTest {
         assertTrue(SetupModel.SELF_DESCRIPTION.contains("Post-provisioning"))
     }
 
-    @Test fun noTextClaimsWizardFirstBootOrProvisioningAuthority() {
-        allTexts.forEach {
-            val t = it.lowercase()
-            if (t.contains("wizard")) assertTrue(it, t.contains("not the android setup wizard"))
-            assertFalse(
-                it,
-                t.contains("first-boot") || t.contains("first boot") || t.contains("first-run")
+    @Test fun wizardAndProvisioningObservationsNeverAssertPrivilegedOwnership() {
+        val advertised = rows(
+            snap().copy(
+                wizardHandler = Observed.Value("app.grapheneos.setupwizard/.WelcomeActivity")
             )
-            assertFalse(it, t.contains("provisioning complete") || t.contains("provisioned"))
-        }
+        )
+        val wizard = row("first-boot-handler", advertised)
+        assertEquals(Readiness.Informational, wizard.state)
+        assertTrue(wizard.detail.contains("privileged ownership not verified"))
+
+        val provisioned = rows(snap().copy(provisioningState = Observed.Value("complete")))
+        val provisionStatus = row("first-boot-status", provisioned)
+        assertEquals(Readiness.Informational, provisionStatus.state)
+        assertTrue(provisionStatus.detail.contains("wizard owner unknown"))
+        assertTrue(SetupModel.SELF_DESCRIPTION.contains("Not the Android Setup Wizard"))
     }
 
     // --- default-app wording matches what is tested ---

@@ -118,24 +118,33 @@ echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-product-review-staging-contract.sh
 bash "$ROOT/build/gates/n1d-c3b-product-review-staging-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e2-product-admission-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-e2-product-admission-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e2-product-composition-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e2-product-composition-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e3-systemimage-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e3-systemimage-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e4-deployment-readiness-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e4-deployment-readiness-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
+# N1D-C3B E2-E6 qualified product/source snapshots apply only to that
+# historical lineage. TB2 uses an independently pinned A16 13-app/FLOSS graph.
+# Preserve cross-device flash regression and the remaining shared contracts.
+if [[ "${SABLEOS_DEVICE:-}" == titan2 && "${SABLEOS_RELEASE_VERSION:-}" == TB2 ]]; then
+  echo "SABLE_PIPELINE_N1D_C3B_E2_E6=SKIP_HISTORICAL_NONSELECTED_TB2_PRODUCT"
+else
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e2-product-composition-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e2-product-composition-contract.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e3-systemimage-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e3-systemimage-contract.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e4-deployment-readiness-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e4-deployment-readiness-contract.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e5a-readonly-device-state-contract.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e5b-authorization-package-contract.sh"
+  fi
 echo "SABLE_PIPELINE_STEP=build/gates/titan2-flash-regression-contract.py"
 python3 "$ROOT/build/gates/titan2-flash-regression-contract.py"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-execution-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e5b-standard-execution-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e6-standard-deployment-contract.sh"
-bash "$ROOT/build/gates/n1d-c3b-e6-standard-deployment-contract.sh"
+if ! [[ "${SABLEOS_DEVICE:-}" == titan2 && "${SABLEOS_RELEASE_VERSION:-}" == TB2 ]]; then
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e5b-standard-deployment-contract.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e5b-standard-execution-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e5b-standard-execution-contract.sh"
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-e6-standard-deployment-contract.sh"
+  bash "$ROOT/build/gates/n1d-c3b-e6-standard-deployment-contract.sh"
+  fi
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-restless-security-boundary-contract.sh"
 bash "$ROOT/build/gates/n1d-restless-security-boundary-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-source-lock-contract.sh"
@@ -166,8 +175,18 @@ echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-product-composition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-engineering-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-engineering-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-hub-parity-contract.py"
-python3 "$ROOT/build/gates/n1d-c3b-hub-parity-contract.py"
+# The C3B Hub parity source tokens belong to the earlier C3B/R9 message
+# implementation. TB2's refactored Hub has bounded v3 storage, profile-aware
+# LauncherApps enumeration and guarded RemoteInput under different owners.
+# Keep those safety properties explicitly source-checked on TB2; retain the
+# original historic contract for its own release rather than disabling it.
+if [[ "${SABLEOS_DEVICE:-}" == titan2 && "${SABLEOS_RELEASE_VERSION:-}" == TB2 ]]; then
+  echo "SABLE_PIPELINE_STEP=build/gates/tb2-hub-source-contract.py"
+  python3 "$ROOT/build/gates/tb2-hub-source-contract.py"
+else
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-hub-parity-contract.py"
+  python3 "$ROOT/build/gates/n1d-c3b-hub-parity-contract.py"
+fi
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-product-parse-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-trebledroid-build-contract.sh"

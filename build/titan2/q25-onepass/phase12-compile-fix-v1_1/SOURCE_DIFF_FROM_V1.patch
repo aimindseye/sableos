@@ -1,0 +1,93 @@
+--- a/integrate_compile.py
++++ b/integrate_compile.py
+@@ -5,6 +5,7 @@
+ """
+ from __future__ import annotations
+ import argparse
++import difflib
+ import hashlib
+ import json
+ import os
+@@ -19,6 +20,14 @@
+ import time
+ 
+ ACK = 'INTEGRATE_AND_COMPILE_Q25_A16_NATIVE_SEVEN_ONLY'
++DIALER_OWNER = 'packages/apps/Dialer/java/com/android/incallui/InCallActivity.java'
++DIALER_OLD = (b'androidx.preference.PreferenceManager\n'
++              b'                        .getDefaultSharedPreferences(this)')
++DIALER_NEW = (b'getSharedPreferences(getPackageName() + "_preferences",\n'
++              b'                        android.content.Context.MODE_PRIVATE)')
++# The default preference filename is <applicationId>_preferences on both AndroidX
++# and the platform PreferenceManager. Avoid importing a missing AndroidX class.
++
+ TARGETS = {
+     'frameworks/base/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputView.java': ('de1b5ec457945f5a3843ef842db1919a8d99198ee3110a54b833438f20271af8', 'f13f1e9b2ce1d2ac7b763ad869bcd5fc7f7f54d15743dc0a14cd81ef63900bb1'),
+     'frameworks/base/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java': ('550e087d087a792e7f5d76f35c15d748715ea6d8c3bc9826bcffdb3cd1c8f6c8', '99d676f4a3068bff2aae95d75dcf27356dc4834d38d878591129d0dce318ff20'),
+@@ -99,6 +108,32 @@
+                          '_before': prior, '_after': replacement_path.read_bytes()})
+     return verified
+ 
++def correct_dialer_default_preferences(entries: list[dict]) -> tuple[str, str]:
++    """A one-occurrence, hash-pin-preserving change of the staged candidate in RAM.
++
++    The original user-provided stage and its SHA256 pins remain unchanged. Failure
++    to find precisely the observed line is a hard hold, never a broad substitution.
++    """
++    dialer = [e for e in entries if e['relpath'] == DIALER_OWNER]
++    if len(dialer) != 1:
++        raise Hold('DIALER_OWNER_NOT_UNIQUE')
++    entry = dialer[0]
++    original = entry['_after']
++    if original.count(DIALER_OLD) != 1:
++        raise Hold('DIALER_ANDROIDX_PREFERENCE_ANCHOR_CHANGED')
++    corrected = original.replace(DIALER_OLD, DIALER_NEW, 1)
++    if b'androidx.preference.PreferenceManager' in corrected:
++        raise Hold('DIALER_UNRESOLVED_PREFERENCE_IMPORT')
++    entry['_after'] = corrected
++    entry['after_sha256'] = digest(corrected)
++    entry['bytes'] = len(corrected)
++    diff = ''.join(difflib.unified_diff(
++        original.decode('utf-8').splitlines(keepends=True),
++        corrected.decode('utf-8').splitlines(keepends=True),
++        fromfile='a/' + DIALER_OWNER,
++        tofile='b/' + DIALER_OWNER))
++    return diff, entry['after_sha256']
++
+ def atomic_write(path: Path, data: bytes, mode: int) -> None:
+     path.parent.mkdir(parents=True, exist_ok=True)
+     fd, tmp = tempfile.mkstemp(prefix='.sable-q25-phase12-', dir=path.parent)
+@@ -274,7 +309,7 @@
+     ap.add_argument('--android',type=Path,required=True)
+     ap.add_argument('--stage',type=Path,required=True)
+     ap.add_argument('--out',type=Path,required=True)
+-    ap.add_argument('--lunch-target',default='tdgsi_arm64_ab-userdebug')
++    ap.add_argument('--lunch-target',default='treble_arm64_bvN-bp4a-userdebug')
+     ap.add_argument('--jobs',type=int,default=4)
+     ap.add_argument('--timeout',type=int,default=7200)
+     ap.add_argument('--ack',default='')
+@@ -294,7 +329,7 @@
+     if a.command=='run' and a.ack != ACK:
+         ap.error('EXPLICIT_SOURCE_APPLY_AND_MODULE_BUILD_ACK_REQUIRED: '+ACK)
+     started=time.monotonic()
+-    report={'schema':'sableos-q25-phase12-native-v1','status':'STARTED','mode':a.command,
++    report={'schema':'sableos-q25-phase12-native-v1.1','status':'STARTED','mode':a.command,
+             'source_mutation':False,'image_build':False,'device_contact':False,'flash':False,
+             'native_targets':['SystemUI','Dialer'],'module_compile':'NOT_RUN','rollback':'NOT_NEEDED',
+             'stage_root':str(stage),'android_root':str(android),'steps':[]}
+@@ -303,10 +338,16 @@
+     new_dirs=[]
+     try:
+         entries=validate_stage(stage,android)
++        dialer_diff, dialer_sha = correct_dialer_default_preferences(entries)
++        (out/'DIALER_PREFERENCE_FIX.patch').write_text(dialer_diff)
++        report['dialer_preference_fix']={'status':'PASS', 'scope':DIALER_OWNER,
++              'after_sha256':dialer_sha, 'original_stage_unchanged':True,
++              'default_store':'getPackageName() + _preferences', 'patch':'DIALER_PREFERENCE_FIX.patch'}
+         if a.with_q25_apps:
+             check_app_sources(a.sable_repo.resolve(strict=True))
+         report['files']=[{k:e[k] for k in ('relpath','before_sha256','after_sha256','source_action','bytes')} for e in entries]
+         report['steps'].append({'step':'seven_exact_hashes','status':'PASS'})
++        report['steps'].append({'step':'dialer_preference_classpath_fix','status':'PASS'})
+         if a.command == 'plan':
+             report['status']='PLAN_PASS_READY_FOR_ACKNOWLEDGED_APPLY_AND_COMPILE'
+             print(report['status'])

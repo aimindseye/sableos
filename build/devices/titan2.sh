@@ -224,6 +224,9 @@ sable_device_build() {
   echo "TITAN2_BUILD_REGRESSION_PREFLIGHT=PASS"
 
   case "$release" in
+    TB2|tb2)
+      bash "$ROOT/build/titan2/run-track-b-integrated.sh" "$mode"
+      ;;
     N1I|n1i)
       EXPECTED_SOURCE_COMMIT="$(git -C "$ROOT" rev-parse HEAD)" \
         bash "$ROOT/build/titan2/run-n1i-c1-cellular-isolation.sh" N1I "$mode"

@@ -1,0 +1,232 @@
+{
+  "schema": "sableos-q25-onepass-owner-recovery-v1",
+  "source_repo": "aimindseye/sableos",
+  "source_ref": "titan2/track-b-portable-hub-tools-reuse-20261020",
+  "source_base": "build/titan2/q25-onepass/patches/framework",
+  "q25_origin": "aimindseye/zinwaq25-sableos@feature/sable-start-bb10-layout-20261019",
+  "active_android": "/srv/sable-build/workspaces/titan2-track-b/android",
+  "canonical_sableos": "/srv/sable-build/sableos/repo",
+  "patches": [
+    {
+      "id": "systemui-qs-base",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0101-SableOS-read-default-large-Quick-Settings-tiles-from.patch",
+      "git_blob": "0e779818de67225e1b420a2ef73c2a31a95b3ab5",
+      "decision": "review"
+    },
+    {
+      "id": "systemui-qs-card",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0102-SableOS-Quick-Settings-tiles-use-the-Sable-card-and-.patch",
+      "git_blob": "d55456db82beac4af48c64abdda38fbb58b2eca2",
+      "decision": "review",
+      "requires": [
+        "systemui-qs-base"
+      ]
+    },
+    {
+      "id": "systemui-notification-core",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0301-SableOS-keyboard-notification-commands-in-the-shade.patch",
+      "git_blob": "f41ec39545514f23c2d74711f71859c086947e31",
+      "decision": "review"
+    },
+    {
+      "id": "systemui-alt-shade",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0302-SableOS-Alt-shade-shortcuts-for-keyboards-without-Fn.patch",
+      "git_blob": "363c8cec1851cfcf53311340dc6391532b04428c",
+      "decision": "review",
+      "requires": [
+        "systemui-notification-core"
+      ]
+    },
+    {
+      "id": "systemui-toggle",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0303-SableOS-Space-toggles-and-Alt-Enter-opens-details-on.patch",
+      "git_blob": "0a3120a2441ff3d3a0123c04d74ed587fa3ea4d8",
+      "decision": "review"
+    },
+    {
+      "id": "systemui-hints",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0304-SableOS-keyboard-hint-line-and-type-ahead-on-the-loc.patch",
+      "git_blob": "b303c9ed041f54f9852f68f9215b7ff2323b63b3",
+      "decision": "review"
+    },
+    {
+      "id": "keyguard-clock",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0305-SableOS-Sable-lock-screen-clock-and-unlock-text.patch",
+      "git_blob": "38988c9edb320946050607c8c4016b62e4bdc120",
+      "decision": "review"
+    },
+    {
+      "id": "systemui-led",
+      "module": "frameworks/base",
+      "file": "frameworks/base/0501-SableOS-notification-light-for-every-alerting-channe.patch",
+      "git_blob": "60f656db68ca8d595138c42f8ddfb76149c1aca1",
+      "decision": "review"
+    },
+    {
+      "id": "files-policy",
+      "module": "packages/apps/DocumentsUI",
+      "file": "packages/apps/DocumentsUI/1001-SableOS-pure-Files-keyboard-model.patch",
+      "git_blob": "66087905a2cd83eedcc5816e5e2fedfff86b8c60",
+      "decision": "review"
+    },
+    {
+      "id": "files-keys",
+      "module": "packages/apps/DocumentsUI",
+      "file": "packages/apps/DocumentsUI/1002-SableOS-Files-keys-for-copy-move-rename-new-folder-a.patch",
+      "git_blob": "6ce014c1d12dd2caf4ecd682b13210fe2281c5b9",
+      "decision": "review"
+    },
+    {
+      "id": "browser-policy",
+      "module": "packages/apps/Jelly",
+      "file": "packages/apps/Jelly/1041-SableOS-pure-Browser-keyboard-model.patch",
+      "git_blob": "03d78b72a9dc05b21b023548830ecfec8ed1da1e",
+      "decision": "review"
+    },
+    {
+      "id": "browser-keys",
+      "module": "packages/apps/Jelly",
+      "file": "packages/apps/Jelly/1042-SableOS-Browser-keys-for-the-address-bar-tabs-find-a.patch",
+      "git_blob": "ffa11a4851fd61b05ced41082fd43865cce8a15b",
+      "decision": "review"
+    },
+    {
+      "id": "settings-mobile-policy",
+      "module": "packages/apps/Settings",
+      "file": "packages/apps/Settings/1101-SableOS-Mobile-Manager-App-lock-Focus-mode-and-profi.patch",
+      "git_blob": "1ad847e723106f7a8e691b3b15f0364f05d854f5",
+      "decision": "hold_privileged_enforcement"
+    },
+    {
+      "id": "settings-mobile-pages",
+      "module": "packages/apps/Settings",
+      "file": "packages/apps/Settings/1102-SableOS-Mobile-Manager-App-lock-Focus-mode-and-Priva.patch",
+      "git_blob": "b7e7cc4ead800c93c65771749818fa37872b00ed",
+      "decision": "hold_privileged_enforcement"
+    },
+    {
+      "id": "settings-keyboard-info",
+      "module": "packages/apps/Settings",
+      "file": "packages/apps/Settings/0901-SableOS-Keyboard-light-info-in-Settings-Keyboard.patch",
+      "git_blob": "e927720008d1efa410e427b62df57bd82db7053e",
+      "decision": "hold_q25_device_specific"
+    },
+    {
+      "id": "settings-setup-only",
+      "module": "packages/apps/Settings",
+      "file": "packages/apps/Settings/1103-SableOS-Settings-Sable-holds-Sable-Setup-only.patch",
+      "git_blob": "8649143046ccd01afd14f206d61f81efaf1b6e4f",
+      "decision": "review",
+      "requires": [
+        "settings-mobile-pages"
+      ]
+    },
+    {
+      "id": "setup-keyboard-focus",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0401-SableOS-keyboard-first-focus-in-setup-steps.patch",
+      "git_blob": "aa774a84a8447bb616984015a7be83797e909b7e",
+      "decision": "review"
+    },
+    {
+      "id": "setup-keyboard-ready",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0402-SableOS-Sable-Keyboard-readiness-step-before-Wi-Fi-a.patch",
+      "git_blob": "9db755fca22a7c644e76386934d1844b8cb60b44",
+      "decision": "review",
+      "requires": [
+        "setup-keyboard-focus"
+      ]
+    },
+    {
+      "id": "setup-back",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0403-SableOS-Esc-returns-to-the-previous-setup-step.patch",
+      "git_blob": "571c6e384ee25238747d50c4783852adab808c11",
+      "decision": "review",
+      "requires": [
+        "setup-keyboard-ready"
+      ]
+    },
+    {
+      "id": "setup-keyboard-test",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0404-SableOS-keyboard-test-step-after-keyboard-readiness.patch",
+      "git_blob": "103eed70c239b4ea989379e2948b75eeb0ae5ba6",
+      "decision": "review",
+      "requires": [
+        "setup-back"
+      ]
+    },
+    {
+      "id": "setup-privacy",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0405-SableOS-privacy-summary-step-after-Wi-Fi.patch",
+      "git_blob": "9db29bd21dbcef816fe4472afbd63102e5db4308",
+      "decision": "review",
+      "requires": [
+        "setup-keyboard-test"
+      ]
+    },
+    {
+      "id": "setup-theme",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0406-SableOS-Sable-accent-on-the-Theme-step-Theme-after-P.patch",
+      "git_blob": "b9098922cccb24ec06eaa2d79c72925e7900e265",
+      "decision": "review",
+      "requires": [
+        "setup-privacy"
+      ]
+    },
+    {
+      "id": "setup-ready",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0407-SableOS-Ready-to-start-text-on-the-final-setup-page.patch",
+      "git_blob": "994ed6e58672d3990093fcd8b5a2884afd78fad4",
+      "decision": "review",
+      "requires": [
+        "setup-theme"
+      ]
+    },
+    {
+      "id": "setup-remove-lineage",
+      "module": "packages/apps/SetupWizard",
+      "file": "packages/apps/SetupWizard/0408-SableOS-drop-the-LineageOS-features-step.patch",
+      "git_blob": "41c40a9d0b223a0c747f6aea07c75d036bc88154",
+      "decision": "review",
+      "requires": [
+        "setup-ready"
+      ]
+    },
+    {
+      "id": "dialer-in-call-keys",
+      "module": "packages/apps/Dialer",
+      "file": "packages/apps/Dialer/0703-SableOS-single-key-mute-speaker-and-dialpad-on-the-in.patch",
+      "git_blob": "1e9b0d3375a570bf9a661407632344f9d2254245",
+      "decision": "review"
+    },
+    {
+      "id": "dialer-space-answer",
+      "module": "packages/apps/Dialer",
+      "file": "packages/apps/Dialer/0704-SableOS-Space-answers-a-ringing-call-on-the-in-call-.patch",
+      "git_blob": "0a04a7e6cb468170e1d7b72ad67c7c23d311b9bc",
+      "decision": "review",
+      "requires": [
+        "dialer-in-call-keys"
+      ]
+    }
+  ],
+  "prohibited": [
+    "Do not remove Launcher3QuickStep HOME role by importing Q25 Launcher3 0002",
+    "Do not enable UI-only AppLock/Mobile Manager without privileged launch/profile enforcement",
+    "Do not copy Q25 Sym/PaBaLF keyboard-backlight firmware instructions into Titan 2",
+    "WRITE_SMS cannot be granted on Android16; Telephony owner handles writes"
+  ]
+}

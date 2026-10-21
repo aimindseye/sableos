@@ -25,7 +25,22 @@ class SableDesignContractTest {
     fun uiContractKeepsTouchTargetsAndCornersIntentional() {
         assertEquals(2, SableDesignContract.SCHEMA_VERSION)
         assertTrue(SableDesignContract.MIN_TOUCH_TARGET_DP >= 48)
-        assertTrue(SableDesignContract.MAX_STANDARD_CORNER_RADIUS_DP <= 6)
+        assertEquals(SableCornerStyle.Compact, SableCornerStyle.DEFAULT)
+        // The original Compact style stays at 6dp; opt-in Rounded is 12dp.
+        assertEquals(6, SableShapeTable.forStyle(SableCornerStyle.Compact).maxDp)
+        assertEquals(12, SableShapeTable.forStyle(SableCornerStyle.Rounded).maxDp)
+        assertEquals(
+            SableShapeTable.Compact.maxDp,
+            SableDesignContract.MAX_COMPACT_CORNER_RADIUS_DP,
+        )
+        assertEquals(
+            SableShapeTable.Rounded.maxDp,
+            SableDesignContract.MAX_ROUNDED_CORNER_RADIUS_DP,
+        )
+        assertEquals(
+            SableDesignContract.MAX_ROUNDED_CORNER_RADIUS_DP,
+            SableDesignContract.MAX_STANDARD_CORNER_RADIUS_DP,
+        )
         assertTrue(
             SableDesignContract.SCREEN_HORIZONTAL_PADDING_DP >=
                 SableDesignContract.SCREEN_VERTICAL_PADDING_DP,

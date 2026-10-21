@@ -39,6 +39,7 @@ object ActionRouter {
         CameraAction.VideoToggle,
         CameraAction.PauseToggle,
         CameraAction.NextCaptureMode,
+        CameraAction.RawToggle,
         CameraAction.CompareToggle,
         CameraAction.QualityNext -> routeCaptureKey(ui, a)
 
@@ -83,7 +84,7 @@ object ActionRouter {
 
         CameraAction.PauseToggle -> if (ui == UiMode.Video) Cmd.Act(a) else Cmd.Nop
 
-        CameraAction.NextCaptureMode, CameraAction.CompareToggle ->
+        CameraAction.NextCaptureMode, CameraAction.RawToggle, CameraAction.CompareToggle ->
             if (ui == UiMode.Photo) Cmd.Act(a) else Cmd.Nop
 
         CameraAction.QualityNext -> if (ui == UiMode.Video) Cmd.Act(a) else Cmd.Nop

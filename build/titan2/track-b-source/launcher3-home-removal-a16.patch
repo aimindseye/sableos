@@ -1,0 +1,10 @@
+--- a/packages/apps/Launcher3/AndroidManifest.xml
++++ b/packages/apps/Launcher3/AndroidManifest.xml
+@@ -64,7 +64,6 @@
+                 <action android:name="android.intent.action.MAIN" />
+                 <action android:name="android.intent.action.SHOW_WORK_APPS" />
+                 <action android:name="android.intent.action.ALL_APPS" />
+-                <category android:name="android.intent.category.HOME" />
+                 <category android:name="android.intent.category.DEFAULT" />
+                 <category android:name="android.intent.category.MONKEY"/>
+                 <category android:name="android.intent.category.LAUNCHER_APP" />

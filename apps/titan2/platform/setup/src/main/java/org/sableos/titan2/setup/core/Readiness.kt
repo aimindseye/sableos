@@ -40,7 +40,8 @@ enum class Action(val label: String) {
     KeyboardPicker("Keyboard picker"),
     DisplayCompat("Display compatibility"),
     RadioDiag("Radio diagnostics"),
-    NetworkSettings("Network settings")
+    NetworkSettings("Network settings"),
+    PrivacySettings("Privacy settings")
 }
 
 /** Whether the destination of an [Action] could be resolved before it was offered. */

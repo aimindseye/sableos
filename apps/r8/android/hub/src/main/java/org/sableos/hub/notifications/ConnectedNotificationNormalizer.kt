@@ -57,11 +57,7 @@ internal class ConnectedNotificationNormalizer(
         val conversationTitle =
             envelope.conversationTitle
                 ?: envelope.notificationTitle
-                ?: envelope.messages
-                    .asReversed()
-                    .firstNotNullOfOrNull { message ->
-                        message.senderLabel
-                    }
+                ?: latestSenderLabel(envelope)
                 ?: sourceLabel
 
         return ConnectedNotificationNormalization(
@@ -87,6 +83,10 @@ internal class ConnectedNotificationNormalizer(
                     },
         )
     }
+
+    /** The newest message's sender, or null when no message names one. */
+    private fun latestSenderLabel(envelope: ConnectedNotificationEnvelope): String? =
+        envelope.messages.lastOrNull { message -> message.senderLabel != null }?.senderLabel
 
     private fun buildRecords(
         envelope: ConnectedNotificationEnvelope,
@@ -114,6 +114,7 @@ internal class ConnectedNotificationNormalizer(
                     body = envelope.notificationBody,
                     timestampMillis = envelope.postTimeMillis,
                     incoming = true,
+                    category = envelope.category,
                 ),
             )
         } else {
@@ -136,6 +137,7 @@ internal class ConnectedNotificationNormalizer(
                     body = message.body,
                     timestampMillis = message.timestampMillis,
                     incoming = message.incoming,
+                    category = envelope.category,
                 )
             }
         }
