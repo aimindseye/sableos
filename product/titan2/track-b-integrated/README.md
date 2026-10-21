@@ -1,3 +1,13 @@
+## 2026-10-21 existing ai-g732 TB2 product selection (supersedes hypothetical duplicate import)
+
+The owner supplied the actual `vendor/sable/tb2-rebuilt/tb2-apps.mk` contents (reported SHA256 `8264edf7985b9aa1f62e36acbdd0d07767834705c6aee8680cd733e9232c6e7f`). It selects exactly **13** existing `TB2Sable*` modules, all matching the previously uploaded `vendor/sable/tb2-rebuilt/Android.bp` imports: **7 presigned** and **6 default-dev-cert**. The active `rom.mk` includes `tb2-product.mk`, which imports that selected list. `trackb13ims/track-b.mk` separately selects **FLOSS PhhIms/Iwlan** source without selecting its old `TrackBSable*` import definitions. No duplicate installation of that latter set was established.
+
+**Treat the earlier new `SableTB2*` staging proposal in this README as nonactive until reconciled, NOT as a completed duplicate graph or signed installed product.** `build/titan2/stage-track-b-product.sh` deliberately refuses to append its additional app/IMS makefile when these actual host includes are present. The branch also repaired first-ten-row malformed TSV separators, but their debug APK signing assumptions still do **not** match six existing default-dev-cert Soong imports; do not copy signed debug APKs into unsigned-only module definitions.
+
+See [existing host graph and signing matrix](EXISTING_HOST_GRAPH_20261021.md). Next is to reuse the existing 13 imports and their source-bound APK build/receipt metadata within the canonical single-run workflow, then resolve SableLauncher HOME + Quickstep RECENTS-only and remaining Q25/IMS. No standalone module quality reruns. Source-selection **is not** native compilation, IMS runtime proof or flash readiness.
+
+---
+
 # Titan 2 Track B — selected engineering product source
 
 This is source integration, **not** a production/flash-ready or fully Q25-conformant product.
