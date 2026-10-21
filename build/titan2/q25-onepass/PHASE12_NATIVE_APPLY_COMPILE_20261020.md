@@ -17,12 +17,12 @@ bash operator.sh run \
   --android /srv/sable-build/workspaces/titan2-track-b/android \
   --stage "$HOME/Downloads/TB2_A16_NATIVE_OWNER_STAGE_V1_1_20261020" \
   --out "$HOME/Downloads/TB2_A16_PHASE12_RESULT_20261020" \
-  --lunch-target tdgsi_arm64_ab-userdebug \
+  --lunch-target treble_arm64_bvN-bp4a-userdebug \
   --jobs 4 \
   --ack INTEGRATE_AND_COMPILE_Q25_A16_NATIVE_SEVEN_ONLY
 ```
 
-The lunch target is an explicit **candidate** based on prior `out/target/product/tdgsi_arm64_ab` evidence. Change it to the actual qualified Track B target if needed; the runner refuses fallback to unrelated products. It calls `source build/envsetup.sh; lunch <target>; m -j4 SystemUI Dialer`, **not** `m systemimage` or the full `sable.sh` release/image builder.
+The generated Treble engineering **lunch product** is `treble_arm64_bvN`, with Android 16 `bp4a` release and `userdebug` variant; `tdgsi_arm64_ab` is its `PRODUCT_DEVICE` and output-directory name, NOT its lunch name. The later Sable wrapper uses `sable_titan2-bp4a-userdebug` only when its product graph is present. Verify the registered product/release using `source build/envsetup.sh; list_products; list_releases treble_arm64_bvN` and a read-only lunch before invoking `run`. Do not silently switch products. It calls `source build/envsetup.sh; lunch <target>; m -j4 SystemUI Dialer`, **not** `m systemimage` or the full `sable.sh` release/image builder.
 
 The runner strictly pins all seven V1.1 before and after SHA256 values and source actions, checks candidate and backup bytes, symlinks and all exact current A16 file hashes before mutating. Atomic source writes preserve modes; on native compilation failure/timeout/interruption it restores originals and removes new helpers only if promoted hashes remain unchanged. Concurrent modifications stop with `HOLD_ROLLBACK_INCOMPLETE`. Native build outputs in Android `out/` are not removed. Successful module build leaves the seven source changes applied **uncommitted**, without firmware/device/image side effects. `RESULT.json` and `native-modules.log` preserve actual results.
 
@@ -43,3 +43,11 @@ Reviewed existing scope: PR #342 is historical OEM IMS qualification, not select
 **Q25 full source completion remains OPEN** for privileged AppLock/Freezer/Vault/Dual, installed Browser and first-boot Setup owner, full Keyguard type-ahead, Phone/Contacts, permanent Launcher3QuickStep HOME/Recents, effective installed READ_SMS, Camera2/QuickReview and platform product wiring. IMS provider selection (FLOSS vs OEM), selected G1/G2/G3 and live registration/VoLTE remain separate. The script does **not** claim any of those gates passed and does not invoke `sable.sh`, create an image, or flash.
 
 **Final archive safety correction:** The verified operator also resolves output directory parents before confinement checks and, on failed compilation, removes newly created empty source directories (never recursively deleting populated directories). Added regression coverage for symlinked output parents and exact rollback of newly added directory trees. Final local suite **12/12 PASS**, latest local 250× seven-file SHA preflight ~0.585s. This supersedes earlier 11-test artifact/hash referenced in preliminary PR discussion; no host native run has occurred.
+
+## 2026-10-20 actual ai-g732 RC=1 adjudication — build never reached Soong
+
+Actual 12/12 regression suite PASS; operator applied all seven staged source candidates, then exited in 0.114 seconds from AOSP `lunch` with: `Invalid lunch combo: tdgsi_arm64_ab-userdebug; Valid combos must be of the form <product>-<release>-<variant>`. **Soong never ran**, module compilation status FAIL denotes *environment selection failure*, not a Java/Kotlin error. The runner restored all seven originals and deleted three new files: `rollback=PASS`, `rollback_errors=[]`, `source_mutation=false`, every original SHA256 verified by user. No image/device/flash. This failure was introduced by the default target used in the assistant handoff, **not** the Q25 source candidate.
+
+Historical canonical proof: `build/titan2/build-n1b2-image-candidate.sh` defines `DEFAULT_LUNCH_TARGET=treble_arm64_bvN-bp4a-userdebug` and `DEFAULT_PRODUCT_OUT_REL=target/product/tdgsi_arm64_ab`; `build/titan2/run-n1g-sable-product-identity.sh` describes the later wrapper `sable_titan2-bp4a-user`. The active Track B repo must resolve the chosen *actual* product. **Correction**: run read-only AOSP envsetup + `lunch treble_arm64_bvN-bp4a-userdebug` and confirm `TARGET_PRODUCT=treble_arm64_bvN`, `TARGET_RELEASE=bp4a`, `TARGET_BUILD_VARIANT=userdebug` before a new seven-source apply/compile run. If the generated Treble product is missing, HOLD and inspect the current product graph; do not substitute a random combo. Use a **fresh** out receipt path.
+
+The standalone Phase12 V1 ZIP previously distributed defaults incorrectly to `tdgsi_arm64_ab-userdebug` when `--lunch-target` is omitted; always pass a verified explicit three-part target until the operator itself is revised. No repeat hash/bootstrap scan or immediate image build.
