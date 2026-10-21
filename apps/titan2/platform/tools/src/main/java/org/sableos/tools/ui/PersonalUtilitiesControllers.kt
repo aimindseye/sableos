@@ -16,14 +16,14 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import org.sableos.tools.core.Command
 import java.io.File
 import java.io.IOException
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
+import org.sableos.tools.core.Command
 
-/** Private Notes inside the existing Sable Tools package: no exported content provider or network sync. */
+/** Private Notes in the existing Sable Tools package: no exported provider or network sync. */
 class NotesController(private val host: ToolHost) : ToolController {
     private val ctx = host.activity
     private val store = PrivateNotes(ctx.filesDir)
@@ -34,23 +34,34 @@ class NotesController(private val host: ToolHost) : ToolController {
 
     private fun showList() {
         body.removeAllViews()
-        body.addView(Ui.body(ctx, "Stored only in Sable Tools private app data. Use Enter to open a note."))
+        body.addView(
+            Ui.body(ctx, "Stored only in Sable Tools private app data. Use Enter to open a note.")
+        )
         body.addView(Ui.row(ctx, "+ New note") { edit(store.create()) })
         val notes = store.list()
         if (notes.isEmpty()) body.addView(Ui.body(ctx, "No notes yet."))
         notes.take(MAX_VISIBLE).forEach { id ->
             val title = try {
-                store.read(id).lineSequence().firstOrNull().orEmpty().take(TITLE_LIMIT).ifBlank { "Untitled note" }
+                store.read(id)
+                    .lineSequence()
+                    .firstOrNull()
+                    .orEmpty()
+                    .take(TITLE_LIMIT)
+                    .ifBlank { "Untitled note" }
             } catch (_: IOException) {
                 "Unreadable note"
             }
             body.addView(Ui.row(ctx, title) { edit(id) })
         }
-        if (notes.size > MAX_VISIBLE) body.addView(Ui.body(ctx, "Showing the most recent $MAX_VISIBLE notes."))
+        if (notes.size > MAX_VISIBLE) {
+            body.addView(Ui.body(ctx, "Showing the most recent $MAX_VISIBLE notes."))
+        }
     }
 
     private fun edit(id: String) {
-        val original = try { store.read(id) } catch (_: IOException) {
+        val original = try {
+            store.read(id)
+        } catch (_: IOException) {
             host.toast("Could not read note")
             return
         }
@@ -61,44 +72,50 @@ class NotesController(private val host: ToolHost) : ToolController {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or
                 InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
             setSingleLine(false)
-            minLines = 8
+            minLines = NOTES_EDITOR_MIN_LINES
             gravity = Gravity.TOP
             setText(original)
             contentDescription = "Edit note"
         }
         body.addView(editor)
-        body.addView(Ui.row(ctx, "Save note") {
-            try {
-                store.write(id, editor.text.toString())
-                showList()
-            } catch (_: IOException) {
-                host.toast("Note save failed or exceeds 64 KiB")
+        body.addView(
+            Ui.row(ctx, "Save note") {
+                try {
+                    store.write(id, editor.text.toString())
+                    showList()
+                } catch (_: IOException) {
+                    host.toast("Note save failed or exceeds 64 KiB")
+                }
             }
-        })
+        )
         body.addView(Ui.row(ctx, "Discard changes") { showList() })
         if (original.isNotEmpty()) {
-            body.addView(Ui.row(ctx, "Delete note") {
-                AlertDialog.Builder(ctx).setTitle("Delete this note?")
-                    .setMessage("This cannot be undone.")
-                    .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Delete") { _, _ ->
-                        if (!store.delete(id)) host.toast("Delete failed")
-                        showList()
-                    }.show()
-            })
+            body.addView(
+                Ui.row(ctx, "Delete note") {
+                    AlertDialog.Builder(ctx).setTitle("Delete this note?")
+                        .setMessage("This cannot be undone.")
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Delete") { _, _ ->
+                            if (!store.delete(id)) host.toast("Delete failed")
+                            showList()
+                        }.show()
+                }
+            )
         }
         editor.requestFocus()
     }
 
-    override fun info() = "Text notes only; 64 KiB maximum per note, app-private files, no cloud or sharing."
+    override fun info() =
+        "Text notes only; 64 KiB maximum per note, app-private files, no cloud or sharing."
 
     private companion object {
+        const val NOTES_EDITOR_MIN_LINES = 8
         const val TITLE_LIMIT = 60
         const val MAX_VISIBLE = 40
     }
 }
 
-/** Microphone permission is obtained by ToolActivity at tool entry. Backgrounding stops capture and playback. */
+/** Microphone permission comes from ToolActivity at entry. Backgrounding stops capture/playback. */
 class VoiceRecorderController(private val host: ToolHost) : ToolController {
     private val ctx = host.activity
     private val root = Ui.column(ctx)
@@ -113,43 +130,64 @@ class VoiceRecorderController(private val host: ToolHost) : ToolController {
 
     private fun render() {
         root.removeAllViews()
-        root.addView(Ui.body(ctx, "Recordings stay inside Sable Tools. Capture stops when this screen is left."))
-        status = Ui.body(ctx, if (recorder == null) "Not recording" else "Recording — microphone in use")
+        root.addView(
+            Ui.body(
+                ctx,
+                "Recordings stay inside Sable Tools. " +
+                    "Capture stops when this screen is left."
+            )
+        )
+        status = Ui.body(
+            ctx,
+            if (recorder == null) "Not recording" else "Recording — microphone in use"
+        )
         root.addView(status)
-        root.addView(Ui.row(ctx, if (recorder == null) "Start recording" else "Stop and save") {
-            if (recorder == null) begin() else end()
-            render()
-        })
+        root.addView(
+            Ui.row(ctx, if (recorder == null) "Start recording" else "Stop and save") {
+                if (recorder == null) begin() else end()
+                render()
+            }
+        )
         root.addView(Ui.row(ctx, "Stop playback") { stopPlayback() })
         val files = directory.listFiles { file -> file.isFile && file.name.matches(CLIP_PATTERN) }
             ?.sortedByDescending { it.lastModified() }.orEmpty()
         if (files.isEmpty()) root.addView(Ui.body(ctx, "No recordings yet."))
         files.take(MAX_VISIBLE).forEach { clip ->
             root.addView(Ui.row(ctx, "Play ${clip.name}") { play(clip) })
-            root.addView(Ui.row(ctx, "Delete ${clip.name}") {
-                AlertDialog.Builder(ctx).setTitle("Delete recording?")
-                    .setNegativeButton("Cancel", null)
-                    .setPositiveButton("Delete") { _, _ ->
-                        stopPlayback()
-                        if (!clip.delete()) host.toast("Delete failed")
-                        render()
-                    }.show()
-            })
+            root.addView(
+                Ui.row(ctx, "Delete ${clip.name}") {
+                    AlertDialog.Builder(ctx).setTitle("Delete recording?")
+                        .setNegativeButton("Cancel", null)
+                        .setPositiveButton("Delete") { _, _ ->
+                            stopPlayback()
+                            if (!clip.delete()) host.toast("Delete failed")
+                            render()
+                        }.show()
+                }
+            )
         }
-        if (files.size > MAX_VISIBLE) root.addView(Ui.body(ctx, "Showing latest $MAX_VISIBLE recordings."))
+        if (files.size > MAX_VISIBLE) {
+            root.addView(Ui.body(ctx, "Showing latest $MAX_VISIBLE recordings."))
+        }
     }
 
+    // Each early return is a fail-closed resource-acquisition exit.
+    @Suppress("ReturnCount")
     private fun begin() {
         if (recorder != null) return
         if (!directory.isDirectory && !directory.mkdirs()) {
             host.toast("Recording storage unavailable")
             return
         }
-        val clip = try { File.createTempFile("rec-", ".m4a", directory) } catch (_: IOException) {
+        val clip = try {
+            File.createTempFile("rec-", ".m4a", directory)
+        } catch (_: IOException) {
             host.toast("Cannot create recording")
             return
         }
-        val fresh = try { MediaRecorder(ctx) } catch (_: RuntimeException) {
+        val fresh = try {
+            MediaRecorder(ctx)
+        } catch (_: RuntimeException) {
             clip.delete()
             host.toast("Microphone unavailable")
             return
@@ -202,7 +240,10 @@ class VoiceRecorderController(private val host: ToolHost) : ToolController {
             p.setDataSource(clip.absolutePath)
             p.setOnPreparedListener { prepared -> if (player === prepared) prepared.start() }
             p.setOnCompletionListener { stopPlayback() }
-            p.setOnErrorListener { _, _, _ -> stopPlayback(); true }
+            p.setOnErrorListener { _, _, _ ->
+                stopPlayback()
+                true
+            }
             p.prepareAsync()
         } catch (_: Exception) {
             stopPlayback()
@@ -217,8 +258,14 @@ class VoiceRecorderController(private val host: ToolHost) : ToolController {
         runCatching { active.release() }
     }
 
-    override fun stop() { end(); stopPlayback(); render() }
-    override fun info() = "Audio is only recorded while this tool is foregrounded and has microphone permission. Maximum five minutes per clip."
+    override fun stop() {
+        end()
+        stopPlayback()
+        render()
+    }
+    override fun info() =
+        "Audio is only recorded while this tool is foregrounded and has microphone permission. " +
+            "Maximum five minutes per clip."
 
     private companion object {
         val CLIP_PATTERN = Regex("rec-[A-Za-z0-9-]+\\.m4a")
@@ -227,7 +274,7 @@ class VoiceRecorderController(private val host: ToolHost) : ToolController {
     }
 }
 
-/** App-local clock and elapsed stopwatch. Actual alarms are always delegated to the Android Clock owner. */
+/** App-local stopwatch; actual alarms are always delegated to the Android Clock owner. */
 class ClockStopwatchController(private val host: ToolHost) : ToolController {
     private val ctx = host.activity
     private val handler = Handler(Looper.getMainLooper())
@@ -241,7 +288,13 @@ class ClockStopwatchController(private val host: ToolHost) : ToolController {
         override fun run() {
             current.text = DateFormat.getTimeInstance(DateFormat.MEDIUM).format(Date())
             val ms = duration()
-            elapsed.text = String.format(Locale.getDefault(), "%02d:%02d.%01d", ms / 60000, ms / 1000 % 60, ms % 1000 / 100)
+            elapsed.text = String.format(
+                Locale.getDefault(),
+                "%02d:%02d.%01d",
+                ms / MINUTE_MS,
+                ms / SECOND_MS % SECONDS_PER_MINUTE,
+                ms % SECOND_MS / TENTH_SECOND_MS
+            )
             handler.postDelayed(this, TICK_MS)
         }
     }
@@ -252,30 +305,57 @@ class ClockStopwatchController(private val host: ToolHost) : ToolController {
         body.addView(elapsed)
         body.addView(Ui.row(ctx, "Start / pause") { toggle() })
         body.addView(Ui.row(ctx, "Reset stopwatch") { reset() })
-        body.addView(Ui.row(ctx, "Set alarm in system Clock") {
-            try {
-                ctx.startActivity(Intent(AlarmClock.ACTION_SET_ALARM))
-            } catch (_: ActivityNotFoundException) {
-                host.toast("No installed Clock handles alarms")
+        body.addView(
+            Ui.row(ctx, "Set alarm in system Clock") {
+                try {
+                    ctx.startActivity(Intent(AlarmClock.ACTION_SET_ALARM))
+                } catch (_: ActivityNotFoundException) {
+                    host.toast("No installed Clock handles alarms")
+                }
             }
-        })
+        )
         addView(body)
     }
 
-    private fun duration(): Long = accumulatedMs + if (running) SystemClock.elapsedRealtime() - startedMs else 0L
+    private fun duration(): Long =
+        accumulatedMs + if (running) SystemClock.elapsedRealtime() - startedMs else 0L
     private fun toggle() {
         if (running) accumulatedMs = duration() else startedMs = SystemClock.elapsedRealtime()
         running = !running
     }
-    private fun reset() { accumulatedMs = 0; startedMs = SystemClock.elapsedRealtime(); running = false }
+    private fun reset() {
+        accumulatedMs = 0
+        startedMs = SystemClock.elapsedRealtime()
+        running = false
+    }
     override fun onCommand(c: Command): Boolean = when (c) {
-        Command.Toggle -> { toggle(); true }
-        Command.Reset -> { reset(); true }
+        Command.Toggle -> {
+            toggle()
+            true
+        }
+
+        Command.Reset -> {
+            reset()
+            true
+        }
+
         else -> false
     }
-    override fun start() { handler.removeCallbacks(tick); handler.post(tick) }
-    override fun stop() { handler.removeCallbacks(tick) }
-    override fun info() = "Stopwatch uses monotonic elapsed time while this process stays alive; no background alarm service."
+    override fun start() {
+        handler.removeCallbacks(tick)
+        handler.post(tick)
+    }
+    override fun stop() {
+        handler.removeCallbacks(tick)
+    }
+    override fun info() = "Stopwatch uses monotonic elapsed time while this process stays alive; " +
+        "no background alarm service."
 
-    private companion object { const val TICK_MS = 200L }
+    private companion object {
+        const val TICK_MS = 200L
+        const val MINUTE_MS = 60_000L
+        const val SECOND_MS = 1_000L
+        const val SECONDS_PER_MINUTE = 60L
+        const val TENTH_SECOND_MS = 100L
+    }
 }

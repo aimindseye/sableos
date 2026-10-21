@@ -70,14 +70,16 @@ object SetupRows {
             provisioningDetail(snapshot.provisioningState),
             Readiness.Informational
         ),
-        Item(
-            "messages-sms",
-            "Messages SMS access",
-            smsPermissionDetail(snapshot.messagesReadPermission),
-            Readiness.Informational,
-            Action.DefaultApps
-        )
+        messagesPermission(snapshot.messagesReadPermission)
     ).map { applyTarget(it, targets(it.action)) }
+
+    private fun messagesPermission(value: Observed): Item = Item(
+        "messages-sms",
+        "Messages SMS access",
+        smsPermissionDetail(value),
+        Readiness.Informational,
+        Action.DefaultApps
+    )
 
     /** Browser detection reads an actual Android intent handler. */
     fun browserDetail(value: Observed): String = OwnerEvidence.browser(value)
@@ -97,7 +99,9 @@ object SetupRows {
             "READ_SMS is not granted to Sable Messages. Installer/role policy and user " +
                 "authorization must be checked; no permission was changed here."
         }
+
         Observed.Absent -> "Sable Messages is not installed or its permission state is unavailable."
+
         Observed.Failed -> "Could not verify READ_SMS on this device; no access is assumed."
     }
 

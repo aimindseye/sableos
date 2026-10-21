@@ -94,12 +94,17 @@ class ControlDeckTest {
         assertEquals(CameraAction.ZoomIn, CameraKeyMap.resolve("z", false))
         assertEquals(CameraAction.ZoomOut, CameraKeyMap.resolve("z", true))
         assertEquals(CameraAction.RawToggle, CameraKeyMap.resolve("r", false))
-        assertEquals(Cmd.Act(CameraAction.RawToggle), ActionRouter.route(UiMode.Photo, CameraAction.RawToggle))
+        assertEquals(
+            Cmd.Act(CameraAction.RawToggle),
+            ActionRouter.route(UiMode.Photo, CameraAction.RawToggle)
+        )
         assertEquals(Cmd.Nop, ActionRouter.route(UiMode.Video, CameraAction.RawToggle))
         assertTrue(ControlGate.check(CameraAction.RawToggle, ctx(UiMode.Photo, rear)).isOpen)
         assertFalse(ControlGate.check(CameraAction.RawToggle, ctx(UiMode.Photo, front)).isOpen)
         assertFalse(ControlGate.check(CameraAction.RawToggle, ctx(UiMode.Video, rear)).isOpen)
-        assertFalse(ControlGate.check(CameraAction.RawToggle, ctx(UiMode.Photo, rear, rec = true)).isOpen)
+        assertFalse(
+            ControlGate.check(CameraAction.RawToggle, ctx(UiMode.Photo, rear, rec = true)).isOpen
+        )
     }
 
     @Test fun func1AndFunc2StayUnboundEverywhere() {

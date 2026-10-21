@@ -31,8 +31,15 @@ import org.sableos.titan2.camera.core.DeckPresentation
 import org.sableos.titan2.camera.core.DeckState
 import org.sableos.titan2.camera.core.RecState
 import org.sableos.titan2.camera.core.Size
-import org.sableos.titan2.camera.core.UiMode
 import org.sableos.titan2.camera.core.TouchFallback
+import org.sableos.titan2.camera.core.UiMode
+
+// Pixel-angle and Compose presentation values are not permissions or runtime policy.
+private const val HUD_HINT_SP = 11
+private const val HUD_MUTED_ARGB = 0xFF8BA6B8
+private const val QUARTER_TURN_DEGREES = 90f
+private const val HALF_TURN_DEGREES = 180f
+private const val SELECTED_MODE_ARGB = 0xFF55B9FF
 
 /** One immutable rendering snapshot, with no control/permission ownership. */
 internal data class CameraScreenInfo(
@@ -62,6 +69,7 @@ internal data class CameraScreenActions(
 )
 
 /** Pure Compose layout; real touch and key commands still use the activity's one action router. */
+@Suppress("FunctionNaming")
 @Composable
 internal fun CameraScreenContent(frame: CameraScreenFrame, actions: CameraScreenActions) {
     val dc = frame.context
@@ -86,16 +94,23 @@ internal fun CameraScreenContent(frame: CameraScreenFrame, actions: CameraScreen
             )
         }
         Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 6.dp)) {
-            if (DeckOrientation.touchChromeVisible(frame.presentation, frame.deck.touchChromeRevealed)) {
+            if (
+                DeckOrientation.touchChromeVisible(
+                    frame.presentation,
+                    frame.deck.touchChromeRevealed
+                )
+            ) {
                 actions.modeSelector(
                     Modifier.align(Alignment.CenterHorizontally).padding(vertical = 2.dp)
                 )
-                if (dc != null) TouchControlBar(TouchFallback.controls(dc), actions.action, Modifier)
+                if (dc != null) {
+                    TouchControlBar(TouchFallback.controls(dc), actions.action, Modifier)
+                }
             }
             Text(
                 "H or ? shows the controls",
-                color = Color(0xFF8BA6B8),
-                fontSize = 11.sp,
+                color = Color(HUD_MUTED_ARGB),
+                fontSize = HUD_HINT_SP.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
@@ -119,14 +134,15 @@ internal fun transformCameraPreview(tv: TextureView, ps: Size, rotation: Int) {
             m.setRectToRect(view, buf, Matrix.ScaleToFit.FILL)
             val s = maxOf(vh / ps.h, vw / ps.w)
             m.postScale(s, s, cx, cy)
-            m.postRotate(90f * (rotation - 2), cx, cy)
+            m.postRotate(QUARTER_TURN_DEGREES * (rotation - Surface.ROTATION_180), cx, cy)
         }
 
-        Surface.ROTATION_180 -> m.postRotate(180f, cx, cy)
+        Surface.ROTATION_180 -> m.postRotate(HALF_TURN_DEGREES, cx, cy)
     }
     tv.setTransform(m)
 }
 
+@Suppress("FunctionNaming")
 @Composable
 internal fun CameraPreviewSurface(
     modifier: Modifier,
@@ -163,6 +179,7 @@ internal fun cameraSurfaceListener(
     }
 }
 
+@Suppress("FunctionNaming")
 @Composable
 internal fun CameraModeSelector(
     avail: List<UiMode>,
@@ -176,7 +193,7 @@ internal fun CameraModeSelector(
             Text(
                 m.label,
                 fontSize = 14.sp,
-                color = if (m == selected) Color(0xFF55B9FF) else Color.White,
+                color = if (m == selected) Color(SELECTED_MODE_ARGB) else Color.White,
                 modifier = Modifier.clickable(enabled = enabled) {
                     onSelect(m)
                 }.padding(horizontal = 10.dp, vertical = 4.dp)

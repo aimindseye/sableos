@@ -88,7 +88,6 @@ private const val HALF_TURN = 180
 private const val THREE_QUARTER_TURN = 270
 private const val RECORDING_POLL_MS = 250L
 
-
 /**
  * Keyboard-first camera with three modes: Video, Photo, Pro (stock order, minus Timelapse/More
  * which are not built).
@@ -294,7 +293,6 @@ class MainActivity : ComponentActivity() {
         if (tv != null && ps != null) transformCameraPreview(tv, ps, rotation)
     }
 
-
     private fun refreshHud() {
         val zoomText = "%.1f".format(controller.zoom)
         hud = when (uiMode) {
@@ -474,7 +472,11 @@ class MainActivity : ComponentActivity() {
 
     private fun nextVideoQuality(cam: org.sableos.titan2.camera.core.CameraReport) {
         if (recState != RecState.Idle) return
-        videoOption = VideoPlanner.next(VideoPlanner.options(cam.camera.videoSizes), videoOption, +1)
+        videoOption = VideoPlanner.next(
+            VideoPlanner.options(cam.camera.videoSizes),
+            videoOption,
+            +1
+        )
         restart()
     }
 
@@ -491,7 +493,11 @@ class MainActivity : ComponentActivity() {
         // ControlDeck already verified HAL RAW capability; choose a single capture path.
         mode = if (mode == CaptureMode.Raw) CaptureMode.Auto else CaptureMode.Raw
         compare = false
-        status = if (mode == CaptureMode.Raw) "RAW DNG capture selected" else "Auto photo capture selected"
+        status = if (mode == CaptureMode.Raw) {
+            "RAW DNG capture selected"
+        } else {
+            "Auto photo capture selected"
+        }
         restart()
     }
 
@@ -688,11 +694,13 @@ class MainActivity : ComponentActivity() {
                 previewAspect = previewAspect,
                 presentation = DeckOrientation.presentation(cfg.screenWidthDp, cfg.screenHeightDp),
                 info = CameraScreenInfo(
-                    hud, status,
+                    hud,
+                    status,
                     report?.mismatches?.firstOrNull {
                         it.kind != org.sableos.titan2.camera.core.MismatchKind.Note
                     }?.message,
-                    recState, recMs
+                    recState,
+                    recMs
                 )
             ),
             actions = CameraScreenActions(
@@ -702,8 +710,11 @@ class MainActivity : ComponentActivity() {
                 modeSelector = { modifier ->
                     val avail = report?.camera(camId)?.let { ActionRouter.available(it) }.orEmpty()
                     CameraModeSelector(
-                        avail, uiMode, recState == RecState.Idle,
-                        { selected -> report?.let { switchUi(selected, it) } }, modifier
+                        avail,
+                        uiMode,
+                        recState == RecState.Idle,
+                        { selected -> report?.let { switchUi(selected, it) } },
+                        modifier
                     )
                 },
                 revealTouch = { deck = ControlDeck.toggleTouchChrome(deck) },
@@ -725,8 +736,6 @@ class MainActivity : ComponentActivity() {
             controller.closeSession()
         }
     )
-
-
 }
 
 private val deckAccent = Color(0xFF55B9FF)

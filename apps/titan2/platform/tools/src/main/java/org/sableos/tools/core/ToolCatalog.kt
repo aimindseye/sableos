@@ -52,7 +52,12 @@ enum class Tool(
 ) {
     // Utilities
     // Personal software utilities (independent of hardware capability); existing Sable Tools owns them.
-    NOTES(Section.UTILITIES, "Notes", ToolKind.ACTION, keywords = listOf("writing", "memo", "text")),
+    NOTES(
+        Section.UTILITIES,
+        "Notes",
+        ToolKind.ACTION,
+        keywords = listOf("writing", "memo", "text")
+    ),
     VOICE_RECORDER(
         Section.UTILITIES,
         "Voice Recorder",

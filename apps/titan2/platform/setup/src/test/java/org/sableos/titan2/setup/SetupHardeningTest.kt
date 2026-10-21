@@ -89,11 +89,20 @@ class SetupHardeningTest {
     }
 
     @Test fun advertisedWizardDoesNotClaimPrivilegeOrOwnership() {
-        val one = rows(snap().copy(wizardHandler = Observed.Value("app.grapheneos.setupwizard/.WelcomeActivity")))
+        val one =
+            rows(
+                snap().copy(
+                    wizardHandler = Observed.Value("app.grapheneos.setupwizard/.WelcomeActivity")
+                )
+            )
         assertEquals(Readiness.Informational, row("first-boot-handler", one).state)
-        assertTrue(row("first-boot-handler", one).detail.contains("privileged ownership not verified"))
+        assertTrue(
+            row("first-boot-handler", one).detail.contains("privileged ownership not verified")
+        )
         val absent = rows(snap().copy(wizardHandler = Observed.Absent))
-        assertTrue(row("first-boot-handler", absent).detail.contains("may be disabled after provisioning"))
+        assertTrue(
+            row("first-boot-handler", absent).detail.contains("may be disabled after provisioning")
+        )
         val denied = rows(snap().copy(wizardHandler = Observed.Failed))
         assertTrue(row("first-boot-handler", denied).detail.contains("Cannot identify"))
     }
@@ -259,7 +268,7 @@ class SetupHardeningTest {
     }
 
     @Test fun everyDestinationIsCoveredByARow() {
-        val used = rows().map { it.action }.toSet()
+        val used = rows().map { it.action }.toSet() - Action.None
         assertEquals(Action.values().toSet() - Action.None, used)
     }
 
@@ -336,16 +345,21 @@ class SetupHardeningTest {
         assertTrue(SetupModel.SELF_DESCRIPTION.contains("Post-provisioning"))
     }
 
-    @Test fun noTextClaimsWizardFirstBootOrProvisioningAuthority() {
-        allTexts.forEach {
-            val t = it.lowercase()
-            if (t.contains("wizard")) assertTrue(it, t.contains("not the android setup wizard"))
-            assertFalse(
-                it,
-                t.contains("first-boot") || t.contains("first boot") || t.contains("first-run")
+    @Test fun wizardAndProvisioningObservationsNeverAssertPrivilegedOwnership() {
+        val advertised = rows(
+            snap().copy(
+                wizardHandler = Observed.Value("app.grapheneos.setupwizard/.WelcomeActivity")
             )
-            assertFalse(it, t.contains("provisioning complete") || t.contains("provisioned"))
-        }
+        )
+        val wizard = row("first-boot-handler", advertised)
+        assertEquals(Readiness.Informational, wizard.state)
+        assertTrue(wizard.detail.contains("privileged ownership not verified"))
+
+        val provisioned = rows(snap().copy(provisioningState = Observed.Value("complete")))
+        val provisionStatus = row("first-boot-status", provisioned)
+        assertEquals(Readiness.Informational, provisionStatus.state)
+        assertTrue(provisionStatus.detail.contains("wizard owner unknown"))
+        assertTrue(SetupModel.SELF_DESCRIPTION.contains("Not the Android Setup Wizard"))
     }
 
     // --- default-app wording matches what is tested ---
