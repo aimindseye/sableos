@@ -72,6 +72,7 @@ for entry in "${entries[@]}"; do
 done
 mv -f "$STAGE/.Android.bp.tb2-new" "$STAGE/Android.bp"
 install -m 0644 "$PRODUCT/sable-track-b.mk" "$STAGE/sable-track-b.mk"
+install -m 0644 "$PRODUCT/ims-oem-only.mk" "$STAGE/ims-oem-only.mk"
 ROM="$ANDROID/device/phh/treble/rom.mk"
 inc='$(call inherit-product, vendor/sable/trackb/sable-track-b.mk)'
 if ! grep -Fxq "$inc" "$ROM"; then
