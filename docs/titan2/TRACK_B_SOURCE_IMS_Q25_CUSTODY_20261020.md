@@ -300,3 +300,32 @@ Unchanged remaining Q25 source/security, effective selected-image HOME/READ_SMS/
 **IMS effective provider not selected:** PR342 M4/M11/R2 historic G1/G2/G3 success reused strictly within original scopes; Track B staged FLOSS `PhhIms/Iwlan` and canonical C1 OEM `com.mediatek.ims` are alternative paths. New selected image still needs only one effective provider, final source/product graph, actual cert/UID/SELinux and configured JAR/bootclasspath G2 and complete ELF namespace G3. Live SIM1/SIM2/DSDS VoLTE necessarily remains a later device gate, not a preimage gate. Historical M4 recovered rather than Android-booted.
 
 **New sealed host-only preimage-audit operator** `TB2_Q25_IMS_PREIMAGE_INTEGRATED_GATE_V1.zip`, SHA256 `1170c3d41d2ba3ba8cd735332144f081f677a176aa131633361a1dfc1c2dc607` (local ZIP only, **not Git-committed**). It binds original known native A16 after-SHAs+combined evidence, detached PR346 code/markers, optional real quality output+two logs, and audits every current Q25/privileged/IMS preimage gate; explicit separate postimage/runtime gates. Expected `HOLD_PREIMAGE_GATES_OPEN`, exit 78, image_build_authorized=false. It is **not a full IMS fix implementation, not a Q25 feature implementation and not an image gate PASS**. Python/Bash syntax, ZIP CRC and manifest checks PASS, 27/27 local synthetic regressions PASS; actual ai-g732 run of this new operator PENDING. [PR346 engineering ledger](https://github.com/aimindseye/sableos/blob/titan2/track-b-portable-hub-tools-reuse-20261020/build/titan2/q25-onepass/PREIMAGE_Q25_IMS_ALL_GATES_20261021.md) contains exact commands/backlog/authority. Full `sable.sh` image build, device contact and flash remain held.
+
+
+## ACTUAL_41_GATE_HOST_AUDIT_20261021
+
+The owner ran the sealed **TB2_Q25_IMS_PREIMAGE_INTEGRATED_GATE_V1** on the real ai-g732 Android16 and detached PR346 source, after verifying outer ZIP integrity and **9/9 internal SHA256 members**, and executing **27/27 Python regressions PASS (0.071s)**. The **real host** `operator.sh audit --ims UNSELECTED` returned:
+
+```
+status=HOLD_PREIMAGE_GATES_OPEN
+preimage_total=41
+preimage_pass=2
+preimage_open=39
+preimage_hold=0
+postimage_deferred=3
+runtime_deferred=4
+quality_invoked=false
+ims_provider_requested=UNSELECTED
+ims_selected_product_verified=false
+ims_conflict_free_verified=false
+image_build_authorized=false
+flash_authorized=false
+```
+
+The two PASSes are the existing, byte-bound **P01 seven-source native compile** and **P02 isolated PR346 app-source** gates; optional P03 offline Gradle quality remains OPEN, not a failed Gradle run. Native Phase12/13 combined source freeze remains unchanged. No new image, AOSP source write, device contact or flash took place.
+
+The host discovery confirmed `vendor/sable/trackb13ims/Android.bp` (FLOSS staging), `product/titan2/n1i-c1/Android.bp` (OEM C1 reference source) and selected `device/phh/treble/rom.mk` all exist, but **NONE** proves the installed **single effective IMS provider**. Historical PR342 G1/G2/G3 results are not a selected-image PASS. The retained PR346 patch inventory found **26** patch candidates. Actual A16 framework owner directories: Dialer, DocumentsUI, Launcher3 and Settings present; `packages/apps/Jelly` Browser and `packages/apps/SetupWizard` absent. Those Q25 patches require real selected owner adapters rather than blind copying. Shared SableLauncher HOME vs Track B Launcher3QuickStep HOME remains an explicit unresolved architecture decision.
+
+**Reporting quality finding:** current v1 `patch_counts_by_owner` accidentally uses the fourth path component for `packages/apps/*`, resulting in filename-level keys instead of the expected owner grouping. This affects **presentation only**; the 26 patch count and fail-closed admission results are unchanged. Correct that aggregation in a later focused maintenance revision rather than misreport owner counts or rerun the entire qualification today.
+
+**Next action:** execute the already-qualified combined operator's explicit **offline seven-app Gradle quality** against the pinned detached `.../q25-app-quality-pr346-257a037e88f2` checkout; capture `QUALITY_RESULT.json` and the two log hashes. If caches/tools are missing or Gradle fails, capture the first actual error rather than changing the Android16 tree. Resolve one actual HOME owner and one effective IMS provider, then implement/qualify outstanding Q25 privilege backends and selected-product G1/G2/G3 checks. `build/sable.sh` full image remains held; neither 39 OPEN gates nor historical IMS can be marked PASS by editing JSON statuses.
