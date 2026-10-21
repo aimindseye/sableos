@@ -1,117 +1,117 @@
 #!/usr/bin/env bash
-# Build-time product source composer, called ONCE from canonical sable.sh TB2.
-# This stages only nonprivileged app imports and SableLauncher source. It does
-# not change default role, privileged permissions, radio, AVB or flashing.
+# Track B Android16 single-source convergence: reuse selected 13 APKs + FLOSS IMS.
+# Never builds, flashes, signs, downloads, or replaces historical product modules.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-source "$ROOT/build/config/host-tools.env"
 ANDROID="${SABLE_TB2_ANDROID_ROOT:-/srv/sable-build/workspaces/titan2-track-b/android}"
-PRODUCT="$ROOT/product/titan2/track-b-integrated"
-CACHE="${SABLE_LOCAL_CI_CACHE_ROOT:-/srv/data/sable-build/sableos/local-ci-cache}"
-IMS="${SABLE_TB2_IMS_PROVIDER:-UNSELECTED}"
-[[ -f "$ANDROID/build/envsetup.sh" && -f "$ANDROID/device/phh/treble/rom.mk" ]] || {
-  echo "TB2_PRODUCT=HOLD_SELECTED_ANDROID16_ROOT_MISSING"; exit 66;
+MODE="${1:---plan}"
+[[ "$MODE" == --plan || "$MODE" == --apply ]] || { echo 'TB2_CONVERGENCE=HOLD_MODE'; exit 64; }
+[[ -f "$ANDROID/build/envsetup.sh" ]] || { echo 'TB2_CONVERGENCE=HOLD_AOSP_ROOT'; exit 66; }
+[[ -d "$ROOT/src/android/packages/apps/SableStart" && -d "$ROOT/src/android/shared/sabledesign" ]] || {
+  echo 'TB2_CONVERGENCE=HOLD_SABLE_LAUNCHER_SOURCE'; exit 66;
 }
-# The 20261021 ai-g732 supplement identifies complementary existing graphs:
-# - trackb13ims/track-b.mk selects PhhIms + Iwlan (not its 13 orphan app imports).
-# - tb2-rebuilt/tb2-product.mk INCLUDES tb2-apps.mk (not yet supplied).
-# Until the exact existing installed modules are known, a second 13-app stage
-# might duplicate package IDs. This is a reconciliation HOLD, not proof of a
-# present duplicate package or two running IMS providers.
 ROM="$ANDROID/device/phh/treble/rom.mk"
-if grep -Fq 'vendor/sable/trackb13ims/track-b.mk' "$ROM" ||
-   grep -Fq 'vendor/sable/tb2-rebuilt/tb2-product.mk' "$ROM"; then
-  echo 'TB2_PRODUCT=HOLD_EXISTING_GRAPH_RECONCILIATION'
-  echo 'TB2_PRODUCT=NEED_TB2_REBUILT_APPS_MK_AND_SELECTED_PROVIDER_DECISION'
-  exit 78
-fi
-[[ "$IMS" == OEM || "$IMS" == FLOSS ]] || {
-  echo "TB2_PRODUCT=HOLD_EXPLICIT_SINGLE_IMS_PROVIDER_REQUIRED"; exit 78;
-}
-case "$IMS" in
- OEM) provider="$ANDROID/vendor/sable/titan2/n1i-c1/sable-titan2-n1i-c1.mk" ;;
- FLOSS) provider="$ANDROID/vendor/sable/trackb13ims/selected-provider.mk" ;;
-esac
-[[ -f "$provider" ]] || { echo "TB2_PRODUCT=HOLD_PROVIDER_PRODUCT_MK_MISSING path=$provider"; exit 78; }
-[[ -x "$SABLE_ANDROID_BUILD_TOOLS/aapt2" && -x "$SABLE_ANDROID_BUILD_TOOLS/apksigner" ]] || {
-  echo "TB2_PRODUCT=HOLD_CANONICAL_AAPT2_OR_APKSIGNER"; exit 66;
-}
-# Resolve all release-scoped inputs before mutating the AOSP checkout.
-entries=()
-while IFS=$'\t' read -r module rel package signing; do
-  [[ -z "$module" || "${module:0:1}" == "#" ]] && continue
-  [[ "$module" =~ ^SableTB2[A-Za-z0-9]+$ &&
-     ( "$rel" == apps/* || "$rel" == ci-cache/* ) &&
-     "$rel" != *..* && "$rel" != /* &&
-     "$package" =~ ^org\.sableos\.[A-Za-z0-9._]+$ &&
-     ( "$signing" == presigned || "$signing" == unsigned ) ]] || {
-    echo "TB2_PRODUCT=HOLD_INVALID_APK_ROW module=$module"; exit 78;
-  }
-  if [[ "$rel" == apps/* ]]; then
-    apk="$ROOT/$rel"
-  else
-    mapfile -t matched < <(compgen -G "$CACHE/${rel#ci-cache/}" | LC_ALL=C sort || true)
-    [[ "${#matched[@]}" -eq 1 ]] || { echo "TB2_PRODUCT=HOLD_CI_ARTIFACT_COUNT module=$module count=${#matched[@]}"; exit 78; }
-    apk="${matched[0]}"
-  fi
-  [[ -f "$apk" && ! -L "$apk" ]] || { echo "TB2_PRODUCT=HOLD_APP_NOT_BUILT module=$module path=$apk"; exit 78; }
-  found="$("$SABLE_ANDROID_BUILD_TOOLS/aapt2" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)"
-  [[ "$found" == "$package" ]] || { echo "TB2_PRODUCT=HOLD_APK_PACKAGE_MISMATCH module=$module actual=$found expected=$package"; exit 78; }
-  if "$SABLE_ANDROID_BUILD_TOOLS/apksigner" verify "$apk" >/dev/null 2>&1; then
-    actual_signing=presigned
-  else
-    actual_signing=unsigned
-  fi
-  [[ "$actual_signing" == "$signing" ]] || { echo "TB2_PRODUCT=HOLD_SIGNING_CLASS_MISMATCH module=$module"; exit 78; }
-  entries+=("$module|$apk|$package|$signing")
-done < "$PRODUCT/selected-apps.tsv"
-[[ "${#entries[@]}" -eq 13 ]] || { echo "TB2_PRODUCT=HOLD_APP_SET_INCOMPLETE count=${#entries[@]}"; exit 78; }
-# Copy without deleting or silently replacing historical N1B2/native34 sources.
-copy_source_tree() {
-  local src="$1" dst="$2" file rel
-  [[ -d "$src" ]] || { echo "TB2_PRODUCT=HOLD_REQUIRED_SOURCE_MISSING path=$src"; return 78; }
-  while IFS= read -r -d '' file; do
-    rel="${file#"$src"/}"
-    [[ ! -L "$file" ]] || { echo "TB2_PRODUCT=HOLD_SOURCE_SYMLINK path=$file"; return 78; }
-    if [[ -e "$dst/$rel" ]]; then
-      cmp -s "$file" "$dst/$rel" || { echo "TB2_PRODUCT=HOLD_EXISTING_AOSP_SOURCE_DIFF path=$dst/$rel"; return 78; }
-    else
-      install -D -m 0644 "$file" "$dst/$rel"
-    fi
-  done < <(find "$src" -type f -print0 | LC_ALL=C sort -z)
-}
-copy_source_tree "$ROOT/src/android/packages/apps/SableStart" "$ANDROID/packages/apps/SableStart"
-copy_source_tree "$ROOT/src/android/shared/sabledesign" "$ANDROID/packages/apps/SableDesign"
-STAGE="$ANDROID/vendor/sable/trackb"
-mkdir -p "$STAGE/prebuilt"
-if [[ -f "$STAGE/Android.bp" ]] && ! grep -Fq 'TB2_MANAGED_BY_CANONICAL_STAGE' "$STAGE/Android.bp"; then
-  echo "TB2_PRODUCT=HOLD_UNMANAGED_ANDROID_BP_COLLISION"; exit 78;
-fi
-{
-  echo '// TB2_MANAGED_BY_CANONICAL_STAGE: engineering, nonprivileged, signed debug APKs.'
-  for entry in "${entries[@]}"; do
-    IFS='|' read -r module apk package signing <<< "$entry"
-    if [[ "$signing" == unsigned ]]; then sign_property="default_dev_cert: true,"; else sign_property="presigned: true,"; fi
-    printf 'android_app_import {\n    name: "%s",\n    apk: "prebuilt/%s.apk",\n    %s\n    product_specific: true,\n    privileged: false,\n    dex_preopt: { enabled: false },\n}\n\n' "$module" "$module" "$sign_property"
-  done
-} > "$STAGE/.Android.bp.tb2-new"
-for entry in "${entries[@]}"; do
-  IFS='|' read -r module apk package signing <<< "$entry"
-  dest="$STAGE/prebuilt/$module.apk"
-  if [[ -f "$dest" && ! -f "$STAGE/Android.bp" ]]; then
-    echo "TB2_PRODUCT=HOLD_UNMANAGED_PREBUILT_COLLISION module=$module"; exit 78;
-  fi
-  install -m 0644 "$apk" "$dest"
+BP="$ANDROID/vendor/sable/tb2-rebuilt/Android.bp"
+APPS="$ANDROID/vendor/sable/tb2-rebuilt/tb2-apps.mk"
+FLOSS="$ANDROID/vendor/sable/trackb13ims/track-b.mk"
+IMS_XML="$ANDROID/vendor/sable/trackb13ims/privapp-permissions-me.phh.ims.xml"
+LAUNCHER="$ANDROID/packages/apps/Launcher3/AndroidManifest.xml"
+PATCH="$ROOT/build/titan2/track-b-source/launcher3-home-removal-a16.patch"
+for file in "$ROM" "$BP" "$APPS" "$FLOSS" "$IMS_XML" "$LAUNCHER" "$PATCH"; do
+  [[ -f "$file" && ! -L "$file" ]] || { echo "TB2_CONVERGENCE=HOLD_FILE path=$file"; exit 66; }
 done
-mv -f "$STAGE/.Android.bp.tb2-new" "$STAGE/Android.bp"
-install -m 0644 "$PRODUCT/sable-track-b.mk" "$STAGE/sable-track-b.mk"
-install -m 0644 "$PRODUCT/ims-oem-only.mk" "$STAGE/ims-oem-only.mk"
-ROM="$ANDROID/device/phh/treble/rom.mk"
-inc='$(call inherit-product, vendor/sable/trackb/sable-track-b.mk)'
-if ! grep -Fxq "$inc" "$ROM"; then
-  printf '\n# SableOS TB2 build-owned product composition (host-only engineering).\n%s\n' "$inc" >> "$ROM"
+# Bind exact supplied host contents. A stale/mutated product must be investigated,
+# not blindly made to match the last manifest.
+check_pin() {
+  local file="$1" wanted="$2" actual
+  actual="$(sha256sum "$file")"; actual="${actual%% *}"
+  [[ "$actual" == "$wanted" ]] || { echo "TB2_CONVERGENCE=HOLD_PIN path=$file sha=$actual"; exit 78; }
+}
+check_pin "$APPS" 8264edf7985b9aa1f62e36acbdd0d07767834705c6aee8680cd733e9232c6e7f
+check_pin "$BP" ab2b0654ee4b560aa1b741af913898c2d22d6963d33fbf78899f399e2fffd717
+check_pin "$FLOSS" 4146c78c7f4963a971117bb25003b62a294b550beff93eb124742b3fd0f1d97b
+check_pin "$IMS_XML" 6ccb15dcc39495a2c2688871f84d7368871805e08b1d02823c77af09720bcba7
+check_pin "$PATCH" 72df02669cda5b36b95319219cdae54f0bfb415830c89b17648a47e59f11fc04
+BASE_ROM=0c654060c57fc1b639d670164055aeffa231441a595310b2f45f7badb0ba66cb
+HOME_LINE='PRODUCT_PACKAGES += SableLauncher'
+if grep -Fxq "$HOME_LINE" "$ROM"; then
+  grep -Fxq '$(call inherit-product, vendor/sable/trackb13ims/track-b.mk)' "$ROM" || exit 78
+  grep -Fxq '$(call inherit-product, vendor/sable/tb2-rebuilt/tb2-product.mk)' "$ROM" || exit 78
+else
+  check_pin "$ROM" "$BASE_ROM"
 fi
-echo "TB2_PRODUCT=STAGED_ENGINEERING_APPS_13_AND_SABLE_HOME_SOURCE IMS_REQUESTED=$IMS"
-echo "TB2_PRODUCT_HOME_ROLE=OPEN_LAUNCHER3_RECENTS_ONLY_SOURCE_ADAPTATION"
-echo "TB2_PRODUCT_PRIVILEGED_BACKENDS=OPEN"
-echo "TB2_PRODUCT_IMS_G123=OPEN"
+[[ "$(grep -Fc 'vendor/sable/trackb13ims/track-b.mk' "$ROM")" -eq 1 &&
+   "$(grep -Fc 'vendor/sable/tb2-rebuilt/tb2-product.mk' "$ROM")" -eq 1 ]] || {
+  echo 'TB2_CONVERGENCE=HOLD_EXISTING_INHERITS'; exit 78;
+}
+# Source selection, not APK runtime qualification: exactly 13 product imports.
+mapfile -t app_names < <(sed -n 's/^[[:space:]]*\(TB2Sable[A-Za-z0-9]*\)[[:space:]]*\\\{0,1\}[[:space:]]*$/\1/p' "$APPS" | LC_ALL=C sort)
+[[ "${#app_names[@]}" -eq 13 ]] || { echo "TB2_CONVERGENCE=HOLD_APP_COUNT count=${#app_names[@]}"; exit 78; }
+for name in "${app_names[@]}"; do
+  [[ "$(grep -Fc "name: \"$name\"" "$BP")" -eq 1 ]] || {
+    echo "TB2_CONVERGENCE=HOLD_BP_MODULE name=$name"; exit 78;
+  }
+  [[ -s "$ANDROID/vendor/sable/tb2-rebuilt/prebuilt/$name.apk" ]] || {
+    echo "TB2_CONVERGENCE=HOLD_PREBUILT name=$name"; exit 78;
+  }
+done
+for ims_module in PhhIms PhhImsOverlay Iwlan QualifiedNetworksService; do
+  grep -Eq "^[[:space:]]+$ims_module[[:space:]\\]*$" "$FLOSS" || {
+    echo "TB2_CONVERGENCE=HOLD_FLOSS_MODULE name=$ims_module"; exit 78;
+  }
+done
+[[ $(grep -Fc 'privapp-permissions package="me.phh.ims"' "$IMS_XML") -eq 1 ]] || exit 78
+# No automatic stage of OEM C1 or alternative TrackBSable/SableTB2 modules.
+for dir_pair in \
+  'src/android/packages/apps/SableStart:packages/apps/SableStart' \
+  'src/android/shared/sabledesign:packages/apps/SableDesign'; do
+  source_dir="$ROOT/${dir_pair%%:*}"
+  dest_dir="$ANDROID/${dir_pair#*:}"
+  while IFS= read -r -d '' source_file; do
+    rel="${source_file#"$source_dir"/}"
+    dest_file="$dest_dir/$rel"
+    [[ ! -L "$source_file" && ! -L "$dest_file" ]] || { echo 'TB2_CONVERGENCE=HOLD_SOURCE_SYMLINK'; exit 78; }
+    if [[ -e "$dest_file" ]]; then
+      cmp -s "$source_file" "$dest_file" || {
+        echo "TB2_CONVERGENCE=HOLD_AOSP_SOURCE_DRIFT path=$dest_file"; exit 78;
+      }
+    fi
+  done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
+done
+if grep -Fq 'android.intent.category.HOME' "$LAUNCHER"; then
+  check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
+  ( cd "$ANDROID" && git -C packages/apps/Launcher3 apply -p4 --check "$PATCH" ) || {
+    echo 'TB2_CONVERGENCE=HOLD_LAUNCHER_PATCH_CONTEXT'; exit 78;
+  }
+else
+  # Idempotence: another edit with HOME removed is not automatically admitted.
+  check_pin "$LAUNCHER" 904faa32569da62de2f1c2ed774da2f2fc7d3920268720139ada1467cdf72c41
+  echo 'TB2_CONVERGENCE=LAUNCHER_HOME_ALREADY_REMOVED_REVIEW_COMMIT'
+fi
+if [[ "$MODE" == --plan ]]; then
+  echo 'TB2_CONVERGENCE=PASS_EXACT_SOURCE_PREFLIGHT_NO_WRITES'
+  echo 'TB2_PRODUCT=REUSE_EXISTING_13_TB2Sable_AND_FLOSS_PHHiMS'
+  exit 0
+fi
+# All source conflicts and original content pins were checked before mutation.
+for dir_pair in \
+  'src/android/packages/apps/SableStart:packages/apps/SableStart' \
+  'src/android/shared/sabledesign:packages/apps/SableDesign'; do
+  source_dir="$ROOT/${dir_pair%%:*}"
+  dest_dir="$ANDROID/${dir_pair#*:}"
+  while IFS= read -r -d '' source_file; do
+    rel="${source_file#"$source_dir"/}"
+    dest_file="$dest_dir/$rel"
+    if [[ ! -e "$dest_file" ]]; then
+      install -D -m 0644 "$source_file" "$dest_file"
+    fi
+  done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
+done
+if grep -Fq 'android.intent.category.HOME' "$LAUNCHER"; then
+  (cd "$ANDROID" && git -C packages/apps/Launcher3 apply -p4 "$PATCH")
+fi
+if ! grep -Fxq "$HOME_LINE" "$ROM"; then
+  printf '\n# SableOS Track B: source-built HOME; existing 13 app/PhhIms graph retained.\n%s\n' "$HOME_LINE" >> "$ROM"
+fi
+echo 'TB2_CONVERGENCE=SOURCE_STAGED_REUSE_13_AND_FLOSS_HOME_SOURCE_NO_BUILD'
+echo 'TB2_UNQUALIFIED=IMS_G123_PRIVILEGED_FEATURES_RUNTIME_HOME'
