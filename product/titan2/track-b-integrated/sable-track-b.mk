@@ -12,7 +12,10 @@ PRODUCT_PACKAGES += \
     SableTB2Media \
     SableTB2Hub \
     SableTB2Weather \
-    SableTB2Calendar
+    SableTB2Calendar \
+    SableTB2Reader \
+    SableTB2Mail \
+    SableTB2TextReader
 
 # Exactly one explicitly admitted IMS provider must have been chosen by the
 # Sable source stage and its *actual* selected AOSP product inherited below.
