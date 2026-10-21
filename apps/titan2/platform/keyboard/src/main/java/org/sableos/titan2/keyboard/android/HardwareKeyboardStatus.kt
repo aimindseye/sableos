@@ -9,11 +9,12 @@ internal object HardwareKeyboardStatus {
         var alphabetic = 0
         var other = 0
         for (id in InputDevice.getDeviceIds()) {
-            val dev = InputDevice.getDevice(id) ?: continue
-            if (dev.isVirtual) continue
-            when (dev.keyboardType) {
-                InputDevice.KEYBOARD_TYPE_ALPHABETIC -> alphabetic++
-                InputDevice.KEYBOARD_TYPE_NON_ALPHABETIC -> other++
+            val dev = InputDevice.getDevice(id)
+            if (dev != null && !dev.isVirtual) {
+                when (dev.keyboardType) {
+                    InputDevice.KEYBOARD_TYPE_ALPHABETIC -> alphabetic++
+                    InputDevice.KEYBOARD_TYPE_NON_ALPHABETIC -> other++
+                }
             }
         }
         return HardwareKeyboardSummary.describe(alphabetic, other)
