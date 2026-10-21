@@ -695,7 +695,17 @@ private fun SableContinuousLibraryGrid(
         / "sableos"
         / "design"
     )
-    for name in ("SableTheme.kt", "SableComponents.kt", "SableSystemBars.kt", "SableGlobalAppearance.kt"):
+    for name in (
+        "SableTheme.kt",
+        "SableComponents.kt",
+        "SableSystemBars.kt",
+        "SableGlobalAppearance.kt",
+        "SableCornerStyle.kt",
+        "SableResponsive.kt",
+        "SableResponsiveComponents.kt",
+        "SableAlphabetIndex.kt",
+        "SableMiniPlayerPolicy.kt",
+    ):
         copy_file(design_source / name, design_destination / name)
 
     # Keep upstream Vaachak appearance unchanged for its own flavor and preserve the
