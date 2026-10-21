@@ -2,7 +2,7 @@
 
 Date: 2026-10-20. Actual host source precondition is the user's **successful seven-file V1.1 staging receipt** `TB2_A16_NATIVE_OWNER_STAGE_V1_1_20261020/RESULT.json`: `STAGED_NOT_COMPILED`, seven files (four modify, three add), no source mutation, build, device contact or flash, 5.705 ms. Earlier V1.1 source-integrator regression tests and ZIP/member hashes PASS. **This does not mean any A16 module compiled.**
 
-This entry records the **sealed standalone executable** `TB2_A16_PHASE12_INTEGRATE_COMPILE_V1.zip` SHA-256 `0caa46626ddb241080ae0eaa8560ba5f0c5c7662383b37e5a01f961ab1dbdbfa`. Source `integrate_compile.py`, `operator.sh`, tests, engineering review and README are in the archive, **not misrepresented as committed Android source**. The previous staged A16 target files remain the input; no new Q25 inventory/source rebase or git checkout is required.
+This entry records the **sealed standalone executable** `TB2_A16_PHASE12_INTEGRATE_COMPILE_V1.zip` SHA-256 `679cf9f24cbcd703fd1fdbba0688476769a71034800c104bf1380db5030ebb47`. Source `integrate_compile.py`, `operator.sh`, tests, engineering review and README are in the archive, **not misrepresented as committed Android source**. The previous staged A16 target files remain the input; no new Q25 inventory/source rebase or git checkout is required.
 
 ## One acknowledged source + compile operation
 
@@ -31,8 +31,8 @@ The runner strictly pins all seven V1.1 before and after SHA256 values and sourc
 ## Local validation and performance
 
 - `python3 -m py_compile` of Python source and tests PASS; `bash -n operator.sh` PASS.
-- **11/11 hermetic regression tests PASS in ~0.6 seconds**: exact source and stage hash checks; run success against fake `envsetup/lunch/m`; compilation-failure rollback of all 7; original/candidate drift, unapproved paths, symlinks, output inside Android, missing acknowledgment, optional Q25 app source preflight and read-only plan.
-- **250 seven-path digest preflight iterations ~0.58 seconds locally**, not a Soong/Gradle performance claim.
+- **12/12 hermetic regression tests PASS in ~0.6 seconds**: exact source and stage hash checks; run success against fake `envsetup/lunch/m`; compilation-failure rollback of all 7; original/candidate drift, unapproved paths, symlinks, output inside Android, missing acknowledgment, optional Q25 app source preflight and read-only plan.
+- **250 seven-path digest preflight iterations ~0.59 seconds locally**, not a Soong/Gradle performance claim.
 - ZIP SHA256 and all seven member SHAs/CRC PASS.
 - **Actual ai-g732 native SystemUI/Dialer module build and Q25 app Gradle quality have NOT RUN for this operator**; no `RESULT.json` receipt from them exists yet.
 
@@ -41,3 +41,5 @@ The runner strictly pins all seven V1.1 before and after SHA256 values and sourc
 Reviewed existing scope: PR #342 is historical OEM IMS qualification, not selected new-image G1/G2/G3; PR #344 Track B custody; PR #345 Sonar CI is not native/image qualification; PR #346 draft unmerged portable Q25 source and Native34 candidates. The exact Q25 upstream SystemUI patch 0301 was verified in `aimindseye/zinwaq25-sableos`. Canonical host tool configuration remains `build/config/host-tools.env`; no new compiler installation/bootstrap.
 
 **Q25 full source completion remains OPEN** for privileged AppLock/Freezer/Vault/Dual, installed Browser and first-boot Setup owner, full Keyguard type-ahead, Phone/Contacts, permanent Launcher3QuickStep HOME/Recents, effective installed READ_SMS, Camera2/QuickReview and platform product wiring. IMS provider selection (FLOSS vs OEM), selected G1/G2/G3 and live registration/VoLTE remain separate. The script does **not** claim any of those gates passed and does not invoke `sable.sh`, create an image, or flash.
+
+**Final archive safety correction:** The verified operator also resolves output directory parents before confinement checks and, on failed compilation, removes newly created empty source directories (never recursively deleting populated directories). Added regression coverage for symlinked output parents and exact rollback of newly added directory trees. Final local suite **12/12 PASS**, latest local 250× seven-file SHA preflight ~0.585s. This supersedes earlier 11-test artifact/hash referenced in preliminary PR discussion; no host native run has occurred.
