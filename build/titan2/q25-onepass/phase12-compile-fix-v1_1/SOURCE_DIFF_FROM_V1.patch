@@ -21,6 +21,8 @@
 +# and the platform PreferenceManager. Avoid importing a missing AndroidX class.
 +
  TARGETS = {
+     'frameworks/base/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputView.java': ('de1b5ec457945f5a3843ef842db1919a8d99198ee3110a54b833438f20271af8', 'f13f1e9b2ce1d2ac7b763ad869bcd5fc7f7f54d15743dc0a14cd81ef63900bb1'),
+     'frameworks/base/packages/SystemUI/src/com/android/keyguard/KeyguardPinBasedInputViewController.java': ('550e087d087a792e7f5d76f35c15d748715ea6d8c3bc9826bcffdb3cd1c8f6c8', '99d676f4a3068bff2aae95d75dcf27356dc4834d38d878591129d0dce318ff20'),
 @@ -99,6 +108,32 @@
                           '_before': prior, '_after': replacement_path.read_bytes()})
      return verified
@@ -88,3 +90,4 @@
 +        report['steps'].append({'step':'dialer_preference_classpath_fix','status':'PASS'})
          if a.command == 'plan':
              report['status']='PLAN_PASS_READY_FOR_ACKNOWLEDGED_APPLY_AND_COMPILE'
+             print(report['status'])
