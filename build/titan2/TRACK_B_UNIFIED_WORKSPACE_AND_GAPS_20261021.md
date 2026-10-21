@@ -25,7 +25,7 @@ The directory listing is supplied by the owner; this environment cannot read tho
 ## Newly committed consolidated build plumbing
 
 - `build/devices/titan2.sh` supports release `TB2` for **build only**, calling `build/titan2/run-track-b-integrated.sh`.
-- One canonical call does full local CI, both Gradle project groups (keyboard/camera/setup/tools on Gradle 8.14.3; Hub/Messages/Calendar on Gradle 8.13; assembleDebug, JVM unit tests, lint, detekt, ktlintCheck), and AOSP `m systemimage target-files-package otatools`. Collects **all stage failures**, unique evidence, SHA256 logs. No device, ADB, fastboot, signing, flashing or release acceptance.
+- One canonical call runs **existing full local CI once**, which already handles R8 Hub/Messages/Calendar plus the remaining R8 applications, and now incorporates Titan 2 `displaycompat/keyboard/camera/setup/tools` assembly/unit-test/lint/detekt/ktlint tasks in that same CI run; afterward it runs AOSP `m systemimage target-files-package otatools`. The parent driver preserves CI and AOSP failures in one unique evidence location and SHA256 logs; there is no duplicate R8 Gradle pass. No device, ADB, fastboot, signing, flashing or release acceptance.
 - `N1B2` stays `AUDIT_ONLY_FAIL_CLOSED`; original `N1I` path and flash policies are unchanged.
 - `SetupReader.kt` now uses the read-only SDK `Settings.Secure.getInt` with literal `user_setup_complete` setting key; this addresses the observed compiler missing-public-constant error, **not yet proven by real post-merge compilation**.
 
