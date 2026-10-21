@@ -46,6 +46,7 @@ functions:
 examples:
   bash build/sable.sh panther R9 ci full
   bash build/sable.sh titan2 N1B2 ci core
+  bash build/sable.sh titan2 TB2 build --direct # engineering-only unified source build; never flash-ready
   bash build/sable.sh panther R9 qualify physical-ux
   bash build/sable.sh panther R9 build --tmux
   bash build/sable.sh panther R9 register-artifact --build-source <sha> --target-files <zip> --sha256 <sha256> --android-info <path>
