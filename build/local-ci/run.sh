@@ -833,6 +833,34 @@ write_attestation() {
   fi
 }
 
+# TB2 modules are verified once inside canonical full CI, not by a detached Gradle operator.
+run_titan2_tb2_apps() {
+  source "$ROOT/build/config/host-tools.env"
+  export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME"
+  export JAVA_HOME="$SABLE_JDK17"
+  export ANDROID_HOME="$SABLE_ANDROID_SDK"
+  export ANDROID_SDK_ROOT="$SABLE_ANDROID_SDK"
+  local -a candidates tasks
+  shopt -s nullglob
+  candidates=("$SABLE_GRADLE_USER_HOME"/wrapper/dists/gradle-8.14.3-bin/*/gradle-8.14.3/bin/gradle)
+  shopt -u nullglob
+  [[ ${#candidates[@]} -eq 1 && -x "${candidates[0]}" ]] || {
+    echo "TB2_CI=HOLD_CANONICAL_GRADLE_8_14_3"
+    return 78
+  }
+  local mod task
+  tasks=()
+  for mod in displaycompat keyboard camera setup tools; do
+    for task in assembleDebug testDebugUnitTest lint detekt ktlintCheck; do
+      tasks+=(":$mod:$task")
+    done
+  done
+  (
+    cd "$ROOT/apps/titan2/platform" || return 66
+    "${candidates[0]}" "${GRADLE_NETWORK_ARGS[@]}" --no-daemon --console=plain --continue --max-workers=4 "${tasks[@]}"
+  )
+}
+
 stage POLICY run_policy
 stage STATIC run_static
 
@@ -846,6 +874,10 @@ stage RUST run_rust
 stage ANDROID run_android
 stage APK_SEAL run_apk_seal
 stage QUALITY run_quality
+
+if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+  stage TITAN2_TB2_APPS run_titan2_tb2_apps
+fi
 stage SUPPLY_CHAIN run_supply_chain
 
 if [[ "$PROFILE" == full || "$PROFILE" == release ]]; then
