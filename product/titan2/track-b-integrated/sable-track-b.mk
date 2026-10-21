@@ -18,7 +18,7 @@ PRODUCT_PACKAGES += \
 # Sable source stage and its *actual* selected AOSP product inherited below.
 # Presence here never substitutes for G1/G2/G3 or live IMS verification.
 ifeq ($(strip $(SABLE_TB2_IMS_PROVIDER)),OEM)
-$(call inherit-product, vendor/sable/titan2/n1i-c1/sable-titan2-n1i-c1.mk)
+$(call inherit-product, vendor/sable/trackb/ims-oem-only.mk)
 else ifeq ($(strip $(SABLE_TB2_IMS_PROVIDER)),FLOSS)
 $(call inherit-product, vendor/sable/trackb13ims/selected-provider.mk)
 else
