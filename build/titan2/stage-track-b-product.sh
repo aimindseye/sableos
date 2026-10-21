@@ -7,6 +7,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$ROOT/build/config/host-tools.env"
 ANDROID="${SABLE_TB2_ANDROID_ROOT:-/srv/sable-build/workspaces/titan2-track-b/android}"
 PRODUCT="$ROOT/product/titan2/track-b-integrated"
+CACHE="${SABLE_LOCAL_CI_CACHE_ROOT:-/srv/data/sable-build/sableos/local-ci-cache}"
 IMS="${SABLE_TB2_IMS_PROVIDER:-UNSELECTED}"
 [[ -f "$ANDROID/build/envsetup.sh" && -f "$ANDROID/device/phh/treble/rom.mk" ]] || {
   echo "TB2_PRODUCT=HOLD_SELECTED_ANDROID16_ROOT_MISSING"; exit 66;
@@ -19,21 +20,39 @@ case "$IMS" in
  FLOSS) provider="$ANDROID/vendor/sable/trackb13ims/selected-provider.mk" ;;
 esac
 [[ -f "$provider" ]] || { echo "TB2_PRODUCT=HOLD_PROVIDER_PRODUCT_MK_MISSING path=$provider"; exit 78; }
-[[ -x "$SABLE_ANDROID_BUILD_TOOLS/aapt2" ]] || { echo "TB2_PRODUCT=HOLD_CANONICAL_AAPT2"; exit 66; }
+[[ -x "$SABLE_ANDROID_BUILD_TOOLS/aapt2" && -x "$SABLE_ANDROID_BUILD_TOOLS/apksigner" ]] || {
+  echo "TB2_PRODUCT=HOLD_CANONICAL_AAPT2_OR_APKSIGNER"; exit 66;
+}
 # Resolve all release-scoped inputs before mutating the AOSP checkout.
 entries=()
-while IFS=$'\t' read -r module rel package; do
+while IFS=$'\t' read -r module rel package signing; do
   [[ -z "$module" || "${module:0:1}" == "#" ]] && continue
-  [[ "$module" =~ ^SableTB2[A-Za-z0-9]+$ && "$rel" == apps/* && "$rel" != *..* && "$package" =~ ^org\.sableos\.[A-Za-z0-9._]+$ ]] || {
-    echo "TB2_PRODUCT=HOLD_INVALID_APK_ROW"; exit 78;
+  [[ "$module" =~ ^SableTB2[A-Za-z0-9]+$ &&
+     ( "$rel" == apps/* || "$rel" == ci-cache/* ) &&
+     "$rel" != *..* && "$rel" != /* &&
+     "$package" =~ ^org\.sableos\.[A-Za-z0-9._]+$ &&
+     ( "$signing" == presigned || "$signing" == unsigned ) ]] || {
+    echo "TB2_PRODUCT=HOLD_INVALID_APK_ROW module=$module"; exit 78;
   }
-  apk="$ROOT/$rel"
+  if [[ "$rel" == apps/* ]]; then
+    apk="$ROOT/$rel"
+  else
+    mapfile -t matched < <(compgen -G "$CACHE/${rel#ci-cache/}" | LC_ALL=C sort || true)
+    [[ "${#matched[@]}" -eq 1 ]] || { echo "TB2_PRODUCT=HOLD_CI_ARTIFACT_COUNT module=$module count=${#matched[@]}"; exit 78; }
+    apk="${matched[0]}"
+  fi
   [[ -f "$apk" && ! -L "$apk" ]] || { echo "TB2_PRODUCT=HOLD_APP_NOT_BUILT module=$module path=$apk"; exit 78; }
   found="$("$SABLE_ANDROID_BUILD_TOOLS/aapt2" dump badging "$apk" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -n1)"
   [[ "$found" == "$package" ]] || { echo "TB2_PRODUCT=HOLD_APK_PACKAGE_MISMATCH module=$module actual=$found expected=$package"; exit 78; }
-  entries+=("$module|$apk|$package")
+  if "$SABLE_ANDROID_BUILD_TOOLS/apksigner" verify "$apk" >/dev/null 2>&1; then
+    actual_signing=presigned
+  else
+    actual_signing=unsigned
+  fi
+  [[ "$actual_signing" == "$signing" ]] || { echo "TB2_PRODUCT=HOLD_SIGNING_CLASS_MISMATCH module=$module"; exit 78; }
+  entries+=("$module|$apk|$package|$signing")
 done < "$PRODUCT/selected-apps.tsv"
-[[ "${#entries[@]}" -eq 10 ]] || { echo "TB2_PRODUCT=HOLD_APP_SET_INCOMPLETE count=${#entries[@]}"; exit 78; }
+[[ "${#entries[@]}" -eq 13 ]] || { echo "TB2_PRODUCT=HOLD_APP_SET_INCOMPLETE count=${#entries[@]}"; exit 78; }
 # Copy without deleting or silently replacing historical N1B2/native34 sources.
 copy_source_tree() {
   local src="$1" dst="$2" file rel
@@ -58,12 +77,13 @@ fi
 {
   echo '// TB2_MANAGED_BY_CANONICAL_STAGE: engineering, nonprivileged, signed debug APKs.'
   for entry in "${entries[@]}"; do
-    IFS='|' read -r module apk package <<< "$entry"
-    printf 'android_app_import {\n    name: "%s",\n    apk: "prebuilt/%s.apk",\n    presigned: true,\n    product_specific: true,\n    privileged: false,\n    dex_preopt: { enabled: false },\n}\n\n' "$module" "$module"
+    IFS='|' read -r module apk package signing <<< "$entry"
+    if [[ "$signing" == unsigned ]]; then sign_property="default_dev_cert: true,"; else sign_property="presigned: true,"; fi
+    printf 'android_app_import {\n    name: "%s",\n    apk: "prebuilt/%s.apk",\n    %s\n    product_specific: true,\n    privileged: false,\n    dex_preopt: { enabled: false },\n}\n\n' "$module" "$module" "$sign_property"
   done
 } > "$STAGE/.Android.bp.tb2-new"
 for entry in "${entries[@]}"; do
-  IFS='|' read -r module apk package <<< "$entry"
+  IFS='|' read -r module apk package signing <<< "$entry"
   dest="$STAGE/prebuilt/$module.apk"
   if [[ -f "$dest" && ! -f "$STAGE/Android.bp" ]]; then
     echo "TB2_PRODUCT=HOLD_UNMANAGED_PREBUILT_COLLISION module=$module"; exit 78;
@@ -78,7 +98,7 @@ inc='$(call inherit-product, vendor/sable/trackb/sable-track-b.mk)'
 if ! grep -Fxq "$inc" "$ROM"; then
   printf '\n# SableOS TB2 build-owned product composition (host-only engineering).\n%s\n' "$inc" >> "$ROM"
 fi
-echo "TB2_PRODUCT=STAGED_ENGINEERING_APPS_10_AND_SABLE_HOME_SOURCE IMS_REQUESTED=$IMS"
+echo "TB2_PRODUCT=STAGED_ENGINEERING_APPS_13_AND_SABLE_HOME_SOURCE IMS_REQUESTED=$IMS"
 echo "TB2_PRODUCT_HOME_ROLE=OPEN_LAUNCHER3_RECENTS_ONLY_SOURCE_ADAPTATION"
 echo "TB2_PRODUCT_PRIVILEGED_BACKENDS=OPEN"
 echo "TB2_PRODUCT_IMS_G123=OPEN"
