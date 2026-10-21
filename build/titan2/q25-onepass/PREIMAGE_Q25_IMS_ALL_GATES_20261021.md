@@ -43,3 +43,32 @@ bash operator.sh audit \
 Optional *earlier* combined operator `quality-run` must be separately executed on exact isolated source with `--ack RUN_OFFLINE_Q25_SEVEN_APP_QUALITY_ONLY` to make a real `QUALITY_RESULT.json` and logs, then rerun this auditor with `--quality-result .../QUALITY_RESULT.json`.
 
 **Source fixes remain to be written and qualified:** Q25 actual installed UI owner modules and 3-page Sable Start vs Quickstep roles, app Privileged AppLock/Freezer/Vault/Dual profile backends, read_sms hardRestricted selected app grant, browser/settings/setup/camera/contacts/files and full product wiring; one IMS provider, selected source+product G1/G2/G3 delta with signer/SELinux/classpaths and complete ELF namespace, then only after image the embedded and runtime checks. Do not run `build/sable.sh` full image yet. No new image, flash, device, network or AOSP source mutation by the auditor.
+
+
+## ACTUAL_41_GATE_HOST_AUDIT_20261021
+
+The owner ran the sealed **TB2_Q25_IMS_PREIMAGE_INTEGRATED_GATE_V1** on the real ai-g732 Android16 and detached PR346 source, after verifying outer ZIP integrity and **9/9 internal SHA256 members**, and executing **27/27 Python regressions PASS (0.071s)**. The **real host** `operator.sh audit --ims UNSELECTED` returned:
+
+```
+status=HOLD_PREIMAGE_GATES_OPEN
+preimage_total=41
+preimage_pass=2
+preimage_open=39
+preimage_hold=0
+postimage_deferred=3
+runtime_deferred=4
+quality_invoked=false
+ims_provider_requested=UNSELECTED
+ims_selected_product_verified=false
+ims_conflict_free_verified=false
+image_build_authorized=false
+flash_authorized=false
+```
+
+The two PASSes are the existing, byte-bound **P01 seven-source native compile** and **P02 isolated PR346 app-source** gates; optional P03 offline Gradle quality remains OPEN, not a failed Gradle run. Native Phase12/13 combined source freeze remains unchanged. No new image, AOSP source write, device contact or flash took place.
+
+The host discovery confirmed `vendor/sable/trackb13ims/Android.bp` (FLOSS staging), `product/titan2/n1i-c1/Android.bp` (OEM C1 reference source) and selected `device/phh/treble/rom.mk` all exist, but **NONE** proves the installed **single effective IMS provider**. Historical PR342 G1/G2/G3 results are not a selected-image PASS. The retained PR346 patch inventory found **26** patch candidates. Actual A16 framework owner directories: Dialer, DocumentsUI, Launcher3 and Settings present; `packages/apps/Jelly` Browser and `packages/apps/SetupWizard` absent. Those Q25 patches require real selected owner adapters rather than blind copying. Shared SableLauncher HOME vs Track B Launcher3QuickStep HOME remains an explicit unresolved architecture decision.
+
+**Reporting quality finding:** current v1 `patch_counts_by_owner` accidentally uses the fourth path component for `packages/apps/*`, resulting in filename-level keys instead of the expected owner grouping. This affects **presentation only**; the 26 patch count and fail-closed admission results are unchanged. Correct that aggregation in a later focused maintenance revision rather than misreport owner counts or rerun the entire qualification today.
+
+**Next action:** execute the already-qualified combined operator's explicit **offline seven-app Gradle quality** against the pinned detached `.../q25-app-quality-pr346-257a037e88f2` checkout; capture `QUALITY_RESULT.json` and the two log hashes. If caches/tools are missing or Gradle fails, capture the first actual error rather than changing the Android16 tree. Resolve one actual HOME owner and one effective IMS provider, then implement/qualify outstanding Q25 privilege backends and selected-product G1/G2/G3 checks. `build/sable.sh` full image remains held; neither 39 OPEN gates nor historical IMS can be marked PASS by editing JSON statuses.
