@@ -33,7 +33,16 @@ SABLEOS_DEVICE=titan2 SABLEOS_RELEASE_VERSION=TB2 bash "$ROOT/build/local-ci/run
 echo "TB2_CI_EXIT=$rc_ci"
 if ((rc_ci == 0)); then
   rc_stage=0
-  bash "$ROOT/build/titan2/stage-track-b-product.sh" > "$OUT/product-stage.log" 2>&1 || rc_stage=$?
+  # Full build consumes source convergence; it does NOT mutate the Android tree.
+  bash "$ROOT/build/titan2/stage-track-b-product.sh" --plan > "$OUT/product-stage.log" 2>&1 || rc_stage=$?
+  if ((rc_stage == 0)); then
+    if ! grep -Fxq 'PRODUCT_PACKAGES += SableLauncher' "$ANDROID/device/phh/treble/rom.mk" ||
+       [[ ! -f "$ANDROID/packages/apps/SableStart/Android.bp" ]] ||
+       [[ ! -f "$ANDROID/packages/apps/SableDesign/Android.bp" ]]; then
+      echo 'TB2_PRODUCT=HOLD_SOURCE_CONVERGENCE_NOT_APPLIED' >> "$OUT/product-stage.log"
+      rc_stage=78
+    fi
+  fi
 else
   printf 'TB2_PRODUCT=SKIP_CANONICAL_CI_FAILED\n' > "$OUT/product-stage.log"
 fi
