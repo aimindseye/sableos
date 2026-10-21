@@ -1,0 +1,13 @@
+--- a/native_merge.py
++++ b/native_merge.py
+@@ -117,8 +117,8 @@
+                 DialerCall incoming = list.getIncomingCall();
+                 boolean alone = incoming != null && list.getOutgoingOrActive() == null
+                         && list.getBackgroundCall() == null;
+-                boolean spaceAnswers = androidx.preference.PreferenceManager
+-                        .getDefaultSharedPreferences(this).getBoolean("sable_space_answers", true);
++                boolean spaceAnswers = getSharedPreferences(getPackageName() + "_preferences",
++                        android.content.Context.MODE_PRIVATE).getBoolean("sable_space_answers", true);
+                 if (SableTitanInCallKeys.decide(event.getKeyCode(), event.getMetaState(),
+                         event.getRepeatCount(), alone, false, false, spaceAnswers)
+                         == SableTitanInCallKeys.Action.ANSWER) {
