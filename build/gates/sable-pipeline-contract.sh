@@ -175,8 +175,18 @@ echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-product-composition-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-composition-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-engineering-contract.sh"
 bash "$ROOT/build/gates/n1d-c3b-engineering-contract.sh"
-echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-hub-parity-contract.py"
-python3 "$ROOT/build/gates/n1d-c3b-hub-parity-contract.py"
+# The C3B Hub parity source tokens belong to the earlier C3B/R9 message
+# implementation. TB2's refactored Hub has bounded v3 storage, profile-aware
+# LauncherApps enumeration and guarded RemoteInput under different owners.
+# Keep those safety properties explicitly source-checked on TB2; retain the
+# original historic contract for its own release rather than disabling it.
+if [[ "${SABLEOS_DEVICE:-}" == titan2 && "${SABLEOS_RELEASE_VERSION:-}" == TB2 ]]; then
+  echo "SABLE_PIPELINE_STEP=build/gates/tb2-hub-source-contract.py"
+  python3 "$ROOT/build/gates/tb2-hub-source-contract.py"
+else
+  echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3b-hub-parity-contract.py"
+  python3 "$ROOT/build/gates/n1d-c3b-hub-parity-contract.py"
+fi
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-product-parse-contract.sh"
 bash "$ROOT/build/gates/n1d-c3-product-parse-contract.sh"
 echo "SABLE_PIPELINE_STEP=build/gates/n1d-c3-trebledroid-build-contract.sh"
