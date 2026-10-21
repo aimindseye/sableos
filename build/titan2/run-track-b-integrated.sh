@@ -33,7 +33,7 @@ printf 'IMS_PROVIDER=UNQUALIFIED_SELECTED_PRODUCT_PENDING\n'
 printf 'APP_INSTALL_GRAPH=UNQUALIFIED_SELECTED_PRODUCT_PENDING\n'
 rc_ci=0; rc_titan=0; rc_r8=0; rc_aosp=0
 # One run; capture every stage's result rather than stopping at the first independent failure.
-bash "$ROOT/build/local-ci/run.sh" full > "$OUT/ci.log" 2>&1 || rc_ci=$?
+SABLEOS_DEVICE=titan2 SABLEOS_RELEASE_VERSION=TB2 bash "$ROOT/build/local-ci/run.sh" full > "$OUT/ci.log" 2>&1 || rc_ci=$?
 echo "TB2_CI_EXIT=$rc_ci"
 TITAN_TASKS=()
 for mod in keyboard camera setup tools; do
