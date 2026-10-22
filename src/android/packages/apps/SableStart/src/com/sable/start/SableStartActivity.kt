@@ -276,7 +276,8 @@ class SableStartActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        if (intent.action == ACTION_EDIT_QUICK_BAR || intent.action == ACTION_EDIT_HOME) {
+        if (intent.action == ACTION_EDIT_QUICK_BAR || intent.action == ACTION_EDIT_HOME ||
+            intent.action == ACTION_OPEN_COMMAND) {
             // The Screen is recomposed fresh for the request: its Home/Back effects act only on
             // counts above zero, so they restart from zero rather than undo the request at once.
             homeGeneration.value = 0
@@ -428,12 +429,16 @@ class SableStartActivity : ComponentActivity() {
 
         /** Settings > Sable Start > Home layout: Edit Home. */
         const val ACTION_EDIT_HOME = "org.sableos.start.action.EDIT_HOME"
+
+        /** Explicit cross-app command entry. Global Alt+Space still needs native input policy. */
+        const val ACTION_OPEN_COMMAND = "org.sableos.start.action.OPEN_COMMAND"
         const val SCREEN_START = "start"
         const val SCREEN_EDIT_HOME = "home"
 
         fun screenFor(intent: Intent?): String =
             when (intent?.action) {
                 ACTION_EDIT_QUICK_BAR, ACTION_EDIT_HOME -> SCREEN_EDIT_HOME
+                ACTION_OPEN_COMMAND -> "search"
                 else -> SCREEN_START
             }
     }
