@@ -292,6 +292,7 @@ fun HubScreen(
     onSendSms: (String, String) -> HubSendResult,
     onOpenAndroidMessaging: (String?, String?) -> Boolean,
     onOpenSableMail: () -> Boolean,
+    onOpenCommand: () -> Boolean = { false },
     onOpenConnectedApps: () -> Unit,
     onReplyConnected: (String, String) -> HubSendResult,
     onOpenConnectedApp: (String, Long) -> Boolean,
@@ -364,6 +365,7 @@ fun HubScreen(
                     snapshot = snapshot,
                     actions = actions,
                     focusMemory = focusMemory,
+                    onOpenCommand = onOpenCommand,
                 )
             }
 
@@ -413,11 +415,21 @@ private fun HubRootView(
     snapshot: HubSnapshot,
     actions: HubActions,
     focusMemory: SableFocusMemory,
+    onOpenCommand: () -> Boolean,
 ) {
     SableScreen {
         SablePageHeader(
             title = "hub",
             subtitle = "Local communication across your enabled sources.",
+        )
+        SableActionButton(
+            text = "Command",
+            primary = false,
+            onClick = {
+                if (!onOpenCommand()) {
+                    state.statusMessage = "Sable Command is unavailable on this image."
+                }
+            },
         )
 
         HubPivotRow(
