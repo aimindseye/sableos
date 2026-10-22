@@ -705,7 +705,18 @@ class MainActivity : ComponentActivity() {
             ),
             actions = CameraScreenActions(
                 preview = { modifier ->
-                    CameraPreviewSurface(modifier, { textureView = it }, previewSurfaceListener())
+                    CameraPreviewSurface(
+                        modifier,
+                        { textureView = it },
+                        previewSurfaceListener(),
+                        onDirectScreenTap = {
+                            if (DeckOrientation.presentation(cfg.screenWidthDp, cfg.screenHeightDp) ==
+                                org.sableos.titan2.camera.core.DeckPresentation.LandscapeDeck
+                            ) {
+                                deck = ControlDeck.toggleTouchChrome(deck)
+                            }
+                        }
+                    )
                 },
                 modeSelector = { modifier ->
                     val avail = report?.camera(camId)?.let { ActionRouter.available(it) }.orEmpty()
