@@ -16,7 +16,7 @@ Current-build custody: **PR 346 and its running Android16 AOSP workspace must no
 | # | Exact Q25 artifact row | Q25 review | What is reused or newly implemented | Next-build closure still required |
 |---:|---|---|---|---|
 | 1 | `start-titan2-3page` | Done in code | Existing SableLauncher HOME source; Q25 command key/ranking policy now ported | Implement/verify complete Glance–Home–Hub paging, personalized widgets/base bar/edit mode and actual HOME role |
-| 2 | `all-apps-titan2` | Partial | Existing launcher alphabet rail and privacy summaries; now ports Q25 `AllAppsKeyPolicy` Search/type-to-letter | Full private-profile chips, slot chooser, per-app permission-group summaries, secure preview and focused row actions |
+| 2 | `all-apps-titan2` | Partial | Existing launcher alphabet rail and privacy summaries; now ports Q25 `AllAppsKeyPolicy` Search/type-to-letter and static granted-permission group filter chips | Full private-profile chips, slot chooser, per-app permission-group summaries, secure preview and focused row actions |
 | 3 | `command-titan2` | Partial | **Implemented in PR347:** exact Q25 `CommandQuery` / `CommandRanking`, `? /apps @ # ! /settings /hub`, Settings destinations and recency-aware app ranking wired to live Sable Search | Global Alt+Space owner, People provider permission/lock gating, best-match actions and global routing across surfaces |
 | 4 | `hub-titan2` | Partial | Existing Hub source near Q25, dedicated app included in 13 graph | Verify category subfilters, slash search, action sheet, private counts-only display and latest state |
 | 5 | `messages-conversation-titan2` | Partial | Q25 `MessagesInteractionModel.kt` identical Git blob `66cf923d1b8b6185adb461be1347bdf2336d49ae` | End/Esc latest, PageUp, in-thread search/new-message pill, selected default SMS role/READ_SMS policy |
@@ -45,7 +45,7 @@ Current-build custody: **PR 346 and its running Android16 AOSP workspace must no
 - `privacy/AllAppsInteraction.kt`: **byte-identical Q25 upstream file**, Git blob `18591715002707aa5878266c34f795e357e7b573`; keyboard policy, focus protection, and confirmation contract.
 - Existing `SableStartScreen.kt` uses parsed query scopes, Settings destinations, recency/prefix-aware app ranking and All Apps Search/type-to-jump. It **does not** treat people/SMS content as generally searchable; the owner app stays authoritative.
 - Existing `SableStartActivity.kt` opens only approved public Settings action strings with fallback to Settings; no private API/role elevation.
-- Existing Soong `Android.bp` includes the two new policy owners. Host-only pure Kotlin smoke test exercises 23 assertions, no device/flash.
+- Existing Soong `Android.bp` includes the two pinned Q25 policy owners plus a local-only granted-permission chip policy. The chip filter never treats unknown profile permission state as a grant and does not claim AppOps activity. Host-only pure Kotlin smoke test exercises 28 assertions, no device/flash.
 
 ## Reuse checks and build boundary
 
