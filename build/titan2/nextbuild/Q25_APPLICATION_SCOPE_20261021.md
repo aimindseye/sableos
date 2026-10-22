@@ -15,25 +15,25 @@ Current-build custody: **PR 346 and its running Android16 AOSP workspace must no
 
 | # | Exact Q25 artifact row | Q25 review | What is reused or newly implemented | Next-build closure still required |
 |---:|---|---|---|---|
-| 1 | `start-titan2-3page` | Done in code | Existing SableLauncher HOME source; Q25 command key/ranking policy now ported | Implement/verify complete Glance–Home–Hub paging, personalized widgets/base bar/edit mode and actual HOME role |
-| 2 | `all-apps-titan2` | Partial | Existing launcher alphabet rail and privacy summaries; now ports Q25 `AllAppsKeyPolicy` Search/type-to-letter and static granted-permission group filter chips | Full private-profile chips, slot chooser, per-app permission-group summaries, secure preview and focused row actions |
-| 3 | `command-titan2` | Partial | **Implemented in PR347:** exact Q25 `CommandQuery` / `CommandRanking`, `? /apps @ # ! /settings /hub`, Settings destinations and recency-aware app ranking wired to live Sable Search | Global Alt+Space owner, People provider permission/lock gating, best-match actions and global routing across surfaces |
-| 4 | `hub-titan2` | Partial | Existing Hub source near Q25, dedicated app included in 13 graph | Verify category subfilters, slash search, action sheet, private counts-only display and latest state |
+| 1 | `start-titan2-3page` | Done in code | Q25 16-file SableLauncher port: Glance/Home/Hub, BB10 dashboard, ordered quick bar, persisted Home and Glance edits | Native selected HOME/Quickstep role, APK/Soong compile, runtime and visual acceptance open |
+| 2 | `all-apps-titan2` | Partial | Q25 profile-aware LauncherApps/permission/AppOps readers and caches, privacy detail/actions, private-space state; PR347 keyboard/chip policy retained | Verify Android16 signature permissions, locked profile lifecycle, UI compile and physical input |
+| 3 | `command-titan2` | Partial | Q25 Command query/ranking and full upstream screen; explicit cross-app OPEN_COMMAND activity entry plus Hub > Command action | System-wide Alt+Space still requires A16 global input policy; People/SMS runtime gates |
+| 4 | `hub-titan2` | Partial | Hub Q25 semantics already present; added explicit Hub > Command action with fail-closed unavailable state | Verify subfilters, locked-state redaction, refresh and keyboard runtime, true SMS role |
 | 5 | `messages-conversation-titan2` | Partial | Q25 `MessagesInteractionModel.kt` identical Git blob `66cf923d1b8b6185adb461be1347bdf2336d49ae` | End/Esc latest, PageUp, in-thread search/new-message pill, selected default SMS role/READ_SMS policy |
 | 6 | `phone-dialer-titan2` | Partial | Existing seven SystemUI/Dialer native edits compiled and local-committed on AI-G732 | Dial screen letters/recents privacy, Telecom/role/source-owner runtime |
 | 7 | `contacts-people-titan2` | Partial | Existing Android16 Contacts provider owner | Route subtitle, Hub route chip, private work profile lock states |
 | 8 | `lockscreen-titan2` | Partial | Native A16 PIN source compiled/committed | Count row, private cards/Locked badge, accessible emergency input policy |
 | 9 | `quick-settings-titan2` | Partial | Historical Q25 framework patch candidates | Hub summary, slash search/hint, decide 2-v-3 layout; actual A16 SystemUI integration |
 | 10 | `settings-titan2 / -approved` | Partial | Titan Keyboard Settings and read-only Setup status | Keyboard/Input/Diagnostics approved placement, focus-ring parity without counterfeit privileges |
-| 11 | `setup-wizard-titan2` | Partial | Titan Setup is read-only post-provision checklist | Find actual Android16 first-boot owner, wifi/step/restore behavior; do not equate Setup APK with SetupWizard |
+| 11 | `setup-wizard-titan2` | Partial | Read-only post-provision Setup helper now has review step labels and keyboard-first Android Wi-Fi instructions | Actual privileged first-boot wizard unknown; do not claim provisioning, restore or device owner |
 | 12 | `battery-health-usage-titan2` | Done | Historical Q25 source only | Verify selected Android16 battery screen and real available measurements |
 | 13 | `mobile-manager-app-controls-titan2` | Partial | UI/Settings concepts retained | Privileged App Control/Freezer/Student lifecycle enforcement, not placebo UI |
 | 14 | `private-space-dual-work-titan2` | Partial | Q25 acknowledged stored-but-unenforced AppLock | Real AppLock/secure Vault/private profiles/Dual state or hide unimplemented controls |
 | 15 | `connectivity-otg-nfc-cast-titan2` | Partial | DisplayCompat state source and package | OTG/NFC/Cast hub, and actual WindowManager display-profile enforcement |
-| 16 | `camera-capture-titan2` | Partial | Camera `KeyMap.kt` already maps Z/Alt+Z zoom and R RAW; Q25 fixes preserved and strict Gradle passed | Trackpad guard, focus reticle, hint dock, user selection/default role and HAL gating |
-| 17 | `browser-webview-titan2` | Partial | No `packages/apps/Jelly` in selected A16 source | Discover actual browser; T/B/L arbitration, tab/reader mode and privacy bounds |
-| 18 | `files-documents-titan2` | Partial | A16 DocumentsUI owner must be used; not Q25 Jelly or separate filesystem | J/K/T/E/V/F, A–Z file navigation, 3-pane preview/SAF ownership |
-| 19 | `mail-calendar-titan2` | Partial | Both staged app surfaces; Calendar main source differs from Q25 and is larger | Week view/NOW line, C/T/V/J/K/R navigation, live read-only provider |
+| 16 | `camera-capture-titan2` | Partial | Preserved already implemented Z/Alt+Z zoom and R RAW; added direct-touch-only preview guard tested in JVM | Focus reticle/hint dock, actual Camera role and HAL/touchpad device qualification open |
+| 17 | `browser-webview-titan2` | Partial | Q25 Jelly 1041/1042 patches already retained; prior host source report has no Jelly owner | Identify selected browser owner; real T/B/L, tabs/start cards/reader A16 integration open |
+| 18 | `files-documents-titan2` | Partial | Q25 DocumentsUI 1001/1002 patches already retained, prior A16 scratch-context PASS | Adapt to exact ai-g732 selected DocumentsUI source; compile J/K/T/E/V/F and preview SAF policy |
+| 19 | `mail-calendar-titan2` | Partial | Current Calendar already implements Week mode, NOW row and browse keyboard policy; no downgrade to older Q25 | Selected Calendar APK freshness and full keyboard/viewport runtime qualification open |
 | 20 | `media-gallery-titan2` | Partial | Selected TB2SableMedia prebuilt | Key labels, caption strip, conflict over S=Share |
 | 21 | `utilities-notes-recorder-titan2` | Missing | Calculator present, Tools existing | Notes/Recorder/Clock app implementations; do not expose empty placeholders as complete |
 | 22 | `toolbox-hardware-titan2` | Done | Selected TB2SableTools; strict Detekt/ktlint/unit/debug APK PASS | Verify selected APK freshness and hardware capability gates |
