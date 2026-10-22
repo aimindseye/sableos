@@ -82,7 +82,9 @@ tasks.configureEach {
         (
             name == "preBuild" ||
                 name.contains("lint", ignoreCase = true) ||
-                name.startsWith("compileDebugKotlin")
+                name.startsWith("compileDebugKotlin") ||
+                name.startsWith("compileReleaseKotlin") ||
+                name.contains("UnitTestKotlin")
         )
     ) {
         dependsOn(syncSableStartPresentationSources)
@@ -117,4 +119,5 @@ dependencies {
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.material3:material3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+    testImplementation("junit:junit:4.13.2")
 }
