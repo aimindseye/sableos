@@ -13,6 +13,7 @@ import org.sableos.titan2.setup.core.LaunchReport
 import org.sableos.titan2.setup.core.Readiness
 import org.sableos.titan2.setup.core.SetupModel
 import org.sableos.titan2.setup.core.SetupRows
+import org.sableos.titan2.setup.core.SetupPresentation
 
 /**
  * Post-provisioning readiness checklist. This is not the Android Setup Wizard (that is a privileged system
@@ -61,7 +62,9 @@ class SetupActivity : Activity() {
                 .apply { setPadding(0, px(SPACING), 0, px(SPACING)) }
         )
         if (failure != null) body.addView(text(failure, DETAIL_SP, WARN, true))
-        items.forEach { addRow(it) }
+        items.forEachIndexed { index, item ->
+            addRow(item, SetupPresentation.stepLabel(index, items.size))
+        }
         body.addView(
             text(SetupModel.FOOTNOTE, DETAIL_SP, DIM, false).apply {
                 setPadding(0, px(SPACING), 0, 0)
@@ -69,7 +72,11 @@ class SetupActivity : Activity() {
         )
     }
 
-    private fun addRow(item: Item) {
+    private fun addRow(item: Item, stepLabel: String) {
+        body.addView(
+            text(stepLabel, DETAIL_SP, DIM, false)
+                .apply { setPadding(0, px(SPACING), 0, 0) }
+        )
         body.addView(
             text(marker(item.state) + item.title, ROW_TITLE_SP, Color.WHITE, true)
                 .apply { setPadding(0, px(SPACING), 0, 0) }
