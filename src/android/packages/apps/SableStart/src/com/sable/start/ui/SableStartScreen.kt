@@ -1225,6 +1225,10 @@ private fun SearchScreen(
                     command.subtitle.lowercase(locale).contains(normalizedQuery.lowercase(locale)) ||
                     command in settingsMatches)
         }
+    // The first ranked local app is visibly the best match. All Apps and
+    // Command never bypass Android's per-profile LauncherApps visibility.
+    val bestMatch = filteredApps.firstOrNull().takeIf { normalizedQuery.isNotBlank() }
+    val remainingApps = filteredApps.filterNot { it.stableKey() == bestMatch?.stableKey() }
 
     Column(
         modifier =
@@ -1267,12 +1271,25 @@ private fun SearchScreen(
                 }
             }
 
-            if (filteredApps.isNotEmpty()) {
+            if (bestMatch != null) {
+                item {
+                    SectionLabel("best match")
+                }
+                item(key = "best-local-app") {
+                    AppRow(
+                        app = bestMatch,
+                        onClick = { onLaunchApp(bestMatch) },
+                        onContext = { onOpenPeek(bestMatch) },
+                    )
+                }
+            }
+
+            if (remainingApps.isNotEmpty()) {
                 item {
                     SectionLabel("apps")
                 }
                 items(
-                    items = filteredApps,
+                    items = remainingApps,
                     key = { it.stableKey() },
                 ) { app ->
                     AppRow(
@@ -1281,7 +1298,7 @@ private fun SearchScreen(
                         onContext = { onOpenPeek(app) },
                     )
                 }
-            } else if (filteredCommands.isEmpty()) {
+            } else if (bestMatch == null && filteredCommands.isEmpty()) {
                 item {
                     EmptyState("No local results match “$normalizedQuery”.")
                 }
