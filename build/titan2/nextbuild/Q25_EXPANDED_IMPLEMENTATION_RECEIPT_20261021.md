@@ -33,3 +33,23 @@
 9. Original five Q25 owner decisions (emergency key, Diagnostics placement, QS columns, Seedvault restore fail-closed, legacy Settings rows) remain recorded and unforced.
 
 **Operational status:** `FULL_23_ROW_Q25_CONFORMANCE=OPEN` / `NEXT_AOSP_BUILD=HOLD` / `FLASH=NO`. Run targeted app unit tests/Android16 compile only after controlled source staging in a non-running workspace. Preserve all previous image and log receipts.
+
+## Host-only exact A16 owner snapshot (new, optional)
+`build/titan2/nextbuild/a16_owner_snapshot.py` parses the 26 pinned original Q25 patch diff headers and the active global input-policy owner, reads **only** matching Android16 source files, and produces a bounded receipt or explicitly requested ZIP; it does not mutate `android/`, stage product, execute builds, or contact a device. Missing sources remain reported as missing rather than guessed.
+
+From a **separate read-only checkout of the PR347 branch**, not the frozen PR346 build terminal:
+
+```bash
+cd /srv/sable-build/workspaces/titan2-track-b/tb2-pr347-nextbuild-source
+python3 -B build/titan2/nextbuild/a16_owner_snapshot.py \
+  --android-root /srv/sable-build/workspaces/titan2-track-b/android --plan
+# Optional, only when source handoff is needed and output path is new:
+python3 -B build/titan2/nextbuild/a16_owner_snapshot.py \
+  --android-root /srv/sable-build/workspaces/titan2-track-b/android \
+  --collect --out "$HOME/Downloads/TB2_Q25_A16_OWNER_SNAPSHOT.zip"
+```
+The source checkout path above is an **example**, not a claimed existing host directory; do not checkout PR347 into the running PR346 workspace. Output ZIP must be outside Android and Sable source trees and must not exist. Input symlinks, owner path escapes, size overflow, module drift and patch count changes fail closed.
+
+**Exact snapshot tool test evidence (assistant host, not ai-g732):** source Git blob `0f8a5f457536bc44d173e4a3dd3fbac554ff678b`; regression file Git blob `9a65dc827df2bd00194735b7b5be62f6a954fd2a`; both independently reconstructed with exact SHA1 identities. Python `py_compile` PASS, 8/8 real standard-library regression tests PASS (0.052s), 3,000 small-file scans 0.365s test-fixture microbenchmark. A whole Android source snapshot has **not** yet been run on ai-g732.
+
+This tool is **not required to finish already-existing portable UI port**; it is the safe dependency to adapt actual SystemUI/Settings/Dialer/DocumentsUI source and to identify missing browser/first-boot owners without fabricating success.
