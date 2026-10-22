@@ -1,0 +1,202 @@
+{
+  "schema": "TB2_NEXTBUILD_SOURCE_READINESS_V1",
+  "base_commit": "7ead6fcf37ffc231ea168b18641bcc7b1c7ae8ab",
+  "original_q25_status_counts": {
+    "partial": 18,
+    "done": 2,
+    "done_in_code": 1,
+    "missing": 1,
+    "not_applicable": 1
+  },
+  "items": [
+    {
+      "id": "start-titan2-3page",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "all-apps-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "command-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "hub-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "messages-conversation-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "phone-dialer-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "contacts-people-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "lockscreen-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "quick-settings-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "settings-titan2-approved",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "setup-wizard-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "battery-health-usage-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "mobile-manager-app-controls-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "private-space-dual-work-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "connectivity-otg-nfc-cast-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "camera-capture-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "browser-webview-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "files-documents-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "mail-calendar-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "media-gallery-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "utilities-notes-recorder-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "toolbox-hardware-titan2",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "subscreen-shortcut-keyboard-titan2",
+      "status": "not_applicable",
+      "evidence_file": null,
+      "evidence_sha256": null
+    }
+  ],
+  "requirements": [
+    {
+      "id": "effective-single-provider",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "installed-package-and-privapp-identity",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "G1-framework-classes-and-bindings",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "G2-native-linker-and-abi",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "G3-vendor-ims-transport",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "hard-restricted-sms-role",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "fresh-selected-apk-provenance",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    },
+    {
+      "id": "SableLauncher-home-and-quickstep-recents",
+      "status": "open",
+      "evidence_file": null,
+      "evidence_sha256": null
+    }
+  ],
+  "qualifier": "source-completion check only, never a hardware IMS or flash qualification"
+}
