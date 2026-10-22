@@ -4,8 +4,6 @@ import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.view.Surface
-import android.view.InputDevice
-import android.view.MotionEvent
 import android.view.TextureView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import org.sableos.titan2.camera.core.CameraAction
+import org.sableos.titan2.camera.core.CameraPreviewInputPolicy
 import org.sableos.titan2.camera.core.CameraDeviceProfile
 import org.sableos.titan2.camera.core.DeckContext
 import org.sableos.titan2.camera.core.DeckOrientation
@@ -161,16 +160,12 @@ internal fun CameraPreviewSurface(
             // Trackpads and connected mice emit SOURCE_MOUSE: they must not be
             // reinterpreted as a physical touchscreen press on the preview.
             view.setOnTouchListener { _, event ->
-                val touchScreen =
-                    (event.source and InputDevice.SOURCE_TOUCHSCREEN) ==
-                        InputDevice.SOURCE_TOUCHSCREEN
-                val touchTool =
-                    event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER ||
-                        event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS
-                if (!touchScreen || !touchTool) {
+                val source = event.source
+                val tool = event.getToolType(0)
+                if (!CameraPreviewInputPolicy.isDirectTouch(source, tool)) {
                     false
                 } else {
-                    if (event.actionMasked == MotionEvent.ACTION_UP) {
+                    if (CameraPreviewInputPolicy.revealControls(source, tool, event.actionMasked)) {
                         onDirectScreenTap()
                     }
                     true
