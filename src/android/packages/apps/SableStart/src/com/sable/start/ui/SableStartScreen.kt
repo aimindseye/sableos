@@ -50,6 +50,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -73,6 +77,8 @@ import org.sableos.start.model.CommandQuery
 import org.sableos.start.model.CommandRanking
 import org.sableos.start.model.CommandScope
 import org.sableos.start.model.stableKey
+import org.sableos.start.privacy.AllAppsKeyAction
+import org.sableos.start.privacy.AllAppsKeyPolicy
 import org.sableos.start.platform.LiveSurfaceRepository
 import java.time.LocalTime
 import java.util.Locale
@@ -909,6 +915,37 @@ private fun AppsScreen(
         modifier =
             Modifier
                 .fillMaxSize()
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) {
+                        false
+                    } else {
+                        val key = event.nativeKeyEvent
+                        val decision =
+                            AllAppsKeyPolicy.decide(
+                                keyCode = key.keyCode,
+                                unicode = key.unicodeChar,
+                                metaState = key.metaState,
+                                repeat = key.repeatCount > 0,
+                            )
+                        when (decision.action) {
+                            AllAppsKeyAction.Search -> {
+                                onSearch()
+                                true
+                            }
+                            AllAppsKeyAction.TypeToJump -> {
+                                val target = decision.char.uppercaseChar().toString()
+                                val index = rows.indexOfFirst { it.section == target }
+                                if (index >= 0) {
+                                    activeLetter = target
+                                    scope.launch { listState.scrollToItem(index) }
+                                }
+                                true
+                            }
+                            AllAppsKeyAction.IgnoreRepeat -> true
+                            else -> false // app rows retain Enter/Space/Menu focus semantics
+                        }
+                    }
+                }
                 .padding(top = 18.dp, bottom = 18.dp),
     ) {
         Column(
