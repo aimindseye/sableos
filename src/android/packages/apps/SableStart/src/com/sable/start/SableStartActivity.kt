@@ -175,6 +175,7 @@ class SableStartActivity : ComponentActivity() {
                     launcherAppsRepository.launch(entry)
                 },
                 onOpenSystemSettings = ::openSystemSettings,
+                onOpenSystemSettingsDestination = ::openSystemSettingsDestination,
                 onOpenAppInfo = { entry ->
                     launcherAppsRepository.openAppDetails(entry)
                 },
@@ -264,6 +265,20 @@ class SableStartActivity : ComponentActivity() {
     private fun openSystemSettings() {
         runCatching {
             startActivity(Intent(Settings.ACTION_SETTINGS))
+        }
+    }
+
+    /** Launch only public Settings actions; a missing handler falls back to Settings. */
+    private fun openSystemSettingsDestination(action: String) {
+        if (!action.startsWith("android.settings.") &&
+            action != Intent.ACTION_POWER_USAGE_SUMMARY
+        ) {
+            return
+        }
+        runCatching {
+            startActivity(Intent(action))
+        }.onFailure {
+            openSystemSettings()
         }
     }
 
