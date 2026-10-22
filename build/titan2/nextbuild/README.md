@@ -22,7 +22,7 @@ python3 -B build/titan2/nextbuild/check-ready.py --require-ready
 bash tests/titan2/q25-nextbuild/run-policy-smoke.sh
 ```
 
-The pure Kotlin test compiles only the Q25 source policies plus the locally authored static permission-chip policy with `kotlinc`; it never builds Android, changes caches or contacts a device. It requires `kotlinc`/Java on PATH. Android16 Soong/Compose compilation and runtime acceptance remain **NOT RUN** for this branch.
+The pure Kotlin test compiles only the Q25 source policies plus the locally authored static permission-chip policy with `kotlinc`; it never builds Android, changes caches or contacts a device. It requires `kotlinc`/Java on PATH. The exact portable Kotlin policies were reconstructed by Git SHA1 and **compiled with kotlinc-jvm 1.9.0 / JRE 21** on the assistant host; the test jar printed **Q25_PORTABLE_POLICY_SMOKE=PASS_28**. This is a pure JVM smoke, not Android16 Soong/Compose compilation or runtime acceptance. Android16 Soong/Compose compilation remains **NOT RUN** for this branch.
 
 ## Verified assistant-host regression evidence
 
@@ -32,7 +32,7 @@ The pure Kotlin test compiles only the Q25 source policies plus the locally auth
 - **10/10** standard-library Python tests PASS (0.023s test run on disposable local fixture): 23-row identity, required release HOLDS, row changes, invalid statuses, missing/hash-drift/symlink/path-escape evidence, driver invocation contract.
 - Gate `--report` PASS/OPEN; `--require-ready` actual exit code 78 with `HOLD_Q25_AND_IMS_SCOPE_OPEN`.
 - One short 5-process gate benchmark on this assistant fixture: **5.040s total, 1.008s/process** with Python interpreter startup overhead; not an ai-g732 timing prediction. A longer 40-process loop exceeded runtime limit; no result claimed.
-- Bash syntax of the exact new driver gate fragment PASS; full Android `m`/Kotlin Compose compile NOT EXECUTED.
+- Exact host-only `run-policy-smoke.sh` Git blob `0864b4de2906b0f6a481d9641976b79e5b5f7d41` reconstructed; `bash -n` PASS. The Kotlin smoke source blob `a2c2e9d3a1c00cd3690525ab0dc811b667345de7` matched and the 28 JVM assertions PASS. Original upstream Git blobs for Q25 Command `76d67ab365ec20fc9d54ca7afbeba82638f7efa4` and All Apps `18591715002707aa5878266c34f795e357e7b573` were matched exactly; permission-chip blob `ccadb18da0815e1adf714f4b260ddd598c3297dc` matched. Full Android `m`/Kotlin Compose compile NOT EXECUTED.
 
 ## Next source work; NOT done in this slice
 
