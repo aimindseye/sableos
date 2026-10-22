@@ -143,7 +143,15 @@ class LauncherAppsRepository(
     fun setLocked(
         user: UserHandle,
         locked: Boolean,
-    ): Boolean = runCatching { userManager.requestQuietModeEnabled(locked, user) }.getOrDefault(false)
+    ): Boolean {
+        val knownProfile = runCatching { userManager.userProfiles.contains(user) }.getOrDefault(false)
+        if (!LauncherProfileSecurityGate.mayTogglePrivateSpace(
+                knownProfile = knownProfile,
+                isActualPrivateProfile = profileLabelFor(user) == PROFILE_PRIVATE,
+            )) return false
+        // Android owns authentication and the actual quiet-mode transition.
+        return runCatching { userManager.requestQuietModeEnabled(locked, user) }.getOrDefault(false)
+    }
 
     private fun profileLabelFor(user: UserHandle): String? {
         if (user == launcherUser) return null
@@ -194,8 +202,33 @@ class LauncherAppsRepository(
         }.getOrDefault(false)
     }
 
+    /**
+     * Recheck platform profile state at launch time, not just when the list was drawn.
+     * A locked/removed work or private profile may have changed since the UI snapshot.
+     * This is additional launcher-side gating; Android still enforces the actual launch.
+     */
+    private fun canLaunchNow(entry: AppEntry): Boolean {
+        val ownUser = entry.user == launcherUser
+        val knownProfile = runCatching { userManager.userProfiles.contains(entry.user) }
+            .getOrDefault(false)
+        val profile = if (ownUser) null else profileLabelFor(entry.user)
+        val quiet = if (ownUser) false else isLocked(entry.user)
+        val visible = runCatching {
+            launcherApps.getActivityList(null, entry.user)
+                .any { it.componentName == entry.component }
+        }.getOrDefault(false)
+        return LauncherProfileSecurityGate.mayLaunch(
+            knownProfile = knownProfile,
+            ownUser = ownUser,
+            supportedManagedOrPrivateProfile = profile == PROFILE_WORK || profile == PROFILE_PRIVATE,
+            quietModeEnabled = quiet,
+            currentActivityVisible = visible,
+        )
+    }
+
     fun launch(entry: AppEntry): Boolean =
         try {
+            if (!canLaunchNow(entry)) return false
             launcherApps.startMainActivity(
                 entry.component,
                 entry.user,
