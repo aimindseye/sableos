@@ -68,6 +68,13 @@
                 <action android:name="org.sableos.start.action.EDIT_HOME" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <!-- Explicit local Command entry for Hub/Settings/other Sable apps.
+                 This is not a system-wide Alt+Space interception claim. -->
+            <intent-filter>
+                <action android:name="org.sableos.start.action.OPEN_COMMAND" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
