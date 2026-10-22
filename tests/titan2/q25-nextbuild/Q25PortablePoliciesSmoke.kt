@@ -71,5 +71,5 @@ fun main() {
     check(AppAction.Uninstall !in choices)
     check(AppAction.NotificationSettings !in choices)
     check(AppActionPolicy.requiresConfirmation(AppAction.Uninstall))
-    println("Q25_PORTABLE_POLICY_SMOKE=PASS_22")
+    println("Q25_PORTABLE_POLICY_SMOKE=PASS_23")
 }
