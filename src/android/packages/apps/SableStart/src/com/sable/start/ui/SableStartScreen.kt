@@ -10,6 +10,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,6 +81,8 @@ import org.sableos.start.model.CommandScope
 import org.sableos.start.model.stableKey
 import org.sableos.start.privacy.AllAppsKeyAction
 import org.sableos.start.privacy.AllAppsKeyPolicy
+import org.sableos.start.privacy.AllAppsPermissionChip
+import org.sableos.start.privacy.AllAppsPermissionChipPolicy
 import org.sableos.start.platform.LiveSurfaceRepository
 import java.time.LocalTime
 import java.util.Locale
@@ -903,7 +907,14 @@ private fun AppsScreen(
     onLaunchApp: (AppEntry) -> Unit,
     onOpenPeek: (AppEntry) -> Unit,
 ) {
-    val rows = remember(apps) { buildRailRows(apps) }
+    var activePermissionChip by remember { mutableStateOf(AllAppsPermissionChip.All) }
+    val visibleApps =
+        remember(apps, activePermissionChip) {
+            apps.filter { entry ->
+                AllAppsPermissionChipPolicy.matches(entry.privacySummary, activePermissionChip)
+            }
+        }
+    val rows = remember(visibleApps) { buildRailRows(visibleApps) }
     val letters = remember(rows) { rows.map { it.section }.distinct() }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -961,9 +972,43 @@ private fun AppsScreen(
             Spacer(Modifier.height(8.dp))
             SearchLaunchButton(onClick = onSearch)
             Spacer(Modifier.height(12.dp))
+            Row(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                AllAppsPermissionChip.entries.forEach { chip ->
+                    val selected = activePermissionChip == chip
+                    Text(
+                        text = chip.title,
+                        modifier =
+                            Modifier
+                                .clickable { activePermissionChip = chip }
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color =
+                            if (selected) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                text = "Filter by granted permission groups · not recent access",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 6.dp),
+            )
 
             if (rows.isEmpty()) {
-                EmptyState("No launchable apps are available.")
+                EmptyState(
+                    if (activePermissionChip == AllAppsPermissionChip.All) {
+                        "No launchable apps are available."
+                    } else {
+                        "No accessible apps report this granted permission group."
+                    },
+                )
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
