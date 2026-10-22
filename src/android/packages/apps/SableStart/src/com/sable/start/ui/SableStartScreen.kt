@@ -989,8 +989,11 @@ private fun AppsScreen(
                                 .padding(horizontal = 8.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelLarge,
                         color =
-                            if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                     )
                 }
             }
