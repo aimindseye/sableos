@@ -5,6 +5,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MODE="${1:---direct}"
 [[ "$MODE" == --direct ]] || { echo 'TB2_BUILD=HOLD_USE_DIRECT_MODE'; exit 78; }
+# Next-build source convergence gate: no full AOSP build from partial Q25/IMS work.
+# This exists only on the dedicated next-build branch, not the running PR346 commit.
+python3 "$ROOT/build/titan2/nextbuild/check-ready.py" --require-ready || {
+  echo 'TB2_BUILD=HOLD_Q25_IMS_SOURCE_COMPLETION_BEFORE_COMPILATION'
+  exit 78
+}
 source "$ROOT/build/config/storage.env"
 source "$ROOT/build/config/host-tools.env"
 ANDROID="${SABLE_TB2_ANDROID_ROOT:-$SABLE_WORKSPACES_ROOT/titan2-track-b/android}"
