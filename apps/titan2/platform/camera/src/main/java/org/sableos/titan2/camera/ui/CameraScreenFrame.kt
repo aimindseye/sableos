@@ -4,6 +4,8 @@ import android.graphics.Matrix
 import android.graphics.RectF
 import android.graphics.SurfaceTexture
 import android.view.Surface
+import android.view.InputDevice
+import android.view.MotionEvent
 import android.view.TextureView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -76,9 +78,6 @@ internal fun CameraScreenContent(frame: CameraScreenFrame, actions: CameraScreen
     Box(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding()) {
         actions.preview(
             Modifier.align(Alignment.Center).fillMaxWidth().aspectRatio(frame.previewAspect)
-                .clickable(enabled = frame.presentation == DeckPresentation.LandscapeDeck) {
-                    actions.revealTouch()
-                }
         )
         StatusOverlay(
             frame.info.hud,
@@ -147,7 +146,8 @@ internal fun transformCameraPreview(tv: TextureView, ps: Size, rotation: Int) {
 internal fun CameraPreviewSurface(
     modifier: Modifier,
     onViewCreated: (TextureView) -> Unit,
-    listener: TextureView.SurfaceTextureListener
+    listener: TextureView.SurfaceTextureListener,
+    onDirectScreenTap: () -> Unit
 ) {
     AndroidView(
         modifier = modifier,
@@ -155,6 +155,26 @@ internal fun CameraPreviewSurface(
             TextureView(ctx).apply {
                 onViewCreated(this)
                 surfaceTextureListener = listener
+            }
+        },
+        update = { view ->
+            // Trackpads and connected mice emit SOURCE_MOUSE: they must not be
+            // reinterpreted as a physical touchscreen press on the preview.
+            view.setOnTouchListener { _, event ->
+                val touchScreen =
+                    (event.source and InputDevice.SOURCE_TOUCHSCREEN) ==
+                        InputDevice.SOURCE_TOUCHSCREEN
+                val touchTool =
+                    event.getToolType(0) == MotionEvent.TOOL_TYPE_FINGER ||
+                        event.getToolType(0) == MotionEvent.TOOL_TYPE_STYLUS
+                if (!touchScreen || !touchTool) {
+                    false
+                } else {
+                    if (event.actionMasked == MotionEvent.ACTION_UP) {
+                        onDirectScreenTap()
+                    }
+                    true
+                }
             }
         }
     )
