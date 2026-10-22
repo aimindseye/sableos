@@ -38,6 +38,7 @@ android_app {
         ":sable_design_shared_srcs",
         "src/com/sable/start/SableStartActivity.kt",
         "src/com/sable/start/platform/LauncherAppsRepository.kt",
+        "src/com/sable/start/platform/LauncherProfileSecurityGate.kt",
     ],
 
     resource_dirs: ["res"],
