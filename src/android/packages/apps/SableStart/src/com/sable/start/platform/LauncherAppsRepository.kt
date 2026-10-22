@@ -214,7 +214,7 @@ class LauncherAppsRepository(
         val profile = if (ownUser) null else profileLabelFor(entry.user)
         val quiet = if (ownUser) false else isLocked(entry.user)
         val visible = runCatching {
-            launcherApps.getActivityList(null, entry.user)
+            launcherApps.getActivityList(entry.component.packageName, entry.user)
                 .any { it.componentName == entry.component }
         }.getOrDefault(false)
         return LauncherProfileSecurityGate.mayLaunch(
