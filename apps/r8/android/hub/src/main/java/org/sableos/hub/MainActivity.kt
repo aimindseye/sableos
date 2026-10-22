@@ -183,6 +183,17 @@ class MainActivity : ComponentActivity() {
                     onOpenSableMail = {
                         repository.openSableMail()
                     },
+                    onOpenCommand = {
+                        runCatching {
+                            startActivity(
+                                Intent("org.sableos.start.action.OPEN_COMMAND")
+                                    .setClassName(
+                                        "org.sableos.launcher",
+                                        "org.sableos.start.SableStartActivity",
+                                    ),
+                            )
+                        }.isSuccess
+                    },
                     onDial = { number ->
                         repository.dial(number)
                     },
