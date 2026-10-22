@@ -227,8 +227,7 @@ class LauncherAppsRepository(
     }
 
     fun launch(entry: AppEntry): Boolean =
-        try {
-            if (!canLaunchNow(entry)) return false
+        if (!canLaunchNow(entry)) false else try {
             launcherApps.startMainActivity(
                 entry.component,
                 entry.user,
