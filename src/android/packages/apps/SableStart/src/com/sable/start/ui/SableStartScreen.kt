@@ -69,6 +69,9 @@ import org.sableos.start.live.LiveAvailability
 import org.sableos.start.live.LiveDatum
 import org.sableos.start.live.LiveSurfaceSnapshot
 import org.sableos.start.model.AppEntry
+import org.sableos.start.model.CommandQuery
+import org.sableos.start.model.CommandRanking
+import org.sableos.start.model.CommandScope
 import org.sableos.start.model.stableKey
 import org.sableos.start.platform.LiveSurfaceRepository
 import java.time.LocalTime
@@ -103,6 +106,7 @@ private data class SearchCommand(
     val title: String,
     val subtitle: String,
     val mark: String,
+    val scope: CommandScope = CommandScope.Actions,
     val onClick: () -> Unit,
 )
 
@@ -145,6 +149,7 @@ fun SableStartScreen(
     onResetAppearance: () -> Unit = {},
     onLaunchApp: (AppEntry) -> Boolean,
     onOpenSystemSettings: () -> Unit,
+    onOpenSystemSettingsDestination: (String) -> Unit,
     onOpenAppInfo: (AppEntry) -> Unit,
     onRequestLivePermissions: () -> Unit,
     onRefreshLive: () -> Unit,
@@ -304,6 +309,7 @@ fun SableStartScreen(
                     SableStartDestination.Search ->
                         SearchScreen(
                             apps = apps,
+                            recentKeys = recentKeys,
                             onBack = ::navigateBack,
                             onLaunchApp = ::launchApp,
                             onOpenPeek = { app ->
@@ -319,6 +325,7 @@ fun SableStartScreen(
                                 destination = SableStartDestination.Live
                             },
                             onOpenSettings = onOpenSystemSettings,
+                            onOpenSettingsDestination = onOpenSystemSettingsDestination,
                         )
 
                     SableStartDestination.Live ->
@@ -1053,6 +1060,7 @@ private fun AppsScreen(
 @Composable
 private fun SearchScreen(
     apps: List<AppEntry>,
+    recentKeys: List<String>,
     onBack: () -> Unit,
     onLaunchApp: (AppEntry) -> Unit,
     onOpenPeek: (AppEntry) -> Unit,
@@ -1060,18 +1068,26 @@ private fun SearchScreen(
     onAppearance: () -> Unit,
     onLive: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSettingsDestination: (String) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
-    val normalizedQuery = query.trim()
+    val commandQuery = remember(query) { CommandQuery.parse(query) }
+    val normalizedQuery = commandQuery.term
     val locale = Locale.getDefault()
+    // Never enumerate people/SMS/provider data here: owner apps enforce their own gates.
     val filteredApps =
-        remember(apps, normalizedQuery) {
-            if (normalizedQuery.isEmpty()) {
-                apps.take(6)
+        remember(apps, recentKeys, commandQuery) {
+            if (!commandQuery.includes(CommandScope.Apps)) {
+                emptyList()
             } else {
-                apps.filter { app ->
-                    app.label.contains(normalizedQuery, ignoreCase = true)
-                }.take(12)
+                CommandRanking.apps(
+                    items = apps,
+                    label = { it.label },
+                    recentRank = { app ->
+                        recentKeys.indexOf(app.stableKey()).takeIf { it >= 0 }
+                    },
+                    term = normalizedQuery,
+                ).take(if (normalizedQuery.isEmpty()) 6 else 12)
             }
         }
 
@@ -1081,6 +1097,7 @@ private fun SearchScreen(
                 title = "All apps",
                 subtitle = "Alphabetical launcher list",
                 mark = "A",
+                scope = CommandScope.Apps,
                 onClick = onAllApps,
             ),
             SearchCommand(
@@ -1093,20 +1110,38 @@ private fun SearchScreen(
                 title = "Local context",
                 subtitle = "Calendar, photos and local media state",
                 mark = "◫",
+                scope = CommandScope.Hub,
                 onClick = onLive,
             ),
             SearchCommand(
                 title = "System Settings",
                 subtitle = "Open Android settings",
                 mark = "⚙",
+                scope = CommandScope.Settings,
                 onClick = onOpenSettings,
             ),
         )
+    val settingsMatches =
+        if (commandQuery.includes(CommandScope.Settings)) {
+            CommandRanking.settings(normalizedQuery).map { destination ->
+                SearchCommand(
+                    title = destination.title,
+                    subtitle = "Android Settings",
+                    mark = "⚙",
+                    scope = CommandScope.Settings,
+                    onClick = { onOpenSettingsDestination(destination.action) },
+                )
+            }
+        } else {
+            emptyList()
+        }
     val filteredCommands =
-        commands.filter { command ->
-            normalizedQuery.isEmpty() ||
-                command.title.lowercase(locale).contains(normalizedQuery.lowercase(locale)) ||
-                command.subtitle.lowercase(locale).contains(normalizedQuery.lowercase(locale))
+        (commands + settingsMatches).filter { command ->
+            commandQuery.includes(command.scope) &&
+                (normalizedQuery.isEmpty() ||
+                    command.title.lowercase(locale).contains(normalizedQuery.lowercase(locale)) ||
+                    command.subtitle.lowercase(locale).contains(normalizedQuery.lowercase(locale)) ||
+                    command in settingsMatches)
         }
 
     Column(
