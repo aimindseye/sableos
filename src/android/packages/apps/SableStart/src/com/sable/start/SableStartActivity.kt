@@ -271,7 +271,7 @@ class SableStartActivity : ComponentActivity() {
     /** Launch only public Settings actions; a missing handler falls back to Settings. */
     private fun openSystemSettingsDestination(action: String) {
         if (!action.startsWith("android.settings.") &&
-            action != Intent.ACTION_POWER_USAGE_SUMMARY
+            action != "android.intent.action.POWER_USAGE_SUMMARY"
         ) {
             return
         }
