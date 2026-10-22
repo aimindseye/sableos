@@ -8,6 +8,8 @@ import org.sableos.start.privacy.AllAppsKeyPolicy
 import org.sableos.start.privacy.AppAction
 import org.sableos.start.privacy.AppActionContext
 import org.sableos.start.privacy.AppActionPolicy
+import org.sableos.start.privacy.AllAppsPermissionChip
+import org.sableos.start.privacy.AllAppsPermissionChipPolicy
 
 /** Pure host-side Q25 policy smoke checks; never queries installed profiles, IMS or device. */
 fun main() {
@@ -71,5 +73,10 @@ fun main() {
     check(AppAction.Uninstall !in choices)
     check(AppAction.NotificationSettings !in choices)
     check(AppActionPolicy.requiresConfirmation(AppAction.Uninstall))
-    println("Q25_PORTABLE_POLICY_SMOKE=PASS_23")
+    check(AllAppsPermissionChipPolicy.matches("permissions · camera · location", AllAppsPermissionChip.Camera))
+    check(AllAppsPermissionChipPolicy.matches("permissions · camera · location", AllAppsPermissionChip.Location))
+    check(!AllAppsPermissionChipPolicy.matches("permissions · camera", AllAppsPermissionChip.Messages))
+    check(!AllAppsPermissionChipPolicy.matches("permissions · unavailable", AllAppsPermissionChip.Camera))
+    check(AllAppsPermissionChipPolicy.matches("permissions · unavailable", AllAppsPermissionChip.All))
+    println("Q25_PORTABLE_POLICY_SMOKE=PASS_28")
 }
