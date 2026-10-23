@@ -693,15 +693,7 @@ class MainActivity : ComponentActivity() {
                 profile = profile,
                 previewAspect = previewAspect,
                 presentation = DeckOrientation.presentation(cfg.screenWidthDp, cfg.screenHeightDp),
-                info = CameraScreenInfo(
-                    hud,
-                    status,
-                    report?.mismatches?.firstOrNull {
-                        it.kind != org.sableos.titan2.camera.core.MismatchKind.Note
-                    }?.message,
-                    recState,
-                    recMs
-                )
+                info = currentScreenInfo()
             ),
             actions = CameraScreenActions(
                 preview = { modifier ->
@@ -738,6 +730,16 @@ class MainActivity : ComponentActivity() {
             )
         )
     }
+
+    private fun currentScreenInfo(): CameraScreenInfo = CameraScreenInfo(
+        hud,
+        status,
+        report?.mismatches?.firstOrNull {
+            it.kind != org.sableos.titan2.camera.core.MismatchKind.Note
+        }?.message,
+        recState,
+        recMs
+    )
 
     private fun previewSurfaceListener() = cameraSurfaceListener(
         onAvailable = { st ->
