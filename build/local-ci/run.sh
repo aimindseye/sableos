@@ -335,8 +335,14 @@ PY
       bash "$ROOT/build/gates/r8-no-stale-product-code.sh"
   run_static_contract r9-sablestart-design-self-test \
     python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
-  run_static_contract r9-sablestart-design \
-    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+    # PR347 Titan2/TB2 has a separately reviewed A16 launcher source/design.
+    # Keep the R9 contract self-test, but do not impose Panther R9 UI literals.
+    echo "SABLE_LOCAL_CI_R9_SABLESTART_DESIGN=SKIP_NONSELECTED_PANTHER_R9_PRODUCT"
+  else
+    run_static_contract r9-sablestart-design \
+      python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  fi
   if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then
     run_static_contract r9-launcher3-foundation-self-test \
       python3 "$ROOT/build/gates/r9-launcher3-foundation-contract.py" --self-test
