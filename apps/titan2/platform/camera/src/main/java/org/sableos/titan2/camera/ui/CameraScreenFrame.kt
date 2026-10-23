@@ -24,8 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import org.sableos.titan2.camera.core.CameraAction
-import org.sableos.titan2.camera.core.CameraPreviewInputPolicy
 import org.sableos.titan2.camera.core.CameraDeviceProfile
+import org.sableos.titan2.camera.core.CameraPreviewInputPolicy
 import org.sableos.titan2.camera.core.DeckContext
 import org.sableos.titan2.camera.core.DeckOrientation
 import org.sableos.titan2.camera.core.DeckPresentation

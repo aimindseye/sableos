@@ -20,18 +20,24 @@ class TasksController(private val host: ToolHost) : ToolController {
 
     private fun render() {
         body.removeAllViews()
-        body.addView(Ui.body(ctx, "Tasks stay in private Sable Tools storage. No cloud sync or reminders."))
+        body.addView(
+            Ui.body(ctx, "Tasks stay in private Sable Tools storage. No cloud sync or reminders.")
+        )
         body.addView(Ui.row(ctx, "+ New task") { newTask() })
-        body.addView(Ui.row(ctx, if (showDone) "Hide completed tasks" else "Show completed tasks") {
-            showDone = !showDone
-            render()
-        })
+        body.addView(
+            Ui.row(ctx, if (showDone) "Hide completed tasks" else "Show completed tasks") {
+                showDone = !showDone
+                render()
+            }
+        )
         val storage = store
         if (storage == null) {
             body.addView(Ui.body(ctx, "Tasks storage unavailable. No changes made."))
             return
         }
-        val tasks = try { storage.list() } catch (_: IOException) {
+        val tasks = try {
+            storage.list()
+        } catch (_: IOException) {
             body.addView(Ui.body(ctx, "Tasks unavailable. No changes made."))
             return
         }
@@ -41,7 +47,11 @@ class TasksController(private val host: ToolHost) : ToolController {
         open.take(MAX_VISIBLE).forEach { task ->
             body.addView(Ui.row(ctx, task.title, "Open") { taskActions(task) })
         }
-        if (open.size > MAX_VISIBLE) body.addView(Ui.body(ctx, "Showing latest $MAX_VISIBLE open tasks."))
+        if (open.size >
+            MAX_VISIBLE
+        ) {
+            body.addView(Ui.body(ctx, "Showing latest $MAX_VISIBLE open tasks."))
+        }
         if (showDone) {
             val done = tasks.filter { it.complete }
             body.addView(Ui.header(ctx, "Completed · ${done.size}"))
@@ -84,7 +94,10 @@ class TasksController(private val host: ToolHost) : ToolController {
                     0 -> try {
                         storage.setComplete(task.id, !task.complete)
                         render()
-                    } catch (_: IOException) { host.toast("Task update failed") }
+                    } catch (_: IOException) {
+                        host.toast("Task update failed")
+                    }
+
                     1 -> confirmDelete(task)
                 }
             }.show()
@@ -99,13 +112,18 @@ class TasksController(private val host: ToolHost) : ToolController {
                 try {
                     storage.delete(task.id)
                     render()
-                } catch (_: IOException) { host.toast("Task delete failed") }
+                } catch (_: IOException) {
+                    host.toast("Task delete failed")
+                }
             }.show()
     }
 
     override fun onCommand(c: Command): Boolean = false // Text fields own every printable key.
-    override fun info() = "App-private tasks; current open tasks always precede explicit completed history. " +
-        "No sync, notifications or background service."
+    override fun info() =
+        "App-private tasks; current open tasks always precede explicit completed history. " +
+            "No sync, notifications or background service."
 
-    private companion object { const val MAX_VISIBLE = 40 }
+    private companion object {
+        const val MAX_VISIBLE = 40
+    }
 }

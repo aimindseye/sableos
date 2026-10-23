@@ -710,7 +710,10 @@ class MainActivity : ComponentActivity() {
                         { textureView = it },
                         previewSurfaceListener(),
                         onDirectScreenTap = {
-                            if (DeckOrientation.presentation(cfg.screenWidthDp, cfg.screenHeightDp) ==
+                            if (DeckOrientation.presentation(
+                                    cfg.screenWidthDp,
+                                    cfg.screenHeightDp
+                                ) ==
                                 org.sableos.titan2.camera.core.DeckPresentation.LandscapeDeck
                             ) {
                                 deck = ControlDeck.toggleTouchChrome(deck)

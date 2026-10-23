@@ -9,6 +9,6 @@ object SetupPresentation {
 
     const val WIFI_HELP =
         "Check that the network appears in Android Wi-Fi Settings, select it, " +
-        "and enter its password using the physical keyboard or on-screen keyboard. " +
-        "This checklist does not configure Wi-Fi or bypass Android provisioning."
+            "and enter its password using the physical keyboard or on-screen keyboard. " +
+            "This checklist does not configure Wi-Fi or bypass Android provisioning."
 }

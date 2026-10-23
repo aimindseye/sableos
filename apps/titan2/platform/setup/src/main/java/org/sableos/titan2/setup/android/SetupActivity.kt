@@ -12,8 +12,8 @@ import org.sableos.titan2.setup.core.Item
 import org.sableos.titan2.setup.core.LaunchReport
 import org.sableos.titan2.setup.core.Readiness
 import org.sableos.titan2.setup.core.SetupModel
-import org.sableos.titan2.setup.core.SetupRows
 import org.sableos.titan2.setup.core.SetupPresentation
+import org.sableos.titan2.setup.core.SetupRows
 
 /**
  * Post-provisioning readiness checklist. This is not the Android Setup Wizard (that is a privileged system
