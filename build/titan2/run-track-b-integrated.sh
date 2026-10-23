@@ -66,6 +66,7 @@ else
 fi
 echo "TB2_PRODUCT_STAGE_EXIT=$rc_stage"
 if ((rc_stage == 0)); then
+  rc_aosp=0 # successful m must not inherit the NOT_RUN sentinel
 (
   cd "$ANDROID" || exit 66
   set +u # AOSP envsetup/lunch refer to optionally unset shell variables.
