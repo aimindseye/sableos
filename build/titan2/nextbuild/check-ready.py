@@ -98,6 +98,9 @@ def check(mode: str) -> int:
                 print(f"TB2_NEXTBUILD_SOURCE_OPEN={name}")
             if mode == "require-ready":
                 return hold("Q25_AND_IMS_SCOPE_OPEN")
+            if mode == "engineering-build":
+                print("TB2_NEXTBUILD_ENGINEERING=SOURCE_LEDGER_VALID_OPEN_NOT_RELEASE_READY")
+                return 0
             print("TB2_NEXTBUILD_READINESS=REPORT_OPEN_NO_MUTATION")
             return 0
         print("TB2_NEXTBUILD_READINESS=SOURCE_RECEIPTS_PRESENT_REVIEW_REQUIRED")
@@ -110,10 +113,14 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--report", action="store_true")
     parser.add_argument("--require-ready", action="store_true")
+    parser.add_argument("--engineering-build", action="store_true")
     args = parser.parse_args()
-    if args.report == args.require_ready:
-        parser.error("select exactly one of --report or --require-ready")
-    return check("require-ready" if args.require_ready else "report")
+    if sum((args.report, args.require_ready, args.engineering_build)) != 1:
+        parser.error("select exactly one readiness mode")
+    mode = "require-ready" if args.require_ready else (
+        "engineering-build" if args.engineering_build else "report"
+    )
+    return check(mode)
 
 
 if __name__ == "__main__":

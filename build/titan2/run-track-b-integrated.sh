@@ -5,10 +5,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 MODE="${1:---direct}"
 [[ "$MODE" == --direct ]] || { echo 'TB2_BUILD=HOLD_USE_DIRECT_MODE'; exit 78; }
-# Next-build source convergence gate: no full AOSP build from partial Q25/IMS work.
-# This exists only on the dedicated next-build branch, not the running PR346 commit.
-python3 "$ROOT/build/titan2/nextbuild/check-ready.py" --require-ready || {
-  echo 'TB2_BUILD=HOLD_Q25_IMS_SOURCE_COMPLETION_BEFORE_COMPILATION'
+# PR347 engineering build admits a valid but incomplete source ledger.
+# Release/flash acceptance still requires --require-ready separately.
+python3 "$ROOT/build/titan2/nextbuild/check-ready.py" --engineering-build || {
+  echo 'TB2_BUILD=HOLD_INVALID_Q25_SOURCE_LEDGER'
   exit 78
 }
 source "$ROOT/build/config/storage.env"
@@ -17,6 +17,17 @@ ANDROID="${SABLE_TB2_ANDROID_ROOT:-$SABLE_WORKSPACES_ROOT/titan2-track-b/android
 [[ -f "$ANDROID/build/envsetup.sh" ]] || { echo "TB2_BUILD=HOLD_ANDROID_SOURCE_MISSING path=$ANDROID"; exit 66; }
 [[ -x "$SABLE_JDK17/bin/java" && -d "$SABLE_ANDROID_SDK" ]] || { echo 'TB2_BUILD=HOLD_CANONICAL_JDK_SDK_MISSING'; exit 66; }
 [[ "$SABLE_GRADLE_USER_HOME" == "$SABLE_HOST_TOOLS_ROOT/gradle" ]] || { echo 'TB2_BUILD=HOLD_NONCANONICAL_GRADLE_CACHE'; exit 78; }
+# Explicit acknowledgement: engineering image only, never a release or flash.
+[[ "${SABLE_TB2_ENGINEERING_IMAGE_ACK:-}" == PR347_CANONICAL_ENGINEERING_IMAGE_NOT_FLASH_READY ]] || {
+  echo 'TB2_BUILD=HOLD_ENGINEERING_IMAGE_ACK_REQUIRED'
+  exit 78
+}
+# External, read-only verification that the selected AOSP source equals PR347.
+python3 "$ROOT/build/titan2/nextbuild/pr347-source-convergence.py" verify \
+  --sable "$ROOT" --android "$ANDROID" || {
+  echo 'TB2_BUILD=HOLD_SELECTED_AOSP_SOURCE_NOT_CONVERGED'
+  exit 78
+}
 JOBS="${SABLE_TB2_JOBS:-4}"
 [[ "$JOBS" =~ ^([1-9]|1[0-6])$ ]] || { echo 'TB2_BUILD=HOLD_INVALID_JOBS'; exit 64; }
 export GRADLE_USER_HOME="$SABLE_GRADLE_USER_HOME" JAVA_HOME="$SABLE_JDK17"
@@ -26,7 +37,7 @@ OUT="${SABLE_TB2_BUILD_EVIDENCE_DIR:-$SABLE_EVIDENCE_ROOT/titan2/track-b-unified
 [[ ! -e "$OUT" ]] || { echo "TB2_BUILD=HOLD_EXISTING_OUTPUT path=$OUT"; exit 78; }
 mkdir -p "$OUT"
 exec > >(tee "$OUT/integrated.log") 2>&1
-printf 'TB2_BUILD=START_SOURCE_ONLY_NOT_FLASH_READY\n'
+printf 'TB2_BUILD=START_ENGINEERING_IMAGE_NOT_RELEASE_OR_FLASH_READY\n'
 printf 'SABLE_SOURCE_COMMIT=%s\n' "$(git -C "$ROOT" rev-parse HEAD)"
 printf 'ANDROID_ROOT=%s\n' "$ANDROID"
 printf 'CANONICAL_GRADLE_HOME=%s\n' "$GRADLE_USER_HOME"
@@ -39,7 +50,8 @@ SABLEOS_DEVICE=titan2 SABLEOS_RELEASE_VERSION=TB2 bash "$ROOT/build/local-ci/run
 echo "TB2_CI_EXIT=$rc_ci"
 if ((rc_ci == 0)); then
   rc_stage=0
-  # Full build consumes source convergence; it does NOT mutate the Android tree.
+  # Source is synchronized only in a separately authorized source-stage.
+  # The canonical image run does NOT mutate the selected source.
   bash "$ROOT/build/titan2/stage-track-b-product.sh" --plan > "$OUT/product-stage.log" 2>&1 || rc_stage=$?
   if ((rc_stage == 0)); then
     if ! grep -Fxq 'PRODUCT_PACKAGES += SableLauncher' "$ANDROID/device/phh/treble/rom.mk" ||
