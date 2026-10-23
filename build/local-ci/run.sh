@@ -872,10 +872,16 @@ run_titan2_tb2_apps() {
       tasks+=(":$mod:$task")
     done
   done
+  # The active TB2SableTools Soong import uses default_dev_cert. Build an
+  # unsigned release input during canonical CI; never promote a debug-signed APK.
+  tasks+=(":tools:assembleRelease")
   (
     cd "$ROOT/apps/titan2/platform" || return 66
     "${candidates[0]}" "${GRADLE_NETWORK_ARGS[@]}" --no-daemon --console=plain --continue --max-workers=4 "${tasks[@]}"
   )
+  python3 "$ROOT/build/titan2/nextbuild/tb2-apk-provenance.py" seal-tools \
+    --sable "$ROOT" --evidence "$EVIDENCE_DIR" \
+    --aapt2 "$SABLE_ANDROID_SDK/build-tools/$SABLE_ANDROID_BUILD_TOOLS_VERSION/aapt2"
 }
 
 stage POLICY run_policy
