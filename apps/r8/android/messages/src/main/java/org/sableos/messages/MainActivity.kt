@@ -329,15 +329,7 @@ private fun MessagesApp(
                         composerFocus = { composerFocused = it },
                         action = ::apply,
                         providerHandoff = ::sendToProvider,
-                        searchQueryChanged = { query ->
-                            state =
-                                state.copy(
-                                    searchQuery = query,
-                                    mode = MessagesMode.Search,
-                                    focus = MessagesFocus.SearchField,
-                                    lastEvent = "SEARCH_IN_CONVERSATION",
-                                )
-                        },
+                        searchQueryChanged = { query -> state = state.withConversationSearchQuery(query) },
                     ),
                 selectThread = { index ->
                     state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
@@ -378,6 +370,14 @@ private fun providerStatusAction(
     {
         publish(providerHandoffStatus(route(), open, success, unavailable))
     }
+
+private fun MessagesUiState.withConversationSearchQuery(query: String): MessagesUiState =
+    copy(
+        searchQuery = query,
+        mode = MessagesMode.Search,
+        focus = MessagesFocus.SearchField,
+        lastEvent = "SEARCH_IN_CONVERSATION",
+    )
 
 @Composable
 private fun MessagesUnavailableScreen(feed: LiveSmsLoad?) {
