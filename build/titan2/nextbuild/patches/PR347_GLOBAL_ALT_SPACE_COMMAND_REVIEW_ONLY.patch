@@ -1,0 +1,43 @@
+--- a/frameworks/base/services/core/java/com/android/server/policy/PhoneWindowManager.java
++++ b/frameworks/base/services/core/java/com/android/server/policy/PhoneWindowManager.java
+@@ -3441,6 +3441,40 @@
+                     sendSystemKeyToStatusBarAsync(event);
+                     return true;
+                 }
++            case KeyEvent.KEYCODE_SPACE: {
++                // Sable Start global Command: the explicit existing exported activity owns
++                // the search UI. Only physical Alt+Space can open it, never a lock-screen,
++                // setup or virtual-keyboard bypass.
++                final InputDevice commandDevice = event.getDevice();
++                if (commandDevice == null || commandDevice.isVirtual()
++                        || (event.getFlags() & KeyEvent.FLAG_VIRTUAL_HARD_KEY) != 0
++                        || (commandDevice.getSources() & InputDevice.SOURCE_KEYBOARD)
++                                != InputDevice.SOURCE_KEYBOARD
++                        || !event.hasModifiers(KeyEvent.META_ALT_ON)
++                        || event.getAction() != KeyEvent.ACTION_DOWN
++                        || event.getRepeatCount() != 0 || event.isCanceled()
++                        || keyguardOn() || !isUserSetupComplete()
++                        || mUserManagerInternal == null
++                        || !mUserManagerInternal.isUserUnlocked(mCurrentUserId)) {
++                    break;
++                }
++                final Intent command = new Intent("org.sableos.start.action.OPEN_COMMAND")
++                        .setClassName("org.sableos.launcher",
++                                "org.sableos.start.SableStartActivity")
++                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP
++                                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
++                final ActivityInfo owner = command.resolveActivityInfo(
++                        mContext.getPackageManager(), 0);
++                if (owner == null || !owner.exported
++                        || !"org.sableos.launcher".equals(owner.packageName)
++                        || !"org.sableos.start.SableStartActivity".equals(owner.name)) {
++                    // Missing/not installed: do not steal Alt+Space from the active app.
++                    break;
++                }
++                // Never block the input-dispatch thread on an activity start.
++                mHandler.post(() -> startActivityAsUser(command, UserHandle.CURRENT_OR_SELF));
++                return true;
++            }
+             case KeyEvent.KEYCODE_DPAD_DOWN: {
+                 // Sable: Alt+Down opens the shade and, pressed again, expands Quick Settings
+                 // (the design's Fn+Down, for keyboards without Fn). SystemUI does nothing with it

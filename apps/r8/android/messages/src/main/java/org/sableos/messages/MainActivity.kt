@@ -329,6 +329,10 @@ private fun MessagesApp(
                         composerFocus = { composerFocused = it },
                         action = ::apply,
                         providerHandoff = ::sendToProvider,
+                        searchQueryChanged = { query ->
+                            state = state.copy(searchQuery = query, mode = MessagesMode.Search,
+                                focus = MessagesFocus.SearchField, lastEvent = "SEARCH_IN_CONVERSATION")
+                        },
                     ),
                 selectThread = { index ->
                     state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
@@ -391,6 +395,7 @@ private data class MessagesEditorCallbacks(
     val composerFocus: (Boolean) -> Unit,
     val action: (MessagesAction) -> Unit,
     val providerHandoff: () -> Unit,
+    val searchQueryChanged: (String) -> Unit,
 )
 
 private data class ReadyMessagesView(
@@ -431,7 +436,8 @@ private fun ReadyMessagesUi(
             callbacks = actions.editor,
         )
         Spacer(Modifier.height(SableSpacing.Xl))
-        HistoryAndSearchPanel(state = state, onAction = actions.editor.action)
+        HistoryAndSearchPanel(state = state, onAction = actions.editor.action,
+            onSearchQueryChanged = actions.editor.searchQueryChanged)
         Spacer(Modifier.height(SableSpacing.Xl))
         ConversationList(
             state = state,
@@ -717,7 +723,13 @@ private fun LatestMessages(
     state: MessagesUiState,
     thread: SableThread,
 ) {
-    val messages = thread.messages.takeLast(VISIBLE_MESSAGE_COUNT)
+    val messages = MessagesConversationSearch.visibleMessages(
+        thread, if (state.mode == MessagesMode.Search) state.searchQuery else "",
+        VISIBLE_MESSAGE_COUNT,
+    )
+    if (messages.isEmpty() && state.mode == MessagesMode.Search && state.searchQuery.isNotBlank()) {
+        Text("No messages match this conversation search.")
+    }
     messages.forEachIndexed { index, message ->
         MessageBubble(
             message = message,
@@ -731,13 +743,21 @@ private fun LatestMessages(
 private fun HistoryAndSearchPanel(
     state: MessagesUiState,
     onAction: (MessagesAction) -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
 ) {
     ContractPanel(title = "Explicit history/search mode") {
+        OutlinedTextField(
+            value = state.searchQuery,
+            onValueChange = onSearchQueryChanged,
+            label = { Text("Search in this conversation") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
         ContractRow("HISTORY_ACCESS_EXPLICIT", "PASS")
         ContractRow("SEARCH_IN_CONVERSATION", "PASS")
         ContractRow("JUMP_TO_UNREAD", "PASS")
         ContractRow("RETURN_TO_LATEST_KEY", "PASS")
-        Text(
+        if (MessagesConversationSearch.showNewMessagePrompt(state)) Text(
             text = "New message — Enter to latest",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary,

@@ -1,0 +1,28 @@
+--- a/frameworks/base/packages/SystemUI/src/com/android/systemui/keyguard/domain/interactor/KeyguardKeyEventInteractor.kt
++++ b/frameworks/base/packages/SystemUI/src/com/android/systemui/keyguard/domain/interactor/KeyguardKeyEventInteractor.kt
+@@ -87,13 +87,24 @@
+             }
+         }
+         when (event.keyCode) {
+-            KeyEvent.KEYCODE_BACK ->
++            KeyEvent.KEYCODE_BACK,
++            KeyEvent.KEYCODE_ESCAPE -> {
++                // Esc mirrors Android Back only for a real hardware keyboard. The existing
++                // keyguard manager decides whether the bouncer may dismiss; no credential
++                // state is read, changed, or bypassed here.
++                if (event.keyCode == KeyEvent.KEYCODE_ESCAPE) {
++                    val physical = event.getDevice()
++                    if (physical == null || physical.isVirtual() || !physical.isFullKeyboard()) {
++                        return false
++                    }
++                }
+                 if (
+                     statusBarStateController.state == StatusBarState.KEYGUARD &&
+                         statusBarKeyguardViewManager.dispatchBackKeyEventPreIme()
+                 ) {
+                     return backActionInteractor.onBackRequested()
+                 }
++            }
+         }
+         return false
+     }

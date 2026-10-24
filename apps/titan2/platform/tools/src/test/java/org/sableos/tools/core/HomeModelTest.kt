@@ -24,7 +24,7 @@ class HomeModelTest {
             HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = false)
         )
         assertEquals(
-            listOf(Tool.NOTES, Tool.VOICE_RECORDER, Tool.CLOCK_STOPWATCH),
+            listOf(Tool.NOTES, Tool.VOICE_RECORDER, Tool.CLOCK_STOPWATCH, Tool.TASKS_CHECKLISTS),
             tools(g, Section.UTILITIES)
         )
         assertEquals(listOf("Utilities", "Diagnostics", "Reports"), g.map { it.title })
@@ -122,7 +122,7 @@ class HomeModelTest {
     @Test fun profileSummaryNamesTheProfile() {
         val i = HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = false)
         assertEquals(
-            "Zinwa Q25 · zinwa-q25 · 3 utilities",
+            "Zinwa Q25 · zinwa-q25 · 4 utilities",
             HomeModel.profileSummary(i, HomeModel.build(i))
         )
     }

@@ -7,6 +7,21 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- All Apps privacy row (DESIGN-KF-D): read each profile's own permission
+         state, hear runtime-permission changes, and hand uninstall to the
+         system uninstaller (which confirms again). SableLauncher is
+         platform-signed, so the signature permissions are granted. -->
+    <uses-permission android:name="android.permission.INTERACT_ACROSS_USERS" />
+    <uses-permission android:name="android.permission.OBSERVE_GRANT_REVOKE_PERMISSIONS" />
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
+
+    <!-- Private Space in All Apps: see the private profile and lock or unlock
+         it (quiet mode). The system asks for the private space credential
+         itself when unlocking. -->
+    <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
+    <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES_FULL" />
+    <uses-permission android:name="android.permission.MODIFY_QUIET_MODE" />
+
     <queries>
         <intent>
             <action android:name="android.intent.action.MAIN" />
@@ -23,6 +38,7 @@
 
     <application
         android:allowBackup="false"
+        android:usesCleartextTraffic="false"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.SableLauncher">
@@ -38,6 +54,25 @@
             <intent-filter android:priority="10">
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Settings > Sable > Quick bar: opens Edit Home (Home apps and quick bar). -->
+            <intent-filter>
+                <action android:name="org.sableos.start.action.EDIT_QUICK_BAR" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Settings > Sable Start > Home layout: opens Edit Home. -->
+            <intent-filter>
+                <action android:name="org.sableos.start.action.EDIT_HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <!-- Explicit local Command entry for Hub/Settings/other Sable apps.
+                 This is not a system-wide Alt+Space interception claim. -->
+            <intent-filter>
+                <action android:name="org.sableos.start.action.OPEN_COMMAND" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>

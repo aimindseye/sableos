@@ -72,6 +72,13 @@ enum class Tool(
         keywords = listOf("time", "timer", "alarm")
     ),
 
+    TASKS_CHECKLISTS(
+        Section.UTILITIES,
+        "Tasks and checklists",
+        ToolKind.ACTION,
+        keywords = listOf("tasks", "todo", "checklist", "grocery")
+    ),
+
     COMPASS(
         Section.UTILITIES,
         "Compass",

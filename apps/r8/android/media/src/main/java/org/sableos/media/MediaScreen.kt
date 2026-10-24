@@ -3,6 +3,7 @@ package org.sableos.media
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -40,6 +41,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -418,6 +428,7 @@ internal fun MediaScreen(
                                         onPrevious = onPrevious,
                                         onNext = onNext,
                                         onStop = onStop,
+                                        onQueue = { onDestinationChange(MediaDestination.Queue) },
                                         onSeek = onSeek,
                                     )
                                 }
@@ -1347,9 +1358,67 @@ private fun NowPlayingScreen(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onStop: () -> Unit,
+    onQueue: () -> Unit,
     onSeek: (Long) -> Unit,
 ) {
+    // This specific Now Playing surface has no editable text input.
+    // Do not attach these single-key commands to the Media app root.
     Column(
+        modifier =
+            Modifier
+                .onKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) {
+                        false
+                    } else {
+                        val key =
+                            when (event.key) {
+                                Key.J -> 'j'
+                                Key.K -> 'k'
+                                Key.Q -> 'q'
+                                else -> '\u0000'
+                            }
+                        val action =
+                            mediaPlaybackShortcut(
+                                key = key,
+                                editingText = false,
+                                modifiers =
+                                    MediaPlaybackModifiers(
+                                        alt = event.isAltPressed,
+                                        ctrl = event.isCtrlPressed,
+                                        meta = event.isMetaPressed,
+                                        shift = event.isShiftPressed,
+                                    ),
+                            )
+                        when (action) {
+                            MediaPlaybackShortcut.Previous -> {
+                                if (playback.hasPrevious) {
+                                    onPrevious()
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+
+                            MediaPlaybackShortcut.Next -> {
+                                if (playback.hasNext) {
+                                    onNext()
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+
+                            MediaPlaybackShortcut.Queue -> {
+                                onQueue()
+                                true
+                            }
+
+                            null -> {
+                                false
+                            }
+                        }
+                    }
+                }.focusable(),
         verticalArrangement = Arrangement.spacedBy(SableSpacing.Md),
     ) {
         Text(

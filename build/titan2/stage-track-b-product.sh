@@ -16,8 +16,7 @@ APPS="$ANDROID/vendor/sable/tb2-rebuilt/tb2-apps.mk"
 FLOSS="$ANDROID/vendor/sable/trackb13ims/track-b.mk"
 IMS_XML="$ANDROID/vendor/sable/trackb13ims/privapp-permissions-me.phh.ims.xml"
 LAUNCHER="$ANDROID/packages/apps/Launcher3/AndroidManifest.xml"
-PATCH="$ROOT/build/titan2/track-b-source/launcher3-home-removal-a16.patch"
-for file in "$ROM" "$BP" "$APPS" "$FLOSS" "$IMS_XML" "$LAUNCHER" "$PATCH"; do
+for file in "$ROM" "$BP" "$APPS" "$FLOSS" "$IMS_XML" "$LAUNCHER"; do
   [[ -f "$file" && ! -L "$file" ]] || { echo "TB2_CONVERGENCE=HOLD_FILE path=$file"; exit 66; }
 done
 # Bind exact supplied host contents. A stale/mutated product must be investigated,
@@ -31,7 +30,6 @@ check_pin "$APPS" 8264edf7985b9aa1f62e36acbdd0d07767834705c6aee8680cd733e9232c6e
 check_pin "$BP" ab2b0654ee4b560aa1b741af913898c2d22d6963d33fbf78899f399e2fffd717
 check_pin "$FLOSS" 4146c78c7f4963a971117bb25003b62a294b550beff93eb124742b3fd0f1d97b
 check_pin "$IMS_XML" 6ccb15dcc39495a2c2688871f84d7368871805e08b1d02823c77af09720bcba7
-check_pin "$PATCH" 72df02669cda5b36b95319219cdae54f0bfb415830c89b17648a47e59f11fc04
 BASE_ROM=0c654060c57fc1b639d670164055aeffa231441a595310b2f45f7badb0ba66cb
 HOME_LINE='PRODUCT_PACKAGES += SableLauncher'
 if grep -Fxq "$HOME_LINE" "$ROM"; then
@@ -78,16 +76,10 @@ for dir_pair in \
     fi
   done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
 done
-if grep -Fq 'android.intent.category.HOME' "$LAUNCHER"; then
-  check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
-  ( cd "$ANDROID" && git -C packages/apps/Launcher3 apply -p4 --check "$PATCH" ) || {
-    echo 'TB2_CONVERGENCE=HOLD_LAUNCHER_PATCH_CONTEXT'; exit 78;
-  }
-else
-  # Idempotence: another edit with HOME removed is not automatically admitted.
-  check_pin "$LAUNCHER" 904faa32569da62de2f1c2ed774da2f2fc7d3920268720139ada1467cdf72c41
-  echo 'TB2_CONVERGENCE=LAUNCHER_HOME_ALREADY_REMOVED_REVIEW_COMMIT'
-fi
+# ADR-0013: keep Quickstep HOME eligibility for alternate-HOME Recents fallback.
+# A changed manifest must be reviewed; never reapply old HOME-removal patch.
+check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
+echo 'TB2_CONVERGENCE=QUICKSTEP_HOME_ELIGIBILITY_PRESERVED'
 if [[ "$MODE" == --plan ]]; then
   echo 'TB2_CONVERGENCE=PASS_EXACT_SOURCE_PREFLIGHT_NO_WRITES'
   echo 'TB2_PRODUCT=REUSE_EXISTING_13_TB2Sable_AND_FLOSS_PHHiMS'
@@ -107,9 +99,6 @@ for dir_pair in \
     fi
   done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
 done
-if grep -Fq 'android.intent.category.HOME' "$LAUNCHER"; then
-  (cd "$ANDROID" && git -C packages/apps/Launcher3 apply -p4 "$PATCH")
-fi
 if ! grep -Fxq "$HOME_LINE" "$ROM"; then
   printf '\n# SableOS Track B: source-built HOME; existing 13 app/PhhIms graph retained.\n%s\n' "$HOME_LINE" >> "$ROM"
 fi
