@@ -64,8 +64,9 @@ for forbidden_ims in 'ims-oem-only.mk' 'product/titan2/n1i-c1'; do
   fi
 done
 for ims_module in PhhIms PhhImsOverlay Iwlan QualifiedNetworksService; do
-  grep -Eq "^[[:space:]]+$ims_module[[:space:]\\]*$" "$FLOSS" || {
-    echo "TB2_CONVERGENCE=HOLD_FLOSS_MODULE name=$ims_module"; exit 78;
+  count="$(grep -Ec "^[[:space:]]+$ims_module[[:space:]\\]*$" "$FLOSS" || true)"
+  [[ "$count" == 1 ]] || {
+    echo "TB2_CONVERGENCE=HOLD_FLOSS_MODULE_CARDINALITY name=$ims_module count=$count"; exit 78;
   }
 done
 [[ $(grep -Fc 'privapp-permissions package="me.phh.ims"' "$IMS_XML") -eq 1 ]] || exit 78

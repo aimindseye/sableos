@@ -1369,6 +1369,21 @@ private fun NowPlayingScreen(
                 .onKeyEvent { event ->
                     if (event.type != KeyEventType.KeyDown) {
                         false
+                    } else if (
+                        MediaNowPlayingKeyPolicy.shouldTogglePlayPause(
+                            isSpace = event.key == Key.Spacebar,
+                            hasItem = playback.title != "Nothing queued",
+                            hasModifiers =
+                                when {
+                                    event.isAltPressed -> true
+                                    event.isCtrlPressed -> true
+                                    event.isMetaPressed -> true
+                                    else -> event.isShiftPressed
+                                },
+                        )
+                    ) {
+                        onPlayPause()
+                        true
                     } else {
                         val key =
                             when (event.key) {
