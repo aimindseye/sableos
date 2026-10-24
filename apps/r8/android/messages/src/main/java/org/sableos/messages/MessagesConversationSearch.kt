@@ -9,10 +9,15 @@ object MessagesConversationSearch {
     ): List<SableMessage> {
         if (limit <= 0) return emptyList()
         val needle = query.trim()
-        val selected = if (needle.isEmpty()) thread.messages else thread.messages.filter { message ->
-            message.body.contains(needle, ignoreCase = true) ||
-                message.sender.contains(needle, ignoreCase = true)
-        }
+        val selected =
+            if (needle.isEmpty()) {
+                thread.messages
+            } else {
+                thread.messages.filter { message ->
+                    message.body.contains(needle, ignoreCase = true) ||
+                        message.sender.contains(needle, ignoreCase = true)
+                }
+            }
         return selected.takeLast(limit)
     }
 

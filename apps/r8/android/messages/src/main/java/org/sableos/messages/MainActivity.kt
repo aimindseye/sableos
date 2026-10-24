@@ -330,26 +330,33 @@ private fun MessagesApp(
                         action = ::apply,
                         providerHandoff = ::sendToProvider,
                         searchQueryChanged = { query ->
-                            state = state.copy(searchQuery = query, mode = MessagesMode.Search,
-                                focus = MessagesFocus.SearchField, lastEvent = "SEARCH_IN_CONVERSATION")
+                            state =
+                                state.copy(
+                                    searchQuery = query,
+                                    mode = MessagesMode.Search,
+                                    focus = MessagesFocus.SearchField,
+                                    lastEvent = "SEARCH_IN_CONVERSATION",
+                                )
                         },
                     ),
                 selectThread = { index ->
                     state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
                     apply(MessagesAction.OpenFocusedConversation)
                 },
-                contact = providerStatusAction(
-                    route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
-                    open = onContactHandoff,
-                    success = "Contacts editor opened.",
-                    unavailable = "Contacts provider unavailable.",
-                ) { providerStatus = it },
-                phone = providerStatusAction(
-                    route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
-                    open = onPhoneHandoff,
-                    success = "Dialer opened; call not placed.",
-                    unavailable = "Dialer unavailable.",
-                ) { providerStatus = it },
+                contact =
+                    providerStatusAction(
+                        route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
+                        open = onContactHandoff,
+                        success = "Contacts editor opened.",
+                        unavailable = "Contacts provider unavailable.",
+                    ) { providerStatus = it },
+                phone =
+                    providerStatusAction(
+                        route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
+                        open = onPhoneHandoff,
+                        success = "Dialer opened; call not placed.",
+                        unavailable = "Dialer unavailable.",
+                    ) { providerStatus = it },
             ),
     )
 }
@@ -367,9 +374,10 @@ private fun providerStatusAction(
     success: String,
     unavailable: String,
     publish: (String) -> Unit,
-): () -> Unit = {
-    publish(providerHandoffStatus(route(), open, success, unavailable))
-}
+): () -> Unit =
+    {
+        publish(providerHandoffStatus(route(), open, success, unavailable))
+    }
 
 @Composable
 private fun MessagesUnavailableScreen(feed: LiveSmsLoad?) {
@@ -447,8 +455,11 @@ private fun ReadyMessagesUi(
             callbacks = actions.editor,
         )
         Spacer(Modifier.height(SableSpacing.Xl))
-        HistoryAndSearchPanel(state = state, onAction = actions.editor.action,
-            onSearchQueryChanged = actions.editor.searchQueryChanged)
+        HistoryAndSearchPanel(
+            state = state,
+            onAction = actions.editor.action,
+            onSearchQueryChanged = actions.editor.searchQueryChanged,
+        )
         Spacer(Modifier.height(SableSpacing.Xl))
         ConversationList(
             state = state,
@@ -734,10 +745,12 @@ private fun LatestMessages(
     state: MessagesUiState,
     thread: SableThread,
 ) {
-    val messages = MessagesConversationSearch.visibleMessages(
-        thread, if (state.mode == MessagesMode.Search) state.searchQuery else "",
-        VISIBLE_MESSAGE_COUNT,
-    )
+    val messages =
+        MessagesConversationSearch.visibleMessages(
+            thread,
+            if (state.mode == MessagesMode.Search) state.searchQuery else "",
+            VISIBLE_MESSAGE_COUNT,
+        )
     if (messages.isEmpty() && state.mode == MessagesMode.Search && state.searchQuery.isNotBlank()) {
         Text("No messages match this conversation search.")
     }
@@ -807,11 +820,13 @@ private fun HistorySearchStatus(state: MessagesUiState) {
     ContractRow("SEARCH_IN_CONVERSATION", "PASS")
     ContractRow("JUMP_TO_UNREAD", "PASS")
     ContractRow("RETURN_TO_LATEST_KEY", "PASS")
-    if (MessagesConversationSearch.showNewMessagePrompt(state)) Text(
-        text = "New message — Enter to latest",
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-    )
+    if (MessagesConversationSearch.showNewMessagePrompt(state)) {
+        Text(
+            text = "New message — Enter to latest",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
     Text(
         text = "History pages are discrete slices; no precision touchpad scrolling is required.",
         style = MaterialTheme.typography.bodyMedium,
