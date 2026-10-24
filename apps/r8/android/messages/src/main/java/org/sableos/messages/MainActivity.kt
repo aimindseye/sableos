@@ -271,6 +271,22 @@ private fun rememberLiveSmsFeed(refreshGeneration: Int): LiveSmsLoad? {
 }
 
 @Composable
+private fun IncomingSmsRefreshEffect(
+    feed: LiveSmsLoad?,
+    onIncoming: (Int) -> Unit,
+) {
+    // Preserve the prior authorized snapshot across transient loading states.
+    var priorThreads by remember { mutableStateOf<List<SableThread>?>(null) }
+    LaunchedEffect(feed) {
+        val ready = feed as? LiveSmsLoad.Ready ?: return@LaunchedEffect
+        if (MessagesIncomingRefreshPolicy.hasNewLatestIncoming(priorThreads, ready.threads)) {
+            onIncoming(ready.threads.size)
+        }
+        priorThreads = ready.threads
+    }
+}
+
+@Composable
 private fun MessagesApp(
     onProviderHandoff: (String, String) -> Boolean,
     onPhoneHandoff: (String) -> Boolean,
@@ -281,6 +297,9 @@ private fun MessagesApp(
     var composerFocused by remember { mutableStateOf(false) }
     var providerStatus by remember { mutableStateOf("Read-only Android SMS provider · send via installed SMS app") }
     val feed = rememberLiveSmsFeed(refreshGeneration)
+    IncomingSmsRefreshEffect(feed) { threadCount ->
+        state = MessagesInteractionModel.reduce(state, MessagesAction.IncomingMessage, threadCount)
+    }
     val sortedThreads = (feed as? LiveSmsLoad.Ready)?.threads.orEmpty()
     val safeSelection = state.selectedThreadIndex.coerceIn(0, (sortedThreads.size - 1).coerceAtLeast(0))
 

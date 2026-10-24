@@ -53,6 +53,16 @@ for name in "${app_names[@]}"; do
     echo "TB2_CONVERGENCE=HOLD_PREBUILT name=$name"; exit 78;
   }
 done
+# Selected Track B product must inherit its FLOSS IMS source exactly once.
+# Reject direct OEM C1 source mixing; this is source admission, not G1/G2/G3.
+[[ "$(grep -Fxc '$(call inherit-product, vendor/sable/trackb13ims/track-b.mk)' "$ROM")" -eq 1 ]] || {
+  echo 'TB2_CONVERGENCE=HOLD_FLOSS_IMS_INHERIT_NOT_EXACT'; exit 78;
+}
+for forbidden_ims in 'ims-oem-only.mk' 'product/titan2/n1i-c1'; do
+  if grep -Fq "$forbidden_ims" "$ROM" || grep -Fq "$forbidden_ims" "$FLOSS"; then
+    echo "TB2_CONVERGENCE=HOLD_MIXED_OEM_FLOSS_IMS source=$forbidden_ims"; exit 78
+  fi
+done
 for ims_module in PhhIms PhhImsOverlay Iwlan QualifiedNetworksService; do
   grep -Eq "^[[:space:]]+$ims_module[[:space:]\\]*$" "$FLOSS" || {
     echo "TB2_CONVERGENCE=HOLD_FLOSS_MODULE name=$ims_module"; exit 78;
