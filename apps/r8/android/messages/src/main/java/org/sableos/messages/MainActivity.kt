@@ -49,6 +49,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.font.FontWeight
@@ -286,6 +288,9 @@ private fun IncomingSmsRefreshEffect(
     }
 }
 
+private fun MessagesUiState.afterIncomingRefresh(threadCount: Int): MessagesUiState =
+    MessagesInteractionModel.reduce(this, MessagesAction.IncomingMessage, threadCount)
+
 @Composable
 private fun MessagesApp(
     onProviderHandoff: (String, String) -> Boolean,
@@ -295,11 +300,10 @@ private fun MessagesApp(
 ) {
     var state by remember { mutableStateOf(MessagesInteractionModel.initialState().copy(draft = "")) }
     var composerFocused by remember { mutableStateOf(false) }
+    var searchFocused by remember { mutableStateOf(false) }
     var providerStatus by remember { mutableStateOf("Read-only Android SMS provider · send via installed SMS app") }
     val feed = rememberLiveSmsFeed(refreshGeneration)
-    IncomingSmsRefreshEffect(feed) { threadCount ->
-        state = MessagesInteractionModel.reduce(state, MessagesAction.IncomingMessage, threadCount)
-    }
+    IncomingSmsRefreshEffect(feed) { state = state.afterIncomingRefresh(it) }
     val sortedThreads = (feed as? LiveSmsLoad.Ready)?.threads.orEmpty()
     val safeSelection = state.selectedThreadIndex.coerceIn(0, (sortedThreads.size - 1).coerceAtLeast(0))
 
@@ -338,6 +342,7 @@ private fun MessagesApp(
                 threads = sortedThreads,
                 selectedIndex = safeSelection,
                 composerFocused = composerFocused,
+                searchFocused = searchFocused,
                 providerStatus = providerStatus,
             ),
         actions =
@@ -346,6 +351,7 @@ private fun MessagesApp(
                     MessagesEditorCallbacks(
                         draftChanged = { draft -> state = state.copy(draft = draft) },
                         composerFocus = { composerFocused = it },
+                        searchFocus = { searchFocused = it },
                         action = ::apply,
                         providerHandoff = ::sendToProvider,
                         searchQueryChanged = { query -> state = state.withConversationSearchQuery(query) },
@@ -431,6 +437,7 @@ private fun MessagesEmptyScreen() {
 private data class MessagesEditorCallbacks(
     val draftChanged: (String) -> Unit,
     val composerFocus: (Boolean) -> Unit,
+    val searchFocus: (Boolean) -> Unit,
     val action: (MessagesAction) -> Unit,
     val providerHandoff: () -> Unit,
     val searchQueryChanged: (String) -> Unit,
@@ -441,6 +448,7 @@ private data class ReadyMessagesView(
     val threads: List<SableThread>,
     val selectedIndex: Int,
     val composerFocused: Boolean,
+    val searchFocused: Boolean,
     val providerStatus: String,
 )
 
@@ -459,10 +467,10 @@ private fun ReadyMessagesUi(
     val state = view.state
     val sortedThreads = view.threads
     val safeSelection = view.selectedIndex
-    val composerFocused = view.composerFocused
+    val textInputFocused = view.composerFocused || view.searchFocused
     val providerStatus = view.providerStatus
     Column(
-        modifier = messagesAppModifier(state, actions.editor.action, actions.editor.providerHandoff, composerFocused),
+        modifier = messagesAppModifier(state, actions.editor.action, textInputFocused),
     ) {
         Header()
         Spacer(Modifier.height(SableSpacing.Xl))
@@ -478,6 +486,7 @@ private fun ReadyMessagesUi(
             state = state,
             onAction = actions.editor.action,
             onSearchQueryChanged = actions.editor.searchQueryChanged,
+            onSearchFocusChanged = actions.editor.searchFocus,
         )
         Spacer(Modifier.height(SableSpacing.Xl))
         ConversationList(
@@ -505,19 +514,17 @@ private fun ReadyMessagesUi(
 private fun messagesAppModifier(
     state: MessagesUiState,
     apply: (MessagesAction) -> Unit,
-    sendToProvider: () -> Unit,
-    composerFocused: Boolean,
+    textInputFocused: Boolean,
 ): Modifier =
     Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
         .onPreviewKeyEvent { event ->
-            if (composerFocused) return@onPreviewKeyEvent false
+            if (textInputFocused) return@onPreviewKeyEvent false
             handleMessagesKey(
                 event = event.nativeKeyEvent,
                 state = state,
                 apply = apply,
-                sendToProvider = sendToProvider,
             )
         }.verticalScroll(rememberScrollState())
         .padding(
@@ -529,17 +536,16 @@ private fun handleMessagesKey(
     event: AndroidKeyEvent,
     state: MessagesUiState,
     apply: (MessagesAction) -> Unit,
-    sendToProvider: () -> Unit,
 ): Boolean {
     if (event.action != AndroidKeyEvent.ACTION_DOWN) return false
 
     val action = resolveMessagesKeyAction(event, state)
-    if (action == MessagesAction.ComposerEnterSend) {
-        sendToProvider()
-    } else {
+    return if (MessagesGlobalKeyPolicy.shouldHandle(action)) {
         apply(action)
+        true
+    } else {
+        false
     }
-    return true
 }
 
 private fun resolveMessagesKeyAction(
@@ -787,13 +793,22 @@ private fun HistoryAndSearchPanel(
     state: MessagesUiState,
     onAction: (MessagesAction) -> Unit,
     onSearchQueryChanged: (String) -> Unit,
+    onSearchFocusChanged: (Boolean) -> Unit,
 ) {
+    val requester = remember { FocusRequester() }
+    LaunchedEffect(state.mode) {
+        if (state.mode == MessagesMode.Search) requester.requestFocus()
+    }
     ContractPanel(title = "Explicit history/search mode") {
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = onSearchQueryChanged,
             label = { Text("Search in this conversation") },
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusRequester(requester)
+                    .onFocusChanged { onSearchFocusChanged(it.isFocused) },
             singleLine = true,
         )
         HistorySearchStatus(state)
