@@ -339,26 +339,33 @@ private fun MessagesApp(
                     apply(MessagesAction.OpenFocusedConversation)
                 },
                 contact = {
-                    val route = sortedThreads.getOrNull(safeSelection)?.route.orEmpty()
                     providerStatus =
-                        if (onContactHandoff(route)) {
-                            "Contacts editor opened."
-                        } else {
-                            "Contacts provider unavailable."
-                        }
+                        providerHandoffStatus(
+                            sortedThreads.getOrNull(safeSelection)?.route.orEmpty(),
+                            onContactHandoff,
+                            "Contacts editor opened.",
+                            "Contacts provider unavailable.",
+                        )
                 },
                 phone = {
-                    val route = sortedThreads.getOrNull(safeSelection)?.route.orEmpty()
                     providerStatus =
-                        if (onPhoneHandoff(route)) {
-                            "Dialer opened; call not placed."
-                        } else {
-                            "Dialer unavailable."
-                        }
+                        providerHandoffStatus(
+                            sortedThreads.getOrNull(safeSelection)?.route.orEmpty(),
+                            onPhoneHandoff,
+                            "Dialer opened; call not placed.",
+                            "Dialer unavailable.",
+                        )
                 },
             ),
     )
 }
+
+private fun providerHandoffStatus(
+    route: String,
+    open: (String) -> Boolean,
+    success: String,
+    unavailable: String,
+): String = if (open(route)) success else unavailable
 
 @Composable
 private fun MessagesUnavailableScreen(feed: LiveSmsLoad?) {
@@ -753,25 +760,7 @@ private fun HistoryAndSearchPanel(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
-        ContractRow("HISTORY_ACCESS_EXPLICIT", "PASS")
-        ContractRow("SEARCH_IN_CONVERSATION", "PASS")
-        ContractRow("JUMP_TO_UNREAD", "PASS")
-        ContractRow("RETURN_TO_LATEST_KEY", "PASS")
-        if (MessagesConversationSearch.showNewMessagePrompt(state)) Text(
-            text = "New message — Enter to latest",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "History pages are discrete slices; no precision touchpad scrolling is required.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Current slice: ${state.historySlice} · mode: ${state.mode}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        HistorySearchStatus(state)
         Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
             Button(onClick = { onAction(MessagesAction.SearchInConversation) }) {
                 Text("/ search")
@@ -806,6 +795,29 @@ private fun HistoryAndSearchPanel(
             }
         }
     }
+}
+
+@Composable
+private fun HistorySearchStatus(state: MessagesUiState) {
+    ContractRow("HISTORY_ACCESS_EXPLICIT", "PASS")
+    ContractRow("SEARCH_IN_CONVERSATION", "PASS")
+    ContractRow("JUMP_TO_UNREAD", "PASS")
+    ContractRow("RETURN_TO_LATEST_KEY", "PASS")
+    if (MessagesConversationSearch.showNewMessagePrompt(state)) Text(
+        text = "New message — Enter to latest",
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+    )
+    Text(
+        text = "History pages are discrete slices; no precision touchpad scrolling is required.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text(
+        text = "Current slice: ${state.historySlice} · mode: ${state.mode}",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onBackground,
+    )
 }
 
 @Composable
