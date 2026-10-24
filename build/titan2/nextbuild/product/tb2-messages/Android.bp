@@ -1,0 +1,11 @@
+// PR347 Titan 2 Track B engineering image only.
+// This module is DISTINCT from Android's com.android.messaging SMS handler.
+// APK bytes come from the reviewed :messages:assembleDebug artifact.
+// No SMS role, READ_SMS exemption, privileged grants, or release-signing implied.
+android_app_import {
+    name: "TB2SableMessages",
+    apk: "prebuilt/TB2SableMessages.apk",
+    presigned: true,
+    preprocessed: true,
+    product_specific: true,
+}
