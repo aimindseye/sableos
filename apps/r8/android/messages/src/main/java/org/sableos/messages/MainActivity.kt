@@ -338,24 +338,18 @@ private fun MessagesApp(
                     state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
                     apply(MessagesAction.OpenFocusedConversation)
                 },
-                contact = {
-                    providerStatus =
-                        providerHandoffStatus(
-                            sortedThreads.getOrNull(safeSelection)?.route.orEmpty(),
-                            onContactHandoff,
-                            "Contacts editor opened.",
-                            "Contacts provider unavailable.",
-                        )
-                },
-                phone = {
-                    providerStatus =
-                        providerHandoffStatus(
-                            sortedThreads.getOrNull(safeSelection)?.route.orEmpty(),
-                            onPhoneHandoff,
-                            "Dialer opened; call not placed.",
-                            "Dialer unavailable.",
-                        )
-                },
+                contact = providerStatusAction(
+                    route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
+                    open = onContactHandoff,
+                    success = "Contacts editor opened.",
+                    unavailable = "Contacts provider unavailable.",
+                ) { providerStatus = it },
+                phone = providerStatusAction(
+                    route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
+                    open = onPhoneHandoff,
+                    success = "Dialer opened; call not placed.",
+                    unavailable = "Dialer unavailable.",
+                ) { providerStatus = it },
             ),
     )
 }
@@ -366,6 +360,16 @@ private fun providerHandoffStatus(
     success: String,
     unavailable: String,
 ): String = if (open(route)) success else unavailable
+
+private fun providerStatusAction(
+    route: () -> String,
+    open: (String) -> Boolean,
+    success: String,
+    unavailable: String,
+    publish: (String) -> Unit,
+): () -> Unit = {
+    publish(providerHandoffStatus(route(), open, success, unavailable))
+}
 
 @Composable
 private fun MessagesUnavailableScreen(feed: LiveSmsLoad?) {
