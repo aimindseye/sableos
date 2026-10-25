@@ -24,7 +24,6 @@ data class KeyboardTraits(
          * Alt, Sym, Fn) and the public lights API.
          */
         val GENERIC = KeyboardTraits(setOf(Modifier.ALT, Modifier.SYM, Modifier.FN))
-
     }
 }
 
@@ -45,6 +44,7 @@ object KeyboardLight {
             KeyboardLightState.NOT_SUPPORTED,
             "this profile declares no keyboard light"
         )
+
         KeyboardLightSource.INPUT_LIGHTS -> if (inputLights.isEmpty()) {
             KeyboardLightReading(KeyboardLightState.UNKNOWN, "no light exposed by any input device")
         } else {

@@ -124,7 +124,11 @@ class CapabilityGateTest {
     }
 
     @Test fun fmIsStatusOnlyAndOwnedByMedia() {
-        val r = CapabilityGate.resolve(LegacyQ25TestFixture.profile, allPresent, Capability.FM_RADIO)
+        val r = CapabilityGate.resolve(
+            LegacyQ25TestFixture.profile,
+            allPresent,
+            Capability.FM_RADIO
+        )
         val s = FmStatus.of(r, mediaFmInstalled = true)
         assertEquals("PRESENT_NOT_PROVEN", s.state)
         assertFalse(s.handoff)
@@ -132,7 +136,11 @@ class CapabilityGateTest {
         assertEquals(
             "UNKNOWN",
             FmStatus.of(
-                CapabilityGate.resolve(ToolsDeviceProfile.Unknown, allPresent, Capability.FM_RADIO),
+                CapabilityGate.resolve(
+                    ToolsDeviceProfile.Unknown,
+                    allPresent,
+                    Capability.FM_RADIO
+                ),
                 true
             ).state
         )
