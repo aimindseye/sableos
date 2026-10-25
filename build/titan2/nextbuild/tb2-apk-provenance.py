@@ -122,29 +122,143 @@ def aapt_package(apk: Path, aapt: str) -> str:
         raise Hold(f'APK_PACKAGE_UNPARSEABLE:{apk}')
     return m.group(1)
 
+def _soong_code_views(raw: str) -> tuple[str, str]:
+    """Same-length Blueprint views: one hides comments, one hides strings too.
+
+    Braces, import keywords and field names in quoted strings/comments must not
+    affect structural parsing. Reject unclosed comments/strings, fail closed.
+    """
+    uncommented = list(raw)
+    structural = list(raw)
+    state = 'code'
+    i = 0
+    while i < len(raw):
+        ch = raw[i]
+        nxt = raw[i + 1] if i + 1 < len(raw) else ''
+        if state == 'code':
+            if ch == '"':
+                structural[i] = ' '
+                state = 'string'
+                i += 1
+                continue
+            if ch == '/' and nxt == '/':
+                for j in (i, i+1):
+                    uncommented[j] = structural[j] = ' '
+                i += 2
+                state = 'line_comment'
+                continue
+            if ch == '/' and nxt == '*':
+                for j in (i, i+1):
+                    uncommented[j] = structural[j] = ' '
+                i += 2
+                state = 'block_comment'
+                continue
+        elif state == 'string':
+            structural[i] = ' '
+            if ch == '\\':
+                if i + 1 >= len(raw):
+                    raise Hold('UNTERMINATED_SOONG_STRING_ESCAPE')
+                structural[i + 1] = ' '
+                i += 2
+                continue
+            if ch == '"':
+                state = 'code'
+            i += 1
+            continue
+        elif state == 'line_comment':
+            if ch == '\n':
+                state = 'code'
+            else:
+                uncommented[i] = structural[i] = ' '
+            i += 1
+            continue
+        else:  # block_comment
+            if ch == '*' and nxt == '/':
+                for j in (i, i+1):
+                    uncommented[j] = structural[j] = ' '
+                i += 2
+                state = 'code'
+            else:
+                uncommented[i] = structural[i] = ' '
+                i += 1
+            continue
+        i += 1
+    if state not in ('code', 'line_comment'):
+        raise Hold('UNTERMINATED_SOONG_LITERAL_OR_COMMENT')
+    return ''.join(uncommented), ''.join(structural)
+
+
+def soong_app_import_fields(raw: str) -> list[str]:
+    """Extract brace-balanced android_app_import blocks, exposing only top-level fields.
+
+    A pinned Soong file may legitimately contain nested dictionaries; a flat
+    ``[^{}]*`` regex wrongly drops those imports. Quotes and comments cannot
+    create synthetic imports or braces. All work is bounded by the pinned
+    <=256-KiB BP input and one pass per app-import block.
+    """
+    text, structural = _soong_code_views(raw)
+    imports = []
+    for match in re.finditer(r'\bandroid_app_import\s*\{', structural):
+        opening = structural.find('{', match.start(), match.end())
+        depth, closing = 0, None
+        for i in range(opening, len(structural)):
+            if structural[i] == '{':
+                depth += 1
+            elif structural[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    closing = i
+                    break
+                if depth < 0:
+                    raise Hold('UNBALANCED_SOONG_IMPORT')
+        if closing is None:
+            raise Hold('UNBALANCED_SOONG_IMPORT')
+        top = list(text[opening + 1:closing])
+        depth = 1
+        for offset, i in enumerate(range(opening + 1, closing)):
+            ch = structural[i]
+            if ch == '{':
+                depth += 1
+            if depth > 1 or ch == '}':
+                top[offset] = ' '
+            if ch == '}':
+                depth -= 1
+        imports.append(''.join(top))
+    return imports
+
+
 def bp_modules(bp: Path) -> dict:
     check_file(bp, 250000)
     if sha(bp) != BP_PIN:
         raise Hold('ACTIVE_BP_PIN_DRIFT')
     content = bp.read_text(encoding='utf-8')
-    # Fixed, known local module import shape, no nested Soong properties permitted.
-    blocks = re.findall(r'android_app_import\s*\{([^{}]*)\}', content)
+    # Nested Soong dictionaries are legitimate. Only top-level property keys
+    # of real android_app_import blocks may establish package/source authority.
+    blocks = soong_app_import_fields(content)
     entries = {}
     for b in blocks:
-        n = re.search(r'\bname\s*:\s*"([^"]+)"', b)
-        if not n or n.group(1) not in MODULES:
+        names = re.findall(r'\bname\s*:\s*"([^"\n]+)"', b)
+        if len(names) != 1:
+            raise Hold('SOONG_IMPORT_NAME_CARDINALITY_DRIFT')
+        name = names[0]
+        if name not in MODULES:
             continue
-        name = n.group(1)
         if name in entries:
             raise Hold(f'DUPLICATE_SOONG_IMPORT:{name}')
-        sign = 'default_dev_cert' if re.search(r'\bdefault_dev_cert\s*:\s*true\b', b) else 'presigned' if re.search(r'\bpresigned\s*:\s*true\b', b) else 'unknown'
-        src = re.search(r'\bapk\s*:\s*"([^"]+)"', b)
-        entries[name] = {'signing': sign, 'apk_field': src.group(1) if src else None,
+        sign = ('default_dev_cert' if re.search(r'\bdefault_dev_cert\s*:\s*true\b', b)
+                else 'presigned' if re.search(r'\bpresigned\s*:\s*true\b', b)
+                else 'unknown')
+        sources = re.findall(r'\bapk\s*:\s*"([^"\n]+)"', b)
+        if len(sources) != 1:
+            raise Hold(f'SOONG_IMPORT_APK_CARDINALITY_DRIFT:{name}')
+        entries[name] = {'signing': sign, 'apk_field': sources[0],
                          'privileged': bool(re.search(r'\bprivileged\s*:\s*true\b', b))}
     if set(entries) != set(MODULES):
         raise Hold('ACTIVE_BP_13_MODULE_SET_DRIFT')
     for name, item in entries.items():
-        if item['signing'] != EXPECTED_SIGNING[name] or item['apk_field'] not in (f'prebuilt/{name}.apk', f'{name}.apk') or item['privileged']:
+        if (item['signing'] != EXPECTED_SIGNING[name]
+                or item['apk_field'] not in (f'prebuilt/{name}.apk', f'{name}.apk')
+                or item['privileged']):
             raise Hold(f'SOONG_SIGNING_PATH_OR_PRIVILEGE_DRIFT:{name}:{item}')
     return entries
 
