@@ -87,10 +87,26 @@ for dir_pair in \
     fi
   done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
 done
-# ADR-0013: keep Quickstep HOME eligibility for alternate-HOME Recents fallback.
-# A changed manifest must be reviewed; never reapply old HOME-removal patch.
-check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
+# ADR-0013: exact manifest custody differs between the two known AOSP roots.
+# The original root has Quickstep HOME and service in additional XML fragments;
+# neither these pins nor the product graph establish an effective default HOME.
+case "$ANDROID" in
+  /srv/sable-build/workspaces/titan2-track-b/android)
+    check_pin "$LAUNCHER" 904faa32569da62de2f1c2ed774da2f2fc7d3920268720139ada1467cdf72c41
+    check_pin "$ANDROID/packages/apps/Launcher3/Android.bp" 51c5e56da157378f51501767592813618871bd651a17f6b98caf1728a4163848
+    check_pin "$ANDROID/packages/apps/Launcher3/quickstep/AndroidManifest.xml" 6f0d8b399253f63b490cd4b5faac383dac6b9a81b5fd8631347738b64eab02e5
+    check_pin "$ANDROID/packages/apps/Launcher3/quickstep/AndroidManifest-launcher.xml" f4413a77cd52ec407ba594233048ad78c450f4dfb4d49febb64012f2be7dd11f
+    ;;
+  /srv/sable-build/workspaces/titan2-track-b/android-pr347-integrated)
+    check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
+    ;;
+  *)
+    echo "TB2_CONVERGENCE=HOLD_UNREVIEWED_AOSP_ROOT path=$ANDROID"
+    exit 78
+    ;;
+esac
 echo 'TB2_CONVERGENCE=QUICKSTEP_HOME_ELIGIBILITY_PRESERVED'
+echo 'TB2_CONVERGENCE=HOME_SOURCE_FRAGMENTS_REVIEWED_COMPILED_ROLE_OPEN'
 if [[ "$MODE" == --plan ]]; then
   echo 'TB2_CONVERGENCE=PASS_EXACT_SOURCE_PREFLIGHT_NO_WRITES'
   echo 'TB2_PRODUCT=REUSE_EXISTING_13_TB2Sable_AND_FLOSS_PHHiMS'
