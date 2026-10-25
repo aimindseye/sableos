@@ -6,7 +6,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class KeyboardTraitsTest {
-    private val q25 = ToolsDeviceProfile.ZinwaQ25.keyboard
+    private val q25 = LegacyQ25TestFixture.profile.keyboard
 
     private fun ids(k: KeyboardTraits) = TextEntryTest.casesFor(k).map { it.id }
 
@@ -18,7 +18,7 @@ class KeyboardTraitsTest {
     @Test fun q25DeclaresBlackBerryClassicKeys() {
         assertEquals(setOf(Modifier.ALT, Modifier.SHIFT, Modifier.SYM), q25.modifiers)
         assertTrue(q25.digitsOnAltLayer)
-        assertEquals(KeyboardLightSource.SABLE_PROPERTIES, q25.light)
+        assertEquals(KeyboardLightSource.INPUT_LIGHTS, q25.light)
     }
 
     @Test fun q25TextEntryNeverAsksForFn() {
@@ -87,44 +87,11 @@ class KeyboardTraitsTest {
         assertEquals(CaseResult.FAIL, TextEntryTest.check(digits, "246", altKeys.take(3)))
     }
 
-    @Test fun q25LightReadsSableProperties() {
-        val src = KeyboardLightSource.SABLE_PROPERTIES
-        // The build does not declare the control: honest UNKNOWN, never a pass.
-        val undeclared = KeyboardLight.read(src, props(), listOf("kbd"))
-        assertEquals(KeyboardLightState.UNKNOWN, undeclared.state)
-
-        val on = KeyboardLight.read(
-            src,
-            props(KeyboardLight.PROP_SUPPORTED to "true"),
-            emptyList()
+    @Test fun q25BacklightDriverAbsentFromTitan2ProductionApi() {
+        assertEquals(
+            setOf(KeyboardLightSource.INPUT_LIGHTS, KeyboardLightSource.NONE),
+            KeyboardLightSource.entries.toSet()
         )
-        assertEquals(KeyboardLightState.ON, on.state)
-        assertTrue(on.detail.contains("255/255"))
-
-        val dim = KeyboardLight.read(
-            src,
-            props(
-                KeyboardLight.PROP_SUPPORTED to "true",
-                KeyboardLight.PROP_ENABLED to "1",
-                KeyboardLight.PROP_LEVEL to "51"
-            ),
-            emptyList()
-        )
-        assertTrue(dim.detail.contains("51/255"))
-
-        val bad = KeyboardLight.read(
-            src,
-            props(KeyboardLight.PROP_SUPPORTED to "true", KeyboardLight.PROP_LEVEL to "999"),
-            emptyList()
-        )
-        assertTrue(bad.detail.contains("255/255"))
-
-        val off = KeyboardLight.read(
-            src,
-            props(KeyboardLight.PROP_SUPPORTED to "true", KeyboardLight.PROP_ENABLED to "0"),
-            emptyList()
-        )
-        assertEquals(KeyboardLightState.OFF, off.state)
     }
 
     @Test fun genericLightUsesInputLights() {
