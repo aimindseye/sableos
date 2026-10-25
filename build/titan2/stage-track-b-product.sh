@@ -16,8 +16,7 @@ APPS="$ANDROID/vendor/sable/tb2-rebuilt/tb2-apps.mk"
 FLOSS="$ANDROID/vendor/sable/trackb13ims/track-b.mk"
 IMS_XML="$ANDROID/vendor/sable/trackb13ims/privapp-permissions-me.phh.ims.xml"
 LAUNCHER="$ANDROID/packages/apps/Launcher3/AndroidManifest.xml"
-PATCH="$ROOT/build/titan2/track-b-source/launcher3-home-removal-a16.patch"
-for file in "$ROM" "$BP" "$APPS" "$FLOSS" "$IMS_XML" "$LAUNCHER" "$PATCH"; do
+for file in "$ROM" "$BP" "$APPS" "$FLOSS" "$IMS_XML" "$LAUNCHER"; do
   [[ -f "$file" && ! -L "$file" ]] || { echo "TB2_CONVERGENCE=HOLD_FILE path=$file"; exit 66; }
 done
 # Bind exact supplied host contents. A stale/mutated product must be investigated,
@@ -31,7 +30,6 @@ check_pin "$APPS" 8264edf7985b9aa1f62e36acbdd0d07767834705c6aee8680cd733e9232c6e
 check_pin "$BP" ab2b0654ee4b560aa1b741af913898c2d22d6963d33fbf78899f399e2fffd717
 check_pin "$FLOSS" 4146c78c7f4963a971117bb25003b62a294b550beff93eb124742b3fd0f1d97b
 check_pin "$IMS_XML" 6ccb15dcc39495a2c2688871f84d7368871805e08b1d02823c77af09720bcba7
-check_pin "$PATCH" 72df02669cda5b36b95319219cdae54f0bfb415830c89b17648a47e59f11fc04
 BASE_ROM=0c654060c57fc1b639d670164055aeffa231441a595310b2f45f7badb0ba66cb
 HOME_LINE='PRODUCT_PACKAGES += SableLauncher'
 if grep -Fxq "$HOME_LINE" "$ROM"; then
@@ -55,9 +53,20 @@ for name in "${app_names[@]}"; do
     echo "TB2_CONVERGENCE=HOLD_PREBUILT name=$name"; exit 78;
   }
 done
+# Selected Track B product must inherit its FLOSS IMS source exactly once.
+# Reject direct OEM C1 source mixing; this is source admission, not G1/G2/G3.
+[[ "$(grep -Fxc '$(call inherit-product, vendor/sable/trackb13ims/track-b.mk)' "$ROM")" -eq 1 ]] || {
+  echo 'TB2_CONVERGENCE=HOLD_FLOSS_IMS_INHERIT_NOT_EXACT'; exit 78;
+}
+for forbidden_ims in 'ims-oem-only.mk' 'product/titan2/n1i-c1'; do
+  if grep -Fq "$forbidden_ims" "$ROM" || grep -Fq "$forbidden_ims" "$FLOSS"; then
+    echo "TB2_CONVERGENCE=HOLD_MIXED_OEM_FLOSS_IMS source=$forbidden_ims"; exit 78
+  fi
+done
 for ims_module in PhhIms PhhImsOverlay Iwlan QualifiedNetworksService; do
-  grep -Eq "^[[:space:]]+$ims_module[[:space:]\\]*$" "$FLOSS" || {
-    echo "TB2_CONVERGENCE=HOLD_FLOSS_MODULE name=$ims_module"; exit 78;
+  count="$(grep -Ec "^[[:space:]]+$ims_module[[:space:]\\]*$" "$FLOSS" || true)"
+  [[ "$count" == 1 ]] || {
+    echo "TB2_CONVERGENCE=HOLD_FLOSS_MODULE_CARDINALITY name=$ims_module count=$count"; exit 78;
   }
 done
 [[ $(grep -Fc 'privapp-permissions package="me.phh.ims"' "$IMS_XML") -eq 1 ]] || exit 78
@@ -78,16 +87,26 @@ for dir_pair in \
     fi
   done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
 done
-if grep -Fq 'android.intent.category.HOME' "$LAUNCHER"; then
-  check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
-  ( cd "$ANDROID" && git -C packages/apps/Launcher3 apply -p4 --check "$PATCH" ) || {
-    echo 'TB2_CONVERGENCE=HOLD_LAUNCHER_PATCH_CONTEXT'; exit 78;
-  }
-else
-  # Idempotence: another edit with HOME removed is not automatically admitted.
-  check_pin "$LAUNCHER" 904faa32569da62de2f1c2ed774da2f2fc7d3920268720139ada1467cdf72c41
-  echo 'TB2_CONVERGENCE=LAUNCHER_HOME_ALREADY_REMOVED_REVIEW_COMMIT'
-fi
+# ADR-0013: exact manifest custody differs between the two known AOSP roots.
+# The original root has Quickstep HOME and service in additional XML fragments;
+# neither these pins nor the product graph establish an effective default HOME.
+case "$ANDROID" in
+  /srv/sable-build/workspaces/titan2-track-b/android)
+    check_pin "$LAUNCHER" 904faa32569da62de2f1c2ed774da2f2fc7d3920268720139ada1467cdf72c41
+    check_pin "$ANDROID/packages/apps/Launcher3/Android.bp" 51c5e56da157378f51501767592813618871bd651a17f6b98caf1728a4163848
+    check_pin "$ANDROID/packages/apps/Launcher3/quickstep/AndroidManifest.xml" 6f0d8b399253f63b490cd4b5faac383dac6b9a81b5fd8631347738b64eab02e5
+    check_pin "$ANDROID/packages/apps/Launcher3/quickstep/AndroidManifest-launcher.xml" f4413a77cd52ec407ba594233048ad78c450f4dfb4d49febb64012f2be7dd11f
+    ;;
+  /srv/sable-build/workspaces/titan2-track-b/android-pr347-integrated)
+    check_pin "$LAUNCHER" 3bcd0ddf69493f117668cdcfe82fd32a2fcb0162d062cae1ac87ccfaa5f0a919
+    ;;
+  *)
+    echo "TB2_CONVERGENCE=HOLD_UNREVIEWED_AOSP_ROOT path=$ANDROID"
+    exit 78
+    ;;
+esac
+echo 'TB2_CONVERGENCE=QUICKSTEP_HOME_ELIGIBILITY_PRESERVED'
+echo 'TB2_CONVERGENCE=HOME_SOURCE_FRAGMENTS_REVIEWED_COMPILED_ROLE_OPEN'
 if [[ "$MODE" == --plan ]]; then
   echo 'TB2_CONVERGENCE=PASS_EXACT_SOURCE_PREFLIGHT_NO_WRITES'
   echo 'TB2_PRODUCT=REUSE_EXISTING_13_TB2Sable_AND_FLOSS_PHHiMS'
@@ -107,9 +126,6 @@ for dir_pair in \
     fi
   done < <(find "$source_dir" -type f -print0 | LC_ALL=C sort -z)
 done
-if grep -Fq 'android.intent.category.HOME' "$LAUNCHER"; then
-  (cd "$ANDROID" && git -C packages/apps/Launcher3 apply -p4 "$PATCH")
-fi
 if ! grep -Fxq "$HOME_LINE" "$ROM"; then
   printf '\n# SableOS Track B: source-built HOME; existing 13 app/PhhIms graph retained.\n%s\n' "$HOME_LINE" >> "$ROM"
 fi

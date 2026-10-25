@@ -164,7 +164,7 @@ class MeasureAndRemoteTest {
     @Test fun irTransmitIsCapabilityGated() {
         val all = Hardware.entries.associateWith { Probe.PRESENT }
         val lg = RemoteLibrary.BUILT_IN.first { it.name == "LG TV" }
-        val q25 = CapabilityGate.resolve(ToolsDeviceProfile.ZinwaQ25, all, Capability.IR_REMOTE)
+        val q25 = CapabilityGate.resolve(LegacyQ25TestFixture.profile, all, Capability.IR_REMOTE)
         assertTrue(
             IrTransmit.decide(lg, lg.buttons[0], q25, emptyList()) is IrTransmit.Decision.Refuse
         )
@@ -190,7 +190,7 @@ class MeasureAndRemoteTest {
     @Test fun dialerCodeBridge() {
         val all = Hardware.entries.associateWith { Probe.PRESENT }
         val q25 = CapabilityGate.resolve(
-            ToolsDeviceProfile.ZinwaQ25,
+            LegacyQ25TestFixture.profile,
             all,
             Capability.FACTORY_TEST_BRIDGE
         )
@@ -245,7 +245,7 @@ class MeasureAndRemoteTest {
         val all = Hardware.entries.associateWith { Probe.PRESENT }
         assertTrue(
             SubscreenModes.available(
-                CapabilityGate.resolveAll(ToolsDeviceProfile.ZinwaQ25, all)
+                CapabilityGate.resolveAll(LegacyQ25TestFixture.profile, all)
             ).isEmpty()
         )
         val t2 = SubscreenModes.available(CapabilityGate.resolveAll(ToolsDeviceProfile.Titan2, all))

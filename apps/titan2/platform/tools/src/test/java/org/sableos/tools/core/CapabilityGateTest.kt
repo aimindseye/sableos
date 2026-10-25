@@ -29,7 +29,7 @@ class CapabilityGateTest {
 
     @Test fun diagnosticOnlyIsDeveloperModeOnly() {
         val r = CapabilityGate.resolve(
-            ToolsDeviceProfile.ZinwaQ25,
+            LegacyQ25TestFixture.profile,
             allPresent,
             Capability.BUBBLE_LEVEL
         )
@@ -43,7 +43,7 @@ class CapabilityGateTest {
     }
 
     @Test fun q25HasNoIrRemoteOrSubscreenEvenInDeveloperMode() {
-        val res = CapabilityGate.resolveAll(ToolsDeviceProfile.ZinwaQ25, allPresent)
+        val res = CapabilityGate.resolveAll(LegacyQ25TestFixture.profile, allPresent)
         listOf(
             Capability.IR_REMOTE,
             Capability.IR_LEARNING,
@@ -63,8 +63,8 @@ class CapabilityGateTest {
     }
 
     @Test fun profileLookupIsByIdOnly() {
-        assertEquals("zinwa-q25", ToolsDeviceProfile.byId("zinwa-q25").id)
-        assertEquals("zinwa-q25", ToolsDeviceProfile.byId(" zinwa-q25 ").id)
+        assertEquals("unknown", ToolsDeviceProfile.byId("zinwa-q25").id)
+        assertEquals("unknown", ToolsDeviceProfile.byId(" zinwa-q25 ").id)
         assertEquals("unknown", ToolsDeviceProfile.byId("Q25").id)
         assertEquals("unknown", ToolsDeviceProfile.byId(null).id)
     }
@@ -124,7 +124,11 @@ class CapabilityGateTest {
     }
 
     @Test fun fmIsStatusOnlyAndOwnedByMedia() {
-        val r = CapabilityGate.resolve(ToolsDeviceProfile.ZinwaQ25, allPresent, Capability.FM_RADIO)
+        val r = CapabilityGate.resolve(
+            LegacyQ25TestFixture.profile,
+            allPresent,
+            Capability.FM_RADIO
+        )
         val s = FmStatus.of(r, mediaFmInstalled = true)
         assertEquals("PRESENT_NOT_PROVEN", s.state)
         assertFalse(s.handoff)
@@ -132,7 +136,11 @@ class CapabilityGateTest {
         assertEquals(
             "UNKNOWN",
             FmStatus.of(
-                CapabilityGate.resolve(ToolsDeviceProfile.Unknown, allPresent, Capability.FM_RADIO),
+                CapabilityGate.resolve(
+                    ToolsDeviceProfile.Unknown,
+                    allPresent,
+                    Capability.FM_RADIO
+                ),
                 true
             ).state
         )

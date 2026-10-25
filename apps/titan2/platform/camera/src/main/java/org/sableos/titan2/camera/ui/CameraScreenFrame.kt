@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import org.sableos.titan2.camera.core.CameraAction
 import org.sableos.titan2.camera.core.CameraDeviceProfile
+import org.sableos.titan2.camera.core.CameraPreviewInputPolicy
 import org.sableos.titan2.camera.core.DeckContext
 import org.sableos.titan2.camera.core.DeckOrientation
 import org.sableos.titan2.camera.core.DeckPresentation
@@ -76,9 +77,6 @@ internal fun CameraScreenContent(frame: CameraScreenFrame, actions: CameraScreen
     Box(Modifier.fillMaxSize().background(Color.Black).safeDrawingPadding()) {
         actions.preview(
             Modifier.align(Alignment.Center).fillMaxWidth().aspectRatio(frame.previewAspect)
-                .clickable(enabled = frame.presentation == DeckPresentation.LandscapeDeck) {
-                    actions.revealTouch()
-                }
         )
         StatusOverlay(
             frame.info.hud,
@@ -147,7 +145,8 @@ internal fun transformCameraPreview(tv: TextureView, ps: Size, rotation: Int) {
 internal fun CameraPreviewSurface(
     modifier: Modifier,
     onViewCreated: (TextureView) -> Unit,
-    listener: TextureView.SurfaceTextureListener
+    listener: TextureView.SurfaceTextureListener,
+    onDirectScreenTap: () -> Unit
 ) {
     AndroidView(
         modifier = modifier,
@@ -155,6 +154,22 @@ internal fun CameraPreviewSurface(
             TextureView(ctx).apply {
                 onViewCreated(this)
                 surfaceTextureListener = listener
+            }
+        },
+        update = { view ->
+            // Trackpads and connected mice emit SOURCE_MOUSE: they must not be
+            // reinterpreted as a physical touchscreen press on the preview.
+            view.setOnTouchListener { _, event ->
+                val source = event.source
+                val tool = event.getToolType(0)
+                if (!CameraPreviewInputPolicy.isDirectTouch(source, tool)) {
+                    false
+                } else {
+                    if (CameraPreviewInputPolicy.revealControls(source, tool, event.actionMasked)) {
+                        onDirectScreenTap()
+                    }
+                    true
+                }
             }
         }
     )

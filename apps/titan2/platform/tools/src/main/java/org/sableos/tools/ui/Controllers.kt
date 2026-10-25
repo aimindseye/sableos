@@ -14,6 +14,7 @@ object Controllers {
         Tool.NOTES to ::NotesController,
         Tool.VOICE_RECORDER to ::VoiceRecorderController,
         Tool.CLOCK_STOPWATCH to ::ClockStopwatchController,
+        Tool.TASKS_CHECKLISTS to ::TasksController,
         Tool.COMPASS to ::CompassController,
         Tool.BUBBLE_LEVEL to { h -> TiltController(h, Capability.BUBBLE_LEVEL) },
         Tool.PLUMB_BOB to { h -> TiltController(h, Capability.PLUMB_BOB) },

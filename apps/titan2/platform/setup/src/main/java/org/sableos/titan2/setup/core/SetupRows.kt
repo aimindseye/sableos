@@ -39,7 +39,7 @@ object SetupRows {
         Item(
             "network",
             "Network and SIM settings",
-            "Opens Android Settings",
+            SetupPresentation.WIFI_HELP,
             Readiness.Informational,
             Action.NetworkSettings
         ),

@@ -22,6 +22,7 @@ require() {
 require 'if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then'
 require 'SABLE_LOCAL_CI_PANTHER_R9_STATIC_CONTRACTS=SKIP'
 require 'SABLE_LOCAL_CI_R9_LAUNCHER3_FOUNDATION=SKIP'
+require 'SABLE_LOCAL_CI_R9_SABLESTART_DESIGN=SKIP_NONSELECTED_PANTHER_R9_PRODUCT'
 require ':messages:detekt'
 require ':messages:ktlintCheck'
 require ':messages:testDebugUnitTest'
@@ -73,6 +74,31 @@ launcher_block = text[launcher_start:launcher_end]
 if "r9-launcher3-foundation-contract.py" not in launcher_block:
     raise SystemExit(
         "N1D_LOCAL_CI_SCOPE_CONTRACT=FAIL panther_scope_missing=launcher3_foundation"
+    )
+
+# The Panther R9 production design requirement is NEVER waived; only the
+# selected Titan2/TB2 product gets an exact-scoped non-applicable disposition.
+# The shared contract's self-test must remain active for all products.
+design_start = text.index('  run_static_contract r9-sablestart-design-self-test')
+design_end = text.index(
+    '  if [[ "$SABLEOS_DEVICE" == panther && "$SABLEOS_RELEASE_VERSION" == R9 ]]; then',
+    design_start,
+)
+design_block = text[design_start:design_end]
+expected_design_block = r'''  run_static_contract r9-sablestart-design-self-test \
+    python3 "$ROOT/build/gates/r9-sablestart-design-contract.py" --self-test
+  if [[ "$SABLEOS_DEVICE" == titan2 && "${SABLEOS_RELEASE_VERSION^^}" == TB2 ]]; then
+    # PR347 Titan2/TB2 has a separately reviewed A16 launcher source/design.
+    # Keep the R9 contract self-test, but do not impose Panther R9 UI literals.
+    echo "SABLE_LOCAL_CI_R9_SABLESTART_DESIGN=SKIP_NONSELECTED_PANTHER_R9_PRODUCT"
+  else
+    run_static_contract r9-sablestart-design \
+      python3 "$ROOT/build/gates/r9-sablestart-design-contract.py"
+  fi
+'''
+if design_block != expected_design_block:
+    raise SystemExit(
+        "N1D_LOCAL_CI_SCOPE_CONTRACT=FAIL r9_design_nonselected_exception_drift"
     )
 
 for shared in (

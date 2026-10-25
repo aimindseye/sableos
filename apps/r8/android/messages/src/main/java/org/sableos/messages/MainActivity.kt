@@ -49,6 +49,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.text.font.FontWeight
@@ -271,6 +273,25 @@ private fun rememberLiveSmsFeed(refreshGeneration: Int): LiveSmsLoad? {
 }
 
 @Composable
+private fun IncomingSmsRefreshEffect(
+    feed: LiveSmsLoad?,
+    onIncoming: (Int) -> Unit,
+) {
+    // Preserve the prior authorized snapshot across transient loading states.
+    var priorThreads by remember { mutableStateOf<List<SableThread>?>(null) }
+    LaunchedEffect(feed) {
+        val ready = feed as? LiveSmsLoad.Ready ?: return@LaunchedEffect
+        if (MessagesIncomingRefreshPolicy.hasNewLatestIncoming(priorThreads, ready.threads)) {
+            onIncoming(ready.threads.size)
+        }
+        priorThreads = ready.threads
+    }
+}
+
+private fun MessagesUiState.afterIncomingRefresh(threadCount: Int): MessagesUiState =
+    MessagesInteractionModel.reduce(this, MessagesAction.IncomingMessage, threadCount)
+
+@Composable
 private fun MessagesApp(
     onProviderHandoff: (String, String) -> Boolean,
     onPhoneHandoff: (String) -> Boolean,
@@ -279,8 +300,10 @@ private fun MessagesApp(
 ) {
     var state by remember { mutableStateOf(MessagesInteractionModel.initialState().copy(draft = "")) }
     var composerFocused by remember { mutableStateOf(false) }
+    var searchFocused by remember { mutableStateOf(false) }
     var providerStatus by remember { mutableStateOf("Read-only Android SMS provider · send via installed SMS app") }
     val feed = rememberLiveSmsFeed(refreshGeneration)
+    IncomingSmsRefreshEffect(feed) { state = state.afterIncomingRefresh(it) }
     val sortedThreads = (feed as? LiveSmsLoad.Ready)?.threads.orEmpty()
     val safeSelection = state.selectedThreadIndex.coerceIn(0, (sortedThreads.size - 1).coerceAtLeast(0))
 
@@ -319,6 +342,7 @@ private fun MessagesApp(
                 threads = sortedThreads,
                 selectedIndex = safeSelection,
                 composerFocused = composerFocused,
+                searchFocused = searchFocused,
                 providerStatus = providerStatus,
             ),
         actions =
@@ -327,34 +351,58 @@ private fun MessagesApp(
                     MessagesEditorCallbacks(
                         draftChanged = { draft -> state = state.copy(draft = draft) },
                         composerFocus = { composerFocused = it },
+                        searchFocus = { searchFocused = it },
                         action = ::apply,
                         providerHandoff = ::sendToProvider,
+                        searchQueryChanged = { query -> state = state.withConversationSearchQuery(query) },
                     ),
                 selectThread = { index ->
                     state = state.copy(focusedConversationRow = index, selectedThreadIndex = index)
                     apply(MessagesAction.OpenFocusedConversation)
                 },
-                contact = {
-                    val route = sortedThreads.getOrNull(safeSelection)?.route.orEmpty()
-                    providerStatus =
-                        if (onContactHandoff(route)) {
-                            "Contacts editor opened."
-                        } else {
-                            "Contacts provider unavailable."
-                        }
-                },
-                phone = {
-                    val route = sortedThreads.getOrNull(safeSelection)?.route.orEmpty()
-                    providerStatus =
-                        if (onPhoneHandoff(route)) {
-                            "Dialer opened; call not placed."
-                        } else {
-                            "Dialer unavailable."
-                        }
-                },
+                contact =
+                    providerStatusAction(
+                        route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
+                        open = onContactHandoff,
+                        success = "Contacts editor opened.",
+                        unavailable = "Contacts provider unavailable.",
+                    ) { providerStatus = it },
+                phone =
+                    providerStatusAction(
+                        route = { sortedThreads.getOrNull(safeSelection)?.route.orEmpty() },
+                        open = onPhoneHandoff,
+                        success = "Dialer opened; call not placed.",
+                        unavailable = "Dialer unavailable.",
+                    ) { providerStatus = it },
             ),
     )
 }
+
+private fun providerHandoffStatus(
+    route: String,
+    open: (String) -> Boolean,
+    success: String,
+    unavailable: String,
+): String = if (open(route)) success else unavailable
+
+private fun providerStatusAction(
+    route: () -> String,
+    open: (String) -> Boolean,
+    success: String,
+    unavailable: String,
+    publish: (String) -> Unit,
+): () -> Unit =
+    {
+        publish(providerHandoffStatus(route(), open, success, unavailable))
+    }
+
+private fun MessagesUiState.withConversationSearchQuery(query: String): MessagesUiState =
+    copy(
+        searchQuery = query,
+        mode = MessagesMode.Search,
+        focus = MessagesFocus.SearchField,
+        lastEvent = "SEARCH_IN_CONVERSATION",
+    )
 
 @Composable
 private fun MessagesUnavailableScreen(feed: LiveSmsLoad?) {
@@ -389,8 +437,10 @@ private fun MessagesEmptyScreen() {
 private data class MessagesEditorCallbacks(
     val draftChanged: (String) -> Unit,
     val composerFocus: (Boolean) -> Unit,
+    val searchFocus: (Boolean) -> Unit,
     val action: (MessagesAction) -> Unit,
     val providerHandoff: () -> Unit,
+    val searchQueryChanged: (String) -> Unit,
 )
 
 private data class ReadyMessagesView(
@@ -398,6 +448,7 @@ private data class ReadyMessagesView(
     val threads: List<SableThread>,
     val selectedIndex: Int,
     val composerFocused: Boolean,
+    val searchFocused: Boolean,
     val providerStatus: String,
 )
 
@@ -416,10 +467,10 @@ private fun ReadyMessagesUi(
     val state = view.state
     val sortedThreads = view.threads
     val safeSelection = view.selectedIndex
-    val composerFocused = view.composerFocused
+    val textInputFocused = view.composerFocused || view.searchFocused
     val providerStatus = view.providerStatus
     Column(
-        modifier = messagesAppModifier(state, actions.editor.action, actions.editor.providerHandoff, composerFocused),
+        modifier = messagesAppModifier(state, actions.editor.action, textInputFocused),
     ) {
         Header()
         Spacer(Modifier.height(SableSpacing.Xl))
@@ -431,7 +482,12 @@ private fun ReadyMessagesUi(
             callbacks = actions.editor,
         )
         Spacer(Modifier.height(SableSpacing.Xl))
-        HistoryAndSearchPanel(state = state, onAction = actions.editor.action)
+        HistoryAndSearchPanel(
+            state = state,
+            onAction = actions.editor.action,
+            onSearchQueryChanged = actions.editor.searchQueryChanged,
+            onSearchFocusChanged = actions.editor.searchFocus,
+        )
         Spacer(Modifier.height(SableSpacing.Xl))
         ConversationList(
             state = state,
@@ -458,19 +514,17 @@ private fun ReadyMessagesUi(
 private fun messagesAppModifier(
     state: MessagesUiState,
     apply: (MessagesAction) -> Unit,
-    sendToProvider: () -> Unit,
-    composerFocused: Boolean,
+    textInputFocused: Boolean,
 ): Modifier =
     Modifier
         .fillMaxSize()
         .background(MaterialTheme.colorScheme.background)
         .onPreviewKeyEvent { event ->
-            if (composerFocused) return@onPreviewKeyEvent false
+            if (textInputFocused) return@onPreviewKeyEvent false
             handleMessagesKey(
                 event = event.nativeKeyEvent,
                 state = state,
                 apply = apply,
-                sendToProvider = sendToProvider,
             )
         }.verticalScroll(rememberScrollState())
         .padding(
@@ -482,17 +536,16 @@ private fun handleMessagesKey(
     event: AndroidKeyEvent,
     state: MessagesUiState,
     apply: (MessagesAction) -> Unit,
-    sendToProvider: () -> Unit,
 ): Boolean {
     if (event.action != AndroidKeyEvent.ACTION_DOWN) return false
 
     val action = resolveMessagesKeyAction(event, state)
-    if (action == MessagesAction.ComposerEnterSend) {
-        sendToProvider()
-    } else {
+    return if (MessagesGlobalKeyPolicy.shouldHandle(action)) {
         apply(action)
+        true
+    } else {
+        false
     }
-    return true
 }
 
 private fun resolveMessagesKeyAction(
@@ -717,7 +770,15 @@ private fun LatestMessages(
     state: MessagesUiState,
     thread: SableThread,
 ) {
-    val messages = thread.messages.takeLast(VISIBLE_MESSAGE_COUNT)
+    val messages =
+        MessagesConversationSearch.visibleMessages(
+            thread,
+            if (state.mode == MessagesMode.Search) state.searchQuery else "",
+            VISIBLE_MESSAGE_COUNT,
+        )
+    if (messages.isEmpty() && state.mode == MessagesMode.Search && state.searchQuery.isNotBlank()) {
+        Text("No messages match this conversation search.")
+    }
     messages.forEachIndexed { index, message ->
         MessageBubble(
             message = message,
@@ -731,27 +792,26 @@ private fun LatestMessages(
 private fun HistoryAndSearchPanel(
     state: MessagesUiState,
     onAction: (MessagesAction) -> Unit,
+    onSearchQueryChanged: (String) -> Unit,
+    onSearchFocusChanged: (Boolean) -> Unit,
 ) {
+    val requester = remember { FocusRequester() }
+    LaunchedEffect(state.mode) {
+        if (state.mode == MessagesMode.Search) requester.requestFocus()
+    }
     ContractPanel(title = "Explicit history/search mode") {
-        ContractRow("HISTORY_ACCESS_EXPLICIT", "PASS")
-        ContractRow("SEARCH_IN_CONVERSATION", "PASS")
-        ContractRow("JUMP_TO_UNREAD", "PASS")
-        ContractRow("RETURN_TO_LATEST_KEY", "PASS")
-        Text(
-            text = "New message — Enter to latest",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
+        OutlinedTextField(
+            value = state.searchQuery,
+            onValueChange = onSearchQueryChanged,
+            label = { Text("Search in this conversation") },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusRequester(requester)
+                    .onFocusChanged { onSearchFocusChanged(it.isFocused) },
+            singleLine = true,
         )
-        Text(
-            text = "History pages are discrete slices; no precision touchpad scrolling is required.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = "Current slice: ${state.historySlice} · mode: ${state.mode}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        HistorySearchStatus(state)
         Row(horizontalArrangement = Arrangement.spacedBy(SableSpacing.Sm)) {
             Button(onClick = { onAction(MessagesAction.SearchInConversation) }) {
                 Text("/ search")
@@ -786,6 +846,31 @@ private fun HistoryAndSearchPanel(
             }
         }
     }
+}
+
+@Composable
+private fun HistorySearchStatus(state: MessagesUiState) {
+    ContractRow("HISTORY_ACCESS_EXPLICIT", "PASS")
+    ContractRow("SEARCH_IN_CONVERSATION", "PASS")
+    ContractRow("JUMP_TO_UNREAD", "PASS")
+    ContractRow("RETURN_TO_LATEST_KEY", "PASS")
+    if (MessagesConversationSearch.showNewMessagePrompt(state)) {
+        Text(
+            text = "New message — Enter to latest",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+    Text(
+        text = "History pages are discrete slices; no precision touchpad scrolling is required.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Text(
+        text = "Current slice: ${state.historySlice} · mode: ${state.mode}",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onBackground,
+    )
 }
 
 @Composable

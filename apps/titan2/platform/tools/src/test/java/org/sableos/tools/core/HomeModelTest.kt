@@ -21,10 +21,10 @@ class HomeModelTest {
 
     @Test fun q25NormalModeShowsOnlySoftwareUtilitiesWithoutHardwareGate() {
         val g = HomeModel.build(
-            HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = false)
+            HomeInputs(LegacyQ25TestFixture.profile, allPresent, developerMode = false)
         )
         assertEquals(
-            listOf(Tool.NOTES, Tool.VOICE_RECORDER, Tool.CLOCK_STOPWATCH),
+            listOf(Tool.NOTES, Tool.VOICE_RECORDER, Tool.CLOCK_STOPWATCH, Tool.TASKS_CHECKLISTS),
             tools(g, Section.UTILITIES)
         )
         assertEquals(listOf("Utilities", "Diagnostics", "Reports"), g.map { it.title })
@@ -34,7 +34,7 @@ class HomeModelTest {
 
     @Test fun q25DeveloperModeShowsQualificationToolsButNeverIr() {
         val g = HomeModel.build(
-            HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = true)
+            HomeInputs(LegacyQ25TestFixture.profile, allPresent, developerMode = true)
         )
         val u = tools(g, Section.UTILITIES)
         assertTrue(Tool.COMPASS in u)
@@ -68,7 +68,7 @@ class HomeModelTest {
     @Test fun noUnavailableBadgeOnHome() {
         listOf(
             ToolsDeviceProfile.Titan2,
-            ToolsDeviceProfile.ZinwaQ25,
+            LegacyQ25TestFixture.profile,
             ToolsDeviceProfile.Unknown
         ).forEach { p ->
             listOf(true, false).forEach { dev ->
@@ -90,7 +90,7 @@ class HomeModelTest {
                 Tool.APPS
             )
         val g = HomeModel.build(
-            HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, false, recents = recents)
+            HomeInputs(LegacyQ25TestFixture.profile, allPresent, false, recents = recents)
         )
         val r = g.first().items.map { it.tool }
         assertEquals("Recent", g.first().title)
@@ -120,9 +120,9 @@ class HomeModelTest {
     }
 
     @Test fun profileSummaryNamesTheProfile() {
-        val i = HomeInputs(ToolsDeviceProfile.ZinwaQ25, allPresent, developerMode = false)
+        val i = HomeInputs(LegacyQ25TestFixture.profile, allPresent, developerMode = false)
         assertEquals(
-            "Zinwa Q25 · zinwa-q25 · 3 utilities",
+            "Zinwa Q25 · zinwa-q25 · 4 utilities",
             HomeModel.profileSummary(i, HomeModel.build(i))
         )
     }
