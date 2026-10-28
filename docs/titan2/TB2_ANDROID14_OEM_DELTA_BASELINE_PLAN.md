@@ -65,3 +65,11 @@ This plan does not replace the independent C2 Zygote fatal capture required for 
 - OEM closure: https://github.com/aimindseye/sableos/blob/main/docs/titan2/N1I_A_V010014_OEM_IMS_DEPENDENCY_CLOSURE.md
 - C3A booted control: https://github.com/aimindseye/sableos/blob/main/docs/titan2/N1D_C3A_CONTROL_R1.md
 - PR347: https://github.com/aimindseye/sableos/pull/347
+
+## Phase 1 execution checkpoint — 2026-10-28
+
+Owner executed the Phase 1 stock/AOSP14 inventory and preserved its sealed result at `/srv/sable-build/evidence/titan2-a14-phase1-inventory-20261028T135100Z`. The **binary/source custody** check reported `PASS_PHASE1_BINARY_AND_SOURCE_CUSTODY`, 106 stock JAR/APEX, 124 AOSP14 JAR/APEX, 190 raw path comparisons, manifest `e3f9241982f55ef4cec97df0c55e9b87d37a5656` with 1,224 projects. Its extracted `BUILD_PROP_OBSERVATIONS.json` showed stock system Android 16 / SDK 36 / `BP2A.250605.031.A3` versus AOSP GSI Android 14 / SDK 34 / `UP1A.231005.007`; hence **version-match qualification HOLDS**. These 190 path rows are not OEM-change findings.
+
+The Phase 1 Version Rebase V1 host run passed 15/15 regression tests but prematurely rejected `stock-product.erofs.log` as `EMPTY_FILE`: this **SHA-sealed zero-byte extractor diagnostic is valid**, because a successful EROFS extractor may produce no error text. A corrected **Version Rebase V1.1** makes only a narrow checksummed-extractor-log exception and keeps all required evidence nonempty; it locally passed 21/21 regressions, including 190-row receipt replay. The owner **has not yet run V1.1 on the real receipt**; report-only status remains pending that replay. Do not repeat image extraction and do not relax the source/hash/version checks.
+
+The next matched framework control remains stock V01.00.14 A16 versus exact AOSP16 r2 candidate source/GSI; AOSP14 remains relevant to the separately analyzed vendor/compatibility lane. No PR347 build, source patch, device contact, flash, or cellular acceptance is authorized by this checkpoint.
