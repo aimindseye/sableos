@@ -7,8 +7,8 @@
 > **Immediate next gate:** read exact `BUILD_PROP_OBSERVATIONS.json` from the accepted Phase 1 receipt, reconcile system-vs-vendor evidence without re-extracting images, then admit only source/binary-matched AOSP16 framework comparison. Do not start Phase 2 ABI comparisons with mismatched releases, do not attribute 190 path rows to OEM mods, and preserve the independent C2 Zygote fatal hold.  
 > **Correction reference:** [N1C stock build properties](https://github.com/aimindseye/sableos/blob/main/docs/titan2/N1C_FIRST_WRITE_POSTMORTEM_20260930.md); [official Android build numbers](https://source.android.com/docs/setup/reference/build-numbers); [official GSI checksum](https://developer.android.com/topic/generic-system-image/releases).
 
-Status: **Phase 1 planned and tool qualification in progress; comparison not yet accepted**.
-Scope: Titan 2 V01.00.14 Android 14 stock against a pinned *standard* Android 14 reference, then later reconcile against the exact PR347 Android 16 product and the physically booted C3A control.
+Status: **Phase 1 original AOSP14/stock binary and source custody passed; stock-system version-match rejected (A16 vs A14); corrected rebase V1.2 awaits owner replay**.
+Scope: Titan 2 V01.00.14 Android 16 stock system versus a pinned standard AOSP 16 candidate, with its Android 14 vendor interfaces tracked in a separate lane; later reconcile with exact PR347 Android 16 and physically booted C3A.
 
 ## Why this track takes priority
 
@@ -73,3 +73,11 @@ Owner executed the Phase 1 stock/AOSP14 inventory and preserved its sealed resul
 The Phase 1 Version Rebase V1 host run passed 15/15 regression tests but prematurely rejected `stock-product.erofs.log` as `EMPTY_FILE`: this **SHA-sealed zero-byte extractor diagnostic is valid**, because a successful EROFS extractor may produce no error text. A corrected **Version Rebase V1.1** makes only a narrow checksummed-extractor-log exception and keeps all required evidence nonempty; it locally passed 21/21 regressions, including 190-row receipt replay. The owner **has not yet run V1.1 on the real receipt**; report-only status remains pending that replay. Do not repeat image extraction and do not relax the source/hash/version checks.
 
 The next matched framework control remains stock V01.00.14 A16 versus exact AOSP16 r2 candidate source/GSI; AOSP14 remains relevant to the separately analyzed vendor/compatibility lane. No PR347 build, source patch, device contact, flash, or cellular acceptance is authorized by this checkpoint.
+
+## Phase 1 V1.2 consumer/producer label correction — 2026-10-28
+
+Real owner execution of **Version Rebase V1.1** passed 21 unit tests but stopped at `PHASE1_VERSION_REBASE=HOLD INVENTORY_COUNT_DRIFT` before writing a report. Root cause established by inspecting the original Phase 1 inventory producer `qualify.py`: its `IMAGE_PROVENANCE.tsv` uses `side=AOSP14_GSI` for the archive, while its `ARTIFACT_INVENTORY.tsv` uses `side=AOSP14` for extracted JAR/APEX artifacts. The rebase V1.1 consumer and synthetic fixture incorrectly counted the archive-side label in the artifact inventory. This is a report-consumer/fixture defect, not image custody drift.
+
+**V1.2 corrected deliverable** counts only `STOCK` and `AOSP14` artifact sides, explicitly rejects foreign/unknown sides, and preserves all 190-row/106+124 count checks, stock/GSI/source hashes and zero-byte checksummed extraction-log allowance. Locally verified: Python AST and Bash syntax PASS, 26/26 regression tests PASS, fresh ZIP extraction + SHA seals PASS; 10,000-row parser median 0.008321s (9 samples). **Owner real receipt rerun pending**. Expect `HOLD_CROSS_VERSION_FRAMEWORK_BASELINE`, `rows_reclassified=190`, `inventory_counts_verified={STOCK:106,AOSP14:124}`, `new_oem_abi_gaps_proven=0`, `a16_patch_admitted=false`.
+
+No new image extraction, source edits, C2 boot/flash, or Android 16 ABI patch admission is permitted by the corrected report. Only after this baseline gate can we qualify a standard AOSP16 source/GSI reference against the V01.00.14 A16 stock **system**. Keep Android14 vendor separate. Do not mistake source-version changes or APEX packaging differences for OEM behavior modifications.
