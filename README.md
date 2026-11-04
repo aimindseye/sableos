@@ -1,3 +1,10 @@
+> **CURRENT DEVICE PORTFOLIO — 2026-11-03 (supersedes all older Titan status below):**
+> SableOS development of **GSIs and custom ROMs for Unihertz Titan 2 and Titan 2 Elite is closed until further notice**. **Active device-development priorities: Zinwa Q25 and Zinwa Q27.** Historical Titan source, research, flash and recovery evidence is retained, but no new Titan/Elite image build, device bring-up, IMS/VoLTE implementation, flash campaign, or release is authorized under the retired roadmap. Pixel 7 / Panther remains a frozen reference; Q25/Q27 are priorities, not implicitly qualified releases. [Current canonical decision](https://github.com/sableos-project/platform_sable/blob/main/docs/DEVICE_PORTFOLIO_STATUS_2026-11-03.md).
+>
+> **Historical documentation notice:** The README content below is preserved for provenance. Any older statement naming Titan 2/Elite as ACTIVE, NEXT, or a current deployment target is superseded by the 2026-11-03 decision.
+
+---
+
 > **Current status (2026-10-12):** See [the reconciled engineering gate ledger](docs/ENGINEERING_STATUS_2026-10-12.md). Older milestone status below is retained as dated history. Titan 2 N1F/M4 full-image qualification and flash authorization remain OPEN.
 
 # SableOS
