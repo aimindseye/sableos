@@ -1,3 +1,10 @@
+> **STATUS OVERRIDE — 2026-11-03:** SableOS GSI and custom-ROM development for **Unihertz Titan 2 and Titan 2 Elite is closed until further notice**. Device-development priorities are **Zinwa Q25 and Zinwa Q27**. The original milestones and technical guidance below are retained as history, not active execution instructions. No Titan/Elite build, flash, test-campaign or release work should resume without a new explicit owner decision. [Portfolio decision](https://github.com/sableos-project/platform_sable/blob/main/docs/DEVICE_PORTFOLIO_STATUS_2026-11-03.md).
+
+---
+
+
+**Latest physical closure:** The November 1 Titan 2 GSI flashed successfully but failed to achieve usable Android boot (Recovery followed by continuous animation after factory reset, including without SIMs). The operator subsequently restored matched stock images and reported successful stock boot after reset. The root cause remains unproven. Historical evidence: [closed PR #347](https://github.com/aimindseye/sableos/pull/347).
+
 # SableOS current status
 
 Last updated: 2026-10-05 ET
